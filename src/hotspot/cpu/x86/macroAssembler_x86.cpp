@@ -4376,6 +4376,52 @@ void MacroAssembler::vextendbw(bool sign, XMMRegister dst, XMMRegister src, int 
   }
 }
 
+void MacroAssembler::pminmax(BasicType typ, int opcode, XMMRegister dst, XMMRegister src) {
+  if (opcode == Op_MinV) {
+    if (typ == T_BYTE) {
+        pminsb(dst, src);
+    } else if (typ == T_SHORT) {
+        pminsw(dst, src);
+    } else {
+        assert(typ == T_INT,"required.");
+        pminsd(dst, src);
+    }
+  } else { // opcode == Op_MaxV
+    assert(opcode == Op_MaxV,"required.");
+    if (typ == T_BYTE) {
+        pmaxsb(dst, src);
+    } else if (typ == T_SHORT) {
+        pmaxsw(dst, src);
+    } else {
+        assert(typ == T_INT,"required.");
+        pmaxsd(dst, src);
+    }
+  }
+}
+
+void MacroAssembler::vpminmax(BasicType typ, int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len) {
+  if (opcode == Op_MinV) {
+    if (typ == T_BYTE) {
+        vpminsb(dst, src1, src2, vector_len);
+    } else if (typ == T_SHORT) {
+        vpminsw(dst, src1, src2, vector_len);
+    } else {
+        assert(typ == T_INT,"required.");
+        vpminsd(dst, src1, src2, vector_len);
+    }
+  } else { // opcode == Op_MaxV
+    assert(opcode == Op_MaxV,"required.");
+    if (typ == T_BYTE) {
+        vpmaxsb(dst, src1, src2, vector_len);
+    } else if (typ == T_SHORT) {
+        vpmaxsw(dst, src1, src2, vector_len);
+    } else {
+        assert(typ == T_INT,"required.");
+        vpmaxsd(dst, src1, src2, vector_len);
+    }
+  }
+}
+
 void MacroAssembler::vshiftd(int opcode, XMMRegister dst, XMMRegister src) {
   if (opcode == Op_RShiftVI) {
     psrad(dst, src);

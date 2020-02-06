@@ -1729,6 +1729,8 @@ public:
   void vshiftd(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
   void vshiftw(int opcode, XMMRegister dst, XMMRegister src);
   void vshiftw(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+  void pminmax(BasicType typ, int opcode, XMMRegister dst, XMMRegister src);
+  void vpminmax(BasicType typ, int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len);
   void vshiftq(int opcode, XMMRegister dst, XMMRegister src);
   void vshiftq(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
   void insert(BasicType typ, XMMRegister dst, Register val, int idx);
