@@ -4528,6 +4528,66 @@ void MacroAssembler::vinsert(BasicType typ, XMMRegister dst, XMMRegister src, Re
   }
 }
 
+void MacroAssembler::vgather(BasicType typ, XMMRegister dst, Register base, XMMRegister idx, XMMRegister mask, int vector_len) {
+  switch(typ) {
+    case T_INT:
+      vpgatherdd(dst, Address(base, idx, Address::times_4), mask, vector_len);
+      break;
+    case T_FLOAT:
+      vgatherdps(dst, Address(base, idx, Address::times_4), mask, vector_len);
+      break;
+    case T_LONG:
+      vpgatherdq(dst, Address(base, idx, Address::times_8), mask, vector_len);
+      break;
+    case T_DOUBLE:
+      vgatherdpd(dst, Address(base, idx, Address::times_8), mask, vector_len);
+      break;
+    default:
+      assert(false,"Should not reach here.");
+      break;
+  }
+}
+
+void MacroAssembler::evgather(BasicType typ, XMMRegister dst, KRegister mask, Register base, XMMRegister idx, int vector_len) {
+  switch(typ) {
+    case T_INT:
+      evpgatherdd(dst, mask, Address(base, idx, Address::times_4), vector_len);
+      break;
+    case T_FLOAT:
+      evgatherdps(dst, mask, Address(base, idx, Address::times_4), vector_len);
+      break;
+    case T_LONG:
+      evpgatherdq(dst, mask, Address(base, idx, Address::times_8), vector_len);
+      break;
+    case T_DOUBLE:
+      evgatherdpd(dst, mask, Address(base, idx, Address::times_8), vector_len);
+      break;
+    default:
+      assert(false,"Should not reach here.");
+      break;
+  }
+}
+
+void MacroAssembler::evscatter(BasicType typ, Register base, XMMRegister idx, KRegister mask, XMMRegister src, int vector_len) {
+  switch(typ) {
+    case T_INT:
+      evpscatterdd(Address(base, idx, Address::times_4), mask, src, vector_len);
+      break;
+    case T_FLOAT:
+      evscatterdps(Address(base, idx, Address::times_4), mask, src, vector_len);
+      break;
+    case T_LONG:
+      evpscatterdq(Address(base, idx, Address::times_8), mask, src, vector_len);
+      break;
+    case T_DOUBLE:
+      evscatterdpd(Address(base, idx, Address::times_8), mask, src, vector_len);
+      break;
+    default:
+      assert(false,"Should not reach here.");
+      break;
+  }
+}
+
 void MacroAssembler::reducedw(int opcode, XMMRegister dst, XMMRegister src) {
   if(opcode == Op_AddReductionVI) {
     paddd(dst, src);
