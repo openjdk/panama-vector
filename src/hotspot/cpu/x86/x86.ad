@@ -4955,7 +4955,7 @@ instruct minmax_reduction2F(legRegF dst, immF src1, legVec src2, legVec tmp,
     bool is_min = (this->ideal_Opcode() == Op_MinReductionV) ? true: false;
      
     __ vpermilps($xmm_1$$XMMRegister, $src2$$XMMRegister, 1, vector_len);
-    __ vmin_max_macro($dst$$XMMRegister, $xmm_1$$XMMRegister, $src2$$XMMRegister, $tmp$$XMMRegister,
+    __ vminmax($dst$$XMMRegister, $xmm_1$$XMMRegister, $src2$$XMMRegister, $tmp$$XMMRegister,
                       $atmp$$XMMRegister, $btmp$$XMMRegister, true, is_min, vector_len);
   %}
   ins_pipe( pipe_slow );
@@ -4980,22 +4980,22 @@ instruct minmax_reductionF(legRegF dst, immF src1, legVec src2, legVec tmp, legV
       case 16: 
         vector_len = 0;
         __ vpermilps($xmm_1$$XMMRegister, $src2$$XMMRegister, 14, vector_len);
-        __ vmin_max_macro($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $src2$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $src2$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         __ vpermilps($xmm_1$$XMMRegister, $xmm_0$$XMMRegister, 1, vector_len);
-        __ vmin_max_macro($dst$$XMMRegister, $xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($dst$$XMMRegister, $xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         break;
       case 32:
         vector_len = 1;
         __ vperm2f128($xmm_1$$XMMRegister, $src2$$XMMRegister, $src2$$XMMRegister, 1);
-        __ vmin_max_macro($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $src2$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $src2$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         __ vpermilps($xmm_1$$XMMRegister, $xmm_0$$XMMRegister, 14, vector_len);
-        __ vmin_max_macro($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         __ vpermilps($xmm_1$$XMMRegister, $xmm_0$$XMMRegister, 1, vector_len);
-        __ vmin_max_macro($dst$$XMMRegister, $xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($dst$$XMMRegister, $xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         break;
       case 64:
@@ -5003,16 +5003,16 @@ instruct minmax_reductionF(legRegF dst, immF src1, legVec src2, legVec tmp, legV
         ktmp = k1;
         __ vextractf64x4($xmm_0$$XMMRegister, $src2$$XMMRegister, 0);
         __ vextractf64x4($xmm_1$$XMMRegister, $src2$$XMMRegister, 1);
-        __ vmin_max_macro_evex($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, ktmp,
+        __ evminmax($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, ktmp,
                         $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         __ vpermpd($xmm_1$$XMMRegister, $xmm_0$$XMMRegister, 78, vector_len);
-        __ vmin_max_macro_evex($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, ktmp,
+        __ evminmax($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, ktmp,
                         $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         __ vpermilps($xmm_1$$XMMRegister, $xmm_0$$XMMRegister, 14, vector_len);
-        __ vmin_max_macro_evex($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, ktmp,
+        __ evminmax($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, ktmp,
                         $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         __ vpermilps($xmm_1$$XMMRegister, $xmm_0$$XMMRegister, 1, vector_len);
-        __ vmin_max_macro_evex($dst$$XMMRegister, $xmm_0$$XMMRegister, $xmm_1$$XMMRegister, ktmp,
+        __ evminmax($dst$$XMMRegister, $xmm_0$$XMMRegister, $xmm_1$$XMMRegister, ktmp,
                         $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         break;
       default:
@@ -5035,9 +5035,9 @@ instruct minmax_reduction2F_av(legRegF dst, legVec src, legVec tmp, legVec dtmp,
     int vector_len = 0;
     bool is_min = (this->ideal_Opcode() == Op_MinReductionV) ? true: false;
     __ vpermilps($xmm_1$$XMMRegister, $src$$XMMRegister, 1, vector_len);
-    __ vmin_max_macro($dtmp$$XMMRegister, $xmm_1$$XMMRegister, $src$$XMMRegister, $tmp$$XMMRegister,
+    __ vminmax($dtmp$$XMMRegister, $xmm_1$$XMMRegister, $src$$XMMRegister, $tmp$$XMMRegister,
                       $atmp$$XMMRegister, $btmp$$XMMRegister, true, is_min, vector_len);
-    __ vmin_max_macro($dst$$XMMRegister, $dtmp$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister,
+    __ vminmax($dst$$XMMRegister, $dtmp$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister,
                       $atmp$$XMMRegister, $btmp$$XMMRegister, true, is_min, vector_len);
   %}
   ins_pipe( pipe_slow );
@@ -5061,26 +5061,26 @@ instruct minmax_reductionF_av(legRegF dst, legVec src, legVec tmp, legVec dtmp,
       case 16:
         vector_len = 0;
         __ vpermilps($xmm_1$$XMMRegister, $src$$XMMRegister, 14, vector_len);
-        __ vmin_max_macro($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $src$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $src$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         __ vpermilps($xmm_1$$XMMRegister, $xmm_0$$XMMRegister, 1, vector_len);
-        __ vmin_max_macro($dtmp$$XMMRegister, $xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($dtmp$$XMMRegister, $xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
-        __ vmin_max_macro($dst$$XMMRegister, $dtmp$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($dst$$XMMRegister, $dtmp$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         break;
       case 32:
         vector_len = 1;
         __ vperm2f128($xmm_1$$XMMRegister, $src$$XMMRegister, $src$$XMMRegister, 1);
-        __ vmin_max_macro($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $src$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $src$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         __ vpermilps($xmm_1$$XMMRegister, $xmm_0$$XMMRegister, 14, vector_len);
-        __ vmin_max_macro($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         __ vpermilps($xmm_1$$XMMRegister, $xmm_0$$XMMRegister, 1, vector_len);
-        __ vmin_max_macro($dtmp$$XMMRegister, $xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($dtmp$$XMMRegister, $xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
-        __ vmin_max_macro($dst$$XMMRegister, $dtmp$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($dst$$XMMRegister, $dtmp$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         break;
       case 64:
@@ -5088,18 +5088,18 @@ instruct minmax_reductionF_av(legRegF dst, legVec src, legVec tmp, legVec dtmp,
         ktmp = k1;
         __ vextractf64x4($xmm_0$$XMMRegister, $src$$XMMRegister, 0);
         __ vextractf64x4($xmm_1$$XMMRegister, $src$$XMMRegister, 1);
-        __ vmin_max_macro_evex($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, ktmp,
+        __ evminmax($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, ktmp,
                         $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         __ vpermpd($xmm_1$$XMMRegister, $xmm_0$$XMMRegister, 78, vector_len);
-        __ vmin_max_macro_evex($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, ktmp,
+        __ evminmax($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, ktmp,
                         $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         __ vpermilps($xmm_1$$XMMRegister, $xmm_0$$XMMRegister, 14, vector_len);
-        __ vmin_max_macro_evex($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, ktmp,
+        __ evminmax($xmm_0$$XMMRegister, $xmm_1$$XMMRegister, $xmm_0$$XMMRegister, ktmp,
                         $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         __ vpermilps($xmm_1$$XMMRegister, $xmm_0$$XMMRegister, 1, vector_len);
-        __ vmin_max_macro_evex($dtmp$$XMMRegister, $xmm_0$$XMMRegister, $xmm_1$$XMMRegister, ktmp,
+        __ evminmax($dtmp$$XMMRegister, $xmm_0$$XMMRegister, $xmm_1$$XMMRegister, ktmp,
                         $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
-        __ vmin_max_macro_evex($dst$$XMMRegister, $dtmp$$XMMRegister, $dst$$XMMRegister, ktmp,
+        __ evminmax($dst$$XMMRegister, $dtmp$$XMMRegister, $dst$$XMMRegister, ktmp,
                     $atmp$$XMMRegister, $btmp$$XMMRegister , true, is_min, vector_len);
         break;
       default:
@@ -5126,7 +5126,7 @@ instruct minmax_reduction2D(legRegD dst, immD src1, legVec src2, legVec tmp,
     int vector_len = 0;
     bool is_min = (this->ideal_Opcode() == Op_MinReductionV) ? true: false;
     __ vpermilpd($xmm_1$$XMMRegister, $src2$$XMMRegister, 1, vector_len);
-    __ vmin_max_macro($dst$$XMMRegister, $xmm_1$$XMMRegister, $src2$$XMMRegister, $tmp$$XMMRegister,
+    __ vminmax($dst$$XMMRegister, $xmm_1$$XMMRegister, $src2$$XMMRegister, $tmp$$XMMRegister,
                       $atmp$$XMMRegister, $btmp$$XMMRegister, false, is_min, vector_len);
   %}
   ins_pipe( pipe_slow );
@@ -5151,10 +5151,10 @@ instruct minmax_reductionD(legRegD dst, immD src1, legVec src2, legVec tmp,
       case 32:
         vector_len = 1;
         __ vperm2f128($ymm_1$$XMMRegister, $src2$$XMMRegister, $src2$$XMMRegister, 1);
-        __ vmin_max_macro($ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $src2$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $src2$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , false, is_min, vector_len);
         __ vpermilpd($ymm_1$$XMMRegister, $ymm_0$$XMMRegister, 1, vector_len);
-        __ vmin_max_macro($dst$$XMMRegister, $ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($dst$$XMMRegister, $ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , false, is_min, vector_len);
         break;
       case 64:
@@ -5162,13 +5162,13 @@ instruct minmax_reductionD(legRegD dst, immD src1, legVec src2, legVec tmp,
         ktmp = k1;
         __ vextractf64x4($ymm_0$$XMMRegister, $src2$$XMMRegister, 0);
         __ vextractf64x4($ymm_1$$XMMRegister, $src2$$XMMRegister, 1);
-        __ vmin_max_macro_evex($ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $ymm_0$$XMMRegister, ktmp,
+        __ evminmax($ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $ymm_0$$XMMRegister, ktmp,
                         $atmp$$XMMRegister, $btmp$$XMMRegister , false, is_min, vector_len);
         __ vpermpd($ymm_1$$XMMRegister, $ymm_0$$XMMRegister, 14, vector_len);
-        __ vmin_max_macro_evex($ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $ymm_0$$XMMRegister, ktmp,
+        __ evminmax($ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $ymm_0$$XMMRegister, ktmp,
                         $atmp$$XMMRegister, $btmp$$XMMRegister , false, is_min, vector_len);
         __ vpermilpd($ymm_1$$XMMRegister, $ymm_0$$XMMRegister, 1, vector_len);
-        __ vmin_max_macro_evex($dst$$XMMRegister, $ymm_1$$XMMRegister, $ymm_0$$XMMRegister, ktmp,
+        __ evminmax($dst$$XMMRegister, $ymm_1$$XMMRegister, $ymm_0$$XMMRegister, ktmp,
                         $atmp$$XMMRegister, $btmp$$XMMRegister , false, is_min, vector_len);
         break;
       default:
@@ -5192,9 +5192,9 @@ instruct minmax_reduction2D_av(legRegD dst, legVec src, legVec tmp, legVec dtmp,
     int vector_len = 0;
     bool is_min = (this->ideal_Opcode() == Op_MinReductionV) ? true: false;
     __ vpermilpd($xmm_1$$XMMRegister, $src$$XMMRegister, 1, vector_len);
-    __ vmin_max_macro($dtmp$$XMMRegister, $xmm_1$$XMMRegister, $src$$XMMRegister, $tmp$$XMMRegister,
+    __ vminmax($dtmp$$XMMRegister, $xmm_1$$XMMRegister, $src$$XMMRegister, $tmp$$XMMRegister,
                       $atmp$$XMMRegister, $btmp$$XMMRegister, false, is_min, vector_len);
-    __ vmin_max_macro($dst$$XMMRegister, $dtmp$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister,
+    __ vminmax($dst$$XMMRegister, $dtmp$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister,
                       $atmp$$XMMRegister, $btmp$$XMMRegister, false, is_min, vector_len);
   %}
   ins_pipe( pipe_slow );
@@ -5217,12 +5217,12 @@ instruct minmax_reductionD_av(legRegD dst, legVec src, legVec tmp, legVec dtmp,
       case 32:
         vector_len = 1;
         __ vperm2f128($ymm_1$$XMMRegister, $src$$XMMRegister, $src$$XMMRegister, 1);
-        __ vmin_max_macro($ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $src$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $src$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , false, is_min, vector_len);
         __ vpermilpd($ymm_1$$XMMRegister, $ymm_0$$XMMRegister, 1, vector_len);
-        __ vmin_max_macro($dtmp$$XMMRegister, $ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($dtmp$$XMMRegister, $ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , false, is_min, vector_len);
-        __ vmin_max_macro($dst$$XMMRegister, $dtmp$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister,
+        __ vminmax($dst$$XMMRegister, $dtmp$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister,
                           $atmp$$XMMRegister, $btmp$$XMMRegister , false, is_min, vector_len);
         break;
       case 64:
@@ -5230,15 +5230,15 @@ instruct minmax_reductionD_av(legRegD dst, legVec src, legVec tmp, legVec dtmp,
         ktmp = k1;
         __ vextractf64x4($ymm_0$$XMMRegister, $src$$XMMRegister, 0);
         __ vextractf64x4($ymm_1$$XMMRegister, $src$$XMMRegister, 1);
-        __ vmin_max_macro_evex($ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $ymm_0$$XMMRegister, ktmp,
+        __ evminmax($ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $ymm_0$$XMMRegister, ktmp,
                         $atmp$$XMMRegister, $btmp$$XMMRegister , false, is_min, vector_len);
         __ vpermpd($ymm_1$$XMMRegister, $ymm_0$$XMMRegister, 14, vector_len);
-        __ vmin_max_macro_evex($ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $ymm_0$$XMMRegister, ktmp,
+        __ evminmax($ymm_0$$XMMRegister, $ymm_1$$XMMRegister, $ymm_0$$XMMRegister, ktmp,
                         $atmp$$XMMRegister, $btmp$$XMMRegister , false, is_min, vector_len);
         __ vpermilpd($ymm_1$$XMMRegister, $ymm_0$$XMMRegister, 1, vector_len);
-        __ vmin_max_macro_evex($dst$$XMMRegister, $ymm_1$$XMMRegister, $ymm_0$$XMMRegister, ktmp,
+        __ evminmax($dst$$XMMRegister, $ymm_1$$XMMRegister, $ymm_0$$XMMRegister, ktmp,
                         $atmp$$XMMRegister, $btmp$$XMMRegister , false, is_min, vector_len);
-        __ vmin_max_macro_evex($dst$$XMMRegister, $dtmp$$XMMRegister, $dst$$XMMRegister, ktmp,
+        __ evminmax($dst$$XMMRegister, $dtmp$$XMMRegister, $dst$$XMMRegister, ktmp,
                         $atmp$$XMMRegister, $btmp$$XMMRegister , false, is_min, vector_len);
         break;
       default:
@@ -6089,8 +6089,8 @@ instruct minmax_reg(vec dst, vec src) %{
   match(Set dst (MaxV dst src));
   format %{ "vector_minmax  $dst,$src\t!  " %}
   ins_encode %{
-    int opcode = this->ideal_Opcode();
-    __ pminmax(this->bottom_type()->is_vect()->element_basic_type(), opcode, $dst$$XMMRegister, $src$$XMMRegister);
+    bool is_min = (this->ideal_Opcode() == Op_MinV) ? true: false;
+    __ pminmax(this->bottom_type()->is_vect()->element_basic_type(), $dst$$XMMRegister, $src$$XMMRegister, is_min);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -6104,9 +6104,9 @@ instruct vminmax_reg(vec dst, vec src1, vec src2) %{
   match(Set dst (MaxV src1 src2));
   format %{ "vector_minmax  $dst,$src1,$src2\t!  " %}
   ins_encode %{
-    int opcode = this->ideal_Opcode();
+    bool is_min = (this->ideal_Opcode() == Op_MinV) ? true: false;
     int vector_len = vector_length_encoding(this);
-    __ vpminmax(this->bottom_type()->is_vect()->element_basic_type(), opcode, $dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, vector_len);
+    __ vpminmax(this->bottom_type()->is_vect()->element_basic_type(), $dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, is_min, vector_len);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -6193,7 +6193,7 @@ instruct minmaxFD_reg_avx(legVec dst, legVec a, legVec b, legVec tmp, legVec atm
     int vector_len = vector_length_encoding(this);
     bool is_min = (this->ideal_Opcode() == Op_MinV) ? true: false;
     bool is_single = this->bottom_type()->is_vect()->element_basic_type() == T_FLOAT;
-    __ vmin_max_macro($dst$$XMMRegister, $a$$XMMRegister, $b$$XMMRegister,
+    __ vminmax($dst$$XMMRegister, $a$$XMMRegister, $b$$XMMRegister,
                      $tmp$$XMMRegister, $atmp$$XMMRegister , $btmp$$XMMRegister,
                      is_single, is_min, vector_len);
   %}
@@ -6213,7 +6213,7 @@ instruct evminmaxFD_reg_avx(vec dst, vec a, vec b, vec atmp, vec btmp) %{
     bool is_min = (this->ideal_Opcode() == Op_MinV) ? true: false;
     bool is_single = this->bottom_type()->is_vect()->element_basic_type() == T_FLOAT;
     KRegister ktmp = k1;
-    __ vmin_max_macro_evex($dst$$XMMRegister, $a$$XMMRegister, $b$$XMMRegister,
+    __ evminmax($dst$$XMMRegister, $a$$XMMRegister, $b$$XMMRegister,
                            ktmp, $atmp$$XMMRegister , $btmp$$XMMRegister,
                            is_single, is_min, vector_len);
   %}

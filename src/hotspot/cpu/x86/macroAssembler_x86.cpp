@@ -509,9 +509,10 @@ void MacroAssembler::print_state() {
 
 #else // _LP64
 
-void MacroAssembler::vmin_max_macro_evex(XMMRegister dst, XMMRegister a, XMMRegister b,
-                                         KRegister ktmp, XMMRegister atmp, XMMRegister btmp,
-                                         bool is_single, bool is_min, int vector_len) {
+// Float/Double min max
+void MacroAssembler::evminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
+                              KRegister ktmp, XMMRegister atmp, XMMRegister btmp,
+                              bool is_single, bool is_min, int vector_len) {
   if (is_single && is_min) {
     evpmovd2m(ktmp, a, vector_len);
     evblendmps(atmp, ktmp, a, b, true, vector_len);
@@ -543,9 +544,10 @@ void MacroAssembler::vmin_max_macro_evex(XMMRegister dst, XMMRegister a, XMMRegi
   }
 }
 
-void MacroAssembler::vmin_max_macro(XMMRegister dst, XMMRegister a, XMMRegister b,
-                                    XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
-                                    bool is_single, bool is_min, int vector_len) {
+// Float/Double min max
+void MacroAssembler::vminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
+                             XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
+                             bool is_single, bool is_min, int vector_len) {
   if (is_single && is_min) {
     vblendvps(atmp, a, b, a, vector_len);
     vblendvps(btmp, b, a, a, vector_len);
@@ -4376,8 +4378,8 @@ void MacroAssembler::vextendbw(bool sign, XMMRegister dst, XMMRegister src, int 
   }
 }
 
-void MacroAssembler::pminmax(BasicType typ, int opcode, XMMRegister dst, XMMRegister src) {
-  if (opcode == Op_MinV) {
+void MacroAssembler::pminmax(BasicType typ, XMMRegister dst, XMMRegister src, bool is_min) {
+  if (is_min) {
     if (typ == T_BYTE) {
         pminsb(dst, src);
     } else if (typ == T_SHORT) {
@@ -4387,7 +4389,6 @@ void MacroAssembler::pminmax(BasicType typ, int opcode, XMMRegister dst, XMMRegi
         pminsd(dst, src);
     }
   } else { // opcode == Op_MaxV
-    assert(opcode == Op_MaxV,"required.");
     if (typ == T_BYTE) {
         pmaxsb(dst, src);
     } else if (typ == T_SHORT) {
@@ -4399,8 +4400,8 @@ void MacroAssembler::pminmax(BasicType typ, int opcode, XMMRegister dst, XMMRegi
   }
 }
 
-void MacroAssembler::vpminmax(BasicType typ, int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len) {
-  if (opcode == Op_MinV) {
+void MacroAssembler::vpminmax(BasicType typ, XMMRegister dst, XMMRegister src1, XMMRegister src2, bool is_min, int vector_len) {
+  if (is_min) {
     if (typ == T_BYTE) {
         vpminsb(dst, src1, src2, vector_len);
     } else if (typ == T_SHORT) {
@@ -4410,7 +4411,6 @@ void MacroAssembler::vpminmax(BasicType typ, int opcode, XMMRegister dst, XMMReg
         vpminsd(dst, src1, src2, vector_len);
     }
   } else { // opcode == Op_MaxV
-    assert(opcode == Op_MaxV,"required.");
     if (typ == T_BYTE) {
         vpmaxsb(dst, src1, src2, vector_len);
     } else if (typ == T_SHORT) {

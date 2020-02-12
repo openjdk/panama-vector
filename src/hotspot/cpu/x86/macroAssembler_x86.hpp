@@ -924,13 +924,13 @@ class MacroAssembler: public Assembler {
   void ldmxcsr(Address src) { Assembler::ldmxcsr(src); }
   void ldmxcsr(AddressLiteral src);
 
-  void vmin_max_macro(XMMRegister dst, XMMRegister a, XMMRegister b,
-                         XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
-                         bool is_single, bool is_min, int vector_len);
+  void vminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
+               XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
+               bool is_single, bool is_min, int vector_len);
 
-  void vmin_max_macro_evex(XMMRegister dst, XMMRegister a, XMMRegister b,
-                           KRegister ktmp, XMMRegister atmp, XMMRegister btmp,
-                           bool is_single, bool is_min, int vector_len);
+  void evminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
+                KRegister ktmp, XMMRegister atmp, XMMRegister btmp,
+                bool is_single, bool is_min, int vector_len);
 
 #ifdef _LP64
  private:
@@ -1729,8 +1729,8 @@ public:
   void vshiftd(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
   void vshiftw(int opcode, XMMRegister dst, XMMRegister src);
   void vshiftw(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
-  void pminmax(BasicType typ, int opcode, XMMRegister dst, XMMRegister src);
-  void vpminmax(BasicType typ, int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len);
+  void pminmax(BasicType typ, XMMRegister dst, XMMRegister src, bool is_min);
+  void vpminmax(BasicType typ, XMMRegister dst, XMMRegister src1, XMMRegister src2, bool is_min, int vector_len);
   void vshiftq(int opcode, XMMRegister dst, XMMRegister src);
   void vshiftq(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
   void insert(BasicType typ, XMMRegister dst, Register val, int idx);
