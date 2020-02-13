@@ -3847,8 +3847,6 @@ void Compile::final_graph_reshaping_main_switch(Node* n, Final_Reshape_Counts& f
   case Op_AndReductionV:
   case Op_OrReductionV:
   case Op_XorReductionV:
-  case Op_SubReductionV:
-  case Op_SubReductionVFP:
     break;
 
   case Op_PackB:

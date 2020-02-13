@@ -1226,6 +1226,18 @@ int HandlerImpl::emit_deopt_handler(CodeBuffer& cbuf) {
   return offset;
 }
 
+Assembler::Width widthForType(BasicType typ) {
+  if (typ == T_BYTE)
+    return Assembler::B;
+  else if (typ == T_SHORT)
+    return Assembler::W;
+  else if (typ == T_INT)
+    return Assembler::D;
+  else {
+    assert((typ == T_LONG),"Should be T_LONG");
+    return Assembler::Q;
+  }
+}
 
 //=============================================================================
 
@@ -2400,60 +2412,6 @@ operand legVecZ() %{
 
   format %{ %}
   interface(REG_INTER);
-%}
-
-operand immU1() %{
-  predicate(n->get_int() >= 0 && n->get_int() < nth_bit(1));
-  match(ConI);
-
-  op_cost(0);
-  format %{ %}
-  interface(CONST_INTER);
-%}
-
-operand immU2() %{
-  predicate(n->get_int() >= 0 && n->get_int() < nth_bit(2));
-  match(ConI);
-
-  op_cost(0);
-  format %{ %}
-  interface(CONST_INTER);
-%}
-
-operand immU3() %{
-  predicate(n->get_int() >= 0 && n->get_int() < nth_bit(3));
-  match(ConI);
-
-  op_cost(0);
-  format %{ %}
-  interface(CONST_INTER);
-%}
-
-operand immU4() %{
-  predicate(n->get_int() >= 0 && n->get_int() < nth_bit(4));
-  match(ConI);
-
-  op_cost(0);
-  format %{ %}
-  interface(CONST_INTER);
-%}
-
-operand immU5() %{
-  predicate(n->get_int() >= 0 && n->get_int() < nth_bit(5));
-  match(ConI);
-
-  op_cost(0);
-  format %{ %}
-  interface(CONST_INTER);
-%}
-
-operand immU6() %{
-  predicate(n->get_int() >= 0 && n->get_int() < nth_bit(6));
-  match(ConI);
-
-  op_cost(0);
-  format %{ %}
-  interface(CONST_INTER);
 %}
 
 // Comparison Code for FP conditional move
@@ -7918,192 +7876,88 @@ instruct vcvtDtoF_reg(vec dst, vec src) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vcmpCCF(legVec dst, legVec src1, legVec src2, immI8 cond) %{
-  predicate(n->as_Vector()->length() >= 2 && n->as_Vector()->length() <= 8 &&
-            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+instruct vcmpFD(legVec dst, legVec src1, legVec src2, immI8 cond) %{
+  predicate(n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() >= 8 &&
+            n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() <= 32 &&
+            ((n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT) ||
+             (n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE)));
   match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
-  format %{ "vcmpCCps  $dst,$src1,$src2\t! cmpCC packedF" %}
+  format %{ "vector_compare $dst,$src1,$src2,$cond\t!" %}
   ins_encode %{
-    int vector_len = vector_length_encoding(this);
+    int vector_len = vector_length_encoding(vector_length_in_bytes(this, $src1));
     Assembler::ComparisonPredicateFP cmp = Assembler::booltest_pred_to_comparison_pred_fp($cond$$constant);
-    __ vcmpps($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
+    if (vector_basic_type(this, $src1) == T_FLOAT)
+      __ vcmpps($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
+    else 
+      __ vcmppd($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vcmpCC16F(vec dst, vec src1, vec src2, immI8 cond, rRegL scratch) %{
-  predicate(UseAVX > 2 && n->as_Vector()->length() == 16 &&
-            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+instruct evcmpFD(vec dst, vec src1, vec src2, immI8 cond, rRegL scratch) %{
+  predicate(UseAVX > 2 && n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() == 64 &&
+            ((n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT) ||
+             (n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE)));
   match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   effect(TEMP scratch);
-  format %{ "vcmpCCps  k2,$src1,$src2\n\t"
-            "vmovdqu8  $dst, k2{z}, 0xFFFFFFFFFF \t! cmpCC packed16F" %}
-  ins_encode %{
-    int vector_len = 2;
-    Assembler::ComparisonPredicateFP cmp = Assembler::booltest_pred_to_comparison_pred_fp($cond$$constant);
-    KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
-    KRegister mask = k0; // The comparison itself is not being masked.
-    __ evcmpps(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
-    __ evmovdqul($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), false, vector_len, $scratch$$Register);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vcmpCCD(legVec dst, legVec src1, legVec src2, immI8 cond) %{
-  predicate(n->as_Vector()->length() >= 1 && n->as_Vector()->length() <= 4 &&
-            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
-  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
-  format %{ "vcmpCCpd  $dst,$src1,$src2\t! cmpCC packedD" %}
-  ins_encode %{
-    int vector_len = vector_length_encoding(this);
-    Assembler::ComparisonPredicateFP cmp = Assembler::booltest_pred_to_comparison_pred_fp($cond$$constant);
-    __ vcmppd($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vcmpCC8D(vec dst, vec src1, vec src2, immI8 cond, rRegL scratch) %{
-  predicate(UseAVX > 2 && n->as_Vector()->length() == 8 &&
-            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
-  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
-  effect(TEMP scratch);
-  format %{ "vcmpCCpd  k2,$src1,$src2\n\t"
-            "vmovdqu8  $dst, k2{z}, 0xFFFFFFFFFF \t! cmpCC packed8D" %}
+  format %{ "vector_compare $dst,$src1,$src2,$cond\t! using $scratch as TEMP" %}
   ins_encode %{
     int vector_len = 2;
     Assembler::ComparisonPredicateFP cmp = Assembler::booltest_pred_to_comparison_pred_fp($cond$$constant);
     KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
     KRegister mask = k0; // The comparison itself is not being masked.
-    __ evcmppd(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
-    __ evmovdquq($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), false, vector_len, $scratch$$Register);
+    if (vector_basic_type(this, $src1) == T_FLOAT) {
+      __ evcmpps(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
+      __ evmovdqul($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), false, vector_len, $scratch$$Register);
+    } else {
+      __ evcmppd(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
+      __ evmovdquq($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), false, vector_len, $scratch$$Register);
+    }
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vcmpCCI(legVec dst, legVec src1, legVec src2, immI8 cond, rRegL scratch) %{
-  predicate(n->as_Vector()->length() >= 2 && n->as_Vector()->length() <= 8 &&
-            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+instruct vcmp(legVec dst, legVec src1, legVec src2, immI8 cond, rRegL scratch) %{
+  predicate(n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() >= 8 &&
+            n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() <= 32 &&
+            is_integral_type(n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type()));
   match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   effect(TEMP scratch);
-  format %{ "vpcmpCCd  $dst,$src1,$src2\n\t! cmpCC packedI" %}
+  format %{ "vector_compare $dst,$src1,$src2,$cond\t! using $scratch as TEMP" %}
   ins_encode %{
-    int vector_len = vector_length_encoding(this);
+    int vector_len = vector_length_encoding(vector_length_in_bytes(this, $src1));
     Assembler::ComparisonPredicate cmp = Assembler::booltest_pred_to_comparison_pred($cond$$constant);
-    __ vpcmpCCbwd($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, Assembler::D, vector_len, $scratch$$Register);
+    Assembler::Width ww = widthForType(vector_basic_type(this, $src1));
+    __ vpcmpCCW($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, ww, vector_len, $scratch$$Register);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vcmpCC16I(vec dst, vec src1, vec src2, immI8 cond, rRegL scratch) %{
-  predicate(UseAVX > 2 && n->as_Vector()->length() == 16 &&
-            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
-  effect(TEMP scratch);
-  format %{ "vpcmpCCd  k2,$src1,$src2\n\t"
-            "vmovdqu32 $dst, k2{z}, 0xFFFFFFFFFF \t! cmpCC packed16I" %}
-  ins_encode %{
-    int vector_len = 2;
-    Assembler::ComparisonPredicate cmp = Assembler::booltest_pred_to_comparison_pred($cond$$constant);
-    KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
-    KRegister mask = k0; // The comparison itself is not being masked.
-    __ evpcmpd(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
-    __ evmovdqul($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), false, vector_len, $scratch$$Register);
-  %}
-  ins_pipe( pipe_slow );
-%}
 
-instruct vcmpCCB(legVec dst, legVec src1, legVec src2, immI8 cond, rRegL scratch) %{
-  predicate(n->as_Vector()->length() >= 8 && n->as_Vector()->length() <= 32 &&
-            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+instruct evcmp(vec dst, vec src1, vec src2, immI8 cond, rRegL scratch) %{
+  predicate(UseAVX > 2 && n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() == 64 &&
+            is_integral_type(n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type()));
   match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   effect(TEMP scratch);
-  format %{ "vpcmpCCb  $dst,$src1,$src2\n\t! cmpCC packedB" %}
-  ins_encode %{
-    int vector_len = vector_length_encoding(this);
-    Assembler::ComparisonPredicate cmp = Assembler::booltest_pred_to_comparison_pred($cond$$constant);
-    __ vpcmpCCbwd($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, Assembler::B, vector_len, $scratch$$Register);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vcmpCC64B(vec dst, vec src1, vec src2, immI8 cond, rRegL scratch) %{
-  predicate(UseAVX > 2 && n->as_Vector()->length() == 64 &&
-            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
-  effect(TEMP scratch);
-  format %{ "vpcmpCCb  k2,$src1,$src2\n\t"
-            "vmovdqu8 $dst, k2{z}, 0xFFFFFFFFFF \t! cmpCC packed64B" %}
+  format %{ "vector_compare $dst,$src1,$src2,$cond\t! using $scratch as TEMP" %}
   ins_encode %{
     int vector_len = 2;
     Assembler::ComparisonPredicate cmp = Assembler::booltest_pred_to_comparison_pred($cond$$constant);
     KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
     KRegister mask = k0; // The comparison itself is not being masked.
-    __ evpcmpb(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
-    __ evmovdqub($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), false, vector_len, $scratch$$Register);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vcmpCCS(legVec dst, legVec src1, legVec src2, immI8 cond, rRegL scratch) %{
-  predicate(n->as_Vector()->length() >= 4 && n->as_Vector()->length() <= 16 &&
-            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
-  effect(TEMP scratch);
-  format %{ "vpcmpCCw  $dst,$src1,$src2\n\t! cmpCC packedS" %}
-  ins_encode %{
-    int vector_len = vector_length_encoding(this);
-    Assembler::ComparisonPredicate cmp = Assembler::booltest_pred_to_comparison_pred($cond$$constant);
-    __ vpcmpCCbwd($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, Assembler::W, vector_len, $scratch$$Register);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vcmpCC32S(vec dst, vec src1, vec src2, immI8 cond, rRegL scratch) %{
-  predicate(UseAVX > 2 && n->as_Vector()->length() == 32 &&
-            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
-  effect(TEMP scratch);
-  format %{ "vpcmpCCw  k2,$src1,$src2\n\t"
-            "vmovdqu16 $dst, k2{z}, 0xFFFFFFFFFF \t! cmpCC packed32S" %}
-  ins_encode %{
-    int vector_len = 2;
-    Assembler::ComparisonPredicate cmp = Assembler::booltest_pred_to_comparison_pred($cond$$constant);
-    KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
-    KRegister mask = k0; // The comparison itself is not being masked.
-    __ evpcmpw(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
-    __ evmovdquw($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), false, vector_len, $scratch$$Register);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vcmpCCL(legVec dst, legVec src1, legVec src2, immI8 cond, rRegL scratch) %{
-  predicate(n->as_Vector()->length() >= 1 && n->as_Vector()->length() <= 4 &&
-            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
-  effect(TEMP scratch);
-  format %{ "vpcmpCCq  $dst,$src1,$src2\n\t! cmpCC packedL" %}
-  ins_encode %{
-    int vector_len = vector_length_encoding(this);
-    Assembler::ComparisonPredicate cmp = Assembler::booltest_pred_to_comparison_pred($cond$$constant);
-    __ vpcmpCCq($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len, $scratch$$Register);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vcmpCC8L(vec dst, vec src1, vec src2, immI8 cond, rRegL scratch) %{
-  predicate(UseAVX > 2 && n->as_Vector()->length() == 8 &&
-            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
-  effect(TEMP scratch);
-  format %{ "vpcmpCCq  k2,$src1,$src2\n\t"
-            "vmovdqu64 $dst, k2{z}, 0xFFFFFFFFFF \t! cmpCC packed8L" %}
-  ins_encode %{
-    int vector_len = 2;
-    KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
-    KRegister mask = k0; // The comparison itself is not being masked.
-    Assembler::ComparisonPredicate cmp = Assembler::booltest_pred_to_comparison_pred($cond$$constant);
-    __ evpcmpq(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
-    __ evmovdquq($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), false, vector_len, $scratch$$Register);
+    if (vector_basic_type(this, $src1) == T_BYTE) {
+      __ evpcmpb(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
+      __ evmovdqub($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), false, vector_len, $scratch$$Register);
+    } else if (vector_basic_type(this, $src1) == T_SHORT) {
+      __ evpcmpw(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
+      __ evmovdquw($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), false, vector_len, $scratch$$Register);
+    } else if (vector_basic_type(this, $src1) == T_INT) {
+      __ evpcmpd(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
+      __ evmovdqul($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), false, vector_len, $scratch$$Register);
+    } else if (vector_basic_type(this, $src1) == T_LONG) {
+      __ evpcmpq(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
+      __ evmovdquq($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), false, vector_len, $scratch$$Register);
+    }
   %}
   ins_pipe( pipe_slow );
 %}

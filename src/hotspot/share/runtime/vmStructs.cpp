@@ -1751,7 +1751,6 @@ typedef HashtableEntry<InstanceKlass*, mtClass>  KlassHashtableEntry;
   declare_c2_type(SubFPNode, SubNode)                                     \
   declare_c2_type(SubFNode, SubFPNode)                                    \
   declare_c2_type(SubDNode, SubFPNode)                                    \
-  declare_c2_type(SubReductionVNode, ReductionNode)                       \
   declare_c2_type(CmpNode, SubNode)                                       \
   declare_c2_type(CmpINode, CmpNode)                                      \
   declare_c2_type(CmpUNode, CmpNode)                                      \

@@ -7163,7 +7163,7 @@ bool LibraryCallKit::inline_vector_shuffle_iota() {
   const TypeInt* step_val         = gvn().type(step)->is_int();
   const TypeInt* wrap             = gvn().type(argument(6))->is_int();
 
-  if (!vlen->is_con() || !is_power_of_2(vlen->get_con()) || 
+  if (!vlen->is_con() || !is_power_of_2(vlen->get_con()) ||
       shuffle_klass->const_oop() == NULL || !wrap->is_con()) {
     return false; // not enough info for intrinsification
   }
@@ -7172,20 +7172,20 @@ bool LibraryCallKit::inline_vector_shuffle_iota() {
   int num_elem = vlen->get_con();
   BasicType elem_bt = T_BYTE;
 
-  if (num_elem < 4) 
+  if (num_elem < 4)
     return false;
 
   if (!arch_supports_vector(VectorNode::replicate_opcode(elem_bt), num_elem, elem_bt, VecMaskNotUsed)) {
-    return false;   
+    return false;
   }
   if (!arch_supports_vector(Op_AddVB, num_elem, elem_bt, VecMaskNotUsed)) {
-    return false;   
+    return false;
   }
   if (!arch_supports_vector(Op_AndV, num_elem, elem_bt, VecMaskNotUsed)) {
-    return false;   
+    return false;
   }
   if (!arch_supports_vector(Op_VectorBlend, num_elem, elem_bt, VecMaskUseLoad)) {
-    return false; 
+    return false;
   }
   if (!arch_supports_vector(Op_VectorMaskCmp, num_elem, elem_bt, VecMaskUseStore)) {
     return false;
@@ -7216,7 +7216,7 @@ bool LibraryCallKit::inline_vector_shuffle_iota() {
     res = _gvn.transform(VectorNode::make(Op_AndI, res, bcast_mod, num_elem, elem_bt));
   } else {
     ConINode* pred_node = (ConINode*)_gvn.makecon(TypeInt::make(1));
-    Node * lane_cnt  = gvn().makecon(TypeInt::make(num_elem)); 
+    Node * lane_cnt  = gvn().makecon(TypeInt::make(num_elem));
     Node * bcast_lane_cnt = _gvn.transform(VectorNode::scalar2vector(lane_cnt, num_elem, type_bt));
     Node* mask = _gvn.transform(new VectorMaskCmpNode(BoolTest::ge, bcast_lane_cnt, res, pred_node, vt));
 
@@ -7255,7 +7255,7 @@ bool LibraryCallKit::inline_vector_shuffle_to_vector() {
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
   BasicType elem_bt = elem_type->basic_type();
 
-  if (num_elem < 4) { 
+  if (num_elem < 4) {
     return false;
   }
 
@@ -7654,16 +7654,6 @@ bool LibraryCallKit::inline_vector_reduction() {
 
   int opc  = get_opc(opr->get_con(), elem_bt);
   int sopc = ReductionNode::opcode(opc, elem_bt);
-
-  // FIXME: When encountering a SubReduction, we want to check for support of
-  // the corresponding AddReduction node.
-  if (sopc == Op_SubReductionV) {
-    if (gvn().type(argument(2))->isa_int()) {
-      sopc = Op_AddReductionVI;
-    } else if (gvn().type(argument(2))->isa_long()) {
-      sopc = Op_AddReductionVL;
-    }
-  }
 
   // TODO When mask usage is supported, VecMaskNotUsed needs to be VecMaskUseLoad.
   if (!arch_supports_vector(sopc, num_elem, elem_bt, VecMaskNotUsed)) {

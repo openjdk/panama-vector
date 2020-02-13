@@ -4005,61 +4005,42 @@ void MacroAssembler::evpcmpw(KRegister kdst, KRegister mask, XMMRegister nds, Ad
   }
 }
 
-void MacroAssembler::vpcmpCCbwd(XMMRegister dst, XMMRegister nds, XMMRegister src, ComparisonPredicate cond, Width width, int vector_len, Register scratch_reg) {
-  assert (width != Assembler::Q, "this function does not accept quadword width");
-  int eq_cond_enc = 0x74 + width;
-  int gt_cond_enc = 0x64 + width;
-  switch (cond) {
-  case eq:
-    Assembler::vpcmpCCbwd(dst, nds, src, eq_cond_enc, vector_len);
-    break;
-  case neq:
-    Assembler::vpcmpCCbwd(dst, nds, src, eq_cond_enc, vector_len);
-    vpxor(dst, dst, ExternalAddress(StubRoutines::x86::vector_all_bits_set()), vector_len, scratch_reg);
-    break;
-  case le:
-    Assembler::vpcmpCCbwd(dst, nds, src, gt_cond_enc, vector_len);
-    vpxor(dst, dst, ExternalAddress(StubRoutines::x86::vector_all_bits_set()), vector_len, scratch_reg);
-    break;
-  case nlt:
-    Assembler::vpcmpCCbwd(dst, src, nds, gt_cond_enc, vector_len);
-    vpxor(dst, dst, ExternalAddress(StubRoutines::x86::vector_all_bits_set()), vector_len, scratch_reg);
-    break;
-  case lt:
-    Assembler::vpcmpCCbwd(dst, src, nds, gt_cond_enc, vector_len);
-    break;
-  case nle:
-    Assembler::vpcmpCCbwd(dst, nds, src, gt_cond_enc, vector_len);
-    break;
-  default:
-    assert(false, "Should not reach here");
+void MacroAssembler::vpcmpCC(XMMRegister dst, XMMRegister nds, XMMRegister src, int cond_encoding, Width width, int vector_len) {
+  if (width == Assembler::Q) {
+    Assembler::vpcmpCCq(dst, nds, src, cond_encoding, vector_len);
+  } else {
+    Assembler::vpcmpCCbwd(dst, nds, src, cond_encoding, vector_len);
   }
 }
 
-void MacroAssembler::vpcmpCCq(XMMRegister dst, XMMRegister nds, XMMRegister src, ComparisonPredicate cond, int vector_len, Register scratch_reg) {
+void MacroAssembler::vpcmpCCW(XMMRegister dst, XMMRegister nds, XMMRegister src, ComparisonPredicate cond, Width width, int vector_len, Register scratch_reg) {
   int eq_cond_enc = 0x29;
   int gt_cond_enc = 0x37;
+  if (width != Assembler::Q) {
+    eq_cond_enc = 0x74 + width;
+    gt_cond_enc = 0x64 + width;
+  }
   switch (cond) {
   case eq:
-    Assembler::vpcmpCCq(dst, nds, src, eq_cond_enc, vector_len);
+    vpcmpCC(dst, nds, src, eq_cond_enc, width, vector_len);
     break;
   case neq:
-    Assembler::vpcmpCCq(dst, nds, src, eq_cond_enc, vector_len);
+    vpcmpCC(dst, nds, src, eq_cond_enc, width, vector_len);
     vpxor(dst, dst, ExternalAddress(StubRoutines::x86::vector_all_bits_set()), vector_len, scratch_reg);
     break;
   case le:
-    Assembler::vpcmpCCq(dst, nds, src, gt_cond_enc, vector_len);
+    vpcmpCC(dst, nds, src, gt_cond_enc, width, vector_len);
     vpxor(dst, dst, ExternalAddress(StubRoutines::x86::vector_all_bits_set()), vector_len, scratch_reg);
     break;
   case nlt:
-    Assembler::vpcmpCCq(dst, src, nds, gt_cond_enc, vector_len);
+    vpcmpCC(dst, src, nds, gt_cond_enc, width, vector_len);
     vpxor(dst, dst, ExternalAddress(StubRoutines::x86::vector_all_bits_set()), vector_len, scratch_reg);
     break;
   case lt:
-    Assembler::vpcmpCCq(dst, src, nds, gt_cond_enc, vector_len);
+    vpcmpCC(dst, src, nds, gt_cond_enc, width, vector_len);
     break;
   case nle:
-    Assembler::vpcmpCCq(dst, nds, src, gt_cond_enc, vector_len);
+    vpcmpCC(dst, nds, src, gt_cond_enc, width, vector_len);
     break;
   default:
     assert(false, "Should not reach here");
