@@ -161,10 +161,6 @@
   product(bool, UseParallelGC, false,                                       \
           "Use the Parallel garbage collector.")                            \
                                                                             \
-  product(bool, UseParallelOldGC, false,                                    \
-          "Use the Parallel or Serial garbage collector when collecting "   \
-          "the old generation. Deprecated.")                                \
-                                                                            \
   experimental(bool, UseEpsilonGC, false,                                   \
           "Use the Epsilon (no-op) garbage collector")                      \
                                                                             \
@@ -318,10 +314,6 @@
                                                                             \
   develop(uintx, PromotionFailureALotInterval, 5,                           \
           "Total collections between promotion failures a lot")             \
-                                                                            \
-  diagnostic(bool, UseOWSTTaskTerminator, true,                             \
-          "Use Optimized Work Stealing Threads task termination "           \
-          "protocol")                                                       \
                                                                             \
   experimental(uintx, WorkStealingSleepMillis, 1,                           \
           "Sleep time when sleep is used for yields")                       \
