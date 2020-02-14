@@ -1455,6 +1455,12 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
         return false; // 512bit vandpd and vxorpd are not available
       }
       break;
+    case Op_ExtractB:
+    case Op_ExtractI:
+    case Op_ExtractL:
+      if (UseSSE <= 3) {
+        return false;
+      }
     case Op_CMoveVF:
       if (vlen != 8) {
         return false; // implementation limitation (only vcmov8F_reg is present)
@@ -1531,6 +1537,10 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
         return false;
       }
       break;
+    case Op_VectorInsert:
+      if (UseSSE <= 3) {
+        return false;
+      }
     case Op_MinReductionV:
     case Op_MaxReductionV:
       if ((bt == T_INT || is_subword_type(bt)) && UseSSE < 4) {
@@ -1573,6 +1583,12 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       }
       break;
     case Op_VectorLoadShuffle:
+      if (UseSSE <= 3 && bt != T_BYTE) {
+        return false;
+      } else if (size_in_bits >= 256 && (bt != T_BYTE) && UseAVX < 2) {
+        return false;
+      }
+      break;
     case Op_VectorRearrange:
       if (vlen == 1 || vlen == 2) {
         return false; // Implementation limitation due to how shuffle is loaded
@@ -1585,7 +1601,7 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       }
       break;
     case Op_VectorStoreMask:
-      if (UseAVX < 0) {
+      if (UseSSE <= 3) {
         return false; // Implementation limitation
       } else if ((size_in_bits >= 256 || bt == T_LONG || bt == T_DOUBLE) && UseAVX < 2) {
         return false; // Implementation limitation
@@ -9363,7 +9379,7 @@ instruct loadshuffle4i(vec dst, vec src, vec tmp, vec tmp2, rRegI scratch) %{
 %}
 
 instruct loadshufflevi(vec dst, vec src) %{
-  predicate(UseAVX >= 1 && (n->as_Vector()->length() == 8 || n->as_Vector()->length() == 16) &&
+  predicate((n->as_Vector()->length() == 8 || n->as_Vector()->length() == 16) &&
             (n->bottom_type()->is_vect()->element_basic_type() == T_INT ||
              n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
   match(Set dst (VectorLoadShuffle src));
