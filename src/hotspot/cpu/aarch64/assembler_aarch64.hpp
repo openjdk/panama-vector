@@ -1482,6 +1482,21 @@ public:
 
 #undef INSN
 
+/* SIMD extensions
+ *
+ * We just use FloatRegister in the following. They are exactly the same
+ * as SIMD registers.
+ */
+public:
+
+  enum SIMD_Arrangement {
+    T8B, T16B, T4H, T8H, T2S, T4S, T1D, T2D, T1Q
+  };
+
+  enum SIMD_RegVariant {
+    B, H, S, D, Q
+  };
+
   enum shift_kind { LSL, LSR, ASR, ROR };
 
   void op_shifted_reg(unsigned decode,
@@ -1856,6 +1871,30 @@ public:
     i_fmovs(Vd, Vn);
   }
 
+private:
+  void _fcvt_narrow_extend(FloatRegister Vd, SIMD_Arrangement Ta,
+                           FloatRegister Vn, SIMD_Arrangement Tb, bool do_extend) {
+    assert((do_extend && (Tb >> 1) + 1 == (Ta >> 1))
+           || (!do_extend && (Ta >> 1) + 1 == (Tb >> 1)), "Incompatible arrangement");
+    starti;
+    int op30 = (do_extend ? Tb : Ta) & 1;
+    int op22 = ((do_extend ? Ta : Tb) >> 1) & 1;
+    f(0, 31), f(op30, 30), f(0b0011100, 29, 23), f(op22, 22);
+    f(0b100001011, 21, 13), f(do_extend ? 1 : 0, 12), f(0b10, 11, 10);
+    rf(Vn, 5), rf(Vd, 0);
+  }
+
+public:
+  void fcvtl(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb) {
+    assert(Tb == T4H || Tb == T8H|| Tb == T2S || Tb == T4S, "invalid arrangement");
+    _fcvt_narrow_extend(Vd, Ta, Vn, Tb, true);
+  }
+
+  void fcvtn(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb) {
+    assert(Ta == T4H || Ta == T8H|| Ta == T2S || Ta == T4S, "invalid arrangement");
+    _fcvt_narrow_extend(Vd, Ta, Vn, Tb, false);
+  }
+
 #undef INSN
 
   // Floating-point data-processing (2 source)
@@ -1992,6 +2031,43 @@ public:
 
 #undef INSN
 
+  enum sign_kind { SIGNED, UNSIGNED };
+
+private:
+  void _xcvtf_scalar_integer(sign_kind sign, unsigned sz,
+                             FloatRegister Rd, FloatRegister Rn) {
+    starti;
+    f(0b01, 31, 30), f(sign == SIGNED ? 0 : 1, 29);
+    f(0b111100, 27, 23), f((sz >> 1) & 1, 22), f(0b100001110110, 21, 10);
+    rf(Rn, 5), rf(Rd, 0);
+  }
+
+public:
+#define INSN(NAME, sign, sz)                        \
+  void NAME(FloatRegister Rd, FloatRegister Rn) {   \
+    _xcvtf_scalar_integer(sign, sz, Rd, Rn);        \
+  }
+
+  INSN(scvtfs, SIGNED, 0);
+  INSN(scvtfd, SIGNED, 1);
+
+#undef INSN
+
+private:
+  void _xcvtf_vector_integer(sign_kind sign, SIMD_Arrangement T,
+                             FloatRegister Rd, FloatRegister Rn) {
+    assert(T == T2S || T == T4S || T == T2D, "invalid arrangement");
+    starti;
+    f(0, 31), f(T & 1, 30), f(sign == SIGNED ? 0 : 1, 29);
+    f(0b011100, 28, 23), f((T >> 1) & 1, 22), f(0b100001110110, 21, 10);
+    rf(Rn, 5), rf(Rd, 0);
+  }
+
+public:
+  void scvtfv(SIMD_Arrangement T, FloatRegister Rd, FloatRegister Rn) {
+    _xcvtf_vector_integer(SIGNED, T, Rd, Rn);
+  }
+
   // Floating-point compare
   void float_compare(unsigned op31, unsigned type,
                      unsigned op, unsigned op2,
@@ -2105,21 +2181,6 @@ public:
   INSN(frintxd, 0b01, 0b110);
   INSN(frintzd, 0b01, 0b011);
 #undef INSN
-
-/* SIMD extensions
- *
- * We just use FloatRegister in the following. They are exactly the same
- * as SIMD registers.
- */
- public:
-
-  enum SIMD_Arrangement {
-       T8B, T16B, T4H, T8H, T2S, T4S, T1D, T2D, T1Q
-  };
-
-  enum SIMD_RegVariant {
-       B, H, S, D, Q
-  };
 
 private:
   static short SIMD_Size_in_bytes[];
@@ -2512,33 +2573,48 @@ public:
 #undef INSN
 
 private:
-  void _ushll(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn, SIMD_Arrangement Tb, int shift) {
+  void _xshll(sign_kind sign, FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn, SIMD_Arrangement Tb, int shift) {
     starti;
     /* The encodings for the immh:immb fields (bits 22:16) are
-     *   0001 xxx       8H, 8B/16b shift = xxx
+     *   0001 xxx       8H, 8B/16B shift = xxx
      *   001x xxx       4S, 4H/8H  shift = xxxx
      *   01xx xxx       2D, 2S/4S  shift = xxxxx
      *   1xxx xxx       RESERVED
      */
     assert((Tb >> 1) + 1 == (Ta >> 1), "Incompatible arrangement");
     assert((1 << ((Tb>>1)+3)) > shift, "Invalid shift value");
-    f(0, 31), f(Tb & 1, 30), f(0b1011110, 29, 23), f((1 << ((Tb>>1)+3))|shift, 22, 16);
+    f(0, 31), f(Tb & 1, 30), f(sign == SIGNED ? 0 : 1, 29), f(0b011110, 28, 23);
+    f((1 << ((Tb>>1)+3))|shift, 22, 16);
     f(0b101001, 15, 10), rf(Vn, 5), rf(Vd, 0);
   }
 
 public:
   void ushll(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb, int shift) {
     assert(Tb == T8B || Tb == T4H || Tb == T2S, "invalid arrangement");
-    _ushll(Vd, Ta, Vn, Tb, shift);
+    _xshll(UNSIGNED, Vd, Ta, Vn, Tb, shift);
   }
 
   void ushll2(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb, int shift) {
     assert(Tb == T16B || Tb == T8H || Tb == T4S, "invalid arrangement");
-    _ushll(Vd, Ta, Vn, Tb, shift);
+    _xshll(UNSIGNED, Vd, Ta, Vn, Tb, shift);
   }
 
   void uxtl(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb) {
     ushll(Vd, Ta, Vn, Tb, 0);
+  }
+
+  void sshll(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb, int shift) {
+    assert(Tb == T8B || Tb == T4H || Tb == T2S, "invalid arrangement");
+    _xshll(SIGNED, Vd, Ta, Vn, Tb, shift);
+  }
+
+  void sshll2(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb, int shift) {
+    assert(Tb == T16B || Tb == T8H || Tb == T4S, "invalid arrangement");
+    _xshll(SIGNED, Vd, Ta, Vn, Tb, shift);
+  }
+
+  void sxtl(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb) {
+    sshll(Vd, Ta, Vn, Tb, 0);
   }
 
   // Move from general purpose register
