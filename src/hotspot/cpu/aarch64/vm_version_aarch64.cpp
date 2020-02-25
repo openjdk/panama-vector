@@ -447,8 +447,16 @@ void VM_Version::get_processor_features() {
   if (FLAG_IS_DEFAULT(UseMontgomerySquareIntrinsic)) {
     UseMontgomerySquareIntrinsic = true;
   }
-  if (FLAG_IS_DEFAULT(MaxVectorSize)) {
-    if (UseSVE) {
+
+  int min_vector_size = 8;
+
+  if (!FLAG_IS_DEFAULT(MaxVectorSize)) {
+    if (MaxVectorSize < min_vector_size) {
+      warning("MaxVectorSize must be at least %i on this platform", min_vector_size);
+      FLAG_SET_DEFAULT(MaxVectorSize, min_vector_size);
+    }
+  } else {
+    if (UseSVE > 0) {
       MaxVectorSize = 256;
     }
   }
