@@ -1784,6 +1784,13 @@ public:
   void reduce2D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp);
   void reduce4D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
   void reduce8D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
+
+  // extract
+  void extract(BasicType typ, Register dst, XMMRegister src, int idx);
+  XMMRegister get_lane(BasicType typ, XMMRegister dst, XMMRegister src, int elemindex);
+  void get_elem(BasicType typ, Register dst, XMMRegister src, int elemindex);
+  void get_elem(BasicType typ, XMMRegister dst, XMMRegister src, int elemindex, Register tmp = noreg, XMMRegister vtmp = xnoreg);
+
 #endif
 
   // C2 compiled method's prolog code.

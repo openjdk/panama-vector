@@ -7978,426 +7978,103 @@ instruct evcmp(vec dst, vec src1, vec src2, immI8 cond, rRegL scratch) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct extract8d(regD dst, vec src, vec tmp, immI idx) %{
-  predicate(UseAVX > 2 && n->in(1)->bottom_type()->is_vect()->length() == 8);
-  match(Set dst (ExtractD src idx));
-  effect(TEMP tmp);
-  ins_encode %{
-    int vector_len = 2;
-    int midx = 0x7 & $idx$$constant;
-    if (midx == 0 && $dst$$XMMRegister != $src$$XMMRegister) {
-      __ vmovdqu($dst$$XMMRegister, $src$$XMMRegister);
-    } else if (midx == 1) {
-      __ vpshufpd($dst$$XMMRegister, $src$$XMMRegister, $src$$XMMRegister, midx, vector_len);
-    } else if (midx > 1 && midx <= 7) {
-      int extr_idx1 = midx / 2;
-      int extr_idx2 = midx % 2;
-      __ vextractf32x4($tmp$$XMMRegister, $src$$XMMRegister, extr_idx1);
-      __ vpshufpd($dst$$XMMRegister, $tmp$$XMMRegister, $tmp$$XMMRegister, extr_idx2, vector_len);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract4d(legRegD dst, vec src, vec tmp, immI idx) %{
-  predicate(UseAVX > 0 && n->in(1)->bottom_type()->is_vect()->length() == 4);
-  match(Set dst (ExtractD src idx));
-  effect(TEMP tmp);
-  ins_encode %{
-    int vector_len = 1;
-    int midx = 0x3 & $idx$$constant;
-    if (midx == 0 && $dst$$XMMRegister != $src$$XMMRegister) {
-      __ vmovdqu($dst$$XMMRegister, $src$$XMMRegister);
-    } else if (midx == 1) {
-      __ vpshufpd($dst$$XMMRegister, $src$$XMMRegister, $src$$XMMRegister, midx, vector_len);
-    } else if (midx > 1 && midx <= 3) {
-      __ vextractf128($tmp$$XMMRegister, $src$$XMMRegister, 0x1);
-      __ vpshufpd($dst$$XMMRegister, $tmp$$XMMRegister, $tmp$$XMMRegister, midx - 2, vector_len);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract2d(legRegD dst, vec src, immI idx) %{
-  predicate(UseSSE >= 2 && n->in(1)->bottom_type()->is_vect()->length() == 2);
+instruct extractd(legRegD dst, legVec src, immI idx) %{
+  predicate(UseSSE >= 2 && n->in(1)->bottom_type()->is_vect()->length() <= 2);
   match(Set dst (ExtractD src idx));
   ins_encode %{
-    int midx = 0x1 & $idx$$constant;
-    if ($dst$$XMMRegister != $src$$XMMRegister) {
-      __ movdqu($dst$$XMMRegister, $src$$XMMRegister);
-    }
-    if (midx > 0) {
-      __ pshufpd($dst$$XMMRegister, $dst$$XMMRegister, midx);
-    }
+    int eindex = $idx$$constant;
+    __ get_elem(T_DOUBLE, $dst$$XMMRegister, $src$$XMMRegister, eindex);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct extract1d(regD dst, vec src, immI idx) %{
-  predicate(UseSSE >= 2  && n->in(1)->bottom_type()->is_vect()->length() == 1);
+instruct vextractd(legRegD dst, legVec src, immI idx, legVec vtmp) %{
+  predicate(n->in(1)->bottom_type()->is_vect()->length() == 4 ||
+            n->in(1)->bottom_type()->is_vect()->length() == 8);
   match(Set dst (ExtractD src idx));
+  effect(TEMP vtmp);
   ins_encode %{
-    int midx = 0x1 & $idx$$constant;
-    if (midx == 0 && $dst$$XMMRegister != $src$$XMMRegister) {
-      __ movdqu($dst$$XMMRegister, $src$$XMMRegister);
-    }
+    int eindex = $idx$$constant;
+    XMMRegister srcvec = __ get_lane(T_DOUBLE, $vtmp$$XMMRegister, $src$$XMMRegister, eindex);
+    __ get_elem(T_DOUBLE, $dst$$XMMRegister, srcvec, eindex);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct extract16f(regF dst, vec src, vec tmp, immI idx) %{
-  predicate(UseAVX > 2 && n->in(1)->bottom_type()->is_vect()->length() == 16);
+instruct extractf(legRegF dst, legVec src, immI idx, rRegI tmp, legVec vtmp) %{
+  predicate(UseSSE >= 2 && n->in(1)->bottom_type()->is_vect()->length() <= 4);
   match(Set dst (ExtractF src idx));
-  effect(TEMP tmp);
+  effect(TEMP dst, TEMP tmp, TEMP vtmp);
   ins_encode %{
-    int vector_len=2;
-    int midx = 0xF & $idx$$constant;
-    if (midx == 0 && $dst$$XMMRegister != $src$$XMMRegister) {
-      __ vmovdqu($dst$$XMMRegister, $src$$XMMRegister);
-    } else if (midx >= 1 && midx <= 3) {
-      __ vpshufps($dst$$XMMRegister, $src$$XMMRegister, $src$$XMMRegister, midx, vector_len);
-    } else {
-      int extr_idx1 = midx / 4;
-      int extr_idx2 = midx % 4;
-      __ vextractf32x4($tmp$$XMMRegister, $src$$XMMRegister, extr_idx1);
-      __ vpshufps($dst$$XMMRegister, $tmp$$XMMRegister, $tmp$$XMMRegister, extr_idx2, vector_len);
-    }
+    int eindex = $idx$$constant;
+    __ get_elem(T_FLOAT, $dst$$XMMRegister, $src$$XMMRegister, eindex, $tmp$$Register, $vtmp$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct extract8f(legRegF dst, vec src, vec tmp, immI idx) %{
-  predicate(UseAVX > 0 && n->in(1)->bottom_type()->is_vect()->length() == 8);
+instruct vextractf(legRegF dst, legVec src, immI idx, rRegI tmp, legVec vtmp) %{
+  predicate(n->in(1)->bottom_type()->is_vect()->length() == 8 ||
+            n->in(1)->bottom_type()->is_vect()->length() == 16);
   match(Set dst (ExtractF src idx));
-  effect(TEMP tmp);
+  effect(TEMP tmp, TEMP vtmp);
   ins_encode %{
-    int vector_len=1;
-    int midx = 0x7 & $idx$$constant;
-    if (midx == 0 && $dst$$XMMRegister != $src$$XMMRegister) {
-      __ vmovdqu($dst$$XMMRegister, $src$$XMMRegister);
-    } else if (midx >= 1 && midx <= 3) {
-      __ vpshufps($dst$$XMMRegister, $src$$XMMRegister, $src$$XMMRegister, midx, vector_len);
-    } else if (midx >= 4) {
-      __ vextractf128($tmp$$XMMRegister, $src$$XMMRegister, 0x1);
-      __ vpshufps($dst$$XMMRegister, $tmp$$XMMRegister, $tmp$$XMMRegister, midx - 4, vector_len);
-    }
+    int eindex = $idx$$constant;
+    XMMRegister srcvec = __ get_lane(T_FLOAT, $vtmp$$XMMRegister, $src$$XMMRegister, eindex);
+    __ get_elem(T_FLOAT, $dst$$XMMRegister, srcvec, eindex, $tmp$$Register);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct extract4f(legRegF dst, vec src, immI idx) %{
-  predicate(UseSSE >= 2 && n->in(1)->bottom_type()->is_vect()->length() == 4);
-  match(Set dst (ExtractF src idx));
-  ins_encode %{
-    int midx = 0x3 & $idx$$constant;
-    if ($dst$$XMMRegister != $src$$XMMRegister) {
-      __ movdqu($dst$$XMMRegister, $src$$XMMRegister);
-    }
-    if (midx > 0) {
-      __ pshufps($dst$$XMMRegister, $dst$$XMMRegister, midx);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract2f(legRegF dst, vec src, immI idx) %{
-  predicate(UseSSE >= 2 && n->in(1)->bottom_type()->is_vect()->length() == 2);
-  match(Set dst (ExtractF src idx));
-  ins_encode %{
-    int midx = 0x1 & $idx$$constant;
-    if ($dst$$XMMRegister != $src$$XMMRegister) {
-      __ movdqu($dst$$XMMRegister, $src$$XMMRegister);
-    }
-    if (midx > 0)
-    {
-      __ pshufps($dst$$XMMRegister, $dst$$XMMRegister, midx);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract1l(rRegL dst, vec src, immI idx) %{
-  predicate(UseSSE > 1 && n->in(1)->bottom_type()->is_vect()->length() == 1);
+#ifdef _LP64
+instruct extractl(rRegL dst, legVec src, immI idx) %{
+  predicate(UseSSE >= 4 && n->in(1)->bottom_type()->is_vect()->length() <= 2);
   match(Set dst (ExtractL src idx));
   ins_encode %{
-    int midx = 0x1 & $idx$$constant;
-    if (midx == 0) {
-      __ movq($dst$$Register, $src$$XMMRegister);
-    }
+    int eindex = $idx$$constant;
+    __ get_elem(T_LONG, $dst$$Register, $src$$XMMRegister, eindex);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct extract2l(rRegL dst, vec src, immI idx) %{
-  predicate(UseSSE >= 4 && n->in(1)->bottom_type()->is_vect()->length() == 2);
+instruct vextractl(rRegL dst, legVec src, immI idx, legVec vtmp) %{
+  predicate(n->in(1)->bottom_type()->is_vect()->length() == 4 ||
+            n->in(1)->bottom_type()->is_vect()->length() == 8);
   match(Set dst (ExtractL src idx));
+  effect(TEMP vtmp);
   ins_encode %{
-    int midx = 0x1 & $idx$$constant;
-    if (midx == 0) {
-      __ movq($dst$$Register, $src$$XMMRegister);
-    } else {
-      __ pextrq($dst$$Register, $src$$XMMRegister, midx);
-    }
+    int eindex = $idx$$constant;
+    XMMRegister srcvec = __ get_lane(T_LONG, $vtmp$$XMMRegister, $src$$XMMRegister, eindex);
+    __ get_elem(T_LONG, $dst$$Register, srcvec, eindex);
   %}
   ins_pipe( pipe_slow );
 %}
+#endif
 
-instruct extract4l(rRegL dst, vec src, immI idx, vec tmp) %{
-  predicate(UseAVX > 1 && n->in(1)->bottom_type()->is_vect()->length() == 4);
-  match(Set dst (ExtractL src idx));
-  effect(TEMP tmp);
-  ins_encode %{
-    int midx = 0x3 & $idx$$constant;
-    if (midx == 0) {
-      __ movq($dst$$Register, $src$$XMMRegister);
-    } else if(midx==1){
-      __ pextrq($dst$$Register, $src$$XMMRegister, midx);
-    } else {
-      __ vextracti128($tmp$$XMMRegister, $src$$XMMRegister, 0x1);
-      __ pextrq($dst$$Register, $tmp$$XMMRegister, midx-2);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract8l(rRegL dst, vec src, vec tmp, immI idx) %{
-  predicate(UseAVX > 2 && n->in(1)->bottom_type()->is_vect()->length() == 8);
-  match(Set dst (ExtractL src idx));
-  effect(TEMP tmp);
-  ins_encode %{
-    int midx = 0x7 & $idx$$constant;
-    if (midx == 0) {
-      __ movq($dst$$Register, $src$$XMMRegister);
-    } else if (midx == 1) {
-      __ pextrq($dst$$Register, $src$$XMMRegister, midx);
-    } else {
-      // Using 2 because there are 2 longs in 128-bit
-      int extr_idx1 = midx / 2;
-      int extr_idx2 = midx % 2;
-      __ vextracti32x4($tmp$$XMMRegister, $src$$XMMRegister, extr_idx1);
-      __ pextrq($dst$$Register, $tmp$$XMMRegister, extr_idx2);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract2i(rRegI dst, vec src, immI idx) %{
-  predicate(UseSSE > 3 && n->in(1)->bottom_type()->is_vect()->length() == 2);
+instruct extracti(rRegI dst, legVec src, immI idx) %{
+  predicate(n->in(1)->bottom_type()->is_vect()->length_in_bytes() <= 16);
   match(Set dst (ExtractI src idx));
-  ins_encode %{
-    int midx = 0x1 & $idx$$constant;
-    if (midx == 0) {
-      __ movdl($dst$$Register, $src$$XMMRegister);
-    } else if (midx >= 1) {
-      __ pextrd($dst$$Register, $src$$XMMRegister, midx);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract4i(rRegI dst, vec src, immI idx) %{
-  predicate(UseSSE > 3 && n->in(1)->bottom_type()->is_vect()->length() == 4);
-  match(Set dst (ExtractI src idx));
-  ins_encode %{
-    int midx = 0x3 & $idx$$constant;
-    if (midx == 0) {
-      __ movdl($dst$$Register, $src$$XMMRegister);
-    } else if (midx >= 1 && midx <= 3) {
-      __ pextrd($dst$$Register, $src$$XMMRegister, midx);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract8i(rRegI dst, vec src, vec tmp, immI idx) %{
-  predicate(UseAVX > 1 && n->in(1)->bottom_type()->is_vect()->length() == 8);
-  match(Set dst (ExtractI src idx));
-  effect(TEMP tmp);
-  ins_encode %{
-    int midx = 0x7 & $idx$$constant;
-    if (midx == 0) {
-      __ movdl($dst$$Register, $src$$XMMRegister);
-    } else if (midx >= 1 && midx <= 3) {
-      __ pextrd($dst$$Register, $src$$XMMRegister, midx);
-    } else if (midx >= 4) {
-      __ vextracti128($tmp$$XMMRegister, $src$$XMMRegister, 0x1);
-      __ pextrd($dst$$Register, $tmp$$XMMRegister, midx - 4);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract16i(rRegI dst, legVec src, vec tmp, immI idx) %{
-  predicate(UseAVX > 2 && n->in(1)->bottom_type()->is_vect()->length() == 16);
-  match(Set dst (ExtractI src idx));
-  effect(TEMP tmp);
-    ins_encode %{
-    int midx = 0xF & $idx$$constant;
-    if (midx == 0) {
-      __ movdl($dst$$Register, $src$$XMMRegister);
-    } else if (midx >= 1 && midx <= 3) {
-      __ pextrd($dst$$Register, $src$$XMMRegister, midx);
-    } else {
-      // Using 4 because there are 4 ints in 128-bit
-      int extr_idx1 = midx / 4;
-      int extr_idx2 = midx % 4;
-      __ vextracti32x4($tmp$$XMMRegister, $src$$XMMRegister, extr_idx1);
-      __ pextrd($dst$$Register, $tmp$$XMMRegister, extr_idx2);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract4s(rRegI dst, vec src, immI idx) %{
-  predicate(UseSSE > 1 && n->in(1)->bottom_type()->is_vect()->length() == 4);
   match(Set dst (ExtractS src idx));
-  ins_encode %{
-    int midx = 0x3 & $idx$$constant;
-    if (midx == 0) {
-      __ movdl($dst$$Register, $src$$XMMRegister);
-      __ movswl($dst$$Register, $dst$$Register);
-    } else if (midx >= 1) {
-      __ pextrw($dst$$Register, $src$$XMMRegister, midx);
-      __ movswl($dst$$Register, $dst$$Register);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract8s(rRegI dst, vec src, immI idx) %{
-  predicate(UseSSE > 1 && n->in(1)->bottom_type()->is_vect()->length() == 8);
-  match(Set dst (ExtractS src idx));
-  ins_encode %{
-    int midx = 0x7 & $idx$$constant;
-    if (midx == 0) {
-      __ movdl($dst$$Register, $src$$XMMRegister);
-      __ movswl($dst$$Register, $dst$$Register);
-    } else if (midx >= 1) {
-      __ pextrw($dst$$Register, $src$$XMMRegister, midx);
-      __ movswl($dst$$Register, $dst$$Register);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract16s(rRegI dst, vec src, vec tmp, immI idx) %{
-  predicate(UseAVX > 1 && n->in(1)->bottom_type()->is_vect()->length() == 16);
-  match(Set dst (ExtractS src idx));
-  effect(TEMP tmp);
-  ins_encode %{
-    int midx = 0xF & $idx$$constant;
-    if (midx == 0) {
-      __ movdl($dst$$Register, $src$$XMMRegister);
-      __ movswl($dst$$Register, $dst$$Register);
-    } else if (midx >= 1 && midx <= 7) {
-      __ pextrw($dst$$Register, $src$$XMMRegister, midx);
-      __ movswl($dst$$Register, $dst$$Register);
-    } else {
-      __ vextracti128($tmp$$XMMRegister, $src$$XMMRegister, 0x1);
-      __ pextrw($dst$$Register, $tmp$$XMMRegister, midx-8);
-      __ movswl($dst$$Register, $dst$$Register);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract32s(rRegI dst, vec src, vec tmp, immI idx) %{
-  predicate(UseAVX > 2 && n->in(1)->bottom_type()->is_vect()->length() == 32);
-  match(Set dst (ExtractS src idx));
-  effect(TEMP tmp);
-    ins_encode %{
-    int midx = 0x1F & $idx$$constant;
-    if (midx == 0) {
-    __ movdl($dst$$Register, $src$$XMMRegister);
-    __ movswl($dst$$Register, $dst$$Register);
-    } else if (midx >= 1 && midx <= 7) {
-      __ pextrw($dst$$Register, $src$$XMMRegister, midx);
-      __ movswl($dst$$Register, $dst$$Register);
-    } else {
-      int extr_idx1 = midx / 8;
-      int extr_idx2 = midx % 8;
-      __ vextracti32x4($tmp$$XMMRegister, $src$$XMMRegister, extr_idx1);
-      __ pextrw($dst$$Register, $tmp$$XMMRegister, extr_idx2);
-      __ movswl($dst$$Register, $dst$$Register);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract8b(rRegI dst, vec src, immI idx) %{
-  predicate(UseSSE >= 4 && n->in(1)->bottom_type()->is_vect()->length() == 8);
   match(Set dst (ExtractB src idx));
   ins_encode %{
-    int midx = 0x7 & $idx$$constant;
-    if (midx == 0) {
-      __ movdl($dst$$Register, $src$$XMMRegister);
-      __ movsbl($dst$$Register, $dst$$Register);
-    } else if (midx >= 1) {
-      __ pextrb($dst$$Register, $src$$XMMRegister, midx);
-      __ movsbl($dst$$Register, $dst$$Register);
-    }
+    int eindex = $idx$$constant;
+    BasicType typ = vector_basic_type(this, $src);
+    __ get_elem(typ, $dst$$Register, $src$$XMMRegister, eindex);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct extract16b(rRegI dst, vec src, immI idx) %{
-  predicate(UseSSE >= 4 && n->in(1)->bottom_type()->is_vect()->length() == 16);
+instruct vextracti(rRegI dst, legVec src, immI idx, legVec vtmp) %{
+  predicate(n->in(1)->bottom_type()->is_vect()->length_in_bytes() == 32 ||
+            n->in(1)->bottom_type()->is_vect()->length_in_bytes() == 64);
+  match(Set dst (ExtractI src idx));
+  match(Set dst (ExtractS src idx));
   match(Set dst (ExtractB src idx));
+  effect(TEMP vtmp);
   ins_encode %{
-    int midx = 0xF & $idx$$constant;
-    if (midx == 0) {
-      __ movdl($dst$$Register, $src$$XMMRegister);
-      __ movsbl($dst$$Register, $dst$$Register);
-    } else if (midx >= 1) {
-      __ pextrb($dst$$Register, $src$$XMMRegister, midx);
-      __ movsbl($dst$$Register, $dst$$Register);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract32b(rRegI dst, vec src, vec tmp, immI idx) %{
-  predicate(UseAVX > 0 && n->in(1)->bottom_type()->is_vect()->length() == 32);
-  match(Set dst (ExtractB src idx));
-  effect(TEMP tmp);
-    ins_encode %{
-    int midx = 0x1F & $idx$$constant;
-    if (midx == 0) {
-      __ movdl($dst$$Register, $src$$XMMRegister);
-      __ movsbl($dst$$Register, $dst$$Register);
-    } else if (midx >= 1 && midx <= 15) {
-      __ pextrb($dst$$Register, $src$$XMMRegister, midx);
-      __ movsbl($dst$$Register, $dst$$Register);
-    } else {
-      int extr_idx1 = midx / 16;
-      int extr_idx2 = midx % 16;
-      __ vextractf128($tmp$$XMMRegister, $src$$XMMRegister, extr_idx1);
-      __ pextrb($dst$$Register, $tmp$$XMMRegister, extr_idx2);
-      __ movsbl($dst$$Register, $dst$$Register);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct extract64b(rRegI dst, vec src, vec tmp, immI idx) %{
-  predicate(UseAVX > 2 && n->in(1)->bottom_type()->is_vect()->length() == 64);
-  match(Set dst (ExtractB src idx));
-  effect(TEMP tmp);
-    ins_encode %{
-    int midx = 0x3F & $idx$$constant;
-    if (midx == 0) {
-    __ movdl($dst$$Register, $src$$XMMRegister);
-    __ movsbl($dst$$Register, $dst$$Register);
-    } else if (midx >= 1 && midx <= 15) {
-      __ pextrb($dst$$Register, $src$$XMMRegister, midx);
-      __ movsbl($dst$$Register, $dst$$Register);
-    } else {
-      int extr_idx1 = midx / 16;
-      int extr_idx2 = midx % 16;
-      __ vextracti32x4($tmp$$XMMRegister, $src$$XMMRegister, extr_idx1);
-      __ pextrb($dst$$Register, $tmp$$XMMRegister, extr_idx2);
-      __ movsbl($dst$$Register, $dst$$Register);
-    }
+    int eindex = $idx$$constant;
+    BasicType typ = vector_basic_type(this, $src);
+    XMMRegister srcvec = __ get_lane(typ, $vtmp$$XMMRegister, $src$$XMMRegister, eindex);
+    __ get_elem(typ, $dst$$Register, srcvec, eindex);
   %}
   ins_pipe( pipe_slow );
 %}

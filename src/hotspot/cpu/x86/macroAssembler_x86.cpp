@@ -4989,6 +4989,105 @@ void MacroAssembler::reduce8D(int opcode, XMMRegister dst, XMMRegister src, XMMR
   reduce4D(opcode, dst, vtmp1, vtmp1, vtmp2);
 }
 
+void MacroAssembler::extract(BasicType typ, Register dst, XMMRegister src, int idx) {
+  switch(typ) {
+    case T_BYTE:
+      pextrb(dst, src, idx);
+      break;
+    case T_SHORT:
+      pextrw(dst, src, idx);
+      break;
+    case T_INT:
+      pextrd(dst, src, idx);
+      break;
+    case T_LONG:
+      pextrq(dst, src, idx);
+      break;
+    default:
+      assert(false,"Should not reach here.");
+      break;
+  }
+}
+
+XMMRegister MacroAssembler::get_lane(BasicType typ, XMMRegister dst, XMMRegister src, int elemindex) {
+  int esize =  type2aelembytes(typ);
+  int elem_per_lane = 16/esize;
+  int lane = elemindex / elem_per_lane;
+  int eindex = elemindex % elem_per_lane;
+
+  if (lane >= 2) {
+    assert(UseAVX > 2, "required");
+    vextractf32x4(dst, src, lane & 3);
+    return dst;
+  } else if (lane > 0) {
+    assert(UseAVX > 0, "required");
+    vextractf128(dst, src, lane);
+    return dst;
+  } else {
+    return src;
+  }
+}
+
+void MacroAssembler::get_elem(BasicType typ, Register dst, XMMRegister src, int elemindex) {
+  int esize =  type2aelembytes(typ);
+  int elem_per_lane = 16/esize;
+  int eindex = elemindex % elem_per_lane;
+  assert(is_integral_type(typ),"required");
+
+  if (eindex == 0) {
+    if (typ == T_LONG) {
+      movq(dst, src);
+    } else {
+      movdl(dst, src);
+      if (typ == T_BYTE) 
+        movsbl(dst, dst);
+      else if (typ == T_SHORT)
+        movswl(dst, dst);
+    }
+  } else {
+    extract(typ, dst, src, eindex);
+  }
+}
+
+void MacroAssembler::get_elem(BasicType typ, XMMRegister dst, XMMRegister src, int elemindex, Register tmp, XMMRegister vtmp) {
+  int esize =  type2aelembytes(typ);
+  int elem_per_lane = 16/esize;
+  int eindex = elemindex % elem_per_lane;
+  assert((typ == T_FLOAT || typ == T_DOUBLE),"required");
+
+  if (eindex == 0) {
+    movq(dst, src);
+  } else {
+    if (typ == T_FLOAT) {
+      if (UseAVX == 0) {
+        movdqu(dst, src);
+        pshufps(dst, dst, eindex);
+      } else {
+        vpshufps(dst, src, src, eindex, Assembler::AVX_128bit);
+      }
+    } else {
+      if (UseAVX == 0) {
+        movdqu(dst, src);
+        psrldq(dst, eindex*esize);
+      } else {
+        vpsrldq(dst, src, eindex*esize, Assembler::AVX_128bit);
+      }
+      movq(dst, dst);
+    }
+  }
+  // Zero upper bits
+  if (typ == T_FLOAT) {
+    if (UseAVX == 0) {
+      assert((vtmp != xnoreg) && (tmp != noreg), "required.");
+      movdqu(vtmp, ExternalAddress(StubRoutines::x86::vector_32_bit_mask()), tmp);
+      pand(dst, vtmp);
+    } else {
+      assert((tmp != noreg), "required.");
+      vpand(dst, dst, ExternalAddress(StubRoutines::x86::vector_32_bit_mask()), Assembler::AVX_128bit, tmp);
+    }
+  }
+}
+
 #endif
 //-------------------------------------------------------------------------------------------
 

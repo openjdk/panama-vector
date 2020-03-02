@@ -1595,6 +1595,7 @@ private:
   // Move Quadword
   void movq(Address     dst, XMMRegister src);
   void movq(XMMRegister dst, Address src);
+  void movq(XMMRegister dst, XMMRegister src);
   void movq(Register dst, XMMRegister src);
   void movq(XMMRegister dst, Register src);
 
