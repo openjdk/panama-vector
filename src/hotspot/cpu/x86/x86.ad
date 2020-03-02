@@ -1590,7 +1590,9 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       }
       break;
     case Op_VectorRearrange:
-      if (vlen == 1 || vlen == 2) {
+      if (UseSSE < 3) {
+        return false;
+      } else if(vlen == 1 || vlen == 2) {
         return false; // Implementation limitation due to how shuffle is loaded
       } else if (size_in_bits >= 256 && UseAVX < 2) {
         return false; // Implementation limitation
