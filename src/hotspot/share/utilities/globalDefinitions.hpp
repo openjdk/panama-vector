@@ -641,6 +641,24 @@ enum BasicType {
   T_ILLEGAL     = 99
 };
 
+#define SIGNATURE_TYPES_DO(F, N)                \
+    F(JVM_SIGNATURE_BOOLEAN, T_BOOLEAN, N)      \
+    F(JVM_SIGNATURE_CHAR,    T_CHAR,    N)      \
+    F(JVM_SIGNATURE_FLOAT,   T_FLOAT,   N)      \
+    F(JVM_SIGNATURE_DOUBLE,  T_DOUBLE,  N)      \
+    F(JVM_SIGNATURE_BYTE,    T_BYTE,    N)      \
+    F(JVM_SIGNATURE_SHORT,   T_SHORT,   N)      \
+    F(JVM_SIGNATURE_INT,     T_INT,     N)      \
+    F(JVM_SIGNATURE_LONG,    T_LONG,    N)      \
+    F(JVM_SIGNATURE_CLASS,   T_OBJECT,  N)      \
+    F(JVM_SIGNATURE_ARRAY,   T_ARRAY,   N)      \
+    F(JVM_SIGNATURE_VOID,    T_VOID,    N)      \
+    /*end*/
+
+inline bool is_java_type(BasicType t) {
+  return T_BOOLEAN <= t && t <= T_VOID;
+}
+
 inline bool is_java_primitive(BasicType t) {
   return T_BOOLEAN <= t && t <= T_LONG;
 }
@@ -664,24 +682,6 @@ inline bool is_reference_type(BasicType t) {
 
 inline bool is_integral_type(BasicType t) {
   return is_subword_type(t) || t == T_INT || t == T_LONG;
-}
-
-// Convert a char from a classfile signature to a BasicType
-inline BasicType char2type(char c) {
-  switch( c ) {
-  case JVM_SIGNATURE_BYTE:    return T_BYTE;
-  case JVM_SIGNATURE_CHAR:    return T_CHAR;
-  case JVM_SIGNATURE_DOUBLE:  return T_DOUBLE;
-  case JVM_SIGNATURE_FLOAT:   return T_FLOAT;
-  case JVM_SIGNATURE_INT:     return T_INT;
-  case JVM_SIGNATURE_LONG:    return T_LONG;
-  case JVM_SIGNATURE_SHORT:   return T_SHORT;
-  case JVM_SIGNATURE_BOOLEAN: return T_BOOLEAN;
-  case JVM_SIGNATURE_VOID:    return T_VOID;
-  case JVM_SIGNATURE_CLASS:   return T_OBJECT;
-  case JVM_SIGNATURE_ARRAY:   return T_ARRAY;
-  }
-  return T_ILLEGAL;
 }
 
 extern char type2char_tab[T_CONFLICT+1];     // Map a BasicType to a jchar
@@ -713,6 +713,13 @@ enum BasicTypeSize {
   T_VOID_size        = 0
 };
 
+// this works on valid parameter types but not T_VOID, T_CONFLICT, etc.
+inline int parameter_type_word_count(BasicType t) {
+  if (is_double_word_type(t))  return 2;
+  assert(is_java_primitive(t) || is_reference_type(t), "no goofy types here please");
+  assert(type2size[t] == 1, "must be");
+  return 1;
+}
 
 // maps a BasicType to its instance field storage type:
 // all sub-word integral types are widened to T_INT
@@ -1001,16 +1008,6 @@ inline T clamp(T value, T min, T max) {
   return MIN2(MAX2(value, min), max);
 }
 
-// true if x is a power of 2, false otherwise
-inline bool is_power_of_2(intptr_t x) {
-  return ((x != NoBits) && (mask_bits(x, x - 1) == NoBits));
-}
-
-// long version of is_power_of_2
-inline bool is_power_of_2_long(jlong x) {
-  return ((x != NoLongBits) && (mask_long_bits(x, x - 1) == NoLongBits));
-}
-
 // Returns largest i such that 2^i <= x.
 // If x == 0, the function returns -1.
 inline int log2_intptr(uintptr_t x) {
@@ -1062,18 +1059,6 @@ inline int log2_uint(uint x) {
 inline int log2_jlong(jlong x) {
   STATIC_ASSERT(sizeof(jlong) <= sizeof(julong));
   return log2_long((julong)x);
-}
-
-//* the argument must be exactly a power of 2
-inline int exact_log2(intptr_t x) {
-  assert(is_power_of_2(x), "x must be a power of 2: " INTPTR_FORMAT, x);
-  return log2_intptr(x);
-}
-
-//* the argument must be exactly a power of 2
-inline int exact_log2_long(jlong x) {
-  assert(is_power_of_2_long(x), "x must be a power of 2: " JLONG_FORMAT, x);
-  return log2_long(x);
 }
 
 inline bool is_odd (intx x) { return x & 1;      }

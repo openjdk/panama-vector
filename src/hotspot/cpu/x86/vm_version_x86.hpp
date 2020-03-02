@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -293,6 +293,8 @@ protected:
   static int _model;
   static int _stepping;
 
+  static bool _has_intel_jcc_erratum;
+
   static address   _cpuinfo_segv_addr; // address of instruction which causes SEGV
   static address   _cpuinfo_cont_addr; // address of instruction after the one which causes SEGV
 
@@ -499,6 +501,8 @@ enum Extended_Family {
     uint result = threads_per_core();
     return result;
   }
+
+  static bool compute_has_intel_jcc_erratum();
 
   static uint64_t feature_flags() {
     uint64_t result = 0;
@@ -872,6 +876,9 @@ public:
   static bool is_intel_family_core() { return is_intel() &&
                                        extended_cpu_family() == CPU_FAMILY_INTEL_CORE; }
 
+  static bool is_intel_skylake() { return is_intel_family_core() &&
+                                          extended_cpu_model() == CPU_MODEL_SKYLAKE; }
+
   static bool is_intel_tsc_synched_at_init()  {
     if (is_intel_family_core()) {
       uint32_t ext_model = extended_cpu_model();
@@ -889,6 +896,12 @@ public:
     }
     return false;
   }
+
+  // This checks if the JVM is potentially affected by an erratum on Intel CPUs (SKX102)
+  // that causes unpredictable behaviour when jcc crosses 64 byte boundaries. Its microcode
+  // mitigation causes regressions when jumps or fused conditional branches cross or end at
+  // 32 byte boundaries.
+  static bool has_intel_jcc_erratum() { return _has_intel_jcc_erratum; }
 
   // AMD features
   static bool supports_3dnow_prefetch()    { return (_features & CPU_3DNOW_PREFETCH) != 0; }

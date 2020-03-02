@@ -78,7 +78,7 @@ public class HtmlConfiguration extends BaseConfiguration {
      */
     public static final String HTML_DEFAULT_CHARSET = "utf-8";
 
-    public final Resources resources;
+    public final Resources docResources;
 
     /**
      * First file to appear in the right-hand frame in the generated
@@ -91,19 +91,7 @@ public class HtmlConfiguration extends BaseConfiguration {
      */
     public TypeElement currentTypeElement = null;  // Set this TypeElement in the ClassWriter.
 
-    protected SortedSet<SearchIndexItem> memberSearchIndex;
-
-    protected SortedSet<SearchIndexItem> moduleSearchIndex;
-
-    protected SortedSet<SearchIndexItem> packageSearchIndex;
-
-    protected SortedSet<SearchIndexItem> tagSearchIndex;
-
-    protected SortedSet<SearchIndexItem> typeSearchIndex;
-
-    protected Map<Character,List<SearchIndexItem>> tagSearchIndexMap = new HashMap<>();
-
-    protected Set<Character> tagSearchIndexKeys;
+    protected SearchIndexItems searchItems;
 
     public final Contents contents;
 
@@ -133,17 +121,31 @@ public class HtmlConfiguration extends BaseConfiguration {
      */
     public HtmlConfiguration(Doclet doclet, Locale locale, Reporter reporter) {
         super(doclet, locale, reporter);
-        resources = new Resources(locale,
+
+        // Use the default locale for console messages.
+        Resources msgResources = new Resources(Locale.getDefault(),
                 BaseConfiguration.sharedResourceBundleName,
                 "jdk.javadoc.internal.doclets.formats.html.resources.standard");
 
-        messages = new Messages(this);
+        // Use the provided locale for generated docs
+        // Ideally, the doc resources would be in different resource files than the
+        // message resources, so that we do not have different copies of the same resources.
+        if (locale.equals(Locale.getDefault())) {
+            docResources = msgResources;
+        } else {
+            docResources = new Resources(locale,
+                    BaseConfiguration.sharedResourceBundleName,
+                    "jdk.javadoc.internal.doclets.formats.html.resources.standard");
+        }
+
+        messages = new Messages(this, msgResources);
         contents = new Contents(this);
         options = new HtmlOptions(this);
 
         String v;
         try {
-            ResourceBundle rb = ResourceBundle.getBundle(versionBundleName, getLocale());
+            // the version bundle is not localized
+            ResourceBundle rb = ResourceBundle.getBundle(versionBundleName, Locale.getDefault());
             try {
                 v = rb.getString("release");
             } catch (MissingResourceException e) {
@@ -166,10 +168,15 @@ public class HtmlConfiguration extends BaseConfiguration {
     }
 
     @Override
-    public Resources getResources() {
-        return resources;
+    public Resources getDocResources() {
+        return docResources;
     }
 
+    /**
+     * Returns a utility object providing commonly used fragments of content.
+     *
+     * @return a utility object providing commonly used fragments of content
+     */
     public Contents getContents() {
         return contents;
     }
@@ -310,7 +317,8 @@ public class HtmlConfiguration extends BaseConfiguration {
 
     public List<DocPath> getAdditionalStylesheets() {
         return options.additionalStylesheets().stream()
-                .map(ssf -> DocFile.createFileForInput(this, ssf)).map(file -> DocPath.create(file.getName()))
+                .map(ssf -> DocFile.createFileForInput(this, ssf))
+                .map(file -> DocPath.create(file.getName()))
                 .collect(Collectors.toList());
     }
 
@@ -329,22 +337,6 @@ public class HtmlConfiguration extends BaseConfiguration {
         return (e == null || workArounds.haveDocLint());
     }
 
-    protected void buildSearchTagIndex() {
-        for (SearchIndexItem sii : tagSearchIndex) {
-            String tagLabel = sii.getLabel();
-            Character unicode = (tagLabel.length() == 0)
-                    ? '*'
-                    : Character.toUpperCase(tagLabel.charAt(0));
-            List<SearchIndexItem> list = tagSearchIndexMap.get(unicode);
-            if (list == null) {
-                list = new ArrayList<>();
-                tagSearchIndexMap.put(unicode, list);
-            }
-            list.add(sii);
-        }
-        tagSearchIndexKeys = tagSearchIndexMap.keySet();
-    }
-
     @Override
     protected boolean finishOptionSettings0() throws DocletException {
         if (options.docEncoding() == null) {
@@ -359,7 +351,7 @@ public class HtmlConfiguration extends BaseConfiguration {
             if (options.charset() == null) {
                 options.setCharset(options.docEncoding());
             } else if (!options.charset().equals(options.docEncoding())) {
-                reporter.print(ERROR, resources.getText("doclet.Option_conflict", "-charset", "-docencoding"));
+                messages.error("doclet.Option_conflict", "-charset", "-docencoding");
                 return false;
             }
         }
@@ -369,10 +361,6 @@ public class HtmlConfiguration extends BaseConfiguration {
     @Override
     protected void initConfiguration(DocletEnvironment docEnv) {
         super.initConfiguration(docEnv);
-        memberSearchIndex = new TreeSet<>(utils.makeGenericSearchIndexComparator());
-        moduleSearchIndex = new TreeSet<>(utils.makeGenericSearchIndexComparator());
-        packageSearchIndex = new TreeSet<>(utils.makeGenericSearchIndexComparator());
-        tagSearchIndex = new TreeSet<>(utils.makeGenericSearchIndexComparator());
-        typeSearchIndex = new TreeSet<>(utils.makeTypeSearchIndexComparator());
+        searchItems = new SearchIndexItems(utils);
     }
 }

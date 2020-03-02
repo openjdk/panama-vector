@@ -98,7 +98,6 @@ public class Start {
     // used to determine the locale for the messager
     private Locale locale;
 
-
     /**
      * In API mode, exceptions thrown while calling the doclet are
      * propagated using ClientCodeException.
@@ -287,9 +286,9 @@ public class Start {
     // be similar to that of the java launcher: i.e. "java -help".
 
     /** The indent for the option synopsis. */
-    private static final String SMALL_INDENT = "    ";
+    private static final String SMALL_INDENT = " ".repeat(4);
     /** The automatic indent for the description. */
-    private static final String LARGE_INDENT = "                  ";
+    private static final String LARGE_INDENT = " ".repeat(18);
     /** The space allowed for the synopsis, if the description is to be shown on the same line. */
     private static final int DEFAULT_SYNOPSIS_WIDTH = 13;
     /** The nominal maximum line length, when seeing if text will fit on a line. */
@@ -339,17 +338,18 @@ public class Start {
         // Preprocess @file arguments
         try {
             argv = CommandLine.parse(argv);
-            return begin(Arrays.asList(argv), Collections.emptySet());
         } catch (IOException e) {
             error("main.cant.read", e.getMessage());
             return ERROR;
         }
+        return begin(Arrays.asList(argv), Collections.emptySet());
     }
 
-    // Called by 199 API.
+    // Called by the JSR 199 API
     public boolean begin(Class<?> docletClass,
-            Iterable<String> options,
-            Iterable<? extends JavaFileObject> fileObjects) {
+                         Iterable<String> options,
+                         Iterable<? extends JavaFileObject> fileObjects)
+    {
         this.docletClass = docletClass;
         List<String> opts = new ArrayList<>();
         for (String opt: options)
@@ -368,9 +368,10 @@ public class Start {
             }
         }
 
-        // locale, doclet and maybe taglet, needs to be determined first
+        // Perform an initial scan of the options to determine the doclet to be used (if any),
+        // so that it may participate in the main round of option processing.
         try {
-            doclet = preprocess(fileManager, options);
+            doclet = preprocess(options);
         } catch (ToolException te) {
             if (!te.result.isOK()) {
                 if (te.message != null) {
@@ -398,14 +399,14 @@ public class Start {
             Throwable t = e.getCause();
             dumpStack(t == null ? e : t);
             return ERROR;
-        } catch (OptionException toe) {
-            if (toe.message != null)
-                messager.printError(toe.message);
+        } catch (OptionException oe) {
+            if (oe.message != null)
+                messager.printError(oe.message);
 
-            toe.m.run();
-            Throwable t = toe.getCause();
-            dumpStack(t == null ? toe : t);
-            return toe.result;
+            oe.m.run();
+            Throwable t = oe.getCause();
+            dumpStack(t == null ? oe : t);
+            return oe.result;
         } catch (ToolException exc) {
             if (exc.message != null) {
                 messager.printError(exc.message);
@@ -472,8 +473,9 @@ public class Start {
      * Main program - internal
      */
     private Result parseAndExecute(List<String> argList, Iterable<? extends JavaFileObject> fileObjects)
-            throws ToolException, OptionException, com.sun.tools.javac.main.Option.InvalidValueException {
-        long tm = System.currentTimeMillis();
+            throws ToolException, OptionException, com.sun.tools.javac.main.Option.InvalidValueException
+    {
+        final long startNanos = System.nanoTime();
 
         List<String> javaNames = new ArrayList<>();
 
@@ -548,8 +550,8 @@ public class Start {
 
         // We're done.
         if (options.verbose()) {
-            tm = System.currentTimeMillis() - tm;
-            messager.notice("main.done_in", Long.toString(tm));
+            long elapsedMillis = (System.nanoTime() - startNanos) / 1_000_000;
+            messager.notice("main.done_in", Long.toString(elapsedMillis));
         }
 
         return returnStatus;
@@ -621,21 +623,34 @@ public class Start {
         return idx;
     }
 
-    private Doclet preprocess(JavaFileManager jfm, List<String> argv)
+    /**
+     * Performs an initial pass over the options, primarily to determine
+     * the doclet to be used (if any), so that it may participate in the
+     * main round of option decoding. This avoids having to specify that
+     * the options to specify the doclet should appear before any options
+     * that are handled by the doclet.
+     *
+     * The downside of this initial phase is that we have to skip over
+     * unknown options, and assume that we can reliably detect the options
+     * we need to handle.
+     *
+     * @param argv the arguments to be processed
+     * @return the doclet
+     * @throws ToolException if an error occurs initializing the doclet
+     * @throws OptionException if an error occurs while processing an option
+     */
+    private Doclet preprocess(List<String> argv)
             throws ToolException, OptionException {
         // doclet specifying arguments
         String userDocletPath = null;
         String userDocletName = null;
 
-        // taglet specifying arguments, since tagletpath is a doclet
-        // functionality, assume they are repeated and inspect all.
-        List<File> userTagletPath = new ArrayList<>();
-        List<String> userTagletNames = new ArrayList<>();
-
         // Step 1: loop through the args, set locale early on, if found.
-        for (int i = 0 ; i < argv.size() ; i++) {
+        for (int i = 0; i < argv.size(); i++) {
             String arg = argv.get(i);
             if (arg.equals(ToolOptions.DUMP_ON_ERROR)) {
+                // although this option is not needed in order to initialize the doclet,
+                // it is helpful if it is set before trying to initialize the doclet
                 options.setDumpOnError(true);
             } else if (arg.equals(ToolOptions.LOCALE)) {
                 checkOneArg(argv, i++);
@@ -668,12 +683,6 @@ public class Start {
                     userDocletPath = argv.get(i);
                 } else {
                     userDocletPath += File.pathSeparator + argv.get(i);
-                }
-            } else if ("-taglet".equals(arg)) {
-                userTagletNames.add(argv.get(i + 1));
-            } else if ("-tagletpath".equals(arg)) {
-                for (String pathname : argv.get(i + 1).split(File.pathSeparator)) {
-                    userTagletPath.add(new File(pathname));
                 }
             }
         }
@@ -724,8 +733,8 @@ public class Start {
             }
         }
 
-        if (jdk.javadoc.doclet.Doclet.class.isAssignableFrom(docletClass)) {
-            messager.setLocale(locale);
+        if (Doclet.class.isAssignableFrom(docletClass)) {
+            messager.setLocale(Locale.getDefault());  // use default locale for console messages
             try {
                 Object o = docletClass.getConstructor().newInstance();
                 doclet = (Doclet) o;
@@ -757,7 +766,7 @@ public class Start {
 
     private void parseArgs(List<String> args, List<String> javaNames) throws ToolException,
             OptionException, com.sun.tools.javac.main.Option.InvalidValueException {
-        for (int i = 0 ; i < args.size() ; i++) {
+        for (int i = 0; i < args.size(); i++) {
             String arg = args.get(i);
             ToolOption o = options.getOption(arg);
             if (o != null) {
@@ -810,10 +819,6 @@ public class Start {
         messager.printErrorUsingKey(key, args);
     }
 
-    void warn(String key, Object... args)  {
-        messager.printWarningUsingKey(key, args);
-    }
-
     /**
      * Get the locale if specified on the command line
      * else return null and if locale option is not used
@@ -832,22 +837,5 @@ public class Start {
             throw new ToolException(CMDERR, text);
         }
     }
-
-    /**
-     * Search the locale for specified language, specified country and
-     * specified variant.
-     */
-    private Locale searchLocale(String language, String country,
-                                String variant) {
-        for (Locale loc : Locale.getAvailableLocales()) {
-            if (loc.getLanguage().equals(language) &&
-                (country == null || loc.getCountry().equals(country)) &&
-                (variant == null || loc.getVariant().equals(variant))) {
-                return loc;
-            }
-        }
-        return null;
-    }
-
 
 }
