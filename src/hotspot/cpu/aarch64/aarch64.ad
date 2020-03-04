@@ -17477,18 +17477,22 @@ instruct reduce_mul4I(iRegINoSp dst, iRegIorL2I src1, vecX src2, vecX tmp, iRegI
   ins_pipe(pipe_class_default);
 %}
 
-instruct reduce_add2F(vRegF dst, vRegF src1, vecD src2, vRegF tmp)
+instruct reduce_add2F(vRegF dst, vRegF src1, vecD src2, vecD tmp)
 %{
   match(Set dst (AddReductionVF src1 src2));
   ins_cost(INSN_COST);
-  effect(TEMP tmp);
-  format %{ "faddp $tmp, $src2, S\n\t"
-            "fadds $dst, $src1, $tmp\t add reduction2F"
+  effect(TEMP tmp, TEMP dst);
+  format %{ "fadds $dst, $src1, $src2\n\t"
+            "ins   $tmp, S, $src2, 0, 1\n\t"
+            "fadds $dst, $dst, $tmp\t add reduction2F"
   %}
   ins_encode %{
-    __ faddp(as_FloatRegister($tmp$$reg), as_FloatRegister($src2$$reg), __ S);
     __ fadds(as_FloatRegister($dst$$reg),
-             as_FloatRegister($src1$$reg), as_FloatRegister($tmp$$reg));
+             as_FloatRegister($src1$$reg), as_FloatRegister($src2$$reg));
+    __ ins(as_FloatRegister($tmp$$reg), __ S,
+           as_FloatRegister($src2$$reg), 0, 1);
+    __ fadds(as_FloatRegister($dst$$reg),
+             as_FloatRegister($dst$$reg), as_FloatRegister($tmp$$reg));
   %}
   ins_pipe(pipe_class_default);
 %}
@@ -17613,18 +17617,22 @@ instruct reduce_mul2L(iRegLNoSp dst, iRegL src1, vecX src2, iRegLNoSp tmp)
   ins_pipe(pipe_class_default);
 %}
 
-instruct reduce_add2D(vRegD dst, vRegD src1, vecX src2, vRegD tmp)
+instruct reduce_add2D(vRegD dst, vRegD src1, vecX src2, vecX tmp)
 %{
   match(Set dst (AddReductionVD src1 src2));
   ins_cost(INSN_COST);
-  effect(TEMP tmp);
-  format %{ "faddp $tmp, $src2, D\n\t"
-            "faddd $dst, $src1, $tmp\t add reduction2D"
+  effect(TEMP tmp, TEMP dst);
+  format %{ "faddd $dst, $src1, $src2\n\t"
+            "ins   $tmp, D, $src2, 0, 1\n\t"
+            "faddd $dst, $dst, $tmp\t add reduction2D"
   %}
   ins_encode %{
-    __ faddp(as_FloatRegister($tmp$$reg), as_FloatRegister($src2$$reg), __ D);
     __ faddd(as_FloatRegister($dst$$reg),
-             as_FloatRegister($src1$$reg), as_FloatRegister($tmp$$reg));
+             as_FloatRegister($src1$$reg), as_FloatRegister($src2$$reg));
+    __ ins(as_FloatRegister($tmp$$reg), __ D,
+           as_FloatRegister($src2$$reg), 0, 1);
+    __ faddd(as_FloatRegister($dst$$reg),
+             as_FloatRegister($dst$$reg), as_FloatRegister($tmp$$reg));
   %}
   ins_pipe(pipe_class_default);
 %}
