@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -2738,13 +2738,15 @@ public abstract class FloatVector extends AbstractVector<Float> {
                                    float[] a, int offset,
                                    int[] indexMap, int mapOffset) {
         FloatSpecies vsp = (FloatSpecies) species;
+        IntVector.IntSpecies isp = IntVector.species(vsp.indexShape());
         Objects.requireNonNull(a);
         Objects.requireNonNull(indexMap);
         Class<? extends FloatVector> vectorType = vsp.vectorType();
 
-
         // Index vector: vix[0:n] = k -> offset + indexMap[mapOffset + k]
-        IntVector vix = IntVector.fromArray(IntVector.species(vsp.indexShape()), indexMap, mapOffset).add(offset);
+        IntVector vix = IntVector
+            .fromArray(isp, indexMap, mapOffset)
+            .add(offset);
 
         vix = VectorIntrinsics.checkIndex(vix, a.length);
 
@@ -3013,20 +3015,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
     void intoArray(float[] a, int offset,
                    int[] indexMap, int mapOffset) {
         FloatSpecies vsp = vspecies();
-        if (length() == 1) {
-            intoArray(a, offset + indexMap[mapOffset]);
-            return;
-        }
-        IntVector.IntSpecies isp = (IntVector.IntSpecies) vsp.indexSpecies();
-        if (isp.laneCount() != vsp.laneCount()) {
-            stOp(a, offset,
-                 (arr, off, i, e) -> {
-                     int j = indexMap[mapOffset + i];
-                     arr[off + j] = e;
-                 });
-            return;
-        }
-
+        IntVector.IntSpecies isp = IntVector.species(vsp.indexShape());
         // Index vector: vix[0:n] = i -> offset + indexMap[mo + i]
         IntVector vix = IntVector
             .fromArray(isp, indexMap, mapOffset)
@@ -3088,7 +3077,14 @@ public abstract class FloatVector extends AbstractVector<Float> {
             intoArray(a, offset, indexMap, mapOffset);
             return;
         }
-        throw new AssertionError("fixme");
+        else {
+            // FIXME: Cannot vectorize yet, if there's a mask.
+            stOp(a, offset, m,
+                 (arr, off, i, e) -> {
+                     int j = indexMap[mapOffset + i];
+                     arr[off + j] = e;
+                 });
+        }
     }
 
     /**

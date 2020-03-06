@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -2735,6 +2735,7 @@ public abstract class LongVector extends AbstractVector<Long> {
                                    long[] a, int offset,
                                    int[] indexMap, int mapOffset) {
         LongSpecies vsp = (LongSpecies) species;
+        IntVector.IntSpecies isp = IntVector.species(vsp.indexShape());
         Objects.requireNonNull(a);
         Objects.requireNonNull(indexMap);
         Class<? extends LongVector> vectorType = vsp.vectorType();
@@ -2744,7 +2745,22 @@ public abstract class LongVector extends AbstractVector<Long> {
         }
 
         // Index vector: vix[0:n] = k -> offset + indexMap[mapOffset + k]
-        IntVector vix = IntVector.fromArray(IntVector.species(vsp.indexShape()), indexMap, mapOffset).add(offset);
+        IntVector vix;
+        if (vsp.vectorType() == LongMaxVector.class) {
+            // For LongMaxVector,  if vector length is 2048 bits, indexShape
+            // of Long species is S_MAX_BIT. and the lane count of Long
+            // vector is 32. When converting Long species to int species,
+            // indexShape is still S_MAX_BIT, but the lane count of int vector
+            // is 64. So when loading index vector (IntVector), only lower half
+            // of index data is needed.
+            vix = IntVector
+                .fromArray(isp, indexMap, mapOffset, IntMaxVector.IntMaxMask.LOWER_HALF_TRUE_MASK)
+                .add(offset);
+        } else {
+            vix = IntVector
+                .fromArray(isp, indexMap, mapOffset)
+                .add(offset);
+        }
 
         vix = VectorIntrinsics.checkIndex(vix, a.length);
 
@@ -3013,24 +3029,30 @@ public abstract class LongVector extends AbstractVector<Long> {
     void intoArray(long[] a, int offset,
                    int[] indexMap, int mapOffset) {
         LongSpecies vsp = vspecies();
-        if (length() == 1) {
+        IntVector.IntSpecies isp = IntVector.species(vsp.indexShape());
+        if (vsp.laneCount() == 1) {
             intoArray(a, offset + indexMap[mapOffset]);
-            return;
-        }
-        IntVector.IntSpecies isp = (IntVector.IntSpecies) vsp.indexSpecies();
-        if (isp.laneCount() != vsp.laneCount()) {
-            stOp(a, offset,
-                 (arr, off, i, e) -> {
-                     int j = indexMap[mapOffset + i];
-                     arr[off + j] = e;
-                 });
             return;
         }
 
         // Index vector: vix[0:n] = i -> offset + indexMap[mo + i]
-        IntVector vix = IntVector
-            .fromArray(isp, indexMap, mapOffset)
-            .add(offset);
+        IntVector vix;
+        if (vsp.vectorType() == LongMaxVector.class) {
+            // For LongMaxVector,  if vector length is 2048 bits, indexShape
+            // of Long species is S_MAX_BIT. and the lane count of Long
+            // vector is 32. When converting Long species to int species,
+            // indexShape is still S_MAX_BIT, but the lane count of int vector
+            // is 64. So when loading index vector (IntVector), only lower half
+            // of index data is needed.
+            vix = IntVector
+                .fromArray(isp, indexMap, mapOffset, IntMaxVector.IntMaxMask.LOWER_HALF_TRUE_MASK)
+                .add(offset);
+        } else {
+            vix = IntVector
+                .fromArray(isp, indexMap, mapOffset)
+                .add(offset);
+        }
+
 
         vix = VectorIntrinsics.checkIndex(vix, a.length);
 
@@ -3088,7 +3110,14 @@ public abstract class LongVector extends AbstractVector<Long> {
             intoArray(a, offset, indexMap, mapOffset);
             return;
         }
-        throw new AssertionError("fixme");
+        else {
+            // FIXME: Cannot vectorize yet, if there's a mask.
+            stOp(a, offset, m,
+                 (arr, off, i, e) -> {
+                     int j = indexMap[mapOffset + i];
+                     arr[off + j] = e;
+                 });
+        }
     }
 
     /**
