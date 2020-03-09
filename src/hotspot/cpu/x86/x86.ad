@@ -8716,6 +8716,26 @@ instruct storemask8i(vec dst, vec src, vec tmp) %{
   ins_pipe( pipe_slow );
 %}
 
+instruct storemask8f(vec dst, vec src, vec tmp) %{
+  predicate(UseAVX == 1 && n->as_Vector()->length() == 8 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 4);
+  match(Set dst (VectorStoreMask src));
+  effect(TEMP dst, TEMP tmp);
+  format %{ "vpxor  $dst,$dst,$dst\n\t"
+            "vpsubd $dst,$dst,$src\n\t"
+            "vextractf128 $tmp,$src\n\t"
+            "vpackusdw $dst,$dst,$tmp\n\t"
+            "vpackuswb $dst,$dst,$dst\t! store mask (8I to 8B)" %}
+  ins_encode %{
+    int vector_len = 1;
+    __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
+    __ vpsubd($dst$$XMMRegister, $dst$$XMMRegister, $src$$XMMRegister, vector_len);
+    __ vextractf128($tmp$$XMMRegister, $src$$XMMRegister, 1);    
+    __ vpackusdw($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, vector_len);
+    __ vpackuswb($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, 0);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 instruct storemask16i_evex(vec dst, vec src, vec tmp) %{
   predicate(UseAVX > 2 && !(VM_Version::supports_avx512bw()) && n->as_Vector()->length() == 16 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 4);
   match(Set dst (VectorStoreMask src));
@@ -8791,6 +8811,26 @@ instruct storemask4l(vec dst, vec src, rRegP scratch) %{
     __ vmovdqu($dst$$XMMRegister, ExternalAddress(vector_long_perm_mask()), $scratch$$Register);
     __ vpermd($dst$$XMMRegister, $dst$$XMMRegister, $src$$XMMRegister, 1);
     __ vpabsd($dst$$XMMRegister, $dst$$XMMRegister, vector_len);
+    __ vpackusdw($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
+    __ vpackuswb($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct storemask4d(vec dst, vec src, rRegL scratch, vec tmp) %{
+  predicate(UseAVX == 1 && n->as_Vector()->length() == 4 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 8);
+  match(Set dst (VectorStoreMask src));
+  effect(TEMP scratch, TEMP dst, TEMP tmp);
+  format %{ "vpshufps $dst,$src,$src,0x88\n\t"
+           "vextractf128 $tmp,$src,"
+           "vblendps $dst,$dst,$tmp,0xC\n\t"
+           "vpackusdw $dst,$dst,$dst\n\t"
+           "vpackuswb $dst,$dst,$dst\t! store mask (4D to 4B)" %}
+  ins_encode %{
+    int vector_len = 0;
+    __ vpshufps($dst$$XMMRegister, $src$$XMMRegister, $src$$XMMRegister, 0x88, 1);
+    __ vextractf128($tmp$$XMMRegister, $dst$$XMMRegister, 1);
+    __ vblendps($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, 0xC, vector_len);
     __ vpackusdw($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
     __ vpackuswb($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
   %}

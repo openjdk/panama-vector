@@ -9251,6 +9251,14 @@ void Assembler::vblendvps(XMMRegister dst, XMMRegister nds, XMMRegister src, XMM
   emit_int8((unsigned char)(0xF0 & mask_enc<<4));
 }
 
+void Assembler::vblendps(XMMRegister dst, XMMRegister nds, XMMRegister src, int imm8, int vector_len) {
+  InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ true, /* no_mask_reg */ true, /* uses_vl */ false);
+  int encode = vex_prefix_and_encode(dst->encoding(), nds->encoding(), src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_3A, &attributes);
+  emit_int8((unsigned char)0x0C);
+  emit_int8((unsigned char)(0xC0 | encode));
+  emit_int8(imm8);
+}
+
 void Assembler::vpcmpgtb(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len) {
   assert(vector_len == AVX_128bit ? VM_Version::supports_avx() : VM_Version::supports_avx2(), "");
   assert(vector_len <= AVX_256bit, "evex encoding is different - has k register as dest");
