@@ -49,6 +49,7 @@
 #include "runtime/timer.hpp"
 #include "runtime/vframeArray.hpp"
 #include "utilities/debug.hpp"
+#include "utilities/powerOfTwo.hpp"
 #include <sys/types.h>
 
 #ifndef PRODUCT
@@ -443,7 +444,6 @@ address TemplateInterpreterGenerator::generate_return_entry_for(TosState state, 
     Register obj = r0;
     Register mdp = r1;
     Register tmp = r2;
-    __ ldr(mdp, Address(rmethod, Method::method_data_offset()));
     __ profile_return_type(mdp, obj, tmp);
   }
 
@@ -1633,13 +1633,8 @@ address TemplateInterpreterGenerator::generate_normal_entry(bool synchronized) {
   __ mov(rscratch2, true);
   __ strb(rscratch2, do_not_unlock_if_synchronized);
 
-  Label no_mdp;
   Register mdp = r3;
-  __ ldr(mdp, Address(rmethod, Method::method_data_offset()));
-  __ cbz(mdp, no_mdp);
-  __ add(mdp, mdp, in_bytes(MethodData::data_offset()));
   __ profile_parameters_type(mdp, r1, r2);
-  __ bind(no_mdp);
 
   // increment invocation count & check for overflow
   Label invocation_counter_overflow;

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2019, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2019, 2020, Red Hat, Inc. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
@@ -144,11 +145,16 @@ void ShenandoahNMethod::detect_reloc_oops(nmethod* nm, GrowableArray<oop*>& oops
       continue;
     }
 
-    if (r->oop_value() != NULL) {
+    oop value = r->oop_value();
+    if (value != NULL) {
+      oop* addr = r->oop_addr();
+      shenandoah_assert_correct(addr, value);
+      shenandoah_assert_not_in_cset_except(addr, value, ShenandoahHeap::heap()->cancelled_gc());
+      shenandoah_assert_not_forwarded(addr, value);
       // Non-NULL immediate oop found. NULL oops can safely be
       // ignored since the method will be re-registered if they
       // are later patched to be non-NULL.
-      oops.push(r->oop_addr());
+      oops.push(addr);
     }
   }
 }
@@ -170,11 +176,13 @@ ShenandoahNMethod* ShenandoahNMethod::for_nmethod(nmethod* nm) {
 }
 
 void ShenandoahNMethod::heal_nmethod(nmethod* nm) {
+  assert(ShenandoahHeap::heap()->is_concurrent_root_in_progress(), "Only this phase");
   ShenandoahNMethod* data = gc_data(nm);
   assert(data != NULL, "Sanity");
   assert(data->lock()->owned_by_self(), "Must hold the lock");
 
-  ShenandoahEvacuateUpdateRootsClosure cl;
+  ShenandoahEvacOOMScope evac_scope;
+  ShenandoahEvacuateUpdateRootsClosure<> cl;
   data->oops_do(&cl, true /*fix relocation*/);
 }
 
@@ -229,14 +237,36 @@ void ShenandoahNMethod::assert_same_oops(bool allow_dead) {
 
   GrowableArray<oop*>* oops = detector.oops();
 
-  assert(oops->length() == oop_count(), "Must match");
-
+  int count = _oops_count;
   for (int index = 0; index < _oops_count; index ++) {
     assert(oops->contains(_oops[index]), "Must contain this oop");
   }
 
   for (oop* p = nm()->oops_begin(); p < nm()->oops_end(); p ++) {
+    if (*p == Universe::non_oop_word()) continue;
+    count++;
     assert(oops->contains(p), "Must contain this oop");
+  }
+
+  if (oops->length() < count) {
+    stringStream debug_stream;
+    debug_stream.print_cr("detected locs: %d", oops->length());
+    for (int i = 0; i < oops->length(); i++) {
+      debug_stream.print_cr("-> " PTR_FORMAT, p2i(oops->at(i)));
+    }
+    debug_stream.print_cr("recorded oops: %d", _oops_count);
+    for (int i = 0; i < _oops_count; i++) {
+      debug_stream.print_cr("-> " PTR_FORMAT, p2i(_oops[i]));
+    }
+    GrowableArray<oop*> check;
+    bool non_immed;
+    detect_reloc_oops(nm(), check, non_immed);
+    debug_stream.print_cr("check oops: %d", check.length());
+    for (int i = 0; i < check.length(); i++) {
+      debug_stream.print_cr("-> " PTR_FORMAT, p2i(check.at(i)));
+    }
+    fatal("Must match #detected: %d, #recorded: %d, #total: %d, begin: " PTR_FORMAT ", end: " PTR_FORMAT "\n%s",
+          oops->length(), _oops_count, count, p2i(nm()->oops_begin()), p2i(nm()->oops_end()), debug_stream.as_string());
   }
 }
 
@@ -269,6 +299,7 @@ void ShenandoahNMethodTable::register_nmethod(nmethod* nm) {
 
   if (data != NULL) {
     assert(contain(nm), "Must have been registered");
+    assert(nm == data->nm(), "Must be same nmethod");
     data->update();
   } else {
     data = ShenandoahNMethod::for_nmethod(nm);
@@ -476,7 +507,7 @@ void ShenandoahNMethodTableSnapshot::concurrent_nmethods_do(NMethodClosure* cl) 
   ShenandoahNMethod** list = _array;
   size_t max = (size_t)_length;
   while (_claimed < max) {
-    size_t cur = Atomic::add(&_claimed, stride) - stride;
+    size_t cur = Atomic::fetch_and_add(&_claimed, stride);
     size_t start = cur;
     size_t end = MIN2(cur + stride, max);
     if (start >= max) break;

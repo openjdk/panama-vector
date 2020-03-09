@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,7 +38,6 @@ import java.util.function.Predicate;
 
 import javax.lang.model.element.Element;
 
-import jdk.javadoc.internal.doclets.formats.html.Contents;
 import jdk.javadoc.internal.doclets.toolkit.Content;
 
 /**
@@ -77,6 +76,7 @@ public class Table {
     private final List<Content> bodyRows;
     private final List<Integer> bodyRowMasks;
     private String rowIdPrefix = "i";
+    private String id;
 
     /**
      * Creates a builder for an HTML table.
@@ -277,6 +277,17 @@ public class Table {
     }
 
     /**
+     * Sets the id attribute of the table.
+     *
+     * @param id the id
+     * @return this object
+     */
+    public Table setId(String id) {
+        this.id = id;
+        return this;
+    }
+
+    /**
      * Add a row of data to the table.
      * Each item of content should be suitable for use as the content of a
      * {@code <th>} or {@code <td>} cell.
@@ -396,6 +407,9 @@ public class Table {
     public Content toContent() {
         HtmlTree mainDiv = new HtmlTree(HtmlTag.DIV);
         mainDiv.setStyle(tableStyle);
+        if (id != null) {
+            mainDiv.setId(id);
+        }
         HtmlTree table = new HtmlTree(HtmlTag.TABLE);
         if (tabMap == null || tabs.size() == 1) {
             if (tabMap == null) {
@@ -453,7 +467,7 @@ public class Table {
         thead.add(header.toContent());
         tableContent.add(thead);
         Content tbody = new HtmlTree(HtmlTag.TBODY);
-        bodyRows.forEach(row -> tbody.add(row));
+        bodyRows.forEach(tbody::add);
         tableContent.add(tbody);
         return tableContent;
     }

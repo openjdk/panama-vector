@@ -41,6 +41,7 @@
 #include "opto/type.hpp"
 #include "utilities/copy.hpp"
 #include "utilities/macros.hpp"
+#include "utilities/powerOfTwo.hpp"
 
 class RegMask;
 // #include "phase.hpp"
@@ -653,7 +654,7 @@ void Node::grow( uint len ) {
     to[3] = NULL;
     return;
   }
-  while( new_max <= len ) new_max <<= 1; // Find next power-of-2
+  new_max = next_power_of_2(len);
   // Trimming to limit allows a uint8 to handle up to 255 edges.
   // Previously I was using only powers-of-2 which peaked at 128 edges.
   //if( new_max >= limit ) new_max = limit-1;
@@ -676,7 +677,7 @@ void Node::out_grow( uint len ) {
     _out = (Node **)arena->Amalloc(4*sizeof(Node*));
     return;
   }
-  while( new_max <= len ) new_max <<= 1; // Find next power-of-2
+  new_max = next_power_of_2(len);
   // Trimming to limit allows a uint8 to handle up to 255 edges.
   // Previously I was using only powers-of-2 which peaked at 128 edges.
   //if( new_max >= limit ) new_max = limit-1;
@@ -1165,7 +1166,7 @@ bool Node::has_special_unique_user() const {
     // See IfProjNode::Identity()
     return true;
   } else {
-    return BarrierSet::barrier_set()->barrier_set_c2()->has_special_unique_user(this);
+    return false;
   }
 };
 
@@ -2122,7 +2123,8 @@ void Node::verify_edges(Unique_Node_List &visited) {
       }
       assert( cnt == 0,"Mismatched edge count.");
     } else if (n == NULL) {
-      assert(i >= req() || i == 0 || is_Region() || is_Phi(), "only regions or phis have null data edges");
+      assert(i >= req() || i == 0 || is_Region() || is_Phi() || is_ArrayCopy()
+              || (is_Unlock() && i == req()-1), "only region, phi, arraycopy or unlock nodes have null data edges");
     } else {
       assert(n->is_top(), "sanity");
       // Nothing to check.
@@ -2135,9 +2137,6 @@ void Node::verify_edges(Unique_Node_List &visited) {
       in(i)->verify_edges(visited);
   }
 }
-
-//------------------------------verify_recur-----------------------------------
-static const Node *unique_top = NULL;
 
 void Node::verify_recur(const Node *n, int verify_depth,
                         VectorSet &old_space, VectorSet &new_space) {
@@ -2256,7 +2255,7 @@ void Node_Array::grow( uint i ) {
     _nodes[0] = NULL;
   }
   uint old = _max;
-  while( i >= _max ) _max <<= 1;        // Double to fit
+  _max = next_power_of_2(i);
   _nodes = (Node**)_a->Arealloc( _nodes, old*sizeof(Node*),_max*sizeof(Node*));
   Copy::zero_to_bytes( &_nodes[old], (_max-old)*sizeof(Node*) );
 }

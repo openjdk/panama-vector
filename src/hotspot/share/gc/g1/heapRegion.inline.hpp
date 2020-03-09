@@ -28,6 +28,7 @@
 #include "gc/g1/g1BlockOffsetTable.inline.hpp"
 #include "gc/g1/g1CollectedHeap.inline.hpp"
 #include "gc/g1/g1ConcurrentMarkBitMap.inline.hpp"
+#include "gc/g1/g1Predictions.hpp"
 #include "gc/g1/heapRegion.hpp"
 #include "oops/oop.inline.hpp"
 #include "runtime/atomic.hpp"
@@ -115,7 +116,7 @@ inline HeapWord* HeapRegion::block_start_const(const void* p) const {
 }
 
 inline bool HeapRegion::is_obj_dead_with_size(const oop obj, const G1CMBitMap* const prev_bitmap, size_t* size) const {
-  HeapWord* addr = (HeapWord*) obj;
+  HeapWord* addr = cast_from_oop<HeapWord*>(obj);
 
   assert(addr < top(), "must be");
   assert(!is_closed_archive(),
@@ -164,7 +165,7 @@ inline size_t HeapRegion::block_size_using_bitmap(const HeapWord* addr, const G1
 inline bool HeapRegion::is_obj_dead(const oop obj, const G1CMBitMap* const prev_bitmap) const {
   assert(is_in_reserved(obj), "Object " PTR_FORMAT " must be in region", p2i(obj));
   return !obj_allocated_since_prev_marking(obj) &&
-         !prev_bitmap->is_marked((HeapWord*)obj) &&
+         !prev_bitmap->is_marked(obj) &&
          !is_open_archive();
 }
 
@@ -298,7 +299,7 @@ HeapWord* HeapRegion::do_oops_on_memregion_in_humongous(MemRegion mr,
     // We have scanned to the end of the object, but since there can be no objects
     // after this humongous object in the region, we can return the end of the
     // region if it is greater.
-    return MAX2((HeapWord*)obj + size, mr.end());
+    return MAX2(cast_from_oop<HeapWord*>(obj) + size, mr.end());
   }
 }
 
@@ -357,7 +358,7 @@ HeapWord* HeapRegion::oops_on_memregion_seq_iterate_careful(MemRegion mr,
       // start, in which case we need to iterate over them in full.
       // objArrays are precisely marked, but can still be iterated
       // over in full if completely covered.
-      if (!obj->is_objArray() || (((HeapWord*)obj) >= start && cur <= end)) {
+      if (!obj->is_objArray() || (cast_from_oop<HeapWord*>(obj) >= start && cur <= end)) {
         obj->oop_iterate(cl);
       } else {
         obj->oop_iterate(cl, mr);
@@ -368,6 +369,53 @@ HeapWord* HeapRegion::oops_on_memregion_seq_iterate_careful(MemRegion mr,
       return is_precise ? end : cur;
     }
   }
+}
+
+inline int HeapRegion::age_in_surv_rate_group() const {
+  assert(has_surv_rate_group(), "pre-condition");
+  assert(has_valid_age_in_surv_rate(), "pre-condition");
+  return _surv_rate_group->age_in_group(_age_index);
+}
+
+inline bool HeapRegion::has_valid_age_in_surv_rate() const {
+  return G1SurvRateGroup::is_valid_age_index(_age_index);
+}
+
+inline bool HeapRegion::has_surv_rate_group() const {
+  return _surv_rate_group != NULL;
+}
+
+inline double HeapRegion::surv_rate_prediction(G1Predictions const& predictor) const {
+  assert(has_surv_rate_group(), "pre-condition");
+  return _surv_rate_group->surv_rate_pred(predictor, age_in_surv_rate_group());
+}
+
+inline void HeapRegion::install_surv_rate_group(G1SurvRateGroup* surv_rate_group) {
+  assert(surv_rate_group != NULL, "pre-condition");
+  assert(!has_surv_rate_group(), "pre-condition");
+  assert(is_young(), "pre-condition");
+
+  _surv_rate_group = surv_rate_group;
+  _age_index = surv_rate_group->next_age_index();
+}
+
+inline void HeapRegion::uninstall_surv_rate_group() {
+  if (has_surv_rate_group()) {
+    assert(has_valid_age_in_surv_rate(), "pre-condition");
+    assert(is_young(), "pre-condition");
+
+    _surv_rate_group = NULL;
+    _age_index = G1SurvRateGroup::InvalidAgeIndex;
+  } else {
+    assert(!has_valid_age_in_surv_rate(), "pre-condition");
+  }
+}
+
+inline void HeapRegion::record_surv_words_in_group(size_t words_survived) {
+  assert(has_surv_rate_group(), "pre-condition");
+  assert(has_valid_age_in_surv_rate(), "pre-condition");
+  int age_in_group = age_in_surv_rate_group();
+  _surv_rate_group->record_surviving_words(age_in_group, words_survived);
 }
 
 #endif // SHARE_GC_G1_HEAPREGION_INLINE_HPP

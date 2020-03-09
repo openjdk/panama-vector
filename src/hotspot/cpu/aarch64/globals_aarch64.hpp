@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2015, 2019, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -71,8 +71,6 @@ define_pd_global(bool, CompactStrings, true);
 // Clear short arrays bigger than one word in an arch-specific way
 define_pd_global(intx, InitArrayShortSize, BytesPerLong);
 
-define_pd_global(bool, ThreadLocalHandshakes, true);
-
 #if defined(COMPILER1) || defined(COMPILER2)
 define_pd_global(intx, InlineSmallCode,          1000);
 #endif
@@ -83,8 +81,7 @@ define_pd_global(intx, InlineSmallCode,          1000);
                    experimental, \
                    notproduct, \
                    range, \
-                   constraint, \
-                   writeable) \
+                   constraint) \
                                                                         \
   product(bool, NearCpool, true,                                        \
          "constant pool is close to instructions")                      \
@@ -105,8 +102,9 @@ define_pd_global(intx, InlineSmallCode,          1000);
           "Avoid generating unaligned memory accesses")                 \
   product(bool, UseLSE, false,                                          \
           "Use LSE instructions")                                       \
-  product(bool, UseSVE, false,                                          \
-          "Use SVE instructions")                                       \
+  product(uint, UseSVE, 0,                                              \
+          "Highest supported SVE instruction set version")              \
+          range(0, 2)                                                   \
   product(bool, UseBlockZeroing, true,                                  \
           "Use DC ZVA for block zeroing")                               \
   product(intx, BlockZeroingLowLimit, 256,                              \

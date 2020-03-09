@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2017, 2019, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2017, 2020, Red Hat, Inc. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
@@ -26,12 +27,14 @@
 #include "code/icBuffer.hpp"
 #include "code/nmethod.hpp"
 #include "gc/shenandoah/shenandoahCodeRoots.hpp"
+#include "gc/shenandoah/shenandoahEvacOOMHandler.hpp"
 #include "gc/shenandoah/shenandoahHeap.inline.hpp"
 #include "gc/shenandoah/shenandoahNMethod.inline.hpp"
 #include "gc/shenandoah/shenandoahUtils.hpp"
 #include "memory/resourceArea.hpp"
 #include "memory/universe.hpp"
 #include "runtime/atomic.hpp"
+#include "utilities/powerOfTwo.hpp"
 
 ShenandoahParallelCodeCacheIterator::ShenandoahParallelCodeCacheIterator(const GrowableArray<CodeHeap*>* heaps) {
   _length = heaps->length();
@@ -154,7 +157,7 @@ void ShenandoahCodeRoots::flush_nmethod(nmethod* nm) {
   }
 }
 
-void ShenandoahCodeRoots::prepare_concurrent_unloading() {
+void ShenandoahCodeRoots::arm_nmethods() {
   assert(SafepointSynchronize::is_at_safepoint(), "Must be at a safepoint");
   _disarmed_value ++;
   // 0 is reserved for new nmethod
@@ -201,6 +204,7 @@ public:
       _heap(ShenandoahHeap::heap()) {}
 
   virtual void do_nmethod(nmethod* nm) {
+    assert(_heap->is_concurrent_root_in_progress(), "Only this phase");
     if (failed()) {
       return;
     }
@@ -221,8 +225,9 @@ public:
     ShenandoahReentrantLocker locker(nm_data->lock());
 
     // Heal oops and disarm
-    ShenandoahEvacOOMScope scope;
-    ShenandoahNMethod::heal_nmethod(nm);
+    if (_heap->is_evacuation_in_progress()) {
+      ShenandoahNMethod::heal_nmethod(nm);
+    }
     ShenandoahNMethod::disarm_nmethod(nm);
 
     // Clear compiled ICs and exception caches

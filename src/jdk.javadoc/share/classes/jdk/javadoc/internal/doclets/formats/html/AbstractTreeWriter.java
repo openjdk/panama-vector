@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,8 +47,6 @@ import jdk.javadoc.internal.doclets.toolkit.util.DocPath;
  *  If you write code that depends on this, you do so at your own risk.
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
- *
- * @author Atul M Dambalkar
  */
 public abstract class AbstractTreeWriter extends HtmlDocletWriter {
 
@@ -133,12 +131,12 @@ public abstract class AbstractTreeWriter extends HtmlDocletWriter {
      * @param typeElement the TypeElement under consideration
      * @param contentTree the content tree to which the information will be added
      */
-    protected void addExtendsImplements(TypeElement parent, TypeElement typeElement,
-            Content contentTree) {
+    protected void addExtendsImplements(TypeElement parent,
+                                        TypeElement typeElement,
+                                        Content contentTree)
+    {
         SortedSet<TypeElement> interfaces = new TreeSet<>(utils.makeGeneralPurposeComparator());
-        typeElement.getInterfaces().stream().forEach((t) -> {
-            interfaces.add(utils.asTypeElement(t));
-        });
+        typeElement.getInterfaces().forEach(t -> interfaces.add(utils.asTypeElement(t)));
         if (interfaces.size() > (utils.isInterface(typeElement) ? 1 : 0)) {
             boolean isFirst = true;
             for (TypeElement intf : interfaces) {

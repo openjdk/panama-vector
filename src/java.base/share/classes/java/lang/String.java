@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1819,7 +1819,7 @@ public final class String
      * @param   src         the characters being searched.
      * @param   srcCoder    coder handles the mapping between bytes/chars
      * @param   srcCount    count of the source string.
-     * @param   tgt         the characters being searched for.
+     * @param   tgtStr      the characters being searched for.
      * @param   fromIndex   the index to begin searching from.
      */
     static int lastIndexOf(byte[] src, byte srcCoder, int srcCount,
@@ -1900,10 +1900,10 @@ public final class String
     public String substring(int beginIndex, int endIndex) {
         int length = length();
         checkBoundsBeginEnd(beginIndex, endIndex, length);
-        int subLen = endIndex - beginIndex;
         if (beginIndex == 0 && endIndex == length) {
             return this;
         }
+        int subLen = endIndex - beginIndex;
         return isLatin1() ? StringLatin1.newString(value, beginIndex, subLen)
                           : StringUTF16.newString(value, beginIndex, subLen);
     }
@@ -3062,6 +3062,11 @@ public final class String
      *     <td>{@code U+000D}</td>
      *   </tr>
      *   <tr>
+     *     <th scope="row">{@code \u005Cs}</th>
+     *     <td>space</td>
+     *     <td>{@code U+0020}</td>
+     *   </tr>
+     *   <tr>
      *     <th scope="row">{@code \u005C"}</th>
      *     <td>double quote</td>
      *     <td>{@code U+0022}</td>
@@ -3080,6 +3085,11 @@ public final class String
      *     <th scope="row">{@code \u005C0 - \u005C377}</th>
      *     <td>octal escape</td>
      *     <td>code point equivalents</td>
+     *   </tr>
+     *   <tr>
+     *     <th scope="row">{@code \u005C<line-terminator>}</th>
+     *     <td>continuation</td>
+     *     <td>discard</td>
      *   </tr>
      *   </tbody>
      * </table>
@@ -3124,6 +3134,9 @@ public final class String
                 case 'r':
                     ch = '\r';
                     break;
+                case 's':
+                    ch = ' ';
+                    break;
                 case 't':
                     ch = '\t';
                     break;
@@ -3146,6 +3159,13 @@ public final class String
                     }
                     ch = (char)code;
                     break;
+                case '\n':
+                    continue;
+                case '\r':
+                    if (from < length && chars[from] == '\n') {
+                        from++;
+                    }
+                    continue;
                 default: {
                     String msg = String.format(
                         "Invalid escape sequence: \\%c \\\\u%04X",

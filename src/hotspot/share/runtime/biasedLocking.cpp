@@ -35,6 +35,8 @@
 #include "runtime/basicLock.hpp"
 #include "runtime/biasedLocking.hpp"
 #include "runtime/handles.inline.hpp"
+#include "runtime/handshake.hpp"
+#include "runtime/safepointMechanism.hpp"
 #include "runtime/task.hpp"
 #include "runtime/threadSMR.hpp"
 #include "runtime/vframe.hpp"
@@ -61,8 +63,6 @@ class VM_EnableBiasedLocking: public VM_Operation {
  public:
   VM_EnableBiasedLocking() {}
   VMOp_Type type() const          { return VMOp_EnableBiasedLocking; }
-  Mode evaluation_mode() const    { return _async_safepoint; }
-  bool is_cheap_allocated() const { return true; }
 
   void doit() {
     // Iterate the class loader data dictionaries enabling biased locking for all
@@ -82,10 +82,8 @@ class EnableBiasedLockingTask : public PeriodicTask {
   EnableBiasedLockingTask(size_t interval_time) : PeriodicTask(interval_time) {}
 
   virtual void task() {
-    // Use async VM operation to avoid blocking the Watcher thread.
-    // VM Thread will free C heap storage.
-    VM_EnableBiasedLocking *op = new VM_EnableBiasedLocking();
-    VMThread::execute(op);
+    VM_EnableBiasedLocking op;
+    VMThread::execute(&op);
 
     // Reclaim our storage and disenroll ourself
     delete this;
@@ -326,7 +324,7 @@ static HeuristicsResult update_heuristics(oop o) {
   //    and don't allow rebiasing of these objects. Disable
   //    allocation of objects of that type with the bias bit set.
   Klass* k = o->klass();
-  jlong cur_time = os::javaTimeMillis();
+  jlong cur_time = nanos_to_millis(os::javaTimeNanos());
   jlong last_bulk_revocation_time = k->last_biased_lock_bulk_revocation_time();
   int revocation_count = k->biased_lock_revocation_count();
   if ((revocation_count >= BiasedLockingBulkRebiasThreshold) &&
@@ -376,7 +374,7 @@ void BiasedLocking::bulk_revoke_at_safepoint(oop o, bool bulk_rebias, JavaThread
                           o->mark().value(),
                           o->klass()->external_name());
 
-  jlong cur_time = os::javaTimeMillis();
+  jlong cur_time = nanos_to_millis(os::javaTimeNanos());
   o->klass()->set_last_biased_lock_bulk_revocation_time(cur_time);
 
   Klass* k_o = o->klass();
@@ -504,7 +502,7 @@ public:
 };
 
 
-class RevokeOneBias : public ThreadClosure {
+class RevokeOneBias : public HandshakeClosure {
 protected:
   Handle _obj;
   JavaThread* _requesting_thread;
@@ -514,7 +512,8 @@ protected:
 
 public:
   RevokeOneBias(Handle obj, JavaThread* requesting_thread, JavaThread* biased_locker)
-    : _obj(obj)
+    : HandshakeClosure("RevokeOneBias")
+    , _obj(obj)
     , _requesting_thread(requesting_thread)
     , _biased_locker(biased_locker)
     , _status_code(BiasedLocking::NOT_BIASED)
@@ -667,8 +666,8 @@ BiasedLocking::Condition BiasedLocking::single_revoke_with_handshake(Handle obj,
 
 // Caller should have instantiated a ResourceMark object before calling this method
 void BiasedLocking::walk_stack_and_revoke(oop obj, JavaThread* biased_locker) {
-  assert(!SafepointSynchronize::is_at_safepoint() || !ThreadLocalHandshakes,
-         "if ThreadLocalHandshakes is enabled this should always be executed outside safepoints");
+  assert(!SafepointSynchronize::is_at_safepoint() || !SafepointMechanism::uses_thread_local_poll(),
+         "if SafepointMechanism::uses_thread_local_poll() is enabled this should always be executed outside safepoints");
   assert(Thread::current() == biased_locker || Thread::current()->is_VM_thread(), "wrong thread");
 
   markWord mark = obj->mark();

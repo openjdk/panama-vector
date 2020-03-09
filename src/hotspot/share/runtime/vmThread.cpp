@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -50,17 +50,18 @@
 #include "utilities/vmError.hpp"
 #include "utilities/xmlstream.hpp"
 
+VM_QueueHead VMOperationQueue::_queue_head[VMOperationQueue::nof_priorities];
+
 VMOperationQueue::VMOperationQueue() {
   // The queue is a circular doubled-linked list, which always contains
   // one element (i.e., one element means empty).
   for(int i = 0; i < nof_priorities; i++) {
     _queue_length[i] = 0;
     _queue_counter = 0;
-    _queue[i] = new VM_None("QueueHead");
+    _queue[i] = &_queue_head[i];
     _queue[i]->set_next(_queue[i]);
     _queue[i]->set_prev(_queue[i]);
   }
-  _drain_list = NULL;
 }
 
 
@@ -81,12 +82,7 @@ void VMOperationQueue::insert(VM_Operation* q, VM_Operation* n) {
   q->set_next(n);
 }
 
-void VMOperationQueue::queue_add_front(int prio, VM_Operation *op) {
-  _queue_length[prio]++;
-  insert(_queue[prio]->next(), op);
-}
-
-void VMOperationQueue::queue_add_back(int prio, VM_Operation *op) {
+void VMOperationQueue::queue_add(int prio, VM_Operation *op) {
   _queue_length[prio]++;
   insert(_queue[prio]->prev(), op);
 }
@@ -131,34 +127,17 @@ VM_Operation* VMOperationQueue::queue_drain(int prio) {
   return r;
 }
 
-void VMOperationQueue::queue_oops_do(int queue, OopClosure* f) {
-  VM_Operation* cur = _queue[queue];
-  cur = cur->next();
-  while (cur != _queue[queue]) {
-    cur->oops_do(f);
-    cur = cur->next();
-  }
-}
-
-void VMOperationQueue::drain_list_oops_do(OopClosure* f) {
-  VM_Operation* cur = _drain_list;
-  while (cur != NULL) {
-    cur->oops_do(f);
-    cur = cur->next();
-  }
-}
-
 //-----------------------------------------------------------------
 // High-level interface
 void VMOperationQueue::add(VM_Operation *op) {
 
   HOTSPOT_VMOPS_REQUEST(
                    (char *) op->name(), strlen(op->name()),
-                   op->evaluation_mode());
+                   op->evaluate_at_safepoint() ? 0 : 1);
 
   // Encapsulates VM queue policy. Currently, that
   // only involves putting them on the right list
-  queue_add_back(op->evaluate_at_safepoint() ? SafepointPriority : MediumPriority, op);
+  queue_add(op->evaluate_at_safepoint() ? SafepointPriority : MediumPriority, op);
 }
 
 VM_Operation* VMOperationQueue::remove_next() {
@@ -182,20 +161,13 @@ VM_Operation* VMOperationQueue::remove_next() {
   return queue_remove_front(queue_empty(high_prio) ? low_prio : high_prio);
 }
 
-void VMOperationQueue::oops_do(OopClosure* f) {
-  for(int i = 0; i < nof_priorities; i++) {
-    queue_oops_do(i, f);
-  }
-  drain_list_oops_do(f);
-}
-
 //------------------------------------------------------------------------------------------------------------------
 // Timeout machinery
 
 void VMOperationTimeoutTask::task() {
   assert(AbortVMOnVMOperationTimeout, "only if enabled");
   if (is_armed()) {
-    jlong delay = (os::javaTimeMillis() - _arm_time);
+    jlong delay = nanos_to_millis(os::javaTimeNanos() - _arm_time);
     if (delay > AbortVMOnVMOperationTimeoutDelay) {
       fatal("VM operation took too long: " JLONG_FORMAT " ms (timeout: " INTX_FORMAT " ms)",
             delay, AbortVMOnVMOperationTimeoutDelay);
@@ -208,7 +180,7 @@ bool VMOperationTimeoutTask::is_armed() {
 }
 
 void VMOperationTimeoutTask::arm() {
-  _arm_time = os::javaTimeMillis();
+  _arm_time = os::javaTimeNanos();
   Atomic::release_store_fence(&_armed, 1);
 }
 
@@ -380,15 +352,11 @@ static void post_vm_operation_event(EventExecuteVMOperation* event, VM_Operation
   assert(event != NULL, "invariant");
   assert(event->should_commit(), "invariant");
   assert(op != NULL, "invariant");
-  const bool is_concurrent = op->evaluate_concurrently();
   const bool evaluate_at_safepoint = op->evaluate_at_safepoint();
   event->set_operation(op->type());
   event->set_safepoint(evaluate_at_safepoint);
-  event->set_blocking(!is_concurrent);
-  // Only write caller thread information for non-concurrent vm operations.
-  // For concurrent vm operations, the thread id is set to 0 indicating thread is unknown.
-  // This is because the caller thread could have exited already.
-  event->set_caller(is_concurrent ? 0 : JFR_THREAD_ID(op->calling_thread()));
+  event->set_blocking(true);
+  event->set_caller(JFR_THREAD_ID(op->calling_thread()));
   event->set_safepointId(evaluate_at_safepoint ? SafepointSynchronize::safepoint_id() : 0);
   event->commit();
 }
@@ -400,7 +368,7 @@ void VMThread::evaluate_operation(VM_Operation* op) {
     PerfTraceTime vm_op_timer(perf_accumulated_vm_operation_time());
     HOTSPOT_VMOPS_BEGIN(
                      (char *) op->name(), strlen(op->name()),
-                     op->evaluation_mode());
+                     op->evaluate_at_safepoint() ? 0 : 1);
 
     EventExecuteVMOperation event;
     op->evaluate();
@@ -410,29 +378,20 @@ void VMThread::evaluate_operation(VM_Operation* op) {
 
     HOTSPOT_VMOPS_END(
                      (char *) op->name(), strlen(op->name()),
-                     op->evaluation_mode());
+                     op->evaluate_at_safepoint() ? 0 : 1);
   }
-
-  // Last access of info in _cur_vm_operation!
-  bool c_heap_allocated = op->is_cheap_allocated();
 
   // Mark as completed
-  if (!op->evaluate_concurrently()) {
-    op->calling_thread()->increment_vm_operation_completed_count();
-  }
-  // It is unsafe to access the _cur_vm_operation after the 'increment_vm_operation_completed_count' call,
-  // since if it is stack allocated the calling thread might have deallocated
-  if (c_heap_allocated) {
-    delete _cur_vm_operation;
-  }
+  op->calling_thread()->increment_vm_operation_completed_count();
 }
 
 static VM_None    safepointALot_op("SafepointALot");
 static VM_Cleanup cleanup_op;
 
-class HandshakeALotTC : public ThreadClosure {
+class HandshakeALotClosure : public HandshakeClosure {
  public:
-  virtual void do_thread(Thread* thread) {
+  HandshakeALotClosure() : HandshakeClosure("HandshakeALot") {}
+  void do_thread(Thread* thread) {
 #ifdef ASSERT
     assert(thread->is_Java_thread(), "must be");
     JavaThread* jt = (JavaThread*)thread;
@@ -441,17 +400,23 @@ class HandshakeALotTC : public ThreadClosure {
   }
 };
 
+void VMThread::check_for_forced_cleanup() {
+  MonitorLocker mq(VMOperationQueue_lock,  Mutex::_no_safepoint_check_flag);
+  mq.notify();
+}
+
 VM_Operation* VMThread::no_op_safepoint() {
   // Check for handshakes first since we may need to return a VMop.
   if (HandshakeALot) {
-    HandshakeALotTC haltc;
-    Handshake::execute(&haltc);
+    HandshakeALotClosure hal_cl;
+    Handshake::execute(&hal_cl);
   }
   // Check for a cleanup before SafepointALot to keep stats correct.
   long interval_ms = SafepointTracing::time_since_last_safepoint_ms();
   bool max_time_exceeded = GuaranteedSafepointInterval != 0 &&
                            (interval_ms >= GuaranteedSafepointInterval);
-  if (max_time_exceeded && SafepointSynchronize::is_cleanup_needed()) {
+  if ((max_time_exceeded && SafepointSynchronize::is_cleanup_needed()) ||
+      SafepointSynchronize::is_forced_cleanup_needed()) {
     return &cleanup_op;
   }
   if (SafepointALot) {
@@ -480,17 +445,16 @@ void VMThread::loop() {
       _cur_vm_operation = _vm_queue->remove_next();
 
       // Stall time tracking code
-      if (PrintVMQWaitTime && _cur_vm_operation != NULL &&
-          !_cur_vm_operation->evaluate_concurrently()) {
-        long stall = os::javaTimeMillis() - _cur_vm_operation->timestamp();
+      if (PrintVMQWaitTime && _cur_vm_operation != NULL) {
+        jlong stall = nanos_to_millis(os::javaTimeNanos() - _cur_vm_operation->timestamp());
         if (stall > 0)
-          tty->print_cr("%s stall: %ld",  _cur_vm_operation->name(), stall);
+          tty->print_cr("%s stall: " JLONG_FORMAT,  _cur_vm_operation->name(), stall);
       }
 
       while (!should_terminate() && _cur_vm_operation == NULL) {
         // wait with a timeout to guarantee safepoints at regular intervals
-        bool timedout =
-          mu_queue.wait(GuaranteedSafepointInterval);
+        // (if there is cleanup work to do)
+        (void)mu_queue.wait(GuaranteedSafepointInterval);
 
         // Support for self destruction
         if ((SelfDestructTimer != 0) && !VMError::is_error_reported() &&
@@ -499,9 +463,12 @@ void VMThread::loop() {
           exit(-1);
         }
 
-        if (timedout) {
+        // If the queue contains a safepoint VM op,
+        // clean up will be done so we can skip this part.
+        if (!_vm_queue->peek_at_safepoint_priority()) {
+
           // Have to unlock VMOperationQueue_lock just in case no_op_safepoint()
-          // has to do a handshake.
+          // has to do a handshake when HandshakeALot is enabled.
           MutexUnlocker mul(VMOperationQueue_lock, Mutex::_no_safepoint_check_flag);
           if ((_cur_vm_operation = VMThread::no_op_safepoint()) != NULL) {
             // Force a safepoint since we have not had one for at least
@@ -542,8 +509,6 @@ void VMThread::loop() {
       if (_cur_vm_operation->evaluate_at_safepoint()) {
         log_debug(vmthread)("Evaluating safepoint VM operation: %s", _cur_vm_operation->name());
 
-        _vm_queue->set_drain_list(safepoint_ops); // ensure ops can be scanned
-
         SafepointSynchronize::begin();
 
         if (_timeout_task != NULL) {
@@ -562,7 +527,6 @@ void VMThread::loop() {
               // evaluate_operation deletes the op object so we have
               // to grab the next op now
               VM_Operation* next = _cur_vm_operation->next();
-              _vm_queue->set_drain_list(next);
               evaluate_operation(_cur_vm_operation);
               _cur_vm_operation = next;
               _coalesced_count++;
@@ -587,8 +551,6 @@ void VMThread::loop() {
             safepoint_ops = NULL;
           }
         } while(safepoint_ops != NULL);
-
-        _vm_queue->set_drain_list(NULL);
 
         if (_timeout_task != NULL) {
           _timeout_task->disarm();
@@ -624,15 +586,6 @@ void VMThread::loop() {
     { MonitorLocker mu(VMOperationRequest_lock, Mutex::_no_safepoint_check_flag);
       mu.notify_all();
     }
-
-    // We want to make sure that we get to a safepoint regularly
-    // even when executing VMops that don't require safepoints.
-    if ((_cur_vm_operation = VMThread::no_op_safepoint()) != NULL) {
-      HandleMark hm(VMThread::vm_thread());
-      SafepointSynchronize::begin();
-      SafepointSynchronize::end();
-      _cur_vm_operation = NULL;
-    }
   }
 }
 
@@ -667,11 +620,7 @@ void VMThread::execute(VM_Operation* op) {
   if (!t->is_VM_thread()) {
     SkipGCALot sgcalot(t);    // avoid re-entrant attempts to gc-a-lot
     // JavaThread or WatcherThread
-    bool concurrent = op->evaluate_concurrently();
-    // only blocking VM operations need to verify the caller's safepoint state:
-    if (!concurrent) {
-      t->check_for_valid_safepoint_state();
-    }
+    t->check_for_valid_safepoint_state();
 
     // New request from Java thread, evaluate prologue
     if (!op->doit_prologue()) {
@@ -681,16 +630,8 @@ void VMThread::execute(VM_Operation* op) {
     // Setup VM_operations for execution
     op->set_calling_thread(t);
 
-    // It does not make sense to execute the epilogue, if the VM operation object is getting
-    // deallocated by the VM thread.
-    bool execute_epilog = !op->is_cheap_allocated();
-    assert(!concurrent || op->is_cheap_allocated(), "concurrent => cheap_allocated");
-
-    // Get ticket number for non-concurrent VM operations
-    int ticket = 0;
-    if (!concurrent) {
-      ticket = t->vm_operation_ticket();
-    }
+    // Get ticket number for the VM operation
+    int ticket = t->vm_operation_ticket();
 
     // Add VM operation to list of waiting threads. We are guaranteed not to block while holding the
     // VMOperationQueue_lock, so we can block without a safepoint check. This allows vm operation requests
@@ -699,12 +640,11 @@ void VMThread::execute(VM_Operation* op) {
       MonitorLocker ml(VMOperationQueue_lock, Mutex::_no_safepoint_check_flag);
       log_debug(vmthread)("Adding VM operation: %s", op->name());
       _vm_queue->add(op);
-      op->set_timestamp(os::javaTimeMillis());
+      op->set_timestamp(os::javaTimeNanos());
       ml.notify();
     }
-
-    if (!concurrent) {
-      // Wait for completion of request (non-concurrent)
+    {
+      // Wait for completion of request
       // Note: only a JavaThread triggers the safepoint check when locking
       MonitorLocker ml(VMOperationRequest_lock,
                        t->is_Java_thread() ? Mutex::_safepoint_check_flag : Mutex::_no_safepoint_check_flag);
@@ -712,10 +652,7 @@ void VMThread::execute(VM_Operation* op) {
         ml.wait();
       }
     }
-
-    if (execute_epilog) {
-      op->doit_epilogue();
-    }
+    op->doit_epilogue();
   } else {
     // invoked by VM thread; usually nested VM operation
     assert(t->is_VM_thread(), "must be a VM thread");
@@ -744,45 +681,9 @@ void VMThread::execute(VM_Operation* op) {
       op->evaluate();
     }
 
-    // Free memory if needed
-    if (op->is_cheap_allocated()) delete op;
-
     _cur_vm_operation = prev_vm_operation;
   }
 }
-
-
-void VMThread::oops_do(OopClosure* f, CodeBlobClosure* cf) {
-  Thread::oops_do(f, cf);
-  _vm_queue->oops_do(f);
-}
-
-//------------------------------------------------------------------------------------------------------------------
-#ifndef PRODUCT
-
-void VMOperationQueue::verify_queue(int prio) {
-  // Check that list is correctly linked
-  int length = _queue_length[prio];
-  VM_Operation *cur = _queue[prio];
-  int i;
-
-  // Check forward links
-  for(i = 0; i < length; i++) {
-    cur = cur->next();
-    assert(cur != _queue[prio], "list to short (forward)");
-  }
-  assert(cur->next() == _queue[prio], "list to long (forward)");
-
-  // Check backwards links
-  cur = _queue[prio];
-  for(i = 0; i < length; i++) {
-    cur = cur->prev();
-    assert(cur != _queue[prio], "list to short (backwards)");
-  }
-  assert(cur->prev() == _queue[prio], "list to long (backwards)");
-}
-
-#endif
 
 void VMThread::verify() {
   oops_do(&VerifyOopClosure::verify_oop, NULL);

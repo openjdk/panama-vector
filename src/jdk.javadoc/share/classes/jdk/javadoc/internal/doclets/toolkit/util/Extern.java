@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -62,9 +62,6 @@ import jdk.javadoc.internal.doclets.toolkit.Resources;
  *  If you write code that depends on this, you do so at your own risk.
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
- *
- * @author Atul M Dambalkar
- * @author Robert Field
  */
 public class Extern {
 
@@ -101,7 +98,7 @@ public class Extern {
 
         /**
          * The URL or the directory path at which the element documentation will be
-         * avaliable.
+         * available.
          */
         final DocPath path;
 
@@ -137,7 +134,7 @@ public class Extern {
 
     public Extern(BaseConfiguration configuration) {
         this.configuration = configuration;
-        this.resources = configuration.getResources();
+        this.resources = configuration.getDocResources();
         this.utils = configuration.utils;
     }
 
@@ -193,7 +190,7 @@ public class Extern {
         DocPath p = fnd.relative ?
                 relativepath.resolve(fnd.path).resolve(filename) :
                 fnd.path.resolve(filename);
-        return new DocLink(p, "is-external=true", memberName);
+        return new DocLink(p, memberName);
     }
 
     /**

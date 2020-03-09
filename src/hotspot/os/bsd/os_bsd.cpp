@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -166,6 +166,22 @@ julong os::Bsd::available_memory() {
   }
 #endif
   return available;
+}
+
+// for more info see :
+// https://man.openbsd.org/sysctl.2
+void os::Bsd::print_uptime_info(outputStream* st) {
+  struct timeval boottime;
+  size_t len = sizeof(boottime);
+  int mib[2];
+  mib[0] = CTL_KERN;
+  mib[1] = KERN_BOOTTIME;
+
+  if (sysctl(mib, 2, &boottime, &len, NULL, 0) >= 0) {
+    time_t bootsec = boottime.tv_sec;
+    time_t currsec = time(NULL);
+    os::print_dhm(st, "OS uptime:", (long) difftime(currsec, bootsec));
+  }
 }
 
 julong os::physical_memory() {
@@ -618,19 +634,6 @@ extern "C" objc_registerThreadWithCollector_t objc_registerThreadWithCollectorFu
 objc_registerThreadWithCollector_t objc_registerThreadWithCollectorFunction = NULL;
 #endif
 
-#ifdef __APPLE__
-static uint64_t locate_unique_thread_id(mach_port_t mach_thread_port) {
-  // Additional thread_id used to correlate threads in SA
-  thread_identifier_info_data_t     m_ident_info;
-  mach_msg_type_number_t            count = THREAD_IDENTIFIER_INFO_COUNT;
-
-  thread_info(mach_thread_port, THREAD_IDENTIFIER_INFO,
-              (thread_info_t) &m_ident_info, &count);
-
-  return m_ident_info.thread_id;
-}
-#endif
-
 // Thread start routine for all newly created threads
 static void *thread_native_entry(Thread *thread) {
 
@@ -656,10 +659,10 @@ static void *thread_native_entry(Thread *thread) {
     os::current_thread_id(), (uintx) pthread_self());
 
 #ifdef __APPLE__
-  uint64_t unique_thread_id = locate_unique_thread_id(osthread->thread_id());
-  guarantee(unique_thread_id != 0, "unique thread id was not found");
-  osthread->set_unique_thread_id(unique_thread_id);
+  // Store unique OS X thread id used by SA
+  osthread->set_unique_thread_id();
 #endif
+
   // initialize signal mask for this thread
   os::Bsd::hotspot_sigmask(thread);
 
@@ -807,12 +810,12 @@ bool os::create_attached_thread(JavaThread* thread) {
 
   osthread->set_thread_id(os::Bsd::gettid());
 
-  // Store pthread info into the OSThread
 #ifdef __APPLE__
-  uint64_t unique_thread_id = locate_unique_thread_id(osthread->thread_id());
-  guarantee(unique_thread_id != 0, "just checking");
-  osthread->set_unique_thread_id(unique_thread_id);
+  // Store unique OS X thread id used by SA
+  osthread->set_unique_thread_id();
 #endif
+
+  // Store pthread info into the OSThread
   osthread->set_pthread_id(::pthread_self());
 
   // initialize floating point control register
@@ -1084,12 +1087,11 @@ void os::die() {
 pid_t os::Bsd::gettid() {
   int retval = -1;
 
-#ifdef __APPLE__ //XNU kernel
-  // despite the fact mach port is actually not a thread id use it
-  // instead of syscall(SYS_thread_selfid) as it certainly fits to u4
-  retval = ::pthread_mach_thread_np(::pthread_self());
-  guarantee(retval != 0, "just checking");
-  return retval;
+#ifdef __APPLE__ // XNU kernel
+  mach_port_t port = mach_thread_self();
+  guarantee(MACH_PORT_VALID(port), "just checking");
+  mach_port_deallocate(mach_task_self(), port);
+  return (pid_t)port;
 
 #else
   #ifdef __FreeBSD__
@@ -1112,7 +1114,7 @@ pid_t os::Bsd::gettid() {
 
 intx os::current_thread_id() {
 #ifdef __APPLE__
-  return (intx)::pthread_mach_thread_np(::pthread_self());
+  return (intx)os::Bsd::gettid();
 #else
   return (intx)::pthread_self();
 #endif
@@ -1568,6 +1570,8 @@ void os::print_os_info(outputStream* st) {
   st->print("OS:");
 
   os::Posix::print_uname_info(st);
+
+  os::Bsd::print_uptime_info(st);
 
   os::Posix::print_rlimit_info(st);
 
@@ -3763,11 +3767,30 @@ int os::fork_and_exec(char* cmd, bool use_vfork_if_available) {
   }
 }
 
-// Get the default path to the core file
+// Get the kern.corefile setting, or otherwise the default path to the core file
 // Returns the length of the string
 int os::get_core_path(char* buffer, size_t bufferSize) {
-  int n = jio_snprintf(buffer, bufferSize, "/cores/core.%d", current_process_id());
+  int n = 0;
+#ifdef __APPLE__
+  char coreinfo[MAX_PATH];
+  size_t sz = sizeof(coreinfo);
+  int ret = sysctlbyname("kern.corefile", coreinfo, &sz, NULL, 0);
+  if (ret == 0) {
+    char *pid_pos = strstr(coreinfo, "%P");
+    // skip over the "%P" to preserve any optional custom user pattern
+    const char* tail = (pid_pos != NULL) ? (pid_pos + 2) : "";
 
+    if (pid_pos != NULL) {
+      *pid_pos = '\0';
+      n = jio_snprintf(buffer, bufferSize, "%s%d%s", coreinfo, os::current_process_id(), tail);
+    } else {
+      n = jio_snprintf(buffer, bufferSize, "%s", coreinfo);
+    }
+  } else
+#endif
+  {
+    n = jio_snprintf(buffer, bufferSize, "/cores/core.%d", os::current_process_id());
+  }
   // Truncate if theoretical string was longer than bufferSize
   n = MIN2(n, (int)bufferSize);
 

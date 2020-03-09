@@ -146,6 +146,30 @@ public class BindingsTest1 {
             s.length();
         }
 
+        {
+            while (!(o1 instanceof String s)) {
+                L8: break L8;
+            }
+
+            s.length();
+        }
+
+        {
+            for ( ;!(o1 instanceof String s); ) {
+                L9: break L9;
+            }
+
+            s.length();
+        }
+
+        {
+            do {
+                L10: break L10;
+            } while (!(o1 instanceof String s));
+
+            s.length();
+        }
+
         if (o1 instanceof String s) {
             Runnable r1 = new Runnable() {
                 @Override
@@ -161,6 +185,44 @@ public class BindingsTest1 {
             String s2 = s;
         }
 
+        boolean result = (o1 instanceof String a1) ? (o1 instanceof String a2) : (!(o1 instanceof String a3));
+        boolean result2 = (o1 instanceof String a1) ? (o1 instanceof String a2) : (!(switch (0) { default -> false; }));
+
+        //binding in an expression lambda:
+        if (!((VoidPredicate) () -> o1 instanceof String str && !str.isEmpty()).get()) {
+            throw new AssertionError();
+        }
+
+        //binding in an block lambda:
+        if (!((VoidPredicate) () -> o1 instanceof String str && !str.isEmpty()).get()) {
+            throw new AssertionError();
+        }
+
+        //binding in an anonymous class:
+        if (!new VoidPredicate() { public boolean get() { return o1 instanceof String str && !str.isEmpty();} }.get()) {
+            throw new AssertionError();
+        }
+
+        if (!switch (i) {
+            default:
+                if (!(o1 instanceof String str)) {
+                    yield false;
+                }
+                if (str.isEmpty()) {
+                    yield true;
+                }
+                yield true;
+            }) {
+            throw new AssertionError();
+        }
+
         System.out.println("BindingsTest1 complete");
+    }
+
+    interface VoidPredicate {
+        public boolean get();
+    }
+    static boolean id(boolean b) {
+        return b;
     }
 }

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2018, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2018, 2020, Red Hat, Inc. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
@@ -244,17 +245,37 @@ bool ShenandoahHeuristics::should_start_gc() const {
     return true;
   }
 
-  double last_time_ms = (os::elapsedTime() - _last_cycle_end) * 1000;
-  bool periodic_gc = (last_time_ms > ShenandoahGuaranteedGCInterval);
-  if (periodic_gc) {
-    log_info(gc)("Trigger: Time since last GC (%.0f ms) is larger than guaranteed interval (" UINTX_FORMAT " ms)",
-                  last_time_ms, ShenandoahGuaranteedGCInterval);
+  if (ShenandoahGuaranteedGCInterval > 0) {
+    double last_time_ms = (os::elapsedTime() - _last_cycle_end) * 1000;
+    if (last_time_ms > ShenandoahGuaranteedGCInterval) {
+      log_info(gc)("Trigger: Time since last GC (%.0f ms) is larger than guaranteed interval (" UINTX_FORMAT " ms)",
+                   last_time_ms, ShenandoahGuaranteedGCInterval);
+      return true;
+    }
   }
-  return periodic_gc;
+
+  return false;
 }
 
 bool ShenandoahHeuristics::should_degenerate_cycle() {
   return _degenerated_cycles_in_a_row <= ShenandoahFullGCThreshold;
+}
+
+void ShenandoahHeuristics::adjust_penalty(intx step) {
+  assert(0 <= _gc_time_penalties && _gc_time_penalties <= 100,
+          "In range before adjustment: " INTX_FORMAT, _gc_time_penalties);
+
+  intx new_val = _gc_time_penalties + step;
+  if (new_val < 0) {
+    new_val = 0;
+  }
+  if (new_val > 100) {
+    new_val = 100;
+  }
+  _gc_time_penalties = new_val;
+
+  assert(0 <= _gc_time_penalties && _gc_time_penalties <= 100,
+          "In range after adjustment: " INTX_FORMAT, _gc_time_penalties);
 }
 
 void ShenandoahHeuristics::record_success_concurrent() {
@@ -263,19 +284,22 @@ void ShenandoahHeuristics::record_success_concurrent() {
 
   _gc_time_history->add(time_since_last_gc());
   _gc_times_learned++;
-  _gc_time_penalties -= MIN2<size_t>(_gc_time_penalties, Concurrent_Adjust);
+
+  adjust_penalty(Concurrent_Adjust);
 }
 
 void ShenandoahHeuristics::record_success_degenerated() {
   _degenerated_cycles_in_a_row++;
   _successful_cycles_in_a_row = 0;
-  _gc_time_penalties += Degenerated_Penalty;
+
+  adjust_penalty(Degenerated_Penalty);
 }
 
 void ShenandoahHeuristics::record_success_full() {
   _degenerated_cycles_in_a_row = 0;
   _successful_cycles_in_a_row++;
-  _gc_time_penalties += Full_Penalty;
+
+  adjust_penalty(Full_Penalty);
 }
 
 void ShenandoahHeuristics::record_allocation_failure_gc() {

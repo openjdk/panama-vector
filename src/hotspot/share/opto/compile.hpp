@@ -98,6 +98,7 @@ class VectorUnboxNode;
 enum LoopOptsMode {
   LoopOptsDefault,
   LoopOptsNone,
+  LoopOptsMaxUnroll,
   LoopOptsShenandoahExpand,
   LoopOptsShenandoahPostExpand,
   LoopOptsSkipSplitIf,
@@ -170,7 +171,6 @@ class Compile : public Phase {
   friend class VMStructs;
 
  public:
-  static int _vec_nodes;
   // Fixed alias indexes.  (See also MergeMemNode.)
   enum {
     AliasIdxTop = 1,  // pseudo-index, aliases to nothing (used as sentinel value)
@@ -520,6 +520,8 @@ class Compile : public Phase {
     PrintInliningBuffer()
       : _cg(NULL) { _ss = new stringStream(); }
 
+    void freeStream() { _ss->~stringStream(); _ss = NULL; }
+
     stringStream* ss() const { return _ss; }
     CallGenerator* cg() const { return _cg; }
     void set_cg(CallGenerator* cg) { _cg = cg; }
@@ -541,6 +543,7 @@ class Compile : public Phase {
 
   void* _replay_inline_data; // Pointer to data loaded from file
 
+  void print_inlining_stream_free();
   void print_inlining_init();
   void print_inlining_reinit();
   void print_inlining_commit();
@@ -586,8 +589,6 @@ class Compile : public Phase {
  private:
   // Matching, CFG layout, allocation, code generation
   PhaseCFG*             _cfg;                   // Results of CFG finding
-  bool                  _select_24_bit_instr;   // We selected an instruction with a 24-bit result
-  bool                  _in_24_bit_fp_mode;     // We are emitting instructions with 24-bit results
   int                   _java_calls;            // Number of java calls in the method
   int                   _inner_loops;           // Number of inner loops in the method
   Matcher*              _matcher;               // Engine to map ideal to machine instructions
@@ -1161,8 +1162,6 @@ class Compile : public Phase {
 
   // Matching, CFG layout, allocation, code generation
   PhaseCFG*         cfg()                       { return _cfg; }
-  bool              select_24_bit_instr() const { return _select_24_bit_instr; }
-  bool              in_24_bit_fp_mode() const   { return _in_24_bit_fp_mode; }
   bool              has_java_calls() const      { return _java_calls > 0; }
   int               java_calls() const          { return _java_calls; }
   int               inner_loops() const         { return _inner_loops; }
@@ -1193,12 +1192,6 @@ class Compile : public Phase {
 //void          set_regalloc(PhaseRegAlloc* ra)           { _regalloc = ra; }
   void          set_indexSet_arena(Arena* a)            { _indexSet_arena = a; }
   void          set_indexSet_free_block_list(void* p)   { _indexSet_free_block_list = p; }
-
-  // Remember if this compilation changes hardware mode to 24-bit precision
-  void set_24_bit_selection_and_mode(bool selection, bool mode) {
-    _select_24_bit_instr = selection;
-    _in_24_bit_fp_mode   = mode;
-  }
 
   void  set_java_calls(int z) { _java_calls  = z; }
   void set_inner_loops(int z) { _inner_loops = z; }
@@ -1452,6 +1445,22 @@ class Compile : public Phase {
   bool needs_clinit_barrier(ciField* ik,         ciMethod* accessing_method);
   bool needs_clinit_barrier(ciMethod* ik,        ciMethod* accessing_method);
   bool needs_clinit_barrier(ciInstanceKlass* ik, ciMethod* accessing_method);
+
+#ifdef IA32
+ private:
+  bool _select_24_bit_instr;   // We selected an instruction with a 24-bit result
+  bool _in_24_bit_fp_mode;     // We are emitting instructions with 24-bit results
+
+  // Remember if this compilation changes hardware mode to 24-bit precision.
+  void set_24_bit_selection_and_mode(bool selection, bool mode) {
+    _select_24_bit_instr = selection;
+    _in_24_bit_fp_mode   = mode;
+  }
+
+ public:
+  bool select_24_bit_instr() const { return _select_24_bit_instr; }
+  bool in_24_bit_fp_mode() const   { return _in_24_bit_fp_mode; }
+#endif // IA32
 };
 
 #endif // SHARE_OPTO_COMPILE_HPP

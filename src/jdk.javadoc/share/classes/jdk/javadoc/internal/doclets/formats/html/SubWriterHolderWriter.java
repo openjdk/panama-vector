@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -53,10 +53,6 @@ import jdk.javadoc.internal.doclets.toolkit.util.DocPath;
  *
  * @see AbstractMemberWriter
  * @see ClassWriterImpl
- *
- * @author Robert Field
- * @author Atul M Dambalkar
- * @author Bhavesh Patel (Modified)
  */
 public abstract class SubWriterHolderWriter extends HtmlDocletWriter {
 
@@ -73,12 +69,9 @@ public abstract class SubWriterHolderWriter extends HtmlDocletWriter {
      * Add the summary header.
      *
      * @param mw the writer for the member being documented
-     * @param typeElement the type element to be documented
      * @param memberTree the content tree to which the summary header will be added
      */
-    public void addSummaryHeader(AbstractMemberWriter mw, TypeElement typeElement,
-            Content memberTree) {
-        mw.addSummaryAnchor(typeElement, memberTree);
+    public void addSummaryHeader(AbstractMemberWriter mw, Content memberTree) {
         mw.addSummaryLabel(memberTree);
     }
 
@@ -92,7 +85,6 @@ public abstract class SubWriterHolderWriter extends HtmlDocletWriter {
     public void addInheritedSummaryHeader(AbstractMemberWriter mw, TypeElement typeElement,
             Content inheritedTree) {
         mw.addInheritedSummaryLabel(typeElement, inheritedTree);
-        mw.addInheritedSummaryAnchor(typeElement, inheritedTree);
     }
 
     /**
@@ -170,9 +162,12 @@ public abstract class SubWriterHolderWriter extends HtmlDocletWriter {
      * @param isFirst true if its the first link being documented
      * @param linksTree the content tree to which the summary will be added
      */
-    public void addInheritedMemberSummary(AbstractMemberWriter mw, TypeElement typeElement,
-            Element member, boolean isFirst, Content linksTree) {
-        if (! isFirst) {
+    public void addInheritedMemberSummary(AbstractMemberWriter mw,
+                                          TypeElement typeElement,
+                                          Element member,
+                                          boolean isFirst,
+                                          Content linksTree) {
+        if (!isFirst) {
             linksTree.add(", ");
         }
         mw.addInheritedSummaryLink(typeElement, member, linksTree);
@@ -225,13 +220,15 @@ public abstract class SubWriterHolderWriter extends HtmlDocletWriter {
     }
 
     /**
-     * Adds the member tree with css style.
+     * Adds the member tree with css style and id attribute.
      * @param style the css style to be applied to member tree
+     * @param sectionName the section name to use for the section id attribute
      * @param memberSummaryTree the content tree representing the member summary
      * @param memberTree the content tree representing the member
      */
-    public void addMemberTree(HtmlStyle style, Content memberSummaryTree, Content memberTree) {
-        HtmlTree htmlTree = HtmlTree.SECTION(style, memberTree);
+    public void addMemberTree(HtmlStyle style, SectionName sectionName, Content memberSummaryTree, Content memberTree) {
+        HtmlTree htmlTree = HtmlTree.SECTION(style, memberTree)
+                .setId(sectionName.getName());
         memberSummaryTree.add(getMemberTree(htmlTree));
     }
 

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2014, 2019, Red Hat Inc. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2020, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -554,7 +554,7 @@ class Address {
 
   void lea(MacroAssembler *, Register) const;
 
-  static bool offset_ok_for_immed(long offset, int shift = 0) {
+  static bool offset_ok_for_immed(long offset, int shift) {
     unsigned mask = (1 << shift) - 1;
     if (offset < 0 || offset & mask) {
       return (uabs(offset) < (1 << (20 - 12))); // Unscaled offset
@@ -604,7 +604,9 @@ class InternalAddress: public Address {
   InternalAddress(address target) : Address(target, relocInfo::internal_word_type) {}
 };
 
-const int FPUStateSizeInWords = 32 * 2;
+const int FPUStateSizeInWords = FloatRegisterImpl::number_of_registers *
+                                FloatRegisterImpl::save_slots_per_register;
+
 typedef enum {
   PLDL1KEEP = 0b00000, PLDL1STRM, PLDL2KEEP, PLDL2STRM, PLDL3KEEP, PLDL3STRM,
   PSTL1KEEP = 0b10000, PSTL1STRM, PSTL2KEEP, PSTL2STRM, PSTL3KEEP, PSTL3STRM,
@@ -1480,6 +1482,21 @@ public:
 
 #undef INSN
 
+/* SIMD extensions
+ *
+ * We just use FloatRegister in the following. They are exactly the same
+ * as SIMD registers.
+ */
+public:
+
+  enum SIMD_Arrangement {
+    T8B, T16B, T4H, T8H, T2S, T4S, T1D, T2D, T1Q
+  };
+
+  enum SIMD_RegVariant {
+    B, H, S, D, Q
+  };
+
   enum shift_kind { LSL, LSR, ASR, ROR };
 
   void op_shifted_reg(unsigned decode,
@@ -1854,6 +1871,30 @@ public:
     i_fmovs(Vd, Vn);
   }
 
+private:
+  void _fcvt_narrow_extend(FloatRegister Vd, SIMD_Arrangement Ta,
+                           FloatRegister Vn, SIMD_Arrangement Tb, bool do_extend) {
+    assert((do_extend && (Tb >> 1) + 1 == (Ta >> 1))
+           || (!do_extend && (Ta >> 1) + 1 == (Tb >> 1)), "Incompatible arrangement");
+    starti;
+    int op30 = (do_extend ? Tb : Ta) & 1;
+    int op22 = ((do_extend ? Ta : Tb) >> 1) & 1;
+    f(0, 31), f(op30, 30), f(0b0011100, 29, 23), f(op22, 22);
+    f(0b100001011, 21, 13), f(do_extend ? 1 : 0, 12), f(0b10, 11, 10);
+    rf(Vn, 5), rf(Vd, 0);
+  }
+
+public:
+  void fcvtl(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb) {
+    assert(Tb == T4H || Tb == T8H|| Tb == T2S || Tb == T4S, "invalid arrangement");
+    _fcvt_narrow_extend(Vd, Ta, Vn, Tb, true);
+  }
+
+  void fcvtn(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb) {
+    assert(Ta == T4H || Ta == T8H|| Ta == T2S || Ta == T4S, "invalid arrangement");
+    _fcvt_narrow_extend(Vd, Ta, Vn, Tb, false);
+  }
+
 #undef INSN
 
   // Floating-point data-processing (2 source)
@@ -1990,6 +2031,43 @@ public:
 
 #undef INSN
 
+  enum sign_kind { SIGNED, UNSIGNED };
+
+private:
+  void _xcvtf_scalar_integer(sign_kind sign, unsigned sz,
+                             FloatRegister Rd, FloatRegister Rn) {
+    starti;
+    f(0b01, 31, 30), f(sign == SIGNED ? 0 : 1, 29);
+    f(0b111100, 27, 23), f((sz >> 1) & 1, 22), f(0b100001110110, 21, 10);
+    rf(Rn, 5), rf(Rd, 0);
+  }
+
+public:
+#define INSN(NAME, sign, sz)                        \
+  void NAME(FloatRegister Rd, FloatRegister Rn) {   \
+    _xcvtf_scalar_integer(sign, sz, Rd, Rn);        \
+  }
+
+  INSN(scvtfs, SIGNED, 0);
+  INSN(scvtfd, SIGNED, 1);
+
+#undef INSN
+
+private:
+  void _xcvtf_vector_integer(sign_kind sign, SIMD_Arrangement T,
+                             FloatRegister Rd, FloatRegister Rn) {
+    assert(T == T2S || T == T4S || T == T2D, "invalid arrangement");
+    starti;
+    f(0, 31), f(T & 1, 30), f(sign == SIGNED ? 0 : 1, 29);
+    f(0b011100, 28, 23), f((T >> 1) & 1, 22), f(0b100001110110, 21, 10);
+    rf(Rn, 5), rf(Rd, 0);
+  }
+
+public:
+  void scvtfv(SIMD_Arrangement T, FloatRegister Rd, FloatRegister Rn) {
+    _xcvtf_vector_integer(SIGNED, T, Rd, Rn);
+  }
+
   // Floating-point compare
   void float_compare(unsigned op31, unsigned type,
                      unsigned op, unsigned op2,
@@ -2103,21 +2181,6 @@ public:
   INSN(frintxd, 0b01, 0b110);
   INSN(frintzd, 0b01, 0b011);
 #undef INSN
-
-/* SIMD extensions
- *
- * We just use FloatRegister in the following. They are exactly the same
- * as SIMD registers.
- */
- public:
-
-  enum SIMD_Arrangement {
-       T8B, T16B, T4H, T8H, T2S, T4S, T1D, T2D, T1Q
-  };
-
-  enum SIMD_RegVariant {
-       B, H, S, D, Q
-  };
 
 private:
   static short SIMD_Size_in_bytes[];
@@ -2272,6 +2335,8 @@ public:
   INSN(mlsv,   1, 0b100101, false); // accepted arrangements: T8B, T16B, T4H, T8H, T2S, T4S
   INSN(sshl,   0, 0b010001, true);  // accepted arrangements: T8B, T16B, T4H, T8H, T2S, T4S, T2D
   INSN(ushl,   1, 0b010001, true);  // accepted arrangements: T8B, T16B, T4H, T8H, T2S, T4S, T2D
+  INSN(addpv,  0, 0b101111, true);  // accepted arrangements: T8B, T16B, T4H, T8H, T2S, T4S, T2D
+  INSN(smullv, 0, 0b110000, false); // accepted arrangements: T8B, T16B, T4H, T8H, T2S, T4S
   INSN(umullv, 1, 0b110000, false); // accepted arrangements: T8B, T16B, T4H, T8H, T2S, T4S
   INSN(umlalv, 1, 0b100000, false); // accepted arrangements: T8B, T16B, T4H, T8H, T2S, T4S
   INSN(maxv,   0, 0b011001, false); // accepted arrangements: T8B, T16B, T4H, T8H, T2S, T4S
@@ -2510,33 +2575,48 @@ public:
 #undef INSN
 
 private:
-  void _ushll(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn, SIMD_Arrangement Tb, int shift) {
+  void _xshll(sign_kind sign, FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn, SIMD_Arrangement Tb, int shift) {
     starti;
     /* The encodings for the immh:immb fields (bits 22:16) are
-     *   0001 xxx       8H, 8B/16b shift = xxx
+     *   0001 xxx       8H, 8B/16B shift = xxx
      *   001x xxx       4S, 4H/8H  shift = xxxx
      *   01xx xxx       2D, 2S/4S  shift = xxxxx
      *   1xxx xxx       RESERVED
      */
     assert((Tb >> 1) + 1 == (Ta >> 1), "Incompatible arrangement");
     assert((1 << ((Tb>>1)+3)) > shift, "Invalid shift value");
-    f(0, 31), f(Tb & 1, 30), f(0b1011110, 29, 23), f((1 << ((Tb>>1)+3))|shift, 22, 16);
+    f(0, 31), f(Tb & 1, 30), f(sign == SIGNED ? 0 : 1, 29), f(0b011110, 28, 23);
+    f((1 << ((Tb>>1)+3))|shift, 22, 16);
     f(0b101001, 15, 10), rf(Vn, 5), rf(Vd, 0);
   }
 
 public:
   void ushll(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb, int shift) {
     assert(Tb == T8B || Tb == T4H || Tb == T2S, "invalid arrangement");
-    _ushll(Vd, Ta, Vn, Tb, shift);
+    _xshll(UNSIGNED, Vd, Ta, Vn, Tb, shift);
   }
 
   void ushll2(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb, int shift) {
     assert(Tb == T16B || Tb == T8H || Tb == T4S, "invalid arrangement");
-    _ushll(Vd, Ta, Vn, Tb, shift);
+    _xshll(UNSIGNED, Vd, Ta, Vn, Tb, shift);
   }
 
   void uxtl(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb) {
     ushll(Vd, Ta, Vn, Tb, 0);
+  }
+
+  void sshll(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb, int shift) {
+    assert(Tb == T8B || Tb == T4H || Tb == T2S, "invalid arrangement");
+    _xshll(SIGNED, Vd, Ta, Vn, Tb, shift);
+  }
+
+  void sshll2(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb, int shift) {
+    assert(Tb == T16B || Tb == T8H || Tb == T4S, "invalid arrangement");
+    _xshll(SIGNED, Vd, Ta, Vn, Tb, shift);
+  }
+
+  void sxtl(FloatRegister Vd, SIMD_Arrangement Ta, FloatRegister Vn,  SIMD_Arrangement Tb) {
+    sshll(Vd, Ta, Vn, Tb, 0);
   }
 
   // Move from general purpose register
@@ -2668,42 +2748,42 @@ public:
 #undef INSN
 
   // AdvSIMD two-reg misc
-#define INSN(NAME, U, opcode)                                                       \
+  // In this instruction group, the 2 bits in the size field ([23:22]) may be
+  // fixed or determined by the "SIMD_Arrangement T", or both. The additional
+  // parameter "tmask" is a 2-bit mask used to indicate which bits in the size
+  // field are determined by the SIMD_Arrangement. The bit of "tmask" should be
+  // set to 1 if corresponding bit marked as "x" in the ArmARM.
+#define INSN(NAME, U, size, tmask, opcode)                                          \
   void NAME(FloatRegister Vd, SIMD_Arrangement T, FloatRegister Vn) {               \
        starti;                                                                      \
        assert((ASSERTION), MSG);                                                    \
        f(0, 31), f((int)T & 1, 30), f(U, 29), f(0b01110, 28, 24);                   \
-       f((int)(T >> 1), 23, 22), f(0b10000, 21, 17), f(opcode, 16, 12);             \
-       f(0b10, 11, 10), rf(Vn, 5), rf(Vd, 0);                                       \
+       f(size | ((int)(T >> 1) & tmask), 23, 22), f(0b10000, 21, 17);               \
+       f(opcode, 16, 12), f(0b10, 11, 10), rf(Vn, 5), rf(Vd, 0);                    \
  }
 
 #define MSG "invalid arrangement"
 
 #define ASSERTION (T == T2S || T == T4S || T == T2D)
-  INSN(fsqrt, 1, 0b11111);
-  INSN(fabs,  0, 0b01111);
-  INSN(fneg,  1, 0b01111);
+  INSN(fsqrt,  1, 0b10, 0b01, 0b11111);
+  INSN(fabs,   0, 0b10, 0b01, 0b01111);
+  INSN(fneg,   1, 0b10, 0b01, 0b01111);
+  INSN(frintn, 0, 0b00, 0b01, 0b11000);
+  INSN(frintm, 0, 0b00, 0b01, 0b11001);
+  INSN(frintp, 0, 0b10, 0b01, 0b11000);
 #undef ASSERTION
 
 #define ASSERTION (T == T8B || T == T16B || T == T4H || T == T8H || T == T2S || T == T4S)
-  INSN(rev64, 0, 0b00000);
+  INSN(rev64, 0, 0b00, 0b11, 0b00000);
 #undef ASSERTION
 
 #define ASSERTION (T == T8B || T == T16B || T == T4H || T == T8H)
-  INSN(rev32, 1, 0b00000);
-private:
-  INSN(_rbit, 1, 0b00101);
-public:
-
+  INSN(rev32, 1, 0b00, 0b11, 0b00000);
 #undef ASSERTION
 
 #define ASSERTION (T == T8B || T == T16B)
-  INSN(rev16, 0, 0b00001);
-  // RBIT only allows T8B and T16B but encodes them oddly.  Argh...
-  void rbit(FloatRegister Vd, SIMD_Arrangement T, FloatRegister Vn) {
-    assert((ASSERTION), MSG);
-    _rbit(Vd, SIMD_Arrangement((T & 1) | 0b010), Vn);
-  }
+  INSN(rev16, 0, 0b00, 0b11, 0b00001);
+  INSN(rbit,  1, 0b01, 0b00, 0b00101);
 #undef ASSERTION
 
 #undef MSG

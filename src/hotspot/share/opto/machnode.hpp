@@ -243,9 +243,7 @@ public:
   // First index in _in[] corresponding to operand, or -1 if there is none
   int  operand_index(uint operand) const;
   int  operand_index(const MachOper *oper) const;
-
-  virtual int oprnd_index(int param_index) const {return -1;}
-
+  int  operand_index(Node* m) const;
 
   // Register class input is expected in
   virtual const RegMask &in_RegMask(uint) const;
@@ -1039,8 +1037,7 @@ private:
 
 public:
   virtual const RegMask &out_RegMask() const { return *_opnds[0]->in_RegMask(0); }
-  virtual uint rule() const { return 9999998; }
-
+  virtual uint rule() const { return 9999999; }
   virtual void emit(CodeBuffer &cbuf, PhaseRegAlloc *ra_) const {}
 
   MachTempNode(MachOper* oper) {

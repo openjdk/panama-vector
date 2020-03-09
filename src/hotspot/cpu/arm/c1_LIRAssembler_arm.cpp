@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,14 +31,13 @@
 #include "c1/c1_ValueStack.hpp"
 #include "ci/ciArrayKlass.hpp"
 #include "ci/ciInstance.hpp"
-#include "gc/shared/barrierSet.hpp"
-#include "gc/shared/cardTableBarrierSet.hpp"
 #include "gc/shared/collectedHeap.hpp"
 #include "memory/universe.hpp"
 #include "nativeInst_arm.hpp"
 #include "oops/objArrayKlass.hpp"
 #include "runtime/frame.inline.hpp"
 #include "runtime/sharedRuntime.hpp"
+#include "utilities/powerOfTwo.hpp"
 #include "vmreg_arm.inline.hpp"
 
 #define __ _masm->
@@ -87,30 +86,6 @@ void LIR_Assembler::store_parameter(Metadata* m, int offset_from_sp_in_words) {
 
 //--------------fpu register translations-----------------------
 
-
-void LIR_Assembler::set_24bit_FPU() {
-  ShouldNotReachHere();
-}
-
-void LIR_Assembler::reset_FPU() {
-  ShouldNotReachHere();
-}
-
-void LIR_Assembler::fpop() {
-  Unimplemented();
-}
-
-void LIR_Assembler::fxch(int i) {
-  Unimplemented();
-}
-
-void LIR_Assembler::fld(int i) {
-  Unimplemented();
-}
-
-void LIR_Assembler::ffree(int i) {
-  Unimplemented();
-}
 
 void LIR_Assembler::breakpoint() {
   __ breakpoint();
@@ -311,23 +286,16 @@ int LIR_Assembler::emit_deopt_handler() {
 void LIR_Assembler::return_op(LIR_Opr result) {
   // Pop the frame before safepoint polling
   __ remove_frame(initial_frame_size_in_bytes());
-
-  // mov_slow here is usually one or two instruction
-  __ mov_address(Rtemp, os::get_polling_page());
-  __ relocate(relocInfo::poll_return_type);
-  __ ldr(Rtemp, Address(Rtemp));
+  __ read_polling_page(Rtemp, relocInfo::poll_return_type);
   __ ret();
 }
 
-
 int LIR_Assembler::safepoint_poll(LIR_Opr tmp, CodeEmitInfo* info) {
-  __ mov_address(Rtemp, os::get_polling_page());
   if (info != NULL) {
     add_debug_info_for_branch(info);
   }
   int offset = __ offset();
-  __ relocate(relocInfo::poll_type);
-  __ ldr(Rtemp, Address(Rtemp));
+  __ read_polling_page(Rtemp, relocInfo::poll_type);
   return offset;
 }
 
@@ -581,6 +549,7 @@ void LIR_Assembler::reg2mem(LIR_Opr src, LIR_Opr dest, BasicType type,
         base_reg = Rtemp;
         __ str(from_lo, Address(Rtemp));
         if (patch != NULL) {
+          __ nop(); // see comment before patching_epilog for 2nd str
           patching_epilog(patch, lir_patch_low, base_reg, info);
           patch = new PatchingStub(_masm, PatchingStub::access_field_id);
           patch_code = lir_patch_high;
@@ -589,6 +558,7 @@ void LIR_Assembler::reg2mem(LIR_Opr src, LIR_Opr dest, BasicType type,
       } else if (base_reg == from_lo) {
         __ str(from_hi, as_Address_hi(to_addr));
         if (patch != NULL) {
+          __ nop(); // see comment before patching_epilog for 2nd str
           patching_epilog(patch, lir_patch_high, base_reg, info);
           patch = new PatchingStub(_masm, PatchingStub::access_field_id);
           patch_code = lir_patch_low;
@@ -597,6 +567,7 @@ void LIR_Assembler::reg2mem(LIR_Opr src, LIR_Opr dest, BasicType type,
       } else {
         __ str(from_lo, as_Address_lo(to_addr));
         if (patch != NULL) {
+          __ nop(); // see comment before patching_epilog for 2nd str
           patching_epilog(patch, lir_patch_low, base_reg, info);
           patch = new PatchingStub(_masm, PatchingStub::access_field_id);
           patch_code = lir_patch_high;
@@ -640,7 +611,7 @@ void LIR_Assembler::reg2mem(LIR_Opr src, LIR_Opr dest, BasicType type,
   }
 
   if (patch != NULL) {
-    // Offset embeedded into LDR/STR instruction may appear not enough
+    // Offset embedded into LDR/STR instruction may appear not enough
     // to address a field. So, provide a space for one more instruction
     // that will deal with larger offsets.
     __ nop();
@@ -791,6 +762,7 @@ void LIR_Assembler::mem2reg(LIR_Opr src, LIR_Opr dest, BasicType type,
         base_reg = Rtemp;
         __ ldr(to_lo, Address(Rtemp));
         if (patch != NULL) {
+          __ nop(); // see comment before patching_epilog for 2nd ldr
           patching_epilog(patch, lir_patch_low, base_reg, info);
           patch = new PatchingStub(_masm, PatchingStub::access_field_id);
           patch_code = lir_patch_high;
@@ -799,6 +771,7 @@ void LIR_Assembler::mem2reg(LIR_Opr src, LIR_Opr dest, BasicType type,
       } else if (base_reg == to_lo) {
         __ ldr(to_hi, as_Address_hi(addr));
         if (patch != NULL) {
+          __ nop(); // see comment before patching_epilog for 2nd ldr
           patching_epilog(patch, lir_patch_high, base_reg, info);
           patch = new PatchingStub(_masm, PatchingStub::access_field_id);
           patch_code = lir_patch_low;
@@ -807,6 +780,7 @@ void LIR_Assembler::mem2reg(LIR_Opr src, LIR_Opr dest, BasicType type,
       } else {
         __ ldr(to_lo, as_Address_lo(addr));
         if (patch != NULL) {
+          __ nop(); // see comment before patching_epilog for 2nd ldr
           patching_epilog(patch, lir_patch_low, base_reg, info);
           patch = new PatchingStub(_masm, PatchingStub::access_field_id);
           patch_code = lir_patch_high;
@@ -846,7 +820,7 @@ void LIR_Assembler::mem2reg(LIR_Opr src, LIR_Opr dest, BasicType type,
   }
 
   if (patch != NULL) {
-    // Offset embeedded into LDR/STR instruction may appear not enough
+    // Offset embedded into LDR/STR instruction may appear not enough
     // to address a field. So, provide a space for one more instruction
     // that will deal with larger offsets.
     __ nop();

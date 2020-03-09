@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -390,7 +390,7 @@ public class AArch64HotSpotBackend extends HotSpotHostBackend implements LIRGene
                 AArch64Call.directCall(crb, masm, linkage, helper, null);
             }
             crb.recordMark(config.MARKID_DEOPT_HANDLER_ENTRY);
-            ForeignCallLinkage linkage = foreignCalls.lookupForeignCall(DEOPTIMIZATION_HANDLER);
+            ForeignCallLinkage linkage = foreignCalls.lookupForeignCall(DEOPT_BLOB_UNPACK);
             masm.adr(lr, 0); // Warning: the argument is an offset from the instruction!
             AArch64Call.directJmp(crb, masm, linkage);
         } else {

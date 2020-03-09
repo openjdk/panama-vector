@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -48,10 +48,17 @@ public abstract class SubprocessTest extends GraalCompilerTest {
             runnable.run();
         } else {
             List<String> vmArgs = withoutDebuggerArguments(getVMCommandLine());
-            vmArgs.addAll(SubprocessUtil.getPackageOpeningOptions());
+            vmArgs.add(SubprocessUtil.PACKAGE_OPENING_OPTIONS);
             vmArgs.add("-D" + recursionPropName + "=true");
             configSubprocess(vmArgs);
+            boolean verbose = Boolean.getBoolean(getClass().getSimpleName() + ".verbose");
+            if (verbose) {
+                System.err.println(String.join(" ", vmArgs));
+            }
             SubprocessUtil.Subprocess proc = java(vmArgs, "com.oracle.mxtool.junit.MxJUnitWrapper", getClass().getName());
+            if (verbose) {
+                System.err.println(proc.output);
+            }
             assertTrue(proc.exitCode == 0, proc.toString() + " failed with exit code " + proc.exitCode);
         }
     }

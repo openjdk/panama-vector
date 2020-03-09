@@ -1,5 +1,7 @@
 /*
- * Copyright (c) 2016, 2019, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2020, Red Hat, Inc. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
@@ -36,8 +38,7 @@
                             product_rw,                                     \
                             lp64_product,                                   \
                             range,                                          \
-                            constraint,                                     \
-                            writeable)                                      \
+                            constraint)                                     \
                                                                             \
   experimental(size_t, ShenandoahHeapRegionSize, 0,                         \
           "Size of the Shenandoah regions. Set to zero to detect "          \
@@ -97,11 +98,6 @@
           "heuristics.")                                                    \
           range(0,100)                                                      \
                                                                             \
-  experimental(uintx, ShenandoahFreeThreshold, 10,                          \
-          "Set the percentage of free heap at which a GC cycle is started. "\
-          "Does not apply to all heuristics.")                              \
-          range(0,100)                                                      \
-                                                                            \
   experimental(uintx, ShenandoahInitFreeThreshold, 70,                      \
           "Initial remaining free heap threshold for learning steps in "    \
           "heuristics. In percents of total heap size. Does not apply to "  \
@@ -145,10 +141,11 @@
           "to duration(marking)+duration(update-refs).")                    \
                                                                             \
   experimental(uintx, ShenandoahGuaranteedGCInterval, 5*60*1000,            \
-          "Adaptive and dynamic heuristics would guarantee a GC cycle "     \
-          "at least with this interval. This is useful when large idle"     \
-          " intervals are present, where GC can run without stealing "      \
-          "time from active application. Time is in milliseconds.")         \
+          "Most heuristics would guarantee a concurrent GC cycle at "       \
+          "least with this interval. This is useful when large idle "       \
+          "intervals are present, where GC can run without stealing "       \
+          "time from active application. Time is in milliseconds. "         \
+          "(Setting this interval to 0 disables this feature).")            \
                                                                             \
   experimental(bool, ShenandoahAlwaysClearSoftRefs, false,                  \
           "Clear soft references always, instead of using any smart "       \
@@ -340,7 +337,7 @@
   experimental(uint, ShenandoahParallelSafepointThreads, 4,                 \
           "Number of parallel threads used for safepoint prolog/epilog")    \
                                                                             \
-  experimental(bool, ShenandoahPreclean, true,                              \
+  diagnostic(bool, ShenandoahPreclean, true,                                \
           "Do concurrent preclean phase before final mark: process "        \
           "definitely alive references to avoid dealing with them during "  \
           "pause.")                                                         \
@@ -366,10 +363,10 @@
   diagnostic(bool, ShenandoahLoadRefBarrier, true,                          \
           "Turn on/off load-reference barriers in Shenandoah")              \
                                                                             \
-  experimental(bool, ShenandoahConcurrentScanCodeRoots, true,               \
+  diagnostic(bool, ShenandoahConcurrentScanCodeRoots, true,                 \
           "Scan code roots concurrently, instead of during a pause")        \
                                                                             \
-  experimental(uintx, ShenandoahCodeRootsStyle, 2,                          \
+  diagnostic(uintx, ShenandoahCodeRootsStyle, 2,                            \
           "Use this style to scan code cache:"                              \
           " 0 - sequential iterator;"                                       \
           " 1 - parallel iterator;"                                         \
@@ -380,13 +377,10 @@
           "Turn it off for maximum compatibility with reflection or JNI "   \
           "code that manipulates final fields.")                            \
                                                                             \
-  experimental(bool, ShenandoahCommonGCStateLoads, false,                   \
-         "Enable commonming for GC state loads in generated code.")         \
-                                                                            \
   develop(bool, ShenandoahVerifyOptoBarriers, false,                        \
           "Verify no missing barriers in C2")                               \
                                                                             \
-  experimental(bool, ShenandoahLoopOptsAfterExpansion, true,                \
+  diagnostic(bool, ShenandoahLoopOptsAfterExpansion, true,                  \
           "Attempt more loop opts after barrier expansion")                 \
                                                                             \
   diagnostic(bool, ShenandoahSelfFixing, true,                              \

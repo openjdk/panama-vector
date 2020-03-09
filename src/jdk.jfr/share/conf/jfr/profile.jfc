@@ -54,6 +54,7 @@
 
     <event name="jdk.ThreadStart">
       <setting name="enabled">true</setting>
+      <setting name="stackTrace">true</setting>
     </event>
 
     <event name="jdk.ThreadEnd">
@@ -122,6 +123,22 @@
     <event name="jdk.ClassDefine">
       <setting name="enabled" control="class-loading-enabled">false</setting>
       <setting name="stackTrace">true</setting>
+    </event>
+
+    <event name="jdk.RedefineClasses">
+      <setting name="enabled">true</setting>
+      <setting name="stackTrace">true</setting>
+      <setting name="threshold">0 ms</setting>
+    </event>
+
+    <event name="jdk.RetransformClasses">
+      <setting name="enabled">true</setting>
+      <setting name="stackTrace">true</setting>
+      <setting name="threshold">0 ms</setting>
+    </event>
+
+    <event name="jdk.ClassRedefinition">
+      <setting name="enabled" control="class-loading-enabled">true</setting>
     </event>
 
     <event name="jdk.ClassUnload">
@@ -671,32 +688,7 @@
     </event>
 
     <event name="jdk.Flush">
-      <setting name="enabled">true</setting>
-      <setting name="threshold">0 ns</setting>
-    </event>
-
-    <event name="jdk.FlushStorage">
-      <setting name="enabled">true</setting>
-      <setting name="threshold">0 ns</setting>
-    </event>
-
-    <event name="jdk.FlushStacktrace">
-      <setting name="enabled">true</setting>
-      <setting name="threshold">0 ns</setting>
-    </event>
-
-    <event name="jdk.FlushStringPool">
-      <setting name="enabled">true</setting>
-      <setting name="threshold">0 ns</setting>
-    </event>
-
-    <event name="jdk.FlushMetadata">
-      <setting name="enabled">true</setting>
-      <setting name="threshold">0 ns</setting>
-    </event>
-
-    <event name="jdk.FlushTypeSet">
-      <setting name="enabled">true</setting>
+      <setting name="enabled">false</setting>
       <setting name="threshold">0 ns</setting>
     </event>
 
@@ -728,6 +720,16 @@
       <setting name="threshold">0 ms</setting>
     </event>
 
+    <event name="jdk.Deoptimization">
+      <setting name="enabled">true</setting>
+      <setting name="stackTrace">true</setting>
+    </event>
+	
+    <event name="jdk.HeapDump">
+      <setting name="enabled">true</setting>
+      <setting name="threshold">0 ns</setting>
+      <setting name="stackTrace">true</setting>
+    </event>
 
 
 

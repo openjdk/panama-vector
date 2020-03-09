@@ -161,9 +161,6 @@ void C2Compiler::compile_method(ciEnv* env, ciMethod* target, int entry_bci, Dir
 
 void C2Compiler::print_timers() {
   Compile::print_timers();
-#ifdef X86 
-  tty->print_cr("   Vector Node Count:           %d",    Compile::_vec_nodes);
-#endif
 }
 
 bool C2Compiler::is_intrinsic_supported(const methodHandle& method, bool is_virtual) {
@@ -636,6 +633,8 @@ bool C2Compiler::is_intrinsic_supported(const methodHandle& method, bool is_virt
   case vmIntrinsics::_mulAdd:
   case vmIntrinsics::_montgomeryMultiply:
   case vmIntrinsics::_montgomerySquare:
+  case vmIntrinsics::_bigIntegerRightShiftWorker:
+  case vmIntrinsics::_bigIntegerLeftShiftWorker:
   case vmIntrinsics::_vectorizedMismatch:
   case vmIntrinsics::_ghash_processBlocks:
   case vmIntrinsics::_base64_encodeBlock:

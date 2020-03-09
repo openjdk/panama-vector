@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -41,6 +41,7 @@
 #include "jfr/support/jfrKlassExtension.hpp"
 #endif
 
+class RecordComponent;
 
 // An InstanceKlass is the VM level representation of a Java class.
 // It contains all information needed for at class at execution runtime.
@@ -102,10 +103,26 @@ class OopMapBlock {
   uint count() const         { return _count; }
   void set_count(uint count) { _count = count; }
 
+  void increment_count(int diff) { _count += diff; }
+
+  int offset_span() const { return _count * heapOopSize; }
+
+  int end_offset() const {
+    return offset() + offset_span();
+  }
+
+  bool is_contiguous(int another_offset) const {
+    return another_offset == end_offset();
+  }
+
   // sizeof(OopMapBlock) in words.
   static const int size_in_words() {
     return align_up((int)sizeof(OopMapBlock), wordSize) >>
       LogBytesPerWord;
+  }
+
+  static int compare_offset(const OopMapBlock* a, const OopMapBlock* b) {
+    return a->offset() - b->offset();
   }
 
  private:
@@ -182,6 +199,9 @@ class InstanceKlass: public Klass {
   // By always being set it makes nest-member access checks simpler.
   InstanceKlass* _nest_host;
 
+  // The contents of the Record attribute.
+  Array<RecordComponent*>* _record_components;
+
   // the source debug extension for this klass, NULL if not specified.
   // Specified as UTF-8 string without terminating zero byte in the classfile,
   // it is stored in the instanceklass as a NULL-terminated UTF-8 string
@@ -208,7 +228,6 @@ class InstanceKlass: public Klass {
   // _is_marked_dependent can be set concurrently, thus cannot be part of the
   // _misc_flags.
   bool            _is_marked_dependent;  // used for marking during flushing and deoptimization
-  bool            _is_being_redefined;   // used for locking redefinition
 
   // The low two bits of _misc_flags contains the kind field.
   // This can be used to quickly discriminate among the four kinds of
@@ -239,12 +258,14 @@ class InstanceKlass: public Klass {
     _misc_is_shared_boot_class                = 1 << 12, // defining class loader is boot class loader
     _misc_is_shared_platform_class            = 1 << 13, // defining class loader is platform class loader
     _misc_is_shared_app_class                 = 1 << 14, // defining class loader is app class loader
-    _misc_has_resolved_methods                = 1 << 15  // resolved methods table entries added for this class
+    _misc_has_resolved_methods                = 1 << 15, // resolved methods table entries added for this class
+    _misc_is_being_redefined                  = 1 << 16, // used for locking redefinition
+    _misc_has_contended_annotations           = 1 << 17  // has @Contended annotation
   };
   u2 loader_type_bits() {
     return _misc_is_shared_boot_class|_misc_is_shared_platform_class|_misc_is_shared_app_class;
   }
-  u2              _misc_flags;
+  u4              _misc_flags;
   u2              _minor_version;        // minor version number of class file
   u2              _major_version;        // major version number of class file
   Thread*         _init_thread;          // Pointer to current thread doing initialization (to handle recursive initialization)
@@ -448,9 +469,17 @@ class InstanceKlass: public Klass {
   jushort nest_host_index() const { return _nest_host_index; }
   void set_nest_host_index(u2 i)  { _nest_host_index = i; }
 
+  // record components
+  Array<RecordComponent*>* record_components() const { return _record_components; }
+  void set_record_components(Array<RecordComponent*>* record_components) {
+    _record_components = record_components;
+  }
+  bool is_record() const { return _record_components != NULL; }
+
 private:
   // Called to verify that k is a member of this nest - does not look at k's nest-host
   bool has_nest_member(InstanceKlass* k, TRAPS) const;
+
 public:
   // Returns nest-host class, resolving and validating it if needed
   // Returns NULL if an exception occurs during loading, or validation fails
@@ -559,15 +588,13 @@ public:
   Klass* find_field(Symbol* name, Symbol* sig, bool is_static, fieldDescriptor* fd) const;
 
   // find a non-static or static field given its offset within the class.
-  bool contains_field_offset(int offset) {
-    return instanceOopDesc::contains_field_offset(offset, nonstatic_field_size());
-  }
+  bool contains_field_offset(int offset);
 
   bool find_local_field_from_offset(int offset, bool is_static, fieldDescriptor* fd) const;
   bool find_field_from_offset(int offset, bool is_static, fieldDescriptor* fd) const;
 
  private:
-  static int quick_search(const Array<Method*>* methods, const Symbol* name);
+  inline static int quick_search(const Array<Method*>* methods, const Symbol* name);
 
  public:
   static void disable_method_binary_search() {
@@ -723,10 +750,29 @@ public:
     _nonstatic_oop_map_size = words;
   }
 
+  bool has_contended_annotations() const {
+    return ((_misc_flags & _misc_has_contended_annotations) != 0);
+  }
+  void set_has_contended_annotations(bool value)  {
+    if (value) {
+      _misc_flags |= _misc_has_contended_annotations;
+    } else {
+      _misc_flags &= ~_misc_has_contended_annotations;
+    }
+  }
+
 #if INCLUDE_JVMTI
   // Redefinition locking.  Class can only be redefined by one thread at a time.
-  bool is_being_redefined() const          { return _is_being_redefined; }
-  void set_is_being_redefined(bool value)  { _is_being_redefined = value; }
+  bool is_being_redefined() const          {
+    return ((_misc_flags & _misc_is_being_redefined) != 0);
+  }
+  void set_is_being_redefined(bool value)  {
+    if (value) {
+      _misc_flags |= _misc_is_being_redefined;
+    } else {
+      _misc_flags &= ~_misc_is_being_redefined;
+    }
+  }
 
   // RedefineClasses() support for previous versions:
   void add_previous_version(InstanceKlass* ik, int emcp_method_count);
@@ -1054,9 +1100,6 @@ public:
                                                is_unsafe_anonymous(),
                                                has_stored_fingerprint());
   }
-#if INCLUDE_SERVICES
-  virtual void collect_statistics(KlassSizeStats *sz) const;
-#endif
 
   intptr_t* start_of_itable()   const { return (intptr_t*)start_of_vtable() + vtable_length(); }
   intptr_t* end_of_itable()     const { return start_of_itable() + itable_length(); }
@@ -1152,6 +1195,8 @@ public:
                                     const Klass* super_klass,
                                     Array<InstanceKlass*>* local_interfaces,
                                     Array<InstanceKlass*>* transitive_interfaces);
+  void static deallocate_record_components(ClassLoaderData* loader_data,
+                                           Array<RecordComponent*>* record_component);
 
   // The constant pool is on stack if any of the methods are executing or
   // referenced by handles.

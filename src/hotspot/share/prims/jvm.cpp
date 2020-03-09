@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -51,6 +51,7 @@
 #include "oops/fieldStreams.inline.hpp"
 #include "oops/instanceKlass.hpp"
 #include "oops/method.hpp"
+#include "oops/recordComponent.hpp"
 #include "oops/objArrayKlass.hpp"
 #include "oops/objArrayOop.inline.hpp"
 #include "oops/oop.inline.hpp"
@@ -93,6 +94,7 @@
 #endif
 
 #include <errno.h>
+#include <jfr/recorder/jfrRecorder.hpp>
 
 /*
   NOTE about use of any ctor or function call that can trigger a safepoint/GC:
@@ -1693,6 +1695,54 @@ JVM_ENTRY(jobjectArray, JVM_GetClassDeclaredFields(JNIEnv *env, jclass ofClass, 
 }
 JVM_END
 
+JVM_ENTRY(jboolean, JVM_IsRecord(JNIEnv *env, jclass cls))
+{
+  JVMWrapper("JVM_IsRecord");
+  Klass* k = java_lang_Class::as_Klass(JNIHandles::resolve_non_null(cls));
+  if (k != NULL && k->is_instance_klass()) {
+    InstanceKlass* ik = InstanceKlass::cast(k);
+    return ik->is_record();
+  } else {
+    return false;
+  }
+}
+JVM_END
+
+JVM_ENTRY(jobjectArray, JVM_GetRecordComponents(JNIEnv* env, jclass ofClass))
+{
+  JVMWrapper("JVM_GetRecordComponents");
+  Klass* c = java_lang_Class::as_Klass(JNIHandles::resolve_non_null(ofClass));
+  assert(c->is_instance_klass(), "must be");
+  InstanceKlass* ik = InstanceKlass::cast(c);
+
+  if (ik->is_record()) {
+    Array<RecordComponent*>* components = ik->record_components();
+    assert(components != NULL, "components should not be NULL");
+    {
+      JvmtiVMObjectAllocEventCollector oam;
+      constantPoolHandle cp(THREAD, ik->constants());
+      int length = components->length();
+      assert(length >= 0, "unexpected record_components length");
+      objArrayOop record_components =
+        oopFactory::new_objArray(SystemDictionary::RecordComponent_klass(), length, CHECK_NULL);
+      objArrayHandle components_h (THREAD, record_components);
+
+      for (int x = 0; x < length; x++) {
+        RecordComponent* component = components->at(x);
+        assert(component != NULL, "unexpected NULL record component");
+        oop component_oop = java_lang_reflect_RecordComponent::create(ik, component, CHECK_NULL);
+        components_h->obj_at_put(x, component_oop);
+      }
+      return (jobjectArray)JNIHandles::make_local(components_h());
+    }
+  }
+
+  // Return empty array if ofClass is not a record.
+  objArrayOop result = oopFactory::new_objArray(SystemDictionary::RecordComponent_klass(), 0, CHECK_NULL);
+  return (jobjectArray)JNIHandles::make_local(env, result);
+}
+JVM_END
+
 static bool select_method(const methodHandle& method, bool want_constructor) {
   if (want_constructor) {
     return (method->is_initializer() && !method->is_static());
@@ -2734,7 +2784,7 @@ void jio_print(const char* s, size_t len) {
   if (Arguments::vfprintf_hook() != NULL) {
     jio_fprintf(defaultStream::output_stream(), "%.*s", (int)len, s);
   } else {
-    // Make an unused local variable to avoid warning from gcc 4.x compiler.
+    // Make an unused local variable to avoid warning from gcc compiler.
     size_t count = ::write(defaultStream::output_fd(), s, (int)len);
   }
 }
@@ -2833,6 +2883,15 @@ JVM_ENTRY(void, JVM_StartThread(JNIEnv* env, jobject jthread))
               os::native_thread_creation_failed_msg());
   }
 
+#if INCLUDE_JFR
+  if (JfrRecorder::is_recording() && EventThreadStart::is_enabled() &&
+      EventThreadStart::is_stacktrace_enabled()) {
+    JfrThreadLocal* tl = native_thread->jfr_thread_local();
+    // skip Thread.start() and Thread.start0()
+    tl->set_cached_stack_trace_id(JfrStackTraceRepository::record(thread, 2));
+  }
+#endif
+
   Thread::start(native_thread);
 
 JVM_END
@@ -2857,7 +2916,7 @@ JVM_ENTRY(void, JVM_StopThread(JNIEnv* env, jobject jthread, jobject throwable))
   bool is_alive = tlh.cv_internal_thread_to_JavaThread(jthread, &receiver, &java_thread);
   Events::log_exception(thread,
                         "JVM_StopThread thread JavaThread " INTPTR_FORMAT " as oop " INTPTR_FORMAT " [exception " INTPTR_FORMAT "]",
-                        p2i(receiver), p2i((address)java_thread), p2i(throwable));
+                        p2i(receiver), p2i(java_thread), p2i(throwable));
 
   if (is_alive) {
     // jthread refers to a live JavaThread.
@@ -3322,6 +3381,7 @@ JVM_ENTRY_NO_ENV(void*, JVM_LoadLibrary(const char* name))
 
     THROW_HANDLE_0(h_exception);
   }
+  log_info(library)("Loaded library %s, handle " INTPTR_FORMAT, name, p2i(load_result));
   return load_result;
 JVM_END
 
@@ -3329,12 +3389,17 @@ JVM_END
 JVM_LEAF(void, JVM_UnloadLibrary(void* handle))
   JVMWrapper("JVM_UnloadLibrary");
   os::dll_unload(handle);
+  log_info(library)("Unloaded library with handle " INTPTR_FORMAT, p2i(handle));
 JVM_END
 
 
 JVM_LEAF(void*, JVM_FindLibraryEntry(void* handle, const char* name))
   JVMWrapper("JVM_FindLibraryEntry");
-  return os::dll_lookup(handle, name);
+  void* find_result = os::dll_lookup(handle, name);
+  log_info(library)("%s %s in library with handle " INTPTR_FORMAT,
+                    find_result != NULL ? "Found" : "Failed to find",
+                    name, p2i(handle));
+  return find_result;
 JVM_END
 
 
@@ -3593,20 +3658,6 @@ JVM_ENTRY(jobjectArray, JVM_GetEnclosingMethodInfo(JNIEnv *env, jclass ofClass))
     dest->obj_at_put(2, str());
   }
   return (jobjectArray) JNIHandles::make_local(dest());
-}
-JVM_END
-
-JVM_ENTRY(void, JVM_GetVersionInfo(JNIEnv* env, jvm_version_info* info, size_t info_size))
-{
-  memset(info, 0, info_size);
-
-  info->jvm_version = VM_Version::jvm_version();
-  info->patch_version = VM_Version::vm_patch_version();
-
-  // when we add a new capability in the jvm_version_info struct, we should also
-  // consider to expose this new capability in the sun.rt.jvmCapabilities jvmstat
-  // counter defined in runtimeService.cpp.
-  info->is_attach_supported = AttachListener::is_attach_supported();
 }
 JVM_END
 

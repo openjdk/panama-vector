@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2019, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -31,18 +31,55 @@ import org.graalvm.compiler.nodes.NodeView;
 import org.graalvm.compiler.nodes.StructuredGraph;
 import org.graalvm.compiler.nodes.ValueNode;
 import org.graalvm.compiler.nodes.extended.ArrayRangeWrite;
+import org.graalvm.compiler.nodes.extended.RawLoadNode;
 import org.graalvm.compiler.nodes.java.AbstractCompareAndSwapNode;
 import org.graalvm.compiler.nodes.java.LoweredAtomicReadAndWriteNode;
 import org.graalvm.compiler.nodes.memory.FixedAccessNode;
-import org.graalvm.compiler.nodes.memory.HeapAccess;
-import org.graalvm.compiler.nodes.memory.HeapAccess.BarrierType;
+import org.graalvm.compiler.nodes.memory.OnHeapMemoryAccess.BarrierType;
 import org.graalvm.compiler.nodes.memory.ReadNode;
 import org.graalvm.compiler.nodes.memory.WriteNode;
 import org.graalvm.compiler.nodes.memory.address.AddressNode;
 import org.graalvm.compiler.nodes.type.StampTool;
 
+import jdk.vm.ci.meta.JavaKind;
+import jdk.vm.ci.meta.ResolvedJavaType;
+
 public class G1BarrierSet implements BarrierSet {
-    public G1BarrierSet() {
+
+    private final ResolvedJavaType referenceType;
+    private final long referentFieldOffset;
+
+    public G1BarrierSet(ResolvedJavaType referenceType, long referentFieldOffset) {
+        this.referenceType = referenceType;
+        this.referentFieldOffset = referentFieldOffset;
+    }
+
+    @Override
+    public BarrierType readBarrierType(RawLoadNode load) {
+        if (load.object().getStackKind() == JavaKind.Object &&
+                        load.accessKind() == JavaKind.Object &&
+                        !StampTool.isPointerAlwaysNull(load.object())) {
+            if (load.offset().isJavaConstant() && referentFieldOffset != load.offset().asJavaConstant().asLong()) {
+                // Reading at a constant offset which is different than the referent field.
+                return BarrierType.NONE;
+            }
+            ResolvedJavaType type = StampTool.typeOrNull(load.object());
+            if (type != null && referenceType.isAssignableFrom(type)) {
+                // It's definitely a field of a Reference type
+                if (load.offset().isJavaConstant() && referentFieldOffset == load.offset().asJavaConstant().asLong()) {
+                    // Exactly Reference.referent
+                    return BarrierType.WEAK_FIELD;
+                }
+                // An unknown offset into Reference
+                return BarrierType.MAYBE_WEAK_FIELD;
+            }
+            if (type == null || type.isAssignableFrom(referenceType)) {
+                // The object is a supertype of Reference with an unknown offset or a constant
+                // offset which is the same as Reference.referent.
+                return BarrierType.MAYBE_WEAK_FIELD;
+            }
+        }
+        return BarrierType.NONE;
     }
 
     @Override
@@ -66,15 +103,15 @@ public class G1BarrierSet implements BarrierSet {
     }
 
     private static void addReadNodeBarriers(ReadNode node) {
-        if (node.getBarrierType() == HeapAccess.BarrierType.WEAK_FIELD) {
+        if (node.getBarrierType() == BarrierType.WEAK_FIELD || node.getBarrierType() == BarrierType.MAYBE_WEAK_FIELD) {
             StructuredGraph graph = node.graph();
-            G1ReferentFieldReadBarrier barrier = graph.add(new G1ReferentFieldReadBarrier(node.getAddress(), node, false));
+            G1ReferentFieldReadBarrier barrier = graph.add(new G1ReferentFieldReadBarrier(node.getAddress(), node, node.getBarrierType() == BarrierType.MAYBE_WEAK_FIELD));
             graph.addAfterFixed(node, barrier);
         }
     }
 
     private void addWriteBarriers(FixedAccessNode node, ValueNode writtenValue, ValueNode expectedValue, boolean doLoad, boolean nullCheck) {
-        HeapAccess.BarrierType barrierType = node.getBarrierType();
+        BarrierType barrierType = node.getBarrierType();
         switch (barrierType) {
             case NONE:
                 // nothing to do
@@ -91,7 +128,7 @@ public class G1BarrierSet implements BarrierSet {
                         addG1PreWriteBarrier(node, node.getAddress(), expectedValue, doLoad, nullCheck, graph);
                     }
                     if (writeRequiresPostBarrier(node, writtenValue)) {
-                        boolean precise = barrierType != HeapAccess.BarrierType.FIELD;
+                        boolean precise = barrierType != BarrierType.FIELD;
                         addG1PostWriteBarrier(node, node.getAddress(), writtenValue, precise, graph);
                     }
                 }

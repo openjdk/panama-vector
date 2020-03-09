@@ -38,12 +38,13 @@
 #include "oops/oop.inline.hpp"
 #include "prims/jvmtiExport.hpp"
 #include "register_s390.hpp"
+#include "registerSaver_s390.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/signature.hpp"
 #include "runtime/vframeArray.hpp"
 #include "utilities/macros.hpp"
+#include "utilities/powerOfTwo.hpp"
 #include "vmreg_s390.inline.hpp"
-#include "registerSaver_s390.hpp"
 
 // Implementation of StubAssembler
 
@@ -339,7 +340,7 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
         oop_maps->add_gc_map(call_offset, map);
         restore_live_registers_except_r2(sasm);
 
-        __ verify_oop(obj);
+        __ verify_oop(obj, FILE_AND_LINE);
         __ z_br(Z_R14);
       }
       break;
@@ -405,7 +406,7 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
         oop_maps->add_gc_map(call_offset, map);
         restore_live_registers_except_r2(sasm);
 
-        __ verify_oop(obj);
+        __ verify_oop(obj, FILE_AND_LINE);
         __ z_br(Z_R14);
       }
       break;
@@ -423,7 +424,7 @@ OopMapSet* Runtime1::generate_code_for(StubID id, StubAssembler* sasm) {
         restore_live_registers_except_r2(sasm);
 
         // Z_R2,: new multi array
-        __ verify_oop(Z_R2);
+        __ verify_oop(Z_R2, FILE_AND_LINE);
         __ z_br(Z_R14);
       }
       break;

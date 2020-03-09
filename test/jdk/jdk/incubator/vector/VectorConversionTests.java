@@ -17,15 +17,13 @@ import jdk.incubator.vector.VectorSpecies;
  * @test
  * @modules jdk.incubator.vector
  * @modules java.base/jdk.internal.vm.annotation
- * @run testng/othervm --add-opens jdk.incubator.vector/jdk.incubator.vector=ALL-UNNAMED
- *      VectorConversionTests
- * @run testng/othervm -Xcomp -XX:-TieredCompilation --add-opens jdk.incubator.vector/jdk.incubator.vector=ALL-UNNAMED
+ * @run testng/othervm  -XX:-TieredCompilation --add-opens jdk.incubator.vector/jdk.incubator.vector=ALL-UNNAMED
  *      VectorConversionTests
  */
 
 @Test
 public class VectorConversionTests {
-   static final int INVOC_COUNT = Integer.getInteger("jdk.incubator.vector.test.loop-iterations", 100);
+   static final int INVOC_COUNT = Integer.getInteger("jdk.incubator.vector.test.loop-iterations", 1000);
 
    static final VectorSpecies<Integer> ispec64 = IntVector.SPECIES_64;
    static final VectorSpecies<Float> fspec64 = FloatVector.SPECIES_64;

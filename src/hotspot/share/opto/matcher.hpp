@@ -78,16 +78,6 @@ public:
     }
   };
 
-#ifdef X86
-  // Enables post selection phase for machine graph cleanup.
-  // Currently this is needed only for X86 target to remove
-  // generic vector operands.
-  void enable_postselect_cleanup(const Node * n);
-  void reset_postselect_cleanup() { _require_postselect_cleanup = 0;}
-  bool require_postselect_cleanup() { return _require_postselect_cleanup & (1 << 0x2);}
-  void do_post_selection_processing(Compile*, Node *);
-  const static RegMask * get_concrete_reg_mask(MachNode * node);
-#endif
 private:
   // Private arena of State objects
   ResourceArea _states_arena;
@@ -135,6 +125,8 @@ private:
   bool is_bmi_pattern(Node *n, Node *m);
 #endif
   bool is_vshift_con(Node *n, Node *m);
+
+  bool is_vshift_con_pattern(Node *n, Node *m);
 
   // Debug and profile information for nodes in old space:
   GrowableArray<Node_Notes*>* _old_node_note_array;
@@ -208,7 +200,6 @@ public:
   // temporary registers.
   bool _allocation_started;
 
-
   // Machine register names
   static const char *regName[];
   // Machine register encodings
@@ -226,9 +217,6 @@ public:
   // Always Save   = 'A' (same as SOE + SOC)
   const char *_register_save_policy;
   const char *_c_reg_save_policy;
-
-  char _require_postselect_cleanup;
-
   // Convert a machine register to a machine register type, so-as to
   // properly match spill code.
   const int *_register_save_type;
@@ -288,7 +276,6 @@ public:
   // If we should save-on-entry this register
   bool is_save_on_entry( int reg );
 
-  const RegMask * getRegMaskForNode(MachNode *);
   // Fixup the save-on-entry registers
   void Fixup_Save_On_Entry( );
 
@@ -529,12 +516,35 @@ public:
   // postalloc expand)?
   static const bool require_postalloc_expand;
 
+  // Does the platform support generic vector operands?
+  // Requires cleanup after selection phase.
+  static const bool supports_generic_vector_operands;
+
+ private:
+  void do_postselect_cleanup();
+
+  void specialize_generic_vector_operands();
+  void specialize_mach_node(MachNode* m);
+  void specialize_temp_node(MachTempNode* tmp, MachNode* use, uint idx);
+  MachOper* specialize_vector_operand(MachNode* m, uint opnd_idx);
+  MachOper* specialize_vector_operand_helper(MachNode* m, uint opnd_idx, const TypeVect* vt);
+
+  static MachOper* specialize_generic_vector_operand(MachOper* generic_opnd, uint ideal_reg, bool is_temp);
+
+  static bool is_generic_reg2reg_move(MachNode* m);
+  static bool is_generic_vector(MachOper* opnd);
+
+  const RegMask* regmask_for_ideal_register(uint ideal_reg, Node* ret);
+
+  // Graph verification code
+  DEBUG_ONLY( bool verify_after_postselect_cleanup(); )
+
+ public:
   // Perform a platform dependent implicit null fixup.  This is needed
   // on windows95 to take care of some unusual register constraints.
   void pd_implicit_null_fixup(MachNode *load, uint idx);
 
-  // Advertise here if the CPU requires explicit rounding operations
-  // to implement the UseStrictFP mode.
+  // Advertise here if the CPU requires explicit rounding operations to implement strictfp mode.
   static const bool strict_fp_requires_explicit_rounding;
 
   // Are floats conerted to double when stored to stack during deoptimization?

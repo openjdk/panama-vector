@@ -59,7 +59,7 @@ public:
   static CompileTask* select_task_helper(CompileQueue* compile_queue);
 
   // Return initial compile level that is used with Xcomp
-  virtual CompLevel initial_compile_level() = 0;
+  virtual CompLevel initial_compile_level(const methodHandle& method) = 0;
   virtual int compiler_count(CompLevel comp_level) = 0;
   // main notification entry, return a pointer to an nmethod if the OSR is required,
   // returns NULL otherwise.
@@ -71,9 +71,6 @@ public:
   // delay_compilation(method) can be called by any component of the runtime to notify the policy
   // that it's recommended to delay the compilation of this method.
   virtual void delay_compilation(Method* method) = 0;
-  // disable_compilation() is called whenever the runtime decides to disable compilation of the
-  // specified method.
-  virtual void disable_compilation(Method* method) = 0;
   // Select task is called by CompileBroker. The queue is guaranteed to have at least one
   // element and is locked. The function should select one and return it.
   virtual CompileTask* select_task(CompileQueue* compile_queue) = 0;
@@ -97,12 +94,11 @@ class SimpleCompPolicy : public CompilationPolicy {
   void method_back_branch_event(const methodHandle& m, int bci, JavaThread* thread);
  public:
   SimpleCompPolicy() : _compiler_count(0) { }
-  virtual CompLevel initial_compile_level() { return CompLevel_highest_tier; }
+  virtual CompLevel initial_compile_level(const methodHandle& m) { return CompLevel_highest_tier; }
   virtual int compiler_count(CompLevel comp_level);
   virtual void do_safepoint_work();
   virtual void reprofile(ScopeDesc* trap_scope, bool is_osr);
   virtual void delay_compilation(Method* method);
-  virtual void disable_compilation(Method* method);
   virtual bool is_mature(Method* method);
   virtual void initialize();
   virtual CompileTask* select_task(CompileQueue* compile_queue);

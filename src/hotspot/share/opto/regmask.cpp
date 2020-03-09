@@ -29,6 +29,7 @@
 #include "opto/node.hpp"
 #include "opto/regmask.hpp"
 #include "utilities/population_count.hpp"
+#include "utilities/powerOfTwo.hpp"
 
 #define RM_SIZE _RM_SIZE /* a constant private to the class RegMask */
 
@@ -309,7 +310,7 @@ uint RegMask::Size() const {
   uint sum = 0;
   assert(valid_watermarks(), "sanity");
   for (int i = _lwm; i <= _hwm; i++) {
-    sum += population_count(_A[i]);
+    sum += population_count((unsigned)_A[i]);
   }
   return sum;
 }

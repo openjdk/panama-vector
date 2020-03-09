@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -78,6 +78,43 @@ public interface Element extends javax.lang.model.AnnotatedConstruct {
     /**
      * Returns the {@code kind} of this element.
      *
+     * <ul>
+     *
+     * <li> The kind of a {@linkplain PackageElement package} is
+     * {@link ElementKind#PACKAGE PACKAGE}.
+     *
+     * <li> The kind of a {@linkplain ModuleElement module} is {@link
+     * ElementKind#MODULE MODULE}.
+     *
+     * <li> The kind of a {@linkplain TypeElement type element} is one
+     * of {@link ElementKind#ANNOTATION_TYPE ANNOTATION_TYPE}, {@link
+     * ElementKind#CLASS CLASS}, {@link ElementKind#ENUM ENUM}, {@link
+     * ElementKind#INTERFACE INTERFACE}, or {@link ElementKind#RECORD
+     * RECORD}.
+     *
+     * <li> The kind of a {@linkplain VariableElement variable} is one
+     * of {@link ElementKind#ENUM_CONSTANT ENUM_CONSTANT}, {@link
+     * ElementKind#EXCEPTION_PARAMETER EXCEPTION_PARAMETER}, {@link
+     * ElementKind#FIELD FIELD}, {@link ElementKind#LOCAL_VARIABLE
+     * LOCAL_VARIABLE}, {@link ElementKind#PARAMETER PARAMETER},
+     * {@link ElementKind#RESOURCE_VARIABLE RESOURCE_VARIABLE}, or
+     * {@link ElementKind#BINDING_VARIABLE BINDING_VARIABLE}.
+     *
+     * <li> The kind of an {@linkplain ExecutableElement executable}
+     * is one of {@link ElementKind#CONSTRUCTOR CONSTRUCTOR}, {@link
+     * ElementKind#INSTANCE_INIT INSTANCE_INIT}, {@link
+     * ElementKind#METHOD METHOD}, or {@link ElementKind#STATIC_INIT
+     * STATIC_INIT}.
+     *
+     * <li> The kind of a {@linkplain TypeParameterElement type parameter} is
+     * {@link ElementKind#TYPE_PARAMETER TYPE_PARAMETER}.
+     *
+     * <li> The kind of a {@linkplain RecordComponentElement record
+     * component} is {@link ElementKind#RECORD_COMPONENT
+     * RECORD_COMPONENT}.
+     *
+     * </ul>
+     *
      * @return the kind of this element
      */
     ElementKind getKind();
@@ -118,6 +155,7 @@ public interface Element extends javax.lang.model.AnnotatedConstruct {
      * @see TypeElement#getSimpleName
      * @see VariableElement#getSimpleName
      * @see ModuleElement#getSimpleName
+     * @see RecordComponentElement#getSimpleName
      * @revised 9
      * @spec JPMS
      */
@@ -148,6 +186,11 @@ public interface Element extends javax.lang.model.AnnotatedConstruct {
      * parameter}, {@linkplain ExecutableElement the executable
      * element} which declares the parameter is returned.
      *
+     * <li> If this is a {@linkplain
+     * RecordComponentElement#getEnclosingElement record component},
+     * {@linkplain TypeElement the type} which declares the
+     * record component is returned.
+     *
      * <li> If this is a {@linkplain ModuleElement#getEnclosingElement
      * module}, {@code null} is returned.
      *
@@ -166,7 +209,7 @@ public interface Element extends javax.lang.model.AnnotatedConstruct {
      *
      * A {@linkplain TypeElement#getEnclosedElements class or
      * interface} is considered to enclose the fields, methods,
-     * constructors, and member types that it directly declares.
+     * constructors, record components, and member types that it directly declares.
      *
      * A {@linkplain PackageElement#getEnclosedElements package}
      * encloses the top-level classes and interfaces within it, but is

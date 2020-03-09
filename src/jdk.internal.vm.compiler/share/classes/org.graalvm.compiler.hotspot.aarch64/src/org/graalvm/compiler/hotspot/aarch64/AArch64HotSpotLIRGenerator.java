@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2020, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2018, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -397,6 +397,12 @@ public class AArch64HotSpotLIRGenerator extends AArch64LIRGenerator implements H
         Value speculation = emitJavaConstant(getMetaAccess().encodeSpeculation(SpeculationLog.NO_SPECULATION));
         moveDeoptValuesToThread(actionAndReason, speculation);
         append(new AArch64HotSpotDeoptimizeCallerOp(config));
+    }
+
+    @Override
+    public void emitDeoptimizeWithExceptionInCaller(Value exception) {
+        Register thread = getProviders().getRegisters().getThreadRegister();
+        append(new AArch64HotSpotDeoptimizeWithExceptionCallerOp(config, exception, thread));
     }
 
     @Override

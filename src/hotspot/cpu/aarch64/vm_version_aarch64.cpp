@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2019, Red Hat Inc. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2020, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -447,14 +447,26 @@ void VM_Version::get_processor_features() {
   if (FLAG_IS_DEFAULT(UseMontgomerySquareIntrinsic)) {
     UseMontgomerySquareIntrinsic = true;
   }
-  if (FLAG_IS_DEFAULT(MaxVectorSize)) {
-    if (UseSVE) {
+
+  int min_vector_size = 8;
+
+  if (!FLAG_IS_DEFAULT(MaxVectorSize)) {
+    if (MaxVectorSize < min_vector_size) {
+      warning("MaxVectorSize must be at least %i on this platform", min_vector_size);
+      FLAG_SET_DEFAULT(MaxVectorSize, min_vector_size);
+    }
+  } else {
+    if (UseSVE > 0) {
       MaxVectorSize = 256;
     }
   }
 
   if (FLAG_IS_DEFAULT(OptoScheduling)) {
     OptoScheduling = true;
+  }
+
+  if (FLAG_IS_DEFAULT(AlignVector)) {
+    AlignVector = AvoidUnalignedAccesses;
   }
 #endif
 }

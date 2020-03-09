@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -426,6 +426,7 @@ class MacroAssembler: public Assembler {
   // Division by power of 2, rounding towards 0
   void division_with_shift(Register reg, int shift_value);
 
+#ifndef _LP64
   // Compares the top-most stack entries on the FPU stack and sets the eflags as follows:
   //
   // CF (corresponds to C0) if x < y
@@ -454,6 +455,10 @@ class MacroAssembler: public Assembler {
   // tmp is a temporary register, if none is available use noreg
   void fremr(Register tmp);
 
+  // only if +VerifyFPU
+  void verify_FPU(int stack_depth, const char* s = "illegal FPU state");
+#endif // !LP64
+
   // dst = c = a * b + c
   void fmad(XMMRegister dst, XMMRegister a, XMMRegister b, XMMRegister c);
   void fmaf(XMMRegister dst, XMMRegister a, XMMRegister b, XMMRegister c);
@@ -473,9 +478,6 @@ class MacroAssembler: public Assembler {
   void jC2 (Register tmp, Label& L);
   void jnC2(Register tmp, Label& L);
 
-  // Pop ST (ffree & fincstp combined)
-  void fpop();
-
   // Load float value from 'address'. If UseSSE >= 1, the value is loaded into
   // register xmm0. Otherwise, the value is loaded onto the FPU stack.
   void load_float(Address src);
@@ -492,13 +494,12 @@ class MacroAssembler: public Assembler {
   // from register xmm0. Otherwise, the value is stored from the FPU stack.
   void store_double(Address dst);
 
-  // pushes double TOS element of FPU stack on CPU stack; pops from FPU stack
-  void push_fTOS();
-
-  // pops double TOS element from CPU stack and pushes on FPU stack
-  void pop_fTOS();
+#ifndef _LP64
+  // Pop ST (ffree & fincstp combined)
+  void fpop();
 
   void empty_FPU_stack();
+#endif // !_LP64
 
   void push_IU_state();
   void pop_IU_state();
@@ -598,19 +599,18 @@ class MacroAssembler: public Assembler {
   // Debugging
 
   // only if +VerifyOops
-  // TODO: Make these macros with file and line like sparc version!
-  void verify_oop(Register reg, const char* s = "broken oop");
-  void verify_oop_addr(Address addr, const char * s = "broken oop addr");
+  void _verify_oop(Register reg, const char* s, const char* file, int line);
+  void _verify_oop_addr(Address addr, const char* s, const char* file, int line);
 
   // TODO: verify method and klass metadata (compare against vptr?)
   void _verify_method_ptr(Register reg, const char * msg, const char * file, int line) {}
   void _verify_klass_ptr(Register reg, const char * msg, const char * file, int line){}
 
+#define verify_oop(reg) _verify_oop(reg, "broken oop " #reg, __FILE__, __LINE__)
+#define verify_oop_msg(reg, msg) _verify_oop(reg, "broken oop " #reg ", " #msg, __FILE__, __LINE__)
+#define verify_oop_addr(addr) _verify_oop_addr(addr, "broken oop addr " #addr, __FILE__, __LINE__)
 #define verify_method_ptr(reg) _verify_method_ptr(reg, "broken method " #reg, __FILE__, __LINE__)
 #define verify_klass_ptr(reg) _verify_klass_ptr(reg, "broken klass " #reg, __FILE__, __LINE__)
-
-  // only if +VerifyFPU
-  void verify_FPU(int stack_depth, const char* s = "illegal FPU state");
 
   // Verify or restore cpu control state after JNI call
   void restore_cpu_control_state_after_jni();
@@ -902,6 +902,7 @@ class MacroAssembler: public Assembler {
   void comisd(XMMRegister dst, Address src) { Assembler::comisd(dst, src); }
   void comisd(XMMRegister dst, AddressLiteral src);
 
+#ifndef _LP64
   void fadd_s(Address src)        { Assembler::fadd_s(src); }
   void fadd_s(AddressLiteral src) { Assembler::fadd_s(as_Address(src)); }
 
@@ -920,17 +921,18 @@ class MacroAssembler: public Assembler {
 
   void fmul_s(Address src)        { Assembler::fmul_s(src); }
   void fmul_s(AddressLiteral src) { Assembler::fmul_s(as_Address(src)); }
+#endif // _LP64
 
   void ldmxcsr(Address src) { Assembler::ldmxcsr(src); }
   void ldmxcsr(AddressLiteral src);
 
-  void vmin_max_macro(XMMRegister dst, XMMRegister a, XMMRegister b,
-                         XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
-                         bool is_single, bool is_min, int vector_len);
+  void vminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
+               XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
+               bool is_single, bool is_min, int vector_len);
 
-  void vmin_max_macro_evex(XMMRegister dst, XMMRegister a, XMMRegister b,
-                           KRegister ktmp, XMMRegister atmp, XMMRegister btmp,
-                           bool is_single, bool is_min, int vector_len);
+  void evminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
+                KRegister ktmp, XMMRegister atmp, XMMRegister btmp,
+                bool is_single, bool is_min, int vector_len);
 
 #ifdef _LP64
  private:
@@ -1089,9 +1091,6 @@ public:
                 XMMRegister xmm4, XMMRegister xmm5, XMMRegister xmm6, XMMRegister xmm7,
                 Register rax, Register rcx, Register rdx, Register tmp);
 #endif
-
-  void increase_precision();
-  void restore_precision();
 
 private:
 
@@ -1326,9 +1325,10 @@ public:
   void evpcmpw(KRegister kdst, KRegister mask, XMMRegister nds, AddressLiteral src,
                int comparison, int vector_len, Register scratch_reg);
 
+
   // Emit comparison instruction for the specified comparison predicate.
-  void vpcmpCCbwd(XMMRegister dst, XMMRegister nds, XMMRegister src, ComparisonPredicate cond, Width width, int vector_len, Register scratch_reg);
-  void vpcmpCCq(XMMRegister dst, XMMRegister nds, XMMRegister src, ComparisonPredicate cond, int vector_len, Register scratch_reg);
+  void vpcmpCCW(XMMRegister dst, XMMRegister nds, XMMRegister src, ComparisonPredicate cond, Width width, int vector_len, Register scratch_reg);
+  void vpcmpCC(XMMRegister dst, XMMRegister nds, XMMRegister src, int cond_encoding, Width width, int vector_len);
 
   void vpmovzxbw(XMMRegister dst, Address src, int vector_len);
   void vpmovzxbw(XMMRegister dst, XMMRegister src, int vector_len) { Assembler::vpmovzxbw(dst, src, vector_len); }
@@ -1437,7 +1437,7 @@ public:
   void vpermd(XMMRegister dst, XMMRegister nds, AddressLiteral src, int vector_len, Register scratch_reg);
 
   void vinserti128(XMMRegister dst, XMMRegister nds, XMMRegister src, uint8_t imm8) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vinserti32x4(dst, dst, src, imm8);
     } else if (UseAVX > 1) {
       // vinserti128 is available only in AVX2
@@ -1448,7 +1448,7 @@ public:
   }
 
   void vinserti128(XMMRegister dst, XMMRegister nds, Address src, uint8_t imm8) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vinserti32x4(dst, dst, src, imm8);
     } else if (UseAVX > 1) {
       // vinserti128 is available only in AVX2
@@ -1459,7 +1459,7 @@ public:
   }
 
   void vextracti128(XMMRegister dst, XMMRegister src, uint8_t imm8) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vextracti32x4(dst, src, imm8);
     } else if (UseAVX > 1) {
       // vextracti128 is available only in AVX2
@@ -1470,7 +1470,7 @@ public:
   }
 
   void vextracti128(Address dst, XMMRegister src, uint8_t imm8) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vextracti32x4(dst, src, imm8);
     } else if (UseAVX > 1) {
       // vextracti128 is available only in AVX2
@@ -1495,7 +1495,7 @@ public:
   }
 
   void vinsertf128_high(XMMRegister dst, XMMRegister src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vinsertf32x4(dst, dst, src, 1);
     } else {
       Assembler::vinsertf128(dst, dst, src, 1);
@@ -1503,7 +1503,7 @@ public:
   }
 
   void vinsertf128_high(XMMRegister dst, Address src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vinsertf32x4(dst, dst, src, 1);
     } else {
       Assembler::vinsertf128(dst, dst, src, 1);
@@ -1511,7 +1511,7 @@ public:
   }
 
   void vextractf128_high(XMMRegister dst, XMMRegister src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vextractf32x4(dst, src, 1);
     } else {
       Assembler::vextractf128(dst, src, 1);
@@ -1519,7 +1519,7 @@ public:
   }
 
   void vextractf128_high(Address dst, XMMRegister src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vextractf32x4(dst, src, 1);
     } else {
       Assembler::vextractf128(dst, src, 1);
@@ -1561,7 +1561,7 @@ public:
   }
 
   void vinsertf128_low(XMMRegister dst, XMMRegister src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vinsertf32x4(dst, dst, src, 0);
     } else {
       Assembler::vinsertf128(dst, dst, src, 0);
@@ -1569,7 +1569,7 @@ public:
   }
 
   void vinsertf128_low(XMMRegister dst, Address src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vinsertf32x4(dst, dst, src, 0);
     } else {
       Assembler::vinsertf128(dst, dst, src, 0);
@@ -1577,7 +1577,7 @@ public:
   }
 
   void vextractf128_low(XMMRegister dst, XMMRegister src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vextractf32x4(dst, src, 0);
     } else {
       Assembler::vextractf128(dst, src, 0);
@@ -1585,7 +1585,7 @@ public:
   }
 
   void vextractf128_low(Address dst, XMMRegister src) {
-    if (UseAVX > 2) {
+    if (UseAVX > 2 && VM_Version::supports_avx512novl()) {
       Assembler::vextractf32x4(dst, src, 0);
     } else {
       Assembler::vextractf128(dst, src, 0);
@@ -1719,9 +1719,9 @@ public:
 
 #ifdef COMPILER2
   // Generic instructions support for use in .ad files C2 code generation
-  void vabsnegd(int opcode, XMMRegister dst, Register scr);
+  void vabsnegd(int opcode, XMMRegister dst, XMMRegister src, Register scr);
   void vabsnegd(int opcode, XMMRegister dst, XMMRegister src, int vector_len, Register scr);
-  void vabsnegf(int opcode, XMMRegister dst, Register scr);
+  void vabsnegf(int opcode, XMMRegister dst, XMMRegister src, Register scr);
   void vabsnegf(int opcode, XMMRegister dst, XMMRegister src, int vector_len, Register scr);
   void vextendbw(bool sign, XMMRegister dst, XMMRegister src, int vector_len);
   void vextendbw(bool sign, XMMRegister dst, XMMRegister src);
@@ -1729,8 +1729,70 @@ public:
   void vshiftd(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
   void vshiftw(int opcode, XMMRegister dst, XMMRegister src);
   void vshiftw(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+  void pminmax(BasicType typ, XMMRegister dst, XMMRegister src, bool is_min);
+  void vpminmax(BasicType typ, XMMRegister dst, XMMRegister src1, XMMRegister src2, bool is_min, int vector_len);
   void vshiftq(int opcode, XMMRegister dst, XMMRegister src);
   void vshiftq(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+  void insert(BasicType typ, XMMRegister dst, Register val, int idx);
+  void vinsert(BasicType typ, XMMRegister dst, XMMRegister src, Register val, int idx);
+  void vgather(BasicType typ, XMMRegister dst, Register base, XMMRegister idx, XMMRegister mask, int vector_len);
+  void evgather(BasicType typ, XMMRegister dst, KRegister mask, Register base, XMMRegister idx, int vector_len);
+  void evscatter(BasicType typ, Register base, XMMRegister idx, KRegister mask, XMMRegister src, int vector_len);
+
+  // Int Reduction
+  void reducedw(int opcode, XMMRegister dst, XMMRegister src);
+  void vreducedw(int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len);
+  void reduce2I(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce4I(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce8I(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce16I(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+
+  // Byte Reduction
+  void reduceb(int opcode, XMMRegister dst, XMMRegister src);
+  void vreduceb(int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len);
+  void reduce8B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce16B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce32B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce64B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void mulreduce8B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void mulreduce16B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void mulreduce32B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void mulreduce64B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+
+  // Short Reduction
+  void reducew(int opcode, XMMRegister dst, XMMRegister src);
+  void vreducew(int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len);
+  void reduce4S(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce8S(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce16S(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce32S(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+
+  // Long Reduction
+  void reduceq(int opcode, XMMRegister dst, XMMRegister src);
+  void vreduceq(int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len);
+  void reduce2L(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce4L(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce8L(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+
+  // Float Reduction
+  void reducef(int opcode, XMMRegister dst, XMMRegister src);
+  void reduce2F(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp);
+  void reduce4F(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp);
+  void reduce8F(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce16F(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
+
+  // Double Reduction
+  void reduced(int opcode, XMMRegister dst, XMMRegister src);
+  void reduce2D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp);
+  void reduce4D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce8D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
+
+  // extract
+  void extract(BasicType typ, Register dst, XMMRegister src, int idx);
+  XMMRegister get_lane(BasicType typ, XMMRegister dst, XMMRegister src, int elemindex);
+  void get_elem(BasicType typ, Register dst, XMMRegister src, int elemindex);
+  void get_elem(BasicType typ, XMMRegister dst, XMMRegister src, int elemindex, Register tmp = noreg, XMMRegister vtmp = xnoreg);
+
 #endif
 
   // C2 compiled method's prolog code.
@@ -1894,6 +1956,11 @@ public:
                           XMMRegister tmp1, Register tmp2);
 
 #ifdef _LP64
+  void convert_f2i(Register dst, XMMRegister src);
+  void convert_d2i(Register dst, XMMRegister src);
+  void convert_f2l(Register dst, XMMRegister src);
+  void convert_d2l(Register dst, XMMRegister src);
+
   void cache_wb(Address line);
   void cache_wbsync(bool is_pre);
 #endif // _LP64

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -63,6 +63,53 @@ import javax.lang.model.util.*;
  * are used in subsequent revisions of the {@code javax.lang.model.*}
  * packages that are only required to run on Java SE 8 and higher
  * platform versions.
+ *
+ * @apiNote
+ *
+ * There are several families of classes implementing this visitor
+ * interface in the {@linkplain javax.lang.model.util util
+ * package}. The families follow a naming pattern along the lines of
+ * {@code FooVisitor}<i>N</i> where <i>N</i> indicates the
+ * {@linkplain javax.lang.model.SourceVersion source version} the
+ * visitor is appropriate for.
+ *
+ * In particular, a {@code FooVisitor}<i>N</i> is expected to handle
+ * all language constructs present in source version <i>N</i>. If
+ * there are no new language constructs added in version
+ * <i>N</i>&nbsp;+&nbsp;1 (or subsequent releases), {@code
+ * FooVisitor}<i>N</i> may also handle that later source version; in
+ * that case, the {@link
+ * javax.annotation.processing.SupportedSourceVersion
+ * SupportedSourceVersion} annotation on the {@code
+ * FooVisitor}<i>N</i> class will indicate a later version.
+ *
+ * When visiting an element representing a language construct
+ * introduced <strong>after</strong> source version <i>N</i>, a {@code
+ * FooVisitor}<i>N</i> will throw an {@link UnknownElementException}
+ * unless that behavior is overridden.
+ *
+ * <p>When choosing which member of a visitor family to subclass,
+ * subclassing the most recent one increases the range of source
+ * versions covered. When choosing which visitor family to subclass,
+ * consider their built-in capabilities:
+ *
+ * <ul>
+ *
+ * <li>{@link AbstractElementVisitor6 AbstractElementVisitor}s:
+ * Skeletal visitor implementations.
+ *
+ * <li>{@link SimpleElementVisitor6 SimpleElementVisitor}s: Support
+ * default actions and a default return value.
+ *
+ * <li>{@link ElementKindVisitor6 ElementKindVisitor}s: Visit methods
+ * provided on a {@linkplain Element#getKind per-kind} granularity as
+ * some categories of elements can have more than one kind.
+ *
+ * <li>{@link ElementScanner6 ElementScanner}s: Scanners are visitors
+ * which traverse an element and the elements {@linkplain
+ * Element#getEnclosedElements enclosed} by it and associated with it.
+ *
+ * </ul>
  *
  * @param <R> the return type of this visitor's methods.  Use {@link
  *            Void} for visitors that do not need to return results.
@@ -162,6 +209,31 @@ public interface ElementVisitor<R, P> {
      * @spec JPMS
      */
     default R visitModule(ModuleElement e, P p) {
+        return visitUnknown(e, p);
+    }
+
+    /**
+     * {@preview Associated with records, a preview feature of the Java language.
+     *
+     *           This method is associated with <i>records</i>, a preview
+     *           feature of the Java language. Preview features
+     *           may be removed in a future release, or upgraded to permanent
+     *           features of the Java language.}
+     *
+     * Visits a record component element.
+     *
+     * @implSpec The default implementation visits a {@code
+     * RecordComponentElement} by calling {@code visitUnknown(e, p)}.
+     *
+     * @param e  the element to visit
+     * @param p  a visitor-specified parameter
+     * @return a visitor-specified result
+     * @since 14
+     */
+    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.RECORDS,
+                                 essentialAPI=false)
+    @SuppressWarnings("preview")
+    default R visitRecordComponent(RecordComponentElement e, P p) {
         return visitUnknown(e, p);
     }
 }

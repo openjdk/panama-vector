@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -304,7 +304,7 @@ void ZBarrierSetAssembler::generate_c1_load_barrier_stub(LIR_Assembler* ce,
   __ addptr(rsp, 2 * BytesPerWord);
 
   // Verify result
-  __ verify_oop(rax, "Bad oop");
+  __ verify_oop(rax);
 
   // Move result into place
   if (ref != rax) {
@@ -517,8 +517,11 @@ private:
     // Sort by size, largest first
     _xmm_registers.sort(xmm_compare_register_size);
 
+    // On Windows, the caller reserves stack space for spilling register arguments
+    const int arg_spill_size = frame::arg_reg_save_area_bytes;
+
     // Stack pointer must be 16 bytes aligned for the call
-    _spill_offset = _spill_size = align_up(xmm_spill_size + gp_spill_size, 16);
+    _spill_offset = _spill_size = align_up(xmm_spill_size + gp_spill_size + arg_spill_size, 16);
   }
 
 public:

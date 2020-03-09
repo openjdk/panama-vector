@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2019, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -31,11 +31,11 @@ import org.graalvm.compiler.nodes.NodeView;
 import org.graalvm.compiler.nodes.StructuredGraph;
 import org.graalvm.compiler.nodes.ValueNode;
 import org.graalvm.compiler.nodes.extended.ArrayRangeWrite;
+import org.graalvm.compiler.nodes.extended.RawLoadNode;
 import org.graalvm.compiler.nodes.java.AbstractCompareAndSwapNode;
 import org.graalvm.compiler.nodes.java.LoweredAtomicReadAndWriteNode;
 import org.graalvm.compiler.nodes.memory.FixedAccessNode;
-import org.graalvm.compiler.nodes.memory.HeapAccess;
-import org.graalvm.compiler.nodes.memory.HeapAccess.BarrierType;
+import org.graalvm.compiler.nodes.memory.OnHeapMemoryAccess.BarrierType;
 import org.graalvm.compiler.nodes.memory.ReadNode;
 import org.graalvm.compiler.nodes.memory.WriteNode;
 import org.graalvm.compiler.nodes.memory.address.AddressNode;
@@ -45,6 +45,11 @@ import org.graalvm.compiler.nodes.util.GraphUtil;
 
 public class CardTableBarrierSet implements BarrierSet {
     public CardTableBarrierSet() {
+    }
+
+    @Override
+    public BarrierType readBarrierType(RawLoadNode load) {
+        return BarrierType.NONE;
     }
 
     @Override
@@ -133,7 +138,7 @@ public class CardTableBarrierSet implements BarrierSet {
 
     public boolean needsWriteBarrier(FixedAccessNode node, ValueNode writtenValue) {
         assert !(node instanceof ArrayRangeWrite);
-        HeapAccess.BarrierType barrierType = node.getBarrierType();
+        BarrierType barrierType = node.getBarrierType();
         switch (barrierType) {
             case NONE:
                 return false;
@@ -166,7 +171,7 @@ public class CardTableBarrierSet implements BarrierSet {
     }
 
     private static void addSerialPostWriteBarrier(FixedAccessNode node, AddressNode address, StructuredGraph graph) {
-        boolean precise = node.getBarrierType() != HeapAccess.BarrierType.FIELD;
+        boolean precise = node.getBarrierType() != BarrierType.FIELD;
         graph.addAfterFixed(node, graph.add(new SerialWriteBarrier(address, precise)));
     }
 

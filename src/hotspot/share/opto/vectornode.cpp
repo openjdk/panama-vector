@@ -26,6 +26,7 @@
 #include "opto/connode.hpp"
 #include "opto/cfgnode.hpp"
 #include "opto/vectornode.hpp"
+#include "utilities/powerOfTwo.hpp"
 
 //------------------------------VectorNode--------------------------------------
 
@@ -505,7 +506,7 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt) {
   case Op_URShiftVI: return new URShiftVINode(n1, n2, vt);
   case Op_URShiftVL: return new URShiftVLNode(n1, n2, vt);
 
-  // Variable shift left 
+  // Variable shift left
   case Op_VLShiftV: return new VLShiftVNode(n1, n2, vt);
   case Op_VRShiftV: return new VRShiftVNode(n1, n2, vt);
   case Op_VURShiftV: return new VURShiftVNode(n1, n2, vt);
@@ -597,6 +598,38 @@ VectorNode* VectorNode::shift_count(int opc, Node* cnt, uint vlen, BasicType bt)
   default:
     fatal("Missed vector creation for '%s'", NodeClassNames[opc]);
     return NULL;
+  }
+}
+
+bool VectorNode::is_vector_shift(int opc) {
+  assert(opc > _last_machine_leaf && opc < _last_opcode, "invalid opcode");
+  switch (opc) {
+  case Op_LShiftVB:
+  case Op_LShiftVS:
+  case Op_LShiftVI:
+  case Op_LShiftVL:
+  case Op_RShiftVB:
+  case Op_RShiftVS:
+  case Op_RShiftVI:
+  case Op_RShiftVL:
+  case Op_URShiftVB:
+  case Op_URShiftVS:
+  case Op_URShiftVI:
+  case Op_URShiftVL:
+    return true;
+  default:
+    return false;
+  }
+}
+
+bool VectorNode::is_vector_shift_count(int opc) {
+  assert(opc > _last_machine_leaf && opc < _last_opcode, "invalid opcode");
+  switch (opc) {
+  case Op_RShiftCntV:
+  case Op_LShiftCntV:
+    return true;
+  default:
+    return false;
   }
 }
 
@@ -875,28 +908,6 @@ int ReductionNode::opcode(int opc, BasicType bt) {
       assert(bt == T_LONG, "must be");
       vopc = Op_XorReductionV;
       break;
-    case Op_SubI:
-      switch(bt) {
-      case T_BYTE:
-      case T_SHORT:
-      case T_INT:
-        vopc = Op_SubReductionV;
-        break;
-      default:  ShouldNotReachHere(); return 0;
-      }
-      break;
-    case Op_SubL:
-      assert(bt == T_LONG, "must be");
-      vopc = Op_SubReductionV;
-      break;
-    case Op_SubF:
-      assert(bt == T_FLOAT, "must be");
-      vopc = Op_SubReductionVFP;
-      break;
-    case Op_SubD:
-      assert(bt == T_DOUBLE, "must be");
-      vopc = Op_SubReductionVFP;
-      break;
     // TODO: add MulL for targets that support it
     default:
       break;
@@ -926,8 +937,6 @@ ReductionNode* ReductionNode::make(int opc, Node *ctrl, Node* n1, Node* n2, Basi
   case Op_AndReductionV: return new AndReductionVNode(ctrl, n1, n2);
   case Op_OrReductionV: return new OrReductionVNode(ctrl, n1, n2);
   case Op_XorReductionV: return new XorReductionVNode(ctrl, n1, n2);
-  case Op_SubReductionV: return new SubReductionVNode(ctrl, n1, n2);
-  case Op_SubReductionVFP: return new SubReductionVFPNode(ctrl, n1, n2);
   default:
     fatal("Missed vector creation for '%s'", NodeClassNames[vopc]);
     return NULL;
@@ -985,8 +994,6 @@ Node* ReductionNode::make_reduction_input(PhaseGVN& gvn, int opc, BasicType bt) 
     case Op_AddReductionVD:
     case Op_OrReductionV:
     case Op_XorReductionV:
-    case Op_SubReductionV:
-    case Op_SubReductionVFP:
       return gvn.zerocon(bt);
     case Op_MulReductionVI:
       return gvn.makecon(TypeInt::ONE);
@@ -1081,22 +1088,6 @@ const TypeFunc* VectorBoxNode::vec_box_type(const TypeInstPtr* box_type) {
   const TypeTuple *range = TypeTuple::make(TypeFunc::Parms+1, fields);
 
   return TypeFunc::make(domain, range);
-}
-
-Node* SubReductionVNode::Ideal(PhaseGVN* phase, bool can_reshape) {
-  Node* ctrl = in(0);
-  Node* in1 = in(1);
-  Node* in2 = in(2);
-
-  if (phase->type(in1)->isa_int()) {
-		assert(phase->type(in2)->is_vect()->element_type()->is_int(), "must be consistent");
-    return new NegINode(phase->transform(new AddReductionVINode(ctrl,in1,in2)));
-  } else if (phase->type(in1)->isa_long()) {
-    return new NegLNode(phase->transform(new AddReductionVLNode(ctrl,in1,in2)));
-  } else {
-    Unimplemented();
-    return NULL;
-  }
 }
 
 Node* VectorInsertNode::make(Node* vec, Node* new_val, int position) {

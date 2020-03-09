@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -350,23 +350,12 @@ void MacroAssembler::pop_callee_saved_registers() {
   pop(rsi);
 }
 
-void MacroAssembler::pop_fTOS() {
-  fld_d(Address(rsp, 0));
-  addl(rsp, 2 * wordSize);
-}
-
 void MacroAssembler::push_callee_saved_registers() {
   push(rsi);
   push(rdi);
   push(rdx);
   push(rcx);
 }
-
-void MacroAssembler::push_fTOS() {
-  subl(rsp, 2 * wordSize);
-  fstp_d(Address(rsp, 0));
-}
-
 
 void MacroAssembler::pushoop(jobject obj) {
   push_literal32((int32_t)obj, oop_Relocation::spec_for_immediate());
@@ -509,9 +498,10 @@ void MacroAssembler::print_state() {
 
 #else // _LP64
 
-void MacroAssembler::vmin_max_macro_evex(XMMRegister dst, XMMRegister a, XMMRegister b,
-                                         KRegister ktmp, XMMRegister atmp, XMMRegister btmp,
-                                         bool is_single, bool is_min, int vector_len) {
+// Float/Double min max
+void MacroAssembler::evminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
+                              KRegister ktmp, XMMRegister atmp, XMMRegister btmp,
+                              bool is_single, bool is_min, int vector_len) {
   if (is_single && is_min) {
     evpmovd2m(ktmp, a, vector_len);
     evblendmps(atmp, ktmp, a, b, true, vector_len);
@@ -543,9 +533,10 @@ void MacroAssembler::vmin_max_macro_evex(XMMRegister dst, XMMRegister a, XMMRegi
   }
 }
 
-void MacroAssembler::vmin_max_macro(XMMRegister dst, XMMRegister a, XMMRegister b,
-                                    XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
-                                    bool is_single, bool is_min, int vector_len) {
+// Float/Double min max
+void MacroAssembler::vminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
+                             XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
+                             bool is_single, bool is_min, int vector_len) {
   if (is_single && is_min) {
     vblendvps(atmp, a, b, a, vector_len);
     vblendvps(btmp, b, a, a, vector_len);
@@ -2524,7 +2515,7 @@ void MacroAssembler::super_call_VM_leaf(address entry_point, Register arg_0, Reg
 void MacroAssembler::get_vm_result(Register oop_result, Register java_thread) {
   movptr(oop_result, Address(java_thread, JavaThread::vm_result_offset()));
   movptr(Address(java_thread, JavaThread::vm_result_offset()), NULL_WORD);
-  verify_oop(oop_result, "broken oop in call_VM_base");
+  verify_oop_msg(oop_result, "broken oop in call_VM_base");
 }
 
 void MacroAssembler::get_vm_result_2(Register metadata_result, Register java_thread) {
@@ -2801,8 +2792,7 @@ void MacroAssembler::divss(XMMRegister dst, AddressLiteral src) {
   }
 }
 
-// !defined(COMPILER2) is because of stupid core builds
-#if !defined(_LP64) || defined(COMPILER1) || !defined(COMPILER2) || INCLUDE_JVMCI
+#ifndef _LP64
 void MacroAssembler::empty_FPU_stack() {
   if (VM_Version::supports_mmx()) {
     emms();
@@ -2810,7 +2800,7 @@ void MacroAssembler::empty_FPU_stack() {
     for (int i = 8; i-- > 0; ) ffree(i);
   }
 }
-#endif // !LP64 || C1 || !C2 || INCLUDE_JVMCI
+#endif // !LP64
 
 
 void MacroAssembler::enter() {
@@ -2831,6 +2821,7 @@ void MacroAssembler::fat_nop() {
   }
 }
 
+#if !defined(_LP64)
 void MacroAssembler::fcmp(Register tmp) {
   fcmp(tmp, 1, true, true);
 }
@@ -2912,6 +2903,29 @@ void MacroAssembler::fldcw(AddressLiteral src) {
   Assembler::fldcw(as_Address(src));
 }
 
+void MacroAssembler::fpop() {
+  ffree();
+  fincstp();
+}
+
+void MacroAssembler::fremr(Register tmp) {
+  save_rax(tmp);
+  { Label L;
+    bind(L);
+    fprem();
+    fwait(); fnstsw_ax();
+    sahf();
+    jcc(Assembler::parity, L);
+  }
+  restore_rax(tmp);
+  // Result is in ST0.
+  // Note: fxch & fpop to get rid of ST1
+  // (otherwise FPU stack could overflow eventually)
+  fxch(1);
+  fpop();
+}
+#endif // !LP64
+
 void MacroAssembler::mulpd(XMMRegister dst, AddressLiteral src) {
   if (reachable(src)) {
     Assembler::mulpd(dst, as_Address(src));
@@ -2919,26 +2933,6 @@ void MacroAssembler::mulpd(XMMRegister dst, AddressLiteral src) {
     lea(rscratch1, src);
     Assembler::mulpd(dst, Address(rscratch1, 0));
   }
-}
-
-void MacroAssembler::increase_precision() {
-  subptr(rsp, BytesPerWord);
-  fnstcw(Address(rsp, 0));
-  movl(rax, Address(rsp, 0));
-  orl(rax, 0x300);
-  push(rax);
-  fldcw(Address(rsp, 0));
-  pop(rax);
-}
-
-void MacroAssembler::restore_precision() {
-  fldcw(Address(rsp, 0));
-  addptr(rsp, BytesPerWord);
-}
-
-void MacroAssembler::fpop() {
-  ffree();
-  fincstp();
 }
 
 void MacroAssembler::load_float(Address src) {
@@ -2975,28 +2969,6 @@ void MacroAssembler::store_double(Address dst) {
     LP64_ONLY(ShouldNotReachHere());
     NOT_LP64(fstp_d(dst));
   }
-}
-
-void MacroAssembler::fremr(Register tmp) {
-  save_rax(tmp);
-  { Label L;
-    bind(L);
-    fprem();
-    fwait(); fnstsw_ax();
-#ifdef _LP64
-    testl(rax, 0x400);
-    jcc(Assembler::notEqual, L);
-#else
-    sahf();
-    jcc(Assembler::parity, L);
-#endif // _LP64
-  }
-  restore_rax(tmp);
-  // Result is in ST0.
-  // Note: fxch & fpop to get rid of ST1
-  // (otherwise FPU stack could overflow eventually)
-  fxch(1);
-  fpop();
 }
 
 // dst = c = a * b + c
@@ -4003,61 +3975,42 @@ void MacroAssembler::evpcmpw(KRegister kdst, KRegister mask, XMMRegister nds, Ad
   }
 }
 
-void MacroAssembler::vpcmpCCbwd(XMMRegister dst, XMMRegister nds, XMMRegister src, ComparisonPredicate cond, Width width, int vector_len, Register scratch_reg) {
-  assert (width != Assembler::Q, "this function does not accept quadword width");
-  int eq_cond_enc = 0x74 + width;
-  int gt_cond_enc = 0x64 + width;
-  switch (cond) {
-  case eq:
-    Assembler::vpcmpCCbwd(dst, nds, src, eq_cond_enc, vector_len);
-    break;
-  case neq:
-    Assembler::vpcmpCCbwd(dst, nds, src, eq_cond_enc, vector_len);
-    vpxor(dst, dst, ExternalAddress(StubRoutines::x86::vector_all_bits_set()), vector_len, scratch_reg);
-    break;
-  case le:
-    Assembler::vpcmpCCbwd(dst, nds, src, gt_cond_enc, vector_len);
-    vpxor(dst, dst, ExternalAddress(StubRoutines::x86::vector_all_bits_set()), vector_len, scratch_reg);
-    break;
-  case nlt:
-    Assembler::vpcmpCCbwd(dst, src, nds, gt_cond_enc, vector_len);
-    vpxor(dst, dst, ExternalAddress(StubRoutines::x86::vector_all_bits_set()), vector_len, scratch_reg);
-    break;
-  case lt:
-    Assembler::vpcmpCCbwd(dst, src, nds, gt_cond_enc, vector_len);
-    break;
-  case nle:
-    Assembler::vpcmpCCbwd(dst, nds, src, gt_cond_enc, vector_len);
-    break;
-  default:
-    assert(false, "Should not reach here");
+void MacroAssembler::vpcmpCC(XMMRegister dst, XMMRegister nds, XMMRegister src, int cond_encoding, Width width, int vector_len) {
+  if (width == Assembler::Q) {
+    Assembler::vpcmpCCq(dst, nds, src, cond_encoding, vector_len);
+  } else {
+    Assembler::vpcmpCCbwd(dst, nds, src, cond_encoding, vector_len);
   }
 }
 
-void MacroAssembler::vpcmpCCq(XMMRegister dst, XMMRegister nds, XMMRegister src, ComparisonPredicate cond, int vector_len, Register scratch_reg) {
+void MacroAssembler::vpcmpCCW(XMMRegister dst, XMMRegister nds, XMMRegister src, ComparisonPredicate cond, Width width, int vector_len, Register scratch_reg) {
   int eq_cond_enc = 0x29;
   int gt_cond_enc = 0x37;
+  if (width != Assembler::Q) {
+    eq_cond_enc = 0x74 + width;
+    gt_cond_enc = 0x64 + width;
+  }
   switch (cond) {
   case eq:
-    Assembler::vpcmpCCq(dst, nds, src, eq_cond_enc, vector_len);
+    vpcmpCC(dst, nds, src, eq_cond_enc, width, vector_len);
     break;
   case neq:
-    Assembler::vpcmpCCq(dst, nds, src, eq_cond_enc, vector_len);
+    vpcmpCC(dst, nds, src, eq_cond_enc, width, vector_len);
     vpxor(dst, dst, ExternalAddress(StubRoutines::x86::vector_all_bits_set()), vector_len, scratch_reg);
     break;
   case le:
-    Assembler::vpcmpCCq(dst, nds, src, gt_cond_enc, vector_len);
+    vpcmpCC(dst, nds, src, gt_cond_enc, width, vector_len);
     vpxor(dst, dst, ExternalAddress(StubRoutines::x86::vector_all_bits_set()), vector_len, scratch_reg);
     break;
   case nlt:
-    Assembler::vpcmpCCq(dst, src, nds, gt_cond_enc, vector_len);
+    vpcmpCC(dst, src, nds, gt_cond_enc, width, vector_len);
     vpxor(dst, dst, ExternalAddress(StubRoutines::x86::vector_all_bits_set()), vector_len, scratch_reg);
     break;
   case lt:
-    Assembler::vpcmpCCq(dst, src, nds, gt_cond_enc, vector_len);
+    vpcmpCC(dst, src, nds, gt_cond_enc, width, vector_len);
     break;
   case nle:
-    Assembler::vpcmpCCq(dst, nds, src, gt_cond_enc, vector_len);
+    vpcmpCC(dst, nds, src, gt_cond_enc, width, vector_len);
     break;
   default:
     assert(false, "Should not reach here");
@@ -4298,7 +4251,10 @@ void MacroAssembler::vpxor(XMMRegister dst, XMMRegister nds, AddressLiteral src,
 #ifdef COMPILER2
 // Generic instructions support for use in .ad files C2 code generation
 
-void MacroAssembler::vabsnegd(int opcode, XMMRegister dst, Register scr) {
+void MacroAssembler::vabsnegd(int opcode, XMMRegister dst, XMMRegister src, Register scr) {
+  if (dst != src) {
+    movdqu(dst, src);
+  }
   if (opcode == Op_AbsVD) {
     andpd(dst, ExternalAddress(StubRoutines::x86::vector_double_sign_mask()), scr);
   } else {
@@ -4326,7 +4282,10 @@ void MacroAssembler::vabsnegd(int opcode, XMMRegister dst, XMMRegister src, int 
   }
 }
 
-void MacroAssembler::vabsnegf(int opcode, XMMRegister dst, Register scr) {
+void MacroAssembler::vabsnegf(int opcode, XMMRegister dst, XMMRegister src, Register scr) {
+  if (dst != src) {
+    movdqu(dst, src);
+  }
   if (opcode == Op_AbsVF) {
     andps(dst, ExternalAddress(StubRoutines::x86::vector_float_sign_mask()), scr);
   } else {
@@ -4367,6 +4326,50 @@ void MacroAssembler::vextendbw(bool sign, XMMRegister dst, XMMRegister src, int 
     vpmovsxbw(dst, src, vector_len);
   } else {
     vpmovzxbw(dst, src, vector_len);
+  }
+}
+
+void MacroAssembler::pminmax(BasicType typ, XMMRegister dst, XMMRegister src, bool is_min) {
+  if (is_min) {
+    if (typ == T_BYTE) {
+        pminsb(dst, src);
+    } else if (typ == T_SHORT) {
+        pminsw(dst, src);
+    } else {
+        assert(typ == T_INT,"required.");
+        pminsd(dst, src);
+    }
+  } else { // opcode == Op_MaxV
+    if (typ == T_BYTE) {
+        pmaxsb(dst, src);
+    } else if (typ == T_SHORT) {
+        pmaxsw(dst, src);
+    } else {
+        assert(typ == T_INT,"required.");
+        pmaxsd(dst, src);
+    }
+  }
+}
+
+void MacroAssembler::vpminmax(BasicType typ, XMMRegister dst, XMMRegister src1, XMMRegister src2, bool is_min, int vector_len) {
+  if (is_min) {
+    if (typ == T_BYTE) {
+        vpminsb(dst, src1, src2, vector_len);
+    } else if (typ == T_SHORT) {
+        vpminsw(dst, src1, src2, vector_len);
+    } else {
+        assert(typ == T_INT,"required.");
+        vpminsd(dst, src1, src2, vector_len);
+    }
+  } else { // opcode == Op_MaxV
+    if (typ == T_BYTE) {
+        vpmaxsb(dst, src1, src2, vector_len);
+    } else if (typ == T_SHORT) {
+        vpmaxsw(dst, src1, src2, vector_len);
+    } else {
+        assert(typ == T_INT,"required.");
+        vpmaxsd(dst, src1, src2, vector_len);
+    }
   }
 }
 
@@ -4435,6 +4438,656 @@ void MacroAssembler::vshiftq(int opcode, XMMRegister dst, XMMRegister nds, XMMRe
     vpsrlq(dst, nds, src, vector_len);
   }
 }
+
+void MacroAssembler::insert(BasicType typ, XMMRegister dst, Register val, int idx) {
+  switch(typ) {
+    case T_BYTE:
+      pinsrb(dst, val, idx);
+      break;
+    case T_SHORT:
+      pinsrw(dst, val, idx);
+      break;
+    case T_INT:
+      pinsrd(dst, val, idx);
+      break;
+    case T_LONG:
+      pinsrq(dst, val, idx);
+      break;
+    default:
+      assert(false,"Should not reach here.");
+      break;
+  }
+}
+
+void MacroAssembler::vinsert(BasicType typ, XMMRegister dst, XMMRegister src, Register val, int idx) {
+  switch(typ) {
+    case T_BYTE:
+      vpinsrb(dst, src, val, idx);
+      break;
+    case T_SHORT:
+      vpinsrw(dst, src, val, idx);
+      break;
+    case T_INT:
+      vpinsrd(dst, src, val, idx);
+      break;
+    case T_LONG:
+      vpinsrq(dst, src, val, idx);
+      break;
+    default:
+      assert(false,"Should not reach here.");
+      break;
+  }
+}
+
+void MacroAssembler::vgather(BasicType typ, XMMRegister dst, Register base, XMMRegister idx, XMMRegister mask, int vector_len) {
+  switch(typ) {
+    case T_INT:
+      vpgatherdd(dst, Address(base, idx, Address::times_4), mask, vector_len);
+      break;
+    case T_FLOAT:
+      vgatherdps(dst, Address(base, idx, Address::times_4), mask, vector_len);
+      break;
+    case T_LONG:
+      vpgatherdq(dst, Address(base, idx, Address::times_8), mask, vector_len);
+      break;
+    case T_DOUBLE:
+      vgatherdpd(dst, Address(base, idx, Address::times_8), mask, vector_len);
+      break;
+    default:
+      assert(false,"Should not reach here.");
+      break;
+  }
+}
+
+void MacroAssembler::evgather(BasicType typ, XMMRegister dst, KRegister mask, Register base, XMMRegister idx, int vector_len) {
+  switch(typ) {
+    case T_INT:
+      evpgatherdd(dst, mask, Address(base, idx, Address::times_4), vector_len);
+      break;
+    case T_FLOAT:
+      evgatherdps(dst, mask, Address(base, idx, Address::times_4), vector_len);
+      break;
+    case T_LONG:
+      evpgatherdq(dst, mask, Address(base, idx, Address::times_8), vector_len);
+      break;
+    case T_DOUBLE:
+      evgatherdpd(dst, mask, Address(base, idx, Address::times_8), vector_len);
+      break;
+    default:
+      assert(false,"Should not reach here.");
+      break;
+  }
+}
+
+void MacroAssembler::evscatter(BasicType typ, Register base, XMMRegister idx, KRegister mask, XMMRegister src, int vector_len) {
+  switch(typ) {
+    case T_INT:
+      evpscatterdd(Address(base, idx, Address::times_4), mask, src, vector_len);
+      break;
+    case T_FLOAT:
+      evscatterdps(Address(base, idx, Address::times_4), mask, src, vector_len);
+      break;
+    case T_LONG:
+      evpscatterdq(Address(base, idx, Address::times_8), mask, src, vector_len);
+      break;
+    case T_DOUBLE:
+      evscatterdpd(Address(base, idx, Address::times_8), mask, src, vector_len);
+      break;
+    default:
+      assert(false,"Should not reach here.");
+      break;
+  }
+}
+
+void MacroAssembler::reducedw(int opcode, XMMRegister dst, XMMRegister src) {
+  if(opcode == Op_AddReductionVI) {
+    paddd(dst, src);
+  } else if (opcode == Op_AndReductionV) {
+    pand(dst, src);
+  } else if (opcode == Op_OrReductionV) {
+    por(dst, src);
+  } else if (opcode == Op_XorReductionV) {
+    pxor(dst, src);
+  } else if (opcode == Op_MinReductionV) {
+    pminsd(dst, src);
+  } else if (opcode == Op_MaxReductionV) {
+    pmaxsd(dst, src);
+  } else if (opcode == Op_MulReductionVI) {
+    pmulld(dst, src);
+  } else {
+    assert(false,"Should not reach here.");
+  }
+}
+
+void MacroAssembler::vreducedw(int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len) {
+  if(opcode == Op_AddReductionVI) {
+    vpaddd(dst, src1, src2, vector_len);
+  } else if (opcode == Op_AndReductionV) {
+    vpand(dst, src1, src2, vector_len);
+  } else if (opcode == Op_OrReductionV) {
+    vpor(dst, src1, src2, vector_len);
+  } else if (opcode == Op_XorReductionV) {
+    vpxor(dst, src1, src2, vector_len);
+  } else if (opcode == Op_MinReductionV) {
+    vpminsd(dst, src1, src2, vector_len);
+  } else if (opcode == Op_MaxReductionV) {
+    vpmaxsd(dst, src1, src2, vector_len);
+  } else if (opcode == Op_MulReductionVI) {
+    vpmulld(dst, src1, src2, vector_len);
+  } else {
+    assert(false,"Should not reach here.");
+  }
+}
+
+// dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::reduce2I(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  if (opcode == Op_AddReductionVI) {
+    if (vtmp1 != src2) {
+      movdqu(vtmp1, src2);
+    }
+    phaddd(vtmp1, vtmp1);
+  } else {
+    pshufd(vtmp1, src2, 0x1);
+    reducedw(opcode, vtmp1, src2);
+  }
+  movdl(vtmp2, src1);
+  reducedw(opcode, vtmp1, vtmp2);
+  movdl(dst, vtmp1);
+}
+
+// dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::reduce4I(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  if (opcode == Op_AddReductionVI) {
+    if (vtmp1 != src2) {
+      movdqu(vtmp1, src2);
+    }
+    phaddd(vtmp1, src2);
+    reduce2I(opcode, dst, src1, vtmp1, vtmp1, vtmp2);
+  } else {
+    pshufd(vtmp2, src2, 0xE);
+    reducedw(opcode, vtmp2, src2);
+    reduce2I(opcode, dst, src1, vtmp2, vtmp1, vtmp2);
+  }
+}
+
+// dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::reduce8I(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  if (opcode == Op_AddReductionVI) {
+    int vector_len = Assembler::AVX_256bit;
+    vphaddd(vtmp1, src2, src2, vector_len);
+    vpermq(vtmp1, vtmp1, 0xD8, vector_len);
+  } else {
+    vextracti128_high(vtmp1, src2);
+    reducedw(opcode, vtmp1, src2);
+  }
+  reduce4I(opcode, dst, src1, vtmp1, vtmp1, vtmp2);
+}
+
+// dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::reduce16I(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  int vector_len = Assembler::AVX_256bit;
+  vextracti64x4_high(vtmp2, src2);
+  vreducedw(opcode, vtmp2, vtmp2, src2, vector_len);
+  reduce8I(opcode, dst, src1, vtmp2, vtmp1, vtmp2);
+}
+
+void MacroAssembler::reduceb(int opcode, XMMRegister dst, XMMRegister src) {
+  if(opcode == Op_AddReductionVI) {
+    paddb(dst, src);
+  } else if (opcode == Op_AndReductionV) {
+    pand(dst, src);
+  } else if (opcode == Op_OrReductionV) {
+    por(dst, src);
+  } else if (opcode == Op_XorReductionV) {
+    pxor(dst, src);
+  } else if (opcode == Op_MinReductionV) {
+    pminsb(dst, src);
+  } else if (opcode == Op_MaxReductionV) {
+    pmaxsb(dst, src);
+  } else {
+    assert(false,"Should not reach here.");
+  }
+}
+
+void MacroAssembler::vreduceb(int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len) {
+  if(opcode == Op_AddReductionVI) {
+    vpaddb(dst, src1, src2, vector_len);
+  } else if (opcode == Op_AndReductionV) {
+    vpand(dst, src1, src2, vector_len);
+  } else if (opcode == Op_OrReductionV) {
+    vpor(dst, src1, src2, vector_len);
+  } else if (opcode == Op_XorReductionV) {
+    vpxor(dst, src1, src2, vector_len);
+  } else if (opcode == Op_MinReductionV) {
+    vpminsb(dst, src1, src2, vector_len);
+  } else if (opcode == Op_MaxReductionV) {
+    vpmaxsb(dst, src1, src2, vector_len);
+  } else {
+    assert(false,"Should not reach here.");
+  }
+}
+
+// dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::reduce8B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  pshufd(vtmp2, src2, 0x1);
+  reduceb(opcode, vtmp2, src2);
+  movdqu(vtmp1, vtmp2);
+  psrldq(vtmp1, 2);
+  reduceb(opcode, vtmp1, vtmp2);
+  movdqu(vtmp2, vtmp1);
+  psrldq(vtmp2, 1);
+  reduceb(opcode, vtmp1, vtmp2);
+  movdl(vtmp2, src1);
+  pmovsxbd(vtmp1, vtmp1);
+  reducedw(opcode, vtmp1, vtmp2);
+  pextrb(dst, vtmp1, 0x0);
+  movsbl(dst, dst);
+}
+
+// dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::reduce16B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  pshufd(vtmp1, src2, 0xE);
+  reduceb(opcode, vtmp1, src2);
+  reduce8B(opcode, dst, src1, vtmp1, vtmp1, vtmp2);
+}
+
+// dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::reduce32B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  vextracti128_high(vtmp2, src2);
+  reduceb(opcode, vtmp2, src2);
+  reduce16B(opcode, dst, src1, vtmp2, vtmp1, vtmp2);
+}
+
+// dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::reduce64B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  int vector_len = Assembler::AVX_256bit;
+  vextracti64x4_high(vtmp1, src2);
+  vreduceb(opcode, vtmp1, vtmp1, src2, vector_len);
+  reduce32B(opcode, dst, src1, vtmp1, vtmp1, vtmp2);
+}
+
+// dst = src1 + mulreduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::mulreduce8B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  pmovsxbw(vtmp2, src2);
+  reduce8S(opcode, dst, src1, vtmp2, vtmp1, vtmp2);
+}
+
+// dst = src1 + mulreduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::mulreduce16B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  if (UseAVX > 1) {
+    int vector_len = Assembler::AVX_256bit;
+    vpmovsxbw(vtmp1, src2, vector_len);
+    reduce16S(opcode, dst, src1, vtmp1, vtmp1, vtmp2);
+  } else {
+    pmovsxbw(vtmp2, src2);
+    reduce8S(opcode, dst, src1, vtmp2, vtmp1, vtmp2);
+    pshufd(vtmp2, src2, 0x1);
+    pmovsxbw(vtmp2, src2);
+    reduce8S(opcode, dst, dst, vtmp2, vtmp1, vtmp2);
+  }
+}
+
+// dst = src1 + mulreduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::mulreduce32B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  if (UseAVX > 2 && VM_Version::supports_avx512bw()) {
+    int vector_len = Assembler::AVX_512bit;
+    vpmovsxbw(vtmp1, src2, vector_len);
+    reduce32S(opcode, dst, src1, vtmp1, vtmp1, vtmp2);
+  } else {
+    assert(UseAVX >= 2,"Should not reach here.");
+    int vector_len = Assembler::AVX_256bit;
+    mulreduce16B(opcode, dst, src1, src2, vtmp1, vtmp2);
+    vextracti128_high(vtmp2, src2);
+    mulreduce16B(opcode, dst, dst, vtmp2, vtmp1, vtmp2);
+  }
+}
+
+// dst = src1 + mulreduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::mulreduce64B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  int vector_len = Assembler::AVX_512bit;
+  mulreduce32B(opcode, dst, src1, src2, vtmp1, vtmp2);
+  vextracti64x4_high(vtmp2, src2);
+  mulreduce32B(opcode, dst, dst, vtmp2, vtmp1, vtmp2);
+}
+
+void MacroAssembler::reducew(int opcode, XMMRegister dst, XMMRegister src) {
+  if(opcode == Op_AddReductionVI) {
+    paddw(dst, src);
+  } else if (opcode == Op_AndReductionV) {
+    pand(dst, src);
+  } else if (opcode == Op_OrReductionV) {
+    por(dst, src);
+  } else if (opcode == Op_XorReductionV) {
+    pxor(dst, src);
+  } else if (opcode == Op_MinReductionV) {
+    pminsw(dst, src);
+  } else if (opcode == Op_MaxReductionV) {
+    pmaxsw(dst, src);
+  } else if (opcode == Op_MulReductionVI) {
+    pmullw(dst, src);
+  } else {
+    assert(false,"Should not reach here.");
+  }
+}
+
+void MacroAssembler::vreducew(int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len) {
+  if(opcode == Op_AddReductionVI) {
+    vpaddw(dst, src1, src2, vector_len);
+  } else if (opcode == Op_AndReductionV) {
+    vpand(dst, src1, src2, vector_len);
+  } else if (opcode == Op_OrReductionV) {
+    vpor(dst, src1, src2, vector_len);
+  } else if (opcode == Op_XorReductionV) {
+    vpxor(dst, src1, src2, vector_len);
+  } else if (opcode == Op_MinReductionV) {
+    vpminsw(dst, src1, src2, vector_len);
+  } else if (opcode == Op_MaxReductionV) {
+    vpmaxsw(dst, src1, src2, vector_len);
+  } else if (opcode == Op_MulReductionVI) {
+    vpmullw(dst, src1, src2, vector_len);
+  } else {
+    assert(false,"Should not reach here.");
+  }
+}
+
+// dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::reduce4S(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  if (opcode == Op_AddReductionVI) {
+    if (vtmp1 != src2) {
+      movdqu(vtmp1, src2);
+    }
+    phaddw(vtmp1, vtmp1);
+    phaddw(vtmp1, vtmp1);
+  } else {
+    pshufd(vtmp2, src2, 0x1);
+    reducew(opcode, vtmp2, src2);
+    movdqu(vtmp1, vtmp2);
+    psrldq(vtmp1, 2);
+    reducew(opcode, vtmp1, vtmp2);
+  }
+  movdl(vtmp2, src1);
+  pmovsxwd(vtmp1, vtmp1);
+  reducedw(opcode, vtmp1, vtmp2);
+  pextrw(dst, vtmp1, 0x0);
+  movswl(dst, dst);
+}
+
+// dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::reduce8S(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  if (opcode == Op_AddReductionVI) {
+    if (vtmp1 != src2) {
+      movdqu(vtmp1, src2);
+    }
+    phaddw(vtmp1, src2);
+  } else {
+    pshufd(vtmp1, src2, 0xE);
+    reducew(opcode, vtmp1, src2);
+  }
+  reduce4S(opcode, dst, src1, vtmp1, vtmp1, vtmp2);
+}
+
+// dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::reduce16S(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  if (opcode == Op_AddReductionVI) {
+    int vector_len = Assembler::AVX_256bit;
+    vphaddw(vtmp2, src2, src2, vector_len);
+    vpermq(vtmp2, vtmp2, 0xD8, vector_len);
+  } else {
+    vextracti128_high(vtmp2, src2);
+    reducew(opcode, vtmp2, src2);
+  }
+  reduce8S(opcode, dst, src1, vtmp2, vtmp1, vtmp2);
+}
+
+// dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::reduce32S(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  int vector_len = Assembler::AVX_256bit;
+  vextracti64x4_high(vtmp1, src2);
+  vreducew(opcode, vtmp1, vtmp1, src2, vector_len);
+  reduce16S(opcode, dst, src1, vtmp1, vtmp1, vtmp2);
+}
+
+void MacroAssembler::reduceq(int opcode, XMMRegister dst, XMMRegister src) {
+  if(opcode == Op_AddReductionVL) {
+    paddq(dst, src);
+  } else if (opcode == Op_AndReductionV) {
+    pand(dst, src);
+  } else if (opcode == Op_OrReductionV) {
+    por(dst, src);
+  } else if (opcode == Op_XorReductionV) {
+    pxor(dst, src);
+  } else if (opcode == Op_MinReductionV) {
+    assert(UseAVX > 2, "required");
+    vpminsq(dst, dst, src, Assembler::AVX_128bit);
+  } else if (opcode == Op_MaxReductionV) {
+    assert(UseAVX > 2, "required");
+    vpmaxsq(dst, dst, src, Assembler::AVX_128bit);
+  } else if (opcode == Op_MulReductionVL) {
+    assert(VM_Version::supports_avx512dq(), "required");
+    vpmullq(dst, dst, src, Assembler::AVX_128bit);
+  } else {
+    assert(false,"Should not reach here.");
+  }
+}
+
+void MacroAssembler::vreduceq(int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len) {
+  if(opcode == Op_AddReductionVL) {
+    vpaddq(dst, src1, src2, vector_len);
+  } else if (opcode == Op_AndReductionV) {
+    vpand(dst, src1, src2, vector_len);
+  } else if (opcode == Op_OrReductionV) {
+    vpor(dst, src1, src2, vector_len);
+  } else if (opcode == Op_XorReductionV) {
+    vpxor(dst, src1, src2, vector_len);
+  } else if (opcode == Op_MinReductionV) {
+    assert(UseAVX > 2, "required");
+    vpminsq(dst, src1, src2, vector_len);
+  } else if (opcode == Op_MaxReductionV) {
+    assert(UseAVX > 2, "required");
+    vpmaxsq(dst, src1, src2, vector_len);
+  } else if (opcode == Op_MulReductionVL) {
+    assert(UseAVX > 2, "required");
+    vpmullq(dst, src1, src2, vector_len);
+  } else {
+    assert(false,"Should not reach here.");
+  }
+}
+
+// dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::reduce2L(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  pshufd(vtmp2, src2, 0xE);
+  reduceq(opcode, vtmp2, src2);
+  movdq(vtmp1, src1);
+  reduceq(opcode, vtmp1, vtmp2);
+  movdq(dst, vtmp1);
+}
+
+// dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::reduce4L(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  vextracti128_high(vtmp1, src2);
+  reduceq(opcode, vtmp1, src2);
+  reduce2L(opcode, dst, src1, vtmp1, vtmp1, vtmp2);
+}
+
+// dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
+void MacroAssembler::reduce8L(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
+  int vector_len = Assembler::AVX_256bit;
+  vextracti64x4_high(vtmp2, src2);
+  vreduceq(opcode, vtmp2, vtmp2, src2, vector_len);
+  reduce4L(opcode, dst, src1, vtmp2, vtmp1, vtmp2);
+}
+
+void MacroAssembler::reducef(int opcode, XMMRegister dst, XMMRegister src) {
+  if(opcode == Op_AddReductionVF) {
+    addss(dst, src);
+  } else if (opcode == Op_MulReductionVF) {
+    mulss(dst, src);
+  } else {
+    assert(false,"Should not reach here.");
+  }
+}
+
+// dst = dst + reduce(op, src) using vtmp as temp
+void MacroAssembler::reduce2F(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp) {
+  reducef(opcode, dst, src);
+  pshufd(vtmp, src, 0x1);
+  reducef(opcode, dst, vtmp);
+}
+
+// dst = dst + reduce(op, src) using vtmp as temp
+void MacroAssembler::reduce4F(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp) {
+  reduce2F(opcode, dst, src, vtmp);
+  pshufd(vtmp, src, 0x2);
+  reducef(opcode, dst, vtmp);
+  pshufd(vtmp, src, 0x3);
+  reducef(opcode, dst, vtmp);
+}
+
+// dst = dst + reduce(op, src) using vtmp1, vtmp2 as temps
+void MacroAssembler::reduce8F(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2) {
+  reduce4F(opcode, dst, src, vtmp2);
+  vextractf128_high(vtmp2, src);
+  reduce4F(opcode, dst, vtmp2, vtmp1);
+}
+
+// dst = dst + reduce(op, src) using vtmp1, vtmp2 as temps
+void MacroAssembler::reduce16F(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2) {
+  reduce8F(opcode, dst, src, vtmp1, vtmp2);
+  vextracti64x4_high(vtmp1, src);
+  reduce8F(opcode, dst, vtmp1, vtmp1, vtmp2);
+}
+
+void MacroAssembler::reduced(int opcode, XMMRegister dst, XMMRegister src) {
+  if(opcode == Op_AddReductionVD) {
+    addsd(dst, src);
+  } else if (opcode == Op_MulReductionVD) {
+    mulsd(dst, src);
+  } else {
+    assert(false,"Should not reach here.");
+  }
+}
+
+// dst = dst + reduce(op, src) using vtmp as temp
+void MacroAssembler::reduce2D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp) {
+  reduced(opcode, dst, src);
+  pshufd(vtmp, src, 0xE);
+  reduced(opcode, dst, vtmp);
+
+}
+
+// dst = dst + reduce(op, src) using vtmp1, vtmp2 as temps
+void MacroAssembler::reduce4D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2) {
+  reduce2D(opcode, dst, src, vtmp2);
+  vextractf128_high(vtmp2, src);
+  reduce2D(opcode, dst, vtmp2, vtmp1);
+}
+
+// dst = dst + reduce(op, src) using vtmp1, vtmp2 as temps
+void MacroAssembler::reduce8D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2) {
+  reduce4D(opcode, dst, src, vtmp1, vtmp2);
+  vextracti64x4_high(vtmp1, src);
+  reduce4D(opcode, dst, vtmp1, vtmp1, vtmp2);
+}
+
+void MacroAssembler::extract(BasicType typ, Register dst, XMMRegister src, int idx) {
+  switch(typ) {
+    case T_BYTE:
+      pextrb(dst, src, idx);
+      break;
+    case T_SHORT:
+      pextrw(dst, src, idx);
+      break;
+    case T_INT:
+      pextrd(dst, src, idx);
+      break;
+    case T_LONG:
+      pextrq(dst, src, idx);
+      break;
+    default:
+      assert(false,"Should not reach here.");
+      break;
+  }
+}
+
+XMMRegister MacroAssembler::get_lane(BasicType typ, XMMRegister dst, XMMRegister src, int elemindex) {
+  int esize =  type2aelembytes(typ);
+  int elem_per_lane = 16/esize;
+  int lane = elemindex / elem_per_lane;
+  int eindex = elemindex % elem_per_lane;
+
+  if (lane >= 2) {
+    assert(UseAVX > 2, "required");
+    vextractf32x4(dst, src, lane & 3);
+    return dst;
+  } else if (lane > 0) {
+    assert(UseAVX > 0, "required");
+    vextractf128(dst, src, lane);
+    return dst;
+  } else {
+    return src;
+  }
+}
+
+void MacroAssembler::get_elem(BasicType typ, Register dst, XMMRegister src, int elemindex) {
+  int esize =  type2aelembytes(typ);
+  int elem_per_lane = 16/esize;
+  int eindex = elemindex % elem_per_lane;
+  assert(is_integral_type(typ),"required");
+
+  if (eindex == 0) {
+    if (typ == T_LONG) {
+      movq(dst, src);
+    } else {
+      movdl(dst, src);
+      if (typ == T_BYTE) 
+        movsbl(dst, dst);
+      else if (typ == T_SHORT)
+        movswl(dst, dst);
+    }
+  } else {
+    extract(typ, dst, src, eindex);
+  }
+}
+
+void MacroAssembler::get_elem(BasicType typ, XMMRegister dst, XMMRegister src, int elemindex, Register tmp, XMMRegister vtmp) {
+  int esize =  type2aelembytes(typ);
+  int elem_per_lane = 16/esize;
+  int eindex = elemindex % elem_per_lane;
+  assert((typ == T_FLOAT || typ == T_DOUBLE),"required");
+
+  if (eindex == 0) {
+    movq(dst, src);
+  } else {
+    if (typ == T_FLOAT) {
+      if (UseAVX == 0) {
+        movdqu(dst, src);
+        pshufps(dst, dst, eindex);
+      } else {
+        vpshufps(dst, src, src, eindex, Assembler::AVX_128bit);
+      }
+    } else {
+      if (UseAVX == 0) {
+        movdqu(dst, src);
+        psrldq(dst, eindex*esize);
+      } else {
+        vpsrldq(dst, src, eindex*esize, Assembler::AVX_128bit);
+      }
+      movq(dst, dst);
+    }
+  }
+  // Zero upper bits
+  if (typ == T_FLOAT) {
+    if (UseAVX == 0) {
+      assert((vtmp != xnoreg) && (tmp != noreg), "required.");
+      movdqu(vtmp, ExternalAddress(StubRoutines::x86::vector_32_bit_mask()), tmp);
+      pand(dst, vtmp);
+    } else {
+      assert((tmp != noreg), "required.");
+      vpand(dst, dst, ExternalAddress(StubRoutines::x86::vector_32_bit_mask()), Assembler::AVX_128bit, tmp);
+    }
+  }
+}
+
 #endif
 //-------------------------------------------------------------------------------------------
 
@@ -4930,7 +5583,7 @@ void MacroAssembler::cmov32(Condition cc, Register dst, Register src) {
   }
 }
 
-void MacroAssembler::verify_oop(Register reg, const char* s) {
+void MacroAssembler::_verify_oop(Register reg, const char* s, const char* file, int line) {
   if (!VerifyOops) return;
 
   // Pass register number to verify_oop_subroutine
@@ -4938,7 +5591,7 @@ void MacroAssembler::verify_oop(Register reg, const char* s) {
   {
     ResourceMark rm;
     stringStream ss;
-    ss.print("verify_oop: %s: %s", reg->name(), s);
+    ss.print("verify_oop: %s: %s (%s:%d)", reg->name(), s, file, line);
     b = code_string(ss.as_string());
   }
   BLOCK_COMMENT("verify_oop {");
@@ -5020,7 +5673,7 @@ Address MacroAssembler::argument_address(RegisterOrConstant arg_slot,
 }
 
 
-void MacroAssembler::verify_oop_addr(Address addr, const char* s) {
+void MacroAssembler::_verify_oop_addr(Address addr, const char* s, const char* file, int line) {
   if (!VerifyOops) return;
 
   // Address adjust(addr.base(), addr.index(), addr.scale(), addr.disp() + BytesPerWord);
@@ -5029,7 +5682,7 @@ void MacroAssembler::verify_oop_addr(Address addr, const char* s) {
   {
     ResourceMark rm;
     stringStream ss;
-    ss.print("verify_oop_addr: %s", s);
+    ss.print("verify_oop_addr: %s (%s:%d)", s, file, line);
     b = code_string(ss.as_string());
   }
 #ifdef _LP64
@@ -5360,6 +6013,7 @@ void MacroAssembler::print_CPU_state() {
 }
 
 
+#ifndef _LP64
 static bool _verify_FPU(int stack_depth, char* s, CPU_State* state) {
   static int counter = 0;
   FPU_State* fs = &state->_fpu_state;
@@ -5416,7 +6070,6 @@ static bool _verify_FPU(int stack_depth, char* s, CPU_State* state) {
   return true;
 }
 
-
 void MacroAssembler::verify_FPU(int stack_depth, const char* s) {
   if (!VerifyFPU) return;
   push_CPU_state();
@@ -5436,6 +6089,7 @@ void MacroAssembler::verify_FPU(int stack_depth, const char* s) {
   }
   pop_CPU_state();
 }
+#endif // _LP64
 
 void MacroAssembler::restore_cpu_control_state_after_jni() {
   // Either restore the MXCSR register after returning from the JNI Call
@@ -5621,7 +6275,7 @@ void MacroAssembler::encode_heap_oop(Register r) {
 #ifdef ASSERT
   verify_heapbase("MacroAssembler::encode_heap_oop: heap base corrupted?");
 #endif
-  verify_oop(r, "broken oop in encode_heap_oop");
+  verify_oop_msg(r, "broken oop in encode_heap_oop");
   if (CompressedOops::base() == NULL) {
     if (CompressedOops::shift() != 0) {
       assert (LogMinObjAlignmentInBytes == CompressedOops::shift(), "decode alg wrong");
@@ -5646,7 +6300,7 @@ void MacroAssembler::encode_heap_oop_not_null(Register r) {
     bind(ok);
   }
 #endif
-  verify_oop(r, "broken oop in encode_heap_oop_not_null");
+  verify_oop_msg(r, "broken oop in encode_heap_oop_not_null");
   if (CompressedOops::base() != NULL) {
     subq(r, r12_heapbase);
   }
@@ -5667,7 +6321,7 @@ void MacroAssembler::encode_heap_oop_not_null(Register dst, Register src) {
     bind(ok);
   }
 #endif
-  verify_oop(src, "broken oop in encode_heap_oop_not_null2");
+  verify_oop_msg(src, "broken oop in encode_heap_oop_not_null2");
   if (dst != src) {
     movq(dst, src);
   }
@@ -5696,7 +6350,7 @@ void  MacroAssembler::decode_heap_oop(Register r) {
     addq(r, r12_heapbase);
     bind(done);
   }
-  verify_oop(r, "broken oop in decode_heap_oop");
+  verify_oop_msg(r, "broken oop in decode_heap_oop");
 }
 
 void  MacroAssembler::decode_heap_oop_not_null(Register r) {
@@ -9210,34 +9864,6 @@ void MacroAssembler::kernel_crc32(Register crc, Register buf, Register len, Regi
   shrl(len, 4);
   jcc(Assembler::zero, L_tail_restore);
 
-  // Fold total 512 bits of polynomial on each iteration
-  if (VM_Version::supports_vpclmulqdq()) {
-    Label Parallel_loop, L_No_Parallel;
-
-    cmpl(len, 8);
-    jccb(Assembler::less, L_No_Parallel);
-
-    movdqu(xmm0, ExternalAddress(StubRoutines::x86::crc_by128_masks_addr() + 32));
-    evmovdquq(xmm1, Address(buf, 0), Assembler::AVX_512bit);
-    movdl(xmm5, crc);
-    evpxorq(xmm1, xmm1, xmm5, Assembler::AVX_512bit);
-    addptr(buf, 64);
-    subl(len, 7);
-    evshufi64x2(xmm0, xmm0, xmm0, 0x00, Assembler::AVX_512bit); //propagate the mask from 128 bits to 512 bits
-
-    BIND(Parallel_loop);
-    fold_128bit_crc32_avx512(xmm1, xmm0, xmm5, buf, 0);
-    addptr(buf, 64);
-    subl(len, 4);
-    jcc(Assembler::greater, Parallel_loop);
-
-    vextracti64x2(xmm2, xmm1, 0x01);
-    vextracti64x2(xmm3, xmm1, 0x02);
-    vextracti64x2(xmm4, xmm1, 0x03);
-    jmp(L_fold_512b);
-
-    BIND(L_No_Parallel);
-  }
   // Fold crc into first bytes of vector
   movdqa(xmm1, Address(buf, 0));
   movdl(rax, xmm1);
@@ -10175,6 +10801,56 @@ void MacroAssembler::byte_array_inflate(Register src, Register dst, Register len
 }
 
 #ifdef _LP64
+void MacroAssembler::convert_f2i(Register dst, XMMRegister src) {
+  Label done;
+  cvttss2sil(dst, src);
+  // Conversion instructions do not match JLS for overflow, underflow and NaN -> fixup in stub
+  cmpl(dst, 0x80000000); // float_sign_flip
+  jccb(Assembler::notEqual, done);
+  subptr(rsp, 8);
+  movflt(Address(rsp, 0), src);
+  call(RuntimeAddress(CAST_FROM_FN_PTR(address, StubRoutines::x86::f2i_fixup())));
+  pop(dst);
+  bind(done);
+}
+
+void MacroAssembler::convert_d2i(Register dst, XMMRegister src) {
+  Label done;
+  cvttsd2sil(dst, src);
+  // Conversion instructions do not match JLS for overflow, underflow and NaN -> fixup in stub
+  cmpl(dst, 0x80000000); // float_sign_flip
+  jccb(Assembler::notEqual, done);
+  subptr(rsp, 8);
+  movdbl(Address(rsp, 0), src);
+  call(RuntimeAddress(CAST_FROM_FN_PTR(address, StubRoutines::x86::d2i_fixup())));
+  pop(dst);
+  bind(done);
+}
+
+void MacroAssembler::convert_f2l(Register dst, XMMRegister src) {
+  Label done;
+  cvttss2siq(dst, src);
+  cmp64(dst, ExternalAddress((address) StubRoutines::x86::double_sign_flip()));
+  jccb(Assembler::notEqual, done);
+  subptr(rsp, 8);
+  movflt(Address(rsp, 0), src);
+  call(RuntimeAddress(CAST_FROM_FN_PTR(address, StubRoutines::x86::f2l_fixup())));
+  pop(dst);
+  bind(done);
+}
+
+void MacroAssembler::convert_d2l(Register dst, XMMRegister src) {
+  Label done;
+  cvttsd2siq(dst, src);
+  cmp64(dst, ExternalAddress((address) StubRoutines::x86::double_sign_flip()));
+  jccb(Assembler::notEqual, done);
+  subptr(rsp, 8);
+  movdbl(Address(rsp, 0), src);
+  call(RuntimeAddress(CAST_FROM_FN_PTR(address, StubRoutines::x86::d2l_fixup())));
+  pop(dst);
+  bind(done);
+}
+
 void MacroAssembler::cache_wb(Address line)
 {
   // 64 bit cpus always support clflush
@@ -10287,4 +10963,4 @@ void MacroAssembler::get_thread(Register thread) {
   }
 }
 
-#endif
+#endif // !WIN32 || _LP64
