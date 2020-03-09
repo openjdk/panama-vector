@@ -4243,14 +4243,6 @@ operand cmpOpUCF2() %{
   %}
 %}
 
-// Operands for bound floating pointer register arguments
-operand rxmm0() %{
-  constraint(ALLOC_IN_RC(xmm0_reg));
-  match(VecX);
-  format%{%}
-  interface(REG_INTER);
-%}
-
 //----------OPERAND CLASSES----------------------------------------------------
 // Operand Classes are groups of operands that are used as to simplify
 // instruction definitions by not requiring the AD writer to specify separate

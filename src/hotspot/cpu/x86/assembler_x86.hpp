@@ -1958,6 +1958,7 @@ private:
   void evalignq(XMMRegister dst, XMMRegister nds, XMMRegister src, uint8_t imm8);
 
   void pblendw(XMMRegister dst, XMMRegister src, int imm8);
+  void vblendps(XMMRegister dst, XMMRegister src1, XMMRegister src2, int imm8, int vector_len);
 
   void sha1rnds4(XMMRegister dst, XMMRegister src, int imm8);
   void sha1nexte(XMMRegister dst, XMMRegister src);

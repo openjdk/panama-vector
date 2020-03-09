@@ -377,6 +377,12 @@ StackValue* StackValue::create_stack_value(const frame* fr, const RegisterMap* r
       value.ji = (jint) *(jlong*) value_addr;
       return new StackValue(value.p); // 64-bit high half is stack junk
     }
+    case Location::vector: {
+      assert(ik != NULL /*&& ik->is_vector_box()*/, "");
+      // Vector value in an aligned adjacent tuple (4, 8, or 16 slots).
+      Handle h(Thread::current(), allocate_vector(ik, value_addr)); // Wrap a handle around the oop
+      return new StackValue(h);
+    }
 #ifdef _LP64
     case Location::dbl:
       // Double value in an aligned adjacent pair
@@ -384,12 +390,6 @@ StackValue* StackValue::create_stack_value(const frame* fr, const RegisterMap* r
     case Location::lng:
       // Long   value in an aligned adjacent pair
       return new StackValue(*(intptr_t*)value_addr);
-    case Location::vector: {
-      assert(ik != NULL /*&& ik->is_vector_box()*/, "");
-      // Vector value in an aligned adjacent tuple (4, 8, or 16 slots).
-      Handle h(Thread::current(), allocate_vector(ik, value_addr)); // Wrap a handle around the oop
-      return new StackValue(h);
-    }
     case Location::narrowoop: {
       union { intptr_t p; narrowOop noop;} value;
       value.p = (intptr_t) CONST64(0xDEADDEAFDEADDEAF);

@@ -1247,22 +1247,6 @@ Assembler::Width widthForType(BasicType typ) {
   static address float_signflip()  { return StubRoutines::x86::float_sign_flip(); }
   static address double_signmask() { return StubRoutines::x86::double_sign_mask(); }
   static address double_signflip() { return StubRoutines::x86::double_sign_flip(); }
-  static address vector_all_bits_set() { return StubRoutines::x86::vector_all_bits_set(); }
-  static address vector_iota_indices() { return StubRoutines::x86::vector_iota_indices(); }
-  static address vector_byte_bitset() { return StubRoutines::x86::vector_byte_bitset(); }
-  static address vector_long_perm_mask() { return StubRoutines::x86::vector_long_perm_mask(); }
-  static address vector_byte_perm_mask() { return StubRoutines::x86::vector_byte_perm_mask(); }
-  static address vector_int_to_byte_mask() { return StubRoutines::x86::vector_int_to_byte_mask(); }
-  static address vector_int_to_short_mask() { return StubRoutines::x86::vector_int_to_short_mask(); }
-  static address vector_32_bit_mask() { return StubRoutines::x86::vector_32_bit_mask(); }
-  static address vector_64_bit_mask() { return StubRoutines::x86::vector_64_bit_mask(); }
-  static address vector_all_ones_mask() { return StubRoutines::x86::vector_all_ones_mask(); }
-  static address vector_int_shufflemask() { return StubRoutines::x86::vector_int_shuffle_mask(); }
-  static address vector_int_sizemask() { return StubRoutines::x86::vector_int_size_mask(); }
-  static address vector_short_shufflemask() { return StubRoutines::x86::vector_short_shuffle_mask(); }
-  static address vector_short_sizemask() { return StubRoutines::x86::vector_short_size_mask(); }
-  static address vector_long_shufflemask() { return StubRoutines::x86::vector_long_shuffle_mask(); }
-  static address vector_long_sizemask() { return StubRoutines::x86::vector_long_size_mask(); }
 #else
   static address float_signmask()  { return (address)float_signmask_pool; }
   static address float_signflip()  { return (address)float_signflip_pool; }
@@ -1271,6 +1255,22 @@ Assembler::Width widthForType(BasicType typ) {
 #endif
   static address vector_long_sign_mask() { return StubRoutines::x86::vector_long_sign_mask(); }
   static address vector_short_to_byte_mask() { return StubRoutines::x86::vector_short_to_byte_mask(); }
+  static address vector_int_to_byte_mask() { return StubRoutines::x86::vector_int_to_byte_mask(); }
+  static address vector_iota_indices() { return StubRoutines::x86::vector_iota_indices(); }
+  static address vector_byte_perm_mask() { return StubRoutines::x86::vector_byte_perm_mask(); }
+  static address vector_long_perm_mask() { return StubRoutines::x86::vector_long_perm_mask(); }
+  static address vector_all_bits_set() { return StubRoutines::x86::vector_all_bits_set(); }
+  static address vector_all_ones_mask() { return StubRoutines::x86::vector_all_ones_mask(); }
+  static address vector_int_to_short_mask() { return StubRoutines::x86::vector_int_to_short_mask(); }
+  static address vector_byte_bitset() { return StubRoutines::x86::vector_byte_bitset(); }
+  static address vector_short_shufflemask() { return StubRoutines::x86::vector_short_shuffle_mask(); }
+  static address vector_short_sizemask() { return StubRoutines::x86::vector_short_size_mask(); }
+  static address vector_int_shufflemask() { return StubRoutines::x86::vector_int_shuffle_mask(); }
+  static address vector_int_sizemask() { return StubRoutines::x86::vector_int_size_mask(); }
+  static address vector_long_shufflemask() { return StubRoutines::x86::vector_long_shuffle_mask(); }
+  static address vector_long_sizemask() { return StubRoutines::x86::vector_long_size_mask(); }
+  static address vector_32_bit_mask() { return StubRoutines::x86::vector_32_bit_mask(); }
+  static address vector_64_bit_mask() { return StubRoutines::x86::vector_64_bit_mask(); }
 
 //=============================================================================
 const bool Matcher::match_rule_supported(int opcode) {
@@ -1456,11 +1456,20 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       }
       break;
     case Op_ExtractB:
-    case Op_ExtractI:
     case Op_ExtractL:
+#ifdef _LP64
       if (UseSSE <= 3) {
         return false;
       }
+#else
+      return false;
+#endif
+      break;
+    case Op_ExtractI:
+      if (UseSSE <= 3) {
+        return false;
+      }
+      break;
     case Op_CMoveVF:
       if (vlen != 8) {
         return false; // implementation limitation (only vcmov8F_reg is present)
@@ -1522,6 +1531,11 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       } else if (is_subword_type(bt) && (UseSSE < 4)) {
         return false;
       }
+#ifndef _LP64
+      if (bt == T_BYTE || bt == T_LONG) {
+        return false;
+      }
+#endif
       break;
     case Op_AndReductionV:
     case Op_OrReductionV:
@@ -1529,6 +1543,11 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       if (is_subword_type(bt) && (UseSSE < 4)) {
         return false;
       }
+#ifndef _LP64
+      if (bt == T_BYTE || bt == T_LONG) {
+        return false;
+      }
+#endif
       break;
     case Op_VectorMaskCmp:
       if (UseAVX <= 0) {
@@ -1541,6 +1560,12 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       if (UseSSE <= 3) {
         return false;
       }
+#ifndef _LP64
+      if (bt == T_LONG || bt == T_DOUBLE) {
+        return false;
+      }
+#endif
+      break;
     case Op_MinReductionV:
     case Op_MaxReductionV:
       if ((bt == T_INT || is_subword_type(bt)) && UseSSE < 4) {
@@ -1556,6 +1581,11 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       if (UseAVX > 2 && (!VM_Version::supports_avx512dq() && size_in_bits == 512)) {
         return false;
       }
+#ifndef _LP64
+      if (bt == T_BYTE || bt == T_LONG) {
+        return false;
+      }
+#endif
       break;
     case Op_VectorBlend:
       if (UseSSE <= 3 && UseAVX == 0) {
@@ -1565,6 +1595,9 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       }
       break;
     case Op_VectorTest:
+#ifdef _LP64
+      return false;
+#else
       if (UseAVX <= 0) {
         return false;
       } else if (size_in_bits == 512 && (UseAVX <= 2 || (VM_Version::supports_avx512bw() == false))) {
@@ -1572,6 +1605,7 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       } else if (size_in_bits != 128 && size_in_bits != 256 && size_in_bits != 512) {
         return false; // Implementation limitation
       }
+#endif
       break;
     case Op_VectorLoadMask:
       if (UseSSE <= 3) {
@@ -2304,6 +2338,13 @@ encode %{
 
 %}
 
+// Operands for bound floating pointer register arguments
+operand rxmm0() %{
+  constraint(ALLOC_IN_RC(xmm0_reg));
+  match(VecX);
+  format%{%}
+  interface(REG_INTER);
+%}
 
 //----------OPERANDS-----------------------------------------------------------
 // Operand definitions must precede instruction definitions for correct parsing
@@ -3113,6 +3154,7 @@ instruct negI_rReg_2(rRegI dst, rFlagsReg cr)
   ins_pipe(ialu_reg);
 %}
 
+#ifdef _LP64
 instruct negL_rReg_2(rRegL dst, rFlagsReg cr)
 %{
   match(Set dst (NegL dst));
@@ -3124,6 +3166,7 @@ instruct negL_rReg_2(rRegL dst, rFlagsReg cr)
   %}
   ins_pipe(ialu_reg);
 %}
+#endif // _LP64
 
 instruct negF_reg(regF dst) %{
   predicate((UseSSE>=1) && (UseAVX == 0));
@@ -3255,7 +3298,7 @@ instruct reinterpret(vec dst) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct reinterpret_expand_sse(vec dst, vec src, rRegL scratch) %{
+instruct reinterpret_expand_sse(vec dst, vec src, rRegP scratch) %{
   predicate(UseAVX == 0 && 
             (n->in(1)->bottom_type()->is_vect()->length_in_bytes() < n->bottom_type()->is_vect()->length_in_bytes()) &&
             (n->in(1)->bottom_type()->is_vect()->length_in_bytes() <= 8) &&
@@ -3274,7 +3317,7 @@ instruct reinterpret_expand_sse(vec dst, vec src, rRegL scratch) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct reinterpret_expand_small(vec dst, vec src, rRegL scratch) %{
+instruct reinterpret_expand_small(vec dst, vec src, rRegP scratch) %{
   predicate(UseAVX > 0 && 
             (n->in(1)->bottom_type()->is_vect()->length_in_bytes() < n->bottom_type()->is_vect()->length_in_bytes()) &&
             (n->in(1)->bottom_type()->is_vect()->length_in_bytes() <= 8));
@@ -3589,7 +3632,7 @@ instruct gather(legVec dst, memory mem, legVec idx, rRegP tmp, legVec mask) %{
     } else {
       __ vmovdqu($mask$$XMMRegister, ExternalAddress(vector_all_bits_set()));
     }
-    __ leaq($tmp$$Register, $mem$$Address);
+    __ lea($tmp$$Register, $mem$$Address);
     __ vgather(this->bottom_type()->is_vect()->element_basic_type(), $dst$$XMMRegister, $tmp$$Register, $idx$$XMMRegister, $mask$$XMMRegister, vector_len);
   %}
   ins_pipe( pipe_slow );
@@ -3609,7 +3652,7 @@ instruct evgather(vec dst, memory mem, vec idx, rRegP tmp) %{
     int vector_len = vector_length_encoding(this);
     KRegister ktmp = k2;
     __ kmovwl(k2, ExternalAddress(vector_all_bits_set()), $tmp$$Register);
-    __ leaq($tmp$$Register, $mem$$Address);
+    __ lea($tmp$$Register, $mem$$Address);
     __ evgather(this->bottom_type()->is_vect()->element_basic_type(), $dst$$XMMRegister, ktmp, $tmp$$Register, $idx$$XMMRegister, vector_len);
   %}
   ins_pipe( pipe_slow );
@@ -3634,7 +3677,7 @@ instruct scatter(memory mem, vec src, vec idx, rRegP tmp) %{
     int vector_len = vector_length_encoding(vector_length_in_bytes(this, $src));
     KRegister ktmp = k2;
     __ kmovwl(k2, ExternalAddress(vector_all_bits_set()), $tmp$$Register);
-    __ leaq($tmp$$Register, $mem$$Address);
+    __ lea($tmp$$Register, $mem$$Address);
     __ evscatter(vector_basic_type(this, $src), $tmp$$Register, $idx$$XMMRegister, ktmp, $src$$XMMRegister, vector_len);
   %}
   ins_pipe( pipe_slow );
@@ -4439,6 +4482,7 @@ instruct insert8D(vec dst, vec src, regD val, immI idx, rRegL tmp, legVec vtmp) 
 
 // =======================Byte Reduction==========================================
 
+#ifdef _LP64
 instruct reductionB(rRegI dst, rRegI src1, vec src2, vec vtmp1, vec vtmp2) %{
   predicate(n->in(2)->bottom_type()->is_vect()->length() >= 8 && n->in(2)->bottom_type()->is_vect()->length() <= 32 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (AddReductionVI src1 src2));
@@ -4486,6 +4530,7 @@ instruct reduction64B(rRegI dst, rRegI src1, legVec src2, legVec vtmp1, legVec v
   ins_pipe( pipe_slow );
 %}
 
+#endif
 // =======================Short Reduction==========================================
 
 instruct reductionS(rRegI dst, rRegI src1, vec src2, vec vtmp1, vec vtmp2) %{
@@ -6575,7 +6620,7 @@ instruct vsllv8S_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegI scrat
   ins_pipe( pipe_slow );
 %}
 
-instruct vsllv16S_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegL scratch, vec shift1, vec shift2) %{
+instruct vsllv16S_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegP scratch, vec shift1, vec shift2) %{
   predicate(UseAVX > 1 && (UseAVX < 3 || !VM_Version::supports_avx512bw()) && n->as_Vector()->length() == 16 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (VLShiftV src shift));
   effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch, TEMP shift1, TEMP shift2);
@@ -7333,7 +7378,7 @@ instruct vcvtBtoD_reg(legVec dst, vec src) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vcvtStoB_reg(vec dst, vec src, rRegL scratch) %{
+instruct vcvtStoB_reg(vec dst, vec src, rRegP scratch) %{
   predicate((n->as_Vector()->length() == 4 || n->as_Vector()->length() == 8) && 
             n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   effect(TEMP scratch);
@@ -7348,7 +7393,7 @@ instruct vcvtStoB_reg(vec dst, vec src, rRegL scratch) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vcvt16Sto16B_reg(vec dst, vec src, vec tmp, rRegL scratch) %{
+instruct vcvt16Sto16B_reg(vec dst, vec src, vec tmp, rRegP scratch) %{
   predicate(UseAVX > 0 && n->as_Vector()->length() == 16 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   effect(TEMP scratch, TEMP tmp);
   match(Set dst (VectorCastS2X src));
@@ -7427,7 +7472,7 @@ instruct vcvtStoD_reg(vec dst, vec src) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vcvt4Ito4B_reg(vec dst, vec src, rRegL scratch) %{
+instruct vcvt4Ito4B_reg(vec dst, vec src, rRegP scratch) %{
   predicate(UseAVX > 0 && n->as_Vector()->length() == 4 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   effect(TEMP scratch);
   match(Set dst (VectorCastI2X src));
@@ -7443,7 +7488,7 @@ instruct vcvt4Ito4B_reg(vec dst, vec src, rRegL scratch) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vcvt8Ito8B_reg(vec dst, vec src, vec tmp, rRegL scratch) %{
+instruct vcvt8Ito8B_reg(vec dst, vec src, vec tmp, rRegP scratch) %{
   predicate(UseAVX >= 2 && n->as_Vector()->length() == 8 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   effect(TEMP scratch, TEMP tmp);
   match(Set dst (VectorCastI2X src));
@@ -7472,7 +7517,7 @@ instruct vcvt16Ito16B_reg(vec dst, vec src) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vcvtItoS_reg(vec dst, vec src, rRegL scratch) %{
+instruct vcvtItoS_reg(vec dst, vec src, rRegP scratch) %{
   predicate((n->as_Vector()->length() == 2 || n->as_Vector()->length() == 4) &&
              n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   effect(TEMP scratch);
@@ -7487,7 +7532,7 @@ instruct vcvtItoS_reg(vec dst, vec src, rRegL scratch) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vcvt8Ito8S_reg(vec dst, vec src, vec tmp, rRegL scratch) %{
+instruct vcvt8Ito8S_reg(vec dst, vec src, vec tmp, rRegP scratch) %{
   predicate(UseAVX >= 2 && n->as_Vector()->length() == 8 && n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   effect(TEMP scratch, TEMP tmp);
   match(Set dst (VectorCastI2X src));
@@ -7550,7 +7595,7 @@ instruct vcvtItoD_reg(vec dst, vec src) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vcvt4Lto4B_reg(vec dst, vec src, rRegL scratch) %{
+instruct vcvt4Lto4B_reg(vec dst, vec src, rRegP scratch) %{
   predicate(UseAVX >= 2 && n->as_Vector()->length() == 4 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (VectorCastL2X src));
   effect(TEMP scratch);
@@ -7583,7 +7628,7 @@ instruct vcvt8Lto8B_reg(vec dst, vec src) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vcvt2Lto2S_reg(vec dst, vec src, rRegL scratch) %{
+instruct vcvt2Lto2S_reg(vec dst, vec src, rRegP scratch) %{
   predicate(UseAVX > 0 && n->as_Vector()->length() == 2 && n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (VectorCastL2X src));
   effect(TEMP scratch);
@@ -7599,7 +7644,7 @@ instruct vcvt2Lto2S_reg(vec dst, vec src, rRegL scratch) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vcvt4Lto4S_reg(vec dst, vec src, rRegL scratch) %{
+instruct vcvt4Lto4S_reg(vec dst, vec src, rRegP scratch) %{
   predicate(UseAVX >= 2 && n->as_Vector()->length() == 4 && n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (VectorCastL2X src));
   effect(TEMP scratch);
@@ -7758,7 +7803,7 @@ instruct vcmpFD(legVec dst, legVec src1, legVec src2, immI8 cond) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct evcmpFD(vec dst, vec src1, vec src2, immI8 cond, rRegL scratch) %{
+instruct evcmpFD(vec dst, vec src1, vec src2, immI8 cond, rRegP scratch) %{
   predicate(UseAVX > 2 && n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() == 64 &&
             ((n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT) ||
              (n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE)));
@@ -7781,7 +7826,7 @@ instruct evcmpFD(vec dst, vec src1, vec src2, immI8 cond, rRegL scratch) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vcmp(legVec dst, legVec src1, legVec src2, immI8 cond, rRegL scratch) %{
+instruct vcmp(legVec dst, legVec src1, legVec src2, immI8 cond, rRegP scratch) %{
   predicate(n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() >= 8 &&
             n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() <= 32 &&
             is_integral_type(n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type()));
@@ -7797,8 +7842,7 @@ instruct vcmp(legVec dst, legVec src1, legVec src2, immI8 cond, rRegL scratch) %
   ins_pipe( pipe_slow );
 %}
 
-
-instruct evcmp(vec dst, vec src1, vec src2, immI8 cond, rRegL scratch) %{
+instruct evcmp(vec dst, vec src1, vec src2, immI8 cond, rRegP scratch) %{
   predicate(UseAVX > 2 && n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() == 64 &&
             is_integral_type(n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type()));
   match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
@@ -7902,7 +7946,9 @@ instruct extracti(rRegI dst, legVec src, immI idx) %{
   predicate(n->in(1)->bottom_type()->is_vect()->length_in_bytes() <= 16);
   match(Set dst (ExtractI src idx));
   match(Set dst (ExtractS src idx));
+#ifdef _LP64
   match(Set dst (ExtractB src idx));
+#endif
   ins_encode %{
     int eindex = $idx$$constant;
     BasicType typ = vector_basic_type(this, $src);
@@ -7916,7 +7962,9 @@ instruct vextracti(rRegI dst, legVec src, immI idx, legVec vtmp) %{
             n->in(1)->bottom_type()->is_vect()->length_in_bytes() == 64);
   match(Set dst (ExtractI src idx));
   match(Set dst (ExtractS src idx));
+#ifdef _LP64
   match(Set dst (ExtractB src idx));
+#endif
   effect(TEMP vtmp);
   ins_encode %{
     int eindex = $idx$$constant;
@@ -7952,7 +8000,7 @@ instruct vblendvpsF(legVec dst, legVec src1, legVec src2, legVec mask) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vblendvps16F(vec dst, vec src1, vec src2, vec mask, rRegL scratch) %{
+instruct vblendvps16F(vec dst, vec src1, vec src2, vec mask, rRegP scratch) %{
   predicate(UseAVX > 2 && n->as_Vector()->length() == 16 && n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
   match(Set dst (VectorBlend (Binary src1 src2) mask));
   effect(TEMP scratch);
@@ -7992,7 +8040,7 @@ instruct vpblendvbI(legVec dst, legVec src1, legVec src2, legVec mask) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vpblendmd16I(vec dst, vec src1, vec src2, vec mask, rRegL scratch) %{
+instruct vpblendmd16I(vec dst, vec src1, vec src2, vec mask, rRegP scratch) %{
   predicate(UseAVX > 2 && n->as_Vector()->length() == 16 && n->bottom_type()->is_vect()->element_basic_type() == T_INT);
   match(Set dst (VectorBlend (Binary src1 src2) mask));
   effect(TEMP scratch);
@@ -8032,7 +8080,7 @@ instruct vpblendvbB(legVec dst, legVec src1, legVec src2, legVec mask) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vpblendmb64B(vec dst, vec src1, vec src2, vec mask, rRegL scratch) %{
+instruct vpblendmb64B(vec dst, vec src1, vec src2, vec mask, rRegP scratch) %{
   predicate(UseAVX > 2 && n->as_Vector()->length() == 64 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE && VM_Version::supports_avx512bw());
   match(Set dst (VectorBlend (Binary src1 src2) mask));
   effect(TEMP scratch);
@@ -8072,7 +8120,7 @@ instruct vpblendvbS(legVec dst, legVec src1, legVec src2, legVec mask) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vpblendmw32S(vec dst, vec src1, vec src2, vec mask, rRegL scratch) %{
+instruct vpblendmw32S(vec dst, vec src1, vec src2, vec mask, rRegP scratch) %{
   predicate(UseAVX > 2 && n->as_Vector()->length() == 32 && n->bottom_type()->is_vect()->element_basic_type() == T_SHORT && VM_Version::supports_avx512bw());
   match(Set dst (VectorBlend (Binary src1 src2) mask));
   effect(TEMP scratch);
@@ -8112,7 +8160,7 @@ instruct vpblendvbL(legVec dst, legVec src1, legVec src2, legVec mask) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vpblendmq8L(vec dst, vec src1, vec src2, vec mask, rRegL scratch) %{
+instruct vpblendmq8L(vec dst, vec src1, vec src2, vec mask, rRegP scratch) %{
   predicate(UseAVX > 2 && n->as_Vector()->length() == 8 && n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
   match(Set dst (VectorBlend (Binary src1 src2) mask));
   effect(TEMP scratch);
@@ -8152,7 +8200,7 @@ instruct vblendvpdD(legVec dst, legVec src1, legVec src2, legVec mask) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vblendvpd8D(vec dst, vec src1, vec src2, vec mask, rRegL scratch) %{
+instruct vblendvpd8D(vec dst, vec src1, vec src2, vec mask, rRegP scratch) %{
   predicate(UseAVX > 2 && n->as_Vector()->length() == 8 && n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
   match(Set dst (VectorBlend (Binary src1 src2) mask));
   effect(TEMP scratch);
@@ -8310,7 +8358,7 @@ instruct vnotB(vec dst, vec src) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vnotB_reg(vec dst, vec src, rRegL scratch) %{
+instruct vnotB_reg(vec dst, vec src, rRegP scratch) %{
   predicate((UseAVX > 0 && (n->as_Vector()->length_in_bytes() >= 4 && n->as_Vector()->length_in_bytes() <= 32)) || 
             (UseAVX > 2 && n->as_Vector()->length_in_bytes() == 64));
   match(Set dst (NotV src));
@@ -8323,6 +8371,7 @@ instruct vnotB_reg(vec dst, vec src, rRegL scratch) %{
   ins_pipe( pipe_slow );
 %}
 
+#ifdef _LP64
 instruct vptest4inae(rRegI dst, legVec src1, legVec src2, rFlagsReg cr) %{
   predicate(UseAVX > 0 && n->in(2)->as_Vector()->length() <=16 && static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::overflow);
   match(Set dst (VectorTest src1 src2 ));
@@ -8420,6 +8469,7 @@ instruct vptest16ieq(rRegI dst, legVec src1, legVec src2, legVec tmp, rFlagsReg 
   %}
   ins_pipe( pipe_slow );
 %}
+#endif
 
 instruct loadmaskb(vec dst, vec src) %{
   predicate(n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
@@ -8570,7 +8620,7 @@ instruct storemask64b_evex(vec dst, vec src) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct storemask64b(vec dst, vec src, rRegL scratch) %{
+instruct storemask64b(vec dst, vec src, rRegP scratch) %{
   predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() == 64 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 1);
   match(Set dst (VectorStoreMask src));
   effect(TEMP scratch);
@@ -8614,7 +8664,7 @@ instruct storemask16s(vec dst, vec src, vec tmp) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct storemask32s(vec dst, vec src, rRegL scratch) %{
+instruct storemask32s(vec dst, vec src, rRegP scratch) %{
   predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() == 32 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 2);
   match(Set dst (VectorStoreMask src));
   effect(TEMP scratch);
@@ -8666,6 +8716,26 @@ instruct storemask8i(vec dst, vec src, vec tmp) %{
   ins_pipe( pipe_slow );
 %}
 
+instruct storemask8f(vec dst, vec src, vec tmp) %{
+  predicate(UseAVX == 1 && n->as_Vector()->length() == 8 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 4);
+  match(Set dst (VectorStoreMask src));
+  effect(TEMP dst, TEMP tmp);
+  format %{ "vpxor  $dst,$dst,$dst\n\t"
+            "vpsubd $dst,$dst,$src\n\t"
+            "vextractf128 $tmp,$src\n\t"
+            "vpackusdw $dst,$dst,$tmp\n\t"
+            "vpackuswb $dst,$dst,$dst\t! store mask (8I to 8B)" %}
+  ins_encode %{
+    int vector_len = 1;
+    __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
+    __ vpsubd($dst$$XMMRegister, $dst$$XMMRegister, $src$$XMMRegister, vector_len);
+    __ vextractf128($tmp$$XMMRegister, $src$$XMMRegister, 1);    
+    __ vpackusdw($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, vector_len);
+    __ vpackuswb($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, 0);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 instruct storemask16i_evex(vec dst, vec src, vec tmp) %{
   predicate(UseAVX > 2 && !(VM_Version::supports_avx512bw()) && n->as_Vector()->length() == 16 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 4);
   match(Set dst (VectorStoreMask src));
@@ -8680,7 +8750,7 @@ instruct storemask16i_evex(vec dst, vec src, vec tmp) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct storemask16i(vec dst, vec src, rRegL scratch) %{
+instruct storemask16i(vec dst, vec src, rRegP scratch) %{
   predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() == 16 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 4);
   match(Set dst (VectorStoreMask src));
   effect(TEMP scratch);
@@ -8726,7 +8796,7 @@ instruct storemask2l(vec dst, vec src) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct storemask4l(vec dst, vec src, rRegL scratch) %{
+instruct storemask4l(vec dst, vec src, rRegP scratch) %{
   predicate(UseAVX > 1 && n->as_Vector()->length() == 4 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 8);
   match(Set dst (VectorStoreMask src));
   effect(TEMP scratch, TEMP dst);
@@ -8747,7 +8817,27 @@ instruct storemask4l(vec dst, vec src, rRegL scratch) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct storemask8l(vec dst, vec src, rRegL scratch) %{
+instruct storemask4d(vec dst, vec src, rRegL scratch, vec tmp) %{
+  predicate(UseAVX == 1 && n->as_Vector()->length() == 4 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 8);
+  match(Set dst (VectorStoreMask src));
+  effect(TEMP scratch, TEMP dst, TEMP tmp);
+  format %{ "vpshufps $dst,$src,$src,0x88\n\t"
+           "vextractf128 $tmp,$src,"
+           "vblendps $dst,$dst,$tmp,0xC\n\t"
+           "vpackusdw $dst,$dst,$dst\n\t"
+           "vpackuswb $dst,$dst,$dst\t! store mask (4D to 4B)" %}
+  ins_encode %{
+    int vector_len = 0;
+    __ vpshufps($dst$$XMMRegister, $src$$XMMRegister, $src$$XMMRegister, 0x88, 1);
+    __ vextractf128($tmp$$XMMRegister, $dst$$XMMRegister, 1);
+    __ vblendps($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, 0xC, vector_len);
+    __ vpackusdw($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
+    __ vpackuswb($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct storemask8l(vec dst, vec src, rRegP scratch) %{
   predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() == 8 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 8);
   match(Set dst (VectorStoreMask src));
   effect(TEMP scratch);
@@ -8764,7 +8854,7 @@ instruct storemask8l(vec dst, vec src, rRegL scratch) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct storemask8l_evex(vec dst, vec src, rRegL scratch, vec tmp) %{
+instruct storemask8l_evex(vec dst, vec src, rRegP scratch, vec tmp) %{
   predicate(UseAVX > 2 && !(VM_Version::supports_avx512bw()) && n->as_Vector()->length() == 8 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 8);
   match(Set dst (VectorStoreMask src));
   effect(TEMP scratch, TEMP tmp);
@@ -8780,7 +8870,7 @@ instruct storemask8l_evex(vec dst, vec src, rRegL scratch, vec tmp) %{
 
 //-------------------------------- LOAD_IOTA_INDICES----------------------------------
 
-instruct loadconb(vec dst, immI0 src, rRegL scratch) %{
+instruct loadconb(vec dst, immI0 src, rRegP scratch) %{
   predicate(n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (VectorLoadConst src));
   effect(TEMP scratch);
