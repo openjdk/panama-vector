@@ -3854,6 +3854,18 @@ operand eRegP() %{
   interface(REG_INTER);
 %}
 
+operand rRegP() %{
+  constraint(ALLOC_IN_RC(int_reg));
+  match(RegP);
+  match(eAXRegP);
+  match(eBXRegP);
+  match(eCXRegP);
+  match(eDIRegP);
+
+  format %{ %}
+  interface(REG_INTER);
+%}
+
 // On windows95, EBP is not safe to use for implicit null tests.
 operand eRegP_no_EBP() %{
   constraint(ALLOC_IN_RC(int_reg_no_ebp));
@@ -3987,6 +3999,15 @@ operand eADXRegL_low_only() %{
 %}
 
 // Flags register, used as output of compare instructions
+operand rFlagsReg() %{
+  constraint(ALLOC_IN_RC(int_flags));
+  match(RegFlags);
+
+  format %{ "EFLAGS" %}
+  interface(REG_INTER);
+%}
+
+// Flags register, used as output of compare instructions
 operand eFlagsReg() %{
   constraint(ALLOC_IN_RC(int_flags));
   match(RegFlags);
@@ -4116,6 +4137,14 @@ operand regF() %{
   interface(REG_INTER);
 %}
 
+operand legRegF() %{
+  predicate( UseSSE>=1 );
+  constraint(ALLOC_IN_RC(float_reg_legacy));
+  match(RegF);
+  format %{ %}
+  interface(REG_INTER);
+%}
+
 // Float register operands
 operand vlRegF() %{
    constraint(ALLOC_IN_RC(float_reg_vl));
@@ -4135,6 +4164,14 @@ operand regD() %{
 %}
 
 // Double register operands
+operand legRegD() %{
+  predicate( UseSSE>=2 );
+  constraint(ALLOC_IN_RC(double_reg_legacy));
+  match(RegD);
+  format %{ %}
+  interface(REG_INTER);
+%}
+
 operand vlRegD() %{
    constraint(ALLOC_IN_RC(double_reg_vl));
    match(RegD);
@@ -5883,6 +5920,46 @@ instruct loadKlass(eRegP dst, memory mem) %{
   opcode(0x8B);
   ins_encode( OpcP, RegMem(dst,mem));
   ins_pipe( ialu_reg_mem );
+%}
+
+// Load Float
+instruct MoveF2LEG(legRegF dst, regF src) %{
+  match(Set dst src);
+  format %{ "movss $dst,$src\t# if src != dst load float (4 bytes)" %}
+  ins_encode %{
+    __ movflt($dst$$XMMRegister, $src$$XMMRegister);
+  %}
+  ins_pipe( fpu_reg_reg );
+%}
+
+// Load Float
+instruct MoveLEG2F(regF dst, legRegF src) %{
+  match(Set dst src);
+  format %{ "movss $dst,$src\t# if src != dst load float (4 bytes)" %}
+  ins_encode %{
+    __ movflt($dst$$XMMRegister, $src$$XMMRegister);
+  %}
+  ins_pipe( fpu_reg_reg );
+%}
+
+// Load Double
+instruct MoveD2LEG(legRegD dst, regD src) %{
+  match(Set dst src);
+  format %{ "movsd $dst,$src\t# if src != dst load double (8 bytes)" %}
+  ins_encode %{
+    __ movdbl($dst$$XMMRegister, $src$$XMMRegister);
+  %}
+  ins_pipe( fpu_reg_reg );
+%}
+
+// Load Double
+instruct MoveLEG2D(regD dst, legRegD src) %{
+  match(Set dst src);
+  format %{ "movsd $dst,$src\t# if src != dst load double (8 bytes)" %}
+  ins_encode %{
+    __ movdbl($dst$$XMMRegister, $src$$XMMRegister);
+  %}
+  ins_pipe( fpu_reg_reg );
 %}
 
 // Load Double

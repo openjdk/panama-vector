@@ -498,73 +498,6 @@ void MacroAssembler::print_state() {
 
 #else // _LP64
 
-// Float/Double min max
-void MacroAssembler::evminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
-                              KRegister ktmp, XMMRegister atmp, XMMRegister btmp,
-                              bool is_single, bool is_min, int vector_len) {
-  if (is_single && is_min) {
-    evpmovd2m(ktmp, a, vector_len);
-    evblendmps(atmp, ktmp, a, b, true, vector_len);
-    evblendmps(btmp, ktmp, b, a, true, vector_len);
-    vminps(dst, atmp, btmp, vector_len);
-    evcmpps(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    evmovdqul(dst, ktmp, atmp, true, vector_len);
-  } else if (is_single && !is_min) {
-    evpmovd2m(ktmp, b, vector_len);
-    evblendmps(atmp, ktmp, a, b, true, vector_len);
-    evblendmps(btmp, ktmp, b, a, true, vector_len);
-    vmaxps(dst, atmp, btmp, vector_len);
-    evcmpps(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    evmovdqul(dst, ktmp, atmp, true, vector_len);
-  } else if (!is_single && is_min) {
-    evpmovq2m(ktmp, a, vector_len);
-    evblendmpd(atmp, ktmp, a, b, true, vector_len);
-    evblendmpd(btmp, ktmp, b, a, true, vector_len);
-    vminpd(dst, atmp, btmp, vector_len);
-    evcmppd(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    evmovdquq(dst, ktmp, atmp, true, vector_len);
-  } else {
-    evpmovq2m(ktmp, b, vector_len);
-    evblendmpd(atmp, ktmp, a, b, true, vector_len);
-    evblendmpd(btmp, ktmp, b, a, true, vector_len);
-    vmaxpd(dst, atmp, btmp, vector_len);
-    evcmppd(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    evmovdquq(dst, ktmp, atmp, true, vector_len);
-  }
-}
-
-// Float/Double min max
-void MacroAssembler::vminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
-                             XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
-                             bool is_single, bool is_min, int vector_len) {
-  if (is_single && is_min) {
-    vblendvps(atmp, a, b, a, vector_len);
-    vblendvps(btmp, b, a, a, vector_len);
-    vminps(tmp, atmp, btmp, vector_len);
-    vcmpps(btmp, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    vblendvps(dst, tmp, atmp, btmp, vector_len);
-  } else if (is_single && !is_min) {
-    vblendvps(btmp, b, a, b, vector_len);
-    vblendvps(atmp, a, b, b, vector_len);
-    vmaxps(tmp, atmp, btmp, vector_len);
-    vcmpps(btmp, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    vblendvps(dst, tmp, atmp, btmp, vector_len);
-  } else if (!is_single && is_min) {
-    vblendvpd(atmp, a, b, a, vector_len);
-    vblendvpd(btmp, b, a, a, vector_len);
-    vminpd(tmp, atmp, btmp, vector_len);
-    vcmppd(btmp, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    vblendvpd(dst, tmp, atmp, btmp, vector_len);
-  } else {
-    vblendvpd(btmp, b, a, b, vector_len);
-    vblendvpd(atmp, a, b, b, vector_len);
-    vmaxpd(tmp, atmp, btmp, vector_len);
-    vcmppd(btmp, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    vblendvpd(dst, tmp, atmp, btmp, vector_len);
-  }
-}
-
-
 // 64 bit versions
 
 Address MacroAssembler::as_Address(AddressLiteral adr) {
@@ -1089,6 +1022,72 @@ void MacroAssembler::atomic_incl(AddressLiteral counter_addr, Register scr) {
   } else {
     lea(scr, counter_addr);
     atomic_incl(Address(scr, 0));
+  }
+}
+
+// Float/Double min max
+void MacroAssembler::evminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
+                              KRegister ktmp, XMMRegister atmp, XMMRegister btmp,
+                              bool is_single, bool is_min, int vector_len) {
+  if (is_single && is_min) {
+    evpmovd2m(ktmp, a, vector_len);
+    evblendmps(atmp, ktmp, a, b, true, vector_len);
+    evblendmps(btmp, ktmp, b, a, true, vector_len);
+    vminps(dst, atmp, btmp, vector_len);
+    evcmpps(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vector_len);
+    evmovdqul(dst, ktmp, atmp, true, vector_len);
+  } else if (is_single && !is_min) {
+    evpmovd2m(ktmp, b, vector_len);
+    evblendmps(atmp, ktmp, a, b, true, vector_len);
+    evblendmps(btmp, ktmp, b, a, true, vector_len);
+    vmaxps(dst, atmp, btmp, vector_len);
+    evcmpps(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vector_len);
+    evmovdqul(dst, ktmp, atmp, true, vector_len);
+  } else if (!is_single && is_min) {
+    evpmovq2m(ktmp, a, vector_len);
+    evblendmpd(atmp, ktmp, a, b, true, vector_len);
+    evblendmpd(btmp, ktmp, b, a, true, vector_len);
+    vminpd(dst, atmp, btmp, vector_len);
+    evcmppd(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vector_len);
+    evmovdquq(dst, ktmp, atmp, true, vector_len);
+  } else {
+    evpmovq2m(ktmp, b, vector_len);
+    evblendmpd(atmp, ktmp, a, b, true, vector_len);
+    evblendmpd(btmp, ktmp, b, a, true, vector_len);
+    vmaxpd(dst, atmp, btmp, vector_len);
+    evcmppd(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vector_len);
+    evmovdquq(dst, ktmp, atmp, true, vector_len);
+  }
+}
+
+// Float/Double min max
+void MacroAssembler::vminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
+                             XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
+                             bool is_single, bool is_min, int vector_len) {
+  if (is_single && is_min) {
+    vblendvps(atmp, a, b, a, vector_len);
+    vblendvps(btmp, b, a, a, vector_len);
+    vminps(tmp, atmp, btmp, vector_len);
+    vcmpps(btmp, atmp, atmp, Assembler::UNORD_Q, vector_len);
+    vblendvps(dst, tmp, atmp, btmp, vector_len);
+  } else if (is_single && !is_min) {
+    vblendvps(btmp, b, a, b, vector_len);
+    vblendvps(atmp, a, b, b, vector_len);
+    vmaxps(tmp, atmp, btmp, vector_len);
+    vcmpps(btmp, atmp, atmp, Assembler::UNORD_Q, vector_len);
+    vblendvps(dst, tmp, atmp, btmp, vector_len);
+  } else if (!is_single && is_min) {
+    vblendvpd(atmp, a, b, a, vector_len);
+    vblendvpd(btmp, b, a, a, vector_len);
+    vminpd(tmp, atmp, btmp, vector_len);
+    vcmppd(btmp, atmp, atmp, Assembler::UNORD_Q, vector_len);
+    vblendvpd(dst, tmp, atmp, btmp, vector_len);
+  } else {
+    vblendvpd(btmp, b, a, b, vector_len);
+    vblendvpd(atmp, a, b, b, vector_len);
+    vmaxpd(tmp, atmp, btmp, vector_len);
+    vcmppd(btmp, atmp, atmp, Assembler::UNORD_Q, vector_len);
+    vblendvpd(dst, tmp, atmp, btmp, vector_len);
   }
 }
 
@@ -4893,6 +4892,7 @@ void MacroAssembler::vreduceq(int opcode, XMMRegister dst, XMMRegister src1, XMM
   }
 }
 
+#ifdef _LP64
 // dst = src1 + reduce(op, src2) using vtmp1 and vtmp2 as temps
 void MacroAssembler::reduce2L(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2) {
   pshufd(vtmp2, src2, 0xE);
@@ -4916,6 +4916,7 @@ void MacroAssembler::reduce8L(int opcode, Register dst, Register src1, XMMRegist
   vreduceq(opcode, vtmp2, vtmp2, src2, vector_len);
   reduce4L(opcode, dst, src1, vtmp2, vtmp1, vtmp2);
 }
+#endif // _LP64
 
 void MacroAssembler::reducef(int opcode, XMMRegister dst, XMMRegister src) {
   if(opcode == Op_AddReductionVF) {
