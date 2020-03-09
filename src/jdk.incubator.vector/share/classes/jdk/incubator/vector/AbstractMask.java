@@ -141,33 +141,15 @@ abstract class AbstractMask<E> extends VectorMask<E> {
     }
 
     @Override
-    public AbstractMask<E> and(VectorMask<E> m) {
-        // FIXME: Generate good code here.
-        return bOp(m, (i, a, b) -> a && b);
-    }
-
-    @Override
-    public AbstractMask<E> or(VectorMask<E> m) {
-        // FIXME: Generate good code here.
-        return bOp(m, (i, a, b) -> a || b);
-    }
-
-    @Override
-    public AbstractMask<E> equal(VectorMask<E> m) {
+    public VectorMask<E> equal(VectorMask<E> m) {
         // FIXME: Generate good code here.
         return bOp(m, (i, a, b) -> a == b);
     }
 
     @Override
-    public AbstractMask<E> andNot(VectorMask<E> m) {
+    public VectorMask<E> andNot(VectorMask<E> m) {
         // FIXME: Generate good code here.
         return bOp(m, (i, a, b) -> a && !b);
-    }
-
-    @Override
-    public AbstractMask<E> not() {
-        // FIXME: Generate good code here.
-        return uOp((i, a) -> !a);
     }
 
     /*package-private*/
@@ -190,7 +172,7 @@ abstract class AbstractMask<E> extends VectorMask<E> {
 
     @Override
     @ForceInline
-    public AbstractMask<E> indexInRange(int offset, int limit) {
+    public VectorMask<E> indexInRange(int offset, int limit) {
         int vlength = length();
         Vector<E> iota = vectorSpecies().zero().addIndex(1);
         VectorMask<E> badMask = checkIndex0(offset, limit, iota, vlength);
@@ -202,8 +184,8 @@ abstract class AbstractMask<E> extends VectorMask<E> {
     AbstractVector<E>
     toVectorTemplate() {
         AbstractSpecies<E> vsp = vspecies();
-        AbstractVector<E> zero = vsp.broadcast(0);
-        AbstractVector<E> mone = vsp.broadcast(-1);
+        Vector<E> zero = vsp.broadcast(0);
+        Vector<E> mone = vsp.broadcast(-1);
         // -1 will result in the most significant bit being set in
         // addition to some or all other lane bits.
         // For integral types, *all* lane bits will be set.

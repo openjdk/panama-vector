@@ -107,7 +107,7 @@ abstract class AbstractShuffle<E> extends VectorShuffle<E> {
     }
 
     @ForceInline
-    public final AbstractShuffle<E> checkIndexes() {
+    public final VectorShuffle<E> checkIndexes() {
         // FIXME: vectorize this
         for (int index : reorder) {
             if (index < 0) {
@@ -118,7 +118,7 @@ abstract class AbstractShuffle<E> extends VectorShuffle<E> {
     }
 
     @ForceInline
-    public final AbstractShuffle<E> wrapIndexes() {
+    public final VectorShuffle<E> wrapIndexes() {
         // FIXME: vectorize this
         int length = reorder.length;
         for (int index : reorder) {
@@ -130,7 +130,7 @@ abstract class AbstractShuffle<E> extends VectorShuffle<E> {
     }
 
     @ForceInline
-    public final AbstractShuffle<E> wrapAndRebuild(byte[] oldReorder) {
+    public final VectorShuffle<E> wrapAndRebuild(byte[] oldReorder) {
         int length = oldReorder.length;
         byte[] reorder = new byte[length];
         for (int i = 0; i < length; i++) {
@@ -149,7 +149,7 @@ abstract class AbstractShuffle<E> extends VectorShuffle<E> {
     }
 
     @ForceInline
-    public final AbstractMask<E> laneIsValid() {
+    public final VectorMask<E> laneIsValid() {
         // FIXME: vectorize this
         int length = reorder.length;
         boolean[] bits = new boolean[length];
@@ -164,7 +164,7 @@ abstract class AbstractShuffle<E> extends VectorShuffle<E> {
     @Override
     @ForceInline
     @SuppressWarnings("unchecked")
-    public
+    public final
     <F> VectorShuffle<F> check(VectorSpecies<F> species) {
         if (species != vectorSpecies()) {
             throw AbstractSpecies.checkFailed(this, species);
@@ -196,7 +196,7 @@ abstract class AbstractShuffle<E> extends VectorShuffle<E> {
 
     /*package-private*/
     @ForceInline
-    public static int checkIndex0(int index, int laneCount, byte mode) {
+    static int checkIndex0(int index, int laneCount, byte mode) {
         int wrapped = VectorIntrinsics.wrapToRange(index, laneCount);
         if (mode == 0 || wrapped == index) {
             return wrapped;

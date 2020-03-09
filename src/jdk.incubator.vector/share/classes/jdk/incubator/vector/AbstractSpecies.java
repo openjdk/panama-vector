@@ -250,9 +250,9 @@ abstract class AbstractSpecies<E> implements VectorSpecies<E> {
     @Override
     @ForceInline
     @SuppressWarnings("unchecked")
-    public final AbstractSpecies<E> withShape(VectorShape newShape) {
+    public final VectorSpecies<E> withShape(VectorShape newShape) {
         if (newShape == vectorShape)  return this;
-        return (AbstractSpecies<E>) findSpecies(laneType, newShape);
+        return (VectorSpecies<E>) findSpecies(laneType, newShape);
     }
 
     @ForceInline
@@ -261,7 +261,7 @@ abstract class AbstractSpecies<E> implements VectorSpecies<E> {
         // This JITs to a constant value:
         AbstractSpecies<Integer> sp = indexSpecies;
         if (sp != null)  return sp;
-        return indexSpecies = findSpecies(LaneType.INT, indexShape).check(int.class);
+        return indexSpecies = findSpecies(LaneType.INT, indexShape).check0(int.class);
     }
 
     @ForceInline
@@ -327,31 +327,31 @@ abstract class AbstractSpecies<E> implements VectorSpecies<E> {
         return dummyVector().maskFromArray(bits);
     }
 
-    public
+    public final
     @Override
     @ForceInline
-    AbstractShuffle<E> shuffleFromArray(int[] sourceIndexes, int offset) {
+    VectorShuffle<E> shuffleFromArray(int[] sourceIndexes, int offset) {
         return dummyVector().shuffleFromArray(sourceIndexes, offset);
     }
 
-    public
+    public final
     @Override
     @ForceInline
-    AbstractShuffle<E> shuffleFromValues(int... sourceIndexes) {
+    VectorShuffle<E> shuffleFromValues(int... sourceIndexes) {
         return dummyVector().shuffleFromArray(sourceIndexes, 0);
     }
 
-    public
+    public final
     @Override
     @ForceInline
-    AbstractShuffle<E> shuffleFromOp(IntUnaryOperator fn) {
+    VectorShuffle<E> shuffleFromOp(IntUnaryOperator fn) {
         return dummyVector().shuffleFromOp(fn);
     }
 
-    public
+    public final
     @Override
     @ForceInline
-    AbstractShuffle<E> iotaShuffle(int start, int step, boolean wrap) {
+    VectorShuffle<E> iotaShuffle(int start, int step, boolean wrap) {
         AbstractShuffle<E> res;
         if (start == 0 && step == 1)
             return dummyVector().iotaShuffle();
@@ -359,14 +359,9 @@ abstract class AbstractSpecies<E> implements VectorSpecies<E> {
             return dummyVector().iotaShuffle(start, step, wrap);
     }
 
-    // Define fromArray when we know the ETYPE.
-    // @Override EVector fromArray(ETYPE[] a, int offset)
-    @Override
-    public abstract AbstractVector<E> fromArray(Object a, int offset);
-
     @ForceInline
     @Override
-    public final AbstractVector<E> fromByteArray(byte[] a, int offset) {
+    public final Vector<E> fromByteArray(byte[] a, int offset) {
         return dummyVector()
             .fromByteArray0(a, offset)
             .maybeSwap(ByteOrder.LITTLE_ENDIAN);
@@ -388,9 +383,6 @@ abstract class AbstractSpecies<E> implements VectorSpecies<E> {
 
     /*package-private*/
     abstract AbstractVector<E> broadcastBits(long bits);
-
-    @Override
-    public abstract AbstractVector<E> broadcast(long e);
 
     /*package-private*/
     final IllegalArgumentException badElementBits(long iv, Object cv) {
@@ -476,9 +468,15 @@ abstract class AbstractSpecies<E> implements VectorSpecies<E> {
 
     @Override
     @ForceInline
+    public final
+    <F> VectorSpecies<F> check(Class<F> elementType) {
+        return check0(elementType);
+    }
+
+    @ForceInline
     @SuppressWarnings("unchecked")
-    public
-    <F> AbstractSpecies<F> check(Class<F> elementType) {
+    /*package-private*/ final
+    <F> AbstractSpecies<F> check0(Class<F> elementType) {
         if (elementType != this.elementType()) {
             throw AbstractSpecies.checkFailed(this, elementType);
         }
@@ -587,7 +585,7 @@ abstract class AbstractSpecies<E> implements VectorSpecies<E> {
                                    LaneType laneType,
                                    VectorShape shape) {
         assert(elementType == laneType.elementType);
-        return findSpecies(laneType, shape).check(elementType);
+        return findSpecies(laneType, shape).check0(elementType);
     }
 
     /*package-private*/

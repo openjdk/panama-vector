@@ -79,9 +79,15 @@ abstract class AbstractVector<E> extends Vector<E> {
 
     @Override
     @ForceInline
-    @SuppressWarnings("unchecked")
     public final
-    <F> AbstractVector<F> check(VectorSpecies<F> species) {
+    <F> Vector<F> check(VectorSpecies<F> species) {
+        return check0(species);
+    }
+
+    @ForceInline
+    @SuppressWarnings("unchecked")
+    /*package-private*/ final
+    <F> AbstractVector<F> check0(VectorSpecies<F> species) {
         if (!sameSpecies(species)) {
             throw AbstractSpecies.checkFailed(this, species);
         }
@@ -93,9 +99,15 @@ abstract class AbstractVector<E> extends Vector<E> {
      */
     @Override
     @ForceInline
-    @SuppressWarnings("unchecked")
     public final
-    <F> AbstractVector<F> check(Class<F> elementType) {
+    <F> Vector<F> check(Class<F> elementType) {
+        return check0(elementType);
+    }
+
+    @ForceInline
+    @SuppressWarnings("unchecked")
+    /*package-private*/ final
+    <F> AbstractVector<F> check0(Class<F> elementType) {
         if (this.elementType() != elementType) {
             throw AbstractSpecies.checkFailed(this, elementType);
         }
@@ -113,7 +125,7 @@ abstract class AbstractVector<E> extends Vector<E> {
     }
 
     @ForceInline
-    private final boolean sameSpecies(Vector<?> other) {
+    private boolean sameSpecies(Vector<?> other) {
         // It's simpler and faster to do a class check.
         boolean same = (this.getClass() == other.getClass());
         // Make sure it works, too!
@@ -122,7 +134,7 @@ abstract class AbstractVector<E> extends Vector<E> {
     }
 
     @ForceInline
-    private final boolean sameSpecies(VectorSpecies<?> species) {
+    private boolean sameSpecies(VectorSpecies<?> species) {
         // It's simpler and faster to do a class check,
         // even if you have to load a dummy vector.
         AbstractVector<?> other = ((AbstractSpecies<?>)species).dummyVector();
@@ -492,17 +504,17 @@ abstract class AbstractVector<E> extends Vector<E> {
         // enum-switches don't optimize properly JDK-8161245
         switch (rsp.laneType.switchKey) {
         case LaneType.SK_BYTE:
-            return ByteVector.fromByteBuffer(rsp.check(byte.class), bb, 0, bo, m.check(byte.class)).check(rsp);
+            return ByteVector.fromByteBuffer(rsp.check(byte.class), bb, 0, bo, m.check(byte.class)).check0(rsp);
         case LaneType.SK_SHORT:
-            return ShortVector.fromByteBuffer(rsp.check(short.class), bb, 0, bo, m.check(short.class)).check(rsp);
+            return ShortVector.fromByteBuffer(rsp.check(short.class), bb, 0, bo, m.check(short.class)).check0(rsp);
         case LaneType.SK_INT:
-            return IntVector.fromByteBuffer(rsp.check(int.class), bb, 0, bo, m.check(int.class)).check(rsp);
+            return IntVector.fromByteBuffer(rsp.check(int.class), bb, 0, bo, m.check(int.class)).check0(rsp);
         case LaneType.SK_LONG:
-            return LongVector.fromByteBuffer(rsp.check(long.class), bb, 0, bo, m.check(long.class)).check(rsp);
+            return LongVector.fromByteBuffer(rsp.check(long.class), bb, 0, bo, m.check(long.class)).check0(rsp);
         case LaneType.SK_FLOAT:
-            return FloatVector.fromByteBuffer(rsp.check(float.class), bb, 0, bo, m.check(float.class)).check(rsp);
+            return FloatVector.fromByteBuffer(rsp.check(float.class), bb, 0, bo, m.check(float.class)).check0(rsp);
         case LaneType.SK_DOUBLE:
-            return DoubleVector.fromByteBuffer(rsp.check(double.class), bb, 0, bo, m.check(double.class)).check(rsp);
+            return DoubleVector.fromByteBuffer(rsp.check(double.class), bb, 0, bo, m.check(double.class)).check0(rsp);
         default:
             throw new AssertionError(rsp.toString());
         }
@@ -528,42 +540,42 @@ abstract class AbstractVector<E> extends Vector<E> {
                 for (int i = 0; i < limit; i++) {
                     a[i] = (byte) lanes[i];
                 }
-                return ByteVector.fromArray(dsp.check(byte.class), a, 0).check(dsp);
+                return ByteVector.fromArray(dsp.check(byte.class), a, 0).check0(dsp);
             }
             case LaneType.SK_SHORT: {
                 short[] a = new short[rlength];
                 for (int i = 0; i < limit; i++) {
                     a[i] = (short) lanes[i];
                 }
-                return ShortVector.fromArray(dsp.check(short.class), a, 0).check(dsp);
+                return ShortVector.fromArray(dsp.check(short.class), a, 0).check0(dsp);
             }
             case LaneType.SK_INT: {
                 int[] a = new int[rlength];
                 for (int i = 0; i < limit; i++) {
                     a[i] = (int) lanes[i];
                 }
-                return IntVector.fromArray(dsp.check(int.class), a, 0).check(dsp);
+                return IntVector.fromArray(dsp.check(int.class), a, 0).check0(dsp);
             }
             case LaneType.SK_LONG: {
                 long[] a = new long[rlength];
                 for (int i = 0; i < limit; i++) {
                     a[i] = (long) lanes[i];
                 }
-                return LongVector.fromArray(dsp.check(long.class), a, 0).check(dsp);
+                return LongVector.fromArray(dsp.check(long.class), a, 0).check0(dsp);
             }
             case LaneType.SK_FLOAT: {
                 float[] a = new float[rlength];
                 for (int i = 0; i < limit; i++) {
                     a[i] = (float) lanes[i];
                 }
-                return FloatVector.fromArray(dsp.check(float.class), a, 0).check(dsp);
+                return FloatVector.fromArray(dsp.check(float.class), a, 0).check0(dsp);
             }
             case LaneType.SK_DOUBLE: {
                 double[] a = new double[rlength];
                 for (int i = 0; i < limit; i++) {
                     a[i] = (double) lanes[i];
                 }
-                return DoubleVector.fromArray(dsp.check(double.class), a, 0).check(dsp);
+                return DoubleVector.fromArray(dsp.check(double.class), a, 0).check0(dsp);
             }
             default: break;
             }
@@ -578,42 +590,42 @@ abstract class AbstractVector<E> extends Vector<E> {
                 for (int i = 0; i < limit; i++) {
                     a[i] = (byte) lanes[i];
                 }
-                return ByteVector.fromArray(dsp.check(byte.class), a, 0).check(dsp);
+                return ByteVector.fromArray(dsp.check(byte.class), a, 0).check0(dsp);
             }
             case LaneType.SK_SHORT: {
                 short[] a = new short[rlength];
                 for (int i = 0; i < limit; i++) {
                     a[i] = (short) lanes[i];
                 }
-                return ShortVector.fromArray(dsp.check(short.class), a, 0).check(dsp);
+                return ShortVector.fromArray(dsp.check(short.class), a, 0).check0(dsp);
             }
             case LaneType.SK_INT: {
                 int[] a = new int[rlength];
                 for (int i = 0; i < limit; i++) {
                     a[i] = (int) lanes[i];
                 }
-                return IntVector.fromArray(dsp.check(int.class), a, 0).check(dsp);
+                return IntVector.fromArray(dsp.check(int.class), a, 0).check0(dsp);
             }
             case LaneType.SK_LONG: {
                 long[] a = new long[rlength];
                 for (int i = 0; i < limit; i++) {
                     a[i] = (long) lanes[i];
                 }
-                return LongVector.fromArray(dsp.check(long.class), a, 0).check(dsp);
+                return LongVector.fromArray(dsp.check(long.class), a, 0).check0(dsp);
             }
             case LaneType.SK_FLOAT: {
                 float[] a = new float[rlength];
                 for (int i = 0; i < limit; i++) {
                     a[i] = (float) lanes[i];
                 }
-                return FloatVector.fromArray(dsp.check(float.class), a, 0).check(dsp);
+                return FloatVector.fromArray(dsp.check(float.class), a, 0).check0(dsp);
             }
             case LaneType.SK_DOUBLE: {
                 double[] a = new double[rlength];
                 for (int i = 0; i < limit; i++) {
                     a[i] = (double) lanes[i];
                 }
-                return DoubleVector.fromArray(dsp.check(double.class), a, 0).check(dsp);
+                return DoubleVector.fromArray(dsp.check(double.class), a, 0).check0(dsp);
             }
             default: break;
             }
@@ -650,7 +662,7 @@ abstract class AbstractVector<E> extends Vector<E> {
             // Maybe this should be an intrinsic also.
             AbstractSpecies<?> rspi = rsp.asIntegral();
             AbstractVector<?> bitv = resizeLanes0(this, rspi);
-            return (rspi == rsp ? bitv.check(rsp) : bitv.convert0('X', rsp));
+            return (rspi == rsp ? bitv.check0(rsp) : bitv.convert0('X', rsp));
         case 'C':  // lane-wise cast (but not identity)
             rtype = rsp.elementType();
             rlength = rsp.laneCount();
