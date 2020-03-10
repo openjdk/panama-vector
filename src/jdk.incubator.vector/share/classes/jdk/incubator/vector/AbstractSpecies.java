@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -76,11 +76,18 @@ abstract class AbstractSpecies<E> implements VectorSpecies<E> {
         this.laneCount = bitSize / elementSize;
         assert(laneCount > 0);  // could be 1 for mono-vector (double in v64)
         this.laneCountLog2P1 = Integer.numberOfTrailingZeros(laneCount) + 1;
+        assert(laneCount == (1 << laneCountLog2()));
+        assert(laneCountLog2() == vectorShape.vectorBitSizeLog2 - laneType.elementSizeLog2);
 
-        // Note:  The shape might be the max-shape,
-        // if there is no vector this large.
-        int indexBitSize = Integer.SIZE * laneCount;
-        this.indexShape = VectorShape.forIndexBitSize(indexBitSize, elementSize);
+        if ((Class<?>) vectorType == Long64Vector.class ||
+            (Class<?>) vectorType == Double64Vector.class) {
+            this.indexShape = VectorShape.S_64_BIT;
+        } else {
+            int indexBitSize = Integer.SIZE * laneCount;
+            this.indexShape = VectorShape.forBitSize(indexBitSize);
+            // Note:  The shape might be the max-shape,
+            // if there is no vector this large.
+        }
 
         // What are the largest and smallest scale factors that,
         // when multiplied times the elements in [0..VLENGTH],

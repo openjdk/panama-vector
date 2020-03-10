@@ -644,19 +644,8 @@ final class IntMaxVector extends IntVector {
         static IntMaxMask maskAll(boolean bit) {
             return bit ? TRUE_MASK : FALSE_MASK;
         }
-
-        static boolean[] maskLowerHalf() {
-            boolean[] a = new boolean[VLENGTH];
-            int len = a.length >> 1;
-            for (int i = 0; i < len; i++) {
-                a[i] = true;
-            }
-            return a;
-        }
-
         static final IntMaxMask TRUE_MASK = new IntMaxMask(true);
         static final IntMaxMask FALSE_MASK = new IntMaxMask(false);
-        static final IntMaxMask LOWER_HALF_TRUE_MASK = new IntMaxMask(maskLowerHalf());
     }
 
     // Shuffle

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -68,6 +68,7 @@ public enum VectorShape {
         this.switchKey = 1+ordinal();
         this.vectorBitSize = vectorBitSize;
         this.vectorBitSizeLog2 = Integer.numberOfTrailingZeros(vectorBitSize);
+        assert(vectorBitSize == (1 << vectorBitSizeLog2));
     }
 
     /**
@@ -108,18 +109,12 @@ public enum VectorShape {
         return VectorSpecies.of(elementType, this);
     }
 
-    // Max vector size and increments for local use.
-    static final int
-            MAX_VECTOR_SIZE   = 2048,
-            INC_VECTOR_SIZE   = 128;
-
     /**
      * Finds an appropriate shape depending on the
      * proposed bit-size of a vector.
      *
      * @param bitSize the proposed vector size in bits
      * @return a shape corresponding to the vector bit-size
-     * @throws IllegalArgumentException if no such vector shape exists
      * @see #vectorBitSize()
      */
     public static VectorShape forBitSize(int bitSize) {
@@ -133,46 +128,10 @@ public enum VectorShape {
             case 512:
                 return VectorShape.S_512_BIT;
             default:
-                if ((bitSize > 0) && (bitSize <= MAX_VECTOR_SIZE) && (bitSize % INC_VECTOR_SIZE == 0)) {
+                if ((bitSize > 0) && (bitSize <= 2048) && (bitSize % 128 == 0)) {
                     return VectorShape.S_Max_BIT;
                 } else {
                     throw new IllegalArgumentException("Bad vector bit-size: " + bitSize);
-                }
-        }
-    }
-
-    /**
-     * Finds an appropriate index shape depending on the
-     * proposed index-bit-size and element-size of a vector.
-     *
-     * @param indexBitSize the proposed index vector size in bits
-     * @param elementSize the proposed element size in bits
-     * @return a shape corresponding to the index vector bit-size
-     * and element size.
-     * @throws IllegalArgumentException if no such vector shape exists
-     * @see #vectorBitSize()
-     */
-    public static VectorShape forIndexBitSize(int indexBitSize, int elementSize) {
-        switch (indexBitSize) {
-            case 32:
-            case 64:
-                return VectorShape.S_64_BIT;
-            case 128:
-                return VectorShape.S_128_BIT;
-            case 256:
-                return VectorShape.S_256_BIT;
-            case 512:
-                return VectorShape.S_512_BIT;
-            default:
-                // Calculate the maximum of index bit size and step under given element size.
-                // For AArch64 SVE, vector size is from 128 to 2048 bits, in increments of 128.
-                // For X86, vector size is 64, 128, 256 or 512.
-                int maxBitSize = (MAX_VECTOR_SIZE/elementSize) * Integer.SIZE;
-                int step = (INC_VECTOR_SIZE/elementSize) * Integer.SIZE;
-                if ((indexBitSize > 0) && (indexBitSize <= maxBitSize) && (indexBitSize % step == 0)) {
-                    return VectorShape.S_Max_BIT;
-                } else {
-                    throw new IllegalArgumentException("Bad index vector bit-size: " + indexBitSize);
                 }
         }
     }
