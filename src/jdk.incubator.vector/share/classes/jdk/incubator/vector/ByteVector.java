@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -3121,40 +3121,11 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     public final
     void intoArray(byte[] a, int offset,
                    int[] indexMap, int mapOffset) {
-        ByteSpecies vsp = vspecies();
-        if (length() == 1) {
-            intoArray(a, offset + indexMap[mapOffset]);
-            return;
-        }
-        IntVector.IntSpecies isp = (IntVector.IntSpecies) vsp.indexSpecies();
-        if (isp.laneCount() != vsp.laneCount()) {
-            stOp(a, offset,
-                 (arr, off, i, e) -> {
-                     int j = indexMap[mapOffset + i];
-                     arr[off + j] = e;
-                 });
-            return;
-        }
-
-        // Index vector: vix[0:n] = i -> offset + indexMap[mo + i]
-        IntVector vix = IntVector
-            .fromArray(isp, indexMap, mapOffset)
-            .add(offset);
-
-        vix = VectorIntrinsics.checkIndex(vix, a.length);
-
-        VectorIntrinsics.storeWithMap(
-            vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-            isp.vectorType(),
-            a, arrayAddress(a, 0), vix,
-            this,
-            a, offset, indexMap, mapOffset,
-            (arr, off, v, map, mo)
-            -> v.stOp(arr, off,
-                      (arr_, off_, i, e) -> {
-                          int j = map[mo + i];
-                          arr[off + j] = e;
-                      }));
+        stOp(a, offset,
+             (arr, off, i, e) -> {
+                 int j = indexMap[mapOffset + i];
+                 arr[off + j] = e;
+             });
     }
 
     /**
@@ -3192,12 +3163,11 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     void intoArray(byte[] a, int offset,
                    int[] indexMap, int mapOffset,
                    VectorMask<Byte> m) {
-        ByteSpecies vsp = vspecies();
-        if (m.allTrue()) {
-            intoArray(a, offset, indexMap, mapOffset);
-            return;
-        }
-        throw new AssertionError("fixme");
+        stOp(a, offset, m,
+             (arr, off, i, e) -> {
+                 int j = indexMap[mapOffset + i];
+                 arr[off + j] = e;
+             });
     }
 
     /**

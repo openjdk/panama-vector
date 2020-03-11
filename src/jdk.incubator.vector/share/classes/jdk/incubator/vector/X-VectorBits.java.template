@@ -682,8 +682,23 @@ final class $vectortype$ extends $abstractvectortype$ {
         static $masktype$ maskAll(boolean bit) {
             return bit ? TRUE_MASK : FALSE_MASK;
         }
+#if[intAndMax]
+
+        static boolean[] maskLowerHalf() {
+            boolean[] a = new boolean[VLENGTH];
+            int len = a.length >> 1;
+            for (int i = 0; i < len; i++) {
+                a[i] = true;
+            }
+            return a;
+        }
+
+#end[intAndMax]
         static final $masktype$ TRUE_MASK = new $masktype$(true);
         static final $masktype$ FALSE_MASK = new $masktype$(false);
+#if[intAndMax]
+        static final IntMaxMask LOWER_HALF_TRUE_MASK = new IntMaxMask(maskLowerHalf());
+#end[intAndMax]
     }
 
     // Shuffle
