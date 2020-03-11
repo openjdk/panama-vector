@@ -168,12 +168,12 @@ public:
   }
   virtual int Opcode() const;
   virtual const Type* bottom_type() const {
-    if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT)
-      return TypeInt::INT;
-    else if(in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE)
+    if (in(1)->bottom_type()->basic_type() == T_BYTE)
       return TypeInt::BYTE;
-    else
+    else if(in(1)->bottom_type()->basic_type() == T_SHORT)
       return TypeInt::SHORT;
+    else
+      return TypeInt::INT;
   }
   virtual uint ideal_reg() const { return Op_RegI; }
 };
@@ -357,12 +357,12 @@ public:
   }
   virtual int Opcode() const;
   virtual const Type* bottom_type() const {
-    if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT)
-      return TypeInt::INT;
-    else if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE)
+    if (in(1)->bottom_type()->basic_type() == T_BYTE)
       return TypeInt::BYTE;
-    else
+    else if(in(1)->bottom_type()->basic_type() == T_SHORT)
       return TypeInt::SHORT;
+    else
+      return TypeInt::INT;
   }
   virtual uint ideal_reg() const { return Op_RegI; }
 };
@@ -711,12 +711,12 @@ public:
   }
   virtual int Opcode() const;
   virtual const Type* bottom_type() const {
-    if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT)
-      return TypeInt::INT;
-    else if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE)
+    if (in(1)->bottom_type()->basic_type() == T_BYTE)
       return TypeInt::BYTE;
-    else if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT)
+    else if(in(1)->bottom_type()->basic_type() == T_SHORT)
       return TypeInt::SHORT;
+    else if(in(1)->bottom_type()->basic_type() == T_INT)
+      return TypeInt::INT;
     else
       return TypeLong::LONG;
   }
@@ -743,12 +743,12 @@ public:
   }
   virtual int Opcode() const;
   virtual const Type* bottom_type() const {
-    if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT)
-      return TypeInt::INT;
-    else if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE)
+    if (in(1)->bottom_type()->basic_type() == T_BYTE)
       return TypeInt::BYTE;
-    else if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT)
+    else if(in(1)->bottom_type()->basic_type() == T_SHORT)
       return TypeInt::SHORT;
+    else if(in(1)->bottom_type()->basic_type() == T_INT)
+      return TypeInt::INT;
     else
       return TypeLong::LONG;
   }
@@ -768,12 +768,12 @@ public:
   }
   virtual int Opcode() const;
   virtual const Type* bottom_type() const {
-    if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT)
-      return TypeInt::INT;
-    else if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE)
+    if (in(1)->bottom_type()->basic_type() == T_BYTE)
       return TypeInt::BYTE;
-    else if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT)
+    else if(in(1)->bottom_type()->basic_type() == T_SHORT)
       return TypeInt::SHORT;
+    else if(in(1)->bottom_type()->basic_type() == T_INT)
+      return TypeInt::INT;
     else
       return TypeLong::LONG;
   }
@@ -811,17 +811,18 @@ public:
   }
   virtual int Opcode() const;
   virtual const Type* bottom_type() const {
-    if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT)
-      return TypeInt::INT;
-    else if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE)
+    if (in(1)->bottom_type()->basic_type() == T_BYTE)
       return TypeInt::BYTE;
-    else if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT)
+    else if(in(1)->bottom_type()->basic_type() == T_SHORT)
       return TypeInt::SHORT;
-    else if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT)
+    else if(in(1)->bottom_type()->basic_type() == T_INT)
+      return TypeInt::INT;
+    else if(in(1)->bottom_type()->basic_type() == T_FLOAT)
       return Type::FLOAT;
-    else if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE)
+    else if(in(1)->bottom_type()->basic_type() == T_DOUBLE)
       return Type::DOUBLE;
-    else return TypeLong::LONG;
+    else
+      return TypeLong::LONG;
   }
   virtual uint ideal_reg() const {
     if (in(1)->bottom_type()->basic_type() == T_INT)
@@ -856,17 +857,18 @@ public:
   }
   virtual int Opcode() const;
   virtual const Type* bottom_type() const {
-    if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT)
-      return TypeInt::INT;
-    else if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE)
+    if (in(1)->bottom_type()->basic_type() == T_BYTE)
       return TypeInt::BYTE;
-    else if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT)
+    else if(in(1)->bottom_type()->basic_type() == T_SHORT)
       return TypeInt::SHORT;
-    else if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT)
+    else if(in(1)->bottom_type()->basic_type() == T_INT)
+      return TypeInt::INT;
+    else if(in(1)->bottom_type()->basic_type() == T_FLOAT)
       return Type::FLOAT;
-    else if (in(2)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE)
+    else if(in(1)->bottom_type()->basic_type() == T_DOUBLE)
       return Type::DOUBLE;
-    else return TypeLong::LONG;
+    else
+      return TypeLong::LONG;
   }
   virtual uint ideal_reg() const {
     if (in(1)->bottom_type()->basic_type() == T_INT)
