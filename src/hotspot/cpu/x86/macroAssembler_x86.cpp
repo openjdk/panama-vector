@@ -5040,7 +5040,7 @@ void MacroAssembler::get_elem(BasicType typ, Register dst, XMMRegister src, int 
       movq(dst, src);
     } else {
       movdl(dst, src);
-      if (typ == T_BYTE) 
+      if (typ == T_BYTE)
         movsbl(dst, dst);
       else if (typ == T_SHORT)
         movswl(dst, dst);
@@ -5086,6 +5086,50 @@ void MacroAssembler::get_elem(BasicType typ, XMMRegister dst, XMMRegister src, i
       assert((tmp != noreg), "required.");
       vpand(dst, dst, ExternalAddress(StubRoutines::x86::vector_32_bit_mask()), Assembler::AVX_128bit, tmp);
     }
+  }
+}
+
+void MacroAssembler::evpcmp(BasicType typ, KRegister kdmask, KRegister ksmask, XMMRegister src1, AddressLiteral adr, int comparison, int vector_len, Register scratch) {
+  switch(typ) {
+    case T_BYTE:
+      evpcmpb(kdmask, ksmask, src1, adr, comparison, vector_len, scratch);
+      break;
+    case T_SHORT:
+      evpcmpw(kdmask, ksmask, src1, adr, comparison, vector_len, scratch);
+      break;
+    case T_INT:
+    case T_FLOAT:
+      evpcmpd(kdmask, ksmask, src1, adr, comparison, vector_len, scratch);
+      break;
+    case T_LONG:
+    case T_DOUBLE:
+      evpcmpq(kdmask, ksmask, src1, adr, comparison, vector_len, scratch);
+      break;
+    default:
+      assert(false,"Should not reach here.");
+      break;
+  }
+}
+
+void MacroAssembler::evpblend(BasicType typ, XMMRegister dst, KRegister kmask, XMMRegister src1, XMMRegister src2, bool merge, int vector_len) {
+  switch(typ) {
+    case T_BYTE:
+      evpblendmb(dst, kmask, src1, src2, merge, vector_len);
+      break;
+    case T_SHORT:
+      evpblendmw(dst, kmask, src1, src2, merge, vector_len);
+      break;
+    case T_INT:
+    case T_FLOAT:
+      evpblendmd(dst, kmask, src1, src2, merge, vector_len);
+      break;
+    case T_LONG:
+    case T_DOUBLE:
+      evpblendmq(dst, kmask, src1, src2, merge, vector_len);
+      break;
+    default:
+      assert(false,"Should not reach here.");
+      break;
   }
 }
 

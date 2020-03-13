@@ -7975,24 +7975,42 @@ instruct vextracti(rRegI dst, legVec src, immI idx, legVec vtmp) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct blendvpsF(vec dst, vec src, vec mask, rxmm0 xmm_0) %{
-  predicate(UseAVX == 0 && UseSSE > 3 && (n->as_Vector()->length() == 2 || n->as_Vector()->length() == 4) && n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+instruct blendvp(vec dst, vec src, vec mask, rxmm0 tmp) %{
+  predicate(UseAVX == 0 && UseSSE > 3 &&
+            (n->as_Vector()->length_in_bytes() <= 16));
   match(Set dst (VectorBlend (Binary dst src) mask));
-  effect(TEMP xmm_0);
-  format %{ "blendvps  $dst,$src,$mask\t! packedF" %}
+  format %{ "vector_blend  $dst,$src,$mask\t! using $tmp as TEMP" %}
+  effect(TEMP tmp);
   ins_encode %{
-    if ($mask$$XMMRegister != $xmm_0$$XMMRegister) {
-      __ movdqu($xmm_0$$XMMRegister, $mask$$XMMRegister);
+    if ($mask$$XMMRegister != $tmp$$XMMRegister) {
+      __ movdqu($tmp$$XMMRegister, $mask$$XMMRegister);
     }
-    __ blendvps($dst$$XMMRegister, $src$$XMMRegister);
+    __ pblendvb($dst$$XMMRegister, $src$$XMMRegister); // uses xmm0 as mask
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vblendvpsF(legVec dst, legVec src1, legVec src2, legVec mask) %{
-  predicate(UseAVX > 0 && n->as_Vector()->length() >= 2 && n->as_Vector()->length() <= 8 && n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+// --------------------------------- Vector Blend --------------------------------------
+
+instruct vblendvpI(legVec dst, legVec src1, legVec src2, legVec mask) %{
+  predicate(UseAVX > 0 &&
+            n->as_Vector()->length_in_bytes() <= 32 &&
+            is_integral_type(n->bottom_type()->is_vect()->element_basic_type()));
   match(Set dst (VectorBlend (Binary src1 src2) mask));
-  format %{ "vblendvps  $dst,$src1,$src2,$mask\t! packedF" %}
+  format %{ "vector_blend  $dst,$src1,$src2,$mask\t!" %}
+  ins_encode %{
+    int vector_len = vector_length_encoding(this);
+    __ vpblendvb($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, $mask$$XMMRegister, vector_len);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vblendvpFD(legVec dst, legVec src1, legVec src2, legVec mask) %{
+  predicate(UseAVX > 0 &&
+            n->as_Vector()->length_in_bytes() <= 32 &&
+            !is_integral_type(n->bottom_type()->is_vect()->element_basic_type()));
+  match(Set dst (VectorBlend (Binary src1 src2) mask));
+  format %{ "vector_blend  $dst,$src1,$src2,$mask\t!" %}
   ins_encode %{
     int vector_len = vector_length_encoding(this);
     __ vblendvps($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, $mask$$XMMRegister, vector_len);
@@ -8000,217 +8018,17 @@ instruct vblendvpsF(legVec dst, legVec src1, legVec src2, legVec mask) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vblendvps16F(vec dst, vec src1, vec src2, vec mask, rRegP scratch) %{
-  predicate(UseAVX > 2 && n->as_Vector()->length() == 16 && n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+instruct evblendvp64(vec dst, vec src1, vec src2, vec mask, rRegP scratch) %{
+  predicate(UseAVX > 2 &&
+            n->as_Vector()->length_in_bytes() == 64);
   match(Set dst (VectorBlend (Binary src1 src2) mask));
+  format %{ "vector_blend  $dst,$src1,$src2,$mask\t! using $scratch and k2 as TEMP" %}
   effect(TEMP scratch);
-  format %{ "vpcmpeqd  k2,$mask,0xFFFFFFFF\n\t"
-           "vblendmps $dst,k2,$src1,$src2\t! blend packed16F " %}
   ins_encode %{
-    int vector_len = 2;
-    KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
-    __ evpcmpeqd(ktmp, k0, $mask$$XMMRegister, ExternalAddress(vector_all_bits_set()), vector_len, $scratch$$Register);
-    __ evblendmps($dst$$XMMRegister, ktmp, $src1$$XMMRegister, $src2$$XMMRegister, true, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct pblendvbI(vec dst, vec src, vec mask, rxmm0 xmm_0) %{
-  predicate(UseAVX == 0 && UseSSE > 3 && (n->as_Vector()->length() == 2 || n->as_Vector()->length() == 4) && n->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorBlend (Binary dst src) mask));
-  effect(TEMP xmm_0);
-  format %{ "vpblendvb  $dst,$src,$mask\t! blend packedI" %}
-  ins_encode %{
-    if ($mask$$XMMRegister != $xmm_0$$XMMRegister) {
-      __ movdqu($xmm_0$$XMMRegister, $mask$$XMMRegister);
-    }
-    __ pblendvb($dst$$XMMRegister, $src$$XMMRegister);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vpblendvbI(legVec dst, legVec src1, legVec src2, legVec mask) %{
-  predicate(UseAVX > 0 && n->as_Vector()->length() >= 2 && n->as_Vector()->length() <= 8 && n->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorBlend (Binary src1 src2) mask));
-  format %{ "vpblendvb  $dst,$src1,$src2,$mask\t! blend packedI" %}
-  ins_encode %{
-    int vector_len = vector_length_encoding(this);
-    __ vpblendvb($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, $mask$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vpblendmd16I(vec dst, vec src1, vec src2, vec mask, rRegP scratch) %{
-  predicate(UseAVX > 2 && n->as_Vector()->length() == 16 && n->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorBlend (Binary src1 src2) mask));
-  effect(TEMP scratch);
-  format %{ "vpcmpeqd  k2,$mask,0xFFFFFFFF\n\t"
-           "vpblendmd $dst,k2,$src1,$src2\t! blend packed16I " %}
-  ins_encode %{
-    int vector_len = 2;
-    KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
-    __ evpcmpd(ktmp, k0, $mask$$XMMRegister, ExternalAddress(vector_all_bits_set()), Assembler::eq, vector_len, $scratch$$Register);
-    __ evpblendmd($dst$$XMMRegister, ktmp, $src1$$XMMRegister, $src2$$XMMRegister, true, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct pblendvbB(vec dst, vec src, vec mask, rxmm0 xmm_0) %{
-  predicate(UseAVX == 0 && UseSSE > 3 && n->as_Vector()->length() >= 8 && n->as_Vector()->length() <= 16 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VectorBlend (Binary dst src) mask));
-  effect(TEMP xmm_0);
-  format %{ "pblendvb  $dst,$src,$mask\t! blend packedB" %}
-  ins_encode %{
-    if ($mask$$XMMRegister != $xmm_0$$XMMRegister) {
-      __ movdqu($xmm_0$$XMMRegister, $mask$$XMMRegister);
-    }
-    __ pblendvb($dst$$XMMRegister, $src$$XMMRegister);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vpblendvbB(legVec dst, legVec src1, legVec src2, legVec mask) %{
-  predicate(UseAVX > 0 && n->as_Vector()->length() >= 8 && n->as_Vector()->length() <= 32 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VectorBlend (Binary src1 src2) mask));
-  format %{ "vpblendvb  $dst,$src1,$src2,$mask\t! blend packedB" %}
-  ins_encode %{
-    int vector_len = vector_length_encoding(this);
-    __ vpblendvb($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, $mask$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vpblendmb64B(vec dst, vec src1, vec src2, vec mask, rRegP scratch) %{
-  predicate(UseAVX > 2 && n->as_Vector()->length() == 64 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE && VM_Version::supports_avx512bw());
-  match(Set dst (VectorBlend (Binary src1 src2) mask));
-  effect(TEMP scratch);
-  format %{ "vpcmpeqb  k2,$mask,0xFFFFFFFF\n\t"
-           "vpblendmb $dst,k2,$src1,$src2\t! blend packed64B " %}
-  ins_encode %{
-    int vector_len = 2;
-    KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
-    __ evpcmpb(ktmp, k0, $mask$$XMMRegister, ExternalAddress(vector_all_bits_set()), Assembler::eq, vector_len, $scratch$$Register);
-    __ evpblendmb($dst$$XMMRegister, ktmp, $src1$$XMMRegister, $src2$$XMMRegister, true, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct pblendvbS(vec dst, vec src, vec mask, rxmm0 xmm_0) %{
-  predicate(UseAVX == 0 && UseSSE > 3 && (n->as_Vector()->length() == 4 || n->as_Vector()->length() == 8) && n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorBlend (Binary dst src) mask));
-  effect(TEMP xmm_0);
-  format %{ "pblendvb  $dst,$src,$mask\t! blend packedS" %}
-  ins_encode %{
-    if ($mask$$XMMRegister != $xmm_0$$XMMRegister) {
-      __ movdqu($xmm_0$$XMMRegister, $mask$$XMMRegister);
-    }
-    __ pblendvb($dst$$XMMRegister, $src$$XMMRegister);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vpblendvbS(legVec dst, legVec src1, legVec src2, legVec mask) %{
-  predicate(UseAVX > 0 && n->as_Vector()->length() >= 4 && n->as_Vector()->length() <= 16 && n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorBlend (Binary src1 src2) mask));
-  format %{ "vpblendvb  $dst,$src1,$src2,$mask\t! blend packedS" %}
-  ins_encode %{
-    int vector_len = vector_length_encoding(this);
-    __ vpblendvb($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, $mask$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vpblendmw32S(vec dst, vec src1, vec src2, vec mask, rRegP scratch) %{
-  predicate(UseAVX > 2 && n->as_Vector()->length() == 32 && n->bottom_type()->is_vect()->element_basic_type() == T_SHORT && VM_Version::supports_avx512bw());
-  match(Set dst (VectorBlend (Binary src1 src2) mask));
-  effect(TEMP scratch);
-  format %{ "vpcmpeqw  k2,$mask,0xFFFFFFFF\n\t"
-           "vpblendmw $dst,k2,$src1,$src2\t! blend packed32S " %}
-  ins_encode %{
-    int vector_len = 2;
-    KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
-    __ evpcmpw(ktmp, k0, $mask$$XMMRegister, ExternalAddress(vector_all_bits_set()), Assembler::eq, vector_len, $scratch$$Register);
-    __ evpblendmw($dst$$XMMRegister, ktmp, $src1$$XMMRegister, $src2$$XMMRegister, true, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct pblendvbL(vec dst, vec src, vec mask, rxmm0 xmm_0) %{
-  predicate(UseAVX == 0 && UseSSE > 3 && (n->as_Vector()->length() == 1 || n->as_Vector()->length() == 2) && n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VectorBlend (Binary dst src) mask));
-  effect(TEMP xmm_0);
-  format %{ "pblendvb  $dst,$src,$mask\t! blend packedL" %}
-  ins_encode %{
-    if ($mask$$XMMRegister != $xmm_0$$XMMRegister) {
-      __ movdqu($xmm_0$$XMMRegister, $mask$$XMMRegister);
-    }
-    __ pblendvb($dst$$XMMRegister, $src$$XMMRegister);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vpblendvbL(legVec dst, legVec src1, legVec src2, legVec mask) %{
-  predicate(UseAVX > 0 && n->as_Vector()->length() >= 1 && n->as_Vector()->length() <= 4 && n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VectorBlend (Binary src1 src2) mask));
-  format %{ "vpblendvb  $dst,$src1,$src2,$mask\t! blend packedL" %}
-  ins_encode %{
-    int vector_len = vector_length_encoding(this);
-    __ vpblendvb($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, $mask$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vpblendmq8L(vec dst, vec src1, vec src2, vec mask, rRegP scratch) %{
-  predicate(UseAVX > 2 && n->as_Vector()->length() == 8 && n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VectorBlend (Binary src1 src2) mask));
-  effect(TEMP scratch);
-  format %{ "vpcmpeqq  k2,$mask,0xFFFFFFFF\n\t"
-           "vpblendmq $dst,k2,$src1,$src2\t! blend packed8L " %}
-  ins_encode %{
-    int vector_len = 2;
-    KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
-    __ evpcmpq(ktmp, k0, $mask$$XMMRegister, ExternalAddress(vector_all_bits_set()), Assembler::eq, vector_len, $scratch$$Register);
-    __ evpblendmq($dst$$XMMRegister, ktmp, $src1$$XMMRegister, $src2$$XMMRegister, true, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct blendvpdD(vec dst, vec src, vec mask, rxmm0 xmm_0) %{
-  predicate(UseAVX == 0 && UseSSE > 3 && (n->as_Vector()->length() == 1 || n->as_Vector()->length() == 2) && n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
-  match(Set dst (VectorBlend (Binary dst src) mask));
-  effect(TEMP xmm_0);
-  format %{ "blendvpd  $dst,$src,$mask\t! packedD" %}
-  ins_encode %{
-    if ($mask$$XMMRegister != $xmm_0$$XMMRegister) {
-      __ movdqu($xmm_0$$XMMRegister, $mask$$XMMRegister);
-    }
-    __ blendvpd($dst$$XMMRegister, $src$$XMMRegister);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vblendvpdD(legVec dst, legVec src1, legVec src2, legVec mask) %{
-  predicate(UseAVX > 0 && n->as_Vector()->length() >= 1 && n->as_Vector()->length() <= 4 && n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
-  match(Set dst (VectorBlend (Binary src1 src2) mask));
-  format %{ "vblendvpd  $dst,$src1,$src2,$mask\t! packedD" %}
-  ins_encode %{
-    int vector_len = vector_length_encoding(this);
-    __ vblendvpd($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, $mask$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vblendvpd8D(vec dst, vec src1, vec src2, vec mask, rRegP scratch) %{
-  predicate(UseAVX > 2 && n->as_Vector()->length() == 8 && n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
-  match(Set dst (VectorBlend (Binary src1 src2) mask));
-  effect(TEMP scratch);
-  format %{ "evpcmpeqq  k2,$mask,0xFFFFFFFF\n\t"
-           "vblendmpd $dst,k2,$src1,$src2\t! blend packed16F " %}
-  ins_encode %{
-    int vector_len = 2;
-    KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
-    __ evpcmpq(ktmp, k0, $mask$$XMMRegister, ExternalAddress(vector_all_bits_set()), Assembler::eq, vector_len, $scratch$$Register);
-    __ evblendmpd($dst$$XMMRegister, ktmp, $src1$$XMMRegister, $src2$$XMMRegister, true, vector_len);
+     int vector_len = 2;
+     KRegister ktmp = k2;
+    __ evpcmp(this->bottom_type()->is_vect()->element_basic_type(), ktmp, k0, $mask$$XMMRegister, ExternalAddress(vector_all_bits_set()), Assembler::eq, vector_len, $scratch$$Register);
+    __ evpblend(this->bottom_type()->is_vect()->element_basic_type(), $dst$$XMMRegister, ktmp, $src1$$XMMRegister, $src2$$XMMRegister, true, vector_len);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -8817,7 +8635,7 @@ instruct storemask4l(vec dst, vec src, rRegP scratch) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct storemask4d(vec dst, vec src, rRegL scratch, vec tmp) %{
+instruct storemask4d(vec dst, vec src, rRegP scratch, vec tmp) %{
   predicate(UseAVX == 1 && n->as_Vector()->length() == 4 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 8);
   match(Set dst (VectorStoreMask src));
   effect(TEMP scratch, TEMP dst, TEMP tmp);

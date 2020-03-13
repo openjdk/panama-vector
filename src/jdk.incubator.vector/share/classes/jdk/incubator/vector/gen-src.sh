@@ -144,6 +144,9 @@ do
     shape=S${bits}Bit
     Shape=S_${bits}_BIT
     args="$old_args"
+    if [[ "${vectortype}" == "IntMaxVector" ]]; then
+      args="$args -KintAndMax"
+    fi
     bitargs="$args -Dbits=$bits -DBITS=$BITS -Dvectortype=$vectortype -Dmasktype=$masktype -Dshuffletype=$shuffletype -Dbitsvectortype=$bitsvectortype -Dfpvectortype=$fpvectortype -Dvectorindextype=$vectorindextype -Dshape=$shape -DShape=$Shape"
 
     case $vectortype in

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -7525,6 +7525,13 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
   return true;
 }
 
+//   <C, V extends Vector<?>, W extends IntVector, E, S extends VectorSpecies<E>>
+//   void loadWithMap(Class<?> vectorClass, Class<E> E, int length, Class<?> vectorIndexClass,
+//                    Object base, long offset, // Unsafe addressing
+//                    W index_vector,
+//                    C container, int index, int[] indexMap, int indexM, S s, // Arguments for default implementation
+//                    LoadVectorOperationWithMap<C, V, E, S> defaultImpl)
+//
 //    <C, V extends Vector<?>, W extends IntVector>
 //    void storeWithMap(Class<?> vectorClass, Class<?> elementType, int length, Class<?> vectorIndexClass,
 //                      Object base, long offset,    // Unsafe addressing
