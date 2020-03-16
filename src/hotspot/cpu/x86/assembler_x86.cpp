@@ -4462,6 +4462,14 @@ void Assembler::pmovsxbd(XMMRegister dst, XMMRegister src) {
   emit_int8((unsigned char)(0xC0 | encode));
 }
 
+void Assembler::pmovzxbd(XMMRegister dst, XMMRegister src) {
+  assert(VM_Version::supports_sse4_1(), "");
+  InstructionAttr attributes(AVX_128bit, /* rex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ true, /* uses_vl */ true);
+  int encode = simd_prefix_and_encode(dst, xnoreg, src, VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
+  emit_int8(0x31);
+  emit_int8((unsigned char)(0xC0 | encode));
+}
+
 void Assembler::pmovsxbq(XMMRegister dst, XMMRegister src) {
   assert(VM_Version::supports_sse4_1(), "");
   InstructionAttr attributes(AVX_128bit, /* rex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ true, /* uses_vl */ true);
@@ -4852,6 +4860,16 @@ void Assembler::pshufd(XMMRegister dst, Address src, int mode) {
   simd_prefix(dst, xnoreg, src, VEX_SIMD_66, VEX_OPCODE_0F, &attributes);
   emit_int8(0x70);
   emit_operand(dst, src);
+  emit_int8(mode & 0xFF);
+}
+
+void Assembler::pshufhw(XMMRegister dst, XMMRegister src, int mode) {
+  assert(isByte(mode), "invalid value");
+  NOT_LP64(assert(VM_Version::supports_sse2(), ""));
+  InstructionAttr attributes(AVX_128bit, /* rex_w */ false, /* legacy_mode */ _legacy_mode_bw, /* no_mask_reg */ true, /* uses_vl */ true);
+  int encode = simd_prefix_and_encode(dst, xnoreg, src, VEX_SIMD_F3, VEX_OPCODE_0F, &attributes);
+  emit_int8(0x70);
+  emit_int8((unsigned char)(0xC0 | encode));
   emit_int8(mode & 0xFF);
 }
 

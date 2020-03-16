@@ -1798,6 +1798,7 @@ private:
   // Zero extend moves
   void pmovzxbw(XMMRegister dst, XMMRegister src);
   void pmovzxbw(XMMRegister dst, Address src);
+  void pmovzxbd(XMMRegister dst, XMMRegister src);
   void vpmovzxbw( XMMRegister dst, Address src, int vector_len);
   void pmovzxdq(XMMRegister dst, XMMRegister src);
   void vpmovzxbw(XMMRegister dst, XMMRegister src, int vector_len);
@@ -1868,7 +1869,8 @@ private:
   void pshufd(XMMRegister dst, Address src,     int mode);
   void vpshufd(XMMRegister dst, XMMRegister src, int mode, int vector_len);
 
-  // Shuffle Packed Low Words
+  // Shuffle Packed High/Low Words
+  void pshufhw(XMMRegister dst, XMMRegister src, int mode);
   void pshuflw(XMMRegister dst, XMMRegister src, int mode);
   void pshuflw(XMMRegister dst, Address src,     int mode);
 

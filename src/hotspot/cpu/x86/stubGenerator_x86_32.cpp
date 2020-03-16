@@ -4035,11 +4035,8 @@ class StubGenerator: public StubCodeGenerator {
     StubRoutines::x86::_vector_64_bit_mask = generate_vector_custom_i32("vector_64_bit_mask", Assembler::AVX_512bit,
                                                                         0xFFFFFFFF, 0xFFFFFFFF, 0, 0);
     StubRoutines::x86::_vector_int_shuffle_mask = generate_vector_mask("vector_int_shuffle_mask", 0x03020100);
-    StubRoutines::x86::_vector_int_size_mask = generate_vector_mask("vector_int_size_mask", 0x00000004);
     StubRoutines::x86::_vector_short_shuffle_mask = generate_vector_mask("vector_short_shuffle_mask", 0x01000100);
-    StubRoutines::x86::_vector_short_size_mask = generate_vector_mask("vector_short_size_mask", 0x00020002);
     StubRoutines::x86::_vector_long_shuffle_mask = generate_vector_mask_long_double("vector_long_shuffle_mask", 0x00000001, 0x0);
-    StubRoutines::x86::_vector_long_size_mask = generate_vector_mask("vector_long_size_mask", 0x00000002);
     StubRoutines::x86::_vector_byte_perm_mask = generate_vector_byte_perm_mask("vector_byte_perm_mask");
     StubRoutines::x86::_vector_long_sign_mask = generate_vector_mask_long_double("vector_long_sign_mask", 0x80000000, 0x00000000);
     StubRoutines::x86::_vector_all_bits_set = generate_vector_mask("vector_all_bits_set", 0xFFFFFFFF);

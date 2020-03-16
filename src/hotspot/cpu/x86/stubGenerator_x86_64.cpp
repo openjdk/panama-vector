@@ -6802,11 +6802,8 @@ address generate_avx_ghash_processBlocks() {
     StubRoutines::x86::_vector_64_bit_mask = generate_vector_custom_i32("vector_64_bit_mask", Assembler::AVX_512bit,
                                                                         0xFFFFFFFF, 0xFFFFFFFF, 0, 0);
     StubRoutines::x86::_vector_int_shuffle_mask = generate_vector_mask("vector_int_shuffle_mask", 0x0302010003020100);
-    StubRoutines::x86::_vector_int_size_mask = generate_vector_mask("vector_int_size_mask", 0x0000000400000004);
     StubRoutines::x86::_vector_short_shuffle_mask = generate_vector_mask("vector_short_shuffle_mask", 0x0100010001000100);
-    StubRoutines::x86::_vector_short_size_mask = generate_vector_mask("vector_short_size_mask", 0x0002000200020002);
     StubRoutines::x86::_vector_long_shuffle_mask = generate_vector_mask("vector_long_shuffle_mask", 0x0000000100000000);
-    StubRoutines::x86::_vector_long_size_mask = generate_vector_mask("vector_long_size_mask", 0x0000000200000002);
     StubRoutines::x86::_vector_long_sign_mask = generate_vector_mask("vector_long_sign_mask", 0x8000000000000000);
     StubRoutines::x86::_vector_iota_indices = generate_iota_indices("iota_indices");
 

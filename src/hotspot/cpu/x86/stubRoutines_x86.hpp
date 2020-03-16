@@ -151,11 +151,8 @@ class x86 {
   static address _vector_32_bit_mask;
   static address _vector_64_bit_mask;
   static address _vector_int_shuffle_mask;
-  static address _vector_int_size_mask;
   static address _vector_short_shuffle_mask;
-  static address _vector_short_size_mask;
   static address _vector_long_shuffle_mask;
-  static address _vector_long_size_mask;
   static address _vector_iota_indices;
 #ifdef _LP64
   static juint _k256_W[];
@@ -292,24 +289,12 @@ class x86 {
     return _vector_int_shuffle_mask;
   }
 
-  static address vector_int_size_mask() {
-    return _vector_int_size_mask;
-  }
-
   static address vector_short_shuffle_mask() {
     return _vector_short_shuffle_mask;
   }
 
-  static address vector_short_size_mask() {
-    return _vector_short_size_mask;
-  }
-
   static address vector_long_shuffle_mask() {
     return _vector_long_shuffle_mask;
-  }
-
-  static address vector_long_size_mask() {
-    return _vector_long_size_mask;
   }
 
   static address vector_long_sign_mask() {
