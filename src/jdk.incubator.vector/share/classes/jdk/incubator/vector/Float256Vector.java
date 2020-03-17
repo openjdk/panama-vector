@@ -623,7 +623,7 @@ final class Float256Vector extends FloatVector {
         @ForceInline
         public boolean anyTrue() {
             return VectorIntrinsics.test(BT_ne, Float256Mask.class, int.class, VLENGTH,
-                                         this, this,
+                                         this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Float256Mask)m).getBits()));
         }
 

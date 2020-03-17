@@ -628,7 +628,7 @@ final class Short64Vector extends ShortVector {
         @ForceInline
         public boolean anyTrue() {
             return VectorIntrinsics.test(BT_ne, Short64Mask.class, short.class, VLENGTH,
-                                         this, this,
+                                         this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Short64Mask)m).getBits()));
         }
 

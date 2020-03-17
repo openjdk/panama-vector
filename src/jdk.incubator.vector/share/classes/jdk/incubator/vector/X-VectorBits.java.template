@@ -666,7 +666,7 @@ final class $vectortype$ extends $abstractvectortype$ {
         @ForceInline
         public boolean anyTrue() {
             return VectorIntrinsics.test(BT_ne, $masktype$.class, $bitstype$.class, VLENGTH,
-                                         this, this,
+                                         this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper((($masktype$)m).getBits()));
         }
 

@@ -628,7 +628,7 @@ final class Int256Vector extends IntVector {
         @ForceInline
         public boolean anyTrue() {
             return VectorIntrinsics.test(BT_ne, Int256Mask.class, int.class, VLENGTH,
-                                         this, this,
+                                         this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Int256Mask)m).getBits()));
         }
 

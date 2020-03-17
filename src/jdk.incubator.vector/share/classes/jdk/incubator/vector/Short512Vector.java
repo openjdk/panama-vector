@@ -628,7 +628,7 @@ final class Short512Vector extends ShortVector {
         @ForceInline
         public boolean anyTrue() {
             return VectorIntrinsics.test(BT_ne, Short512Mask.class, short.class, VLENGTH,
-                                         this, this,
+                                         this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Short512Mask)m).getBits()));
         }
 

@@ -628,7 +628,7 @@ final class ShortMaxVector extends ShortVector {
         @ForceInline
         public boolean anyTrue() {
             return VectorIntrinsics.test(BT_ne, ShortMaxMask.class, short.class, VLENGTH,
-                                         this, this,
+                                         this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((ShortMaxMask)m).getBits()));
         }
 
