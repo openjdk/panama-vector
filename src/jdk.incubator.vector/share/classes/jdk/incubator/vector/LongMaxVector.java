@@ -618,7 +618,7 @@ final class LongMaxVector extends LongVector {
         @ForceInline
         public boolean anyTrue() {
             return VectorIntrinsics.test(BT_ne, LongMaxMask.class, long.class, VLENGTH,
-                                         this, this,
+                                         this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((LongMaxMask)m).getBits()));
         }
 

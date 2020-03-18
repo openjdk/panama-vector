@@ -628,7 +628,7 @@ final class IntMaxVector extends IntVector {
         @ForceInline
         public boolean anyTrue() {
             return VectorIntrinsics.test(BT_ne, IntMaxMask.class, int.class, VLENGTH,
-                                         this, this,
+                                         this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((IntMaxMask)m).getBits()));
         }
 

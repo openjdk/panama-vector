@@ -623,7 +623,7 @@ final class Double64Vector extends DoubleVector {
         @ForceInline
         public boolean anyTrue() {
             return VectorIntrinsics.test(BT_ne, Double64Mask.class, long.class, VLENGTH,
-                                         this, this,
+                                         this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Double64Mask)m).getBits()));
         }
 

@@ -623,7 +623,7 @@ final class FloatMaxVector extends FloatVector {
         @ForceInline
         public boolean anyTrue() {
             return VectorIntrinsics.test(BT_ne, FloatMaxMask.class, int.class, VLENGTH,
-                                         this, this,
+                                         this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((FloatMaxMask)m).getBits()));
         }
 

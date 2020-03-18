@@ -618,7 +618,7 @@ final class Long256Vector extends LongVector {
         @ForceInline
         public boolean anyTrue() {
             return VectorIntrinsics.test(BT_ne, Long256Mask.class, long.class, VLENGTH,
-                                         this, this,
+                                         this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Long256Mask)m).getBits()));
         }
 

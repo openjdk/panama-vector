@@ -623,7 +623,7 @@ final class Double512Vector extends DoubleVector {
         @ForceInline
         public boolean anyTrue() {
             return VectorIntrinsics.test(BT_ne, Double512Mask.class, long.class, VLENGTH,
-                                         this, this,
+                                         this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Double512Mask)m).getBits()));
         }
 

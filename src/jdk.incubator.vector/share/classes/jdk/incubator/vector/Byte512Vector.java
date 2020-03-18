@@ -628,7 +628,7 @@ final class Byte512Vector extends ByteVector {
         @ForceInline
         public boolean anyTrue() {
             return VectorIntrinsics.test(BT_ne, Byte512Mask.class, byte.class, VLENGTH,
-                                         this, this,
+                                         this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Byte512Mask)m).getBits()));
         }
 
