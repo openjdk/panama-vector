@@ -342,13 +342,13 @@ public class HtmlDocletWriter {
      * Adds the tags information.
      *
      * @param e the Element for which the tags will be generated
-     * @param htmltree the documentation tree to which the tags will be added
+     * @param htmlTree the documentation tree to which the tags will be added
      */
-    protected void addTagsInfo(Element e, Content htmltree) {
+    protected void addTagsInfo(Element e, Content htmlTree) {
         if (options.noComment()) {
             return;
         }
-        Content dl = new HtmlTree(HtmlTag.DL);
+        HtmlTree dl = HtmlTree.DL(HtmlStyle.notes);
         if (utils.isExecutableElement(e) && !utils.isConstructor(e)) {
             addMethodInfo((ExecutableElement)e, dl);
         }
@@ -357,7 +357,7 @@ public class HtmlDocletWriter {
             configuration.tagletManager.getBlockTaglets(e),
                 getTagletWriterInstance(false), output);
         dl.add(output);
-        htmltree.add(dl);
+        htmlTree.add(dl);
     }
 
     /**
@@ -464,7 +464,7 @@ public class HtmlDocletWriter {
                 .setIndex(options.createIndex(), mainBodyScript)
                 .addContent(extraHeadContent);
 
-        Content htmlTree = HtmlTree.HTML(configuration.getLocale().getLanguage(), head.toContent(), body);
+        Content htmlTree = HtmlTree.HTML(configuration.getLocale().getLanguage(), head, body);
         HtmlDocument htmlDocument = new HtmlDocument(htmlComment, htmlTree);
         htmlDocument.write(DocFile.createFileForOutput(configuration, path));
     }
@@ -1357,8 +1357,8 @@ public class HtmlDocletWriter {
     {
         final Content result = new ContentBuilder() {
             @Override
-            public void add(CharSequence text) {
-                super.add(utils.normalizeNewlines(text));
+            public ContentBuilder add(CharSequence text) {
+                return super.add(utils.normalizeNewlines(text));
             }
         };
         CommentHelper ch = utils.getCommentHelper(element);
