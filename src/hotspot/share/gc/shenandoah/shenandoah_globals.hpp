@@ -78,10 +78,6 @@
           " *) traversal - traversal GC (single-pass)"                      \
           " *) passive   - disable concurrent GC, do stop-the-world GC")    \
                                                                             \
-  experimental(ccstr, ShenandoahUpdateRefsEarly, "adaptive",                \
-          "Run a separate concurrent reference updating phase after"        \
-          "concurrent evacuation. Possible values: 'on', 'off', 'adaptive'")\
-                                                                            \
   experimental(uintx, ShenandoahRefProcFrequency, 5,                        \
           "How often should (weak, soft, etc) references be processed. "    \
           "References get processed at every Nth GC cycle. Set to zero "    \
@@ -127,18 +123,6 @@
           "number of candidate regions for collection set. Setting this "   \
           "threshold to 100% effectively disables this shortcut.")          \
           range(0,100)                                                      \
-                                                                            \
-  experimental(uintx, ShenandoahMergeUpdateRefsMinGap, 100,                 \
-          "If GC is currently running in separate update-refs mode "        \
-          "this numbers gives the threshold when to switch to "             \
-          "merged update-refs mode. Number is percentage relative to"       \
-          "duration(marking)+duration(update-refs).")                       \
-                                                                            \
-  experimental(uintx, ShenandoahMergeUpdateRefsMaxGap, 200,                 \
-          "If GC is currently running in merged update-refs mode "          \
-          "this numbers gives the threshold when to switch to "             \
-          "separate update-refs mode. Number is percentage relative "       \
-          "to duration(marking)+duration(update-refs).")                    \
                                                                             \
   experimental(uintx, ShenandoahGuaranteedGCInterval, 5*60*1000,            \
           "Most heuristics would guarantee a concurrent GC cycle at "       \
@@ -235,20 +219,6 @@
           "evacuation reserve/waste is incorrect, at the risk that "        \
           "application allocations run out of memory too early.")           \
                                                                             \
-  diagnostic(bool, ShenandoahAllocationTrace, false,                        \
-          "Trace allocation latencies and stalls. Can be expensive when "   \
-          "lots of allocations happen, and may introduce scalability "      \
-          "bottlenecks.")                                                   \
-                                                                            \
-  diagnostic(intx, ShenandoahAllocationStallThreshold, 10000,               \
-          "When allocation tracing is enabled, the allocation stalls "      \
-          "larger than this threshold would be reported as warnings. "      \
-          "Time is in microseconds.")                                       \
-                                                                            \
-  experimental(uintx, ShenandoahEvacAssist, 10,                             \
-          "How many objects to evacuate on LRB assist path. "               \
-          "Use zero to disable.")                                           \
-                                                                            \
   experimental(bool, ShenandoahPacing, true,                                \
           "Pace application allocations to give GC chance to start "        \
           "and complete before allocation failure is reached.")             \
@@ -308,9 +278,6 @@
   diagnostic(bool, ShenandoahAllocFailureALot, false,                       \
           "Make lots of artificial allocation failures.")                   \
                                                                             \
-  diagnostic(bool, ShenandoahTerminationTrace, false,                       \
-          "Tracing task termination timings")                               \
-                                                                            \
   diagnostic(bool, ShenandoahAlwaysPreTouch, false,                         \
           "Pre-touch heap memory, overrides global AlwaysPreTouch")         \
                                                                             \
@@ -333,9 +300,6 @@
   experimental(uintx, ShenandoahSATBBufferFlushInterval, 100,               \
           "Forcefully flush non-empty SATB buffers at this interval. "      \
           "Time is in milliseconds.")                                       \
-                                                                            \
-  experimental(uint, ShenandoahParallelSafepointThreads, 4,                 \
-          "Number of parallel threads used for safepoint prolog/epilog")    \
                                                                             \
   diagnostic(bool, ShenandoahPreclean, true,                                \
           "Do concurrent preclean phase before final mark: process "        \

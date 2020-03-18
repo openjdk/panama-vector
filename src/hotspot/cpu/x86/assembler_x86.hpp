@@ -706,7 +706,6 @@ private:
   bool _legacy_mode_vl;
   bool _legacy_mode_vlbw;
   bool _is_managed;
-  bool _vector_masking;    // For stub code use only
 
   class InstructionAttr *_attributes;
 
@@ -919,7 +918,6 @@ private:
     _legacy_mode_vl = (VM_Version::supports_avx512vl() == false);
     _legacy_mode_vlbw = (VM_Version::supports_avx512vlbw() == false);
     _is_managed = false;
-    _vector_masking = false;
     _attributes = NULL;
   }
 
