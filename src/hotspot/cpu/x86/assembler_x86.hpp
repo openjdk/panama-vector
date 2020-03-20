@@ -1692,6 +1692,12 @@ private:
   void orq(Register dst, Address src);
   void orq(Register dst, Register src);
 
+  // Pack with signed saturation
+  void packsswb(XMMRegister dst, XMMRegister src);
+  void vpacksswb(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+  void packssdw(XMMRegister dst, XMMRegister src);
+  void vpackssdw(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+
   // Pack with unsigned saturation
   void packuswb(XMMRegister dst, XMMRegister src);
   void packuswb(XMMRegister dst, Address src);

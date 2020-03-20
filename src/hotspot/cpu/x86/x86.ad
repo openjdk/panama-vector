@@ -1258,11 +1258,9 @@ Assembler::Width widthForType(BasicType typ) {
   static address vector_int_to_byte_mask() { return StubRoutines::x86::vector_int_to_byte_mask(); }
   static address vector_iota_indices() { return StubRoutines::x86::vector_iota_indices(); }
   static address vector_byte_perm_mask() { return StubRoutines::x86::vector_byte_perm_mask(); }
-  static address vector_long_perm_mask() { return StubRoutines::x86::vector_long_perm_mask(); }
   static address vector_all_bits_set() { return StubRoutines::x86::vector_all_bits_set(); }
   static address vector_all_ones_mask() { return StubRoutines::x86::vector_all_ones_mask(); }
   static address vector_int_to_short_mask() { return StubRoutines::x86::vector_int_to_short_mask(); }
-  static address vector_byte_bitset() { return StubRoutines::x86::vector_byte_bitset(); }
   static address vector_short_shufflemask() { return StubRoutines::x86::vector_short_shuffle_mask(); }
   static address vector_int_shufflemask() { return StubRoutines::x86::vector_int_shuffle_mask(); }
   static address vector_long_shufflemask() { return StubRoutines::x86::vector_long_shuffle_mask(); }
@@ -1606,15 +1604,6 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       }
 #endif
       break;
-    case Op_VectorLoadMask:
-      if (UseSSE <= 3) {
-        return false;
-      } else if (vlen == 1 || vlen == 2) {
-        return false; // Implementation limitation
-      } else if (size_in_bits >= 256 && UseAVX < 2) {
-        return false; // Implementation limitation
-      }
-      break;
     case Op_VectorLoadShuffle:
     case Op_VectorRearrange:
       if (UseSSE < 3) {
@@ -1629,14 +1618,19 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
         return false; // Implementation limitation
       }
       break;
+    case Op_VectorLoadMask:
+      if (UseSSE <= 3) {
+        return false;
+      } else if (vlen == 1 || vlen == 2) {
+        return false; // Implementation limitation
+      } else if (size_in_bits >= 256 && UseAVX < 2) {
+        return false; // Implementation limitation
+      }
+      break;
     case Op_VectorStoreMask:
       if (UseSSE <= 3) {
         return false; // Implementation limitation
-      } else if ((size_in_bits >= 256 || bt == T_LONG || bt == T_DOUBLE) && UseAVX < 2) {
-        return false; // Implementation limitation
       } else if (vlen == 1 || vlen == 2) {
-        return false; // Implementation limitation
-      } else if (size_in_bits == 512 && !VM_Version::supports_avx512bw()) {
         return false; // Implementation limitation
       }
       break;
@@ -8118,404 +8112,196 @@ instruct vptest_anytrue(rRegI dst, legVec src1, legVec src2, rFlagsReg cr) %{
 %}
 #endif
 
-instruct loadmaskb(vec dst, vec src) %{
-  predicate(n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+//------------------------------------- LoadMask --------------------------------------------
+
+instruct loadmask(vec dst, vec src) %{
   match(Set dst (VectorLoadMask src));
   effect(TEMP dst);
   format %{ "vector_loadmask_byte $dst,$src\n\t" %}
   ins_encode %{
     const TypeVect * vt = this->bottom_type()->is_vect();
-    switch (vt->length()) {
-      default:
-         assert(0, "Incorrect vector length");
-      case 8:
-      case 16: {
-         __ pxor($dst$$XMMRegister, $dst$$XMMRegister);
-         __ psubb($dst$$XMMRegister, $src$$XMMRegister);
-      } break;
-      case 32:
-      case 64: {
-        int vector_len = vector_length_encoding(this);
-        __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
-        __ vpsubb($dst$$XMMRegister, $dst$$XMMRegister, $src$$XMMRegister, vector_len);
-      } break;
+    BasicType bt = vt->element_basic_type();
+    int vector_len = vector_length_encoding(this);
+    if (vt->length_in_bytes() <= 16) {
+      __ pxor($dst$$XMMRegister, $dst$$XMMRegister);
+      __ psubb($dst$$XMMRegister, $src$$XMMRegister);
+      if (bt == T_SHORT) __ pmovsxbw($dst$$XMMRegister, $dst$$XMMRegister);
+      else if ((bt == T_INT) || (bt == T_FLOAT)) __ pmovsxbd($dst$$XMMRegister, $dst$$XMMRegister);
+      else if ((bt == T_LONG) || (bt == T_DOUBLE)) __ pmovsxbq($dst$$XMMRegister, $dst$$XMMRegister);
+    } else {
+      __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
+      __ vpsubb($dst$$XMMRegister, $dst$$XMMRegister, $src$$XMMRegister, vector_len);
+      if (bt == T_SHORT) __ vpmovsxbw($dst$$XMMRegister, $dst$$XMMRegister, vector_len);
+      else if ((bt == T_INT) || (bt == T_FLOAT)) __ vpmovsxbd($dst$$XMMRegister, $dst$$XMMRegister, vector_len);
+      else if ((bt == T_LONG) || (bt == T_DOUBLE)) __ vpmovsxbq($dst$$XMMRegister, $dst$$XMMRegister, vector_len);
     }
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct loadmasks(vec dst, vec src) %{
-  predicate(n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorLoadMask src));
-  effect(TEMP dst);
-  format %{ "vector_loadmask_short $dst,$src\n\t" %}
-  ins_encode %{
-    const TypeVect * vt = this->bottom_type()->is_vect();
-    switch (vt->length()) {
-      default:
-         assert(0, "Incorrect vector length");
-      case 4:
-      case 8: {
-         __ pxor($dst$$XMMRegister, $dst$$XMMRegister);
-         __ psubb($dst$$XMMRegister, $src$$XMMRegister);
-         __ pmovsxbw($dst$$XMMRegister, $dst$$XMMRegister);
-      } break;
-      case 16:
-      case 32: {
-        int vector_len = vector_length_encoding(this);
-        __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
-        __ vpsubb($dst$$XMMRegister, $dst$$XMMRegister, $src$$XMMRegister, vector_len);
-        __ vpmovsxbw($dst$$XMMRegister, $dst$$XMMRegister, vector_len);
-      } break;
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct loadmaski(vec dst, vec src) %{
-  predicate(n->bottom_type()->is_vect()->element_basic_type() == T_INT || n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
-  match(Set dst (VectorLoadMask src));
-  effect(TEMP dst);
-  format %{ "vector_loadmask_int $dst,$src\n\t" %}
-  ins_encode %{
-    const TypeVect * vt = this->bottom_type()->is_vect();
-    switch (vt->length()) {
-      default:
-         assert(0, "Incorrect vector length");
-      case 2:
-      case 4: {
-         __ pxor($dst$$XMMRegister, $dst$$XMMRegister);
-         __ psubb($dst$$XMMRegister, $src$$XMMRegister);
-         __ pmovsxbd($dst$$XMMRegister, $dst$$XMMRegister);
-      } break;
-      case 8:
-      case 16: {
-        int vector_len = vector_length_encoding(this);
-        __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
-        __ vpsubb($dst$$XMMRegister, $dst$$XMMRegister, $src$$XMMRegister, vector_len);
-        __ vpmovsxbd($dst$$XMMRegister, $dst$$XMMRegister, vector_len);
-      } break;
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct loadmaskl(vec dst, vec src) %{
-  predicate(n->bottom_type()->is_vect()->element_basic_type() == T_LONG || n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
-  match(Set dst (VectorLoadMask src));
-  effect(TEMP dst);
-  format %{ "vector_loadmask_long $dst,$src\n\t" %}
-  ins_encode %{
-    const TypeVect * vt = this->bottom_type()->is_vect();
-    switch (vt->length()) {
-      default:
-         assert(0, "Incorrect vector length");
-      case 1:
-      case 2: {
-         __ pxor($dst$$XMMRegister, $dst$$XMMRegister);
-         __ psubb($dst$$XMMRegister, $src$$XMMRegister);
-         __ pmovsxbq($dst$$XMMRegister, $dst$$XMMRegister);
-      } break;
-      case 4: {
-        int vector_len = vector_length_encoding(this);
-        __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len - 1);
-        __ vpsubb($dst$$XMMRegister, $dst$$XMMRegister, $src$$XMMRegister, vector_len - 1);
-        __ vpmovsxbq($dst$$XMMRegister, $dst$$XMMRegister, vector_len);
-      } break;
-      case 8: {
-        int vector_len = vector_length_encoding(this);
-        __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
-        __ vpsubb($dst$$XMMRegister, $dst$$XMMRegister, $src$$XMMRegister, vector_len);
-        __ vpmovsxbq($dst$$XMMRegister, $dst$$XMMRegister, vector_len);
-      } break;
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
+//------------------------------------- StoreMask --------------------------------------------
 
 instruct storemaskb(vec dst, vec src) %{
-  predicate(((UseSSE >=3 && (n->as_Vector()->length() == 8 || n->as_Vector()->length() == 16)) ||
-             (UseAVX > 1 && n->as_Vector()->length() == 32)) && 
+  predicate (UseSSE >= 3 &&
+             (n->as_Vector()->length() < 64 || VM_Version::supports_avx512vlbw()) &&
              static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 1);
   match(Set dst (VectorStoreMask src));
-  format %{ "vector_store_mask $dst,$src\t! store mask (B to B)" %}
+  format %{ "vector_store_mask $dst,$src\t!" %}
   ins_encode %{
     const TypeVect * vt = this->bottom_type()->is_vect();
-    switch(vt->length()) {
-      default:
-        assert(0, "Incorrect vector length");
-      case 8:
-      case 16:
-        __ pabsb($dst$$XMMRegister, $src$$XMMRegister);
-        break;
-      case 32: 
-        __ vpabsb($dst$$XMMRegister, $src$$XMMRegister, 1);
-        break;
+    int num_bytes = vector_length_in_bytes(this, $src);
+    int vector_len = vector_length_encoding(num_bytes);
+    if (vt->length_in_bytes() <= 16) {
+      __ pabsb($dst$$XMMRegister, $src$$XMMRegister);
+    } else {
+      assert(UseAVX >=2, "required");
+      __ vpabsb($dst$$XMMRegister, $src$$XMMRegister, vector_len);
     }
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct storemask64b_evex(vec dst, vec src) %{
-  predicate(UseAVX > 2 && n->as_Vector()->length() == 64);
+instruct storemaskd(vec dst, vec src) %{
+  predicate (UseSSE >= 3 && UseAVX <=2 &&
+             n->as_Vector()->length() <= 4 &&
+             static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 4);
   match(Set dst (VectorStoreMask src));
-  format %{ "vpand $dst,$src,0xFFFFFFFF\t! store mask (64B to 64B)" %}
+  format %{ "vector_store_mask $dst,$src\t!" %}
   ins_encode %{
-    int vector_len = 2;
-    __ vpand($dst$$XMMRegister, $src$$XMMRegister, ExternalAddress(vector_byte_bitset()), vector_len);
+    __ pabsd($dst$$XMMRegister, $src$$XMMRegister);
+    __ packssdw($dst$$XMMRegister, $dst$$XMMRegister);
+    __ packsswb($dst$$XMMRegister, $dst$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct storemask64b(vec dst, vec src, rRegP scratch) %{
-  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() == 64 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 1);
+instruct vstoremaskd(vec dst, vec src) %{
+  predicate (UseAVX <= 2 &&
+             n->as_Vector()->length() == 8 &&
+             static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 4);
   match(Set dst (VectorStoreMask src));
-  effect(TEMP scratch);
-  format %{ "vpcmpeqb k2,$src,0xFFFFFFFF\n\t"
-           "vmovdqub $dst,k2,0x01010101\t! store mask (64B to 64B)" %}
+  format %{ "vector_store_mask $dst,$src\t!" %}
+  effect(TEMP dst);
   ins_encode %{
-    int vector_len = 2;
-    KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
-    Assembler::ComparisonPredicate cp = Assembler::eq;
-    __ evpcmpb(ktmp, k0, $src$$XMMRegister, ExternalAddress(vector_all_bits_set()), cp, vector_len, $scratch$$Register);
-    __ evmovdqub($dst$$XMMRegister, ktmp, ExternalAddress(vector_byte_bitset()), false, vector_len, $scratch$$Register);
+    __ vextracti128($dst$$XMMRegister, $src$$XMMRegister, 0x1);
+    __ vpackssdw($dst$$XMMRegister, $src$$XMMRegister, $dst$$XMMRegister, 0);
+    __ vpacksswb($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, 0);
+    __ vpabsb($dst$$XMMRegister, $dst$$XMMRegister, 0);
   %}
   ins_pipe( pipe_slow );
 %}
+
+
+instruct evstoremaskd(vec dst, vec src) %{
+  predicate (UseAVX > 2 && 
+             static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 4);
+  match(Set dst (VectorStoreMask src));
+  format %{ "vector_store_mask $dst,$src\t!" %}
+  ins_encode %{
+    const TypeVect * vt = this->bottom_type()->is_vect();
+    int vector_len = vector_length_encoding(vector_length_in_bytes(this, $src));
+    int dst_vector_len = vector_length_encoding(this);
+    if (!VM_Version::supports_avx512vl()) vector_len = 2;
+    __ evpmovdb($dst$$XMMRegister, $src$$XMMRegister, vector_len);
+    __ vpabsb($dst$$XMMRegister, $dst$$XMMRegister, dst_vector_len);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct storemaskq(vec dst, vec src) %{
+  predicate (UseSSE >= 3 && UseAVX <=2 &&
+             n->as_Vector()->length() <= 2 &&
+             static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 8);
+  match(Set dst (VectorStoreMask src));
+  format %{ "vector_store_mask $dst,$src\t!" %}
+  ins_encode %{
+    __ pshufd($dst$$XMMRegister, $src$$XMMRegister, 0x8);
+    __ packssdw($dst$$XMMRegister, $dst$$XMMRegister);
+    __ packsswb($dst$$XMMRegister, $dst$$XMMRegister);
+    __ pabsb($dst$$XMMRegister, $dst$$XMMRegister);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vstoremaskq(vec dst, vec src, legVec vtmp) %{
+  predicate (UseAVX <= 2 &&
+             n->as_Vector()->length() == 4 &&
+             static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 8);
+  match(Set dst (VectorStoreMask src));
+  format %{ "vector_store_mask $dst,$src\t! using $vtmp as TEMP" %}
+  effect(TEMP dst, TEMP vtmp);
+  ins_encode %{
+    __ vpshufps($dst$$XMMRegister, $src$$XMMRegister, $src$$XMMRegister, 0x88, 1);
+    __ vextracti128($vtmp$$XMMRegister, $dst$$XMMRegister, 1);
+    __ vblendps($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, 0xC, 0);
+    __ vpackssdw($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, 0);
+    __ vpacksswb($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, 0);
+    __ vpabsb($dst$$XMMRegister, $dst$$XMMRegister, 0);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct evstoremaskq(vec dst, vec src) %{
+  predicate (UseAVX > 2 && 
+             static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 8);
+  match(Set dst (VectorStoreMask src));
+  format %{ "vector_store_mask $dst,$src\t!" %}
+  ins_encode %{
+    const TypeVect * vt = this->bottom_type()->is_vect();
+    int vector_len = vector_length_encoding(vector_length_in_bytes(this, $src));
+    int dst_vector_len = vector_length_encoding(this);
+    if (!VM_Version::supports_avx512vl()) vector_len = 2;
+    __ evpmovqb($dst$$XMMRegister, $src$$XMMRegister, vector_len);
+    __ vpabsb($dst$$XMMRegister, $dst$$XMMRegister, dst_vector_len);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 
 instruct storemasks(vec dst, vec src) %{
-  predicate(UseSSE >=3 && (n->as_Vector()->length() == 4 || n->as_Vector()->length() == 8) && 
+  predicate(UseSSE >=3 &&
+            (n->as_Vector()->length() <= 8) && 
             static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 2);
   match(Set dst (VectorStoreMask src));
   format %{ "vector_store_mask $dst,$src\n\t" %}
   ins_encode %{
     __ pabsw($dst$$XMMRegister, $src$$XMMRegister);
-    __ packuswb($dst$$XMMRegister, $dst$$XMMRegister);
+    __ packsswb($dst$$XMMRegister, $dst$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct storemask16s(vec dst, vec src, vec tmp) %{
-  predicate(UseAVX > 1 && n->as_Vector()->length() == 16 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 2);
+instruct vstoremasks(vec dst, vec src) %{
+  predicate((UseAVX <= 2  || !VM_Version::supports_avx512vlbw()) &&
+            n->as_Vector()->length() == 16 &&
+            static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 2);
   match(Set dst (VectorStoreMask src));
-  effect(TEMP dst, TEMP tmp);
-  format %{ "vpabsw $dst,$src\n\t"
-           "vextracti128 $tmp,$dst\n\t"
-           "vpackuswb $dst,$dst,$tmp\t! store mask (16S to 16B)" %}
+  effect(TEMP dst);
+  format %{ "vector_store_mask $dst,$src\t!" %}
   ins_encode %{
-    int vector_len = 1;
-    __ vpabsw($dst$$XMMRegister, $src$$XMMRegister, vector_len);
-    __ vextracti128($tmp$$XMMRegister, $dst$$XMMRegister, 0x1);
-    __ vpackuswb($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, vector_len);
+    __ vextracti128($dst$$XMMRegister, $src$$XMMRegister, 0x1);
+    __ vpacksswb($dst$$XMMRegister, $src$$XMMRegister, $dst$$XMMRegister, 0);
+    __ vpabsb($dst$$XMMRegister, $dst$$XMMRegister, 0);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct storemask32s(vec dst, vec src, rRegP scratch) %{
-  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() == 32 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 2);
+instruct evstoremasks(vec dst, vec src) %{
+  predicate (UseAVX > 2 && VM_Version::supports_avx512vlbw() &&
+             static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 2);
   match(Set dst (VectorStoreMask src));
-  effect(TEMP scratch);
-  format %{ "vpcmpeqw k2,$src,0xFFFFFFFF\n\t"
-           "vmovdqub $dst,k2,0x01010101\t! store mask (32S to 32B)" %}
+  format %{ "vector_store_mask $dst,$src\t!" %}
   ins_encode %{
-    int vector_len = 2;
-    KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
-    Assembler::ComparisonPredicate cp = Assembler::eq;
-    __ evpcmpw(ktmp, k0, $src$$XMMRegister, ExternalAddress(vector_all_bits_set()), cp, vector_len, $scratch$$Register);
-    // The dst is 256-bit - thus we can do a smaller move.
-    __ evmovdqub($dst$$XMMRegister, ktmp, ExternalAddress(vector_byte_bitset()), false, 1, $scratch$$Register);
+    const TypeVect * vt = this->bottom_type()->is_vect();
+    int vector_len = vector_length_encoding(vector_length_in_bytes(this, $src));
+    int dst_vector_len = vector_length_encoding(this);
+    __ evpmovwb($dst$$XMMRegister, $src$$XMMRegister, vector_len);
+    __ vpabsb($dst$$XMMRegister, $dst$$XMMRegister, dst_vector_len);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct storemaski(vec dst, vec src) %{
-  predicate(UseSSE >=4 && (n->as_Vector()->length() == 2  || n->as_Vector()->length() == 4) && 
-            static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 4);
-  match(Set dst (VectorStoreMask src));
-  format %{ "pabsd $dst,$src\n\t"
-            "packusdw $dst,$dst\n\t"
-            "packuswb $dst,$dst\t! store mask (4I to 4B)" %}
-  ins_encode %{
-    __ pabsd($dst$$XMMRegister, $src$$XMMRegister);
-    __ packusdw($dst$$XMMRegister, $dst$$XMMRegister);
-    __ packuswb($dst$$XMMRegister, $dst$$XMMRegister);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct storemask8i(vec dst, vec src, vec tmp) %{
-  predicate(UseAVX > 1 && n->as_Vector()->length() == 8 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 4);
-  match(Set dst (VectorStoreMask src));
-  effect(TEMP dst, TEMP tmp);
-  format %{ "vpxor  $dst,$dst\n\t"
-           "vpsubd $dst,$src\n\t"
-           "vextracti128 $tmp,$dst\n\t"
-           "vpackusdw $dst,$dst,$tmp\n\t"
-           "vpackuswb $dst,$dst,$dst\t! store mask (8I to 8B)" %}
-  ins_encode %{
-    int vector_len = 1;
-    __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
-    __ vpsubd($dst$$XMMRegister, $dst$$XMMRegister, $src$$XMMRegister, vector_len);
-    __ vextracti128($tmp$$XMMRegister, $dst$$XMMRegister, 0x1);
-    __ vpackusdw($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, vector_len);
-    __ vpackuswb($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, 0);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct storemask8f(vec dst, vec src, vec tmp) %{
-  predicate(UseAVX == 1 && n->as_Vector()->length() == 8 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 4);
-  match(Set dst (VectorStoreMask src));
-  effect(TEMP dst, TEMP tmp);
-  format %{ "vpxor  $dst,$dst,$dst\n\t"
-            "vpsubd $dst,$dst,$src\n\t"
-            "vextractf128 $tmp,$src\n\t"
-            "vpackusdw $dst,$dst,$tmp\n\t"
-            "vpackuswb $dst,$dst,$dst\t! store mask (8I to 8B)" %}
-  ins_encode %{
-    int vector_len = 1;
-    __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
-    __ vpsubd($dst$$XMMRegister, $dst$$XMMRegister, $src$$XMMRegister, vector_len);
-    __ vextractf128($tmp$$XMMRegister, $src$$XMMRegister, 1);    
-    __ vpackusdw($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, vector_len);
-    __ vpackuswb($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, 0);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct storemask16i_evex(vec dst, vec src, vec tmp) %{
-  predicate(UseAVX > 2 && !(VM_Version::supports_avx512bw()) && n->as_Vector()->length() == 16 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 4);
-  match(Set dst (VectorStoreMask src));
-  effect(TEMP tmp);
-  format %{ "vpand $tmp,$src,0xFFFFFFFF\n\t"
-            "evpmovdb $dst,$tmp\t! store mask (16I to 16B)" %}
-  ins_encode %{
-    int vector_len = 2;
-    __ vpand($tmp$$XMMRegister, $src$$XMMRegister, ExternalAddress(vector_byte_bitset()), vector_len);
-    __ evpmovdb($dst$$XMMRegister, $tmp$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct storemask16i(vec dst, vec src, rRegP scratch) %{
-  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() == 16 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 4);
-  match(Set dst (VectorStoreMask src));
-  effect(TEMP scratch);
-  format %{ "vpcmpeqd k2,$src,0xFFFFFFFF\n\t"
-           "vmovdqub $dst,k2,0x01010101\t! store mask (16I to 16B)" %}
-  ins_encode %{
-    int vector_len = 2;
-    KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
-    __ evpcmpeqd(ktmp, k0, $src$$XMMRegister, ExternalAddress(vector_all_bits_set()), vector_len, $scratch$$Register);
-    // The dst is only 128-bit - thus we can do a smaller move.
-    __ evmovdqub($dst$$XMMRegister, ktmp, ExternalAddress(vector_byte_bitset()), false, 0, $scratch$$Register);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct storemask1l(vec dst, vec src) %{
-  predicate(UseSSE >= 4 && n->as_Vector()->length() == 1 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 8);
-  match(Set dst (VectorStoreMask src));
-  format %{ "pabsd $dst,$src\n\t"
-           "packusdw $dst,$dst\n\t"
-           "packuswb $dst,$dst\t! store mask (1L to 1B)" %}
-  ins_encode %{
-    __ pabsd($dst$$XMMRegister, $src$$XMMRegister);
-    __ packusdw($dst$$XMMRegister, $dst$$XMMRegister);
-    __ packuswb($dst$$XMMRegister, $dst$$XMMRegister);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct storemask2l(vec dst, vec src) %{
-  predicate(UseSSE >=4 && n->as_Vector()->length() == 2 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 8);
-  match(Set dst (VectorStoreMask src));
-  format %{ "pshufd $dst,$src,0x8\n\t"
-            "pabsd $dst,$dst\n\t"
-            "packusdw $dst,$dst\n\t"
-            "packuswb $dst,$dst\t! store mask (2L to 2B)" %}
-  ins_encode %{
-    __ pshufd($dst$$XMMRegister, $src$$XMMRegister, 0x8);
-    __ pabsd($dst$$XMMRegister, $dst$$XMMRegister);
-    __ packusdw($dst$$XMMRegister, $dst$$XMMRegister);
-    __ packuswb($dst$$XMMRegister, $dst$$XMMRegister);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct storemask4l(vec dst, vec src, rRegP scratch) %{
-  predicate(UseAVX > 1 && n->as_Vector()->length() == 4 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 8);
-  match(Set dst (VectorStoreMask src));
-  effect(TEMP scratch, TEMP dst);
-  format %{ "vmovdqu $dst,[0,2,4,6,1,3,5,7]\n\t"
-           "vpermd $dst,$dst,$src,"
-           "vpabsd $dst,$dst\n\t"
-           "vpackusdw $dst,$dst,$dst\n\t"
-           "vpackuswb $dst,$dst,$dst\t! store mask (4L to 4B)" %}
-  ins_encode %{
-    // vpermd and load are 256-bit, but all others are 128-bit instructions.
-    int vector_len = 0;
-    __ vmovdqu($dst$$XMMRegister, ExternalAddress(vector_long_perm_mask()), $scratch$$Register);
-    __ vpermd($dst$$XMMRegister, $dst$$XMMRegister, $src$$XMMRegister, 1);
-    __ vpabsd($dst$$XMMRegister, $dst$$XMMRegister, vector_len);
-    __ vpackusdw($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
-    __ vpackuswb($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct storemask4d(vec dst, vec src, rRegP scratch, vec tmp) %{
-  predicate(UseAVX == 1 && n->as_Vector()->length() == 4 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 8);
-  match(Set dst (VectorStoreMask src));
-  effect(TEMP scratch, TEMP dst, TEMP tmp);
-  format %{ "vpshufps $dst,$src,$src,0x88\n\t"
-           "vextractf128 $tmp,$src,"
-           "vblendps $dst,$dst,$tmp,0xC\n\t"
-           "vpackusdw $dst,$dst,$dst\n\t"
-           "vpackuswb $dst,$dst,$dst\t! store mask (4D to 4B)" %}
-  ins_encode %{
-    int vector_len = 0;
-    __ vpshufps($dst$$XMMRegister, $src$$XMMRegister, $src$$XMMRegister, 0x88, 1);
-    __ vextractf128($tmp$$XMMRegister, $dst$$XMMRegister, 1);
-    __ vblendps($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, 0xC, vector_len);
-    __ vpackusdw($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
-    __ vpackuswb($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct storemask8l(vec dst, vec src, rRegP scratch) %{
-  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() == 8 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 8);
-  match(Set dst (VectorStoreMask src));
-  effect(TEMP scratch);
-  format %{ "vpcmpeqq k2,$src,0xFFFFFFFF\n\t"
-           "vmovdqub $dst,k2,0x01010101\t! store mask (8L to 8B)" %}
-  ins_encode %{
-    int vector_len = 2;
-    KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
-    Assembler::ComparisonPredicate cp = Assembler::eq;
-    __ evpcmpq(ktmp, k0, $src$$XMMRegister, ExternalAddress(vector_all_bits_set()), cp, vector_len, $scratch$$Register);
-    // The dst is only 128-bit - thus we can do a smaller move.
-    __ evmovdqub($dst$$XMMRegister, ktmp, ExternalAddress(vector_byte_bitset()), false, 0, $scratch$$Register);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct storemask8l_evex(vec dst, vec src, rRegP scratch, vec tmp) %{
-  predicate(UseAVX > 2 && !(VM_Version::supports_avx512bw()) && n->as_Vector()->length() == 8 && static_cast<const VectorStoreMaskNode*>(n)->GetInputMaskSize() == 8);
-  match(Set dst (VectorStoreMask src));
-  effect(TEMP scratch, TEMP tmp);
-  format %{ "vpand $tmp,$src,0xFFFFFFFF\n\t"
-            "evpmovqb $dst,$tmp,0x01010101\t! store mask (8L to 8B)" %}
-  ins_encode %{
-    int vector_len = 2;
-    __ vpand($tmp$$XMMRegister, $src$$XMMRegister, ExternalAddress(vector_byte_bitset()), vector_len);
-    __ evpmovqb($dst$$XMMRegister, $tmp$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-//-------------------------------- LOAD_IOTA_INDICES----------------------------------
+//-------------------------------- Load Iota Indices ----------------------------------
 
 instruct loadconb(vec dst, immI0 src, rRegP scratch) %{
   predicate(n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);

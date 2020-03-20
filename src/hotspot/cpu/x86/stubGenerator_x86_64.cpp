@@ -6790,9 +6790,6 @@ address generate_avx_ghash_processBlocks() {
     StubRoutines::x86::_vector_double_sign_mask = generate_vector_mask("vector_double_sign_mask", 0x7FFFFFFFFFFFFFFF);
     StubRoutines::x86::_vector_double_sign_flip = generate_vector_mask("vector_double_sign_flip", 0x8000000000000000);
     StubRoutines::x86::_vector_all_bits_set = generate_vector_mask("vector_all_bits_set", 0xFFFFFFFFFFFFFFFF);
-    StubRoutines::x86::_vector_byte_bitset = generate_vector_mask("vector_byte_bitset", 0x0101010101010101);
-    StubRoutines::x86::_vector_long_perm_mask = generate_vector_custom_i32("vector_long_perm_mask", Assembler::AVX_512bit,
-                                                                           0, 2, 4, 6, 8, 10, 12, 14);
     StubRoutines::x86::_vector_short_to_byte_mask = generate_vector_mask("vector_short_to_byte_mask", 0x00ff00ff00ff00ff);
     StubRoutines::x86::_vector_byte_perm_mask = generate_vector_byte_perm_mask("vector_byte_perm_mask");
     StubRoutines::x86::_vector_int_to_byte_mask = generate_vector_mask("vector_int_to_byte_mask", 0x000000ff000000ff);
