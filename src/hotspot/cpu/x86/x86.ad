@@ -1963,6 +1963,12 @@ static inline uint vector_length(const MachNode* n) {
   return vt->length();
 }
 
+static inline uint vector_length(const MachNode* use, MachOper* opnd) {
+  uint def_idx = use->operand_index(opnd);
+  Node* def = use->in(def_idx);
+  return def->bottom_type()->is_vect()->length();
+}
+
 static inline uint vector_length_in_bytes(const MachNode* n) {
   const TypeVect* vt = n->bottom_type()->is_vect();
   return vt->length_in_bytes();
@@ -4362,20 +4368,8 @@ instruct reductionB(rRegI dst, rRegI src1, vec src2, vec vtmp1, vec vtmp2) %{
   format %{ "vector_opB_reduction $dst,$src1,$src2 ; using $vtmp1, $vtmp2 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    switch(vector_length_in_bytes(this, $src2)) {
-      case 8:
-        __ reduce8B(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
-        break;
-      case 16:
-        __ reduce16B(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
-        break;
-      case 32:
-        __ reduce32B(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
-        break;
-      default:
-        assert(0, "Incorrect vector length");
-        break;
-    }
+    int vlen = vector_length(this, $src2);
+    __ reduceB(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4392,7 +4386,8 @@ instruct reduction64B(rRegI dst, rRegI src1, legVec src2, legVec vtmp1, legVec v
   format %{ "vector_op64B_reduction $dst,$src1,$src2 ; using $vtmp1, $vtmp2 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    __ reduce64B(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    int vlen = vector_length(this, $src2);
+    __ reduceB(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4413,20 +4408,8 @@ instruct reductionS(rRegI dst, rRegI src1, vec src2, vec vtmp1, vec vtmp2) %{
   format %{ "vector_opS_reduction $dst,$src1,$src2 ; using $vtmp1, $vtmp2 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    switch(vector_length_in_bytes(this, $src2)) {
-      case 8:
-        __ reduce4S(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
-        break;
-      case 16:
-        __ reduce8S(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
-        break;
-      case 32:
-        __ reduce16S(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
-        break;
-      default:
-        assert(0, "Incorrect vector length");
-        break;
-    }
+    int vlen = vector_length(this, $src2);
+    __ reduceS(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4444,7 +4427,8 @@ instruct reduction32S(rRegI dst, rRegI src1, legVec src2, legVec vtmp1, legVec v
   format %{ "vector_op32S_reduction $dst,$src1,$src2 ; using $vtmp1, $vtmp2 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    __ reduce32S(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    int vlen = vector_length(this, $src2);
+    __ reduceS(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4464,20 +4448,8 @@ instruct reductionI(rRegI dst, rRegI src1, vec src2, vec vtmp1, vec vtmp2) %{
   format %{ "vector_opI_reduction $dst,$src1,$src2 ; using $vtmp1, $vtmp2 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    switch(vector_length_in_bytes(this, $src2)) {
-      case 8:
-        __ reduce2I(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
-        break;
-      case 16:
-        __ reduce4I(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
-        break;
-      case 32:
-        __ reduce8I(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
-        break;
-      default:
-        assert(0, "Incorrect vector length");
-        break;
-    }
+    int vlen = vector_length(this, $src2);
+    __ reduceI(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4495,8 +4467,9 @@ instruct reduction16I(rRegI dst, rRegI src1, legVec src2, legVec vtmp1, legVec v
   format %{ "vector_op16I_reduction $dst,$src1,$src2 ; using $vtmp1, $vtmp2 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    __ reduce16I(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
-  %}
+    int vlen = vector_length(this, $src2);
+    __ reduceI(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);  
+%}
   ins_pipe( pipe_slow );
 %}
 
@@ -4516,17 +4489,8 @@ instruct reductionL(rRegL dst, rRegL src1, vec src2, vec vtmp1, vec vtmp2) %{
   format %{ "vector_opL_reduction $dst,$src1,$src2 ; using $vtmp1, $vtmp2 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    switch(vector_length_in_bytes(this, $src2)) {
-      case 16:
-        __ reduce2L(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
-        break;
-      case 32:
-        __ reduce4L(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
-        break;
-      default:
-        assert(0, "Incorrect vector length");
-        break;
-    }
+    int vlen = vector_length(this, $src2);
+    __ reduceL(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4544,7 +4508,8 @@ instruct reduction8L(rRegL dst, rRegL src1, legVec src2, legVec vtmp1, legVec vt
   format %{ "vector_op8L_reduction $dst,$src1,$src2 ; using $vtmp1, $vtmp2 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    __ reduce8L(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    int vlen = vector_length(this, $src2);
+    __ reduceL(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4552,28 +4517,19 @@ instruct reduction8L(rRegL dst, rRegL src1, legVec src2, legVec vtmp1, legVec vt
 
 // =======================Float Reduction==========================================
 
-instruct reductionF(regF dst, vec src, vec vtmp) %{
-  predicate(n->in(2)->bottom_type()->is_vect()->length() >= 2 && n->in(2)->bottom_type()->is_vect()->length() <= 4); // vector_length(src) == 2,4
+instruct reductionF128(regF dst, vec src, vec vtmp) %{
+  predicate(n->in(2)->bottom_type()->is_vect()->length() <= 4);
   match(Set dst (AddReductionVF dst src));
   match(Set dst (MulReductionVF dst src));
   effect(TEMP dst, TEMP vtmp);
-  format %{ "vector_opF_reduction $dst,$dst,$src ; using $vtmp as TEMP" %}
-  ins_encode %{
+  format %{ "vector_reduction_fp  $dst,$src ; using $vtmp as TEMP" %}
+   ins_encode %{
     int opcode = this->ideal_Opcode();
-    switch(vector_length_in_bytes(this, $src)) {
-      case 8:
-        __ reduce2F(opcode, $dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister);
-        break;
-      case 16:
-        __ reduce4F(opcode, $dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister);
-        break;
-      default:
-        assert(0, "Incorrect vector length");
-        break;
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
+    int vlen = vector_length(this, $src);
+    __ reduce_fp(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister);
+   %}
+   ins_pipe( pipe_slow );
+ %}
 
 instruct reduction8F(regF dst, vec src, vec vtmp1, vec vtmp2) %{
   predicate(n->in(2)->bottom_type()->is_vect()->length() == 8); // vector_length(src) == 8
@@ -4583,7 +4539,8 @@ instruct reduction8F(regF dst, vec src, vec vtmp1, vec vtmp2) %{
   format %{ "vector_op8F_reduction $dst,$dst,$src ; using $vtmp1, $vtmp2 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    __ reduce8F(opcode, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    int vlen = vector_length(this, $src);
+    __ reduce_fp(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);   
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4596,7 +4553,8 @@ instruct reduction16F(regF dst, legVec src, legVec vtmp1, legVec vtmp2) %{
   format %{ "vector_op16F_reduction $dst,$dst,$src ; using $vtmp1, $vtmp2 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    __ reduce16F(opcode, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    int vlen = vector_length(this, $src);
+    __ reduce_fp(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4611,8 +4569,9 @@ instruct reduction2D(regD dst, vec src, vec vtmp) %{
   format %{ "vector_op2D_reduction $dst,$dst,$src ; using $vtmp as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    __ reduce2D(opcode, $dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister);
-  %}
+    int vlen = vector_length(this, $src);
+    __ reduce_fp(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister);  
+%}
   ins_pipe( pipe_slow );
 %}
 
@@ -4624,7 +4583,8 @@ instruct reduction4D(regD dst, vec src, vec vtmp1, vec vtmp2) %{
   format %{ "vector_op4D_reduction $dst,$dst,$src ; using $vtmp1, $vtmp2 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    __ reduce4D(opcode, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    int vlen = vector_length(this, $src);
+    __ reduce_fp(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);    
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4637,7 +4597,8 @@ instruct reduction8D(regD dst, legVec src, legVec vtmp1, legVec vtmp2) %{
   format %{ "vector_op8D_reduction $dst,$dst,$src ; using $vtmp1, $vtmp2 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    __ reduce8D(opcode, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    int vlen = vector_length(this, $src);
+    __ reduce_fp(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);    
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4653,20 +4614,8 @@ instruct mul_reductionB(rRegI dst, rRegI src1, vec src2, vec vtmp1, vec vtmp2) %
   format %{ "vector_mulB_reduction $dst,$src1,$src2; using $vtmp1, $vtmp2 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    switch(vector_length_in_bytes(this, $src2)) {
-      case 8:
-        __ mulreduce8B(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
-        break;
-      case 16:
-        __ mulreduce16B(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
-        break;
-      case 32:
-        __ mulreduce32B(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
-        break;
-      default:
-        assert(0, "Incorrect vector length");
-        break;
-    }
+    int vlen = vector_length(this, $src2);
+    __ mulreduceB(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4679,7 +4628,8 @@ instruct mul_reduction64B(rRegI dst, rRegI src1, legVec src2, legVec vtmp1, legV
   format %{ "vector_mul64B_reduction $dst,$src1,$src2; using $vtmp1, $vtmp2 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    __ mulreduce64B(opcode, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    int vlen = vector_length(this, $src2);
+    __ mulreduceB(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
