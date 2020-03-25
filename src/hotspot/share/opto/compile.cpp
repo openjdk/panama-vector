@@ -2283,7 +2283,6 @@ void Compile::Optimize() {
   assert(EnableVectorSupport || !has_vbox_nodes(), "sanity");
   if (EnableVectorSupport && has_vbox_nodes()) {
     TracePhase tp("", &timers[_t_vector]);
-    ResourceMark rm;
     PhaseVector pv(igvn);
     pv.optimize_vector_boxes();
 
