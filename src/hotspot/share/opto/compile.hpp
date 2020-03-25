@@ -1109,7 +1109,7 @@ class Compile : public Phase {
   void              add_vector_reboxing_late_inline(CallGenerator* cg) {
     _vector_reboxing_late_inlines.push(cg);
   }
-  
+
   void remove_useless_late_inlines(GrowableArray<CallGenerator*>* inlines, Unique_Node_List &useful);
 
   void process_print_inlining();
@@ -1139,24 +1139,7 @@ class Compile : public Phase {
   bool optimize_loops(PhaseIterGVN& igvn, LoopOptsMode mode);
   void remove_root_to_sfpts_edges(PhaseIterGVN& igvn);
 
-  void expand_vbox_nodes();
-  void expand_vbox_node(VectorBoxNode* vec_box);
-  Node* expand_vbox_node_helper(Node* vbox,
-                                Node* vect,
-                                const TypeInstPtr* box_type,
-                                const TypeVect* vect_type);
-  Node* expand_vbox_alloc_node(VectorBoxAllocateNode* vbox_alloc,
-                               Node* value,
-                               const TypeInstPtr* box_type,
-                               const TypeVect* vect_type);
-  void scalarize_vbox_nodes();
-  void scalarize_vbox_node(VectorBoxNode* vec_box);
-  void expand_vunbox_nodes();
-  void expand_vunbox_node(VectorUnboxNode* vec_box);
-  void eliminate_vbox_alloc_nodes();
-  void eliminate_vbox_alloc_node(VectorBoxAllocateNode* vbox_alloc);
   void inline_vector_reboxing_calls();
-
   bool has_vbox_nodes();
 
   // Matching, CFG layout, allocation, code generation

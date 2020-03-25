@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.Stable;
 
+import jdk.internal.vm.vector.VectorSupport;
+
 /**
  * This class consists solely of static constants
  * that describe lane-wise vector operations, plus nested interfaces
@@ -473,128 +475,128 @@ public abstract class VectorOperators {
     // Unary operators
 
     /** Produce {@code ~a}.  Integral only. */
-    public static final /*bitwise*/ Unary NOT = unary("NOT", "~", VectorIntrinsics.VECTOR_OP_NOT, VO_NOFP);
+    public static final /*bitwise*/ Unary NOT = unary("NOT", "~", VectorSupport.VECTOR_OP_NOT, VO_NOFP);
     /** Produce {@code a==0?0:-1} (zero or minus one).  Integral only. */
-    public static final /*bitwise*/ Unary ZOMO = unary("ZOMO", "a==0?0:-1", -1 /*VectorIntrinsics.VECTOR_OP_ZOMO*/, VO_NOFP);
+    public static final /*bitwise*/ Unary ZOMO = unary("ZOMO", "a==0?0:-1", -1 /*VectorSupport.VECTOR_OP_ZOMO*/, VO_NOFP);
     /** Produce {@code abs(a)}. */
-    public static final Unary ABS = unary("ABS", "abs", VectorIntrinsics.VECTOR_OP_ABS, VO_ALL);
+    public static final Unary ABS = unary("ABS", "abs", VectorSupport.VECTOR_OP_ABS, VO_ALL);
     /** Produce {@code -a}. */
-    public static final Unary NEG = unary("NEG", "-a", VectorIntrinsics.VECTOR_OP_NEG, VO_ALL|VO_SPECIAL);
+    public static final Unary NEG = unary("NEG", "-a", VectorSupport.VECTOR_OP_NEG, VO_ALL|VO_SPECIAL);
 
     /** Produce {@code sin(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary SIN = unary("SIN", "sin", VectorIntrinsics.VECTOR_OP_SIN, VO_ONLYFP);
+    public static final /*float*/ Unary SIN = unary("SIN", "sin", VectorSupport.VECTOR_OP_SIN, VO_ONLYFP);
     /** Produce {@code cos(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary COS = unary("COS", "cos", VectorIntrinsics.VECTOR_OP_COS, VO_ONLYFP);
+    public static final /*float*/ Unary COS = unary("COS", "cos", VectorSupport.VECTOR_OP_COS, VO_ONLYFP);
     /** Produce {@code tan(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary TAN = unary("TAN", "tan", VectorIntrinsics.VECTOR_OP_TAN, VO_ONLYFP);
+    public static final /*float*/ Unary TAN = unary("TAN", "tan", VectorSupport.VECTOR_OP_TAN, VO_ONLYFP);
     /** Produce {@code asin(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary ASIN = unary("ASIN", "asin", VectorIntrinsics.VECTOR_OP_ASIN, VO_ONLYFP);
+    public static final /*float*/ Unary ASIN = unary("ASIN", "asin", VectorSupport.VECTOR_OP_ASIN, VO_ONLYFP);
     /** Produce {@code acos(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary ACOS = unary("ACOS", "acos", VectorIntrinsics.VECTOR_OP_ACOS, VO_ONLYFP);
+    public static final /*float*/ Unary ACOS = unary("ACOS", "acos", VectorSupport.VECTOR_OP_ACOS, VO_ONLYFP);
     /** Produce {@code atan(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary ATAN = unary("ATAN", "atan", VectorIntrinsics.VECTOR_OP_ATAN, VO_ONLYFP);
+    public static final /*float*/ Unary ATAN = unary("ATAN", "atan", VectorSupport.VECTOR_OP_ATAN, VO_ONLYFP);
 
     /** Produce {@code exp(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary EXP = unary("EXP", "exp", VectorIntrinsics.VECTOR_OP_EXP, VO_ONLYFP);
+    public static final /*float*/ Unary EXP = unary("EXP", "exp", VectorSupport.VECTOR_OP_EXP, VO_ONLYFP);
     /** Produce {@code log(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary LOG = unary("LOG", "log", VectorIntrinsics.VECTOR_OP_LOG, VO_ONLYFP);
+    public static final /*float*/ Unary LOG = unary("LOG", "log", VectorSupport.VECTOR_OP_LOG, VO_ONLYFP);
     /** Produce {@code log10(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary LOG10 = unary("LOG10", "log10", VectorIntrinsics.VECTOR_OP_LOG10, VO_ONLYFP);
+    public static final /*float*/ Unary LOG10 = unary("LOG10", "log10", VectorSupport.VECTOR_OP_LOG10, VO_ONLYFP);
     /** Produce {@code sqrt(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary SQRT = unary("SQRT", "sqrt", VectorIntrinsics.VECTOR_OP_SQRT, VO_ONLYFP);
+    public static final /*float*/ Unary SQRT = unary("SQRT", "sqrt", VectorSupport.VECTOR_OP_SQRT, VO_ONLYFP);
     /** Produce {@code cbrt(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary CBRT = unary("CBRT", "cbrt", VectorIntrinsics.VECTOR_OP_CBRT, VO_ONLYFP);
+    public static final /*float*/ Unary CBRT = unary("CBRT", "cbrt", VectorSupport.VECTOR_OP_CBRT, VO_ONLYFP);
 
     /** Produce {@code sinh(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary SINH = unary("SINH", "sinh", VectorIntrinsics.VECTOR_OP_SINH, VO_ONLYFP);
+    public static final /*float*/ Unary SINH = unary("SINH", "sinh", VectorSupport.VECTOR_OP_SINH, VO_ONLYFP);
     /** Produce {@code cosh(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary COSH = unary("COSH", "cosh", VectorIntrinsics.VECTOR_OP_COSH, VO_ONLYFP);
+    public static final /*float*/ Unary COSH = unary("COSH", "cosh", VectorSupport.VECTOR_OP_COSH, VO_ONLYFP);
     /** Produce {@code tanh(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary TANH = unary("TANH", "tanh", VectorIntrinsics.VECTOR_OP_TANH, VO_ONLYFP);
+    public static final /*float*/ Unary TANH = unary("TANH", "tanh", VectorSupport.VECTOR_OP_TANH, VO_ONLYFP);
     /** Produce {@code expm1(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary EXPM1 = unary("EXPM1", "expm1", VectorIntrinsics.VECTOR_OP_EXPM1, VO_ONLYFP);
+    public static final /*float*/ Unary EXPM1 = unary("EXPM1", "expm1", VectorSupport.VECTOR_OP_EXPM1, VO_ONLYFP);
     /** Produce {@code log1p(a)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Unary LOG1P = unary("LOG1P", "log1p", VectorIntrinsics.VECTOR_OP_LOG1P, VO_ONLYFP);
+    public static final /*float*/ Unary LOG1P = unary("LOG1P", "log1p", VectorSupport.VECTOR_OP_LOG1P, VO_ONLYFP);
 
     // Binary operators
 
     /** Produce {@code a+b}. */
-    public static final Associative ADD = assoc("ADD", "+", VectorIntrinsics.VECTOR_OP_ADD, VO_ALL+VO_ASSOC);
+    public static final Associative ADD = assoc("ADD", "+", VectorSupport.VECTOR_OP_ADD, VO_ALL+VO_ASSOC);
     /** Produce {@code a-b}. */
-    public static final Binary SUB = binary("SUB", "-", VectorIntrinsics.VECTOR_OP_SUB, VO_ALL);
+    public static final Binary SUB = binary("SUB", "-", VectorSupport.VECTOR_OP_SUB, VO_ALL);
     /** Produce {@code a*b}. */
-    public static final Associative MUL = assoc("MUL", "*", VectorIntrinsics.VECTOR_OP_MUL, VO_ALL+VO_ASSOC);
+    public static final Associative MUL = assoc("MUL", "*", VectorSupport.VECTOR_OP_MUL, VO_ALL+VO_ASSOC);
     /** Produce {@code a/b}. Floating only. */
-    public static final Binary DIV = binary("DIV", "/", VectorIntrinsics.VECTOR_OP_DIV, VO_ONLYFP);
+    public static final Binary DIV = binary("DIV", "/", VectorSupport.VECTOR_OP_DIV, VO_ONLYFP);
     /** Produce {@code min(a,b)}. */
-    public static final Associative MIN = assoc("MIN", "min", VectorIntrinsics.VECTOR_OP_MIN, VO_ALL+VO_ASSOC);
+    public static final Associative MIN = assoc("MIN", "min", VectorSupport.VECTOR_OP_MIN, VO_ALL+VO_ASSOC);
     /** Produce {@code max(a,b)}. */
-    public static final Associative MAX = assoc("MAX", "max", VectorIntrinsics.VECTOR_OP_MAX, VO_ALL+VO_ASSOC);
+    public static final Associative MAX = assoc("MAX", "max", VectorSupport.VECTOR_OP_MAX, VO_ALL+VO_ASSOC);
     /** Produce {@code bits(a)!=0?a:b}. */
-    public static final Associative FIRST_NONZERO = assoc("FIRST_NONZERO", "a!=0?a:b", -1 /*VectorIntrinsics.VECTOR_OP_FIRST_NONZERO*/, VO_ALL+VO_ASSOC);
+    public static final Associative FIRST_NONZERO = assoc("FIRST_NONZERO", "a!=0?a:b", -1 /*VectorSupport.VECTOR_OP_FIRST_NONZERO*/, VO_ALL+VO_ASSOC);
 
     /** Produce {@code a&b}.  Integral only. */
-    public static final Associative AND = assoc("AND", "&", VectorIntrinsics.VECTOR_OP_AND, VO_NOFP+VO_ASSOC);
+    public static final Associative AND = assoc("AND", "&", VectorSupport.VECTOR_OP_AND, VO_NOFP+VO_ASSOC);
     /** Produce {@code a&~b}.  Integral only. */
-    public static final /*bitwise*/ Binary AND_NOT = binary("AND_NOT", "&~", -1 /*VectorIntrinsics.VECTOR_OP_AND_NOT*/, VO_NOFP); // FIXME
+    public static final /*bitwise*/ Binary AND_NOT = binary("AND_NOT", "&~", -1 /*VectorSupport.VECTOR_OP_AND_NOT*/, VO_NOFP); // FIXME
     /** Produce {@code a|b}.  Integral only. */
-    public static final /*bitwise*/ Associative OR = assoc("OR", "|", VectorIntrinsics.VECTOR_OP_OR, VO_NOFP+VO_ASSOC);
+    public static final /*bitwise*/ Associative OR = assoc("OR", "|", VectorSupport.VECTOR_OP_OR, VO_NOFP+VO_ASSOC);
     /*package-private*/ /** Version of OR which works on float and double too. */
-    static final Associative OR_UNCHECKED = assoc("OR_UNCHECKED", "|", VectorIntrinsics.VECTOR_OP_OR, VO_ASSOC+VO_PRIVATE);
+    static final Associative OR_UNCHECKED = assoc("OR_UNCHECKED", "|", VectorSupport.VECTOR_OP_OR, VO_ASSOC+VO_PRIVATE);
     /** Produce {@code a^b}.  Integral only. */
-    public static final /*bitwise*/ Associative XOR = assoc("XOR", "^", VectorIntrinsics.VECTOR_OP_XOR, VO_NOFP+VO_ASSOC);
+    public static final /*bitwise*/ Associative XOR = assoc("XOR", "^", VectorSupport.VECTOR_OP_XOR, VO_NOFP+VO_ASSOC);
 
     /** Produce {@code a<<(n&(ESIZE*8-1))}.  Integral only. */
-    public static final /*bitwise*/ Binary LSHL = binary("LSHL", "<<", VectorIntrinsics.VECTOR_OP_LSHIFT, VO_SHIFT);
+    public static final /*bitwise*/ Binary LSHL = binary("LSHL", "<<", VectorSupport.VECTOR_OP_LSHIFT, VO_SHIFT);
     /** Produce {@code a>>(n&(ESIZE*8-1))}.  Integral only. */
-    public static final /*bitwise*/ Binary ASHR = binary("ASHR", ">>", VectorIntrinsics.VECTOR_OP_RSHIFT, VO_SHIFT);
+    public static final /*bitwise*/ Binary ASHR = binary("ASHR", ">>", VectorSupport.VECTOR_OP_RSHIFT, VO_SHIFT);
     /** Produce {@code a>>>(n&(ESIZE*8-1))}.  Integral only. */
-    public static final /*bitwise*/ Binary LSHR = binary("LSHR", ">>>", VectorIntrinsics.VECTOR_OP_URSHIFT, VO_SHIFT);
+    public static final /*bitwise*/ Binary LSHR = binary("LSHR", ">>>", VectorSupport.VECTOR_OP_URSHIFT, VO_SHIFT);
     /** Produce {@code rotateLeft(a,n)}.  Integral only. */
-    public static final /*bitwise*/ Binary ROL = binary("ROL", "rotateLeft", VectorIntrinsics.VECTOR_OP_LROTATE, VO_SHIFT);
+    public static final /*bitwise*/ Binary ROL = binary("ROL", "rotateLeft", VectorSupport.VECTOR_OP_LROTATE, VO_SHIFT);
     /** Produce {@code rotateRight(a,n)}.  Integral only. */
-    public static final /*bitwise*/ Binary ROR = binary("ROR", "rotateRight", VectorIntrinsics.VECTOR_OP_RROTATE, VO_SHIFT);
+    public static final /*bitwise*/ Binary ROR = binary("ROR", "rotateRight", VectorSupport.VECTOR_OP_RROTATE, VO_SHIFT);
 
     /** Produce {@code atan2(a,b)}. See  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Binary ATAN2 = binary("ATAN2", "atan2", VectorIntrinsics.VECTOR_OP_ATAN2, VO_ONLYFP);
+    public static final /*float*/ Binary ATAN2 = binary("ATAN2", "atan2", VectorSupport.VECTOR_OP_ATAN2, VO_ONLYFP);
     /** Produce {@code pow(a,b)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Binary POW = binary("POW", "pow", VectorIntrinsics.VECTOR_OP_POW, VO_ONLYFP);
+    public static final /*float*/ Binary POW = binary("POW", "pow", VectorSupport.VECTOR_OP_POW, VO_ONLYFP);
     /** Produce {@code hypot(a,b)}.  Floating only.  See section "Operations on floating point vectors" above */
-    public static final /*float*/ Binary HYPOT = binary("HYPOT", "hypot", VectorIntrinsics.VECTOR_OP_HYPOT, VO_ONLYFP);
+    public static final /*float*/ Binary HYPOT = binary("HYPOT", "hypot", VectorSupport.VECTOR_OP_HYPOT, VO_ONLYFP);
 
     // Ternary operators
 
     /** Produce {@code a^((a^b)&c)}.  (Bitwise {@code (c(i)?b(i):a(i))}.)  Integral only. */
-    public static final /*float*/ Ternary BITWISE_BLEND = ternary("BITWISE_BLEND", "a^((a^b)&c)", -1 /*VectorIntrinsics.VECTOR_OP_BITWISE_BLEND*/, VO_NOFP);
+    public static final /*float*/ Ternary BITWISE_BLEND = ternary("BITWISE_BLEND", "a^((a^b)&c)", -1 /*VectorSupport.VECTOR_OP_BITWISE_BLEND*/, VO_NOFP);
     /** Produce {@code fma(a,b,c)}.  Floating only. */
-    public static final /*float*/ Ternary FMA = ternary("FMA", "fma", VectorIntrinsics.VECTOR_OP_FMA, VO_ONLYFP);
+    public static final /*float*/ Ternary FMA = ternary("FMA", "fma", VectorSupport.VECTOR_OP_FMA, VO_ONLYFP);
 
     // Unary boolean operators
     /** Test {@code bits(a)==0}.  (Not true of {@code -0.0}.) */
-    public static final Test IS_DEFAULT = predicate("IS_DEFAULT", "bits(a)==0", -1 /*VectorIntrinsics.VECTOR_OP_TEST_DEFAULT*/, VO_ALL);
+    public static final Test IS_DEFAULT = predicate("IS_DEFAULT", "bits(a)==0", -1 /*VectorSupport.VECTOR_OP_TEST_DEFAULT*/, VO_ALL);
     /** Test {@code bits(a)<0}.  (True of {@code -0.0}.) */
-    public static final Test IS_NEGATIVE = predicate("IS_NEGATIVE", "bits(a)<0", -1 /*VectorIntrinsics.VECTOR_OP_TEST_NEGATIVE*/, VO_ALL);
+    public static final Test IS_NEGATIVE = predicate("IS_NEGATIVE", "bits(a)<0", -1 /*VectorSupport.VECTOR_OP_TEST_NEGATIVE*/, VO_ALL);
     /** Test {@code isFinite(a)}.  Floating only. */
-    public static final Test IS_FINITE = predicate("IS_FINITE", "isFinite", -1 /*VectorIntrinsics.VECTOR_OP_TEST_FINITE*/, VO_ONLYFP);
+    public static final Test IS_FINITE = predicate("IS_FINITE", "isFinite", -1 /*VectorSupport.VECTOR_OP_TEST_FINITE*/, VO_ONLYFP);
     /** Test {@code isNaN(a)}.  Floating only. */
-    public static final Test IS_NAN = predicate("IS_NAN", "isNaN", -1 /*VectorIntrinsics.VECTOR_OP_TEST_NAN*/, VO_ONLYFP);
+    public static final Test IS_NAN = predicate("IS_NAN", "isNaN", -1 /*VectorSupport.VECTOR_OP_TEST_NAN*/, VO_ONLYFP);
     /** Test {@code isInfinite(a)}.  Floating only. */
-    public static final Test IS_INFINITE = predicate("IS_INFINITE", "isInfinite", -1 /*VectorIntrinsics.VECTOR_OP_TEST_INFINITE*/, VO_ONLYFP);
+    public static final Test IS_INFINITE = predicate("IS_INFINITE", "isInfinite", -1 /*VectorSupport.VECTOR_OP_TEST_INFINITE*/, VO_ONLYFP);
 
     // Binary boolean operators
 
     /** Compare {@code a==b}. */
-    public static final Comparison EQ = compare("EQ", "==", VectorIntrinsics.BT_eq, VO_ALL);
+    public static final Comparison EQ = compare("EQ", "==", VectorSupport.BT_eq, VO_ALL);
     /** Compare {@code a!=b}. */
-    public static final Comparison NE = compare("NE", "!=", VectorIntrinsics.BT_ne, VO_ALL);
+    public static final Comparison NE = compare("NE", "!=", VectorSupport.BT_ne, VO_ALL);
     /** Compare {@code a<b}. */
-    public static final Comparison LT = compare("LT", "<",  VectorIntrinsics.BT_lt, VO_ALL);
+    public static final Comparison LT = compare("LT", "<",  VectorSupport.BT_lt, VO_ALL);
     /** Compare {@code a<=b}. */
-    public static final Comparison LE = compare("LE", "<=", VectorIntrinsics.BT_le, VO_ALL);
+    public static final Comparison LE = compare("LE", "<=", VectorSupport.BT_le, VO_ALL);
     /** Compare {@code a>b}. */
-    public static final Comparison GT = compare("GT", ">",  VectorIntrinsics.BT_gt, VO_ALL);
+    public static final Comparison GT = compare("GT", ">",  VectorSupport.BT_gt, VO_ALL);
     /** Compare {@code a>=b}. */
-    public static final Comparison GE = compare("GE", ">=", VectorIntrinsics.BT_ge, VO_ALL);
+    public static final Comparison GE = compare("GE", ">=", VectorSupport.BT_ge, VO_ALL);
     // FIXME: add unsigned comparisons
 
     // Conversion operators
@@ -1281,12 +1283,12 @@ public abstract class VectorOperators {
         /* --- *
         boolean test(long a, long b) {
             switch (opInfo() >> VO_OPCODE_SHIFT) {
-            case VectorIntrinsics.BT_eq:  return a == b;
-            case VectorIntrinsics.BT_ne:  return a != b;
-            case VectorIntrinsics.BT_lt:  return a <  b;
-            case VectorIntrinsics.BT_le:  return a <= b;
-            case VectorIntrinsics.BT_gt:  return a >  b;
-            case VectorIntrinsics.BT_ge:  return a >= b;
+            case VectorSupport.BT_eq:  return a == b;
+            case VectorSupport.BT_ne:  return a != b;
+            case VectorSupport.BT_lt:  return a <  b;
+            case VectorSupport.BT_le:  return a <= b;
+            case VectorSupport.BT_gt:  return a >  b;
+            case VectorSupport.BT_ge:  return a >= b;
             }
             throw new AssertionError();
         }
@@ -1371,7 +1373,7 @@ public abstract class VectorOperators {
             if (fn != null)  return fn;
             fn = supplier.apply(opc);
             if (fn == null)  throw badOp(op);
-            assert(VectorIntrinsics.isNonCapturingLambda(fn)) : fn;
+            assert(VectorSupport.isNonCapturingLambda(fn)) : fn;
             // The JIT can see into this cache:
             cache[opc] = fn;
             return fn;

@@ -4142,8 +4142,14 @@ jint Arguments::apply_ergo() {
   if (!UseBiasedLocking) {
     UseOptoBiasInlining = false;
   }
-#endif
 
+  if (!EnableVectorSupport) {
+    if (!FLAG_IS_DEFAULT(EnableVectorAggressiveReboxing) && EnableVectorAggressiveReboxing) {
+      warning("Disabling EnableVectorAggressiveReboxing since EnableVectorSupport is turned off.");
+    }
+    FLAG_SET_DEFAULT(EnableVectorAggressiveReboxing, false);
+  }
+#endif // COMPILER2
   return JNI_OK;
 }
 

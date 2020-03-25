@@ -1050,30 +1050,32 @@ bool ReductionNode::implemented(int opc, uint vlen, BasicType bt) {
 }
 
 #ifndef PRODUCT
-void VectorBoxAllocateNode::dump_spec(outputStream *st) const {
-  CallStaticJavaNode::dump_spec(st);
-}
-
 void VectorMaskCmpNode::dump_spec(outputStream *st) const {
   st->print(" %d #", _predicate); _type->dump_on(st);
 }
 #endif // PRODUCT
-
-Node* VectorUnboxNode::Identity(PhaseGVN *phase) {
-  Node* n = obj()->uncast();
-  if (n->Opcode() == Op_VectorBox) {
-    if (Type::cmp(bottom_type(), n->in(VectorBoxNode::Value)->bottom_type()) == 0) {
-      return n->in(VectorBoxNode::Value);
-    }
-  }
-  return this;
-}
 
 Node* VectorReinterpretNode::Identity(PhaseGVN *phase) {
   Node* n = in(1);
   if (n->Opcode() == Op_VectorReinterpret) {
     if (Type::cmp(bottom_type(), n->in(1)->bottom_type()) == 0) {
       return n->in(1);
+    }
+  }
+  return this;
+}
+
+Node* VectorInsertNode::make(Node* vec, Node* new_val, int position) {
+  assert(position < (int)vec->bottom_type()->is_vect()->length(), "pos in range");
+  ConINode* pos = ConINode::make(position);
+  return new VectorInsertNode(vec, new_val, pos, vec->bottom_type()->is_vect());
+}
+
+Node* VectorUnboxNode::Identity(PhaseGVN *phase) {
+  Node* n = obj()->uncast();
+  if (EnableVectorReboxing && n->Opcode() == Op_VectorBox) {
+    if (Type::cmp(bottom_type(), n->in(VectorBoxNode::Value)->bottom_type()) == 0) {
+      return n->in(VectorBoxNode::Value);
     }
   }
   return this;
@@ -1090,8 +1092,8 @@ const TypeFunc* VectorBoxNode::vec_box_type(const TypeInstPtr* box_type) {
   return TypeFunc::make(domain, range);
 }
 
-Node* VectorInsertNode::make(Node* vec, Node* new_val, int position) {
-  assert(position < (int)vec->bottom_type()->is_vect()->length(), "pos in range");
-  ConINode* pos = ConINode::make(position);
-  return new VectorInsertNode(vec, new_val, pos, vec->bottom_type()->is_vect());
+#ifndef PRODUCT
+void VectorBoxAllocateNode::dump_spec(outputStream *st) const {
+  CallStaticJavaNode::dump_spec(st);
 }
+#endif // !PRODUCT

@@ -30,8 +30,10 @@ import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
 import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.vector.VectorSupport;
 
-import static jdk.incubator.vector.VectorIntrinsics.*;
+import static jdk.internal.vm.vector.VectorSupport.*;
+
 import static jdk.incubator.vector.VectorOperators.*;
 
 // -- This file was mechanically generated: Do not edit! -- //
@@ -48,15 +50,12 @@ final class Int512Vector extends IntVector {
 
     static final int VSIZE = VSPECIES.vectorBitSize();
 
-    static final int VLENGTH = VSPECIES.laneCount();
+    static final int VLENGTH = VSPECIES.laneCount(); // used by the JVM
 
-    static final Class<Integer> ETYPE = int.class;
-
-    // The JVM expects to find the state here.
-    private final int[] vec; // Don't access directly, use vec() instead.
+    static final Class<Integer> ETYPE = int.class; // used by the JVM
 
     Int512Vector(int[] v) {
-        vec = v;
+        super(v);
     }
 
     // For compatibility as Int512Vector::new,
@@ -115,7 +114,7 @@ final class Int512Vector extends IntVector {
     @ForceInline
     final @Override
     int[] vec() {
-        return VectorIntrinsics.maybeRebox(this).vec;
+        return (int[])getPayload();
     }
 
     // Virtualized constructors
@@ -145,9 +144,9 @@ final class Int512Vector extends IntVector {
     @ForceInline
     Int512Shuffle iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return (Int512Shuffle)VectorIntrinsics.shuffleIota(ETYPE, Int512Shuffle.class, VSPECIES, VLENGTH, start, step, 1, (l, lstart, lstep) -> new Int512Shuffle(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
+        return (Int512Shuffle)VectorSupport.shuffleIota(ETYPE, Int512Shuffle.class, VSPECIES, VLENGTH, start, step, 1, (l, lstart, lstep) -> new Int512Shuffle(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
       } else {
-        return (Int512Shuffle)VectorIntrinsics.shuffleIota(ETYPE, Int512Shuffle.class, VSPECIES, VLENGTH, start, step, 0, (l, lstart, lstep) -> new Int512Shuffle(i -> (i*lstep + lstart)));
+        return (Int512Shuffle)VectorSupport.shuffleIota(ETYPE, Int512Shuffle.class, VSPECIES, VLENGTH, start, step, 0, (l, lstart, lstep) -> new Int512Shuffle(i -> (i*lstep + lstart)));
       }
     }
 
@@ -473,7 +472,7 @@ final class Int512Vector extends IntVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        return (int) VectorIntrinsics.extract(
+        return (int) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
                                 (vec, ix) -> {
@@ -487,7 +486,7 @@ final class Int512Vector extends IntVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        return VectorIntrinsics.insert(
+        return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,
                                 (v, ix, bits) -> {
@@ -500,25 +499,33 @@ final class Int512Vector extends IntVector {
     // Mask
 
     static final class Int512Mask extends AbstractMask<Integer> {
+        static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
+        static final Class<Integer> ETYPE = int.class; // used by the JVM
 
-        private final boolean[] bits; // Don't access directly, use getBits() instead.
-
-        public Int512Mask(boolean[] bits) {
+        Int512Mask(boolean[] bits) {
             this(bits, 0);
         }
 
-        public Int512Mask(boolean[] bits, int offset) {
-            boolean[] a = new boolean[vspecies().laneCount()];
-            for (int i = 0; i < a.length; i++) {
-                a[i] = bits[offset + i];
-            }
-            this.bits = a;
+        Int512Mask(boolean[] bits, int offset) {
+            super(prepare(bits, offset));
         }
 
-        public Int512Mask(boolean val) {
-            boolean[] bits = new boolean[vspecies().laneCount()];
+        Int512Mask(boolean val) {
+            super(prepare(val));
+        }
+
+        private static boolean[] prepare(boolean[] bits, int offset) {
+            boolean[] newBits = new boolean[VSPECIES.laneCount()];
+            for (int i = 0; i < newBits.length; i++) {
+                newBits[i] = bits[offset + i];
+            }
+            return newBits;
+        }
+
+        private static boolean[] prepare(boolean val) {
+            boolean[] bits = new boolean[VSPECIES.laneCount()];
             Arrays.fill(bits, val);
-            this.bits = bits;
+            return bits;
         }
 
         @ForceInline
@@ -531,7 +538,7 @@ final class Int512Vector extends IntVector {
         }
 
         boolean[] getBits() {
-            return VectorIntrinsics.maybeRebox(this).bits;
+            return (boolean[])getPayload();
         }
 
         @Override
@@ -594,7 +601,7 @@ final class Int512Vector extends IntVector {
         @Override
         @ForceInline
         public Int512Mask not() {
-            return (Int512Mask) VectorIntrinsics.unaryOp(
+            return (Int512Mask) VectorSupport.unaryOp(
                                              VECTOR_OP_NOT, Int512Mask.class, int.class, VLENGTH,
                                              this,
                                              (m1) -> m1.uOp((i, a) -> !a));
@@ -607,7 +614,7 @@ final class Int512Vector extends IntVector {
         public Int512Mask and(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
             Int512Mask m = (Int512Mask)mask;
-            return VectorIntrinsics.binaryOp(VECTOR_OP_AND, Int512Mask.class, int.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Int512Mask.class, int.class, VLENGTH,
                                              this, m,
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
@@ -617,7 +624,7 @@ final class Int512Vector extends IntVector {
         public Int512Mask or(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
             Int512Mask m = (Int512Mask)mask;
-            return VectorIntrinsics.binaryOp(VECTOR_OP_OR, Int512Mask.class, int.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Int512Mask.class, int.class, VLENGTH,
                                              this, m,
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
@@ -627,7 +634,7 @@ final class Int512Vector extends IntVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            return VectorIntrinsics.test(BT_ne, Int512Mask.class, int.class, VLENGTH,
+            return VectorSupport.test(BT_ne, Int512Mask.class, int.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Int512Mask)m).getBits()));
         }
@@ -635,7 +642,7 @@ final class Int512Vector extends IntVector {
         @Override
         @ForceInline
         public boolean allTrue() {
-            return VectorIntrinsics.test(BT_overflow, Int512Mask.class, int.class, VLENGTH,
+            return VectorSupport.test(BT_overflow, Int512Mask.class, int.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> allTrueHelper(((Int512Mask)m).getBits()));
         }
@@ -651,20 +658,23 @@ final class Int512Vector extends IntVector {
     // Shuffle
 
     static final class Int512Shuffle extends AbstractShuffle<Integer> {
+        static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
+        static final Class<Integer> ETYPE = int.class; // used by the JVM
+
         Int512Shuffle(byte[] reorder) {
-            super(reorder);
+            super(VLENGTH, reorder);
         }
 
         public Int512Shuffle(int[] reorder) {
-            super(reorder);
+            super(VLENGTH, reorder);
         }
 
         public Int512Shuffle(int[] reorder, int i) {
-            super(reorder, i);
+            super(VLENGTH, reorder, i);
         }
 
         public Int512Shuffle(IntUnaryOperator fn) {
-            super(fn);
+            super(VLENGTH, fn);
         }
 
         @Override
@@ -683,7 +693,7 @@ final class Int512Vector extends IntVector {
         @Override
         @ForceInline
         public Int512Vector toVector() {
-            return VectorIntrinsics.shuffleToVector(VCLASS, ETYPE, Int512Shuffle.class, this, VLENGTH,
+            return VectorSupport.shuffleToVector(VCLASS, ETYPE, Int512Shuffle.class, this, VLENGTH,
                                                     (s) -> ((Int512Vector)(((AbstractShuffle<Integer>)(s)).toVectorTemplate())));
         }
 
@@ -717,10 +727,12 @@ final class Int512Vector extends IntVector {
         @Override
         public Int512Shuffle rearrange(VectorShuffle<Integer> shuffle) {
             Int512Shuffle s = (Int512Shuffle) shuffle;
-            byte[] r = new byte[reorder.length];
-            for (int i = 0; i < reorder.length; i++) {
-                int ssi = s.reorder[i];
-                r[i] = this.reorder[ssi];  // throws on exceptional index
+            byte[] reorder1 = reorder();
+            byte[] reorder2 = s.reorder();
+            byte[] r = new byte[reorder1.length];
+            for (int i = 0; i < reorder1.length; i++) {
+                int ssi = reorder2[i];
+                r[i] = reorder1[ssi];  // throws on exceptional index
             }
             return new Int512Shuffle(r);
         }

@@ -1113,11 +1113,14 @@ import java.util.List;
  * @param <E> the generic (boxed) version of the vector {@code ETYPE}
  *
  */
-public abstract class Vector<E> {
+@SuppressWarnings("exports")
+public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vector<E> {
 
     // This type is sealed within its package.
     // Users cannot roll their own vector types.
-    Vector() {}
+    Vector(Object bits) {
+        super(bits);
+    }
 
     /**
      * Returns the species of this vector.

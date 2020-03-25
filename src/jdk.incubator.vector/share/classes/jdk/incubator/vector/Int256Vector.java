@@ -30,8 +30,10 @@ import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
 import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.vector.VectorSupport;
 
-import static jdk.incubator.vector.VectorIntrinsics.*;
+import static jdk.internal.vm.vector.VectorSupport.*;
+
 import static jdk.incubator.vector.VectorOperators.*;
 
 // -- This file was mechanically generated: Do not edit! -- //
@@ -48,15 +50,12 @@ final class Int256Vector extends IntVector {
 
     static final int VSIZE = VSPECIES.vectorBitSize();
 
-    static final int VLENGTH = VSPECIES.laneCount();
+    static final int VLENGTH = VSPECIES.laneCount(); // used by the JVM
 
-    static final Class<Integer> ETYPE = int.class;
-
-    // The JVM expects to find the state here.
-    private final int[] vec; // Don't access directly, use vec() instead.
+    static final Class<Integer> ETYPE = int.class; // used by the JVM
 
     Int256Vector(int[] v) {
-        vec = v;
+        super(v);
     }
 
     // For compatibility as Int256Vector::new,
@@ -115,7 +114,7 @@ final class Int256Vector extends IntVector {
     @ForceInline
     final @Override
     int[] vec() {
-        return VectorIntrinsics.maybeRebox(this).vec;
+        return (int[])getPayload();
     }
 
     // Virtualized constructors
@@ -145,9 +144,9 @@ final class Int256Vector extends IntVector {
     @ForceInline
     Int256Shuffle iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return (Int256Shuffle)VectorIntrinsics.shuffleIota(ETYPE, Int256Shuffle.class, VSPECIES, VLENGTH, start, step, 1, (l, lstart, lstep) -> new Int256Shuffle(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
+        return (Int256Shuffle)VectorSupport.shuffleIota(ETYPE, Int256Shuffle.class, VSPECIES, VLENGTH, start, step, 1, (l, lstart, lstep) -> new Int256Shuffle(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
       } else {
-        return (Int256Shuffle)VectorIntrinsics.shuffleIota(ETYPE, Int256Shuffle.class, VSPECIES, VLENGTH, start, step, 0, (l, lstart, lstep) -> new Int256Shuffle(i -> (i*lstep + lstart)));
+        return (Int256Shuffle)VectorSupport.shuffleIota(ETYPE, Int256Shuffle.class, VSPECIES, VLENGTH, start, step, 0, (l, lstart, lstep) -> new Int256Shuffle(i -> (i*lstep + lstart)));
       }
     }
 
@@ -473,7 +472,7 @@ final class Int256Vector extends IntVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        return (int) VectorIntrinsics.extract(
+        return (int) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
                                 (vec, ix) -> {
@@ -487,7 +486,7 @@ final class Int256Vector extends IntVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        return VectorIntrinsics.insert(
+        return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,
                                 (v, ix, bits) -> {
@@ -500,25 +499,33 @@ final class Int256Vector extends IntVector {
     // Mask
 
     static final class Int256Mask extends AbstractMask<Integer> {
+        static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
+        static final Class<Integer> ETYPE = int.class; // used by the JVM
 
-        private final boolean[] bits; // Don't access directly, use getBits() instead.
-
-        public Int256Mask(boolean[] bits) {
+        Int256Mask(boolean[] bits) {
             this(bits, 0);
         }
 
-        public Int256Mask(boolean[] bits, int offset) {
-            boolean[] a = new boolean[vspecies().laneCount()];
-            for (int i = 0; i < a.length; i++) {
-                a[i] = bits[offset + i];
-            }
-            this.bits = a;
+        Int256Mask(boolean[] bits, int offset) {
+            super(prepare(bits, offset));
         }
 
-        public Int256Mask(boolean val) {
-            boolean[] bits = new boolean[vspecies().laneCount()];
+        Int256Mask(boolean val) {
+            super(prepare(val));
+        }
+
+        private static boolean[] prepare(boolean[] bits, int offset) {
+            boolean[] newBits = new boolean[VSPECIES.laneCount()];
+            for (int i = 0; i < newBits.length; i++) {
+                newBits[i] = bits[offset + i];
+            }
+            return newBits;
+        }
+
+        private static boolean[] prepare(boolean val) {
+            boolean[] bits = new boolean[VSPECIES.laneCount()];
             Arrays.fill(bits, val);
-            this.bits = bits;
+            return bits;
         }
 
         @ForceInline
@@ -531,7 +538,7 @@ final class Int256Vector extends IntVector {
         }
 
         boolean[] getBits() {
-            return VectorIntrinsics.maybeRebox(this).bits;
+            return (boolean[])getPayload();
         }
 
         @Override
@@ -594,7 +601,7 @@ final class Int256Vector extends IntVector {
         @Override
         @ForceInline
         public Int256Mask not() {
-            return (Int256Mask) VectorIntrinsics.unaryOp(
+            return (Int256Mask) VectorSupport.unaryOp(
                                              VECTOR_OP_NOT, Int256Mask.class, int.class, VLENGTH,
                                              this,
                                              (m1) -> m1.uOp((i, a) -> !a));
@@ -607,7 +614,7 @@ final class Int256Vector extends IntVector {
         public Int256Mask and(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
             Int256Mask m = (Int256Mask)mask;
-            return VectorIntrinsics.binaryOp(VECTOR_OP_AND, Int256Mask.class, int.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Int256Mask.class, int.class, VLENGTH,
                                              this, m,
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
@@ -617,7 +624,7 @@ final class Int256Vector extends IntVector {
         public Int256Mask or(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
             Int256Mask m = (Int256Mask)mask;
-            return VectorIntrinsics.binaryOp(VECTOR_OP_OR, Int256Mask.class, int.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Int256Mask.class, int.class, VLENGTH,
                                              this, m,
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
@@ -627,7 +634,7 @@ final class Int256Vector extends IntVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            return VectorIntrinsics.test(BT_ne, Int256Mask.class, int.class, VLENGTH,
+            return VectorSupport.test(BT_ne, Int256Mask.class, int.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Int256Mask)m).getBits()));
         }
@@ -635,7 +642,7 @@ final class Int256Vector extends IntVector {
         @Override
         @ForceInline
         public boolean allTrue() {
-            return VectorIntrinsics.test(BT_overflow, Int256Mask.class, int.class, VLENGTH,
+            return VectorSupport.test(BT_overflow, Int256Mask.class, int.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> allTrueHelper(((Int256Mask)m).getBits()));
         }
@@ -651,20 +658,23 @@ final class Int256Vector extends IntVector {
     // Shuffle
 
     static final class Int256Shuffle extends AbstractShuffle<Integer> {
+        static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
+        static final Class<Integer> ETYPE = int.class; // used by the JVM
+
         Int256Shuffle(byte[] reorder) {
-            super(reorder);
+            super(VLENGTH, reorder);
         }
 
         public Int256Shuffle(int[] reorder) {
-            super(reorder);
+            super(VLENGTH, reorder);
         }
 
         public Int256Shuffle(int[] reorder, int i) {
-            super(reorder, i);
+            super(VLENGTH, reorder, i);
         }
 
         public Int256Shuffle(IntUnaryOperator fn) {
-            super(fn);
+            super(VLENGTH, fn);
         }
 
         @Override
@@ -683,7 +693,7 @@ final class Int256Vector extends IntVector {
         @Override
         @ForceInline
         public Int256Vector toVector() {
-            return VectorIntrinsics.shuffleToVector(VCLASS, ETYPE, Int256Shuffle.class, this, VLENGTH,
+            return VectorSupport.shuffleToVector(VCLASS, ETYPE, Int256Shuffle.class, this, VLENGTH,
                                                     (s) -> ((Int256Vector)(((AbstractShuffle<Integer>)(s)).toVectorTemplate())));
         }
 
@@ -717,10 +727,12 @@ final class Int256Vector extends IntVector {
         @Override
         public Int256Shuffle rearrange(VectorShuffle<Integer> shuffle) {
             Int256Shuffle s = (Int256Shuffle) shuffle;
-            byte[] r = new byte[reorder.length];
-            for (int i = 0; i < reorder.length; i++) {
-                int ssi = s.reorder[i];
-                r[i] = this.reorder[ssi];  // throws on exceptional index
+            byte[] reorder1 = reorder();
+            byte[] reorder2 = s.reorder();
+            byte[] r = new byte[reorder1.length];
+            for (int i = 0; i < reorder1.length; i++) {
+                int ssi = reorder2[i];
+                r[i] = reorder1[ssi];  // throws on exceptional index
             }
             return new Int256Shuffle(r);
         }

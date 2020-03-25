@@ -2289,7 +2289,7 @@ Node *PhiNode::Ideal(PhaseGVN *phase, bool can_reshape) {
 #endif
 
   // Phi (VB ... VB) => VB (Phi ...) (Phi ...)
-  if (can_reshape && progress == NULL) {
+  if (EnableVectorReboxing && can_reshape && progress == NULL) {
     PhaseIterGVN *igvn = phase->is_IterGVN();
 
     bool all_inputs_are_equiv_vboxes = true;

@@ -1591,7 +1591,7 @@ bool TypeInt::empty(void) const {
 
 //=============================================================================
 // Convenience common pre-built types.
-const TypeLong *TypeLong::MAX; 
+const TypeLong *TypeLong::MAX;
 const TypeLong *TypeLong::MIN;
 const TypeLong *TypeLong::MINUS_1;// -1
 const TypeLong *TypeLong::ZERO; // 0
@@ -2295,13 +2295,6 @@ const Type *TypeVect::xmeet( const Type *t ) const {
   case Bottom:                  // Ye Olde Default
     return t;
 
-  case OopPtr:
-    if (t->is_oopptr()->speculative_type() != NULL) {
-      if (t->is_oopptr()->speculative_type()->is_vectorapi_vector()) {
-        tty->print_cr("Meeting vector with object override");
-        return this;
-      }
-    }  // Fallthrough
   default:                      // All else is a mistake
     typerr(t);
 
@@ -3120,17 +3113,6 @@ const Type *TypeOopPtr::xmeet_helper(const Type *t) const {
   case Top:
     return this;
 
-  case VectorS:
-  case VectorD:
-  case VectorX:
-  case VectorY:
-  case VectorZ:
-    if (speculative_type() != NULL) {
-      if (speculative_type()->is_vectorapi_vector()) {
-        return t;
-      }
-    }  // Fallthrough
-
   default:                      // All else is a mistake
     typerr(t);
 
@@ -3665,17 +3647,6 @@ const Type *TypeInstPtr::xmeet_helper(const Type *t) const {
     return Type::BOTTOM;
   case Top:
     return this;
-
-  case VectorS:
-  case VectorD:
-  case VectorX:
-  case VectorY:
-  case VectorZ:
-    if (speculative_type() != NULL) {
-      if (speculative_type()->is_vectorapi_vector()) {
-        return t;
-      }
-    }  // Fallthrough
 
   default:                      // All else is a mistake
     typerr(t);

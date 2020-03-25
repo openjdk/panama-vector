@@ -1224,67 +1224,6 @@ public:
   virtual const Type *Value(PhaseGVN *phase) const { return TypeInt::INT; }
 };
 
-class VectorBoxNode : public Node {
- private:
-  const TypeInstPtr* const _box_type;
-  const TypeVect*    const _vec_type;
- public:
-  enum {
-     Box   = 1,
-     Value = 2
-  };
-  VectorBoxNode(Compile* C, Node* box, Node* val,
-                const TypeInstPtr* box_type, const TypeVect* vt)
-    : Node(NULL, box, val), _box_type(box_type), _vec_type(vt) {
-    init_flags(Flag_is_macro);
-    C->add_macro_node(this);
-  }
-
-  const  TypeInstPtr* box_type() const { assert(_box_type != NULL, ""); return _box_type; };
-  const  TypeVect*    vec_type() const { assert(_vec_type != NULL, ""); return _vec_type; };
-
-  virtual int Opcode() const;
-  virtual const Type *bottom_type() const { return _box_type; /* TypeInstPtr::BOTTOM? */ }
-  virtual       uint  ideal_reg() const { return box_type()->ideal_reg(); }
-  virtual       uint  size_of() const { return sizeof(*this); }
-
-  static const TypeFunc* vec_box_type(const TypeInstPtr* box_type);
-};
-
-class VectorBoxAllocateNode : public CallStaticJavaNode {
- public:
-  VectorBoxAllocateNode(Compile* C, const TypeInstPtr* vbox_type)
-    : CallStaticJavaNode(C, VectorBoxNode::vec_box_type(vbox_type), NULL, NULL, -1) {
-    init_flags(Flag_is_macro);
-    C->add_macro_node(this);
-  }
-
-  virtual int Opcode() const;
-#ifndef PRODUCT
-  virtual void dump_spec(outputStream *st) const;
-#endif // PRODUCT
-};
-
-class VectorUnboxNode : public VectorNode {
-private:
-  bool _shuffle_to_vector;
-protected:
-  uint size_of() const { return sizeof(*this); }
- public:
-  VectorUnboxNode(Compile* C, const TypeVect* vec_type, Node* obj, Node* mem, bool shuffle_to_vector)
-    : VectorNode(mem, obj, vec_type) {
-    _shuffle_to_vector = shuffle_to_vector;
-    init_flags(Flag_is_macro);
-    C->add_macro_node(this);
-  }
-
-  virtual int Opcode() const;
-  Node* obj() const { return in(2); }
-  Node* mem() const { return in(1); }
-  virtual Node *Identity(PhaseGVN *phase);
-  bool is_shuffle_to_vector() { return _shuffle_to_vector; }
-};
-
 class VectorMaskCmpNode : public VectorNode {
  private:
   BoolTest::mask _predicate;
@@ -1516,6 +1455,67 @@ class VectorInsertNode : public VectorNode {
   uint pos() const { return in(3)->get_int(); }
 
   static Node* make(Node* vec, Node* new_val, int position);
+};
+
+class VectorBoxNode : public Node {
+ private:
+  const TypeInstPtr* const _box_type;
+  const TypeVect*    const _vec_type;
+ public:
+  enum {
+     Box   = 1,
+     Value = 2
+  };
+  VectorBoxNode(Compile* C, Node* box, Node* val,
+                const TypeInstPtr* box_type, const TypeVect* vt)
+    : Node(NULL, box, val), _box_type(box_type), _vec_type(vt) {
+    init_flags(Flag_is_macro);
+    C->add_macro_node(this);
+  }
+
+  const  TypeInstPtr* box_type() const { assert(_box_type != NULL, ""); return _box_type; };
+  const  TypeVect*    vec_type() const { assert(_vec_type != NULL, ""); return _vec_type; };
+
+  virtual int Opcode() const;
+  virtual const Type *bottom_type() const { return _box_type; /* TypeInstPtr::BOTTOM? */ }
+  virtual       uint  ideal_reg() const { return box_type()->ideal_reg(); }
+  virtual       uint  size_of() const { return sizeof(*this); }
+
+  static const TypeFunc* vec_box_type(const TypeInstPtr* box_type);
+};
+
+class VectorBoxAllocateNode : public CallStaticJavaNode {
+ public:
+  VectorBoxAllocateNode(Compile* C, const TypeInstPtr* vbox_type)
+    : CallStaticJavaNode(C, VectorBoxNode::vec_box_type(vbox_type), NULL, NULL, -1) {
+    init_flags(Flag_is_macro);
+    C->add_macro_node(this);
+  }
+
+  virtual int Opcode() const;
+#ifndef PRODUCT
+  virtual void dump_spec(outputStream *st) const;
+#endif // PRODUCT
+};
+
+class VectorUnboxNode : public VectorNode {
+private:
+  bool _shuffle_to_vector;
+protected:
+  uint size_of() const { return sizeof(*this); }
+ public:
+  VectorUnboxNode(Compile* C, const TypeVect* vec_type, Node* obj, Node* mem, bool shuffle_to_vector)
+    : VectorNode(mem, obj, vec_type) {
+    _shuffle_to_vector = shuffle_to_vector;
+    init_flags(Flag_is_macro);
+    C->add_macro_node(this);
+  }
+
+  virtual int Opcode() const;
+  Node* obj() const { return in(2); }
+  Node* mem() const { return in(1); }
+  virtual Node *Identity(PhaseGVN *phase);
+  bool is_shuffle_to_vector() { return _shuffle_to_vector; }
 };
 
 #endif // SHARE_OPTO_VECTORNODE_HPP

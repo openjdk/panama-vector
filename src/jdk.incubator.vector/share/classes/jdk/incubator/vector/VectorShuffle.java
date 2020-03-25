@@ -62,7 +62,7 @@ import java.util.function.IntUnaryOperator;
  * directly relevant to the behavior of the shuffle.  Shuffles can
  * easily be {@linkplain #cast(VectorSpecies) converted} to other lane
  * types, as long as the lane count stays constant.
- * 
+ *
  * <p>
  * In its internal state, a shuffle always holds integral values
  * in a narrow range from {@code [-VLENGTH..VLENGTH-1]}.
@@ -103,9 +103,9 @@ import java.util.function.IntUnaryOperator;
  * new {@code VLENGTH}, and some may be converted to exceptional
  * indexes.  In any case, shuffle casting never converts exceptional
  * indexes to normal ones.
- * 
+ *
  * </ul>
- 
+
  * <h2>Value-based classes and identity operations</h2>
  *
  * {@code VectorShuffle}, along with {@code Vector} is a
@@ -121,11 +121,14 @@ import java.util.function.IntUnaryOperator;
  * Finally, vector shuffles should not be computed in loops, when
  * possible, but instead should be stored in loop-invariant locals or
  * as {@code static final} constants.
- * 
+ *
  * @param <E> the boxed element type of any vector to which this shuffle applies
  */
-public abstract class VectorShuffle<E> {
-    VectorShuffle() {}
+@SuppressWarnings("exports")
+public abstract class VectorShuffle<E> extends jdk.internal.vm.vector.VectorSupport.VectorShuffle<E> {
+    VectorShuffle(byte[] reorder) {
+        super(reorder);
+    }
 
     /**
      * Returns the species of this shuffle.
@@ -303,7 +306,7 @@ public abstract class VectorShuffle<E> {
         AbstractSpecies<E> vsp = (AbstractSpecies<E>) species;
         return vsp.shuffleFromArray(sourceIndexes, offset);
     }
-     
+
     /**
      * Creates a shuffle for a given species from
      * the successive values of an operator applied to
@@ -368,7 +371,7 @@ public abstract class VectorShuffle<E> {
      *
      * @param species shuffle species
      * @param start the starting value of the source index sequence
-     * @param step the difference between adjacent source indexes 
+     * @param step the difference between adjacent source indexes
      * @param wrap whether to wrap resulting indexes
      * @param <E> the boxed element type
      * @return a shuffle of sequential lane indexes, possibly wrapped

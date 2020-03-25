@@ -431,11 +431,11 @@ bool Compile::should_delay_boxing_inlining(ciMethod* call_method, JVMState* jvms
 }
 
 bool Compile::should_delay_vector_inlining(ciMethod* call_method, JVMState* jvms) {
-  return UseVectorApiIntrinsics && call_method->is_vector_method();
+  return EnableVectorSupport && call_method->is_vector_method();
 }
 
 bool Compile::should_delay_vector_reboxing_inlining(ciMethod* call_method, JVMState* jvms) {
-  return UseVectorApiIntrinsics && (call_method->intrinsic_id() == vmIntrinsics::_VectorRebox);
+  return EnableVectorSupport && (call_method->intrinsic_id() == vmIntrinsics::_VectorRebox);
 }
 
 // uncommon-trap call-sites where callee is unloaded, uninitialized or will not link
@@ -670,16 +670,6 @@ void Parse::do_call() {
       guarantee(failing(), "call failed to generate:  calls should work");
       return;
     }
-  }
-
-  if ( DebugVectorApiMissingIntrinsics &&
-      !cg->is_intrinsic() &&
-      !cg->is_mh_late_inline() &&
-      cg->method()->is_vector_api_class() &&
-      !cg->method()->is_compiled_lambda_form() &&
-      !cg->method()->is_initializer() ) {
-    cg->method()->print();
-    tty->print_cr("");
   }
 
   if (cg->is_inline()) {

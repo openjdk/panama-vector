@@ -30,8 +30,10 @@ import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
 import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.vector.VectorSupport;
 
-import static jdk.incubator.vector.VectorIntrinsics.*;
+import static jdk.internal.vm.vector.VectorSupport.*;
+
 import static jdk.incubator.vector.VectorOperators.*;
 
 // -- This file was mechanically generated: Do not edit! -- //
@@ -48,15 +50,12 @@ final class Short512Vector extends ShortVector {
 
     static final int VSIZE = VSPECIES.vectorBitSize();
 
-    static final int VLENGTH = VSPECIES.laneCount();
+    static final int VLENGTH = VSPECIES.laneCount(); // used by the JVM
 
-    static final Class<Short> ETYPE = short.class;
-
-    // The JVM expects to find the state here.
-    private final short[] vec; // Don't access directly, use vec() instead.
+    static final Class<Short> ETYPE = short.class; // used by the JVM
 
     Short512Vector(short[] v) {
-        vec = v;
+        super(v);
     }
 
     // For compatibility as Short512Vector::new,
@@ -115,7 +114,7 @@ final class Short512Vector extends ShortVector {
     @ForceInline
     final @Override
     short[] vec() {
-        return VectorIntrinsics.maybeRebox(this).vec;
+        return (short[])getPayload();
     }
 
     // Virtualized constructors
@@ -145,9 +144,9 @@ final class Short512Vector extends ShortVector {
     @ForceInline
     Short512Shuffle iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return (Short512Shuffle)VectorIntrinsics.shuffleIota(ETYPE, Short512Shuffle.class, VSPECIES, VLENGTH, start, step, 1, (l, lstart, lstep) -> new Short512Shuffle(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
+        return (Short512Shuffle)VectorSupport.shuffleIota(ETYPE, Short512Shuffle.class, VSPECIES, VLENGTH, start, step, 1, (l, lstart, lstep) -> new Short512Shuffle(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
       } else {
-        return (Short512Shuffle)VectorIntrinsics.shuffleIota(ETYPE, Short512Shuffle.class, VSPECIES, VLENGTH, start, step, 0, (l, lstart, lstep) -> new Short512Shuffle(i -> (i*lstep + lstart)));
+        return (Short512Shuffle)VectorSupport.shuffleIota(ETYPE, Short512Shuffle.class, VSPECIES, VLENGTH, start, step, 0, (l, lstart, lstep) -> new Short512Shuffle(i -> (i*lstep + lstart)));
       }
     }
 
@@ -473,7 +472,7 @@ final class Short512Vector extends ShortVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        return (short) VectorIntrinsics.extract(
+        return (short) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
                                 (vec, ix) -> {
@@ -487,7 +486,7 @@ final class Short512Vector extends ShortVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        return VectorIntrinsics.insert(
+        return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,
                                 (v, ix, bits) -> {
@@ -500,25 +499,33 @@ final class Short512Vector extends ShortVector {
     // Mask
 
     static final class Short512Mask extends AbstractMask<Short> {
+        static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
+        static final Class<Short> ETYPE = short.class; // used by the JVM
 
-        private final boolean[] bits; // Don't access directly, use getBits() instead.
-
-        public Short512Mask(boolean[] bits) {
+        Short512Mask(boolean[] bits) {
             this(bits, 0);
         }
 
-        public Short512Mask(boolean[] bits, int offset) {
-            boolean[] a = new boolean[vspecies().laneCount()];
-            for (int i = 0; i < a.length; i++) {
-                a[i] = bits[offset + i];
-            }
-            this.bits = a;
+        Short512Mask(boolean[] bits, int offset) {
+            super(prepare(bits, offset));
         }
 
-        public Short512Mask(boolean val) {
-            boolean[] bits = new boolean[vspecies().laneCount()];
+        Short512Mask(boolean val) {
+            super(prepare(val));
+        }
+
+        private static boolean[] prepare(boolean[] bits, int offset) {
+            boolean[] newBits = new boolean[VSPECIES.laneCount()];
+            for (int i = 0; i < newBits.length; i++) {
+                newBits[i] = bits[offset + i];
+            }
+            return newBits;
+        }
+
+        private static boolean[] prepare(boolean val) {
+            boolean[] bits = new boolean[VSPECIES.laneCount()];
             Arrays.fill(bits, val);
-            this.bits = bits;
+            return bits;
         }
 
         @ForceInline
@@ -531,7 +538,7 @@ final class Short512Vector extends ShortVector {
         }
 
         boolean[] getBits() {
-            return VectorIntrinsics.maybeRebox(this).bits;
+            return (boolean[])getPayload();
         }
 
         @Override
@@ -594,7 +601,7 @@ final class Short512Vector extends ShortVector {
         @Override
         @ForceInline
         public Short512Mask not() {
-            return (Short512Mask) VectorIntrinsics.unaryOp(
+            return (Short512Mask) VectorSupport.unaryOp(
                                              VECTOR_OP_NOT, Short512Mask.class, short.class, VLENGTH,
                                              this,
                                              (m1) -> m1.uOp((i, a) -> !a));
@@ -607,7 +614,7 @@ final class Short512Vector extends ShortVector {
         public Short512Mask and(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             Short512Mask m = (Short512Mask)mask;
-            return VectorIntrinsics.binaryOp(VECTOR_OP_AND, Short512Mask.class, short.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Short512Mask.class, short.class, VLENGTH,
                                              this, m,
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
@@ -617,7 +624,7 @@ final class Short512Vector extends ShortVector {
         public Short512Mask or(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             Short512Mask m = (Short512Mask)mask;
-            return VectorIntrinsics.binaryOp(VECTOR_OP_OR, Short512Mask.class, short.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Short512Mask.class, short.class, VLENGTH,
                                              this, m,
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
@@ -627,7 +634,7 @@ final class Short512Vector extends ShortVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            return VectorIntrinsics.test(BT_ne, Short512Mask.class, short.class, VLENGTH,
+            return VectorSupport.test(BT_ne, Short512Mask.class, short.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Short512Mask)m).getBits()));
         }
@@ -635,7 +642,7 @@ final class Short512Vector extends ShortVector {
         @Override
         @ForceInline
         public boolean allTrue() {
-            return VectorIntrinsics.test(BT_overflow, Short512Mask.class, short.class, VLENGTH,
+            return VectorSupport.test(BT_overflow, Short512Mask.class, short.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> allTrueHelper(((Short512Mask)m).getBits()));
         }
@@ -651,20 +658,23 @@ final class Short512Vector extends ShortVector {
     // Shuffle
 
     static final class Short512Shuffle extends AbstractShuffle<Short> {
+        static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
+        static final Class<Short> ETYPE = short.class; // used by the JVM
+
         Short512Shuffle(byte[] reorder) {
-            super(reorder);
+            super(VLENGTH, reorder);
         }
 
         public Short512Shuffle(int[] reorder) {
-            super(reorder);
+            super(VLENGTH, reorder);
         }
 
         public Short512Shuffle(int[] reorder, int i) {
-            super(reorder, i);
+            super(VLENGTH, reorder, i);
         }
 
         public Short512Shuffle(IntUnaryOperator fn) {
-            super(fn);
+            super(VLENGTH, fn);
         }
 
         @Override
@@ -683,7 +693,7 @@ final class Short512Vector extends ShortVector {
         @Override
         @ForceInline
         public Short512Vector toVector() {
-            return VectorIntrinsics.shuffleToVector(VCLASS, ETYPE, Short512Shuffle.class, this, VLENGTH,
+            return VectorSupport.shuffleToVector(VCLASS, ETYPE, Short512Shuffle.class, this, VLENGTH,
                                                     (s) -> ((Short512Vector)(((AbstractShuffle<Short>)(s)).toVectorTemplate())));
         }
 
@@ -717,10 +727,12 @@ final class Short512Vector extends ShortVector {
         @Override
         public Short512Shuffle rearrange(VectorShuffle<Short> shuffle) {
             Short512Shuffle s = (Short512Shuffle) shuffle;
-            byte[] r = new byte[reorder.length];
-            for (int i = 0; i < reorder.length; i++) {
-                int ssi = s.reorder[i];
-                r[i] = this.reorder[ssi];  // throws on exceptional index
+            byte[] reorder1 = reorder();
+            byte[] reorder2 = s.reorder();
+            byte[] r = new byte[reorder1.length];
+            for (int i = 0; i < reorder1.length; i++) {
+                int ssi = reorder2[i];
+                r[i] = reorder1[ssi];  // throws on exceptional index
             }
             return new Short512Shuffle(r);
         }

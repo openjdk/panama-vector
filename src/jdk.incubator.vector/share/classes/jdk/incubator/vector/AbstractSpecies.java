@@ -32,7 +32,8 @@ import java.util.Arrays;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
-abstract class AbstractSpecies<E> implements VectorSpecies<E> {
+abstract class AbstractSpecies<E> extends jdk.internal.vm.vector.VectorSupport.VectorSpecies<E>
+                                  implements VectorSpecies<E> {
     @Stable
     final VectorShape vectorShape;
     @Stable

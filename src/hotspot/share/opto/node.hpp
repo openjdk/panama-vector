@@ -1569,6 +1569,10 @@ public:
 
   // Used after parsing to remove useless nodes before Iterative GVN
   void remove_useless_nodes(VectorSet& useful);
+  
+  void remove_useless_nodes(Unique_Node_List& useful) {
+    remove_useless_nodes(useful.member_set());
+  }
 
 #ifndef PRODUCT
   void print_set() const { _in_worklist.print(); }

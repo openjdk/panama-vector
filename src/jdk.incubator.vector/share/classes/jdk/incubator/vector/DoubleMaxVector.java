@@ -30,8 +30,10 @@ import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
 import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.vector.VectorSupport;
 
-import static jdk.incubator.vector.VectorIntrinsics.*;
+import static jdk.internal.vm.vector.VectorSupport.*;
+
 import static jdk.incubator.vector.VectorOperators.*;
 
 // -- This file was mechanically generated: Do not edit! -- //
@@ -48,15 +50,12 @@ final class DoubleMaxVector extends DoubleVector {
 
     static final int VSIZE = VSPECIES.vectorBitSize();
 
-    static final int VLENGTH = VSPECIES.laneCount();
+    static final int VLENGTH = VSPECIES.laneCount(); // used by the JVM
 
-    static final Class<Double> ETYPE = double.class;
-
-    // The JVM expects to find the state here.
-    private final double[] vec; // Don't access directly, use vec() instead.
+    static final Class<Double> ETYPE = double.class; // used by the JVM
 
     DoubleMaxVector(double[] v) {
-        vec = v;
+        super(v);
     }
 
     // For compatibility as DoubleMaxVector::new,
@@ -115,7 +114,7 @@ final class DoubleMaxVector extends DoubleVector {
     @ForceInline
     final @Override
     double[] vec() {
-        return VectorIntrinsics.maybeRebox(this).vec;
+        return (double[])getPayload();
     }
 
     // Virtualized constructors
@@ -145,9 +144,9 @@ final class DoubleMaxVector extends DoubleVector {
     @ForceInline
     DoubleMaxShuffle iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return (DoubleMaxShuffle)VectorIntrinsics.shuffleIota(ETYPE, DoubleMaxShuffle.class, VSPECIES, VLENGTH, start, step, 1, (l, lstart, lstep) -> new DoubleMaxShuffle(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
+        return (DoubleMaxShuffle)VectorSupport.shuffleIota(ETYPE, DoubleMaxShuffle.class, VSPECIES, VLENGTH, start, step, 1, (l, lstart, lstep) -> new DoubleMaxShuffle(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
       } else {
-        return (DoubleMaxShuffle)VectorIntrinsics.shuffleIota(ETYPE, DoubleMaxShuffle.class, VSPECIES, VLENGTH, start, step, 0, (l, lstart, lstep) -> new DoubleMaxShuffle(i -> (i*lstep + lstart)));
+        return (DoubleMaxShuffle)VectorSupport.shuffleIota(ETYPE, DoubleMaxShuffle.class, VSPECIES, VLENGTH, start, step, 0, (l, lstart, lstep) -> new DoubleMaxShuffle(i -> (i*lstep + lstart)));
       }
     }
 
@@ -467,7 +466,7 @@ final class DoubleMaxVector extends DoubleVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        long bits = (long) VectorIntrinsics.extract(
+        long bits = (long) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
                                 (vec, ix) -> {
@@ -482,7 +481,7 @@ final class DoubleMaxVector extends DoubleVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        return VectorIntrinsics.insert(
+        return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)Double.doubleToLongBits(e),
                                 (v, ix, bits) -> {
@@ -495,25 +494,33 @@ final class DoubleMaxVector extends DoubleVector {
     // Mask
 
     static final class DoubleMaxMask extends AbstractMask<Double> {
+        static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
+        static final Class<Double> ETYPE = double.class; // used by the JVM
 
-        private final boolean[] bits; // Don't access directly, use getBits() instead.
-
-        public DoubleMaxMask(boolean[] bits) {
+        DoubleMaxMask(boolean[] bits) {
             this(bits, 0);
         }
 
-        public DoubleMaxMask(boolean[] bits, int offset) {
-            boolean[] a = new boolean[vspecies().laneCount()];
-            for (int i = 0; i < a.length; i++) {
-                a[i] = bits[offset + i];
-            }
-            this.bits = a;
+        DoubleMaxMask(boolean[] bits, int offset) {
+            super(prepare(bits, offset));
         }
 
-        public DoubleMaxMask(boolean val) {
-            boolean[] bits = new boolean[vspecies().laneCount()];
+        DoubleMaxMask(boolean val) {
+            super(prepare(val));
+        }
+
+        private static boolean[] prepare(boolean[] bits, int offset) {
+            boolean[] newBits = new boolean[VSPECIES.laneCount()];
+            for (int i = 0; i < newBits.length; i++) {
+                newBits[i] = bits[offset + i];
+            }
+            return newBits;
+        }
+
+        private static boolean[] prepare(boolean val) {
+            boolean[] bits = new boolean[VSPECIES.laneCount()];
             Arrays.fill(bits, val);
-            this.bits = bits;
+            return bits;
         }
 
         @ForceInline
@@ -526,7 +533,7 @@ final class DoubleMaxVector extends DoubleVector {
         }
 
         boolean[] getBits() {
-            return VectorIntrinsics.maybeRebox(this).bits;
+            return (boolean[])getPayload();
         }
 
         @Override
@@ -589,7 +596,7 @@ final class DoubleMaxVector extends DoubleVector {
         @Override
         @ForceInline
         public DoubleMaxMask not() {
-            return (DoubleMaxMask) VectorIntrinsics.unaryOp(
+            return (DoubleMaxMask) VectorSupport.unaryOp(
                                              VECTOR_OP_NOT, DoubleMaxMask.class, long.class, VLENGTH,
                                              this,
                                              (m1) -> m1.uOp((i, a) -> !a));
@@ -602,7 +609,7 @@ final class DoubleMaxVector extends DoubleVector {
         public DoubleMaxMask and(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             DoubleMaxMask m = (DoubleMaxMask)mask;
-            return VectorIntrinsics.binaryOp(VECTOR_OP_AND, DoubleMaxMask.class, long.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_AND, DoubleMaxMask.class, long.class, VLENGTH,
                                              this, m,
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
@@ -612,7 +619,7 @@ final class DoubleMaxVector extends DoubleVector {
         public DoubleMaxMask or(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             DoubleMaxMask m = (DoubleMaxMask)mask;
-            return VectorIntrinsics.binaryOp(VECTOR_OP_OR, DoubleMaxMask.class, long.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_OR, DoubleMaxMask.class, long.class, VLENGTH,
                                              this, m,
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
@@ -622,7 +629,7 @@ final class DoubleMaxVector extends DoubleVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            return VectorIntrinsics.test(BT_ne, DoubleMaxMask.class, long.class, VLENGTH,
+            return VectorSupport.test(BT_ne, DoubleMaxMask.class, long.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((DoubleMaxMask)m).getBits()));
         }
@@ -630,7 +637,7 @@ final class DoubleMaxVector extends DoubleVector {
         @Override
         @ForceInline
         public boolean allTrue() {
-            return VectorIntrinsics.test(BT_overflow, DoubleMaxMask.class, long.class, VLENGTH,
+            return VectorSupport.test(BT_overflow, DoubleMaxMask.class, long.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> allTrueHelper(((DoubleMaxMask)m).getBits()));
         }
@@ -646,20 +653,23 @@ final class DoubleMaxVector extends DoubleVector {
     // Shuffle
 
     static final class DoubleMaxShuffle extends AbstractShuffle<Double> {
+        static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
+        static final Class<Double> ETYPE = double.class; // used by the JVM
+
         DoubleMaxShuffle(byte[] reorder) {
-            super(reorder);
+            super(VLENGTH, reorder);
         }
 
         public DoubleMaxShuffle(int[] reorder) {
-            super(reorder);
+            super(VLENGTH, reorder);
         }
 
         public DoubleMaxShuffle(int[] reorder, int i) {
-            super(reorder, i);
+            super(VLENGTH, reorder, i);
         }
 
         public DoubleMaxShuffle(IntUnaryOperator fn) {
-            super(fn);
+            super(VLENGTH, fn);
         }
 
         @Override
@@ -678,7 +688,7 @@ final class DoubleMaxVector extends DoubleVector {
         @Override
         @ForceInline
         public DoubleMaxVector toVector() {
-            return VectorIntrinsics.shuffleToVector(VCLASS, ETYPE, DoubleMaxShuffle.class, this, VLENGTH,
+            return VectorSupport.shuffleToVector(VCLASS, ETYPE, DoubleMaxShuffle.class, this, VLENGTH,
                                                     (s) -> ((DoubleMaxVector)(((AbstractShuffle<Double>)(s)).toVectorTemplate())));
         }
 
@@ -712,10 +722,12 @@ final class DoubleMaxVector extends DoubleVector {
         @Override
         public DoubleMaxShuffle rearrange(VectorShuffle<Double> shuffle) {
             DoubleMaxShuffle s = (DoubleMaxShuffle) shuffle;
-            byte[] r = new byte[reorder.length];
-            for (int i = 0; i < reorder.length; i++) {
-                int ssi = s.reorder[i];
-                r[i] = this.reorder[ssi];  // throws on exceptional index
+            byte[] reorder1 = reorder();
+            byte[] reorder2 = s.reorder();
+            byte[] r = new byte[reorder1.length];
+            for (int i = 0; i < reorder1.length; i++) {
+                int ssi = reorder2[i];
+                r[i] = reorder1[ssi];  // throws on exceptional index
             }
             return new DoubleMaxShuffle(r);
         }

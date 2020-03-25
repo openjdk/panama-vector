@@ -301,7 +301,6 @@ class LateInlineCallGenerator : public DirectCallGenerator {
     DirectCallGenerator(method, true), _unique_id(0), _is_pure_call(is_pure_call), _inline_cg(inline_cg) {}
 
   virtual bool is_late_inline() const { return true; }
-  virtual bool is_intrinsic() const { return _inline_cg != NULL ? _inline_cg->is_intrinsic() : false; }
 
   // Convert the CallStaticJava into an inline
   virtual void do_late_inline();
@@ -575,7 +574,7 @@ class LateInlineVectorReboxingCallGenerator : public LateInlineCallGenerator {
 
  public:
   LateInlineVectorReboxingCallGenerator(ciMethod* method, CallGenerator* inline_cg) :
-    LateInlineCallGenerator(method, inline_cg) {}
+    LateInlineCallGenerator(method, inline_cg, /*is_pure=*/true) {}
 
   virtual JVMState* generate(JVMState* jvms) {
     Compile *C = Compile::current();

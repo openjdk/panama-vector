@@ -241,6 +241,8 @@ module java.base {
         jdk.internal.vm.ci,
         jdk.incubator.vector,
         jdk.unsupported;
+    exports jdk.internal.vm.vector to
+        jdk.incubator.vector;
     exports jdk.internal.util.jar to
         jdk.jartool;
     exports jdk.internal.util.xml to

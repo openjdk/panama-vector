@@ -6931,7 +6931,7 @@ address generate_avx_ghash_processBlocks() {
     }
 
 #ifdef __VECTOR_API_MATH_INTRINSICS_COMMON
-    if (UseVectorApiIntrinsics) {
+    if (EnableVectorSupport) {
       if (UseAVX >= 1) {
           #if defined(__VECTOR_API_MATH_INTRINSICS_LINUX)
           if (UseAVX > 2) {

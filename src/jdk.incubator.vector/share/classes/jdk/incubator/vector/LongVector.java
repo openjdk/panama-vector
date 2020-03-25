@@ -35,8 +35,11 @@ import java.util.function.UnaryOperator;
 
 import jdk.internal.misc.Unsafe;
 import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.vector.VectorSupport;
 
+import static jdk.internal.vm.vector.VectorSupport.*;
 import static jdk.incubator.vector.VectorIntrinsics.*;
+
 import static jdk.incubator.vector.VectorOperators.*;
 
 // -- This file was mechanically generated: Do not edit! -- //
@@ -48,7 +51,9 @@ import static jdk.incubator.vector.VectorOperators.*;
 @SuppressWarnings("cast")  // warning: redundant cast
 public abstract class LongVector extends AbstractVector<Long> {
 
-    LongVector() {}
+    LongVector(long[] vec) {
+        super(vec);
+    }
 
     static final int FORBID_OPCODE_KIND = VO_ONLYFP;
 
@@ -423,7 +428,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     @ForceInline
     public static LongVector zero(VectorSpecies<Long> species) {
         LongSpecies vsp = (LongSpecies) species;
-        return VectorIntrinsics.broadcastCoerced(vsp.vectorType(), long.class, species.length(),
+        return VectorSupport.broadcastCoerced(vsp.vectorType(), long.class, species.length(),
                                 0, vsp,
                                 ((bits_, s_) -> s_.rvOp(i -> bits_)));
     }
@@ -526,7 +531,7 @@ public abstract class LongVector extends AbstractVector<Long> {
             }
         }
         int opc = opCode(op);
-        return VectorIntrinsics.unaryOp(
+        return VectorSupport.unaryOp(
             opc, getClass(), long.class, length(),
             this,
             UN_IMPL.find(op, opc, (opc_) -> {
@@ -601,7 +606,7 @@ public abstract class LongVector extends AbstractVector<Long> {
             }
         }
         int opc = opCode(op);
-        return VectorIntrinsics.binaryOp(
+        return VectorSupport.binaryOp(
             opc, getClass(), long.class, length(),
             this, that,
             BIN_IMPL.find(op, opc, (opc_) -> {
@@ -747,7 +752,7 @@ public abstract class LongVector extends AbstractVector<Long> {
             LongVector lo = this.lanewise(LSHR, (op == ROR) ? e : -e);
             return hi.lanewise(OR, lo);
         }
-        return VectorIntrinsics.broadcastInt(
+        return VectorSupport.broadcastInt(
             opc, getClass(), long.class, length(),
             this, e,
             BIN_INT_IMPL.find(op, opc, (opc_) -> {
@@ -819,7 +824,7 @@ public abstract class LongVector extends AbstractVector<Long> {
             return this.lanewise(XOR, that);
         }
         int opc = opCode(op);
-        return VectorIntrinsics.ternaryOp(
+        return VectorSupport.ternaryOp(
             opc, getClass(), long.class, length(),
             this, that, tother,
             TERN_IMPL.find(op, opc, (opc_) -> {
@@ -1694,7 +1699,7 @@ public abstract class LongVector extends AbstractVector<Long> {
         LongVector that = (LongVector) v;
         that.check(this);
         int opc = opCode(op);
-        return VectorIntrinsics.compare(
+        return VectorSupport.compare(
             opc, getClass(), maskType, long.class, length(),
             this, that,
             (cond, v0, v1) -> {
@@ -1711,12 +1716,12 @@ public abstract class LongVector extends AbstractVector<Long> {
     private static
     boolean compareWithOp(int cond, long a, long b) {
         switch (cond) {
-        case VectorIntrinsics.BT_eq:  return a == b;
-        case VectorIntrinsics.BT_ne:  return a != b;
-        case VectorIntrinsics.BT_lt:  return a <  b;
-        case VectorIntrinsics.BT_le:  return a <= b;
-        case VectorIntrinsics.BT_gt:  return a >  b;
-        case VectorIntrinsics.BT_ge:  return a >= b;
+        case BT_eq:  return a == b;
+        case BT_ne:  return a != b;
+        case BT_lt:  return a <  b;
+        case BT_le:  return a <= b;
+        case BT_gt:  return a >  b;
+        case BT_ge:  return a >= b;
         }
         throw new AssertionError();
     }
@@ -1808,7 +1813,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     LongVector
     blendTemplate(Class<M> maskType, LongVector v, M m) {
         v.check(this);
-        return VectorIntrinsics.blend(
+        return VectorSupport.blend(
             getClass(), maskType, long.class, length(),
             this, v, m,
             (v0, v1, m_) -> v0.bOp(v1, m_, (i, a, b) -> b));
@@ -1825,7 +1830,7 @@ public abstract class LongVector extends AbstractVector<Long> {
         LongSpecies vsp = vspecies();
         // make sure VLENGTH*scale doesn't overflow:
         vsp.checkScale(scale);
-        return VectorIntrinsics.indexVector(
+        return VectorSupport.indexVector(
             getClass(), long.class, length(),
             this, scale, vsp,
             (v, scale_, s)
@@ -1982,7 +1987,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     <S extends VectorShuffle<Long>>
     LongVector rearrangeTemplate(Class<S> shuffletype, S shuffle) {
         shuffle.checkIndexes();
-        return VectorIntrinsics.rearrangeOp(
+        return VectorSupport.rearrangeOp(
             getClass(), shuffletype, long.class, length(),
             this, shuffle,
             (v1, s_) -> v1.uOp((i, a) -> {
@@ -2007,7 +2012,7 @@ public abstract class LongVector extends AbstractVector<Long> {
                                            S shuffle,
                                            VectorMask<Long> m) {
         LongVector unmasked =
-            VectorIntrinsics.rearrangeOp(
+            VectorSupport.rearrangeOp(
                 getClass(), shuffletype, long.class, length(),
                 this, shuffle,
                 (v1, s_) -> v1.uOp((i, a) -> {
@@ -2040,7 +2045,7 @@ public abstract class LongVector extends AbstractVector<Long> {
         VectorMask<Long> valid = shuffle.laneIsValid();
         S ws = shuffletype.cast(shuffle.wrapIndexes());
         LongVector r0 =
-            VectorIntrinsics.rearrangeOp(
+            VectorSupport.rearrangeOp(
                 getClass(), shuffletype, long.class, length(),
                 this, ws,
                 (v0, s_) -> v0.uOp((i, a) -> {
@@ -2048,7 +2053,7 @@ public abstract class LongVector extends AbstractVector<Long> {
                     return v0.lane(ei);
                 }));
         LongVector r1 =
-            VectorIntrinsics.rearrangeOp(
+            VectorSupport.rearrangeOp(
                 getClass(), shuffletype, long.class, length(),
                 v, ws,
                 (v1, s_) -> v1.uOp((i, a) -> {
@@ -2307,7 +2312,7 @@ public abstract class LongVector extends AbstractVector<Long> {
             return this.lane(thisNZ.firstTrue());
         }
         int opc = opCode(op);
-        return fromBits(VectorIntrinsics.reductionCoerced(
+        return fromBits(VectorSupport.reductionCoerced(
             opc, getClass(), long.class, length(),
             this,
             REDUCE_IMPL.find(op, opc, (opc_) -> {
@@ -2765,7 +2770,7 @@ public abstract class LongVector extends AbstractVector<Long> {
 
         vix = VectorIntrinsics.checkIndex(vix, a.length);
 
-        return VectorIntrinsics.loadWithMap(
+        return VectorSupport.loadWithMap(
             vectorType, long.class, vsp.laneCount(),
             IntVector.species(vsp.indexShape()).vectorType(),
             a, ARRAY_BASE, vix,
@@ -2953,7 +2958,7 @@ public abstract class LongVector extends AbstractVector<Long> {
         offset = checkFromIndexSize(offset,
                                     vsp.laneCount(),
                                     a.length);
-        VectorIntrinsics.store(
+        VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
             this,
@@ -3057,7 +3062,7 @@ public abstract class LongVector extends AbstractVector<Long> {
 
         vix = VectorIntrinsics.checkIndex(vix, a.length);
 
-        VectorIntrinsics.storeWithMap(
+        VectorSupport.storeWithMap(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             isp.vectorType(),
             a, arrayAddress(a, 0), vix,
@@ -3229,7 +3234,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     final
     LongVector fromArray0Template(long[] a, int offset) {
         LongSpecies vsp = vspecies();
-        return VectorIntrinsics.load(
+        return VectorSupport.load(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
             a, offset, vsp,
@@ -3244,7 +3249,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     final
     LongVector fromByteArray0Template(byte[] a, int offset) {
         LongSpecies vsp = vspecies();
-        return VectorIntrinsics.load(
+        return VectorSupport.load(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, byteArrayAddress(a, offset),
             a, offset, vsp,
@@ -3260,7 +3265,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     final
     LongVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         LongSpecies vsp = vspecies();
-        return VectorIntrinsics.load(
+        return VectorSupport.load(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             bufferBase(bb), bufferAddress(bb, offset),
             bb, offset, vsp,
@@ -3280,7 +3285,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     final
     void intoArray0Template(long[] a, int offset) {
         LongSpecies vsp = vspecies();
-        VectorIntrinsics.store(
+        VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
             this, a, offset,
@@ -3295,7 +3300,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     final
     void intoByteArray0Template(byte[] a, int offset) {
         LongSpecies vsp = vspecies();
-        VectorIntrinsics.store(
+        VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, byteArrayAddress(a, offset),
             this, a, offset,
@@ -3309,7 +3314,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
         LongSpecies vsp = vspecies();
-        VectorIntrinsics.store(
+        VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             bufferBase(bb), bufferAddress(bb, offset),
             this, bb, offset,
@@ -3538,7 +3543,7 @@ public abstract class LongVector extends AbstractVector<Long> {
         @ForceInline
         final LongVector broadcastBits(long bits) {
             return (LongVector)
-                VectorIntrinsics.broadcastCoerced(
+                VectorSupport.broadcastCoerced(
                     vectorType, long.class, laneCount,
                     bits, this,
                     (bits_, s_) -> s_.rvOp(i -> bits_));

@@ -644,7 +644,7 @@ void Compile::FillLocArray( int idx, MachSafePointNode* sfpt, Node *local,
     } else if ( t->base() == Type::VectorS || t->base() == Type::VectorD ||
                 t->base() == Type::VectorX || t->base() == Type::VectorY ||
                 t->base() == Type::VectorZ) {
-      array->append(new_loc_value( _regalloc, regnum, Location::vector ));
+      array->append(new_loc_value( C->regalloc(), regnum, Location::vector ));
     } else {
       array->append(new_loc_value( _regalloc, regnum, _regalloc->is_oop(local) ? Location::oop : Location::normal ));
     }

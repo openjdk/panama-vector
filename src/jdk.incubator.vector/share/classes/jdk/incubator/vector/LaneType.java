@@ -27,6 +27,7 @@ package jdk.incubator.vector;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.Stable;
 
+import static jdk.internal.vm.vector.VectorSupport.*;
 import static jdk.incubator.vector.VectorIntrinsics.*;
 
 /**
@@ -196,7 +197,7 @@ enum LaneType {
     }
 
     /*package-private*/
-    @ForceInline final LaneType check() { return this; } 
+    @ForceInline final LaneType check() { return this; }
 
     // Constant-foldable tables mapping ordinals, switch keys,
     // and first characters of type names to enum values.
@@ -231,7 +232,7 @@ enum LaneType {
             // set up asIntegral
             if (value.elementKind == 'I') {
                 value.asIntegral = value;
-            } else { 
+            } else {
                 for (LaneType v : values) {
                     if (v.elementKind == 'I' &&
                         v.elementSize == value.elementSize) {
@@ -243,7 +244,7 @@ enum LaneType {
             // set up asFloating
             if (value.elementKind == 'F') {
                 value.asFloating = value;
-            } else { 
+            } else {
                 for (LaneType v : values) {
                     if (v.elementKind == 'F' &&
                         v.elementSize == value.elementSize) {
