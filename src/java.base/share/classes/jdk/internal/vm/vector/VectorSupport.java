@@ -29,26 +29,21 @@ public class VectorSupport {
     public static final int VECTOR_OP_DIV  = 7;
     public static final int VECTOR_OP_MIN  = 8;
     public static final int VECTOR_OP_MAX  = 9;
-    public static final int VECTOR_OP_FIRST_NONZERO = -9;  //a!=0?a:b  FIXME: Implement?
 
     public static final int VECTOR_OP_AND  = 10;
-    public static final int VECTOR_OP_AND_NOT = -10;  //&~ FIXME: Implement?
     public static final int VECTOR_OP_OR   = 11;
     public static final int VECTOR_OP_XOR  = 12;
 
     // Ternary
     public static final int VECTOR_OP_FMA  = 13;
-    public static final int VECTOR_OP_BITWISE_BLEND = -13;  //a^((a^b)&c) FIXME: Implement?
 
     // Broadcast int
     public static final int VECTOR_OP_LSHIFT  = 14;
     public static final int VECTOR_OP_RSHIFT  = 15;
     public static final int VECTOR_OP_URSHIFT = 16;
-    public static final int VECTOR_OP_LROTATE = 17;
-    public static final int VECTOR_OP_RROTATE = 18;
 
-    public static final int VECTOR_OP_CAST        = 19;
-    public static final int VECTOR_OP_REINTERPRET = 20;
+    public static final int VECTOR_OP_CAST        = 17;
+    public static final int VECTOR_OP_REINTERPRET = 18;
 
     // Math routines
     public static final int VECTOR_OP_TAN = 101;

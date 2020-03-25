@@ -74,12 +74,10 @@ class VectorSupport : AllStatic {
     VECTOR_OP_LSHIFT  = 14,
     VECTOR_OP_RSHIFT  = 15,
     VECTOR_OP_URSHIFT = 16,
-    VECTOR_OP_LROTATE = 17,
-    VECTOR_OP_RROTATE = 18,
 
     // Convert
-    VECTOR_OP_CAST        = 19,
-    VECTOR_OP_REINTERPRET = 20,
+    VECTOR_OP_CAST        = 17,
+    VECTOR_OP_REINTERPRET = 18,
 
     // Vector Math Library
     VECTOR_OP_TAN = 101,

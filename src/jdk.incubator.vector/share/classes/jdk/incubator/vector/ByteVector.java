@@ -663,14 +663,10 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                         v0.bOp(v1, (i, a, b) -> (byte)Math.max(a, b));
                 case VECTOR_OP_MIN: return (v0, v1) ->
                         v0.bOp(v1, (i, a, b) -> (byte)Math.min(a, b));
-                case VECTOR_OP_FIRST_NONZERO: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> toBits(a) != 0 ? a : b);
                 case VECTOR_OP_AND: return (v0, v1) ->
                         v0.bOp(v1, (i, a, b) -> (byte)(a & b));
                 case VECTOR_OP_OR: return (v0, v1) ->
                         v0.bOp(v1, (i, a, b) -> (byte)(a | b));
-                case VECTOR_OP_AND_NOT: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (byte)(a & ~b));
                 case VECTOR_OP_XOR: return (v0, v1) ->
                         v0.bOp(v1, (i, a, b) -> (byte)(a ^ b));
                 case VECTOR_OP_LSHIFT: return (v0, v1) ->
@@ -679,10 +675,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                         v0.bOp(v1, (i, a, n) -> (byte)(a >> n));
                 case VECTOR_OP_URSHIFT: return (v0, v1) ->
                         v0.bOp(v1, (i, a, n) -> (byte)((a & LSHR_SETUP_MASK) >>> n));
-                case VECTOR_OP_LROTATE: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, n) -> (byte)((a << n)|(a >> -n)));
-                case VECTOR_OP_RROTATE: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, n) -> (byte)((a >> n)|(a << -n)));
                 default: return null;
                 }}));
     }
@@ -843,10 +835,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                         v.uOp((i, a) -> (byte)(a >> n));
                 case VECTOR_OP_URSHIFT: return (v, n) ->
                         v.uOp((i, a) -> (byte)((a & LSHR_SETUP_MASK) >>> n));
-                case VECTOR_OP_LROTATE: return (v, n) ->
-                        v.uOp((i, a) -> (byte)((a << n)|(a >> -n)));
-                case VECTOR_OP_RROTATE: return (v, n) ->
-                        v.uOp((i, a) -> (byte)((a >> n)|(a << -n)));
                 default: return null;
                 }}));
     }
@@ -910,8 +898,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             this, that, tother,
             TERN_IMPL.find(op, opc, (opc_) -> {
               switch (opc_) {
-                case VECTOR_OP_BITWISE_BLEND: return (v0, v1_, v2_) ->
-                        v0.tOp(v1_, v2_, (i, a, b, c) -> (byte)(a^((a^b)&c)));
                 default: return null;
                 }}));
     }
@@ -2453,8 +2439,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                       toBits(v.rOp(MAX_OR_INF, (i, a, b) -> (byte) Math.min(a, b)));
               case VECTOR_OP_MAX: return v ->
                       toBits(v.rOp(MIN_OR_INF, (i, a, b) -> (byte) Math.max(a, b)));
-              case VECTOR_OP_FIRST_NONZERO: return v ->
-                      toBits(v.rOp((byte)0, (i, a, b) -> toBits(a) != 0 ? a : b));
               case VECTOR_OP_AND: return v ->
                       toBits(v.rOp((byte)-1, (i, a, b) -> (byte)(a & b)));
               case VECTOR_OP_OR: return v ->
@@ -2478,7 +2462,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 case VECTOR_OP_ADD:
                 case VECTOR_OP_OR:
                 case VECTOR_OP_XOR:
-                case VECTOR_OP_FIRST_NONZERO:
                     return v -> v.broadcast(0);
                 case VECTOR_OP_MUL:
                     return v -> v.broadcast(1);
@@ -3674,6 +3657,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 .fromArray(this, (byte[]) a, offset);
         }
 
+        @ForceInline
         @Override final
         ByteVector dummyVector() {
             return (ByteVector) super.dummyVector();

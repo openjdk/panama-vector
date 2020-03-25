@@ -674,8 +674,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
                         v0.bOp(v1, (i, a, b) -> (float)Math.max(a, b));
                 case VECTOR_OP_MIN: return (v0, v1) ->
                         v0.bOp(v1, (i, a, b) -> (float)Math.min(a, b));
-                case VECTOR_OP_FIRST_NONZERO: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> toBits(a) != 0 ? a : b);
                 case VECTOR_OP_OR: return (v0, v1) ->
                         v0.bOp(v1, (i, a, b) -> fromBits(toBits(a) | toBits(b)));
                 case VECTOR_OP_ATAN2: return (v0, v1) ->
@@ -2332,8 +2330,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
                       toBits(v.rOp(MAX_OR_INF, (i, a, b) -> (float) Math.min(a, b)));
               case VECTOR_OP_MAX: return v ->
                       toBits(v.rOp(MIN_OR_INF, (i, a, b) -> (float) Math.max(a, b)));
-              case VECTOR_OP_FIRST_NONZERO: return v ->
-                      toBits(v.rOp((float)0, (i, a, b) -> toBits(a) != 0 ? a : b));
               case VECTOR_OP_OR: return v ->
                       toBits(v.rOp((float)0, (i, a, b) -> fromBits(toBits(a) | toBits(b))));
               default: return null;
@@ -2353,7 +2349,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
                 case VECTOR_OP_ADD:
                 case VECTOR_OP_OR:
                 case VECTOR_OP_XOR:
-                case VECTOR_OP_FIRST_NONZERO:
                     return v -> v.broadcast(0);
                 case VECTOR_OP_MUL:
                     return v -> v.broadcast(1);
@@ -3592,6 +3587,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
                 .fromArray(this, (float[]) a, offset);
         }
 
+        @ForceInline
         @Override final
         FloatVector dummyVector() {
             return (FloatVector) super.dummyVector();
