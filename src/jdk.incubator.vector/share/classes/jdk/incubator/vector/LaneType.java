@@ -75,20 +75,20 @@ enum LaneType {
         assert("....zcFDBSILoav..".charAt(basicType) == typeChar);
     }
 
-    @Stable final Class<?> elementType;
-    @Stable final Class<?> arrayType;
-    @Stable final Class<?> genericElementType;
-    @Stable final int elementSize;
-    @Stable final int elementSizeLog2;
-    @Stable final int elementPrecision;
-    @Stable final char elementKind; // 'I' or 'F'
-    @Stable final int switchKey;  // 1+ordinal(), which is non-zero
-    @Stable final String printName;
-    @Stable final char typeChar; // one of "BSILFD"
-    @Stable final int basicType;  // lg(size/8) | (kind=='F'?4:kind=='I'?8)
+    final Class<?> elementType;
+    final Class<?> arrayType;
+    final Class<?> genericElementType;
+    final int elementSize;
+    final int elementSizeLog2;
+    final int elementPrecision;
+    final char elementKind; // 'I' or 'F'
+    final int switchKey;  // 1+ordinal(), which is non-zero
+    final String printName;
+    final char typeChar; // one of "BSILFD"
+    final int basicType;  // lg(size/8) | (kind=='F'?4:kind=='I'?8)
 
-    @Stable private LaneType asIntegral;
-    @Stable private LaneType asFloating;
+    private @Stable LaneType asIntegral;
+    private @Stable LaneType asFloating;
 
     @Override
     public String toString() {

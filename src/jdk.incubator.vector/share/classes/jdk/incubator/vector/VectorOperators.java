@@ -804,9 +804,9 @@ public abstract class VectorOperators {
     }
 
     private static abstract class OperatorImpl implements Operator {
-        private @Stable final String symName;
-        private @Stable final String opName;
-        private @Stable final int opInfo;
+        private final String symName;
+        private final String opName;
+        private final int opInfo;
 
         OperatorImpl(String symName, String opName, int opInfo) {
             this.symName = symName;
@@ -968,9 +968,9 @@ public abstract class VectorOperators {
             this.ran = LaneType.of(ran);
             check(dom, ran);  // make sure it all lines up
         }
-        private final @Stable char kind;
-        private final @Stable LaneType dom;
-        private final @Stable LaneType ran;
+        private final char kind;
+        private final LaneType dom;
+        private final LaneType ran;
 
         // non-overrides are all package-private
 

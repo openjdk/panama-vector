@@ -62,9 +62,9 @@ public enum VectorShape {
     /** Shape of maximum length supported on the platform */
     S_Max_BIT(VectorSupport.getMaxLaneCount(byte.class) * Byte.SIZE);
 
-    @Stable final int vectorBitSize;
-    @Stable final int vectorBitSizeLog2;
-    @Stable final int switchKey;  // 1+ordinal(), which is non-zero
+    final int vectorBitSize;
+    final int vectorBitSizeLog2;
+    final int switchKey;  // 1+ordinal(), which is non-zero
 
     VectorShape(int vectorBitSize) {
         this.switchKey = 1+ordinal();

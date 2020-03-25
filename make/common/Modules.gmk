@@ -59,6 +59,7 @@ BOOT_MODULES += \
     java.security.sasl \
     java.xml \
     jdk.incubator.foreign \
+    jdk.incubator.vector \
     jdk.internal.vm.ci \
     jdk.jfr \
     jdk.management \
@@ -109,7 +110,6 @@ PLATFORM_MODULES += \
     jdk.crypto.ec \
     jdk.dynalink \
     jdk.httpserver \
-    jdk.incubator.vector \
     jdk.jsobject \
     jdk.localedata \
     jdk.naming.dns \
@@ -205,7 +205,7 @@ HOTSPOT_MODULES := \
 # The native dynamic libraries in these modules will also get built into static
 # libraries for consumption by downstream projects that need to statically link
 # the JDK libraries. Those static libraries are not part of the main JDK
-# distribution. 
+# distribution.
 STATIC_LIBS_MODULES := \
     java.base \
     jdk.crypto.ec \
