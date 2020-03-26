@@ -105,6 +105,7 @@ static int get_sopc(int opc, BasicType elem_bt, int arity) {
   }
 #endif
   if (opc == Op_CallLeafVector) {
+    assert(UseVectorStubs, "sanity");
     return Op_CallLeafVector;
   }
   return VectorNode::opcode(opc, elem_bt);
@@ -224,11 +225,19 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
   ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
 
-  if (opc == Op_CallLeafVector && !Matcher::supports_vector_calling_convention()) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** cannot support vector calling convention");
+  if (opc == Op_CallLeafVector) {
+    if (!UseVectorStubs) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** vector stubs support is disabled");
+      }
+      return false;
     }
-    return false;
+    if (!Matcher::supports_vector_calling_convention()) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** no vector calling conventions supported");
+      }
+      return false;
+    }
   }
 
   // TODO When mask usage is supported, VecMaskNotUsed needs to be VecMaskUseLoad.
@@ -281,6 +290,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
 
   Node* operation = NULL;
   if (sopc == Op_CallLeafVector) {
+    assert(UseVectorStubs, "sanity");
     operation = gen_call_to_svml(opr->get_con(), elem_bt, num_elem, opd1, opd2);
     if (operation == NULL) {
       if (C->print_intrinsics()) {
@@ -1132,188 +1142,190 @@ Node* LibraryCallKit::shift_count(Node* cnt, int shift_op, BasicType bt, int num
 }
 
 static void get_svml_address(int op, int bits, BasicType bt, const char** name_ptr, address* addr_ptr) {
+  assert(UseVectorStubs, "sanity");
   assert(name_ptr != NULL, "unexpected");
   assert(addr_ptr != NULL, "unexpected");
 
+#ifdef __VECTOR_API_MATH_INTRINSICS_COMMON
   // Since the addresses are resolved at runtime, using switch instead of table - otherwise might get NULL addresses.
   if (bt == T_FLOAT) {
     switch(op) {
       case VectorSupport::VECTOR_OP_EXP: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_exp"; *addr_ptr = StubRoutines::vector_float64_exp(); break;
-            case 128: *name_ptr = "vector_float128_exp"; *addr_ptr = StubRoutines::vector_float128_exp(); break;
-            case 256: *name_ptr = "vector_float256_exp"; *addr_ptr = StubRoutines::vector_float256_exp(); break;
-            case 512: *name_ptr = "vector_float512_exp"; *addr_ptr = StubRoutines::vector_float512_exp(); break;
+            case 64:  *name_ptr = "vector_exp_float64";  *addr_ptr = StubRoutines::vector_exp_float64();  break;
+            case 128: *name_ptr = "vector_exp_float128"; *addr_ptr = StubRoutines::vector_exp_float128(); break;
+            case 256: *name_ptr = "vector_exp_float256"; *addr_ptr = StubRoutines::vector_exp_float256(); break;
+            case 512: *name_ptr = "vector_exp_float512"; *addr_ptr = StubRoutines::vector_exp_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_LOG1P: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_log1p"; *addr_ptr = StubRoutines::vector_float64_log1p(); break;
-            case 128: *name_ptr = "vector_float128_log1p"; *addr_ptr = StubRoutines::vector_float128_log1p(); break;
-            case 256: *name_ptr = "vector_float256_log1p"; *addr_ptr = StubRoutines::vector_float256_log1p(); break;
-            case 512: *name_ptr = "vector_float512_log1p"; *addr_ptr = StubRoutines::vector_float512_log1p(); break;
+            case 64:  *name_ptr = "vector_log1p_float64";  *addr_ptr = StubRoutines::vector_log1p_float64();  break;
+            case 128: *name_ptr = "vector_log1p_float128"; *addr_ptr = StubRoutines::vector_log1p_float128(); break;
+            case 256: *name_ptr = "vector_log1p_float256"; *addr_ptr = StubRoutines::vector_log1p_float256(); break;
+            case 512: *name_ptr = "vector_log1p_float512"; *addr_ptr = StubRoutines::vector_log1p_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_LOG: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_log"; *addr_ptr = StubRoutines::vector_float64_log(); break;
-            case 128: *name_ptr = "vector_float128_log"; *addr_ptr = StubRoutines::vector_float128_log(); break;
-            case 256: *name_ptr = "vector_float256_log"; *addr_ptr = StubRoutines::vector_float256_log(); break;
-            case 512: *name_ptr = "vector_float512_log"; *addr_ptr = StubRoutines::vector_float512_log(); break;
+            case 64:  *name_ptr = "vector_log_float64";  *addr_ptr = StubRoutines::vector_log_float64();  break;
+            case 128: *name_ptr = "vector_log_float128"; *addr_ptr = StubRoutines::vector_log_float128(); break;
+            case 256: *name_ptr = "vector_log_float256"; *addr_ptr = StubRoutines::vector_log_float256(); break;
+            case 512: *name_ptr = "vector_log_float512"; *addr_ptr = StubRoutines::vector_log_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_LOG10: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_log10"; *addr_ptr = StubRoutines::vector_float64_log10(); break;
-            case 128: *name_ptr = "vector_float128_log10"; *addr_ptr = StubRoutines::vector_float128_log10(); break;
-            case 256: *name_ptr = "vector_float256_log10"; *addr_ptr = StubRoutines::vector_float256_log10(); break;
-            case 512: *name_ptr = "vector_float512_log10"; *addr_ptr = StubRoutines::vector_float512_log10(); break;
+            case 64:  *name_ptr = "vector_log10_float64";  *addr_ptr = StubRoutines::vector_log10_float64();  break;
+            case 128: *name_ptr = "vector_log10_float128"; *addr_ptr = StubRoutines::vector_log10_float128(); break;
+            case 256: *name_ptr = "vector_log10_float256"; *addr_ptr = StubRoutines::vector_log10_float256(); break;
+            case 512: *name_ptr = "vector_log10_float512"; *addr_ptr = StubRoutines::vector_log10_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_EXPM1: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_expm1"; *addr_ptr = StubRoutines::vector_float64_expm1(); break;
-            case 128: *name_ptr = "vector_float128_expm1"; *addr_ptr = StubRoutines::vector_float128_expm1(); break;
-            case 256: *name_ptr = "vector_float256_expm1"; *addr_ptr = StubRoutines::vector_float256_expm1(); break;
-            case 512: *name_ptr = "vector_float512_expm1"; *addr_ptr = StubRoutines::vector_float512_expm1(); break;
+            case 64:  *name_ptr = "vector_expm1_float64";  *addr_ptr = StubRoutines::vector_expm1_float64();  break;
+            case 128: *name_ptr = "vector_expm1_float128"; *addr_ptr = StubRoutines::vector_expm1_float128(); break;
+            case 256: *name_ptr = "vector_expm1_float256"; *addr_ptr = StubRoutines::vector_expm1_float256(); break;
+            case 512: *name_ptr = "vector_expm1_float512"; *addr_ptr = StubRoutines::vector_expm1_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_SIN: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_sin"; *addr_ptr = StubRoutines::vector_float64_sin(); break;
-            case 128: *name_ptr = "vector_float128_sin"; *addr_ptr = StubRoutines::vector_float128_sin(); break;
-            case 256: *name_ptr = "vector_float256_sin"; *addr_ptr = StubRoutines::vector_float256_sin(); break;
-            case 512: *name_ptr = "vector_float512_sin"; *addr_ptr = StubRoutines::vector_float512_sin(); break;
+            case 64:  *name_ptr = "vector_sin_float64";  *addr_ptr = StubRoutines::vector_sin_float64();  break;
+            case 128: *name_ptr = "vector_sin_float128"; *addr_ptr = StubRoutines::vector_sin_float128(); break;
+            case 256: *name_ptr = "vector_sin_float256"; *addr_ptr = StubRoutines::vector_sin_float256(); break;
+            case 512: *name_ptr = "vector_sin_float512"; *addr_ptr = StubRoutines::vector_sin_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_COS: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_cos"; *addr_ptr = StubRoutines::vector_float64_cos(); break;
-            case 128: *name_ptr = "vector_float128_cos"; *addr_ptr = StubRoutines::vector_float128_cos(); break;
-            case 256: *name_ptr = "vector_float256_cos"; *addr_ptr = StubRoutines::vector_float256_cos(); break;
-            case 512: *name_ptr = "vector_float512_cos"; *addr_ptr = StubRoutines::vector_float512_cos(); break;
+            case 64:  *name_ptr = "vector_cos_float64";  *addr_ptr = StubRoutines::vector_cos_float64();  break;
+            case 128: *name_ptr = "vector_cos_float128"; *addr_ptr = StubRoutines::vector_cos_float128(); break;
+            case 256: *name_ptr = "vector_cos_float256"; *addr_ptr = StubRoutines::vector_cos_float256(); break;
+            case 512: *name_ptr = "vector_cos_float512"; *addr_ptr = StubRoutines::vector_cos_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_TAN: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_tan"; *addr_ptr = StubRoutines::vector_float64_tan(); break;
-            case 128: *name_ptr = "vector_float128_tan"; *addr_ptr = StubRoutines::vector_float128_tan(); break;
-            case 256: *name_ptr = "vector_float256_tan"; *addr_ptr = StubRoutines::vector_float256_tan(); break;
-            case 512: *name_ptr = "vector_float512_tan"; *addr_ptr = StubRoutines::vector_float512_tan(); break;
+            case 64:  *name_ptr = "vector_tan_float64";  *addr_ptr = StubRoutines::vector_tan_float64();  break;
+            case 128: *name_ptr = "vector_tan_float128"; *addr_ptr = StubRoutines::vector_tan_float128(); break;
+            case 256: *name_ptr = "vector_tan_float256"; *addr_ptr = StubRoutines::vector_tan_float256(); break;
+            case 512: *name_ptr = "vector_tan_float512"; *addr_ptr = StubRoutines::vector_tan_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_SINH: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_sinh"; *addr_ptr = StubRoutines::vector_float64_sinh(); break;
-            case 128: *name_ptr = "vector_float128_sinh"; *addr_ptr = StubRoutines::vector_float128_sinh(); break;
-            case 256: *name_ptr = "vector_float256_sinh"; *addr_ptr = StubRoutines::vector_float256_sinh(); break;
-            case 512: *name_ptr = "vector_float512_sinh"; *addr_ptr = StubRoutines::vector_float512_sinh(); break;
+            case 64:  *name_ptr = "vector_sinh_float64";  *addr_ptr = StubRoutines::vector_sinh_float64();  break;
+            case 128: *name_ptr = "vector_sinh_float128"; *addr_ptr = StubRoutines::vector_sinh_float128(); break;
+            case 256: *name_ptr = "vector_sinh_float256"; *addr_ptr = StubRoutines::vector_sinh_float256(); break;
+            case 512: *name_ptr = "vector_sinh_float512"; *addr_ptr = StubRoutines::vector_sinh_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_COSH: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_cosh"; *addr_ptr = StubRoutines::vector_float64_cosh(); break;
-            case 128: *name_ptr = "vector_float128_cosh"; *addr_ptr = StubRoutines::vector_float128_cosh(); break;
-            case 256: *name_ptr = "vector_float256_cosh"; *addr_ptr = StubRoutines::vector_float256_cosh(); break;
-            case 512: *name_ptr = "vector_float512_cosh"; *addr_ptr = StubRoutines::vector_float512_cosh(); break;
+            case 64:  *name_ptr = "vector_cosh_float64";  *addr_ptr = StubRoutines::vector_cosh_float64();  break;
+            case 128: *name_ptr = "vector_cosh_float128"; *addr_ptr = StubRoutines::vector_cosh_float128(); break;
+            case 256: *name_ptr = "vector_cosh_float256"; *addr_ptr = StubRoutines::vector_cosh_float256(); break;
+            case 512: *name_ptr = "vector_cosh_float512"; *addr_ptr = StubRoutines::vector_cosh_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_TANH: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_tanh"; *addr_ptr = StubRoutines::vector_float64_tanh(); break;
-            case 128: *name_ptr = "vector_float128_tanh"; *addr_ptr = StubRoutines::vector_float128_tanh(); break;
-            case 256: *name_ptr = "vector_float256_tanh"; *addr_ptr = StubRoutines::vector_float256_tanh(); break;
-            case 512: *name_ptr = "vector_float512_tanh"; *addr_ptr = StubRoutines::vector_float512_tanh(); break;
+            case 64:  *name_ptr = "vector_tanh_float64";  *addr_ptr = StubRoutines::vector_tanh_float64();  break;
+            case 128: *name_ptr = "vector_tanh_float128"; *addr_ptr = StubRoutines::vector_tanh_float128(); break;
+            case 256: *name_ptr = "vector_tanh_float256"; *addr_ptr = StubRoutines::vector_tanh_float256(); break;
+            case 512: *name_ptr = "vector_tanh_float512"; *addr_ptr = StubRoutines::vector_tanh_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_ASIN: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_asin"; *addr_ptr = StubRoutines::vector_float64_asin(); break;
-            case 128: *name_ptr = "vector_float128_asin"; *addr_ptr = StubRoutines::vector_float128_asin(); break;
-            case 256: *name_ptr = "vector_float256_asin"; *addr_ptr = StubRoutines::vector_float256_asin(); break;
-            case 512: *name_ptr = "vector_float512_asin"; *addr_ptr = StubRoutines::vector_float512_asin(); break;
+            case 64:  *name_ptr = "vector_asin_float64";  *addr_ptr = StubRoutines::vector_asin_float64();  break;
+            case 128: *name_ptr = "vector_asin_float128"; *addr_ptr = StubRoutines::vector_asin_float128(); break;
+            case 256: *name_ptr = "vector_asin_float256"; *addr_ptr = StubRoutines::vector_asin_float256(); break;
+            case 512: *name_ptr = "vector_asin_float512"; *addr_ptr = StubRoutines::vector_asin_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_ACOS: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_acos"; *addr_ptr = StubRoutines::vector_float64_acos(); break;
-            case 128: *name_ptr = "vector_float128_acos"; *addr_ptr = StubRoutines::vector_float128_acos(); break;
-            case 256: *name_ptr = "vector_float256_acos"; *addr_ptr = StubRoutines::vector_float256_acos(); break;
-            case 512: *name_ptr = "vector_float512_acos"; *addr_ptr = StubRoutines::vector_float512_acos(); break;
+            case 64:  *name_ptr = "vector_acos_float64";  *addr_ptr = StubRoutines::vector_acos_float64();  break;
+            case 128: *name_ptr = "vector_acos_float128"; *addr_ptr = StubRoutines::vector_acos_float128(); break;
+            case 256: *name_ptr = "vector_acos_float256"; *addr_ptr = StubRoutines::vector_acos_float256(); break;
+            case 512: *name_ptr = "vector_acos_float512"; *addr_ptr = StubRoutines::vector_acos_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_ATAN: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_atan"; *addr_ptr = StubRoutines::vector_float64_atan(); break;
-            case 128: *name_ptr = "vector_float128_atan"; *addr_ptr = StubRoutines::vector_float128_atan(); break;
-            case 256: *name_ptr = "vector_float256_atan"; *addr_ptr = StubRoutines::vector_float256_atan(); break;
-            case 512: *name_ptr = "vector_float512_atan"; *addr_ptr = StubRoutines::vector_float512_atan(); break;
+            case 64:  *name_ptr = "vector_atan_float64";  *addr_ptr = StubRoutines::vector_atan_float64();  break;
+            case 128: *name_ptr = "vector_atan_float128"; *addr_ptr = StubRoutines::vector_atan_float128(); break;
+            case 256: *name_ptr = "vector_atan_float256"; *addr_ptr = StubRoutines::vector_atan_float256(); break;
+            case 512: *name_ptr = "vector_atan_float512"; *addr_ptr = StubRoutines::vector_atan_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_CBRT: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_cbrt"; *addr_ptr = StubRoutines::vector_float64_cbrt(); break;
-            case 128: *name_ptr = "vector_float128_cbrt"; *addr_ptr = StubRoutines::vector_float128_cbrt(); break;
-            case 256: *name_ptr = "vector_float256_cbrt"; *addr_ptr = StubRoutines::vector_float256_cbrt(); break;
-            case 512: *name_ptr = "vector_float512_cbrt"; *addr_ptr = StubRoutines::vector_float512_cbrt(); break;
+            case 64:  *name_ptr = "vector_cbrt_float64";  *addr_ptr = StubRoutines::vector_cbrt_float64();  break;
+            case 128: *name_ptr = "vector_cbrt_float128"; *addr_ptr = StubRoutines::vector_cbrt_float128(); break;
+            case 256: *name_ptr = "vector_cbrt_float256"; *addr_ptr = StubRoutines::vector_cbrt_float256(); break;
+            case 512: *name_ptr = "vector_cbrt_float512"; *addr_ptr = StubRoutines::vector_cbrt_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
        case VectorSupport::VECTOR_OP_HYPOT: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_hypot"; *addr_ptr = StubRoutines::vector_float64_hypot(); break;
-            case 128: *name_ptr = "vector_float128_hypot"; *addr_ptr = StubRoutines::vector_float128_hypot(); break;
-            case 256: *name_ptr = "vector_float256_hypot"; *addr_ptr = StubRoutines::vector_float256_hypot(); break;
-            case 512: *name_ptr = "vector_float512_hypot"; *addr_ptr = StubRoutines::vector_float512_hypot(); break;
+            case 64:  *name_ptr = "vector_hypot_float64";  *addr_ptr = StubRoutines::vector_hypot_float64();  break;
+            case 128: *name_ptr = "vector_hypot_float128"; *addr_ptr = StubRoutines::vector_hypot_float128(); break;
+            case 256: *name_ptr = "vector_hypot_float256"; *addr_ptr = StubRoutines::vector_hypot_float256(); break;
+            case 512: *name_ptr = "vector_hypot_float512"; *addr_ptr = StubRoutines::vector_hypot_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_POW: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_pow"; *addr_ptr = StubRoutines::vector_float64_pow(); break;
-            case 128: *name_ptr = "vector_float128_pow"; *addr_ptr = StubRoutines::vector_float128_pow(); break;
-            case 256: *name_ptr = "vector_float256_pow"; *addr_ptr = StubRoutines::vector_float256_pow(); break;
-            case 512: *name_ptr = "vector_float512_pow"; *addr_ptr = StubRoutines::vector_float512_pow(); break;
+            case 64:  *name_ptr = "vector_pow_float64";  *addr_ptr = StubRoutines::vector_pow_float64();  break;
+            case 128: *name_ptr = "vector_pow_float128"; *addr_ptr = StubRoutines::vector_pow_float128(); break;
+            case 256: *name_ptr = "vector_pow_float256"; *addr_ptr = StubRoutines::vector_pow_float256(); break;
+            case 512: *name_ptr = "vector_pow_float512"; *addr_ptr = StubRoutines::vector_pow_float512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_ATAN2: {
           switch(bits) {
-            case 64: *name_ptr = "vector_float64_atan2"; *addr_ptr = StubRoutines::vector_float64_atan2(); break;
-            case 128: *name_ptr = "vector_float128_atan2"; *addr_ptr = StubRoutines::vector_float128_atan2(); break;
-            case 256: *name_ptr = "vector_float256_atan2"; *addr_ptr = StubRoutines::vector_float256_atan2(); break;
-            case 512: *name_ptr = "vector_float512_atan2"; *addr_ptr = StubRoutines::vector_float512_atan2(); break;
+            case 64:  *name_ptr = "vector_atan2_float64";  *addr_ptr = StubRoutines::vector_atan2_float64();  break;
+            case 128: *name_ptr = "vector_atan2_float128"; *addr_ptr = StubRoutines::vector_atan2_float128(); break;
+            case 256: *name_ptr = "vector_atan2_float256"; *addr_ptr = StubRoutines::vector_atan2_float256(); break;
+            case 512: *name_ptr = "vector_atan2_float512"; *addr_ptr = StubRoutines::vector_atan2_float512(); break;
             default: Unimplemented(); break;
           }
         }
@@ -1328,180 +1340,180 @@ static void get_svml_address(int op, int bits, BasicType bt, const char** name_p
     switch(op) {
       case VectorSupport::VECTOR_OP_EXP: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_exp"; *addr_ptr = StubRoutines::vector_double64_exp(); break;
-            case 128: *name_ptr = "vector_double128_exp"; *addr_ptr = StubRoutines::vector_double128_exp(); break;
-            case 256: *name_ptr = "vector_double256_exp"; *addr_ptr = StubRoutines::vector_double256_exp(); break;
-            case 512: *name_ptr = "vector_double512_exp"; *addr_ptr = StubRoutines::vector_double512_exp(); break;
+            case 64:  *name_ptr = "vector_exp_double64";  *addr_ptr = StubRoutines::vector_exp_double64();  break;
+            case 128: *name_ptr = "vector_exp_double128"; *addr_ptr = StubRoutines::vector_exp_double128(); break;
+            case 256: *name_ptr = "vector_exp_double256"; *addr_ptr = StubRoutines::vector_exp_double256(); break;
+            case 512: *name_ptr = "vector_exp_double512"; *addr_ptr = StubRoutines::vector_exp_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_LOG1P: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_log1p"; *addr_ptr = StubRoutines::vector_double64_log1p(); break;
-            case 128: *name_ptr = "vector_double128_log1p"; *addr_ptr = StubRoutines::vector_double128_log1p(); break;
-            case 256: *name_ptr = "vector_double256_log1p"; *addr_ptr = StubRoutines::vector_double256_log1p(); break;
-            case 512: *name_ptr = "vector_double512_log1p"; *addr_ptr = StubRoutines::vector_double512_log1p(); break;
+            case 64:  *name_ptr = "vector_log1p_double64";  *addr_ptr = StubRoutines::vector_log1p_double64();  break;
+            case 128: *name_ptr = "vector_log1p_double128"; *addr_ptr = StubRoutines::vector_log1p_double128(); break;
+            case 256: *name_ptr = "vector_log1p_double256"; *addr_ptr = StubRoutines::vector_log1p_double256(); break;
+            case 512: *name_ptr = "vector_log1p_double512"; *addr_ptr = StubRoutines::vector_log1p_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_LOG: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_log"; *addr_ptr = StubRoutines::vector_double64_log(); break;
-            case 128: *name_ptr = "vector_double128_log"; *addr_ptr = StubRoutines::vector_double128_log(); break;
-            case 256: *name_ptr = "vector_double256_log"; *addr_ptr = StubRoutines::vector_double256_log(); break;
-            case 512: *name_ptr = "vector_double512_log"; *addr_ptr = StubRoutines::vector_double512_log(); break;
+            case 64:  *name_ptr = "vector_log_double64";  *addr_ptr = StubRoutines::vector_log_double64();  break;
+            case 128: *name_ptr = "vector_log_double128"; *addr_ptr = StubRoutines::vector_log_double128(); break;
+            case 256: *name_ptr = "vector_log_double256"; *addr_ptr = StubRoutines::vector_log_double256(); break;
+            case 512: *name_ptr = "vector_log_double512"; *addr_ptr = StubRoutines::vector_log_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_LOG10: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_log10"; *addr_ptr = StubRoutines::vector_double64_log10(); break;
-            case 128: *name_ptr = "vector_double128_log10"; *addr_ptr = StubRoutines::vector_double128_log10(); break;
-            case 256: *name_ptr = "vector_double256_log10"; *addr_ptr = StubRoutines::vector_double256_log10(); break;
-            case 512: *name_ptr = "vector_double512_log10"; *addr_ptr = StubRoutines::vector_double512_log10(); break;
+            case 64:  *name_ptr = "vector_log10_double64";  *addr_ptr = StubRoutines::vector_log10_double64();  break;
+            case 128: *name_ptr = "vector_log10_double128"; *addr_ptr = StubRoutines::vector_log10_double128(); break;
+            case 256: *name_ptr = "vector_log10_double256"; *addr_ptr = StubRoutines::vector_log10_double256(); break;
+            case 512: *name_ptr = "vector_log10_double512"; *addr_ptr = StubRoutines::vector_log10_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_EXPM1: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_expm1"; *addr_ptr = StubRoutines::vector_double64_expm1(); break;
-            case 128: *name_ptr = "vector_double128_expm1"; *addr_ptr = StubRoutines::vector_double128_expm1(); break;
-            case 256: *name_ptr = "vector_double256_expm1"; *addr_ptr = StubRoutines::vector_double256_expm1(); break;
-            case 512: *name_ptr = "vector_double512_expm1"; *addr_ptr = StubRoutines::vector_double512_expm1(); break;
+            case 64:  *name_ptr = "vector_expm1_double64";  *addr_ptr = StubRoutines::vector_expm1_double64();  break;
+            case 128: *name_ptr = "vector_expm1_double128"; *addr_ptr = StubRoutines::vector_expm1_double128(); break;
+            case 256: *name_ptr = "vector_expm1_double256"; *addr_ptr = StubRoutines::vector_expm1_double256(); break;
+            case 512: *name_ptr = "vector_expm1_double512"; *addr_ptr = StubRoutines::vector_expm1_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_SIN: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_sin"; *addr_ptr = StubRoutines::vector_double64_sin(); break;
-            case 128: *name_ptr = "vector_double128_sin"; *addr_ptr = StubRoutines::vector_double128_sin(); break;
-            case 256: *name_ptr = "vector_double256_sin"; *addr_ptr = StubRoutines::vector_double256_sin(); break;
-            case 512: *name_ptr = "vector_double512_sin"; *addr_ptr = StubRoutines::vector_double512_sin(); break;
+            case 64:  *name_ptr = "vector_sin_double64";  *addr_ptr = StubRoutines::vector_sin_double64();  break;
+            case 128: *name_ptr = "vector_sin_double128"; *addr_ptr = StubRoutines::vector_sin_double128(); break;
+            case 256: *name_ptr = "vector_sin_double256"; *addr_ptr = StubRoutines::vector_sin_double256(); break;
+            case 512: *name_ptr = "vector_sin_double512"; *addr_ptr = StubRoutines::vector_sin_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_COS: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_cos"; *addr_ptr = StubRoutines::vector_double64_cos(); break;
-            case 128: *name_ptr = "vector_double128_cos"; *addr_ptr = StubRoutines::vector_double128_cos(); break;
-            case 256: *name_ptr = "vector_double256_cos"; *addr_ptr = StubRoutines::vector_double256_cos(); break;
-            case 512: *name_ptr = "vector_double512_cos"; *addr_ptr = StubRoutines::vector_double512_cos(); break;
+            case 64:  *name_ptr = "vector_cos_double64";  *addr_ptr = StubRoutines::vector_cos_double64();  break;
+            case 128: *name_ptr = "vector_cos_double128"; *addr_ptr = StubRoutines::vector_cos_double128(); break;
+            case 256: *name_ptr = "vector_cos_double256"; *addr_ptr = StubRoutines::vector_cos_double256(); break;
+            case 512: *name_ptr = "vector_cos_double512"; *addr_ptr = StubRoutines::vector_cos_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_TAN: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_tan"; *addr_ptr = StubRoutines::vector_double64_tan(); break;
-            case 128: *name_ptr = "vector_double128_tan"; *addr_ptr = StubRoutines::vector_double128_tan(); break;
-            case 256: *name_ptr = "vector_double256_tan"; *addr_ptr = StubRoutines::vector_double256_tan(); break;
-            case 512: *name_ptr = "vector_double512_tan"; *addr_ptr = StubRoutines::vector_double512_tan(); break;
+            case 64:  *name_ptr = "vector_tan_double64";  *addr_ptr = StubRoutines::vector_tan_double64();  break;
+            case 128: *name_ptr = "vector_tan_double128"; *addr_ptr = StubRoutines::vector_tan_double128(); break;
+            case 256: *name_ptr = "vector_tan_double256"; *addr_ptr = StubRoutines::vector_tan_double256(); break;
+            case 512: *name_ptr = "vector_tan_double512"; *addr_ptr = StubRoutines::vector_tan_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_SINH: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_sinh"; *addr_ptr = StubRoutines::vector_double64_sinh(); break;
-            case 128: *name_ptr = "vector_double128_sinh"; *addr_ptr = StubRoutines::vector_double128_sinh(); break;
-            case 256: *name_ptr = "vector_double256_sinh"; *addr_ptr = StubRoutines::vector_double256_sinh(); break;
-            case 512: *name_ptr = "vector_double512_sinh"; *addr_ptr = StubRoutines::vector_double512_sinh(); break;
+            case 64:  *name_ptr = "vector_sinh_double64";  *addr_ptr = StubRoutines::vector_sinh_double64();  break;
+            case 128: *name_ptr = "vector_sinh_double128"; *addr_ptr = StubRoutines::vector_sinh_double128(); break;
+            case 256: *name_ptr = "vector_sinh_double256"; *addr_ptr = StubRoutines::vector_sinh_double256(); break;
+            case 512: *name_ptr = "vector_sinh_double512"; *addr_ptr = StubRoutines::vector_sinh_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_COSH: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_cosh"; *addr_ptr = StubRoutines::vector_double64_cosh(); break;
-            case 128: *name_ptr = "vector_double128_cosh"; *addr_ptr = StubRoutines::vector_double128_cosh(); break;
-            case 256: *name_ptr = "vector_double256_cosh"; *addr_ptr = StubRoutines::vector_double256_cosh(); break;
-            case 512: *name_ptr = "vector_double512_cosh"; *addr_ptr = StubRoutines::vector_double512_cosh(); break;
+            case 64:  *name_ptr = "vector_cosh_double64";  *addr_ptr = StubRoutines::vector_cosh_double64();  break;
+            case 128: *name_ptr = "vector_cosh_double128"; *addr_ptr = StubRoutines::vector_cosh_double128(); break;
+            case 256: *name_ptr = "vector_cosh_double256"; *addr_ptr = StubRoutines::vector_cosh_double256(); break;
+            case 512: *name_ptr = "vector_cosh_double512"; *addr_ptr = StubRoutines::vector_cosh_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_TANH: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_tanh"; *addr_ptr = StubRoutines::vector_double64_tanh(); break;
-            case 128: *name_ptr = "vector_double128_tanh"; *addr_ptr = StubRoutines::vector_double128_tanh(); break;
-            case 256: *name_ptr = "vector_double256_tanh"; *addr_ptr = StubRoutines::vector_double256_tanh(); break;
-            case 512: *name_ptr = "vector_double512_tanh"; *addr_ptr = StubRoutines::vector_double512_tanh(); break;
+            case 64:  *name_ptr = "vector_tanh_double64";  *addr_ptr = StubRoutines::vector_tanh_double64();  break;
+            case 128: *name_ptr = "vector_tanh_double128"; *addr_ptr = StubRoutines::vector_tanh_double128(); break;
+            case 256: *name_ptr = "vector_tanh_double256"; *addr_ptr = StubRoutines::vector_tanh_double256(); break;
+            case 512: *name_ptr = "vector_tanh_double512"; *addr_ptr = StubRoutines::vector_tanh_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_ASIN: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_asin"; *addr_ptr = StubRoutines::vector_double64_asin(); break;
-            case 128: *name_ptr = "vector_double128_asin"; *addr_ptr = StubRoutines::vector_double128_asin(); break;
-            case 256: *name_ptr = "vector_double256_asin"; *addr_ptr = StubRoutines::vector_double256_asin(); break;
-            case 512: *name_ptr = "vector_double512_asin"; *addr_ptr = StubRoutines::vector_double512_asin(); break;
+            case 64:  *name_ptr = "vector_asin_double64";  *addr_ptr = StubRoutines::vector_asin_double64();  break;
+            case 128: *name_ptr = "vector_asin_double128"; *addr_ptr = StubRoutines::vector_asin_double128(); break;
+            case 256: *name_ptr = "vector_asin_double256"; *addr_ptr = StubRoutines::vector_asin_double256(); break;
+            case 512: *name_ptr = "vector_asin_double512"; *addr_ptr = StubRoutines::vector_asin_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_ACOS: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_acos"; *addr_ptr = StubRoutines::vector_double64_acos(); break;
-            case 128: *name_ptr = "vector_double128_acos"; *addr_ptr = StubRoutines::vector_double128_acos(); break;
-            case 256: *name_ptr = "vector_double256_acos"; *addr_ptr = StubRoutines::vector_double256_acos(); break;
-            case 512: *name_ptr = "vector_double512_acos"; *addr_ptr = StubRoutines::vector_double512_acos(); break;
+            case 64:  *name_ptr = "vector_acos_double64";  *addr_ptr = StubRoutines::vector_acos_double64();  break;
+            case 128: *name_ptr = "vector_acos_double128"; *addr_ptr = StubRoutines::vector_acos_double128(); break;
+            case 256: *name_ptr = "vector_acos_double256"; *addr_ptr = StubRoutines::vector_acos_double256(); break;
+            case 512: *name_ptr = "vector_acos_double512"; *addr_ptr = StubRoutines::vector_acos_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_ATAN: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_atan"; *addr_ptr = StubRoutines::vector_double64_atan(); break;
-            case 128: *name_ptr = "vector_double128_atan"; *addr_ptr = StubRoutines::vector_double128_atan(); break;
-            case 256: *name_ptr = "vector_double256_atan"; *addr_ptr = StubRoutines::vector_double256_atan(); break;
-            case 512: *name_ptr = "vector_double512_atan"; *addr_ptr = StubRoutines::vector_double512_atan(); break;
+            case 64:  *name_ptr = "vector_atan_double64";  *addr_ptr = StubRoutines::vector_atan_double64();  break;
+            case 128: *name_ptr = "vector_atan_double128"; *addr_ptr = StubRoutines::vector_atan_double128(); break;
+            case 256: *name_ptr = "vector_atan_double256"; *addr_ptr = StubRoutines::vector_atan_double256(); break;
+            case 512: *name_ptr = "vector_atan_double512"; *addr_ptr = StubRoutines::vector_atan_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_CBRT: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_cbrt"; *addr_ptr = StubRoutines::vector_double64_cbrt(); break;
-            case 128: *name_ptr = "vector_double128_cbrt"; *addr_ptr = StubRoutines::vector_double128_cbrt(); break;
-            case 256: *name_ptr = "vector_double256_cbrt"; *addr_ptr = StubRoutines::vector_double256_cbrt(); break;
-            case 512: *name_ptr = "vector_double512_cbrt"; *addr_ptr = StubRoutines::vector_double512_cbrt(); break;
+            case 64:  *name_ptr = "vector_cbrt_double64";  *addr_ptr = StubRoutines::vector_cbrt_double64();  break;
+            case 128: *name_ptr = "vector_cbrt_double128"; *addr_ptr = StubRoutines::vector_cbrt_double128(); break;
+            case 256: *name_ptr = "vector_cbrt_double256"; *addr_ptr = StubRoutines::vector_cbrt_double256(); break;
+            case 512: *name_ptr = "vector_cbrt_double512"; *addr_ptr = StubRoutines::vector_cbrt_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_HYPOT: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_hypot"; *addr_ptr = StubRoutines::vector_double64_hypot(); break;
-            case 128: *name_ptr = "vector_double128_hypot"; *addr_ptr = StubRoutines::vector_double128_hypot(); break;
-            case 256: *name_ptr = "vector_double256_hypot"; *addr_ptr = StubRoutines::vector_double256_hypot(); break;
-            case 512: *name_ptr = "vector_double512_hypot"; *addr_ptr = StubRoutines::vector_double512_hypot(); break;
+            case 64:  *name_ptr = "vector_hypot_double64";  *addr_ptr = StubRoutines::vector_hypot_double64();  break;
+            case 128: *name_ptr = "vector_hypot_double128"; *addr_ptr = StubRoutines::vector_hypot_double128(); break;
+            case 256: *name_ptr = "vector_hypot_double256"; *addr_ptr = StubRoutines::vector_hypot_double256(); break;
+            case 512: *name_ptr = "vector_hypot_double512"; *addr_ptr = StubRoutines::vector_hypot_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_POW: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_pow"; *addr_ptr = StubRoutines::vector_double64_pow(); break;
-            case 128: *name_ptr = "vector_double128_pow"; *addr_ptr = StubRoutines::vector_double128_pow(); break;
-            case 256: *name_ptr = "vector_double256_pow"; *addr_ptr = StubRoutines::vector_double256_pow(); break;
-            case 512: *name_ptr = "vector_double512_pow"; *addr_ptr = StubRoutines::vector_double512_pow(); break;
+            case 64:  *name_ptr = "vector_pow_double64";  *addr_ptr = StubRoutines::vector_pow_double64();  break;
+            case 128: *name_ptr = "vector_pow_double128"; *addr_ptr = StubRoutines::vector_pow_double128(); break;
+            case 256: *name_ptr = "vector_pow_double256"; *addr_ptr = StubRoutines::vector_pow_double256(); break;
+            case 512: *name_ptr = "vector_pow_double512"; *addr_ptr = StubRoutines::vector_pow_double512(); break;
             default: Unimplemented(); break;
           }
         }
         break;
       case VectorSupport::VECTOR_OP_ATAN2: {
           switch(bits) {
-            case 64: *name_ptr = "vector_double64_atan2"; *addr_ptr = StubRoutines::vector_double64_atan2(); break;
-            case 128: *name_ptr = "vector_double128_atan2"; *addr_ptr = StubRoutines::vector_double128_atan2(); break;
-            case 256: *name_ptr = "vector_double256_atan2"; *addr_ptr = StubRoutines::vector_double256_atan2(); break;
-            case 512: *name_ptr = "vector_double512_atan2"; *addr_ptr = StubRoutines::vector_double512_atan2(); break;
+            case 64:  *name_ptr = "vector_atan2_double64";  *addr_ptr = StubRoutines::vector_atan2_double64();  break;
+            case 128: *name_ptr = "vector_atan2_double128"; *addr_ptr = StubRoutines::vector_atan2_double128(); break;
+            case 256: *name_ptr = "vector_atan2_double256"; *addr_ptr = StubRoutines::vector_atan2_double256(); break;
+            case 512: *name_ptr = "vector_atan2_double512"; *addr_ptr = StubRoutines::vector_atan2_double512(); break;
             default: Unimplemented(); break;
           }
         }
@@ -1513,9 +1525,14 @@ static void get_svml_address(int op, int bits, BasicType bt, const char** name_p
         break;
     }
   }
+#else
+  *name_ptr = "invalid";
+  *addr_ptr = NULL;
+#endif // __VECTOR_API_MATH_INTRINSICS_COMMON
 }
 
 Node* LibraryCallKit::gen_call_to_svml(int vector_api_op_id, BasicType bt, int num_elem, Node* opd1, Node* opd2) {
+  assert(UseVectorStubs, "sanity");
   assert(vector_api_op_id >= VectorSupport::VECTOR_OP_SVML_START && vector_api_op_id <= VectorSupport::VECTOR_OP_SVML_END, "need valid op id");
   assert(opd1 != NULL, "must not be null");
   const TypeVect* vt = TypeVect::make(bt, num_elem);
