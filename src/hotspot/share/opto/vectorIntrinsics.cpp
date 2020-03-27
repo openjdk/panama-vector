@@ -111,16 +111,17 @@ static int get_sopc(int opc, BasicType elem_bt, int arity) {
   return VectorNode::opcode(opc, elem_bt);
 }
 
-static bool is_vector(ciKlass* klass) {
-  return klass->is_subclass_of(ciEnv::current()->vector_VectorPayload_klass());
-}
-
 static bool is_vector_mask(ciKlass* klass) {
   return klass->is_subclass_of(ciEnv::current()->vector_VectorMask_klass());
 }
 
 static bool is_vector_shuffle(ciKlass* klass) {
   return klass->is_subclass_of(ciEnv::current()->vector_VectorShuffle_klass());
+}
+
+#ifdef ASSERT
+static bool is_vector(ciKlass* klass) {
+  return klass->is_subclass_of(ciEnv::current()->vector_VectorPayload_klass());
 }
 
 static bool check_vbox(const TypeInstPtr* vbox_type) {
@@ -144,6 +145,7 @@ static bool check_vbox(const TypeInstPtr* vbox_type) {
 
   return true;
 }
+#endif
 
 Node* LibraryCallKit::box_vector(Node* vector, const TypeInstPtr* vbox_type,
                                  BasicType elem_bt, int num_elem) {
