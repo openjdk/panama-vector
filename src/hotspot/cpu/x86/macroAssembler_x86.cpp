@@ -4345,6 +4345,22 @@ void MacroAssembler::vextendbw(bool sign, XMMRegister dst, XMMRegister src, int 
   }
 }
 
+void MacroAssembler::vextendbd(bool sign, XMMRegister dst, XMMRegister src, int vector_len) {
+  if (sign) {
+    vpmovsxbd(dst, src, vector_len);
+  } else {
+    vpmovzxbd(dst, src, vector_len);
+  }
+}
+
+void MacroAssembler::vextendwd(bool sign, XMMRegister dst, XMMRegister src, int vector_len) {
+  if (sign) {
+    vpmovsxwd(dst, src, vector_len);
+  } else {
+    vpmovzxwd(dst, src, vector_len);
+  }
+}
+
 void MacroAssembler::pminmax(BasicType typ, XMMRegister dst, XMMRegister src, bool is_min) {
   if (is_min) {
     if (typ == T_BYTE) {
@@ -4452,6 +4468,69 @@ void MacroAssembler::vshiftq(int opcode, XMMRegister dst, XMMRegister nds, XMMRe
   } else {
     assert((opcode == Op_URShiftVL),"opcode should be Op_URShiftVL");
     vpsrlq(dst, nds, src, vector_len);
+  }
+}
+
+void MacroAssembler::varshiftd(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len) {
+  if (opcode == Op_VRShiftV) {
+    vpsravd(dst, nds, src, vector_len);
+  } else if (opcode == Op_VLShiftV) {
+    vpsllvd(dst, nds, src, vector_len);
+  } else {
+    assert((opcode == Op_VURShiftV),"opcode should be Op_URShiftVI");
+    vpsrlvd(dst, nds, src, vector_len);
+  }
+}
+
+void MacroAssembler::varshiftw(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len) {
+  if ((opcode == Op_VRShiftV) || (opcode == Op_VRShiftV)) {
+    evpsravw(dst, nds, src, vector_len);
+  } else if ((opcode == Op_VLShiftV) || (opcode == Op_VLShiftV)) {
+    evpsllvw(dst, nds, src, vector_len);
+  } else {
+    assert(((opcode == Op_VURShiftV) || (opcode == Op_VURShiftV)),"opcode should be one of Op_URShiftVS or Op_URShiftVB");
+    evpsrlvw(dst, nds, src, vector_len);
+  }
+}
+
+void MacroAssembler::varshiftq(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len) {
+  if (opcode == Op_VRShiftV) {
+    evpsravq(dst, nds, src, vector_len);
+  } else if (opcode == Op_VLShiftV) {
+    vpsllvq(dst, nds, src, vector_len);
+  } else {
+    assert((opcode == Op_VURShiftV),"opcode should be Op_URShiftVL");
+    vpsrlvq(dst, nds, src, vector_len);
+  }
+}
+
+// Variable shift src by shift using vtmp and scratch as TEMPs giving word result in dst
+void MacroAssembler::varshiftbw(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len, XMMRegister vtmp, Register scratch) {
+  bool sign = (opcode == Op_VURShiftV) ? false : true;
+  assert(vector_len == 0, "required");
+  vextendbd(sign, dst, src, 1);
+  vpmovzxbd(vtmp, shift, 1);
+  varshiftd(opcode, dst, dst, vtmp, 1);
+  vpand(dst, dst, ExternalAddress(StubRoutines::x86::vector_int_to_byte_mask()), 1, scratch);
+  vextracti128_high(vtmp, dst);
+  vpackusdw(dst, dst, vtmp, 0);
+}
+
+// Variable shift src by shift using vtmp and scratch as TEMPs giving byte result in dst
+void MacroAssembler::evarshiftb(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len, XMMRegister vtmp, Register scratch) {
+  bool sign = (opcode == Op_VURShiftV) ? false : true;
+  int ext_vector_len = vector_len + 1;
+  vextendbw(sign, dst, src, ext_vector_len);
+  vpmovzxbw(vtmp, shift, ext_vector_len);
+  varshiftw(opcode, dst, dst, vtmp, ext_vector_len);
+  vpand(dst, dst, ExternalAddress(StubRoutines::x86::vector_short_to_byte_mask()), ext_vector_len, scratch);
+  if (vector_len == 0) {
+    vextracti128_high(vtmp, dst);
+    vpackuswb(dst, dst, vtmp, vector_len);
+  } else {
+    vextracti64x4_high(vtmp, dst);
+    vpackuswb(dst, dst, vtmp, vector_len);
+    vpermq(dst, dst, 0xD8, vector_len);
   }
 }
 
@@ -4586,8 +4665,8 @@ void MacroAssembler::reduce_operation_128(BasicType typ, int opcode, XMMRegister
       break;
     case Op_AddReductionVF: addss(dst, src); break;
     case Op_AddReductionVD: addsd(dst, src); break;
-    case Op_AddReductionVI: 
-      switch (typ) { 
+    case Op_AddReductionVI:
+      switch (typ) {
         case T_BYTE:        paddb(dst, src); break;
         case T_SHORT:       paddw(dst, src); break;
         case T_INT:         paddd(dst, src); break;

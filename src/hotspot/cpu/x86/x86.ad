@@ -1259,7 +1259,6 @@ Assembler::Width widthForType(BasicType typ) {
   static address vector_iota_indices() { return StubRoutines::x86::vector_iota_indices(); }
   static address vector_byte_perm_mask() { return StubRoutines::x86::vector_byte_perm_mask(); }
   static address vector_all_bits_set() { return StubRoutines::x86::vector_all_bits_set(); }
-  static address vector_all_ones_mask() { return StubRoutines::x86::vector_all_ones_mask(); }
   static address vector_int_to_short_mask() { return StubRoutines::x86::vector_int_to_short_mask(); }
   static address vector_short_shufflemask() { return StubRoutines::x86::vector_short_shuffle_mask(); }
   static address vector_int_shufflemask() { return StubRoutines::x86::vector_int_shuffle_mask(); }
@@ -1511,9 +1510,6 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
     case Op_VRShiftV:
     case Op_VURShiftV:
       if (UseAVX < 2) {
-        return false;
-      }
-      if ((size_in_bits < 512) && (VM_Version::supports_avx512vl() == false)) {
         return false;
       }
       break;
@@ -6218,7 +6214,7 @@ instruct vsra1L(vec dst, vec src, vec shift, vec tmp) %{
   ins_encode %{
     __ movdqu($dst$$XMMRegister, $src$$XMMRegister);
     __ psrlq($dst$$XMMRegister, $shift$$XMMRegister);
-    __ movdqu($tmp$$XMMRegister, ExternalAddress(vector_all_ones_mask()));
+    __ movdqu($tmp$$XMMRegister, ExternalAddress(vector_long_sign_mask()));
     __ psrlq($tmp$$XMMRegister, $shift$$XMMRegister);
     __ pxor($dst$$XMMRegister, $tmp$$XMMRegister);
     __ psubq($dst$$XMMRegister, $tmp$$XMMRegister);
@@ -6237,780 +6233,258 @@ instruct vsra1L_reg_evex(vec dst, vec src, vec shift) %{
   ins_pipe( pipe_slow );
 %}
 
-// ------------------- Variable Bit Shift Left Logical -----------------------------
-//Byte Variable left shift
-instruct vsllv8B_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, vec shift1, vec shift2, rRegI scratch) %{
-  predicate(UseAVX > 1 && n->as_Vector()->length() == 8 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VLShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP shift1, TEMP shift2, TEMP scratch);
-  format %{ "vector_var_shift_left_byte $dst, $src, $shift\n\t" %}
-  ins_encode %{
-    int vector_len = 1;
-    __ vpmovzxbd($tmp$$XMMRegister, $src$$XMMRegister, 1);
-    __ vpmovzxbd($shift1$$XMMRegister, $shift$$XMMRegister, 1);
-    __ vpsllvd($tmp$$XMMRegister, $tmp$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vextracti128_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackusdw($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-    __ vpermq($tmp2$$XMMRegister, $tmp$$XMMRegister, 0x1, 1);
-    __ vpackuswb($dst$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsllv16B_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, vec shift1, vec shift2, rRegI scratch) %{
-  predicate(UseAVX > 1 && n->as_Vector()->length() == 16 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VLShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP shift1, TEMP shift2, TEMP scratch);
-  format %{ "vector_var_shift_left_byte $dst, $src, $shift\n\t" %}
-  ins_encode %{
-    int vector_len = 1;
-    __ vpshufd($tmp$$XMMRegister, $src$$XMMRegister, 0xE, 0);
-    __ vpmovzxbd($tmp2$$XMMRegister, $src$$XMMRegister, 1);
-    __ vpmovzxbd($tmp$$XMMRegister, $tmp$$XMMRegister, 1);
-    __ vpshufd($shift1$$XMMRegister, $shift$$XMMRegister, 0xE, 0);
-    __ vpmovzxbd($shift2$$XMMRegister, $shift$$XMMRegister, 1);
-    __ vpmovzxbd($shift1$$XMMRegister, $shift1$$XMMRegister, 1);
-    __ vpsllvd($tmp2$$XMMRegister, $tmp2$$XMMRegister, $shift2$$XMMRegister, vector_len);
-    __ vpsllvd($tmp$$XMMRegister, $tmp$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vpand($tmp2$$XMMRegister, $tmp2$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vpackusdw($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($tmp$$XMMRegister, $tmp$$XMMRegister, 0x8D, vector_len);
-    __ vextracti128_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackuswb($dst$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsllv16B_evex(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegI scratch) %{
-  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() == 16 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VLShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch);
-  format %{ "vector_var_shift_left_byte $dst, $src, $shift\n\t" %}
-  ins_encode %{
-    int vector_len = 1;
-    __ vpmovzxbw($tmp$$XMMRegister, $src$$XMMRegister, 1);
-    __ vpmovzxbw($tmp2$$XMMRegister, $shift$$XMMRegister, 1);
-    __ evpsllvw($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_short_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vextracti128_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackuswb($dst$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsllv32B_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, vec tmp3, vec shift1, vec shift2, rRegI scratch) %{
-  predicate(UseAVX > 1 && n->as_Vector()->length() == 32 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VLShiftV src shift));
-  effect(TEMP dst, TEMP tmp3, TEMP tmp2, TEMP tmp, TEMP shift1, TEMP shift2, TEMP scratch);
-  format %{ "vector_var_shift_left_byte $dst, $src, $shift\n\t" %}
-  ins_encode %{
-    int vector_len = 1;
-    __ vextracti128_high($tmp$$XMMRegister, $src$$XMMRegister);
-    __ vpshufd($tmp2$$XMMRegister, $tmp$$XMMRegister, 0xE, 0);
-    __ vpmovzxbd($tmp$$XMMRegister, $tmp$$XMMRegister, 1);
-    __ vpmovzxbd($tmp2$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vextracti128_high($shift1$$XMMRegister, $shift$$XMMRegister);
-    __ vpshufd($shift2$$XMMRegister, $shift1$$XMMRegister, 0xE, 0);
-    __ vpmovzxbd($shift2$$XMMRegister, $shift2$$XMMRegister, 1);
-    __ vpmovzxbd($shift1$$XMMRegister, $shift1$$XMMRegister, 1);
-    __ vpsllvd($tmp2$$XMMRegister, $tmp2$$XMMRegister, $shift2$$XMMRegister, vector_len);
-    __ vpsllvd($tmp$$XMMRegister, $tmp$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vpand($tmp2$$XMMRegister, $tmp2$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vpackusdw($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($tmp$$XMMRegister, $tmp$$XMMRegister, 0x8D, vector_len);
-    __ vextracti128_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackuswb($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-    __ vpshufd($tmp2$$XMMRegister, $src$$XMMRegister, 0xE, 0);
-    __ vpmovzxbd($tmp3$$XMMRegister, $src$$XMMRegister, 1);
-    __ vpmovzxbd($tmp2$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpshufd($shift2$$XMMRegister, $shift$$XMMRegister, 0xE, 0);
-    __ vpmovzxbd($shift2$$XMMRegister, $shift2$$XMMRegister, 1);
-    __ vpmovzxbd($shift1$$XMMRegister, $shift$$XMMRegister, 1);
-    __ vpsllvd($tmp2$$XMMRegister, $tmp2$$XMMRegister, $shift2$$XMMRegister, vector_len);
-    __ vpsllvd($tmp3$$XMMRegister, $tmp3$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpand($tmp3$$XMMRegister, $tmp3$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vpand($tmp2$$XMMRegister, $tmp2$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vpackusdw($tmp3$$XMMRegister, $tmp3$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($tmp3$$XMMRegister, $tmp3$$XMMRegister, 0x8D, vector_len);
-    __ vextracti128_high($tmp2$$XMMRegister, $tmp3$$XMMRegister);
-    __ vpackuswb($dst$$XMMRegister, $tmp3$$XMMRegister, $tmp2$$XMMRegister, 0);
-    __ vinserti128($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, 0x1);
-    __ vpermq($dst$$XMMRegister, $dst$$XMMRegister, 0xB1, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsllv32B_evex(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegI scratch) %{
-  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() == 32 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VLShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch);
-  format %{ "vector_var_shift_left_byte $dst, $src, $shift\n\t" %}
-  ins_encode %{
-    int vector_len = 2;
-    __ vpmovzxbw($tmp$$XMMRegister, $src$$XMMRegister, vector_len);
-    __ vpmovzxbw($tmp2$$XMMRegister, $shift$$XMMRegister, vector_len);
-    __ evpsllvw($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_short_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vextracti64x4_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackuswb($dst$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($dst$$XMMRegister, $dst$$XMMRegister, 0xD8, 1);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsllv64B_evex(vec dst, vec src, vec shift, vec tmp, vec tmp2, vec tmp3, vec shift1, rRegI scratch) %{
-  predicate(UseAVX > 2 && n->as_Vector()->length() == 64 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VLShiftV src shift));
-  effect(TEMP dst, TEMP tmp3, TEMP tmp2, TEMP tmp, TEMP shift1, TEMP scratch);
-  format %{ "vector_var_shift_left_byte $dst, $src, $shift\n\t" %}
-  ins_encode %{
-    int vector_len = 2;
-    __ vextracti64x4_high($tmp$$XMMRegister, $src$$XMMRegister);
-    __ vpmovzxbw($tmp$$XMMRegister, $tmp$$XMMRegister, vector_len);
-    __ vextracti64x4_high($shift1$$XMMRegister, $shift$$XMMRegister);
-    __ vpmovzxbw($shift1$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ evpsllvw($tmp$$XMMRegister, $tmp$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_short_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vextracti64x4_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackuswb($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($tmp$$XMMRegister, $tmp$$XMMRegister, 0xD8, 1);
-    __ vpmovzxbw($tmp3$$XMMRegister, $src$$XMMRegister, vector_len);
-    __ vpmovzxbw($shift1$$XMMRegister, $shift$$XMMRegister, vector_len);
-    __ evpsllvw($tmp3$$XMMRegister, $tmp3$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpand($tmp3$$XMMRegister, $tmp3$$XMMRegister, ExternalAddress(vector_short_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vextracti64x4_high($tmp2$$XMMRegister, $tmp3$$XMMRegister);
-    __ vpackuswb($tmp3$$XMMRegister, $tmp3$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($dst$$XMMRegister, $tmp3$$XMMRegister, 0xD8, 1);
-    __ vinserti64x4($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, 0x1);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-//Short Variable left shift
-instruct vsllv4S_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegI scratch) %{
-  predicate(UseAVX > 1 && (UseAVX < 3 || !VM_Version::supports_avx512bw()) && n->as_Vector()->length() == 4 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VLShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch);
-  format %{ "vector_var_shift_left_short $dst, $src, $shift\n\t" %}
-  ins_encode %{
-    int vector_len = 0;
-    __ vpmovzxwd($tmp$$XMMRegister, $src$$XMMRegister, 1);
-    __ vpmovzxwd($tmp2$$XMMRegister, $shift$$XMMRegister, 1) ;
-    __ vpsllvd($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_short_mask()), vector_len, $scratch$$Register);
-    __ vpackusdw($dst$$XMMRegister, $tmp$$XMMRegister, $tmp$$XMMRegister, 0);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsllv8S_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegI scratch) %{
-  predicate(UseAVX > 1 && (UseAVX < 3 || !VM_Version::supports_avx512bw()) && n->as_Vector()->length() == 8 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VLShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch);
-  format %{ "vector_var_shift_left_short $dst, $src, $shift\n\t" %}
-  ins_encode %{
-    int vector_len = 1;
-    __ vpmovzxwd($tmp$$XMMRegister, $src$$XMMRegister, 1);
-    __ vpmovzxwd($tmp2$$XMMRegister, $shift$$XMMRegister, 1);
-    __ vpsllvd($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_short_mask()), vector_len, $scratch$$Register);
-    __ vextracti128_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackusdw($dst$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsllv16S_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegP scratch, vec shift1, vec shift2) %{
-  predicate(UseAVX > 1 && (UseAVX < 3 || !VM_Version::supports_avx512bw()) && n->as_Vector()->length() == 16 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VLShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch, TEMP shift1, TEMP shift2);
-  format %{ "vector_var_shift_left_short $dst, $src, $shift\n\t" %}
-  ins_encode %{
-    int vector_len = 1;
-    __ vextracti128_high($tmp$$XMMRegister, $src$$XMMRegister);
-    __ vpmovzxwd($tmp$$XMMRegister, $tmp$$XMMRegister, vector_len);
-    __ vpmovzxwd($tmp2$$XMMRegister, $src$$XMMRegister, vector_len);
-    __ vextracti128_high($shift1$$XMMRegister, $shift$$XMMRegister);
-    __ vpmovzxwd($shift1$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpmovzxwd($shift2$$XMMRegister, $shift$$XMMRegister, vector_len);
-    __ vpsllvd($tmp$$XMMRegister, $tmp$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpsllvd($tmp2$$XMMRegister, $tmp2$$XMMRegister, $shift2$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_short_mask()), vector_len, $scratch$$Register);
-    __ vpand($tmp2$$XMMRegister, $tmp2$$XMMRegister, ExternalAddress(vector_int_to_short_mask()), vector_len, $scratch$$Register);
-    __ vpackusdw($dst$$XMMRegister, $tmp2$$XMMRegister, $tmp$$XMMRegister, vector_len);
-    __ vpermq($dst$$XMMRegister, $dst$$XMMRegister, 0xD8, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsllvS_evex(vec dst, vec src, vec shift) %{
-  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() >= 4 && n->as_Vector()->length() <= 32 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VLShiftV src shift));
-  format %{ "vector_var_shift_left_short $dst,$src,$shift\t! variable bit shift left shift packedS" %}
-  ins_encode %{
-    int vector_len = vector_length_encoding(this);
-    __ evpsllvw($dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-//Integer Variable left shift
-instruct vsllvI_reg(vec dst, vec src, vec shift) %{
-  predicate(n->as_Vector()->length() >= 2 && n->as_Vector()->length() <= 16 &&
-            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VLShiftV src shift));
-  format %{ "vector_var_shift_left_int $dst,$src,$shift\t! variable bit shift left shift packedI" %}
-  ins_encode %{
-    int vector_len = vector_length_encoding(this);
-    __ vpsllvd($dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-//Long Variable left shift
-instruct vsllvL_reg(vec dst, vec src, vec shift) %{
-  predicate(n->as_Vector()->length() >= 1 && n->as_Vector()->length() <= 8 && 
-            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VLShiftV src shift));
-  format %{ "vector_var_shift_left_long $dst,$src,$shift\t! variable bit shift left shift packedL" %}
-  ins_encode %{
-    int vector_len = vector_length_encoding(this);
-    __ vpsllvq($dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-// ------------------- Variable Bit Shift Right Logical -----------------------------
-//Byte Variable right shift
-instruct vsrlvB_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, vec shift1, vec shift2, rRegI scratch) %{
-  predicate(UseAVX > 1 && (n->as_Vector()->length() == 8 || n->as_Vector()->length() == 16) && 
+// ------------------- Variable Shift -----------------------------
+//Byte variable shift
+instruct variable_shiftb(vec dst, vec src, vec shift, vec vtmp, rRegP scratch) %{
+  predicate((UseAVX == 2 || (UseAVX > 2 && !VM_Version::supports_avx512bw()))  &&
+            n->as_Vector()->length() <= 8 &&
             n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VLShiftV src shift));
+  match(Set dst (VRShiftV src shift));
   match(Set dst (VURShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP shift1, TEMP shift2, TEMP scratch);
-  format %{ "vector_shift_right_logical_byte $dst,$src, $shift\n\t" %}
+  effect(TEMP dst, TEMP vtmp, TEMP scratch);
+  format %{ "vector_varshift_byte $dst, $src, $shift\n\t! using $vtmp, $scratch as TEMP" %}
   ins_encode %{
-    const TypeVect * vt = this->bottom_type()->is_vect();
-    if (vt->length() == 8) {
-      int vector_len = 1;
-      __ vpmovzxbd($tmp$$XMMRegister, $src$$XMMRegister, 1);
-      __ vpmovzxbd($shift1$$XMMRegister, $shift$$XMMRegister, 1);
-      __ vpsrlvd($tmp$$XMMRegister, $tmp$$XMMRegister, $shift1$$XMMRegister, vector_len);
-      __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-      __ vextracti128_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-      __ vpackusdw($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-      __ vpermq($tmp2$$XMMRegister, $tmp$$XMMRegister, 0x1, 1);
-      __ vpackuswb($dst$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-    } else {   
-      int vector_len = 1;
-      __ vpshufd($tmp$$XMMRegister, $src$$XMMRegister, 0xE, 0);
-      __ vpmovzxbd($tmp2$$XMMRegister, $src$$XMMRegister, 1);
-      __ vpmovzxbd($tmp$$XMMRegister, $tmp$$XMMRegister, 1);
-      __ vpshufd($shift1$$XMMRegister, $shift$$XMMRegister, 0xE, 0);
-      __ vpmovzxbd($shift2$$XMMRegister, $shift$$XMMRegister, 1);
-      __ vpmovzxbd($shift1$$XMMRegister, $shift1$$XMMRegister, 1);
-      __ vpsrlvd($tmp2$$XMMRegister, $tmp2$$XMMRegister, $shift2$$XMMRegister, vector_len);
-      __ vpsrlvd($tmp$$XMMRegister, $tmp$$XMMRegister, $shift1$$XMMRegister, vector_len);
-      __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-      __ vpand($tmp2$$XMMRegister, $tmp2$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-      __ vpackusdw($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 1);
-      __ vpermq($tmp$$XMMRegister, $tmp$$XMMRegister, 0x8D, vector_len);
-      __ vextracti128_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-      __ vpackuswb($dst$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsrlv16B_evex(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegI scratch) %{
-  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() == 16 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VURShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch);
-  format %{ "vector_shift_right_logical_byte $dst, $src, $shift\n\t" %}
-  ins_encode %{
-    int vector_len = 1;
-    __ vpmovzxbw($tmp$$XMMRegister, $src$$XMMRegister, 1);
-    __ vpmovzxbw($tmp2$$XMMRegister, $shift$$XMMRegister, 1);
-    __ evpsrlvw($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_short_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vextracti128_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackuswb($dst$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsrlv32B_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, vec tmp3, vec shift1, vec shift2, rRegI scratch) %{
-  predicate(UseAVX > 1 && n->as_Vector()->length() == 32 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VURShiftV src shift));
-  effect(TEMP dst, TEMP tmp3, TEMP tmp2, TEMP tmp, TEMP shift1, TEMP shift2, TEMP scratch);
-  format %{ "vector_shift_right_logical_byte  $dst, $src, $shift\n\t" %}
-  ins_encode %{
-    int vector_len = 1;
-    __ vextracti128_high($tmp$$XMMRegister, $src$$XMMRegister);
-    __ vpshufd($tmp2$$XMMRegister, $tmp$$XMMRegister, 0xE, 0);
-    __ vpmovzxbd($tmp$$XMMRegister, $tmp$$XMMRegister, 1);
-    __ vpmovzxbd($tmp2$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vextracti128_high($shift1$$XMMRegister, $shift$$XMMRegister);
-    __ vpshufd($shift2$$XMMRegister, $shift1$$XMMRegister, 0xE, 0);
-    __ vpmovzxbd($shift2$$XMMRegister, $shift2$$XMMRegister, 1);
-    __ vpmovzxbd($shift1$$XMMRegister, $shift1$$XMMRegister, 1);
-    __ vpsrlvd($tmp2$$XMMRegister, $tmp2$$XMMRegister, $shift2$$XMMRegister, vector_len);
-    __ vpsrlvd($tmp$$XMMRegister, $tmp$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vpand($tmp2$$XMMRegister, $tmp2$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vpackusdw($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($tmp$$XMMRegister, $tmp$$XMMRegister, 0x8D, vector_len);
-    __ vextracti128_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackuswb($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-    __ vpshufd($tmp2$$XMMRegister, $src$$XMMRegister, 0xE, 0);
-    __ vpmovzxbd($tmp3$$XMMRegister, $src$$XMMRegister, 1);
-    __ vpmovzxbd($tmp2$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpshufd($shift2$$XMMRegister, $shift$$XMMRegister, 0xE, 0);
-    __ vpmovzxbd($shift2$$XMMRegister, $shift2$$XMMRegister, 1);
-    __ vpmovzxbd($shift1$$XMMRegister, $shift$$XMMRegister, 1);
-    __ vpsrlvd($tmp2$$XMMRegister, $tmp2$$XMMRegister, $shift2$$XMMRegister, vector_len);
-    __ vpsrlvd($tmp3$$XMMRegister, $tmp3$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpand($tmp3$$XMMRegister, $tmp3$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vpand($tmp2$$XMMRegister, $tmp2$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vpackusdw($tmp3$$XMMRegister, $tmp3$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($tmp3$$XMMRegister, $tmp3$$XMMRegister, 0x8D, vector_len);
-    __ vextracti128_high($tmp2$$XMMRegister, $tmp3$$XMMRegister);
-    __ vpackuswb($dst$$XMMRegister, $tmp3$$XMMRegister, $tmp2$$XMMRegister, 0);
-    __ vinserti128($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, 0x1);
-    __ vpermq($dst$$XMMRegister, $dst$$XMMRegister, 0xB1, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsrlv32B_evex(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegI scratch) %{
-  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() == 32 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VURShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch);
-  format %{ "vector_shift_right_logical_byte  $dst, $src, $shift\n\t" %}
-  ins_encode %{
-    int vector_len = 2;
-    __ vpmovzxbw($tmp$$XMMRegister, $src$$XMMRegister, vector_len);
-    __ vpmovzxbw($tmp2$$XMMRegister, $shift$$XMMRegister, vector_len);
-    __ evpsrlvw($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_short_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vextracti64x4_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackuswb($dst$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($dst$$XMMRegister, $dst$$XMMRegister, 0xD8, 1);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsrlv64B_evex(vec dst, vec src, vec shift, vec tmp, vec tmp2, vec tmp3, vec shift1, rRegI scratch) %{
-  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() == 64 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VURShiftV src shift));
-  effect(TEMP dst, TEMP tmp3, TEMP tmp2, TEMP tmp, TEMP shift1, TEMP scratch);
-  format %{ "vector_shift_right_logical_byte  $dst, $src, $shift\n\t" %}
-  ins_encode %{
-    int vector_len = 2;
-    __ vextracti64x4_high($tmp$$XMMRegister, $src$$XMMRegister);
-    __ vpmovzxbw($tmp$$XMMRegister, $tmp$$XMMRegister, vector_len);
-    __ vextracti64x4_high($shift1$$XMMRegister, $shift$$XMMRegister);
-    __ vpmovzxbw($shift1$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ evpsrlvw($tmp$$XMMRegister, $tmp$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_short_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vextracti64x4_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackuswb($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($tmp$$XMMRegister, $tmp$$XMMRegister, 0xD8, 1);
-    __ vpmovzxbw($tmp3$$XMMRegister, $src$$XMMRegister, vector_len);
-    __ vpmovzxbw($shift1$$XMMRegister, $shift$$XMMRegister, vector_len);
-    __ evpsrlvw($tmp3$$XMMRegister, $tmp3$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpand($tmp3$$XMMRegister, $tmp3$$XMMRegister, ExternalAddress(vector_short_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vextracti64x4_high($tmp2$$XMMRegister, $tmp3$$XMMRegister);
-    __ vpackuswb($tmp3$$XMMRegister, $tmp3$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($dst$$XMMRegister, $tmp3$$XMMRegister, 0xD8, 1);
-    __ vinserti64x4($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, 0x1);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-//Short Variable logical right shift
-instruct vsrlv4S_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegI scratch) %{
-  predicate(UseAVX > 1 && (UseAVX < 3 || !VM_Version::supports_avx512bw()) && n->as_Vector()->length() == 4 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VURShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch);
-  format %{ "vector_shift_right_logical_short $dst, $src, $shift\n\t" %}
-  ins_encode %{
+    int opcode = this->ideal_Opcode();
     int vector_len = 0;
-    __ vpmovzxwd($tmp$$XMMRegister, $src$$XMMRegister, 1);
-    __ vpmovzxwd($tmp2$$XMMRegister, $shift$$XMMRegister, 1);
-    __ vpsrlvd($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_short_mask()), vector_len, $scratch$$Register);
-    __ vpackusdw($dst$$XMMRegister, $tmp$$XMMRegister, $tmp$$XMMRegister, 0);
+    __ varshiftbw(opcode, $dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len, $vtmp$$XMMRegister, $scratch$$Register);
+    __ vpackuswb($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, 0);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vsrlv8S_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegI scratch) %{
-  predicate(UseAVX > 1 && (UseAVX < 3 || !VM_Version::supports_avx512bw()) && n->as_Vector()->length() == 8 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VURShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch);
-  format %{ "vector_shift_right_logical_short $dst, $src, $shift\n\t" %}
-  ins_encode %{
-    int vector_len = 1;
-    __ vpmovzxwd($tmp$$XMMRegister, $src$$XMMRegister, 1);
-    __ vpmovzxwd($tmp2$$XMMRegister, $shift$$XMMRegister, 1);
-    __ vpsrlvd($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_short_mask()), vector_len, $scratch$$Register);
-    __ vextracti128_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackusdw($dst$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsrlv16S_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegI scratch, vec shift1, vec shift2) %{
-  predicate(UseAVX > 1 && (UseAVX < 3 || !VM_Version::supports_avx512bw()) && n->as_Vector()->length() == 16 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VURShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch, TEMP shift1, TEMP shift2);
-  format %{ "vector_shift_right_logical_short $dst, $src, $shift\n\t" %}
-  ins_encode %{
-    int vector_len = 1;
-    __ vextracti128_high($tmp$$XMMRegister, $src$$XMMRegister);
-    __ vpmovzxwd($tmp$$XMMRegister, $tmp$$XMMRegister, vector_len);
-    __ vpmovzxwd($tmp2$$XMMRegister, $src$$XMMRegister, vector_len);
-    __ vextracti128_high($shift1$$XMMRegister, $shift$$XMMRegister);
-    __ vpmovzxwd($shift1$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpmovzxwd($shift2$$XMMRegister, $shift$$XMMRegister, vector_len);
-    __ vpsrlvd($tmp$$XMMRegister, $tmp$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpsrlvd($tmp2$$XMMRegister, $tmp2$$XMMRegister, $shift2$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_short_mask()), vector_len, $scratch$$Register);
-    __ vpand($tmp2$$XMMRegister, $tmp2$$XMMRegister, ExternalAddress(vector_int_to_short_mask()), vector_len, $scratch$$Register);
-    __ vpackusdw($dst$$XMMRegister, $tmp2$$XMMRegister, $tmp$$XMMRegister, vector_len);
-    __ vpermq($dst$$XMMRegister, $dst$$XMMRegister, 0xD8, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsrlvS_evex(vec dst, vec src, vec shift) %{
-  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() >= 4 && n->as_Vector()->length() <= 32 &&
-            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VURShiftV src shift));
-  format %{ "vector_shift_right_logical_short $dst,$src,$shift\t! variable bit shift logical right shift packedS" %}
-  ins_encode %{
-    int vector_len = vector_length_encoding(this);
-    __ evpsrlvw($dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-//Integer Variable right shift
-instruct vsrlvI_reg(vec dst, vec src, vec shift) %{
-  predicate(n->as_Vector()->length() >= 2  && n->as_Vector()->length() <= 16 && 
-            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VURShiftV src shift));
-  format %{ "vector_shift_right_logical_int $dst,$src,$shift\t! variable bit shift right shift packedI" %}
-  ins_encode %{
-    int vector_len = vector_length_encoding(this);
-    __ vpsrlvd($dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-//Long Variable right shift
-instruct vsrlvL_reg(vec dst, vec src, vec shift) %{
-  predicate(n->as_Vector()->length() >= 1 && n->as_Vector()->length() <= 8 && 
-            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VURShiftV src shift));
-  format %{ "vector_shift_right_logical_long $dst,$src,$shift\t! variable bit shift right shift packedL" %}
-  ins_encode %{
-    int vector_len = vector_length_encoding(this);
-    __ vpsrlvq($dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-// ------------------- Variable Bit Shift Right Arithmetic -----------------------------
-//Byte Variable right shift
-instruct vsravB_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, vec shift1, vec shift2, rRegI scratch) %{
-  predicate(UseAVX > 1 && (n->as_Vector()->length() == 8 || n->as_Vector()->length() == 16) && 
+instruct vvariable_shiftb(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, rRegP scratch) %{
+  predicate((UseAVX == 2 || (UseAVX > 2 && !VM_Version::supports_avx512bw()))  &&
+            n->as_Vector()->length() == 16 &&
             n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VLShiftV src shift));
   match(Set dst (VRShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP shift1, TEMP shift2, TEMP scratch);
-  format %{ "vector_shift_right_arith_byte $dst,$src,$shift\n\t" %}
+  match(Set dst (VURShiftV src shift));
+  effect(TEMP dst, TEMP vtmp1, TEMP vtmp2, TEMP scratch);
+  format %{ "vector_varshift_byte $dst, $src, $shift\n\t! using $vtmp1, $vtmp2 and $scratch as TEMP" %}
   ins_encode %{
-    const TypeVect * vt = this->bottom_type()->is_vect();
-    if (vt->length() == 8) {
-       int vector_len = 1;
-       __ vpmovsxbd($tmp$$XMMRegister, $src$$XMMRegister, 1);
-       __ vpmovzxbd($shift1$$XMMRegister, $shift$$XMMRegister, 1);
-       __ vpsravd($tmp$$XMMRegister, $tmp$$XMMRegister, $shift1$$XMMRegister, vector_len);
-       __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-       __ vextracti128_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-       __ vpackusdw($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-       __ vpermq($tmp2$$XMMRegister, $tmp$$XMMRegister, 0x1, 1);
-       __ vpackuswb($dst$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-    } else {
-       int vector_len = 1;
-       __ vpshufd($tmp$$XMMRegister, $src$$XMMRegister, 0xE, 0);
-       __ vpmovsxbd($tmp2$$XMMRegister, $src$$XMMRegister, 1);
-       __ vpmovsxbd($tmp$$XMMRegister, $tmp$$XMMRegister, 1);
-       __ vpshufd($shift1$$XMMRegister, $shift$$XMMRegister, 0xE, 0);
-       __ vpmovzxbd($shift2$$XMMRegister, $shift$$XMMRegister, 1);
-       __ vpmovzxbd($shift1$$XMMRegister, $shift1$$XMMRegister, 1);
-       __ vpsravd($tmp2$$XMMRegister, $tmp2$$XMMRegister, $shift2$$XMMRegister, vector_len);
-       __ vpsravd($tmp$$XMMRegister, $tmp$$XMMRegister, $shift1$$XMMRegister, vector_len);
-       __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-       __ vpand($tmp2$$XMMRegister, $tmp2$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-       __ vpackusdw($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 1);
-       __ vpermq($tmp$$XMMRegister, $tmp$$XMMRegister, 0x8D, vector_len);
-       __ vextracti128_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-       __ vpackuswb($dst$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsrav16B_evex(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegI scratch) %{
-  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() == 16 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VRShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch);
-  format %{ "vector_shift_right_arith_byte $dst,$src,$shift\n\t" %}
-  ins_encode %{
-    int vector_len = 1;
-    __ vpmovsxbw($tmp$$XMMRegister, $src$$XMMRegister, 1);
-    __ vpmovzxbw($tmp2$$XMMRegister, $shift$$XMMRegister, 1);
-    __ evpsravw($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_short_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vextracti128_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackuswb($dst$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsrav32B_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, vec tmp3, vec shift1, vec shift2, rRegI scratch) %{
-  predicate(UseAVX > 1 && n->as_Vector()->length() == 32 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VRShiftV src shift));
-  effect(TEMP dst, TEMP tmp3, TEMP tmp2, TEMP tmp, TEMP shift1, TEMP shift2, TEMP scratch);
-  format %{ "vector_shift_right_arith_byte $dst,$src,$shift\n\t" %}
-  ins_encode %{
-    int vector_len = 1;
-    __ vextracti128_high($tmp$$XMMRegister, $src$$XMMRegister);
-    __ vpshufd($tmp2$$XMMRegister, $tmp$$XMMRegister, 0xE, 0);
-    __ vpmovsxbd($tmp$$XMMRegister, $tmp$$XMMRegister, 1);
-    __ vpmovsxbd($tmp2$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vextracti128_high($shift1$$XMMRegister, $shift$$XMMRegister);
-    __ vpshufd($shift2$$XMMRegister, $shift1$$XMMRegister, 0xE, 0);
-    __ vpmovzxbd($shift2$$XMMRegister, $shift2$$XMMRegister, 1);
-    __ vpmovzxbd($shift1$$XMMRegister, $shift1$$XMMRegister, 1);
-    __ vpsravd($tmp2$$XMMRegister, $tmp2$$XMMRegister, $shift2$$XMMRegister, vector_len);
-    __ vpsravd($tmp$$XMMRegister, $tmp$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vpand($tmp2$$XMMRegister, $tmp2$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vpackusdw($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($tmp$$XMMRegister, $tmp$$XMMRegister, 0x8D, vector_len);
-    __ vextracti128_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackuswb($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
-    __ vpshufd($tmp2$$XMMRegister, $src$$XMMRegister, 0xE, 0);
-    __ vpmovsxbd($tmp3$$XMMRegister, $src$$XMMRegister, 1);
-    __ vpmovsxbd($tmp2$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpshufd($shift2$$XMMRegister, $shift$$XMMRegister, 0xE, 0);
-    __ vpmovzxbd($shift2$$XMMRegister, $shift2$$XMMRegister, 1);
-    __ vpmovzxbd($shift1$$XMMRegister, $shift$$XMMRegister, 1);
-    __ vpsravd($tmp2$$XMMRegister, $tmp2$$XMMRegister, $shift2$$XMMRegister, vector_len);
-    __ vpsravd($tmp3$$XMMRegister, $tmp3$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpand($tmp3$$XMMRegister, $tmp3$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vpand($tmp2$$XMMRegister, $tmp2$$XMMRegister, ExternalAddress(vector_int_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vpackusdw($tmp3$$XMMRegister, $tmp3$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($tmp3$$XMMRegister, $tmp3$$XMMRegister, 0x8D, vector_len);
-    __ vextracti128_high($tmp2$$XMMRegister, $tmp3$$XMMRegister);
-    __ vpackuswb($dst$$XMMRegister, $tmp3$$XMMRegister, $tmp2$$XMMRegister, 0);
-    __ vinserti128($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, 0x1);
-    __ vpermq($dst$$XMMRegister, $dst$$XMMRegister, 0xB1, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsrav32B_evex(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegI scratch) %{
-  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() == 32 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VRShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch);
-  format %{ "vector_shift_right_arith_byte $dst,$src,$shift\n\t" %}
-  ins_encode %{
-    int vector_len = 2;
-    __ vpmovsxbw($tmp$$XMMRegister, $src$$XMMRegister, vector_len);
-    __ vpmovzxbw($tmp2$$XMMRegister, $shift$$XMMRegister, vector_len);
-    __ evpsravw($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_short_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vextracti64x4_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackuswb($dst$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($dst$$XMMRegister, $dst$$XMMRegister, 0xD8, 1);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsrav64B_evex(vec dst, vec src, vec shift, vec tmp, vec tmp2, vec tmp3, vec shift1, rRegI scratch) %{
-  predicate(UseAVX > 2 && n->as_Vector()->length() == 64 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VRShiftV src shift));
-  effect(TEMP dst, TEMP tmp3, TEMP tmp2, TEMP tmp, TEMP shift1, TEMP scratch);
-  format %{ "vector_shift_right_arith_byte $dst,$src,$shift\n\t" %}
-  ins_encode %{
-    int vector_len = 2;
-    __ vextracti64x4_high($tmp$$XMMRegister, $src$$XMMRegister);
-    __ vpmovsxbw($tmp$$XMMRegister, $tmp$$XMMRegister, vector_len);
-    __ vextracti64x4_high($shift1$$XMMRegister, $shift$$XMMRegister);
-    __ vpmovzxbw($shift1$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ evpsravw($tmp$$XMMRegister, $tmp$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_short_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vextracti64x4_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackuswb($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($tmp$$XMMRegister, $tmp$$XMMRegister, 0xD8, 1);
-    __ vpmovsxbw($tmp3$$XMMRegister, $src$$XMMRegister, vector_len);
-    __ vpmovzxbw($shift1$$XMMRegister, $shift$$XMMRegister, vector_len);
-    __ evpsravw($tmp3$$XMMRegister, $tmp3$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpand($tmp3$$XMMRegister, $tmp3$$XMMRegister, ExternalAddress(vector_short_to_byte_mask()), vector_len, $scratch$$Register);
-    __ vextracti64x4_high($tmp2$$XMMRegister, $tmp3$$XMMRegister);
-    __ vpackuswb($tmp3$$XMMRegister, $tmp3$$XMMRegister, $tmp2$$XMMRegister, 1);
-    __ vpermq($dst$$XMMRegister, $tmp3$$XMMRegister, 0xD8, 1);
-    __ vinserti64x4($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, 0x1);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-//Short Variable Arithmetic right shift
-instruct vsrav4S_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegI scratch) %{
-  predicate(UseAVX > 1 && (UseAVX < 3 || !VM_Version::supports_avx512bw()) && n->as_Vector()->length() == 4 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VRShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch);
-  format %{ "vector_shift_right_arith_short $dst, $src, $shift\n\t" %}
-  ins_encode %{
+    int opcode = this->ideal_Opcode();
     int vector_len = 0;
-    __ vpmovsxwd($tmp$$XMMRegister, $src$$XMMRegister, 1);
-    __ vpmovzxwd($tmp2$$XMMRegister, $shift$$XMMRegister, 1);
-    __ vpsravd($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_short_mask()), vector_len, $scratch$$Register);
-    __ vpackusdw($dst$$XMMRegister, $tmp$$XMMRegister, $tmp$$XMMRegister, 0);
+    // Shift lower half and get word result in dst
+    __ varshiftbw(opcode, $dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len, $vtmp1$$XMMRegister, $scratch$$Register);
+
+    // Shift upper half and get word result in vtmp1
+    __ vpshufd($vtmp1$$XMMRegister, $src$$XMMRegister, 0xE, 0);
+    __ vpshufd($vtmp2$$XMMRegister, $shift$$XMMRegister, 0xE, 0);
+    __ varshiftbw(opcode, $vtmp1$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister, vector_len, $vtmp2$$XMMRegister, $scratch$$Register);
+
+    // Merge and down convert the two word results to byte in dst
+    __ vpackuswb($dst$$XMMRegister, $dst$$XMMRegister, $vtmp1$$XMMRegister, 0);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vsrav8S_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegI scratch) %{
-  predicate(UseAVX > 1 && (UseAVX < 3 || !VM_Version::supports_avx512bw()) && n->as_Vector()->length() == 8 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+instruct vvariable_shiftb32(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, vec vtmp3, vec vtmp4, rRegP scratch) %{
+  predicate((UseAVX == 2 || (UseAVX > 2 && !VM_Version::supports_avx512bw()))  &&
+            n->as_Vector()->length() == 32 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VLShiftV src shift));
   match(Set dst (VRShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch);
-  format %{ "vector_shift_right_arith_short $dst, $src, $shift\n\t" %}
+  match(Set dst (VURShiftV src shift));
+  effect(TEMP dst, TEMP vtmp1, TEMP vtmp2, TEMP vtmp3, TEMP vtmp4, TEMP scratch);
+  format %{ "vector_varshift_byte $dst, $src, $shift\n\t using $vtmp1, $vtmp2, $vtmp3, $vtmp4 and $scratch as TEMP" %}
   ins_encode %{
-    int vector_len = 1;
-    __ vpmovsxwd($tmp$$XMMRegister, $src$$XMMRegister, 1);
-    __ vpmovzxwd($tmp2$$XMMRegister, $shift$$XMMRegister, 1);
-    __ vpsravd($tmp$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_short_mask()), vector_len, $scratch$$Register);
-    __ vextracti128_high($tmp2$$XMMRegister, $tmp$$XMMRegister);
-    __ vpackusdw($dst$$XMMRegister, $tmp$$XMMRegister, $tmp2$$XMMRegister, 0);
+    int opcode = this->ideal_Opcode();
+    int vector_len = 0;
+    // Process lower 128 bits and get result in dst
+    __ varshiftbw(opcode, $dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len, $vtmp1$$XMMRegister, $scratch$$Register);
+    __ vpshufd($vtmp1$$XMMRegister, $src$$XMMRegister, 0xE, 0);
+    __ vpshufd($vtmp2$$XMMRegister, $shift$$XMMRegister, 0xE, 0);
+    __ varshiftbw(opcode, $vtmp1$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister, vector_len, $vtmp2$$XMMRegister, $scratch$$Register);
+    __ vpackuswb($dst$$XMMRegister, $dst$$XMMRegister, $vtmp1$$XMMRegister, 0);
+
+    // Process higher 128 bits and get result in vtmp3
+    __ vextracti128_high($vtmp1$$XMMRegister, $src$$XMMRegister);
+    __ vextracti128_high($vtmp2$$XMMRegister, $shift$$XMMRegister);
+    __ varshiftbw(opcode, $vtmp3$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister, vector_len, $vtmp4$$XMMRegister, $scratch$$Register);
+    __ vpshufd($vtmp1$$XMMRegister, $vtmp1$$XMMRegister, 0xE, 0);
+    __ vpshufd($vtmp2$$XMMRegister, $vtmp2$$XMMRegister, 0xE, 0);
+    __ varshiftbw(opcode, $vtmp1$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister, vector_len, $vtmp2$$XMMRegister, $scratch$$Register);
+    __ vpackuswb($vtmp1$$XMMRegister, $vtmp3$$XMMRegister, $vtmp1$$XMMRegister, 0);
+
+    // Merge the two results in dst
+    __ vinserti128($dst$$XMMRegister, $dst$$XMMRegister, $vtmp1$$XMMRegister, 0x1);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vsrav16S_avx(vec dst, vec src, vec shift, vec tmp, vec tmp2, rRegI scratch, vec shift1, vec shift2) %{
-  predicate(UseAVX > 1 && (UseAVX < 3 || !VM_Version::supports_avx512bw()) && n->as_Vector()->length() == 16 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+instruct evariable_shiftb(vec dst, vec src, vec shift, vec vtmp, rRegP scratch) %{
+  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() &&
+            n->as_Vector()->length() <= 32 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VLShiftV src shift));
   match(Set dst (VRShiftV src shift));
-  effect(TEMP dst, TEMP tmp2, TEMP tmp, TEMP scratch, TEMP shift1, TEMP shift2);
-  format %{ "vector_shift_right_arith_short $dst, $src, $shift\n\t" %}
+  match(Set dst (VURShiftV src shift));
+  effect(TEMP dst, TEMP vtmp, TEMP scratch);
+  format %{ "vector_varshift_byte $dst, $src, $shift\n\t! using $vtmp, $scratch as TEMP" %}
   ins_encode %{
+    int opcode = this->ideal_Opcode();
+    int vector_len = vector_length_encoding(this);
+    __ evarshiftb(opcode, $dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len, $vtmp$$XMMRegister, $scratch$$Register);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct evariable_shiftb64(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, rRegP scratch) %{
+  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() &&
+            n->as_Vector()->length() == 64 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VLShiftV src shift));
+  match(Set dst (VRShiftV src shift));
+  match(Set dst (VURShiftV src shift));
+  effect(TEMP dst, TEMP vtmp1, TEMP vtmp2, TEMP scratch);
+  format %{ "vector_varshift_byte $dst, $src, $shift\n\t! using $vtmp1, $vtmp2 and $scratch as TEMP" %}
+  ins_encode %{
+    int opcode = this->ideal_Opcode();
     int vector_len = 1;
-    __ vextracti128_high($tmp$$XMMRegister, $src$$XMMRegister);
-    __ vpmovsxwd($tmp$$XMMRegister, $tmp$$XMMRegister, vector_len);
-    __ vpmovsxwd($tmp2$$XMMRegister, $src$$XMMRegister, vector_len);
-    __ vextracti128_high($shift1$$XMMRegister, $shift$$XMMRegister);
-    __ vpmovzxwd($shift1$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpmovzxwd($shift2$$XMMRegister, $shift$$XMMRegister, vector_len);
-    __ vpsravd($tmp$$XMMRegister, $tmp$$XMMRegister, $shift1$$XMMRegister, vector_len);
-    __ vpsravd($tmp2$$XMMRegister, $tmp2$$XMMRegister, $shift2$$XMMRegister, vector_len);
-    __ vpand($tmp$$XMMRegister, $tmp$$XMMRegister, ExternalAddress(vector_int_to_short_mask()), vector_len, $scratch$$Register);
-    __ vpand($tmp2$$XMMRegister, $tmp2$$XMMRegister, ExternalAddress(vector_int_to_short_mask()), vector_len, $scratch$$Register);
-    __ vpackusdw($dst$$XMMRegister, $tmp2$$XMMRegister, $tmp$$XMMRegister, vector_len);
+    __ evarshiftb(opcode, $dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len, $vtmp1$$XMMRegister, $scratch$$Register);
+    __ vextracti64x4_high($vtmp1$$XMMRegister, $src$$XMMRegister);
+    __ vextracti64x4_high($vtmp2$$XMMRegister, $shift$$XMMRegister);
+    __ evarshiftb(opcode, $vtmp1$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister, vector_len, $vtmp2$$XMMRegister, $scratch$$Register);
+    __ vinserti64x4($dst$$XMMRegister, $dst$$XMMRegister, $vtmp1$$XMMRegister, 0x1);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+//Short variable shift
+instruct variable_shiftw(vec dst, vec src, vec shift, vec vtmp, rRegP scratch) %{
+  predicate((UseAVX == 2 || (UseAVX > 2 && !VM_Version::supports_avx512bw()))  &&
+            n->as_Vector()->length() <= 8 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VLShiftV src shift));
+  match(Set dst (VRShiftV src shift));
+  match(Set dst (VURShiftV src shift));
+  effect(TEMP dst, TEMP vtmp, TEMP scratch);
+  format %{ "vector_var_shift_left_short $dst, $src, $shift\n\t" %}
+  ins_encode %{
+    int opcode = this->ideal_Opcode();
+    bool sign = (opcode == Op_VURShiftV) ? false : true;
+    int vector_len = 1;
+    __ vextendwd(sign, $dst$$XMMRegister, $src$$XMMRegister, 1);
+    __ vpmovzxwd($vtmp$$XMMRegister, $shift$$XMMRegister, 1);
+    __ varshiftd(opcode, $dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, vector_len);
+    __ vpand($dst$$XMMRegister, $dst$$XMMRegister, ExternalAddress(vector_int_to_short_mask()), vector_len, $scratch$$Register);
+    __ vextracti128_high($vtmp$$XMMRegister, $dst$$XMMRegister);
+    __ vpackusdw($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, 0);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vvariable_shiftw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, rRegP scratch) %{
+  predicate((UseAVX == 2 || (UseAVX > 2 && !VM_Version::supports_avx512bw()))  &&
+            n->as_Vector()->length() == 16 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VLShiftV src shift));
+  match(Set dst (VRShiftV src shift));
+  match(Set dst (VURShiftV src shift));
+  effect(TEMP dst, TEMP vtmp1, TEMP vtmp2, TEMP scratch);
+  format %{ "vector_var_shift_left_short $dst, $src, $shift\n\t" %}
+  ins_encode %{
+    int opcode = this->ideal_Opcode();
+    bool sign = (opcode == Op_VURShiftV) ? false : true;
+    int vector_len = 1;
+    // Shift lower half, with result in vtmp2 usign vtmp1 as TEMP
+    __ vextendwd(sign, $vtmp2$$XMMRegister, $src$$XMMRegister, vector_len);
+    __ vpmovzxwd($vtmp1$$XMMRegister, $shift$$XMMRegister, vector_len);
+    __ varshiftd(opcode, $vtmp2$$XMMRegister, $vtmp2$$XMMRegister, $vtmp1$$XMMRegister, vector_len);
+    __ vpand($vtmp2$$XMMRegister, $vtmp2$$XMMRegister, ExternalAddress(vector_int_to_short_mask()), vector_len, $scratch$$Register);
+
+    // Shift upper half, with result in dst usign vtmp1 as TEMP
+    __ vextracti128_high($dst$$XMMRegister, $src$$XMMRegister);
+    __ vextracti128_high($vtmp1$$XMMRegister, $shift$$XMMRegister);
+    __ vextendwd(sign, $dst$$XMMRegister, $dst$$XMMRegister, vector_len);
+    __ vpmovzxwd($vtmp1$$XMMRegister, $vtmp1$$XMMRegister, vector_len);
+    __ varshiftd(opcode, $dst$$XMMRegister, $dst$$XMMRegister, $vtmp1$$XMMRegister, vector_len);
+    __ vpand($dst$$XMMRegister, $dst$$XMMRegister, ExternalAddress(vector_int_to_short_mask()), vector_len, $scratch$$Register);
+
+    // Merge lower and upper half result into dst
+    __ vpackusdw($dst$$XMMRegister, $vtmp2$$XMMRegister, $dst$$XMMRegister, vector_len);
     __ vpermq($dst$$XMMRegister, $dst$$XMMRegister, 0xD8, vector_len);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vsravS_evex(vec dst, vec src, vec shift) %{
-  predicate(UseAVX > 2 && VM_Version::supports_avx512bw() && n->as_Vector()->length() >= 4 && n->as_Vector()->length() <= 32 && 
+instruct evariable_shiftw(vec dst, vec src, vec shift) %{
+  predicate(UseAVX > 2 && VM_Version::supports_avx512bw()  &&
             n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VLShiftV src shift));
   match(Set dst (VRShiftV src shift));
-  format %{ "vector_shift_right_arith_short $dst,$src,$shift\t! packedS" %}
+  match(Set dst (VURShiftV src shift));
+  format %{ "vector_varshift_short $dst,$src,$shift\t!" %}
   ins_encode %{
+    int opcode = this->ideal_Opcode();
     int vector_len = vector_length_encoding(this);
-    __ evpsravw($dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
+    if (!VM_Version::supports_avx512vl()) vector_len = 2;
+    __ varshiftw(opcode, $dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
   %}
   ins_pipe( pipe_slow );
 %}
 
-//Integer Variable right shift
-instruct vsravI_reg(vec dst, vec src, vec shift) %{
-  predicate(n->as_Vector()->length() >= 2 && n->as_Vector()->length() <= 16 && 
+//Integer variable shift
+instruct variable_shiftd(vec dst, vec src, vec shift) %{
+  predicate(UseAVX >= 2 &&
             n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VLShiftV src shift));
   match(Set dst (VRShiftV src shift));
-  format %{ "vector_shift_right_arith_int $dst,$src,$shift\t! variable bit shift right shift packedI" %}
+  match(Set dst (VURShiftV src shift));
+  format %{ "vector_varshift_int $dst,$src,$shift\t!" %}
   ins_encode %{
+    int opcode = this->ideal_Opcode();
     int vector_len = vector_length_encoding(this);
-    __ vpsravd($dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
+    __ varshiftd(opcode, $dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
   %}
   ins_pipe( pipe_slow );
 %}
 
-//Long Variable right shift arithmetic
-instruct vsrav1L_reg(vec dst, vec src, vec shift, vec tmp) %{
-  predicate(UseAVX > 0 && UseAVX < 3 && n->as_Vector()->length() == 1 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VRShiftV src shift));
-  effect(TEMP dst, TEMP tmp);
-  format %{ "vector_shift_right_arith_long  $dst,$src,$shift\n\t" %} 
+//Long variable shift
+instruct variable_shiftq(vec dst, vec src, vec shift) %{
+  predicate(UseAVX >= 2 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  match(Set dst (VLShiftV src shift));
+  match(Set dst (VURShiftV src shift));
+  format %{ "vector_varshift_long $dst,$src,$shift\t!" %}
   ins_encode %{
-     int vector_len = 0;
-     __ vpsrlvq($dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
-     __ vmovdqu($tmp$$XMMRegister, ExternalAddress(vector_all_ones_mask()));
-     __ vpsrlvq($tmp$$XMMRegister, $tmp$$XMMRegister, $shift$$XMMRegister, vector_len);
-     __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, vector_len);
-     __ vpsubq($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, vector_len);
-   %}
-   ins_pipe( pipe_slow );
- %}
-
-instruct vsrav2L_reg(vec dst, vec src, vec shift, vec tmp) %{
-  predicate(UseAVX > 0 && UseAVX < 3 && n->as_Vector()->length() == 2 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VRShiftV src shift));
-  effect(TEMP dst, TEMP tmp);
-  format %{ "vector_shift_right_arith_long  $dst,$src,$shift\n\t" %}
-  ins_encode %{
-    int vector_len = 0;
-    __ vpsrlvq($dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
-    __ vmovdqu($tmp$$XMMRegister, ExternalAddress(vector_all_ones_mask()));
-    __ vpsrlvq($tmp$$XMMRegister, $tmp$$XMMRegister, $shift$$XMMRegister, vector_len);
-    __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, vector_len);
-    __ vpsubq($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, vector_len);
+    int opcode = this->ideal_Opcode();
+    int vector_len = vector_length_encoding(this);
+    __ varshiftq(opcode, $dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vsrav4L_reg(vec dst, vec src, vec shift, vec tmp) %{
-  predicate(UseAVX > 1 && UseAVX < 3 && n->as_Vector()->length() == 4 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VRShiftV src shift));
-  effect(TEMP dst, TEMP tmp);
-  format %{ "vector_shift_right_arith_long  $dst,$src,$shift\n\t" %}
-  ins_encode %{
-    int vector_len = 1;
-    __ vpsrlvq($dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
-    __ vmovdqu($tmp$$XMMRegister, ExternalAddress(vector_all_ones_mask()));
-    __ vpsrlvq($tmp$$XMMRegister, $tmp$$XMMRegister, $shift$$XMMRegister, vector_len);
-    __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, vector_len);
-    __ vpsubq($dst$$XMMRegister, $dst$$XMMRegister, $tmp$$XMMRegister, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vsravL_reg_evex(vec dst, vec src, vec shift) %{
-  predicate(n->as_Vector()->length() >= 1 && n->as_Vector()->length() <= 8 && 
+//Long variable right shift arithmetic
+instruct variable_arshiftq(vec dst, vec src, vec shift, vec vtmp) %{
+  predicate(UseAVX == 2 &&
+            n->as_Vector()->length() <= 4 &&
             n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
   match(Set dst (VRShiftV src shift));
-  format %{ "vector_shift_right_arith_long $dst,$src,$shift\t! variable bit shift right shift packedL" %}
+  effect(TEMP dst, TEMP vtmp);
+  format %{ "vector_varshift_long  $dst,$src,$shift\n\t! using $vtmp as TEMP" %}
   ins_encode %{
     int vector_len = vector_length_encoding(this);
-    __ evpsravq($dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
+    __ vmovdqu($vtmp$$XMMRegister, ExternalAddress(vector_long_sign_mask()));
+    __ vpsrlvq($dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
+    __ vpsrlvq($vtmp$$XMMRegister, $vtmp$$XMMRegister, $shift$$XMMRegister, vector_len);
+    __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, vector_len);
+    __ vpsubq($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, vector_len);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct evariable_arshiftq(vec dst, vec src, vec shift) %{
+  predicate(UseAVX > 2 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  match(Set dst (VRShiftV src shift));
+  format %{ "vector_varfshift_long $dst,$src,$shift\t!" %}
+  ins_encode %{
+    int opcode = this->ideal_Opcode();
+    int vector_len = vector_length_encoding(this);
+    if (!VM_Version::supports_avx512vl()) vector_len = 2;
+    __ varshiftq(opcode, $dst$$XMMRegister, $src$$XMMRegister, $shift$$XMMRegister, vector_len);
   %}
   ins_pipe( pipe_slow );
 %}
