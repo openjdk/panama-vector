@@ -8230,6 +8230,18 @@ instruct negI_rReg(rRegI dst, immI0 zero, rFlagsReg cr)
   ins_pipe(ialu_reg);
 %}
 
+instruct negI_rReg_2(rRegI dst, rFlagsReg cr)
+%{
+  match(Set dst (NegI dst));
+  effect(KILL cr);
+
+  format %{ "negl    $dst\t# int" %}
+  ins_encode %{
+    __ negl($dst$$Register);
+  %}
+  ins_pipe(ialu_reg);
+%}
+
 instruct negI_mem(memory dst, immI0 zero, rFlagsReg cr)
 %{
   match(Set dst (StoreI dst (SubI zero (LoadI dst))));
@@ -8249,6 +8261,18 @@ instruct negL_rReg(rRegL dst, immL0 zero, rFlagsReg cr)
   format %{ "negq    $dst\t# long" %}
   opcode(0xF7, 0x03);  // Opcode F7 /3
   ins_encode(REX_reg_wide(dst), OpcP, reg_opc(dst));
+  ins_pipe(ialu_reg);
+%}
+
+instruct negL_rReg_2(rRegL dst, rFlagsReg cr)
+%{
+  match(Set dst (NegL dst));
+  effect(KILL cr);
+
+  format %{ "negq    $dst\t# int" %}
+  ins_encode %{
+    __ negq($dst$$Register);
+  %}
   ins_pipe(ialu_reg);
 %}
 

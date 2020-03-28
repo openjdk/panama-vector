@@ -866,10 +866,10 @@ public:
   static bool supports_sha()        { return (_features & CPU_SHA) != 0; }
   static bool supports_fma()        { return (_features & CPU_FMA) != 0 && supports_avx(); }
   static bool supports_vzeroupper() { return (_features & CPU_VZEROUPPER) != 0; }
-  static bool supports_vpopcntdq()  { return (_features & CPU_AVX512_VPOPCNTDQ) != 0; }
+  static bool supports_avx512_vpopcntdq()  { return (_features & CPU_AVX512_VPOPCNTDQ) != 0; }
   static bool supports_avx512_vpclmulqdq() { return (_features & CPU_AVX512_VPCLMULQDQ) != 0; }
   static bool supports_vaes()       { return (_features & CPU_VAES) != 0; }
-  static bool supports_vnni()       { return (_features & CPU_VNNI) != 0; }
+  static bool supports_avx512_vnni()       { return (_features & CPU_VNNI) != 0; }
   static bool supports_vbmi2()      { return (_features & CPU_VBMI2) != 0; }
 
   // Intel features

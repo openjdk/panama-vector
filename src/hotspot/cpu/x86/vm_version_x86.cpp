@@ -765,7 +765,7 @@ void VM_Version::get_processor_features() {
                (supports_fma() ? ", fma" : ""),
                (supports_vbmi2() ? ", vbmi2" : ""),
                (supports_vaes() ? ", vaes" : ""),
-               (supports_vnni() ? ", vnni" : ""));
+               (supports_avx512_vnni() ? ", vnni" : ""));
   _features_string = os::strdup(buf);
 
   // UseSSE is set to the smaller of what hardware supports and what
