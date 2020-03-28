@@ -1764,6 +1764,10 @@ public:
                  XMMRegister vtmp1, XMMRegister vtmp2 = xnoreg);
   void reduceF(BasicType typ, int opcode, int vlen, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
   void reduceD(BasicType typ, int opcode, int vlen, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduceFloatMinMax(bool is_min, int log2vlen, bool dstvalid, XMMRegister dst, XMMRegister src,
+                         XMMRegister tmp, XMMRegister atmp, XMMRegister btmp, XMMRegister xmm_0, XMMRegister xmm_1 = xnoreg);
+  void reduceDoubleMinMax(bool is_min, int log2vlen, bool dstvalid, XMMRegister dst, XMMRegister src,
+                         XMMRegister tmp, XMMRegister atmp, XMMRegister btmp, XMMRegister xmm_0, XMMRegister xmm_1 = xnoreg);
 
   // Int Reduction
   void reduce2I(BasicType typ, int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);

@@ -5096,6 +5096,51 @@ void MacroAssembler::reduce8D(BasicType typ, int opcode, XMMRegister dst, XMMReg
   reduce4D(typ, opcode, dst, vtmp1, vtmp1, vtmp2);
 }
 
+void MacroAssembler::reduceFloatMinMax(bool is_min, int log2vlen, bool dstvalid, XMMRegister dst, XMMRegister src,
+                                       XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
+                                       XMMRegister xmm_0, XMMRegister xmm_1) {
+  int permconst [] = {1, 14};
+  XMMRegister wsrc = src;
+  XMMRegister wdst = xmm_0;
+  XMMRegister wtmp = (xmm_1 == xnoreg) ? xmm_0: xmm_1;
+  int vector_len = 0;
+  if (log2vlen == 4) vector_len = 1;
+  for (int i = log2vlen-1; i >=0; i--) {
+    if ((i == 0) && !dstvalid) wdst = dst;
+    if (i == 3) vextracti64x4_high(wtmp, wsrc);
+    else if (i == 2) vextracti128_high(wtmp, wsrc);
+    else vpermilps(wtmp, wsrc, permconst[i], vector_len);
+    vminmax(wdst, wtmp, wsrc, tmp, atmp, btmp, true, is_min, vector_len);
+    wsrc = wdst;
+    vector_len = 0;
+  }
+  if (dstvalid) {
+    vminmax(dst, wdst, dst, tmp, atmp, btmp, true, is_min, vector_len);
+  }
+}
+
+void MacroAssembler::reduceDoubleMinMax(bool is_min, int log2vlen, bool dstvalid, XMMRegister dst, XMMRegister src,
+                                        XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
+                                        XMMRegister xmm_0, XMMRegister xmm_1) {
+  XMMRegister wsrc = src;
+  XMMRegister wdst = xmm_0;
+  XMMRegister wtmp = (xmm_1 == xnoreg) ? xmm_0: xmm_1;
+  int vector_len = 0;
+  if (log2vlen == 3) vector_len = 1;
+  for (int i = log2vlen-1; i >=0; i--) {
+    if ((i == 0) && !dstvalid) wdst = dst;
+    if (i == 2) vextracti64x4_high(wtmp, wsrc);
+    else if (i == 1) vextracti128_high(wtmp, wsrc);
+    else vpermilpd(wtmp, wsrc, 1, vector_len);
+    vminmax(wdst, wtmp, wsrc, tmp, atmp, btmp, false, is_min, vector_len);
+    wsrc = wdst;
+    vector_len = 0;
+  }
+  if (dstvalid) {
+    vminmax(dst, wdst, dst, tmp, atmp, btmp, false, is_min, vector_len);
+  }
+}
+
 void MacroAssembler::extract(BasicType typ, Register dst, XMMRegister src, int idx) {
   switch(typ) {
     case T_BYTE:
