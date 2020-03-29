@@ -1746,13 +1746,19 @@ public:
   void evgather(BasicType typ, XMMRegister dst, KRegister mask, Register base, XMMRegister idx, int vector_len);
   void evscatter(BasicType typ, Register base, XMMRegister idx, KRegister mask, XMMRegister src, int vector_len);
 
+  // extract
+  void extract(BasicType typ, Register dst, XMMRegister src, int idx);
+  XMMRegister get_lane(BasicType typ, XMMRegister dst, XMMRegister src, int elemindex);
+  void get_elem(BasicType typ, Register dst, XMMRegister src, int elemindex);
+  void get_elem(BasicType typ, XMMRegister dst, XMMRegister src, int elemindex, Register tmp = noreg, XMMRegister vtmp = xnoreg);
 
-  // Reductions for vectors of ints, longs, floats, and doubles.
+  // blend
+  void evpcmp(BasicType typ, KRegister kdmask, KRegister ksmask, XMMRegister src1, AddressLiteral adr, int comparison, int vector_len, Register scratch = rscratch1);
+  void evpblend(BasicType typ, XMMRegister dst, KRegister kmask, XMMRegister src1, XMMRegister src2, bool merge, int vector_len);
+
+  // Reductions for vectors of bytes, shorts, ints, longs, floats, and doubles.
 
   // dst = src1  reduce(op, src2) using vtmp as temps
-  void reduceB(BasicType typ, int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void mulreduceB(BasicType typ, int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduceS(BasicType typ, int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
   void reduceI(BasicType typ, int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
 #ifdef _LP64
   void reduceL(BasicType typ, int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
@@ -1762,12 +1768,16 @@ public:
   void reduce_fp(BasicType typ, int opcode, int vlen,
                  XMMRegister dst, XMMRegister src,
                  XMMRegister vtmp1, XMMRegister vtmp2 = xnoreg);
-  void reduceF(BasicType typ, int opcode, int vlen, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduceD(BasicType typ, int opcode, int vlen, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduceB(BasicType typ, int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void mulreduceB(BasicType typ, int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduceS(BasicType typ, int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
   void reduceFloatMinMax(bool is_min, int log2vlen, bool dstvalid, XMMRegister dst, XMMRegister src,
                          XMMRegister tmp, XMMRegister atmp, XMMRegister btmp, XMMRegister xmm_0, XMMRegister xmm_1 = xnoreg);
   void reduceDoubleMinMax(bool is_min, int log2vlen, bool dstvalid, XMMRegister dst, XMMRegister src,
                          XMMRegister tmp, XMMRegister atmp, XMMRegister btmp, XMMRegister xmm_0, XMMRegister xmm_1 = xnoreg);
+ private:
+  void reduceF(BasicType typ, int opcode, int vlen, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduceD(BasicType typ, int opcode, int vlen, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
 
   // Int Reduction
   void reduce2I(BasicType typ, int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
@@ -1813,19 +1823,9 @@ public:
 
   void reduce_operation_128(BasicType typ, int opcode, XMMRegister dst, XMMRegister src);
   void reduce_operation_256(BasicType typ, int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2);
-
-  // extract
-  void extract(BasicType typ, Register dst, XMMRegister src, int idx);
-  XMMRegister get_lane(BasicType typ, XMMRegister dst, XMMRegister src, int elemindex);
-  void get_elem(BasicType typ, Register dst, XMMRegister src, int elemindex);
-  void get_elem(BasicType typ, XMMRegister dst, XMMRegister src, int elemindex, Register tmp = noreg, XMMRegister vtmp = xnoreg);
-
-  // blend
-  void evpcmp(BasicType typ, KRegister kdmask, KRegister ksmask, XMMRegister src1, AddressLiteral adr, int comparison, int vector_len, Register scratch = rscratch1);
-  void evpblend(BasicType typ, XMMRegister dst, KRegister kmask, XMMRegister src1, XMMRegister src2, bool merge, int vector_len);
-
 #endif
 
+ public:
   // C2 compiled method's prolog code.
   void verified_entry(int framesize, int stack_bang_size, bool fp_mode_24b, bool is_stub);
 

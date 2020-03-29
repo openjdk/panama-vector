@@ -80,7 +80,7 @@ import jdk.javadoc.internal.doclets.formats.html.markup.Head;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlAttr;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlDocument;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle;
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTag;
+import jdk.javadoc.internal.doclets.formats.html.markup.TagName;
 import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTree;
 import jdk.javadoc.internal.doclets.formats.html.markup.Links;
 import jdk.javadoc.internal.doclets.formats.html.markup.RawHtml;
@@ -286,30 +286,6 @@ public class HtmlDocletWriter {
         private static final Pattern docrootPattern =
                 Pattern.compile(Pattern.quote("{@docroot}"), Pattern.CASE_INSENSITIVE);
 
-    /**
-     * Get the script to show or hide the All classes link.
-     *
-     * @param id id of the element to show or hide
-     * @return a content tree for the script
-     */
-    public Content getAllClassesLinkScript(String id) {
-        Script script = new Script("<!--\n" +
-                "  allClassesLink = document.getElementById(")
-                .appendStringLiteral(id)
-                .append(");\n" +
-                "  if(window==top) {\n" +
-                "    allClassesLink.style.display = \"block\";\n" +
-                "  }\n" +
-                "  else {\n" +
-                "    allClassesLink.style.display = \"none\";\n" +
-                "  }\n" +
-                "  //-->\n");
-        Content div = HtmlTree.DIV(script.asContent());
-        Content div_noscript = HtmlTree.DIV(contents.noScriptMessage);
-        Content noScript = HtmlTree.NOSCRIPT(div_noscript);
-        div.add(noScript);
-        return div;
-    }
 
     /**
      * Add method information.
@@ -2119,8 +2095,7 @@ public class HtmlDocletWriter {
      * @return an HtmlTree for the BODY tag
      */
     public HtmlTree getBody(String title) {
-        HtmlTree body = new HtmlTree(HtmlTag.BODY);
-        body.put(HtmlAttr.CLASS, getBodyClass());
+        HtmlTree body = new HtmlTree(TagName.BODY).setStyle(getBodyStyle());
 
         this.winTitle = title;
         // Don't print windowtitle script for overview-frame, allclasses-frame
@@ -2131,13 +2106,13 @@ public class HtmlDocletWriter {
         return body;
     }
 
-    public String getBodyClass() {
-        return getClass().getSimpleName()
+    public HtmlStyle getBodyStyle() {
+        String kind = getClass().getSimpleName()
                 .replaceAll("(Writer)?(Impl)?$", "")
                 .replaceAll("AnnotationType", "Class")
-                .replaceAll("(.)([A-Z])", "$1-$2")
-                .replaceAll("(?i)^(module|package|class)$", "$1-declaration")
-                .toLowerCase(Locale.US);
+                .replaceAll("^(Module|Package|Class)$", "$1Declaration");
+        String page = kind.substring(0, 1).toLowerCase(Locale.US) + kind.substring(1) + "Page";
+        return HtmlStyle.valueOf(page);
     }
 
     Script getMainBodyScript() {

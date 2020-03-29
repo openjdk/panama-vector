@@ -4634,7 +4634,7 @@ void MacroAssembler::evscatter(BasicType typ, Register base, XMMRegister idx, KR
   }
 }
 
-// Reductions for vectors of ints, longs, floats, and doubles.
+// Reductions for vectors of bytes, shorts, ints, longs, floats, and doubles.
 
 void MacroAssembler::reduce_operation_128(BasicType typ, int opcode, XMMRegister dst, XMMRegister src) {
   int vector_len = Assembler::AVX_128bit;

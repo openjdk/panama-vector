@@ -821,7 +821,7 @@ int ReductionNode::opcode(int opc, BasicType bt) {
         case T_INT:
           vopc = Op_MinReductionV;
           break;
-        default:          ShouldNotReachHere(); return 0;
+        default: ShouldNotReachHere(); return 0;
       }
       break;
     case Op_MinL:
@@ -845,7 +845,7 @@ int ReductionNode::opcode(int opc, BasicType bt) {
         case T_INT:
           vopc = Op_MaxReductionV;
           break;
-        default:          ShouldNotReachHere(); return 0;
+        default: ShouldNotReachHere(); return 0;
       }
       break;
     case Op_MaxL:
@@ -869,7 +869,7 @@ int ReductionNode::opcode(int opc, BasicType bt) {
       case T_INT:
         vopc = Op_AndReductionV;
         break;
-      default:          ShouldNotReachHere(); return 0;
+      default: ShouldNotReachHere(); return 0;
       }
       break;
     case Op_AndL:
@@ -885,7 +885,7 @@ int ReductionNode::opcode(int opc, BasicType bt) {
       case T_INT:
         vopc = Op_OrReductionV;
         break;
-      default:  ShouldNotReachHere(); return 0;
+      default: ShouldNotReachHere(); return 0;
       }
       break;
     case Op_OrL:
@@ -901,14 +901,13 @@ int ReductionNode::opcode(int opc, BasicType bt) {
       case T_INT:
         vopc = Op_XorReductionV;
         break;
-      default:  ShouldNotReachHere(); return 0;
+      default: ShouldNotReachHere(); return 0;
       }
       break;
     case Op_XorL:
       assert(bt == T_LONG, "must be");
       vopc = Op_XorReductionV;
       break;
-    // TODO: add MulL for targets that support it
     default:
       break;
   }
@@ -932,11 +931,11 @@ ReductionNode* ReductionNode::make(int opc, Node *ctrl, Node* n1, Node* n2, Basi
   case Op_MulReductionVL: return new MulReductionVLNode(ctrl, n1, n2);
   case Op_MulReductionVF: return new MulReductionVFNode(ctrl, n1, n2);
   case Op_MulReductionVD: return new MulReductionVDNode(ctrl, n1, n2);
-  case Op_MinReductionV: return new MinReductionVNode(ctrl, n1, n2);
-  case Op_MaxReductionV: return new MaxReductionVNode(ctrl, n1, n2);
-  case Op_AndReductionV: return new AndReductionVNode(ctrl, n1, n2);
-  case Op_OrReductionV: return new OrReductionVNode(ctrl, n1, n2);
-  case Op_XorReductionV: return new XorReductionVNode(ctrl, n1, n2);
+  case Op_MinReductionV:  return new MinReductionVNode(ctrl, n1, n2);
+  case Op_MaxReductionV:  return new MaxReductionVNode(ctrl, n1, n2);
+  case Op_AndReductionV:  return new AndReductionVNode(ctrl, n1, n2);
+  case Op_OrReductionV:   return new OrReductionVNode(ctrl, n1, n2);
+  case Op_XorReductionV:  return new XorReductionVNode(ctrl, n1, n2);
   default:
     fatal("Missed vector creation for '%s'", NodeClassNames[vopc]);
     return NULL;

@@ -1313,6 +1313,9 @@ const bool Matcher::match_rule_supported(int opcode) {
     case Op_AbsVS:
     case Op_AbsVI:
     case Op_AddReductionVI:
+    case Op_AndReductionV:
+    case Op_OrReductionV:
+    case Op_XorReductionV:
     case Op_VectorLoadShuffle:
     case Op_VectorRearrange:
       if (UseSSE < 3) { // requires at least SSSE3
@@ -1579,7 +1582,7 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
         return false; // Implementation limitation due to how shuffle is loaded
       } else if (size_in_bits >= 256 && UseAVX < 2) {
         return false; // Implementation limitation
-      } else if (bt == T_BYTE && size_in_bits >= 256 && !VM_Version::supports_avx512vbmi())  {
+      } else if (bt == T_BYTE && size_in_bits >= 256 && !VM_Version::supports_avx512_vbmi())  {
         return false; // Implementation limitation
       } else if (bt == T_SHORT && size_in_bits >= 256 && !VM_Version::supports_avx512vlbw())  {
         return false; // Implementation limitation
@@ -7290,7 +7293,7 @@ instruct rearrangeb(vec dst, vec shuffle) %{
 %}
 
 instruct rearrangevb(vec dst, vec src, vec shuffle) %{
-  predicate(UseAVX > 2 && VM_Version::supports_avx512vbmi() && 
+  predicate(UseAVX > 2 && VM_Version::supports_avx512_vbmi() && 
             (n->as_Vector()->length() == 32 || n->as_Vector()->length() == 64) &&
             n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (VectorRearrange src shuffle));

@@ -60,6 +60,7 @@ public:
     Macro_Expand,                     // Expand macro nodes
     Peephole,                         // Apply peephole optimizations
     Vector,
+    Output,
     last_phase
   };
 
