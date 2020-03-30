@@ -1518,11 +1518,6 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
           }
       }
       break;
-    case Op_CallLeafVector:
-      if (size_in_bits == 512 && !VM_Version::supports_avx512vlbwdq()) {
-        return false;
-      }
-      break;
     case Op_AddReductionVI:
       if (bt == T_INT && (UseSSE < 3 || !VM_Version::supports_ssse3())) {
         return false;
@@ -1910,7 +1905,7 @@ static inline BasicType vector_basic_type(const MachNode *n) {
 static inline BasicType vector_basic_type(const MachNode *use, MachOper* opnd) {
   uint def_idx = use->operand_index(opnd);
   Node* def = use->in(def_idx);
-  return def->bottom_type()->is_vect()->element_basic_type(); 
+  return def->bottom_type()->is_vect()->element_basic_type();
 }
 
 static inline Assembler::AvxVectorLen vector_length_encoding(int bytes) {
@@ -2236,7 +2231,7 @@ static inline jlong replicate8_imm(int con, int width) {
     return MachNode::size(ra_);
   }
 
-  
+
 
 %}
 
@@ -3206,7 +3201,7 @@ instruct reinterpret_expand(vec dst, vec src, rRegP scratch) %{
   ins_encode %{
     if (vector_length_in_bytes(this, $src) < 8)
       __ movdqu($dst$$XMMRegister, ExternalAddress(vector_32_bit_mask()), $scratch$$Register);
-    else 
+    else
       __ movdqu($dst$$XMMRegister, ExternalAddress(vector_64_bit_mask()), $scratch$$Register);
     __ pand($dst$$XMMRegister, $src$$XMMRegister);
   %}
@@ -4488,8 +4483,8 @@ instruct mul_reduction64B(rRegI dst, rRegI src1, legVec src2, legVec vtmp1, legV
 instruct minmax_reduction2F(legRegF dst, immF src1, legVec src2, legVec tmp,
                             legVec atmp, legVec btmp, legVec xmm_1, rFlagsReg cr) %{
   predicate(UseAVX > 0 && n->in(2)->bottom_type()->is_vect()->length() == 2 &&
-            ((n->Opcode() == Op_MinReductionV && n->in(1)->as_Type()->type() == (Type*)TypeF::POS_INF) || 
-             (n->Opcode() == Op_MaxReductionV && n->in(1)->as_Type()->type() == (Type*)TypeF::NEG_INF)) && 
+            ((n->Opcode() == Op_MinReductionV && n->in(1)->as_Type()->type() == (Type*)TypeF::POS_INF) ||
+             (n->Opcode() == Op_MaxReductionV && n->in(1)->as_Type()->type() == (Type*)TypeF::NEG_INF)) &&
             n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
   match(Set dst (MinReductionV src1 src2));
   match(Set dst (MaxReductionV src1 src2));
@@ -4507,8 +4502,8 @@ instruct minmax_reductionF(legRegF dst, immF src1, legVec src2, legVec tmp, legV
                            legVec btmp, legVec xmm_0, legVec xmm_1, rFlagsReg cr) %{
   predicate(UseAVX > 0 && n->in(2)->bottom_type()->is_vect()->length() >= 4 &&
             n->in(2)->bottom_type()->is_vect()->length() <= 16 &&
-            ((n->Opcode() == Op_MinReductionV && n->in(1)->as_Type()->type() == (Type*)TypeF::POS_INF) || 
-             (n->Opcode() == Op_MaxReductionV && n->in(1)->as_Type()->type() == (Type*)TypeF::NEG_INF)) && 
+            ((n->Opcode() == Op_MinReductionV && n->in(1)->as_Type()->type() == (Type*)TypeF::POS_INF) ||
+             (n->Opcode() == Op_MaxReductionV && n->in(1)->as_Type()->type() == (Type*)TypeF::NEG_INF)) &&
             n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
   match(Set dst (MinReductionV src1 src2));
   match(Set dst (MaxReductionV src1 src2));
@@ -4563,8 +4558,8 @@ instruct minmax_reductionF_av(legRegF dst, legVec src, legVec tmp,
 instruct minmax_reduction2D(legRegD dst, immD src1, legVec src2, legVec tmp,
                             legVec atmp, legVec btmp, legVec xmm_1, rFlagsReg cr) %{
   predicate(UseAVX > 0 && n->in(2)->bottom_type()->is_vect()->length() == 2 &&
-            ((n->Opcode() == Op_MinReductionV && n->in(1)->as_Type()->type() == (Type*)TypeD::POS_INF) || 
-             (n->Opcode() == Op_MaxReductionV && n->in(1)->as_Type()->type() == (Type*)TypeD::NEG_INF)) && 
+            ((n->Opcode() == Op_MinReductionV && n->in(1)->as_Type()->type() == (Type*)TypeD::POS_INF) ||
+             (n->Opcode() == Op_MaxReductionV && n->in(1)->as_Type()->type() == (Type*)TypeD::NEG_INF)) &&
             n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
   match(Set dst (MinReductionV src1 src2));
   match(Set dst (MaxReductionV src1 src2));
@@ -4582,8 +4577,8 @@ instruct minmax_reductionD(legRegD dst, immD src1, legVec src2, legVec tmp,
                            legVec atmp, legVec btmp, legVec xmm_0, legVec xmm_1, rFlagsReg cr) %{
   predicate(UseAVX > 0 && n->in(2)->bottom_type()->is_vect()->length() >= 4 &&
             n->in(2)->bottom_type()->is_vect()->length() <= 8 &&
-            ((n->Opcode() == Op_MinReductionV && n->in(1)->as_Type()->type() == (Type*)TypeD::POS_INF) || 
-             (n->Opcode() == Op_MaxReductionV && n->in(1)->as_Type()->type() == (Type*)TypeD::NEG_INF)) && 
+            ((n->Opcode() == Op_MinReductionV && n->in(1)->as_Type()->type() == (Type*)TypeD::POS_INF) ||
+             (n->Opcode() == Op_MaxReductionV && n->in(1)->as_Type()->type() == (Type*)TypeD::NEG_INF)) &&
             n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
   match(Set dst (MinReductionV src1 src2));
   match(Set dst (MaxReductionV src1 src2));
@@ -5546,7 +5541,7 @@ instruct minmaxL_reg_avx(legVec dst, legVec src1, legVec src2) %{
 %}
 
 instruct minmaxL_reg_evex(vec dst, vec src1, vec src2) %{
-  predicate(UseAVX > 2 && 
+  predicate(UseAVX > 2 &&
             (n->as_Vector()->length() == 8 || VM_Version::supports_avx512vl()) &&
             n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
   match(Set dst (MinV src1 src2));
@@ -6601,7 +6596,7 @@ instruct vcmpFD(legVec dst, legVec src1, legVec src2, immI8 cond) %{
     Assembler::ComparisonPredicateFP cmp = Assembler::booltest_pred_to_comparison_pred_fp($cond$$constant);
     if (vector_basic_type(this, $src1) == T_FLOAT)
       __ vcmpps($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
-    else 
+    else
       __ vcmppd($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vector_len);
   %}
   ins_pipe( pipe_slow );
@@ -7332,7 +7327,7 @@ instruct rearrangevs(vec dst, vec src, vec shuffle) %{
 %}
 
 instruct loadshuffles(vec dst, vec src, vec vtmp, rRegP scratch) %{
-  predicate(UseSSE > 3 && (UseAVX <= 2 || !VM_Version::supports_avx512vlbw()) && 
+  predicate(UseSSE > 3 && (UseAVX <= 2 || !VM_Version::supports_avx512vlbw()) &&
             (n->as_Vector()->length() <= 8) &&
             n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (VectorLoadShuffle src));
@@ -7353,7 +7348,7 @@ instruct loadshuffles(vec dst, vec src, vec vtmp, rRegP scratch) %{
 
     // Add one to get alternate byte index
     __ movdqu($vtmp$$XMMRegister, ExternalAddress(vector_short_shufflemask()), $scratch$$Register);
-    __ paddb($dst$$XMMRegister, $vtmp$$XMMRegister); 
+    __ paddb($dst$$XMMRegister, $vtmp$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -7420,7 +7415,7 @@ instruct loadshuffle4i(vec dst, vec src, vec vtmp, rRegP scratch) %{
 
     // Add 3,2,1,0 to get alternate byte index
     __ movdqu($dst$$XMMRegister, ExternalAddress(vector_int_shufflemask()), $scratch$$Register);
-    __ paddb($dst$$XMMRegister, $vtmp$$XMMRegister); 
+    __ paddb($dst$$XMMRegister, $vtmp$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -7438,7 +7433,7 @@ instruct rearrangei(vec dst, vec shuffle) %{
 %}
 
 instruct loadshufflevl(vec dst, vec src) %{
-  predicate(UseAVX > 2 && 
+  predicate(UseAVX > 2 &&
             (VM_Version::supports_avx512vl() || (n->as_Vector()->length() == 8)) &&
             (n->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
              n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));

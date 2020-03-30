@@ -325,7 +325,6 @@ class LibraryCallKit : public GraphKit {
   Node* box_vector(Node* in, const TypeInstPtr* vbox_type, BasicType bt, int num_elem);
   Node* unbox_vector(Node* in, const TypeInstPtr* vbox_type, BasicType bt, int num_elem, bool shuffle_to_vector = false);
   Node* shift_count(Node* cnt, int shift_op, BasicType bt, int num_elem);
-  Node* gen_call_to_svml(int vector_api_op_id, BasicType bt, int num_elem, Node* opd1, Node* opd2);
 
   enum VectorMaskUseType {
     VecMaskUseLoad,

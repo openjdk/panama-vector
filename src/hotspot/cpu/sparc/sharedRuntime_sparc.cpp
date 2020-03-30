@@ -1072,15 +1072,6 @@ int SharedRuntime::c_calling_convention(const BasicType *sig_bt,
 
 }
 
-int SharedRuntime::vector_calling_convention(VMRegPair *regs,
-                                             uint num_bits,
-                                             uint total_args_passed) {
-  assert(!Matcher::supports_vector_calling_convention(), "not implemented");
-  Unimplemented();
-  return 0;
-}
-
-
 // ---------------------------------------------------------------------------
 void SharedRuntime::save_native_result(MacroAssembler *masm, BasicType ret_type, int frame_slots) {
   switch (ret_type) {
