@@ -4212,7 +4212,7 @@ instruct reductionI(rRegI dst, rRegI src1, vec src2, vec vtmp1, vec vtmp2) %{
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src2);
-    __ reduceI(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    __ reduceI(opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4232,7 +4232,7 @@ instruct reduction16I(rRegI dst, rRegI src1, legVec src2, legVec vtmp1, legVec v
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src2);
-    __ reduceI(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);  
+    __ reduceI(opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);  
 %}
   ins_pipe( pipe_slow );
 %}
@@ -4255,7 +4255,7 @@ instruct reductionL(rRegL dst, rRegL src1, vec src2, vec vtmp1, vec vtmp2) %{
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src2);
-    __ reduceL(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    __ reduceL(opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4275,7 +4275,7 @@ instruct reduction8L(rRegL dst, rRegL src1, legVec src2, legVec vtmp1, legVec vt
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src2);
-    __ reduceL(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    __ reduceL(opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4292,7 +4292,7 @@ instruct reductionF128(regF dst, vec src, vec vtmp) %{
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src);
-    __ reduce_fp(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister);
+    __ reduce_fp(opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4306,7 +4306,7 @@ instruct reduction8F(regF dst, vec src, vec vtmp1, vec vtmp2) %{
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src);
-    __ reduce_fp(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);   
+    __ reduce_fp(opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);   
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4320,7 +4320,7 @@ instruct reduction16F(regF dst, legVec src, legVec vtmp1, legVec vtmp2) %{
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src);
-    __ reduce_fp(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    __ reduce_fp(opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4336,7 +4336,7 @@ instruct reduction2D(regD dst, vec src, vec vtmp) %{
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src);
-    __ reduce_fp(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister);  
+    __ reduce_fp(opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister);  
 %}
   ins_pipe( pipe_slow );
 %}
@@ -4350,7 +4350,7 @@ instruct reduction4D(regD dst, vec src, vec vtmp1, vec vtmp2) %{
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src);
-    __ reduce_fp(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);    
+    __ reduce_fp(opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);    
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4364,7 +4364,7 @@ instruct reduction8D(regD dst, legVec src, legVec vtmp1, legVec vtmp2) %{
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src);
-    __ reduce_fp(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);    
+    __ reduce_fp(opcode, vlen, $dst$$XMMRegister, $src$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);    
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4386,7 +4386,7 @@ instruct reductionB(rRegI dst, rRegI src1, vec src2, vec vtmp1, vec vtmp2) %{
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src2);
-    __ reduceB(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    __ reduceB(opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4405,7 +4405,7 @@ instruct reduction64B(rRegI dst, rRegI src1, legVec src2, legVec vtmp1, legVec v
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src2);
-    __ reduceB(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    __ reduceB(opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4428,7 +4428,7 @@ instruct reductionS(rRegI dst, rRegI src1, vec src2, vec vtmp1, vec vtmp2) %{
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src2);
-    __ reduceS(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    __ reduceS(opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4448,7 +4448,7 @@ instruct reduction32S(rRegI dst, rRegI src1, legVec src2, legVec vtmp1, legVec v
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src2);
-    __ reduceS(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    __ reduceS(opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4464,7 +4464,7 @@ instruct mul_reductionB(rRegI dst, rRegI src1, vec src2, vec vtmp1, vec vtmp2) %
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src2);
-    __ mulreduceB(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    __ mulreduceB(opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4478,7 +4478,7 @@ instruct mul_reduction64B(rRegI dst, rRegI src1, legVec src2, legVec vtmp1, legV
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen = vector_length(this, $src2);
-    __ mulreduceB(this->in(2)->bottom_type()->is_vect()->element_basic_type(), opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
+    __ mulreduceB(opcode, vlen, $dst$$Register, $src1$$Register, $src2$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
