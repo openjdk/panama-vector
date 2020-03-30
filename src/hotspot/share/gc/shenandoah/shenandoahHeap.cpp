@@ -368,7 +368,7 @@ jint ShenandoahHeap::initialize() {
   }
 
   _traversal_gc = strcmp(ShenandoahGCMode, "traversal") == 0 ?
-                  new ShenandoahTraversalGC(this, _num_regions) :
+                  new ShenandoahTraversalGC(this) :
                   NULL;
 
   _control_thread = new ShenandoahControlThread();
@@ -610,12 +610,12 @@ size_t ShenandoahHeap::committed() const {
 }
 
 void ShenandoahHeap::increase_committed(size_t bytes) {
-  assert_heaplock_or_safepoint();
+  shenandoah_assert_heaplocked_or_safepoint();
   _committed += bytes;
 }
 
 void ShenandoahHeap::decrease_committed(size_t bytes) {
-  assert_heaplock_or_safepoint();
+  shenandoah_assert_heaplocked_or_safepoint();
   _committed -= bytes;
 }
 
@@ -991,8 +991,8 @@ void ShenandoahHeap::print_heap_regions_on(outputStream* st) const {
   st->print_cr("Heap Regions:");
   st->print_cr("EU=empty-uncommitted, EC=empty-committed, R=regular, H=humongous start, HC=humongous continuation, CS=collection set, T=trash, P=pinned");
   st->print_cr("BTE=bottom/top/end, U=used, T=TLAB allocs, G=GCLAB allocs, S=shared allocs, L=live data");
-  st->print_cr("R=root, CP=critical pins, TAMS=top-at-mark-start (previous, next)");
-  st->print_cr("SN=alloc sequence numbers (first mutator, last mutator, first gc, last gc)");
+  st->print_cr("R=root, CP=critical pins, TAMS=top-at-mark-start, UWM=update watermark");
+  st->print_cr("SN=alloc sequence number");
 
   for (size_t i = 0; i < num_regions(); i++) {
     get_region(i)->print_on(st);
@@ -1384,6 +1384,7 @@ void ShenandoahHeap::op_init_mark() {
 
   assert(marking_context()->is_bitmap_clear(), "need clear marking bitmap");
   assert(!marking_context()->is_complete(), "should not be complete");
+  assert(!has_forwarded_objects(), "No forwarded objects on this path");
 
   if (ShenandoahVerify) {
     verifier()->verify_before_concmark();
@@ -1419,6 +1420,13 @@ void ShenandoahHeap::op_init_mark() {
   if (ShenandoahPacing) {
     pacer()->setup_for_mark();
   }
+
+  // Arm nmethods for concurrent marking. When a nmethod is about to be executed,
+  // we need to make sure that all its metadata are marked. alternative is to remark
+  // thread roots at final mark pause, but it can be potential latency killer.
+  if (ShenandoahConcurrentRoots::should_do_concurrent_class_unloading()) {
+    ShenandoahCodeRoots::arm_nmethods();
+  }
 }
 
 void ShenandoahHeap::op_mark() {
@@ -1450,6 +1458,7 @@ public:
 
 void ShenandoahHeap::op_final_mark() {
   assert(ShenandoahSafepoint::is_at_shenandoah_safepoint(), "Should be at safepoint");
+  assert(!has_forwarded_objects(), "No forwarded objects on this path");
 
   // It is critical that we
   // evacuate roots right after finishing marking, so that we don't
@@ -1463,16 +1472,6 @@ void ShenandoahHeap::op_final_mark() {
     mark_complete_marking_context();
 
     parallel_cleaning(false /* full gc*/);
-
-    if (has_forwarded_objects()) {
-      // Degen may be caused by failed evacuation of roots
-      if (is_degenerated_gc_in_progress()) {
-        concurrent_mark()->update_roots(ShenandoahPhaseTimings::degen_gc_update_roots);
-      } else {
-        concurrent_mark()->update_thread_roots(ShenandoahPhaseTimings::update_roots);
-      }
-      set_has_forwarded_objects(false);
-   }
 
     if (ShenandoahVerify) {
       verifier()->verify_roots_no_forwarded();
@@ -1529,6 +1528,13 @@ void ShenandoahHeap::op_final_mark() {
 
       if (ShenandoahVerify) {
         verifier()->verify_before_evacuation();
+      }
+
+      // Remember limit for updating refs. It's guaranteed that we get no from-space-refs written
+      // from here on.
+      for (uint i = 0; i < num_regions(); i++) {
+        ShenandoahHeapRegion* r = get_region(i);
+        r->set_update_watermark(r->top());
       }
 
       set_evacuation_in_progress(true);
@@ -1878,6 +1884,13 @@ void ShenandoahHeap::op_degenerated(ShenandoahDegenPoint point) {
       if (cancelled_gc()) {
         op_degenerated_fail();
         return;
+      }
+
+      if (!has_forwarded_objects() && ShenandoahConcurrentRoots::can_do_concurrent_class_unloading()) {
+        // Disarm nmethods that armed for concurrent mark. On normal cycle, it would
+        // be disarmed while conc-roots phase is running.
+        // TODO: Call op_conc_roots() here instead
+        ShenandoahCodeRoots::disarm_nmethods();
       }
 
       op_cleanup();
@@ -2334,16 +2347,14 @@ void ShenandoahHeap::assert_gc_workers(uint nworkers) {
   assert(nworkers > 0 && nworkers <= max_workers(), "Sanity");
 
   if (ShenandoahSafepoint::is_at_shenandoah_safepoint()) {
-    if (UseDynamicNumberOfGCThreads ||
-        (FLAG_IS_DEFAULT(ParallelGCThreads) && ForceDynamicNumberOfGCThreads)) {
+    if (UseDynamicNumberOfGCThreads) {
       assert(nworkers <= ParallelGCThreads, "Cannot use more than it has");
     } else {
       // Use ParallelGCThreads inside safepoints
-      assert(nworkers == ParallelGCThreads, "Use ParalleGCThreads within safepoints");
+      assert(nworkers == ParallelGCThreads, "Use ParallelGCThreads within safepoints");
     }
   } else {
-    if (UseDynamicNumberOfGCThreads ||
-        (FLAG_IS_DEFAULT(ConcGCThreads) && ForceDynamicNumberOfGCThreads)) {
+    if (UseDynamicNumberOfGCThreads) {
       assert(nworkers <= ConcGCThreads, "Cannot use more than it has");
     } else {
       // Use ConcGCThreads outside safepoints
@@ -2391,13 +2402,13 @@ private:
     ShenandoahHeapRegion* r = _regions->next();
     ShenandoahMarkingContext* const ctx = _heap->complete_marking_context();
     while (r != NULL) {
-      HeapWord* top_at_start_ur = r->concurrent_iteration_safe_limit();
-      assert (top_at_start_ur >= r->bottom(), "sanity");
+      HeapWord* update_watermark = r->get_update_watermark();
+      assert (update_watermark >= r->bottom(), "sanity");
       if (r->is_active() && !r->is_cset()) {
-        _heap->marked_object_oop_iterate(r, &cl, top_at_start_ur);
+        _heap->marked_object_oop_iterate(r, &cl, update_watermark);
       }
       if (ShenandoahPacing) {
-        _heap->pacer()->report_updaterefs(pointer_delta(top_at_start_ur, r->bottom()));
+        _heap->pacer()->report_updaterefs(pointer_delta(update_watermark, r->bottom()));
       }
       if (_heap->check_cancelled_gc_and_yield(_concurrent)) {
         return;
@@ -2435,10 +2446,6 @@ void ShenandoahHeap::op_init_updaterefs() {
     ShenandoahGCPhase phase(ShenandoahPhaseTimings::init_update_refs_prepare);
 
     make_parsable(true);
-    for (uint i = 0; i < num_regions(); i++) {
-      ShenandoahHeapRegion* r = get_region(i);
-      r->set_concurrent_iteration_safe_limit(r->top());
-    }
 
     // Reset iterator.
     _update_refs_iterator.reset();
@@ -2514,20 +2521,6 @@ void ShenandoahHeap::op_final_updaterefs() {
   }
 }
 
-#ifdef ASSERT
-void ShenandoahHeap::assert_heaplock_owned_by_current_thread() {
-  _lock.assert_owned_by_current_thread();
-}
-
-void ShenandoahHeap::assert_heaplock_not_owned_by_current_thread() {
-  _lock.assert_not_owned_by_current_thread();
-}
-
-void ShenandoahHeap::assert_heaplock_or_safepoint() {
-  _lock.assert_owned_by_current_thread_or_safepoint();
-}
-#endif
-
 void ShenandoahHeap::print_extended_on(outputStream *st) const {
   print_on(st);
   print_heap_regions_on(st);
@@ -2549,7 +2542,7 @@ bool ShenandoahHeap::is_bitmap_slice_committed(ShenandoahHeapRegion* r, bool ski
 }
 
 bool ShenandoahHeap::commit_bitmap_slice(ShenandoahHeapRegion* r) {
-  assert_heaplock_owned_by_current_thread();
+  shenandoah_assert_heaplocked();
 
   // Bitmaps in special regions do not need commits
   if (_bitmap_region_special) {
@@ -2573,7 +2566,7 @@ bool ShenandoahHeap::commit_bitmap_slice(ShenandoahHeapRegion* r) {
 }
 
 bool ShenandoahHeap::uncommit_bitmap_slice(ShenandoahHeapRegion *r) {
-  assert_heaplock_owned_by_current_thread();
+  shenandoah_assert_heaplocked();
 
   // Bitmaps in special regions do not need uncommits
   if (_bitmap_region_special) {

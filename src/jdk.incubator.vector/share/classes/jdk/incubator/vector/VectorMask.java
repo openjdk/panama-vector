@@ -26,6 +26,7 @@ package jdk.incubator.vector;
 
 import jdk.internal.misc.Unsafe;
 import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.vector.VectorSupport;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -121,8 +122,9 @@ import java.util.Objects;
  * fields or in array elements, while semantically valid, may incur
  * performance penalties.
  */
-public abstract class VectorMask<E> {
-    VectorMask() {}
+@SuppressWarnings("exports")
+public abstract class VectorMask<E> extends jdk.internal.vm.vector.VectorSupport.VectorMask<E> {
+    VectorMask(boolean[] bits) { super(bits); }
 
     /**
      * Returns the vector species to which this mask applies.
@@ -196,7 +198,7 @@ public abstract class VectorMask<E> {
         AbstractSpecies<E> vsp = (AbstractSpecies<E>) species;
         int laneCount = vsp.laneCount();
         offset = VectorIntrinsics.checkFromIndexSize(offset, laneCount, bits.length);
-        return VectorIntrinsics.load(
+        return VectorSupport.load(
                 vsp.maskType(), vsp.elementType(), laneCount,
                 bits, (long) offset + Unsafe.ARRAY_BOOLEAN_BASE_OFFSET,
                 bits, offset, vsp,

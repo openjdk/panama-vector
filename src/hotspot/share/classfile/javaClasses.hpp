@@ -86,6 +86,7 @@ class RecordComponent;
   f(java_lang_LiveStackFrameInfo) \
   f(java_util_concurrent_locks_AbstractOwnableSynchronizer) \
   f(jdk_internal_misc_UnsafeConstants) \
+  f(vector_VectorPayload) \
   //end
 
 #define BASIC_JAVA_CLASSES_DO(f) \
@@ -1574,6 +1575,24 @@ class jdk_internal_misc_UnsafeConstants : AllStatic {
   static void set_unsafe_constants();
   static void compute_offsets() { }
   static void serialize_offsets(SerializeClosure* f) { }
+};
+
+// Interface to jdk.internal.vm.vector.VectorSupport.VectorPayload objects
+
+class vector_VectorPayload : AllStatic {
+ private:
+  static int _payload_offset;
+ public:
+  static void set_payload(oop o, oop val);
+
+  static void compute_offsets();
+  static void serialize_offsets(SerializeClosure* f) NOT_CDS_RETURN;
+
+  // Testers
+  static bool is_subclass(Klass* klass) {
+    return klass->is_subclass_of(SystemDictionary::vector_VectorPayload_klass());
+  }
+  static bool is_instance(oop obj);
 };
 
 class java_lang_Integer : AllStatic {

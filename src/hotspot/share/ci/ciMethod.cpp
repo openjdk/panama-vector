@@ -1352,12 +1352,8 @@ bool ciMethod::is_unboxing_method() const {
 }
 
 bool ciMethod::is_vector_method() const {
-  return intrinsic_id() >= vmIntrinsics::FIRST_VECTOR_API && intrinsic_id() <= vmIntrinsics::LAST_VECTOR_API;
-}
-
-bool ciMethod::is_vector_api_class() const {
-  Method* method = get_Method();
-  return strncmp(method->klass_name()->as_C_string(), "jdk/incubator/vector", 20) == 0;
+  return (holder() == ciEnv::current()->vector_VectorSupport_klass()) &&
+         (intrinsic_id() != vmIntrinsics::_none);
 }
 
 BCEscapeAnalyzer  *ciMethod::get_bcea() {

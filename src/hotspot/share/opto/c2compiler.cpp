@@ -108,7 +108,7 @@ void C2Compiler::compile_method(ciEnv* env, ciMethod* target, int entry_bci, Dir
 
   while (!env->failing()) {
     // Attempt to compile while subsuming loads into machine instructions.
-    Compile C(env, this, target, entry_bci, subsume_loads, do_escape_analysis, eliminate_boxing, directive);
+    Compile C(env, target, entry_bci, subsume_loads, do_escape_analysis, eliminate_boxing, directive);
 
     // Check result and retry if appropriate.
     if (C.failure_reason() != NULL) {
@@ -169,11 +169,6 @@ bool C2Compiler::is_intrinsic_supported(const methodHandle& method, bool is_virt
 
   if (id < vmIntrinsics::FIRST_ID || id > vmIntrinsics::LAST_COMPILER_INLINE) {
     return false;
-  }
-
-  if (id >= vmIntrinsics::FIRST_VECTOR_API && id <= vmIntrinsics::LAST_VECTOR_API) {
-      // Assume true if enabled and allow implementation which will determine typing to figure out if supported.
-      return UseVectorApiIntrinsics;
   }
 
   // Only Object.hashCode and Object.clone intrinsics implement also a virtual
@@ -649,6 +644,28 @@ bool C2Compiler::is_intrinsic_supported(const methodHandle& method, bool is_virt
   case vmIntrinsics::_isCompileConstant:
   case vmIntrinsics::_Preconditions_checkIndex:
     break;
+
+  case vmIntrinsics::_VectorUnaryOp:
+  case vmIntrinsics::_VectorBinaryOp:
+  case vmIntrinsics::_VectorTernaryOp:
+  case vmIntrinsics::_VectorBroadcastCoerced:
+  case vmIntrinsics::_VectorShuffleIota:
+  case vmIntrinsics::_VectorShuffleToVector:
+  case vmIntrinsics::_VectorLoadOp:
+  case vmIntrinsics::_VectorStoreOp:
+  case vmIntrinsics::_VectorGatherOp:
+  case vmIntrinsics::_VectorScatterOp:
+  case vmIntrinsics::_VectorReductionCoerced:
+  case vmIntrinsics::_VectorTest:
+  case vmIntrinsics::_VectorBlend:
+  case vmIntrinsics::_VectorRearrange:
+  case vmIntrinsics::_VectorCompare:
+  case vmIntrinsics::_VectorBroadcastInt:
+  case vmIntrinsics::_VectorConvert:
+  case vmIntrinsics::_VectorInsert:
+  case vmIntrinsics::_VectorExtract:
+    return EnableVectorSupport;
+
   default:
     return false;
   }
@@ -657,7 +674,7 @@ bool C2Compiler::is_intrinsic_supported(const methodHandle& method, bool is_virt
 
 int C2Compiler::initial_code_buffer_size(int const_size) {
   // See Compile::init_scratch_buffer_blob
-  int locs_size = sizeof(relocInfo) * Compile::MAX_locs_size;
+  int locs_size = sizeof(relocInfo) * PhaseOutput::MAX_locs_size;
   int slop = 2 * CodeSection::end_slop(); // space between sections
-  return Compile::MAX_inst_size + Compile::MAX_stubs_size + const_size + slop + locs_size;
+  return PhaseOutput::MAX_inst_size + PhaseOutput::MAX_stubs_size + const_size + slop + locs_size;
 }

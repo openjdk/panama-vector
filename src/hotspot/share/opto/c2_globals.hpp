@@ -715,18 +715,17 @@
   diagnostic(bool, UseMontgomerySquareIntrinsic, false,                     \
           "Enables intrinsification of BigInteger.montgomerySquare()")      \
                                                                             \
-  product(bool, UseVectorApiIntrinsics, true,                               \
-          "Enables intrinsification of Vector API")                         \
+  experimental(bool, EnableVectorSupport, false,                            \
+          "Enables VectorSupport intrinsics")                               \
                                                                             \
-  product(bool, VectorAPIAggressiveReboxing, true,                          \
+  experimental(bool, EnableVectorReboxing, false,                           \
+          "Enables reboxing of vectors")                                    \
+                                                                            \
+  experimental(bool, EnableVectorAggressiveReboxing, false,                 \
           "Enables aggressive reboxing of vectors")                         \
                                                                             \
-  notproduct(bool, DebugVectorApi, false,                                   \
-          "Enables printing of debug messages for Vector API")              \
-                                                                            \
-  notproduct(bool, DebugVectorApiMissingIntrinsics, false,                  \
-          "Enables printing of debug messages when a missing intrinsic "    \
-          "is found for Vector API ")                                       \
+  experimental(bool, UseVectorStubs, false,                                 \
+          "Use stubs for vector transcendental operations")                 \
                                                                             \
   product(bool, UseTypeSpeculation, true,                                   \
           "Speculatively propagate types from profiles")                    \

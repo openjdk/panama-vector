@@ -29,6 +29,10 @@ import jdk.internal.vm.annotation.ForceInline;
 import static jdk.incubator.vector.VectorOperators.*;
 
 abstract class AbstractMask<E> extends VectorMask<E> {
+    AbstractMask(boolean[] bits) {
+        super(bits);
+    }
+
     /*package-private*/
     abstract boolean[] getBits();
 

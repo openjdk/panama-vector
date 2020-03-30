@@ -1725,67 +1725,26 @@ public:
   void vabsnegf(int opcode, XMMRegister dst, XMMRegister src, int vector_len, Register scr);
   void vextendbw(bool sign, XMMRegister dst, XMMRegister src, int vector_len);
   void vextendbw(bool sign, XMMRegister dst, XMMRegister src);
+  void vextendbd(bool sign, XMMRegister dst, XMMRegister src, int vector_len);
+  void vextendwd(bool sign, XMMRegister dst, XMMRegister src, int vector_len);
+  void pminmax(BasicType typ, XMMRegister dst, XMMRegister src, bool is_min);
+  void vpminmax(BasicType typ, XMMRegister dst, XMMRegister src1, XMMRegister src2, bool is_min, int vector_len);
   void vshiftd(int opcode, XMMRegister dst, XMMRegister src);
   void vshiftd(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
   void vshiftw(int opcode, XMMRegister dst, XMMRegister src);
   void vshiftw(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
-  void pminmax(BasicType typ, XMMRegister dst, XMMRegister src, bool is_min);
-  void vpminmax(BasicType typ, XMMRegister dst, XMMRegister src1, XMMRegister src2, bool is_min, int vector_len);
   void vshiftq(int opcode, XMMRegister dst, XMMRegister src);
   void vshiftq(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+  void varshiftd(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+  void varshiftw(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+  void varshiftq(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+  void varshiftbw(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len, XMMRegister vtmp, Register scratch);
+  void evarshiftb(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len, XMMRegister vtmp, Register scratch);
   void insert(BasicType typ, XMMRegister dst, Register val, int idx);
   void vinsert(BasicType typ, XMMRegister dst, XMMRegister src, Register val, int idx);
   void vgather(BasicType typ, XMMRegister dst, Register base, XMMRegister idx, XMMRegister mask, int vector_len);
   void evgather(BasicType typ, XMMRegister dst, KRegister mask, Register base, XMMRegister idx, int vector_len);
   void evscatter(BasicType typ, Register base, XMMRegister idx, KRegister mask, XMMRegister src, int vector_len);
-
-  // Int Reduction
-  void reducedw(int opcode, XMMRegister dst, XMMRegister src);
-  void vreducedw(int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len);
-  void reduce2I(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduce4I(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduce8I(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduce16I(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-
-  // Byte Reduction
-  void reduceb(int opcode, XMMRegister dst, XMMRegister src);
-  void vreduceb(int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len);
-  void reduce8B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduce16B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduce32B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduce64B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void mulreduce8B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void mulreduce16B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void mulreduce32B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void mulreduce64B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-
-  // Short Reduction
-  void reducew(int opcode, XMMRegister dst, XMMRegister src);
-  void vreducew(int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len);
-  void reduce4S(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduce8S(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduce16S(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduce32S(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-
-  // Long Reduction
-  void reduceq(int opcode, XMMRegister dst, XMMRegister src);
-  void vreduceq(int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vector_len);
-  void reduce2L(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduce4L(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduce8L(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-
-  // Float Reduction
-  void reducef(int opcode, XMMRegister dst, XMMRegister src);
-  void reduce2F(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp);
-  void reduce4F(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp);
-  void reduce8F(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduce16F(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
-
-  // Double Reduction
-  void reduced(int opcode, XMMRegister dst, XMMRegister src);
-  void reduce2D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp);
-  void reduce4D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduce8D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
 
   // extract
   void extract(BasicType typ, Register dst, XMMRegister src, int idx);
@@ -1797,8 +1756,75 @@ public:
   void evpcmp(BasicType typ, KRegister kdmask, KRegister ksmask, XMMRegister src1, AddressLiteral adr, int comparison, int vector_len, Register scratch = rscratch1);
   void evpblend(BasicType typ, XMMRegister dst, KRegister kmask, XMMRegister src1, XMMRegister src2, bool merge, int vector_len);
 
+  // Reductions for vectors of bytes, shorts, ints, longs, floats, and doubles.
+
+  // dst = src1  reduce(op, src2) using vtmp as temps
+  void reduceI(int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+#ifdef _LP64
+  void reduceL(int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+#endif // _LP64
+
+  // dst = reduce(op, src2) using vtmp as temps
+  void reduce_fp(int opcode, int vlen,
+                 XMMRegister dst, XMMRegister src,
+                 XMMRegister vtmp1, XMMRegister vtmp2 = xnoreg);
+  void reduceB(int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void mulreduceB(int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduceS(int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduceFloatMinMax(bool is_min, int log2vlen, bool dstvalid, XMMRegister dst, XMMRegister src,
+                         XMMRegister tmp, XMMRegister atmp, XMMRegister btmp, XMMRegister xmm_0, XMMRegister xmm_1 = xnoreg);
+  void reduceDoubleMinMax(bool is_min, int log2vlen, bool dstvalid, XMMRegister dst, XMMRegister src,
+                         XMMRegister tmp, XMMRegister atmp, XMMRegister btmp, XMMRegister xmm_0, XMMRegister xmm_1 = xnoreg);
+ private:
+  void reduceF(int opcode, int vlen, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduceD(int opcode, int vlen, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
+
+  // Int Reduction
+  void reduce2I (int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce4I (int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce8I (int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce16I(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+
+  // Byte Reduction
+  void reduce8B (int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce16B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce32B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce64B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void mulreduce8B (int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void mulreduce16B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void mulreduce32B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void mulreduce64B(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+
+  // Short Reduction
+  void reduce4S (int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce8S (int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce16S(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce32S(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+
+  // Long Reduction
+#ifdef _LP64
+  void reduce2L(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce4L(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce8L(int opcode, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
+#endif // _LP64
+
+  // Float Reduction
+  void reduce2F (int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp);
+  void reduce4F (int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp);
+  void reduce8F (int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce16F(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
+
+  // Double Reduction
+  void reduce2D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp);
+  void reduce4D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
+  void reduce8D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
+
+  // Base reduction instruction
+  void reduce_operation_128(BasicType typ, int opcode, XMMRegister dst, XMMRegister src);
+  void reduce_operation_256(BasicType typ, int opcode, XMMRegister dst, XMMRegister src1, XMMRegister src2);
 #endif
 
+ public:
   // C2 compiled method's prolog code.
   void verified_entry(int framesize, int stack_bang_size, bool fp_mode_24b, bool is_stub);
 

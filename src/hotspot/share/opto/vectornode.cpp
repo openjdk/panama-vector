@@ -821,7 +821,7 @@ int ReductionNode::opcode(int opc, BasicType bt) {
         case T_INT:
           vopc = Op_MinReductionV;
           break;
-        default:          ShouldNotReachHere(); return 0;
+        default: ShouldNotReachHere(); return 0;
       }
       break;
     case Op_MinL:
@@ -845,7 +845,7 @@ int ReductionNode::opcode(int opc, BasicType bt) {
         case T_INT:
           vopc = Op_MaxReductionV;
           break;
-        default:          ShouldNotReachHere(); return 0;
+        default: ShouldNotReachHere(); return 0;
       }
       break;
     case Op_MaxL:
@@ -869,7 +869,7 @@ int ReductionNode::opcode(int opc, BasicType bt) {
       case T_INT:
         vopc = Op_AndReductionV;
         break;
-      default:          ShouldNotReachHere(); return 0;
+      default: ShouldNotReachHere(); return 0;
       }
       break;
     case Op_AndL:
@@ -885,7 +885,7 @@ int ReductionNode::opcode(int opc, BasicType bt) {
       case T_INT:
         vopc = Op_OrReductionV;
         break;
-      default:  ShouldNotReachHere(); return 0;
+      default: ShouldNotReachHere(); return 0;
       }
       break;
     case Op_OrL:
@@ -901,14 +901,13 @@ int ReductionNode::opcode(int opc, BasicType bt) {
       case T_INT:
         vopc = Op_XorReductionV;
         break;
-      default:  ShouldNotReachHere(); return 0;
+      default: ShouldNotReachHere(); return 0;
       }
       break;
     case Op_XorL:
       assert(bt == T_LONG, "must be");
       vopc = Op_XorReductionV;
       break;
-    // TODO: add MulL for targets that support it
     default:
       break;
   }
@@ -932,11 +931,11 @@ ReductionNode* ReductionNode::make(int opc, Node *ctrl, Node* n1, Node* n2, Basi
   case Op_MulReductionVL: return new MulReductionVLNode(ctrl, n1, n2);
   case Op_MulReductionVF: return new MulReductionVFNode(ctrl, n1, n2);
   case Op_MulReductionVD: return new MulReductionVDNode(ctrl, n1, n2);
-  case Op_MinReductionV: return new MinReductionVNode(ctrl, n1, n2);
-  case Op_MaxReductionV: return new MaxReductionVNode(ctrl, n1, n2);
-  case Op_AndReductionV: return new AndReductionVNode(ctrl, n1, n2);
-  case Op_OrReductionV: return new OrReductionVNode(ctrl, n1, n2);
-  case Op_XorReductionV: return new XorReductionVNode(ctrl, n1, n2);
+  case Op_MinReductionV:  return new MinReductionVNode(ctrl, n1, n2);
+  case Op_MaxReductionV:  return new MaxReductionVNode(ctrl, n1, n2);
+  case Op_AndReductionV:  return new AndReductionVNode(ctrl, n1, n2);
+  case Op_OrReductionV:   return new OrReductionVNode(ctrl, n1, n2);
+  case Op_XorReductionV:  return new XorReductionVNode(ctrl, n1, n2);
   default:
     fatal("Missed vector creation for '%s'", NodeClassNames[vopc]);
     return NULL;
@@ -1050,30 +1049,32 @@ bool ReductionNode::implemented(int opc, uint vlen, BasicType bt) {
 }
 
 #ifndef PRODUCT
-void VectorBoxAllocateNode::dump_spec(outputStream *st) const {
-  CallStaticJavaNode::dump_spec(st);
-}
-
 void VectorMaskCmpNode::dump_spec(outputStream *st) const {
   st->print(" %d #", _predicate); _type->dump_on(st);
 }
 #endif // PRODUCT
-
-Node* VectorUnboxNode::Identity(PhaseGVN *phase) {
-  Node* n = obj()->uncast();
-  if (n->Opcode() == Op_VectorBox) {
-    if (Type::cmp(bottom_type(), n->in(VectorBoxNode::Value)->bottom_type()) == 0) {
-      return n->in(VectorBoxNode::Value);
-    }
-  }
-  return this;
-}
 
 Node* VectorReinterpretNode::Identity(PhaseGVN *phase) {
   Node* n = in(1);
   if (n->Opcode() == Op_VectorReinterpret) {
     if (Type::cmp(bottom_type(), n->in(1)->bottom_type()) == 0) {
       return n->in(1);
+    }
+  }
+  return this;
+}
+
+Node* VectorInsertNode::make(Node* vec, Node* new_val, int position) {
+  assert(position < (int)vec->bottom_type()->is_vect()->length(), "pos in range");
+  ConINode* pos = ConINode::make(position);
+  return new VectorInsertNode(vec, new_val, pos, vec->bottom_type()->is_vect());
+}
+
+Node* VectorUnboxNode::Identity(PhaseGVN *phase) {
+  Node* n = obj()->uncast();
+  if (EnableVectorReboxing && n->Opcode() == Op_VectorBox) {
+    if (Type::cmp(bottom_type(), n->in(VectorBoxNode::Value)->bottom_type()) == 0) {
+      return n->in(VectorBoxNode::Value);
     }
   }
   return this;
@@ -1090,8 +1091,8 @@ const TypeFunc* VectorBoxNode::vec_box_type(const TypeInstPtr* box_type) {
   return TypeFunc::make(domain, range);
 }
 
-Node* VectorInsertNode::make(Node* vec, Node* new_val, int position) {
-  assert(position < (int)vec->bottom_type()->is_vect()->length(), "pos in range");
-  ConINode* pos = ConINode::make(position);
-  return new VectorInsertNode(vec, new_val, pos, vec->bottom_type()->is_vect());
+#ifndef PRODUCT
+void VectorBoxAllocateNode::dump_spec(outputStream *st) const {
+  CallStaticJavaNode::dump_spec(st);
 }
+#endif // !PRODUCT

@@ -4357,6 +4357,7 @@ int java_lang_reflect_RecordComponent::accessor_offset;
 int java_lang_reflect_RecordComponent::signature_offset;
 int java_lang_reflect_RecordComponent::annotations_offset;
 int java_lang_reflect_RecordComponent::typeAnnotations_offset;
+int vector_VectorPayload::_payload_offset;
 
 
 
@@ -4517,6 +4518,28 @@ void java_util_concurrent_locks_AbstractOwnableSynchronizer::serialize_offsets(S
   AOS_FIELDS_DO(FIELD_SERIALIZE_OFFSET);
 }
 #endif
+
+#define VECTORPAYLOAD_FIELDS_DO(macro) \
+  macro(_payload_offset, k, "payload", object_signature, false)
+
+void vector_VectorPayload::compute_offsets() {
+  InstanceKlass* k = SystemDictionary::vector_VectorPayload_klass();
+  VECTORPAYLOAD_FIELDS_DO(FIELD_COMPUTE_OFFSET);
+}
+
+#if INCLUDE_CDS
+void vector_VectorPayload::serialize_offsets(SerializeClosure* f) {
+  VECTORPAYLOAD_FIELDS_DO(FIELD_SERIALIZE_OFFSET);
+}
+#endif
+
+void vector_VectorPayload::set_payload(oop o, oop val) {
+  o->obj_field_put(_payload_offset, val);
+}
+
+bool vector_VectorPayload::is_instance(oop obj) {
+  return obj != NULL && is_subclass(obj->klass());
+}
 
 #define INTEGER_CACHE_FIELDS_DO(macro) \
   macro(_static_cache_offset, k, "cache", java_lang_Integer_array_signature, true)

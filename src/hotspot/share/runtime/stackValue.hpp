@@ -58,7 +58,7 @@ class StackValue : public ResourceObj {
 
   // Only used during deopt- preserve object type.
   StackValue(intptr_t o, BasicType t) {
-    assert(t == T_OBJECT || t == T_ILLEGAL, "should not be used"); // FIXME
+    assert(t == T_OBJECT, "should not be used");
     _type          = t;
     _integer_value = o;
   }
@@ -80,11 +80,6 @@ class StackValue : public ResourceObj {
 
   intptr_t get_int() const {
     assert(type() == T_INT, "type check");
-    return _integer_value;
-  }
-
-  intptr_t get_addr() {
-    assert(type() == T_ILLEGAL, "type check"); // FIXME
     return _integer_value;
   }
 
@@ -112,7 +107,7 @@ class StackValue : public ResourceObj {
     }
   }
 
-  static StackValue* create_stack_value(const frame* fr, const RegisterMap* reg_map, ScopeValue* sv, InstanceKlass* ik = NULL);
+  static StackValue* create_stack_value(const frame* fr, const RegisterMap* reg_map, ScopeValue* sv);
   static BasicLock*  resolve_monitor_lock(const frame* fr, Location location);
 
 #ifndef PRODUCT

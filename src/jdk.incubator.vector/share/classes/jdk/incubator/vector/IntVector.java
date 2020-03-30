@@ -35,8 +35,11 @@ import java.util.function.UnaryOperator;
 
 import jdk.internal.misc.Unsafe;
 import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.vector.VectorSupport;
 
+import static jdk.internal.vm.vector.VectorSupport.*;
 import static jdk.incubator.vector.VectorIntrinsics.*;
+
 import static jdk.incubator.vector.VectorOperators.*;
 
 // -- This file was mechanically generated: Do not edit! -- //
@@ -48,7 +51,9 @@ import static jdk.incubator.vector.VectorOperators.*;
 @SuppressWarnings("cast")  // warning: redundant cast
 public abstract class IntVector extends AbstractVector<Integer> {
 
-    IntVector() {}
+    IntVector(int[] vec) {
+        super(vec);
+    }
 
     static final int FORBID_OPCODE_KIND = VO_ONLYFP;
 
@@ -423,7 +428,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
     @ForceInline
     public static IntVector zero(VectorSpecies<Integer> species) {
         IntSpecies vsp = (IntSpecies) species;
-        return VectorIntrinsics.broadcastCoerced(vsp.vectorType(), int.class, species.length(),
+        return VectorSupport.broadcastCoerced(vsp.vectorType(), int.class, species.length(),
                                 0, vsp,
                                 ((bits_, s_) -> s_.rvOp(i -> bits_)));
     }
@@ -567,7 +572,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
             }
         }
         int opc = opCode(op);
-        return VectorIntrinsics.unaryOp(
+        return VectorSupport.unaryOp(
             opc, getClass(), int.class, length(),
             this,
             UN_IMPL.find(op, opc, (opc_) -> {
@@ -642,7 +647,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
             }
         }
         int opc = opCode(op);
-        return VectorIntrinsics.binaryOp(
+        return VectorSupport.binaryOp(
             opc, getClass(), int.class, length(),
             this, that,
             BIN_IMPL.find(op, opc, (opc_) -> {
@@ -659,14 +664,10 @@ public abstract class IntVector extends AbstractVector<Integer> {
                         v0.bOp(v1, (i, a, b) -> (int)Math.max(a, b));
                 case VECTOR_OP_MIN: return (v0, v1) ->
                         v0.bOp(v1, (i, a, b) -> (int)Math.min(a, b));
-                case VECTOR_OP_FIRST_NONZERO: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> toBits(a) != 0 ? a : b);
                 case VECTOR_OP_AND: return (v0, v1) ->
                         v0.bOp(v1, (i, a, b) -> (int)(a & b));
                 case VECTOR_OP_OR: return (v0, v1) ->
                         v0.bOp(v1, (i, a, b) -> (int)(a | b));
-                case VECTOR_OP_AND_NOT: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (int)(a & ~b));
                 case VECTOR_OP_XOR: return (v0, v1) ->
                         v0.bOp(v1, (i, a, b) -> (int)(a ^ b));
                 case VECTOR_OP_LSHIFT: return (v0, v1) ->
@@ -675,10 +676,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
                         v0.bOp(v1, (i, a, n) -> (int)(a >> n));
                 case VECTOR_OP_URSHIFT: return (v0, v1) ->
                         v0.bOp(v1, (i, a, n) -> (int)((a & LSHR_SETUP_MASK) >>> n));
-                case VECTOR_OP_LROTATE: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, n) -> (int)((a << n)|(a >> -n)));
-                case VECTOR_OP_RROTATE: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, n) -> (int)((a >> n)|(a << -n)));
                 default: return null;
                 }}));
     }
@@ -828,7 +825,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
             IntVector lo = this.lanewise(LSHR, (op == ROR) ? e : -e);
             return hi.lanewise(OR, lo);
         }
-        return VectorIntrinsics.broadcastInt(
+        return VectorSupport.broadcastInt(
             opc, getClass(), int.class, length(),
             this, e,
             BIN_INT_IMPL.find(op, opc, (opc_) -> {
@@ -839,10 +836,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
                         v.uOp((i, a) -> (int)(a >> n));
                 case VECTOR_OP_URSHIFT: return (v, n) ->
                         v.uOp((i, a) -> (int)((a & LSHR_SETUP_MASK) >>> n));
-                case VECTOR_OP_LROTATE: return (v, n) ->
-                        v.uOp((i, a) -> (int)((a << n)|(a >> -n)));
-                case VECTOR_OP_RROTATE: return (v, n) ->
-                        v.uOp((i, a) -> (int)((a >> n)|(a << -n)));
                 default: return null;
                 }}));
     }
@@ -900,13 +893,11 @@ public abstract class IntVector extends AbstractVector<Integer> {
             return this.lanewise(XOR, that);
         }
         int opc = opCode(op);
-        return VectorIntrinsics.ternaryOp(
+        return VectorSupport.ternaryOp(
             opc, getClass(), int.class, length(),
             this, that, tother,
             TERN_IMPL.find(op, opc, (opc_) -> {
               switch (opc_) {
-                case VECTOR_OP_BITWISE_BLEND: return (v0, v1_, v2_) ->
-                        v0.tOp(v1_, v2_, (i, a, b, c) -> (int)(a^((a^b)&c)));
                 default: return null;
                 }}));
     }
@@ -1775,7 +1766,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         IntVector that = (IntVector) v;
         that.check(this);
         int opc = opCode(op);
-        return VectorIntrinsics.compare(
+        return VectorSupport.compare(
             opc, getClass(), maskType, int.class, length(),
             this, that,
             (cond, v0, v1) -> {
@@ -1792,12 +1783,12 @@ public abstract class IntVector extends AbstractVector<Integer> {
     private static
     boolean compareWithOp(int cond, int a, int b) {
         switch (cond) {
-        case VectorIntrinsics.BT_eq:  return a == b;
-        case VectorIntrinsics.BT_ne:  return a != b;
-        case VectorIntrinsics.BT_lt:  return a <  b;
-        case VectorIntrinsics.BT_le:  return a <= b;
-        case VectorIntrinsics.BT_gt:  return a >  b;
-        case VectorIntrinsics.BT_ge:  return a >= b;
+        case BT_eq:  return a == b;
+        case BT_ne:  return a != b;
+        case BT_lt:  return a <  b;
+        case BT_le:  return a <= b;
+        case BT_gt:  return a >  b;
+        case BT_ge:  return a >= b;
         }
         throw new AssertionError();
     }
@@ -1915,7 +1906,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
     IntVector
     blendTemplate(Class<M> maskType, IntVector v, M m) {
         v.check(this);
-        return VectorIntrinsics.blend(
+        return VectorSupport.blend(
             getClass(), maskType, int.class, length(),
             this, v, m,
             (v0, v1, m_) -> v0.bOp(v1, m_, (i, a, b) -> b));
@@ -1932,7 +1923,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         IntSpecies vsp = vspecies();
         // make sure VLENGTH*scale doesn't overflow:
         vsp.checkScale(scale);
-        return VectorIntrinsics.indexVector(
+        return VectorSupport.indexVector(
             getClass(), int.class, length(),
             this, scale, vsp,
             (v, scale_, s)
@@ -2110,7 +2101,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
     <S extends VectorShuffle<Integer>>
     IntVector rearrangeTemplate(Class<S> shuffletype, S shuffle) {
         shuffle.checkIndexes();
-        return VectorIntrinsics.rearrangeOp(
+        return VectorSupport.rearrangeOp(
             getClass(), shuffletype, int.class, length(),
             this, shuffle,
             (v1, s_) -> v1.uOp((i, a) -> {
@@ -2135,7 +2126,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                            S shuffle,
                                            VectorMask<Integer> m) {
         IntVector unmasked =
-            VectorIntrinsics.rearrangeOp(
+            VectorSupport.rearrangeOp(
                 getClass(), shuffletype, int.class, length(),
                 this, shuffle,
                 (v1, s_) -> v1.uOp((i, a) -> {
@@ -2168,7 +2159,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         VectorMask<Integer> valid = shuffle.laneIsValid();
         S ws = shuffletype.cast(shuffle.wrapIndexes());
         IntVector r0 =
-            VectorIntrinsics.rearrangeOp(
+            VectorSupport.rearrangeOp(
                 getClass(), shuffletype, int.class, length(),
                 this, ws,
                 (v0, s_) -> v0.uOp((i, a) -> {
@@ -2176,7 +2167,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                     return v0.lane(ei);
                 }));
         IntVector r1 =
-            VectorIntrinsics.rearrangeOp(
+            VectorSupport.rearrangeOp(
                 getClass(), shuffletype, int.class, length(),
                 v, ws,
                 (v1, s_) -> v1.uOp((i, a) -> {
@@ -2435,7 +2426,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
             return this.lane(thisNZ.firstTrue());
         }
         int opc = opCode(op);
-        return fromBits(VectorIntrinsics.reductionCoerced(
+        return fromBits(VectorSupport.reductionCoerced(
             opc, getClass(), int.class, length(),
             this,
             REDUCE_IMPL.find(op, opc, (opc_) -> {
@@ -2448,8 +2439,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
                       toBits(v.rOp(MAX_OR_INF, (i, a, b) -> (int) Math.min(a, b)));
               case VECTOR_OP_MAX: return v ->
                       toBits(v.rOp(MIN_OR_INF, (i, a, b) -> (int) Math.max(a, b)));
-              case VECTOR_OP_FIRST_NONZERO: return v ->
-                      toBits(v.rOp((int)0, (i, a, b) -> toBits(a) != 0 ? a : b));
               case VECTOR_OP_AND: return v ->
                       toBits(v.rOp((int)-1, (i, a, b) -> (int)(a & b)));
               case VECTOR_OP_OR: return v ->
@@ -2473,7 +2462,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 case VECTOR_OP_ADD:
                 case VECTOR_OP_OR:
                 case VECTOR_OP_XOR:
-                case VECTOR_OP_FIRST_NONZERO:
                     return v -> v.broadcast(0);
                 case VECTOR_OP_MUL:
                     return v -> v.broadcast(1);
@@ -2880,7 +2868,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
 
         vix = VectorIntrinsics.checkIndex(vix, a.length);
 
-        return VectorIntrinsics.loadWithMap(
+        return VectorSupport.loadWithMap(
             vectorType, int.class, vsp.laneCount(),
             IntVector.species(vsp.indexShape()).vectorType(),
             a, ARRAY_BASE, vix,
@@ -3068,7 +3056,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         offset = checkFromIndexSize(offset,
                                     vsp.laneCount(),
                                     a.length);
-        VectorIntrinsics.store(
+        VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
             this,
@@ -3153,7 +3141,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
 
         vix = VectorIntrinsics.checkIndex(vix, a.length);
 
-        VectorIntrinsics.storeWithMap(
+        VectorSupport.storeWithMap(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             isp.vectorType(),
             a, arrayAddress(a, 0), vix,
@@ -3325,7 +3313,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
     final
     IntVector fromArray0Template(int[] a, int offset) {
         IntSpecies vsp = vspecies();
-        return VectorIntrinsics.load(
+        return VectorSupport.load(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
             a, offset, vsp,
@@ -3340,7 +3328,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
     final
     IntVector fromByteArray0Template(byte[] a, int offset) {
         IntSpecies vsp = vspecies();
-        return VectorIntrinsics.load(
+        return VectorSupport.load(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, byteArrayAddress(a, offset),
             a, offset, vsp,
@@ -3356,7 +3344,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
     final
     IntVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         IntSpecies vsp = vspecies();
-        return VectorIntrinsics.load(
+        return VectorSupport.load(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             bufferBase(bb), bufferAddress(bb, offset),
             bb, offset, vsp,
@@ -3376,7 +3364,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
     final
     void intoArray0Template(int[] a, int offset) {
         IntSpecies vsp = vspecies();
-        VectorIntrinsics.store(
+        VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
             this, a, offset,
@@ -3391,7 +3379,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
     final
     void intoByteArray0Template(byte[] a, int offset) {
         IntSpecies vsp = vspecies();
-        VectorIntrinsics.store(
+        VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, byteArrayAddress(a, offset),
             this, a, offset,
@@ -3405,7 +3393,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
         IntSpecies vsp = vspecies();
-        VectorIntrinsics.store(
+        VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             bufferBase(bb), bufferAddress(bb, offset),
             this, bb, offset,
@@ -3634,7 +3622,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         @ForceInline
         final IntVector broadcastBits(long bits) {
             return (IntVector)
-                VectorIntrinsics.broadcastCoerced(
+                VectorSupport.broadcastCoerced(
                     vectorType, int.class, laneCount,
                     bits, this,
                     (bits_, s_) -> s_.rvOp(i -> bits_));
@@ -3717,6 +3705,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 .fromArray(this, (int[]) a, offset);
         }
 
+        @ForceInline
         @Override final
         IntVector dummyVector() {
             return (IntVector) super.dummyVector();

@@ -27,6 +27,8 @@ package jdk.incubator.vector;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.Stable;
 
+import jdk.internal.vm.vector.VectorSupport;
+
 /**
  * A {@code VectorShape} selects a particular implementation of
  * {@link Vector}s.
@@ -58,11 +60,11 @@ public enum VectorShape {
     /** Shape of length 512 bits */
     S_512_BIT(512),
     /** Shape of maximum length supported on the platform */
-    S_Max_BIT(VectorIntrinsics.getMaxLaneCount(byte.class) * Byte.SIZE);
+    S_Max_BIT(VectorSupport.getMaxLaneCount(byte.class) * Byte.SIZE);
 
-    @Stable final int vectorBitSize;
-    @Stable final int vectorBitSizeLog2;
-    @Stable final int switchKey;  // 1+ordinal(), which is non-zero
+    final int vectorBitSize;
+    final int vectorBitSizeLog2;
+    final int switchKey;  // 1+ordinal(), which is non-zero
 
     VectorShape(int vectorBitSize) {
         this.switchKey = 1+ordinal();
@@ -209,7 +211,7 @@ public enum VectorShape {
 
     /*package-private*/
     static VectorShape largestShapeFor(Class<?> etype) {
-        int laneCount = VectorIntrinsics.getMaxLaneCount(etype);
+        int laneCount = VectorSupport.getMaxLaneCount(etype);
         int elementSize = LaneType.of(etype).elementSize;
         int vectorBitSize = laneCount * elementSize;
         return VectorShape.forBitSize(vectorBitSize);
@@ -242,7 +244,7 @@ public enum VectorShape {
         int prefBitSize = Integer.MAX_VALUE;
         for (LaneType type : LaneType.values()) {
             Class<?> etype = type.elementType;
-            int maxLaneCount = VectorIntrinsics.getMaxLaneCount(etype);
+            int maxLaneCount = VectorSupport.getMaxLaneCount(etype);
             int maxSize = type.elementSize * maxLaneCount;
             if (maxSize < Double.SIZE) {
                 String msg = "shape unavailable for lane type: " + etype.getName();
@@ -252,7 +254,7 @@ public enum VectorShape {
         }
         // If these assertions fail, we must reconsider our API portability assumptions.
         assert(prefBitSize >= Double.SIZE && prefBitSize < Integer.MAX_VALUE / Long.SIZE);
-        assert(prefBitSize/Byte.SIZE == VectorIntrinsics.getMaxLaneCount(byte.class));
+        assert(prefBitSize/Byte.SIZE == VectorSupport.getMaxLaneCount(byte.class));
         VectorShape shape = VectorShape.forBitSize(prefBitSize);
         PREFERRED_SHAPE = shape;
         return shape;

@@ -30,8 +30,10 @@ import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
 import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.vector.VectorSupport;
 
-import static jdk.incubator.vector.VectorIntrinsics.*;
+import static jdk.internal.vm.vector.VectorSupport.*;
+
 import static jdk.incubator.vector.VectorOperators.*;
 
 // -- This file was mechanically generated: Do not edit! -- //
@@ -48,15 +50,12 @@ final class Double256Vector extends DoubleVector {
 
     static final int VSIZE = VSPECIES.vectorBitSize();
 
-    static final int VLENGTH = VSPECIES.laneCount();
+    static final int VLENGTH = VSPECIES.laneCount(); // used by the JVM
 
-    static final Class<Double> ETYPE = double.class;
-
-    // The JVM expects to find the state here.
-    private final double[] vec; // Don't access directly, use vec() instead.
+    static final Class<Double> ETYPE = double.class; // used by the JVM
 
     Double256Vector(double[] v) {
-        vec = v;
+        super(v);
     }
 
     // For compatibility as Double256Vector::new,
@@ -115,7 +114,7 @@ final class Double256Vector extends DoubleVector {
     @ForceInline
     final @Override
     double[] vec() {
-        return VectorIntrinsics.maybeRebox(this).vec;
+        return (double[])getPayload();
     }
 
     // Virtualized constructors
@@ -145,9 +144,9 @@ final class Double256Vector extends DoubleVector {
     @ForceInline
     Double256Shuffle iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return (Double256Shuffle)VectorIntrinsics.shuffleIota(ETYPE, Double256Shuffle.class, VSPECIES, VLENGTH, start, step, 1, (l, lstart, lstep) -> new Double256Shuffle(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
+        return (Double256Shuffle)VectorSupport.shuffleIota(ETYPE, Double256Shuffle.class, VSPECIES, VLENGTH, start, step, 1, (l, lstart, lstep) -> new Double256Shuffle(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
       } else {
-        return (Double256Shuffle)VectorIntrinsics.shuffleIota(ETYPE, Double256Shuffle.class, VSPECIES, VLENGTH, start, step, 0, (l, lstart, lstep) -> new Double256Shuffle(i -> (i*lstep + lstart)));
+        return (Double256Shuffle)VectorSupport.shuffleIota(ETYPE, Double256Shuffle.class, VSPECIES, VLENGTH, start, step, 0, (l, lstart, lstep) -> new Double256Shuffle(i -> (i*lstep + lstart)));
       }
     }
 
@@ -467,7 +466,7 @@ final class Double256Vector extends DoubleVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        long bits = (long) VectorIntrinsics.extract(
+        long bits = (long) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
                                 (vec, ix) -> {
@@ -482,7 +481,7 @@ final class Double256Vector extends DoubleVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        return VectorIntrinsics.insert(
+        return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)Double.doubleToLongBits(e),
                                 (v, ix, bits) -> {
@@ -495,25 +494,33 @@ final class Double256Vector extends DoubleVector {
     // Mask
 
     static final class Double256Mask extends AbstractMask<Double> {
+        static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
+        static final Class<Double> ETYPE = double.class; // used by the JVM
 
-        private final boolean[] bits; // Don't access directly, use getBits() instead.
-
-        public Double256Mask(boolean[] bits) {
+        Double256Mask(boolean[] bits) {
             this(bits, 0);
         }
 
-        public Double256Mask(boolean[] bits, int offset) {
-            boolean[] a = new boolean[vspecies().laneCount()];
-            for (int i = 0; i < a.length; i++) {
-                a[i] = bits[offset + i];
-            }
-            this.bits = a;
+        Double256Mask(boolean[] bits, int offset) {
+            super(prepare(bits, offset));
         }
 
-        public Double256Mask(boolean val) {
-            boolean[] bits = new boolean[vspecies().laneCount()];
+        Double256Mask(boolean val) {
+            super(prepare(val));
+        }
+
+        private static boolean[] prepare(boolean[] bits, int offset) {
+            boolean[] newBits = new boolean[VSPECIES.laneCount()];
+            for (int i = 0; i < newBits.length; i++) {
+                newBits[i] = bits[offset + i];
+            }
+            return newBits;
+        }
+
+        private static boolean[] prepare(boolean val) {
+            boolean[] bits = new boolean[VSPECIES.laneCount()];
             Arrays.fill(bits, val);
-            this.bits = bits;
+            return bits;
         }
 
         @ForceInline
@@ -526,7 +533,7 @@ final class Double256Vector extends DoubleVector {
         }
 
         boolean[] getBits() {
-            return VectorIntrinsics.maybeRebox(this).bits;
+            return (boolean[])getPayload();
         }
 
         @Override
@@ -589,7 +596,7 @@ final class Double256Vector extends DoubleVector {
         @Override
         @ForceInline
         public Double256Mask not() {
-            return (Double256Mask) VectorIntrinsics.unaryOp(
+            return (Double256Mask) VectorSupport.unaryOp(
                                              VECTOR_OP_NOT, Double256Mask.class, long.class, VLENGTH,
                                              this,
                                              (m1) -> m1.uOp((i, a) -> !a));
@@ -602,7 +609,7 @@ final class Double256Vector extends DoubleVector {
         public Double256Mask and(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             Double256Mask m = (Double256Mask)mask;
-            return VectorIntrinsics.binaryOp(VECTOR_OP_AND, Double256Mask.class, long.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Double256Mask.class, long.class, VLENGTH,
                                              this, m,
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
@@ -612,7 +619,7 @@ final class Double256Vector extends DoubleVector {
         public Double256Mask or(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             Double256Mask m = (Double256Mask)mask;
-            return VectorIntrinsics.binaryOp(VECTOR_OP_OR, Double256Mask.class, long.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Double256Mask.class, long.class, VLENGTH,
                                              this, m,
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
@@ -622,7 +629,7 @@ final class Double256Vector extends DoubleVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            return VectorIntrinsics.test(BT_ne, Double256Mask.class, long.class, VLENGTH,
+            return VectorSupport.test(BT_ne, Double256Mask.class, long.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Double256Mask)m).getBits()));
         }
@@ -630,7 +637,7 @@ final class Double256Vector extends DoubleVector {
         @Override
         @ForceInline
         public boolean allTrue() {
-            return VectorIntrinsics.test(BT_overflow, Double256Mask.class, long.class, VLENGTH,
+            return VectorSupport.test(BT_overflow, Double256Mask.class, long.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> allTrueHelper(((Double256Mask)m).getBits()));
         }
@@ -646,20 +653,23 @@ final class Double256Vector extends DoubleVector {
     // Shuffle
 
     static final class Double256Shuffle extends AbstractShuffle<Double> {
+        static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
+        static final Class<Double> ETYPE = double.class; // used by the JVM
+
         Double256Shuffle(byte[] reorder) {
-            super(reorder);
+            super(VLENGTH, reorder);
         }
 
         public Double256Shuffle(int[] reorder) {
-            super(reorder);
+            super(VLENGTH, reorder);
         }
 
         public Double256Shuffle(int[] reorder, int i) {
-            super(reorder, i);
+            super(VLENGTH, reorder, i);
         }
 
         public Double256Shuffle(IntUnaryOperator fn) {
-            super(fn);
+            super(VLENGTH, fn);
         }
 
         @Override
@@ -678,7 +688,7 @@ final class Double256Vector extends DoubleVector {
         @Override
         @ForceInline
         public Double256Vector toVector() {
-            return VectorIntrinsics.shuffleToVector(VCLASS, ETYPE, Double256Shuffle.class, this, VLENGTH,
+            return VectorSupport.shuffleToVector(VCLASS, ETYPE, Double256Shuffle.class, this, VLENGTH,
                                                     (s) -> ((Double256Vector)(((AbstractShuffle<Double>)(s)).toVectorTemplate())));
         }
 
@@ -712,10 +722,12 @@ final class Double256Vector extends DoubleVector {
         @Override
         public Double256Shuffle rearrange(VectorShuffle<Double> shuffle) {
             Double256Shuffle s = (Double256Shuffle) shuffle;
-            byte[] r = new byte[reorder.length];
-            for (int i = 0; i < reorder.length; i++) {
-                int ssi = s.reorder[i];
-                r[i] = this.reorder[ssi];  // throws on exceptional index
+            byte[] reorder1 = reorder();
+            byte[] reorder2 = s.reorder();
+            byte[] r = new byte[reorder1.length];
+            for (int i = 0; i < reorder1.length; i++) {
+                int ssi = reorder2[i];
+                r[i] = reorder1[ssi];  // throws on exceptional index
             }
             return new Double256Shuffle(r);
         }

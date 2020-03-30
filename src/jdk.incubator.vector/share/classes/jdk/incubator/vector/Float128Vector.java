@@ -30,8 +30,10 @@ import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
 import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.vector.VectorSupport;
 
-import static jdk.incubator.vector.VectorIntrinsics.*;
+import static jdk.internal.vm.vector.VectorSupport.*;
+
 import static jdk.incubator.vector.VectorOperators.*;
 
 // -- This file was mechanically generated: Do not edit! -- //
@@ -48,15 +50,12 @@ final class Float128Vector extends FloatVector {
 
     static final int VSIZE = VSPECIES.vectorBitSize();
 
-    static final int VLENGTH = VSPECIES.laneCount();
+    static final int VLENGTH = VSPECIES.laneCount(); // used by the JVM
 
-    static final Class<Float> ETYPE = float.class;
-
-    // The JVM expects to find the state here.
-    private final float[] vec; // Don't access directly, use vec() instead.
+    static final Class<Float> ETYPE = float.class; // used by the JVM
 
     Float128Vector(float[] v) {
-        vec = v;
+        super(v);
     }
 
     // For compatibility as Float128Vector::new,
@@ -115,7 +114,7 @@ final class Float128Vector extends FloatVector {
     @ForceInline
     final @Override
     float[] vec() {
-        return VectorIntrinsics.maybeRebox(this).vec;
+        return (float[])getPayload();
     }
 
     // Virtualized constructors
@@ -145,9 +144,9 @@ final class Float128Vector extends FloatVector {
     @ForceInline
     Float128Shuffle iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return (Float128Shuffle)VectorIntrinsics.shuffleIota(ETYPE, Float128Shuffle.class, VSPECIES, VLENGTH, start, step, 1, (l, lstart, lstep) -> new Float128Shuffle(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
+        return (Float128Shuffle)VectorSupport.shuffleIota(ETYPE, Float128Shuffle.class, VSPECIES, VLENGTH, start, step, 1, (l, lstart, lstep) -> new Float128Shuffle(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
       } else {
-        return (Float128Shuffle)VectorIntrinsics.shuffleIota(ETYPE, Float128Shuffle.class, VSPECIES, VLENGTH, start, step, 0, (l, lstart, lstep) -> new Float128Shuffle(i -> (i*lstep + lstart)));
+        return (Float128Shuffle)VectorSupport.shuffleIota(ETYPE, Float128Shuffle.class, VSPECIES, VLENGTH, start, step, 0, (l, lstart, lstep) -> new Float128Shuffle(i -> (i*lstep + lstart)));
       }
     }
 
@@ -467,7 +466,7 @@ final class Float128Vector extends FloatVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        int bits = (int) VectorIntrinsics.extract(
+        int bits = (int) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
                                 (vec, ix) -> {
@@ -482,7 +481,7 @@ final class Float128Vector extends FloatVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        return VectorIntrinsics.insert(
+        return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)Float.floatToIntBits(e),
                                 (v, ix, bits) -> {
@@ -495,25 +494,33 @@ final class Float128Vector extends FloatVector {
     // Mask
 
     static final class Float128Mask extends AbstractMask<Float> {
+        static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
+        static final Class<Float> ETYPE = float.class; // used by the JVM
 
-        private final boolean[] bits; // Don't access directly, use getBits() instead.
-
-        public Float128Mask(boolean[] bits) {
+        Float128Mask(boolean[] bits) {
             this(bits, 0);
         }
 
-        public Float128Mask(boolean[] bits, int offset) {
-            boolean[] a = new boolean[vspecies().laneCount()];
-            for (int i = 0; i < a.length; i++) {
-                a[i] = bits[offset + i];
-            }
-            this.bits = a;
+        Float128Mask(boolean[] bits, int offset) {
+            super(prepare(bits, offset));
         }
 
-        public Float128Mask(boolean val) {
-            boolean[] bits = new boolean[vspecies().laneCount()];
+        Float128Mask(boolean val) {
+            super(prepare(val));
+        }
+
+        private static boolean[] prepare(boolean[] bits, int offset) {
+            boolean[] newBits = new boolean[VSPECIES.laneCount()];
+            for (int i = 0; i < newBits.length; i++) {
+                newBits[i] = bits[offset + i];
+            }
+            return newBits;
+        }
+
+        private static boolean[] prepare(boolean val) {
+            boolean[] bits = new boolean[VSPECIES.laneCount()];
             Arrays.fill(bits, val);
-            this.bits = bits;
+            return bits;
         }
 
         @ForceInline
@@ -526,7 +533,7 @@ final class Float128Vector extends FloatVector {
         }
 
         boolean[] getBits() {
-            return VectorIntrinsics.maybeRebox(this).bits;
+            return (boolean[])getPayload();
         }
 
         @Override
@@ -589,7 +596,7 @@ final class Float128Vector extends FloatVector {
         @Override
         @ForceInline
         public Float128Mask not() {
-            return (Float128Mask) VectorIntrinsics.unaryOp(
+            return (Float128Mask) VectorSupport.unaryOp(
                                              VECTOR_OP_NOT, Float128Mask.class, int.class, VLENGTH,
                                              this,
                                              (m1) -> m1.uOp((i, a) -> !a));
@@ -602,7 +609,7 @@ final class Float128Vector extends FloatVector {
         public Float128Mask and(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             Float128Mask m = (Float128Mask)mask;
-            return VectorIntrinsics.binaryOp(VECTOR_OP_AND, Float128Mask.class, int.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Float128Mask.class, int.class, VLENGTH,
                                              this, m,
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
@@ -612,7 +619,7 @@ final class Float128Vector extends FloatVector {
         public Float128Mask or(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             Float128Mask m = (Float128Mask)mask;
-            return VectorIntrinsics.binaryOp(VECTOR_OP_OR, Float128Mask.class, int.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Float128Mask.class, int.class, VLENGTH,
                                              this, m,
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
@@ -622,7 +629,7 @@ final class Float128Vector extends FloatVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            return VectorIntrinsics.test(BT_ne, Float128Mask.class, int.class, VLENGTH,
+            return VectorSupport.test(BT_ne, Float128Mask.class, int.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Float128Mask)m).getBits()));
         }
@@ -630,7 +637,7 @@ final class Float128Vector extends FloatVector {
         @Override
         @ForceInline
         public boolean allTrue() {
-            return VectorIntrinsics.test(BT_overflow, Float128Mask.class, int.class, VLENGTH,
+            return VectorSupport.test(BT_overflow, Float128Mask.class, int.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> allTrueHelper(((Float128Mask)m).getBits()));
         }
@@ -646,20 +653,23 @@ final class Float128Vector extends FloatVector {
     // Shuffle
 
     static final class Float128Shuffle extends AbstractShuffle<Float> {
+        static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
+        static final Class<Float> ETYPE = float.class; // used by the JVM
+
         Float128Shuffle(byte[] reorder) {
-            super(reorder);
+            super(VLENGTH, reorder);
         }
 
         public Float128Shuffle(int[] reorder) {
-            super(reorder);
+            super(VLENGTH, reorder);
         }
 
         public Float128Shuffle(int[] reorder, int i) {
-            super(reorder, i);
+            super(VLENGTH, reorder, i);
         }
 
         public Float128Shuffle(IntUnaryOperator fn) {
-            super(fn);
+            super(VLENGTH, fn);
         }
 
         @Override
@@ -678,7 +688,7 @@ final class Float128Vector extends FloatVector {
         @Override
         @ForceInline
         public Float128Vector toVector() {
-            return VectorIntrinsics.shuffleToVector(VCLASS, ETYPE, Float128Shuffle.class, this, VLENGTH,
+            return VectorSupport.shuffleToVector(VCLASS, ETYPE, Float128Shuffle.class, this, VLENGTH,
                                                     (s) -> ((Float128Vector)(((AbstractShuffle<Float>)(s)).toVectorTemplate())));
         }
 
@@ -712,10 +722,12 @@ final class Float128Vector extends FloatVector {
         @Override
         public Float128Shuffle rearrange(VectorShuffle<Float> shuffle) {
             Float128Shuffle s = (Float128Shuffle) shuffle;
-            byte[] r = new byte[reorder.length];
-            for (int i = 0; i < reorder.length; i++) {
-                int ssi = s.reorder[i];
-                r[i] = this.reorder[ssi];  // throws on exceptional index
+            byte[] reorder1 = reorder();
+            byte[] reorder2 = s.reorder();
+            byte[] r = new byte[reorder1.length];
+            for (int i = 0; i < reorder1.length; i++) {
+                int ssi = reorder2[i];
+                r[i] = reorder1[ssi];  // throws on exceptional index
             }
             return new Float128Shuffle(r);
         }

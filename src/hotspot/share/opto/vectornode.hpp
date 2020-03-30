@@ -153,28 +153,23 @@ class ReductionNode : public Node {
   static int  opcode(int opc, BasicType bt);
   static bool implemented(int opc, uint vlen, BasicType bt);
   static Node* make_reduction_input(PhaseGVN& gvn, int opc, BasicType bt);
+
+  virtual const Type* bottom_type() const {
+    BasicType vbt = in(1)->bottom_type()->basic_type();
+    return Type::get_const_basic_type(vbt);
+  }
+
+  virtual uint ideal_reg() const {
+    return bottom_type()->ideal_reg();
+  }
 };
 
 //------------------------------AddReductionVINode--------------------------------------
 // Vector add byte, short and int as a reduction
 class AddReductionVINode : public ReductionNode {
 public:
-  AddReductionVINode(Node * ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {
-    if (in1->bottom_type()->basic_type() == T_INT) {
-      assert(in2->bottom_type()->is_vect()->element_basic_type() == T_INT ||
-             in2->bottom_type()->is_vect()->element_basic_type() == T_BYTE ||
-             in2->bottom_type()->is_vect()->element_basic_type() == T_SHORT, "");
-    }
-  }
+  AddReductionVINode(Node * ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {}
   virtual int Opcode() const;
-  virtual const Type* bottom_type() const {
-    if (in(1)->bottom_type()->basic_type() == T_BYTE)
-      return TypeInt::BYTE;
-    else if(in(1)->bottom_type()->basic_type() == T_SHORT)
-      return TypeInt::SHORT;
-    else
-      return TypeInt::INT;
-  }
   virtual uint ideal_reg() const { return Op_RegI; }
 };
 
@@ -348,22 +343,8 @@ public:
 // Vector multiply byte, short and int as a reduction
 class MulReductionVINode : public ReductionNode {
 public:
-  MulReductionVINode(Node * ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {
-    if (in1->bottom_type()->basic_type() == T_INT) {
-      assert(in2->bottom_type()->is_vect()->element_basic_type() == T_INT ||
-        in2->bottom_type()->is_vect()->element_basic_type() == T_BYTE ||
-        in2->bottom_type()->is_vect()->element_basic_type() == T_SHORT, "");
-    }
-  }
+  MulReductionVINode(Node *ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {}
   virtual int Opcode() const;
-  virtual const Type* bottom_type() const {
-    if (in(1)->bottom_type()->basic_type() == T_BYTE)
-      return TypeInt::BYTE;
-    else if(in(1)->bottom_type()->basic_type() == T_SHORT)
-      return TypeInt::SHORT;
-    else
-      return TypeInt::INT;
-  }
   virtual uint ideal_reg() const { return Op_RegI; }
 };
 
@@ -699,32 +680,12 @@ class AndVNode : public VectorNode {
 // Vector and byte, short, int, long as a reduction
 class AndReductionVNode : public ReductionNode {
 public:
-  AndReductionVNode(Node *ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {
-    if (in1->bottom_type()->basic_type() == T_INT) {
-      assert(in2->bottom_type()->is_vect()->element_basic_type() == T_INT ||
-        in2->bottom_type()->is_vect()->element_basic_type() == T_BYTE ||
-        in2->bottom_type()->is_vect()->element_basic_type() == T_SHORT, "");
-    }
-    else if (in1->bottom_type()->basic_type() == T_LONG) {
-      assert(in2->bottom_type()->is_vect()->element_basic_type() == T_LONG, "");
-    }
-  }
+  AndReductionVNode(Node *ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {}
   virtual int Opcode() const;
-  virtual const Type* bottom_type() const {
-    if (in(1)->bottom_type()->basic_type() == T_BYTE)
-      return TypeInt::BYTE;
-    else if(in(1)->bottom_type()->basic_type() == T_SHORT)
-      return TypeInt::SHORT;
-    else if(in(1)->bottom_type()->basic_type() == T_INT)
-      return TypeInt::INT;
-    else
-      return TypeLong::LONG;
-  }
-  virtual uint ideal_reg() const { return in(1)->bottom_type()->basic_type() == T_INT ? Op_RegI : Op_RegL; }
 };
 
 //------------------------------OrVNode---------------------------------------
-// Vector or integer
+// Vector or byte, short, int, long as a reduction
 class OrVNode : public VectorNode {
  public:
   OrVNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1,in2,vt) {}
@@ -732,53 +693,19 @@ class OrVNode : public VectorNode {
 };
 
 //------------------------------OrReductionVNode--------------------------------------
-// Vector or short, byte, int, long as a reduction
+// Vector xor byte, short, int, long as a reduction
 class OrReductionVNode : public ReductionNode {
 public:
-  OrReductionVNode(Node *ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {
-    assert(in1->bottom_type()->basic_type() == T_INT ||
-           in1->bottom_type()->basic_type() == T_LONG ||
-           in1->bottom_type()->basic_type() == T_SHORT ||
-           in1->bottom_type()->basic_type() == T_BYTE, "");
-  }
+  OrReductionVNode(Node *ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {}
   virtual int Opcode() const;
-  virtual const Type* bottom_type() const {
-    if (in(1)->bottom_type()->basic_type() == T_BYTE)
-      return TypeInt::BYTE;
-    else if(in(1)->bottom_type()->basic_type() == T_SHORT)
-      return TypeInt::SHORT;
-    else if(in(1)->bottom_type()->basic_type() == T_INT)
-      return TypeInt::INT;
-    else
-      return TypeLong::LONG;
-  }
-
-  virtual uint ideal_reg() const { return in(1)->bottom_type()->basic_type() == T_INT ? Op_RegI : Op_RegL; }
 };
 
 //------------------------------XorReductionVNode--------------------------------------
 // Vector and int, long as a reduction
 class XorReductionVNode : public ReductionNode {
 public:
-  XorReductionVNode(Node *ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {
-    assert(in1->bottom_type()->basic_type() == T_INT ||
-           in1->bottom_type()->basic_type() == T_LONG ||
-           in1->bottom_type()->basic_type() == T_SHORT ||
-           in1->bottom_type()->basic_type() == T_BYTE, "");
-  }
+  XorReductionVNode(Node *ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {}
   virtual int Opcode() const;
-  virtual const Type* bottom_type() const {
-    if (in(1)->bottom_type()->basic_type() == T_BYTE)
-      return TypeInt::BYTE;
-    else if(in(1)->bottom_type()->basic_type() == T_SHORT)
-      return TypeInt::SHORT;
-    else if(in(1)->bottom_type()->basic_type() == T_INT)
-      return TypeInt::INT;
-    else
-      return TypeLong::LONG;
-  }
-
-  virtual uint ideal_reg() const { return in(1)->bottom_type()->basic_type() == T_INT ? Op_RegI : Op_RegL; }
 };
 
 //------------------------------XorVNode---------------------------------------
@@ -793,92 +720,16 @@ class XorVNode : public VectorNode {
 // Vector min byte, short, int, long, float, double as a reduction
 class MinReductionVNode : public ReductionNode {
 public:
-  MinReductionVNode(Node *ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {
-    if (in1->bottom_type()->basic_type() == T_INT) {
-      assert(in2->bottom_type()->is_vect()->element_basic_type() == T_INT ||
-        in2->bottom_type()->is_vect()->element_basic_type() == T_BYTE ||
-        in2->bottom_type()->is_vect()->element_basic_type() == T_SHORT, "");
-    }
-    else if (in1->bottom_type()->basic_type() == T_LONG) {
-      assert(in2->bottom_type()->is_vect()->element_basic_type() == T_LONG, "");
-    }
-    else if (in1->bottom_type()->basic_type() == T_FLOAT) {
-      assert(in2->bottom_type()->is_vect()->element_basic_type() == T_FLOAT, "");
-    }
-    else if (in1->bottom_type()->basic_type() == T_DOUBLE) {
-      assert(in2->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE, "");
-    }
-  }
+  MinReductionVNode(Node *ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {}
   virtual int Opcode() const;
-  virtual const Type* bottom_type() const {
-    if (in(1)->bottom_type()->basic_type() == T_BYTE)
-      return TypeInt::BYTE;
-    else if(in(1)->bottom_type()->basic_type() == T_SHORT)
-      return TypeInt::SHORT;
-    else if(in(1)->bottom_type()->basic_type() == T_INT)
-      return TypeInt::INT;
-    else if(in(1)->bottom_type()->basic_type() == T_FLOAT)
-      return Type::FLOAT;
-    else if(in(1)->bottom_type()->basic_type() == T_DOUBLE)
-      return Type::DOUBLE;
-    else
-      return TypeLong::LONG;
-  }
-  virtual uint ideal_reg() const {
-    if (in(1)->bottom_type()->basic_type() == T_INT)
-      return Op_RegI;
-    else if (in(1)->bottom_type()->basic_type() == T_FLOAT)
-      return Op_RegF;
-    else if (in(1)->bottom_type()->basic_type() == T_DOUBLE)
-      return Op_RegD;
-    else return Op_RegL;
-  }
 };
 
 //------------------------------MaxReductionVNode--------------------------------------
 // Vector min byte, short, int, long, float, double as a reduction
 class MaxReductionVNode : public ReductionNode {
 public:
-  MaxReductionVNode(Node *ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {
-    if (in1->bottom_type()->basic_type() == T_INT) {
-      assert(in2->bottom_type()->is_vect()->element_basic_type() == T_INT ||
-        in2->bottom_type()->is_vect()->element_basic_type() == T_BYTE ||
-        in2->bottom_type()->is_vect()->element_basic_type() == T_SHORT, "");
-    }
-    else if (in1->bottom_type()->basic_type() == T_LONG) {
-      assert(in2->bottom_type()->is_vect()->element_basic_type() == T_LONG, "");
-    }
-    else if (in1->bottom_type()->basic_type() == T_FLOAT) {
-      assert(in2->bottom_type()->is_vect()->element_basic_type() == T_FLOAT, "");
-    }
-    else if (in1->bottom_type()->basic_type() == T_DOUBLE) {
-      assert(in2->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE, "");
-    }
-  }
+  MaxReductionVNode(Node *ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {}
   virtual int Opcode() const;
-  virtual const Type* bottom_type() const {
-    if (in(1)->bottom_type()->basic_type() == T_BYTE)
-      return TypeInt::BYTE;
-    else if(in(1)->bottom_type()->basic_type() == T_SHORT)
-      return TypeInt::SHORT;
-    else if(in(1)->bottom_type()->basic_type() == T_INT)
-      return TypeInt::INT;
-    else if(in(1)->bottom_type()->basic_type() == T_FLOAT)
-      return Type::FLOAT;
-    else if(in(1)->bottom_type()->basic_type() == T_DOUBLE)
-      return Type::DOUBLE;
-    else
-      return TypeLong::LONG;
-  }
-  virtual uint ideal_reg() const {
-    if (in(1)->bottom_type()->basic_type() == T_INT)
-      return Op_RegI;
-    else if (in(1)->bottom_type()->basic_type() == T_FLOAT)
-      return Op_RegF;
-    else if (in(1)->bottom_type()->basic_type() == T_DOUBLE)
-      return Op_RegD;
-    else return Op_RegL;
-  }
 };
 
 //================================= M E M O R Y ===============================
@@ -1224,67 +1075,6 @@ public:
   virtual const Type *Value(PhaseGVN *phase) const { return TypeInt::INT; }
 };
 
-class VectorBoxNode : public Node {
- private:
-  const TypeInstPtr* const _box_type;
-  const TypeVect*    const _vec_type;
- public:
-  enum {
-     Box   = 1,
-     Value = 2
-  };
-  VectorBoxNode(Compile* C, Node* box, Node* val,
-                const TypeInstPtr* box_type, const TypeVect* vt)
-    : Node(NULL, box, val), _box_type(box_type), _vec_type(vt) {
-    init_flags(Flag_is_macro);
-    C->add_macro_node(this);
-  }
-
-  const  TypeInstPtr* box_type() const { assert(_box_type != NULL, ""); return _box_type; };
-  const  TypeVect*    vec_type() const { assert(_vec_type != NULL, ""); return _vec_type; };
-
-  virtual int Opcode() const;
-  virtual const Type *bottom_type() const { return _box_type; /* TypeInstPtr::BOTTOM? */ }
-  virtual       uint  ideal_reg() const { return box_type()->ideal_reg(); }
-  virtual       uint  size_of() const { return sizeof(*this); }
-
-  static const TypeFunc* vec_box_type(const TypeInstPtr* box_type);
-};
-
-class VectorBoxAllocateNode : public CallStaticJavaNode {
- public:
-  VectorBoxAllocateNode(Compile* C, const TypeInstPtr* vbox_type)
-    : CallStaticJavaNode(C, VectorBoxNode::vec_box_type(vbox_type), NULL, NULL, -1) {
-    init_flags(Flag_is_macro);
-    C->add_macro_node(this);
-  }
-
-  virtual int Opcode() const;
-#ifndef PRODUCT
-  virtual void dump_spec(outputStream *st) const;
-#endif // PRODUCT
-};
-
-class VectorUnboxNode : public VectorNode {
-private:
-  bool _shuffle_to_vector;
-protected:
-  uint size_of() const { return sizeof(*this); }
- public:
-  VectorUnboxNode(Compile* C, const TypeVect* vec_type, Node* obj, Node* mem, bool shuffle_to_vector)
-    : VectorNode(mem, obj, vec_type) {
-    _shuffle_to_vector = shuffle_to_vector;
-    init_flags(Flag_is_macro);
-    C->add_macro_node(this);
-  }
-
-  virtual int Opcode() const;
-  Node* obj() const { return in(2); }
-  Node* mem() const { return in(1); }
-  virtual Node *Identity(PhaseGVN *phase);
-  bool is_shuffle_to_vector() { return _shuffle_to_vector; }
-};
-
 class VectorMaskCmpNode : public VectorNode {
  private:
   BoolTest::mask _predicate;
@@ -1516,6 +1306,67 @@ class VectorInsertNode : public VectorNode {
   uint pos() const { return in(3)->get_int(); }
 
   static Node* make(Node* vec, Node* new_val, int position);
+};
+
+class VectorBoxNode : public Node {
+ private:
+  const TypeInstPtr* const _box_type;
+  const TypeVect*    const _vec_type;
+ public:
+  enum {
+     Box   = 1,
+     Value = 2
+  };
+  VectorBoxNode(Compile* C, Node* box, Node* val,
+                const TypeInstPtr* box_type, const TypeVect* vt)
+    : Node(NULL, box, val), _box_type(box_type), _vec_type(vt) {
+    init_flags(Flag_is_macro);
+    C->add_macro_node(this);
+  }
+
+  const  TypeInstPtr* box_type() const { assert(_box_type != NULL, ""); return _box_type; };
+  const  TypeVect*    vec_type() const { assert(_vec_type != NULL, ""); return _vec_type; };
+
+  virtual int Opcode() const;
+  virtual const Type *bottom_type() const { return _box_type; /* TypeInstPtr::BOTTOM? */ }
+  virtual       uint  ideal_reg() const { return box_type()->ideal_reg(); }
+  virtual       uint  size_of() const { return sizeof(*this); }
+
+  static const TypeFunc* vec_box_type(const TypeInstPtr* box_type);
+};
+
+class VectorBoxAllocateNode : public CallStaticJavaNode {
+ public:
+  VectorBoxAllocateNode(Compile* C, const TypeInstPtr* vbox_type)
+    : CallStaticJavaNode(C, VectorBoxNode::vec_box_type(vbox_type), NULL, NULL, -1) {
+    init_flags(Flag_is_macro);
+    C->add_macro_node(this);
+  }
+
+  virtual int Opcode() const;
+#ifndef PRODUCT
+  virtual void dump_spec(outputStream *st) const;
+#endif // PRODUCT
+};
+
+class VectorUnboxNode : public VectorNode {
+private:
+  bool _shuffle_to_vector;
+protected:
+  uint size_of() const { return sizeof(*this); }
+ public:
+  VectorUnboxNode(Compile* C, const TypeVect* vec_type, Node* obj, Node* mem, bool shuffle_to_vector)
+    : VectorNode(mem, obj, vec_type) {
+    _shuffle_to_vector = shuffle_to_vector;
+    init_flags(Flag_is_macro);
+    C->add_macro_node(this);
+  }
+
+  virtual int Opcode() const;
+  Node* obj() const { return in(2); }
+  Node* mem() const { return in(1); }
+  virtual Node *Identity(PhaseGVN *phase);
+  bool is_shuffle_to_vector() { return _shuffle_to_vector; }
 };
 
 #endif // SHARE_OPTO_VECTORNODE_HPP

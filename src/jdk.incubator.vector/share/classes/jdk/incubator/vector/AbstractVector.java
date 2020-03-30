@@ -25,6 +25,7 @@
 package jdk.incubator.vector;
 
 import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.vector.VectorSupport;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -38,7 +39,7 @@ abstract class AbstractVector<E> extends Vector<E> {
      * The order of vector bytes when stored in natural,
      * array elements of the same lane type.
      * This is the also the behavior of the
-     * VectorIntrinsic load/store instructions.
+     * VectorSupport load/store instructions.
      * If these instructions gain the capability to do
      * byte swapping on the fly, add a bit to those
      * instructions, but let this polarity be the
@@ -62,7 +63,9 @@ abstract class AbstractVector<E> extends Vector<E> {
     static final ByteOrder REGISTER_ENDIAN = ByteOrder.LITTLE_ENDIAN;
 
     /*package-private*/
-    AbstractVector() {}
+    AbstractVector(Object bits) {
+        super(bits);
+    }
 
     // Extractors
 
@@ -669,7 +672,7 @@ abstract class AbstractVector<E> extends Vector<E> {
             etype = this.elementType(); // (profile)
             vlength = this.length();  // (profile)
             rvtype = rsp.dummyVector().getClass();  // (profile)
-            return VectorIntrinsics.cast(
+            return VectorSupport.convert(VectorSupport.VECTOR_OP_CAST,
                     this.getClass(), etype, vlength,
                     rvtype, rtype, rlength,
                     this, rsp,
@@ -680,7 +683,7 @@ abstract class AbstractVector<E> extends Vector<E> {
             etype = this.elementType(); // (profile)
             vlength = this.length();  // (profile)
             rvtype = rsp.dummyVector().getClass();  // (profile)
-            return VectorIntrinsics.reinterpret(
+            return VectorSupport.convert(VectorSupport.VECTOR_OP_REINTERPRET,
                     this.getClass(), etype, vlength,
                     rvtype, rtype, rlength,
                     this, rsp,
@@ -708,7 +711,7 @@ abstract class AbstractVector<E> extends Vector<E> {
     }
 
     static {
-        // Recode uses of VectorIntrinsics.reinterpret if this assertion fails:
+        // Recode uses of VectorSupport.reinterpret if this assertion fails:
         assert(REGISTER_ENDIAN == ByteOrder.LITTLE_ENDIAN);
     }
 }

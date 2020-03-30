@@ -37,6 +37,7 @@ enum CompilerPhaseType {
   PHASE_EXPAND_VBOX,
   PHASE_ELIMINATE_VBOX_ALLOC,
   PHASE_PHASEIDEAL_BEFORE_EA,
+  PHASE_ITER_GVN_AFTER_VECTOR,
   PHASE_ITER_GVN_BEFORE_EA,
   PHASE_ITER_GVN_AFTER_EA,
   PHASE_ITER_GVN_AFTER_ELIMINATION,
@@ -86,6 +87,7 @@ class CompilerPhaseTypeHelper {
       case PHASE_EXPAND_VBOX:                return "Expand VectorBox";
       case PHASE_ELIMINATE_VBOX_ALLOC:       return "Eliminate VectorBoxAllocate";
       case PHASE_PHASEIDEAL_BEFORE_EA:       return "PhaseIdealLoop before EA";
+      case PHASE_ITER_GVN_AFTER_VECTOR:      return "Iter GVN after vector box elimination";
       case PHASE_ITER_GVN_BEFORE_EA:         return "Iter GVN before EA";
       case PHASE_ITER_GVN_AFTER_EA:          return "Iter GVN after EA";
       case PHASE_ITER_GVN_AFTER_ELIMINATION: return "Iter GVN after eliminating allocations and locks";

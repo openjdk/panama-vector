@@ -32,37 +32,47 @@ abstract class AbstractShuffle<E> extends VectorShuffle<E> {
 
     // Internal representation allows for a maximum index of 256
     // Values are clipped to [-VLENGTH..VLENGTH-1].
-    final byte[] reorder;
 
-    AbstractShuffle(byte[] reorder) {
-        this.reorder = reorder;
+    AbstractShuffle(int length, byte[] reorder) {
+        super(reorder);
+        assert(length == reorder.length);
         assert(indexesInRange(reorder));
     }
 
-    public AbstractShuffle(int[] reorder) {
-        this(reorder, 0);
+    AbstractShuffle(int length, int[] reorder) {
+        this(length, reorder, 0);
     }
 
-    public AbstractShuffle(int[] reorder, int offset) {
-        int length = length();
+    AbstractShuffle(int length, int[] reorder, int offset) {
+        super(prepare(length, reorder, offset));
+    }
+
+    AbstractShuffle(int length, IntUnaryOperator f) {
+        super(prepare(length, f));
+    }
+
+    private static byte[] prepare(int length, int[] reorder, int offset) {
         byte[] a = new byte[length];
         for (int i = 0; i < length; i++) {
             int si = reorder[offset + i];
             si = partiallyWrapIndex(si, length);
             a[i] = (byte) si;
         }
-        this.reorder = a;
+        return a;
     }
 
-    public AbstractShuffle(IntUnaryOperator f) {
-        int length = length();
+    private static byte[] prepare(int length, IntUnaryOperator f) {
         byte[] a = new byte[length];
         for (int i = 0; i < a.length; i++) {
             int si = f.applyAsInt(i);
             si = partiallyWrapIndex(si, length);
             a[i] = (byte) si;
         }
-        this.reorder = a;
+        return a;
+    }
+
+    byte[] reorder() {
+        return (byte[])getPayload();
     }
 
     /*package-private*/
@@ -77,6 +87,7 @@ abstract class AbstractShuffle<E> extends VectorShuffle<E> {
     @Override
     @ForceInline
     public void intoArray(int[] a, int offset) {
+        byte[] reorder = reorder();
         int vlen = reorder.length;
         for (int i = 0; i < vlen; i++) {
             int sourceIndex = reorder[i];
@@ -88,6 +99,7 @@ abstract class AbstractShuffle<E> extends VectorShuffle<E> {
     @Override
     @ForceInline
     public int[] toArray() {
+        byte[] reorder = reorder();
         int[] a = new int[reorder.length];
         intoArray(a, 0);
         return a;
@@ -109,7 +121,7 @@ abstract class AbstractShuffle<E> extends VectorShuffle<E> {
     @ForceInline
     public final VectorShuffle<E> checkIndexes() {
         // FIXME: vectorize this
-        for (int index : reorder) {
+        for (int index : reorder()) {
             if (index < 0) {
                 throw checkIndexFailed(index, length());
             }
@@ -120,6 +132,7 @@ abstract class AbstractShuffle<E> extends VectorShuffle<E> {
     @ForceInline
     public final VectorShuffle<E> wrapIndexes() {
         // FIXME: vectorize this
+        byte[] reorder = reorder();
         int length = reorder.length;
         for (int index : reorder) {
             if (index < 0) {
@@ -151,6 +164,7 @@ abstract class AbstractShuffle<E> extends VectorShuffle<E> {
     @ForceInline
     public final VectorMask<E> laneIsValid() {
         // FIXME: vectorize this
+        byte[] reorder = reorder();
         int length = reorder.length;
         boolean[] bits = new boolean[length];
         for (int i = 0; i < length; i++) {

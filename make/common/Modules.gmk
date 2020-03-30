@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2014, 2019, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2014, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -59,6 +59,7 @@ BOOT_MODULES += \
     java.security.sasl \
     java.xml \
     jdk.incubator.foreign \
+    jdk.incubator.vector \
     jdk.internal.vm.ci \
     jdk.jfr \
     jdk.management \
@@ -109,7 +110,6 @@ PLATFORM_MODULES += \
     jdk.crypto.ec \
     jdk.dynalink \
     jdk.httpserver \
-    jdk.incubator.vector \
     jdk.jsobject \
     jdk.localedata \
     jdk.naming.dns \
@@ -173,6 +173,7 @@ DOCS_MODULES += \
     jdk.naming.dns \
     jdk.naming.rmi \
     jdk.net \
+    jdk.nio.mapmode \
     jdk.rmic \
     jdk.scripting.nashorn \
     jdk.sctp \
@@ -205,7 +206,7 @@ HOTSPOT_MODULES := \
 # The native dynamic libraries in these modules will also get built into static
 # libraries for consumption by downstream projects that need to statically link
 # the JDK libraries. Those static libraries are not part of the main JDK
-# distribution. 
+# distribution.
 STATIC_LIBS_MODULES := \
     java.base \
     jdk.crypto.ec \

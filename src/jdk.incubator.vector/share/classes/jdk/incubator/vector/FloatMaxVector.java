@@ -30,8 +30,10 @@ import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
 import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.vector.VectorSupport;
 
-import static jdk.incubator.vector.VectorIntrinsics.*;
+import static jdk.internal.vm.vector.VectorSupport.*;
+
 import static jdk.incubator.vector.VectorOperators.*;
 
 // -- This file was mechanically generated: Do not edit! -- //
@@ -48,15 +50,12 @@ final class FloatMaxVector extends FloatVector {
 
     static final int VSIZE = VSPECIES.vectorBitSize();
 
-    static final int VLENGTH = VSPECIES.laneCount();
+    static final int VLENGTH = VSPECIES.laneCount(); // used by the JVM
 
-    static final Class<Float> ETYPE = float.class;
-
-    // The JVM expects to find the state here.
-    private final float[] vec; // Don't access directly, use vec() instead.
+    static final Class<Float> ETYPE = float.class; // used by the JVM
 
     FloatMaxVector(float[] v) {
-        vec = v;
+        super(v);
     }
 
     // For compatibility as FloatMaxVector::new,
@@ -115,7 +114,7 @@ final class FloatMaxVector extends FloatVector {
     @ForceInline
     final @Override
     float[] vec() {
-        return VectorIntrinsics.maybeRebox(this).vec;
+        return (float[])getPayload();
     }
 
     // Virtualized constructors
@@ -145,9 +144,9 @@ final class FloatMaxVector extends FloatVector {
     @ForceInline
     FloatMaxShuffle iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return (FloatMaxShuffle)VectorIntrinsics.shuffleIota(ETYPE, FloatMaxShuffle.class, VSPECIES, VLENGTH, start, step, 1, (l, lstart, lstep) -> new FloatMaxShuffle(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
+        return (FloatMaxShuffle)VectorSupport.shuffleIota(ETYPE, FloatMaxShuffle.class, VSPECIES, VLENGTH, start, step, 1, (l, lstart, lstep) -> new FloatMaxShuffle(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
       } else {
-        return (FloatMaxShuffle)VectorIntrinsics.shuffleIota(ETYPE, FloatMaxShuffle.class, VSPECIES, VLENGTH, start, step, 0, (l, lstart, lstep) -> new FloatMaxShuffle(i -> (i*lstep + lstart)));
+        return (FloatMaxShuffle)VectorSupport.shuffleIota(ETYPE, FloatMaxShuffle.class, VSPECIES, VLENGTH, start, step, 0, (l, lstart, lstep) -> new FloatMaxShuffle(i -> (i*lstep + lstart)));
       }
     }
 
@@ -467,7 +466,7 @@ final class FloatMaxVector extends FloatVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        int bits = (int) VectorIntrinsics.extract(
+        int bits = (int) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
                                 (vec, ix) -> {
@@ -482,7 +481,7 @@ final class FloatMaxVector extends FloatVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        return VectorIntrinsics.insert(
+        return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)Float.floatToIntBits(e),
                                 (v, ix, bits) -> {
@@ -495,25 +494,33 @@ final class FloatMaxVector extends FloatVector {
     // Mask
 
     static final class FloatMaxMask extends AbstractMask<Float> {
+        static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
+        static final Class<Float> ETYPE = float.class; // used by the JVM
 
-        private final boolean[] bits; // Don't access directly, use getBits() instead.
-
-        public FloatMaxMask(boolean[] bits) {
+        FloatMaxMask(boolean[] bits) {
             this(bits, 0);
         }
 
-        public FloatMaxMask(boolean[] bits, int offset) {
-            boolean[] a = new boolean[vspecies().laneCount()];
-            for (int i = 0; i < a.length; i++) {
-                a[i] = bits[offset + i];
-            }
-            this.bits = a;
+        FloatMaxMask(boolean[] bits, int offset) {
+            super(prepare(bits, offset));
         }
 
-        public FloatMaxMask(boolean val) {
-            boolean[] bits = new boolean[vspecies().laneCount()];
+        FloatMaxMask(boolean val) {
+            super(prepare(val));
+        }
+
+        private static boolean[] prepare(boolean[] bits, int offset) {
+            boolean[] newBits = new boolean[VSPECIES.laneCount()];
+            for (int i = 0; i < newBits.length; i++) {
+                newBits[i] = bits[offset + i];
+            }
+            return newBits;
+        }
+
+        private static boolean[] prepare(boolean val) {
+            boolean[] bits = new boolean[VSPECIES.laneCount()];
             Arrays.fill(bits, val);
-            this.bits = bits;
+            return bits;
         }
 
         @ForceInline
@@ -526,7 +533,7 @@ final class FloatMaxVector extends FloatVector {
         }
 
         boolean[] getBits() {
-            return VectorIntrinsics.maybeRebox(this).bits;
+            return (boolean[])getPayload();
         }
 
         @Override
@@ -589,7 +596,7 @@ final class FloatMaxVector extends FloatVector {
         @Override
         @ForceInline
         public FloatMaxMask not() {
-            return (FloatMaxMask) VectorIntrinsics.unaryOp(
+            return (FloatMaxMask) VectorSupport.unaryOp(
                                              VECTOR_OP_NOT, FloatMaxMask.class, int.class, VLENGTH,
                                              this,
                                              (m1) -> m1.uOp((i, a) -> !a));
@@ -602,7 +609,7 @@ final class FloatMaxVector extends FloatVector {
         public FloatMaxMask and(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             FloatMaxMask m = (FloatMaxMask)mask;
-            return VectorIntrinsics.binaryOp(VECTOR_OP_AND, FloatMaxMask.class, int.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_AND, FloatMaxMask.class, int.class, VLENGTH,
                                              this, m,
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
@@ -612,7 +619,7 @@ final class FloatMaxVector extends FloatVector {
         public FloatMaxMask or(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             FloatMaxMask m = (FloatMaxMask)mask;
-            return VectorIntrinsics.binaryOp(VECTOR_OP_OR, FloatMaxMask.class, int.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_OR, FloatMaxMask.class, int.class, VLENGTH,
                                              this, m,
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
@@ -622,7 +629,7 @@ final class FloatMaxVector extends FloatVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            return VectorIntrinsics.test(BT_ne, FloatMaxMask.class, int.class, VLENGTH,
+            return VectorSupport.test(BT_ne, FloatMaxMask.class, int.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((FloatMaxMask)m).getBits()));
         }
@@ -630,7 +637,7 @@ final class FloatMaxVector extends FloatVector {
         @Override
         @ForceInline
         public boolean allTrue() {
-            return VectorIntrinsics.test(BT_overflow, FloatMaxMask.class, int.class, VLENGTH,
+            return VectorSupport.test(BT_overflow, FloatMaxMask.class, int.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> allTrueHelper(((FloatMaxMask)m).getBits()));
         }
@@ -646,20 +653,23 @@ final class FloatMaxVector extends FloatVector {
     // Shuffle
 
     static final class FloatMaxShuffle extends AbstractShuffle<Float> {
+        static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
+        static final Class<Float> ETYPE = float.class; // used by the JVM
+
         FloatMaxShuffle(byte[] reorder) {
-            super(reorder);
+            super(VLENGTH, reorder);
         }
 
         public FloatMaxShuffle(int[] reorder) {
-            super(reorder);
+            super(VLENGTH, reorder);
         }
 
         public FloatMaxShuffle(int[] reorder, int i) {
-            super(reorder, i);
+            super(VLENGTH, reorder, i);
         }
 
         public FloatMaxShuffle(IntUnaryOperator fn) {
-            super(fn);
+            super(VLENGTH, fn);
         }
 
         @Override
@@ -678,7 +688,7 @@ final class FloatMaxVector extends FloatVector {
         @Override
         @ForceInline
         public FloatMaxVector toVector() {
-            return VectorIntrinsics.shuffleToVector(VCLASS, ETYPE, FloatMaxShuffle.class, this, VLENGTH,
+            return VectorSupport.shuffleToVector(VCLASS, ETYPE, FloatMaxShuffle.class, this, VLENGTH,
                                                     (s) -> ((FloatMaxVector)(((AbstractShuffle<Float>)(s)).toVectorTemplate())));
         }
 
@@ -712,10 +722,12 @@ final class FloatMaxVector extends FloatVector {
         @Override
         public FloatMaxShuffle rearrange(VectorShuffle<Float> shuffle) {
             FloatMaxShuffle s = (FloatMaxShuffle) shuffle;
-            byte[] r = new byte[reorder.length];
-            for (int i = 0; i < reorder.length; i++) {
-                int ssi = s.reorder[i];
-                r[i] = this.reorder[ssi];  // throws on exceptional index
+            byte[] reorder1 = reorder();
+            byte[] reorder2 = s.reorder();
+            byte[] r = new byte[reorder1.length];
+            for (int i = 0; i < reorder1.length; i++) {
+                int ssi = reorder2[i];
+                r[i] = reorder1[ssi];  // throws on exceptional index
             }
             return new FloatMaxShuffle(r);
         }
