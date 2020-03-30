@@ -1144,7 +1144,7 @@ bool SafePointNode::needs_polling_address_input() {
 
 // Emit an interrupt that is caught by the debugger (for debugging compiler).
 void emit_break(CodeBuffer &cbuf) {
-  MacroAssembler _masm(&cbuf);
+  C2_MacroAssembler _masm(&cbuf);
   __ illtrap();
 }
 
@@ -1165,7 +1165,7 @@ uint MachBreakpointNode::size(PhaseRegAlloc *ra_) const {
 //=============================================================================
 
 void emit_nop(CodeBuffer &cbuf) {
-  MacroAssembler _masm(&cbuf);
+  C2_MacroAssembler _masm(&cbuf);
   __ nop();
 }
 
@@ -1184,12 +1184,14 @@ source_hpp %{ // Header information of the source block.
 //---<  Used for optimization in Compile::Shorten_branches  >---
 //--------------------------------------------------------------
 
+class C2_MacroAssembler;
+
 class CallStubImpl {
 
  public:
 
   // Emit call stub, compiled java to interpreter.
-  static void emit_trampoline_stub(MacroAssembler &_masm, int destination_toc_offset, int insts_call_instruction_offset);
+  static void emit_trampoline_stub(C2_MacroAssembler &_masm, int destination_toc_offset, int insts_call_instruction_offset);
 
   // Size of call trampoline stub.
   // This doesn't need to be accurate to the byte, but it
@@ -1220,7 +1222,7 @@ source %{
 //   load the call target from the constant pool
 //   branch via CTR (LR/link still points to the call-site above)
 
-void CallStubImpl::emit_trampoline_stub(MacroAssembler &_masm, int destination_toc_offset, int insts_call_instruction_offset) {
+void CallStubImpl::emit_trampoline_stub(C2_MacroAssembler &_masm, int destination_toc_offset, int insts_call_instruction_offset) {
   address stub = __ emit_trampoline_stub(destination_toc_offset, insts_call_instruction_offset);
   if (stub == NULL) {
     ciEnv::current()->record_out_of_memory_failure();
@@ -1251,7 +1253,7 @@ typedef struct {
 // - Add a relocation at the branch-and-link instruction.
 // - Emit a branch-and-link.
 // - Remember the return pc offset.
-EmitCallOffsets emit_call_with_trampoline_stub(MacroAssembler &_masm, address entry_point, relocInfo::relocType rtype) {
+EmitCallOffsets emit_call_with_trampoline_stub(C2_MacroAssembler &_masm, address entry_point, relocInfo::relocType rtype) {
   EmitCallOffsets offsets = { -1, -1 };
   const int start_offset = __ offset();
   offsets.insts_call_instruction_offset = __ offset();
@@ -1379,7 +1381,7 @@ void MachPrologNode::format(PhaseRegAlloc *ra_, outputStream *st) const {
 
 void MachPrologNode::emit(CodeBuffer &cbuf, PhaseRegAlloc *ra_) const {
   Compile* C = ra_->C;
-  MacroAssembler _masm(&cbuf);
+  C2_MacroAssembler _masm(&cbuf);
 
   const long framesize = C->output()->frame_size_in_bytes();
   assert(framesize % (2 * wordSize) == 0, "must preserve 2*wordSize alignment");
@@ -1571,7 +1573,7 @@ void MachEpilogNode::format(PhaseRegAlloc *ra_, outputStream *st) const {
 
 void MachEpilogNode::emit(CodeBuffer &cbuf, PhaseRegAlloc *ra_) const {
   Compile* C = ra_->C;
-  MacroAssembler _masm(&cbuf);
+  C2_MacroAssembler _masm(&cbuf);
 
   const long framesize = ((long)C->output()->frame_slots()) << LogBytesPerInt;
   assert(framesize >= 0, "negative frame-size?");
@@ -1637,7 +1639,7 @@ int MachEpilogNode::safepoint_offset() const {
 
 #if 0 // TODO: PPC port
 void MachLoadPollAddrLateNode::emit(CodeBuffer& cbuf, PhaseRegAlloc* ra_) const {
-  MacroAssembler _masm(&cbuf);
+  C2_MacroAssembler _masm(&cbuf);
   if (LoadPollAddressFromThread) {
     _masm.ld(R11, in_bytes(JavaThread::poll_address_offset()), R16_thread);
   } else {
@@ -1754,7 +1756,7 @@ uint MachSpillCopyNode::implementation(CodeBuffer *cbuf, PhaseRegAlloc *ra_, boo
       int src_offset = ra_->reg2offset(src_lo);
       int dst_offset = ra_->reg2offset(dst_lo);
       if (cbuf) {
-        MacroAssembler _masm(cbuf);
+        C2_MacroAssembler _masm(cbuf);
         __ ld(R0, src_offset, R1_SP);
         __ std(R0, dst_offset, R1_SP);
         __ ld(R0, src_offset+8, R1_SP);
@@ -1767,7 +1769,7 @@ uint MachSpillCopyNode::implementation(CodeBuffer *cbuf, PhaseRegAlloc *ra_, boo
       VectorSRegister Rsrc = as_VectorSRegister(Matcher::_regEncode[src_lo]);
       int dst_offset = ra_->reg2offset(dst_lo);
       if (cbuf) {
-        MacroAssembler _masm(cbuf);
+        C2_MacroAssembler _masm(cbuf);
         __ addi(R0, R1_SP, dst_offset);
         __ stxvd2x(Rsrc, R0);
       }
@@ -1778,7 +1780,7 @@ uint MachSpillCopyNode::implementation(CodeBuffer *cbuf, PhaseRegAlloc *ra_, boo
       VectorSRegister Rdst = as_VectorSRegister(Matcher::_regEncode[dst_lo]);
       int src_offset = ra_->reg2offset(src_lo);
       if (cbuf) {
-        MacroAssembler _masm(cbuf);
+        C2_MacroAssembler _masm(cbuf);
         __ addi(R0, R1_SP, src_offset);
         __ lxvd2x(Rdst, R0);
       }
@@ -1789,7 +1791,7 @@ uint MachSpillCopyNode::implementation(CodeBuffer *cbuf, PhaseRegAlloc *ra_, boo
       VectorSRegister Rsrc = as_VectorSRegister(Matcher::_regEncode[src_lo]);
       VectorSRegister Rdst = as_VectorSRegister(Matcher::_regEncode[dst_lo]);
       if (cbuf) {
-        MacroAssembler _masm(cbuf);
+        C2_MacroAssembler _masm(cbuf);
         __ xxlor(Rdst, Rsrc, Rsrc);
       }
       size += 4;
@@ -1833,7 +1835,7 @@ uint MachSpillCopyNode::implementation(CodeBuffer *cbuf, PhaseRegAlloc *ra_, boo
       size = (Rsrc != Rdst) ? 4 : 0;
 
       if (cbuf) {
-        MacroAssembler _masm(cbuf);
+        C2_MacroAssembler _masm(cbuf);
         if (size) {
           __ mr(Rdst, Rsrc);
         }
@@ -1879,7 +1881,7 @@ uint MachSpillCopyNode::implementation(CodeBuffer *cbuf, PhaseRegAlloc *ra_, boo
   // Check for float reg-reg copy.
   if (src_lo_rc == rc_float && dst_lo_rc == rc_float) {
     if (cbuf) {
-      MacroAssembler _masm(cbuf);
+      C2_MacroAssembler _masm(cbuf);
       FloatRegister Rsrc = as_FloatRegister(Matcher::_regEncode[src_lo]);
       FloatRegister Rdst = as_FloatRegister(Matcher::_regEncode[dst_lo]);
       __ fmr(Rdst, Rsrc);
@@ -2049,7 +2051,7 @@ void MachNopNode::format(PhaseRegAlloc *ra_, outputStream *st) const {
 #endif
 
 void MachNopNode::emit(CodeBuffer &cbuf, PhaseRegAlloc *) const {
-  MacroAssembler _masm(&cbuf);
+  C2_MacroAssembler _masm(&cbuf);
   // _count contains the number of nops needed for padding.
   for (int i = 0; i < _count; i++) {
     __ nop();
@@ -2070,7 +2072,7 @@ void BoxLockNode::format(PhaseRegAlloc *ra_, outputStream *st) const {
 #endif
 
 void BoxLockNode::emit(CodeBuffer &cbuf, PhaseRegAlloc *ra_) const {
-  MacroAssembler _masm(&cbuf);
+  C2_MacroAssembler _masm(&cbuf);
 
   int offset = ra_->reg2offset(in_RegMask(0).find_first_elem());
   int reg    = ra_->get_encode(this);
@@ -2096,7 +2098,7 @@ void MachUEPNode::format(PhaseRegAlloc *ra_, outputStream *st) const {
 
 void MachUEPNode::emit(CodeBuffer &cbuf, PhaseRegAlloc *ra_) const {
   // This is the unverified entry point.
-  MacroAssembler _masm(&cbuf);
+  C2_MacroAssembler _masm(&cbuf);
 
   // Inline_cache contains a klass.
   Register ic_klass       = as_Register(Matcher::inline_cache_reg_encode());
@@ -2179,7 +2181,7 @@ class HandlerImpl {
 source %{
 
 int HandlerImpl::emit_exception_handler(CodeBuffer &cbuf) {
-  MacroAssembler _masm(&cbuf);
+  C2_MacroAssembler _masm(&cbuf);
 
   address base = __ start_a_stub(size_exception_handler());
   if (base == NULL) return 0; // CodeBuffer::expand failed
@@ -2196,7 +2198,7 @@ int HandlerImpl::emit_exception_handler(CodeBuffer &cbuf) {
 // The deopt_handler is like the exception handler, but it calls to
 // the deoptimization blob instead of jumping to the exception blob.
 int HandlerImpl::emit_deopt_handler(CodeBuffer& cbuf) {
-  MacroAssembler _masm(&cbuf);
+  C2_MacroAssembler _masm(&cbuf);
 
   address base = __ start_a_stub(size_deopt_handler());
   if (base == NULL) return 0; // CodeBuffer::expand failed
@@ -2674,14 +2676,14 @@ const bool Matcher::convi2l_type_required = true;
 encode %{
   enc_class enc_unimplemented %{
     // TODO: PPC port $archOpcode(ppc64Opcode_compound);
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     __ unimplemented("Unimplemented mach node encoding in AD file.", 13);
   %}
 
   enc_class enc_untested %{
 #ifdef ASSERT
     // TODO: PPC port $archOpcode(ppc64Opcode_compound);
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     __ untested("Untested mach node encoding in AD file.");
 #else
     // TODO: PPC port $archOpcode(ppc64Opcode_none);
@@ -2690,7 +2692,7 @@ encode %{
 
   enc_class enc_lbz(iRegIdst dst, memory mem) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_lbz);
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int Idisp = $mem$$disp + frame_slots_bias($mem$$base, ra_);
     __ lbz($dst$$Register, Idisp, $mem$$base$$Register);
   %}
@@ -2698,7 +2700,7 @@ encode %{
   // Load acquire.
   enc_class enc_lbz_ac(iRegIdst dst, memory mem) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_compound);
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int Idisp = $mem$$disp + frame_slots_bias($mem$$base, ra_);
     __ lbz($dst$$Register, Idisp, $mem$$base$$Register);
     __ twi_0($dst$$Register);
@@ -2708,7 +2710,7 @@ encode %{
   enc_class enc_lhz(iRegIdst dst, memory mem) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_lhz);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int Idisp = $mem$$disp + frame_slots_bias($mem$$base, ra_);
     __ lhz($dst$$Register, Idisp, $mem$$base$$Register);
   %}
@@ -2717,7 +2719,7 @@ encode %{
   enc_class enc_lhz_ac(iRegIdst dst, memory mem) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_compound);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int Idisp = $mem$$disp + frame_slots_bias($mem$$base, ra_);
     __ lhz($dst$$Register, Idisp, $mem$$base$$Register);
     __ twi_0($dst$$Register);
@@ -2727,7 +2729,7 @@ encode %{
   enc_class enc_lwz(iRegIdst dst, memory mem) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_lwz);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int Idisp = $mem$$disp + frame_slots_bias($mem$$base, ra_);
     __ lwz($dst$$Register, Idisp, $mem$$base$$Register);
   %}
@@ -2736,7 +2738,7 @@ encode %{
   enc_class enc_lwz_ac(iRegIdst dst, memory mem) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_compound);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int Idisp = $mem$$disp + frame_slots_bias($mem$$base, ra_);
     __ lwz($dst$$Register, Idisp, $mem$$base$$Register);
     __ twi_0($dst$$Register);
@@ -2745,7 +2747,7 @@ encode %{
 
   enc_class enc_ld(iRegLdst dst, memoryAlg4 mem) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_ld);
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int Idisp = $mem$$disp + frame_slots_bias($mem$$base, ra_);
     // Operand 'ds' requires 4-alignment.
     assert((Idisp & 0x3) == 0, "unaligned offset");
@@ -2755,7 +2757,7 @@ encode %{
   // Load acquire.
   enc_class enc_ld_ac(iRegLdst dst, memoryAlg4 mem) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_compound);
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int Idisp = $mem$$disp + frame_slots_bias($mem$$base, ra_);
     // Operand 'ds' requires 4-alignment.
     assert((Idisp & 0x3) == 0, "unaligned offset");
@@ -2766,7 +2768,7 @@ encode %{
 
   enc_class enc_lfd(RegF dst, memory mem) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_lfd);
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int Idisp = $mem$$disp + frame_slots_bias($mem$$base, ra_);
     __ lfd($dst$$FloatRegister, Idisp, $mem$$base$$Register);
   %}
@@ -2774,7 +2776,7 @@ encode %{
   enc_class enc_load_long_constL(iRegLdst dst, immL src, iRegLdst toc) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_ld);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int toc_offset = 0;
 
     address const_toc_addr;
@@ -2798,7 +2800,7 @@ encode %{
   enc_class enc_load_long_constL_hi(iRegLdst dst, iRegLdst toc, immL src) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_addis);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
 
     if (!ra_->C->output()->in_scratch_emit_size()) {
       address const_toc_addr;
@@ -3033,7 +3035,7 @@ encode %{
   enc_class enc_load_long_constP(iRegLdst dst, immP src, iRegLdst toc) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_ld);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int toc_offset = 0;
 
     intptr_t val = $src$$constant;
@@ -3066,7 +3068,7 @@ encode %{
   enc_class enc_load_long_constP_hi(iRegLdst dst, immP src, iRegLdst toc) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_addis);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     if (!ra_->C->output()->in_scratch_emit_size()) {
       intptr_t val = $src$$constant;
       relocInfo::relocType constant_reloc = $src->constant_reloc();  // src
@@ -3200,14 +3202,14 @@ encode %{
 
   enc_class enc_stw(iRegIsrc src, memory mem) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_stw);
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int Idisp = $mem$$disp + frame_slots_bias($mem$$base, ra_);
     __ stw($src$$Register, Idisp, $mem$$base$$Register);
   %}
 
   enc_class enc_std(iRegIsrc src, memoryAlg4 mem) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_std);
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int Idisp = $mem$$disp + frame_slots_bias($mem$$base, ra_);
     // Operand 'ds' requires 4-alignment.
     assert((Idisp & 0x3) == 0, "unaligned offset");
@@ -3216,14 +3218,14 @@ encode %{
 
   enc_class enc_stfs(RegF src, memory mem) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_stfs);
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int Idisp = $mem$$disp + frame_slots_bias($mem$$base, ra_);
     __ stfs($src$$FloatRegister, Idisp, $mem$$base$$Register);
   %}
 
   enc_class enc_stfd(RegF src, memory mem) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_stfd);
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int Idisp = $mem$$disp + frame_slots_bias($mem$$base, ra_);
     __ stfd($src$$FloatRegister, Idisp, $mem$$base$$Register);
   %}
@@ -3244,7 +3246,7 @@ encode %{
     // __ bind(skip_release);
     // __ stb(card mark);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     Label skip_storestore;
 
 #if 0 // TODO: PPC port
@@ -3465,7 +3467,7 @@ encode %{
   enc_class enc_cmove_reg(iRegIdst dst, flagsRegSrc crx, iRegIsrc src, cmpOp cmp) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_cmove);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int cc        = $cmp$$cmpcode;
     int flags_reg = $crx$$reg;
     Label done;
@@ -3480,7 +3482,7 @@ encode %{
   enc_class enc_cmove_imm(iRegIdst dst, flagsRegSrc crx, immI16 src, cmpOp cmp) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_cmove);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     Label done;
     assert((Assembler::bcondCRbiIs1 & ~Assembler::bcondCRbiIs0) == 8, "check encoding");
     // Branch if not (cmp crx).
@@ -3494,14 +3496,14 @@ encode %{
   // input mapping for latency computation.
   enc_class enc_andc(iRegIdst dst, iRegIsrc src1, iRegIsrc src2) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_andc);
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     __ andc($dst$$Register, $src1$$Register, $src2$$Register);
   %}
 
   enc_class enc_convI2B_regI__cmove(iRegIdst dst, iRegIsrc src, flagsReg crx, immI16 zero, immI16 notzero) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_compound);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
 
     Label done;
     __ cmpwi($crx$$CondRegister, $src$$Register, 0);
@@ -3514,7 +3516,7 @@ encode %{
   enc_class enc_convP2B_regP__cmove(iRegIdst dst, iRegPsrc src, flagsReg crx, immI16 zero, immI16 notzero) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_compound);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
 
     Label done;
     __ cmpdi($crx$$CondRegister, $src$$Register, 0);
@@ -3527,7 +3529,7 @@ encode %{
   enc_class enc_cmove_bso_stackSlotL(iRegLdst dst, flagsRegSrc crx, stackSlotL mem ) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_cmove);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int Idisp = $mem$$disp + frame_slots_bias($mem$$base, ra_);
     Label done;
     __ bso($crx$$CondRegister, done);
@@ -3539,7 +3541,7 @@ encode %{
   enc_class enc_cmove_bso_reg(iRegLdst dst, flagsRegSrc crx, regD src) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_cmove);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     Label done;
     __ bso($crx$$CondRegister, done);
     __ mffprd($dst$$Register, $src$$FloatRegister);
@@ -3550,7 +3552,7 @@ encode %{
   enc_class enc_bc(flagsRegSrc crx, cmpOp cmp, Label lbl) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_bc);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     Label d;   // dummy
     __ bind(d);
     Label* p = ($lbl$$label);
@@ -3580,7 +3582,7 @@ encode %{
     // to ppc64Opcode_bc in order to hide this detail from the scheduler.
     // TODO: PPC port $archOpcode(ppc64Opcode_bc);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     Label d;    // dummy
     __ bind(d);
     Label* p = ($lbl$$label);
@@ -3612,7 +3614,7 @@ encode %{
     // to ppc64Opcode_bc in order to hide this detail from the scheduler.
     // TODO: PPC port $archOpcode(ppc64Opcode_bc);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     Label d;   // dummy
     __ bind(d);
     Label* p = ($lbl$$label);
@@ -3697,7 +3699,7 @@ encode %{
     // Fake operand dst needed for PPC scheduler.
     assert($dst$$constant == 0x0, "dst must be 0x0");
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     // Mark the code position where the load from the safepoint
     // polling page was emitted as relocInfo::poll_type.
     __ relocate(relocInfo::poll_type);
@@ -3753,7 +3755,7 @@ encode %{
   enc_class enc_java_static_call(method meth) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_bl);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     address entry_point = (address)$meth$$method;
 
     if (!_method) {
@@ -3803,7 +3805,7 @@ encode %{
   enc_class enc_java_dynamic_call_sched(method meth) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_bl);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
 
     if (!ra_->C->output()->in_scratch_emit_size()) {
       // Create a call trampoline stub for the given method.
@@ -3906,7 +3908,7 @@ encode %{
   // In the code we have to use $constanttablebase.
   enc_class enc_java_dynamic_call(method meth, iRegLdst toc) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_compound);
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     int start_offset = __ offset();
 
     Register Rtoc = (ra_) ? $constanttablebase : R2_TOC;
@@ -3965,7 +3967,7 @@ encode %{
   enc_class enc_java_to_runtime_call (method meth) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_compound);
 
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     const address start_pc = __ pc();
 
 #if defined(ABI_ELFv2)
@@ -3998,7 +4000,7 @@ encode %{
   // input mapping for latency computation.
   enc_class enc_leaf_call_mtctr(iRegLsrc src) %{
     // TODO: PPC port $archOpcode(ppc64Opcode_mtctr);
-    MacroAssembler _masm(&cbuf);
+    C2_MacroAssembler _masm(&cbuf);
     __ mtctr($src$$Register);
   %}
 
