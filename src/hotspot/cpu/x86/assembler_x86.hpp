@@ -771,19 +771,39 @@ private:
 
   bool emit_compressed_disp_byte(int &disp);
 
+  void emit_modrm(int mod, int dst_enc, int src_enc);
+  void emit_modrm_disp8(int mod, int dst_enc, int src_enc,
+                        int disp);
+  void emit_modrm_sib(int mod, int dst_enc, int src_enc,
+                      Address::ScaleFactor scale, int index_enc, int base_enc);
+  void emit_modrm_sib_disp8(int mod, int dst_enc, int src_enc,
+                            Address::ScaleFactor scale, int index_enc, int base_enc,
+                            int disp);
+
+  void emit_operand_helper(int reg_enc,
+                           int base_enc, int index_enc, Address::ScaleFactor scale,
+                           int disp,
+                           RelocationHolder const& rspec,
+                           int rip_relative_correction = 0);
+
   void emit_operand(Register reg,
                     Register base, Register index, Address::ScaleFactor scale,
                     int disp,
                     RelocationHolder const& rspec,
-                    int rip_relative_correction = 0, bool xmmindexVal = false);
-  void emit_operand(XMMRegister reg, Register base, XMMRegister index,
-                    Address::ScaleFactor scale,
-                    int disp, RelocationHolder const& rspec);
+                    int rip_relative_correction = 0);
 
-  void emit_operand(Register reg, Address adr, int rip_relative_correction = 0);
+  void emit_operand(Register reg,
+                    Register base, XMMRegister index, Address::ScaleFactor scale,
+                    int disp,
+                    RelocationHolder const& rspec);
 
-  // operands that only take the original 32bit registers
-  void emit_operand32(Register reg, Address adr);
+  void emit_operand(XMMRegister xreg,
+                    Register base, XMMRegister xindex, Address::ScaleFactor scale,
+                    int disp,
+                    RelocationHolder const& rspec);
+
+  void emit_operand(Register reg, Address adr,
+                    int rip_relative_correction = 0);
 
   void emit_operand(XMMRegister reg,
                     Register base, Register index, Address::ScaleFactor scale,
@@ -792,16 +812,8 @@ private:
 
   void emit_operand(XMMRegister reg, Address adr);
 
-  void emit_operand(MMXRegister reg, Address adr);
-
-  // workaround gcc (3.2.1-7) bug
-  void emit_operand(Address adr, MMXRegister reg);
-
   // Immediate-to-memory forms
   void emit_arith_operand(int op1, Register rm, Address adr, int32_t imm32);
-
-  void emit_farith(int b1, int b2, int i);
-
 
  protected:
   #ifdef ASSERT
@@ -1222,9 +1234,17 @@ private:
   void divss(XMMRegister dst, Address src);
   void divss(XMMRegister dst, XMMRegister src);
 
-  void emms();
 
 #ifndef _LP64
+ private:
+  // operands that only take the original 32bit registers
+  void emit_operand32(Register reg, Address adr);
+
+  void emit_farith(int b1, int b2, int i);
+
+ public:
+  void emms();
+
   void fabs();
 
   void fadd(int i);
@@ -1596,12 +1616,7 @@ private:
   void movq(Register dst, Register src);
   void movq(Register dst, Address src);
   void movq(Address  dst, Register src);
-#endif
 
-  void movq(Address     dst, MMXRegister src );
-  void movq(MMXRegister dst, Address src );
-
-#ifdef _LP64
   // These dummies prevent using movq from converting a zero (like NULL) into Register
   // by giving the compiler two choices it can't resolve
 
