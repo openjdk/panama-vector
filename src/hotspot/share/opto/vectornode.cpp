@@ -942,6 +942,13 @@ ReductionNode* ReductionNode::make(int opc, Node *ctrl, Node* n1, Node* n2, Basi
   }
 }
 
+Node* VectorStoreMaskNode::make(PhaseGVN& gvn, Node* in, BasicType in_type, uint num_elem) {
+  assert(in->bottom_type()->isa_vect(), "sanity");
+  const TypeVect* vt = TypeVect::make(T_BOOLEAN, num_elem);
+  int elem_size = type2aelembytes(in_type);
+  return new VectorStoreMaskNode(in, gvn.intcon(elem_size), vt);
+}
+
 VectorCastNode* VectorCastNode::make(int vopc, Node* n1, BasicType bt, uint vlen) {
   const TypeVect* vt = TypeVect::make(bt, vlen);
   switch (vopc) {

@@ -28,6 +28,8 @@
 // C2_MacroAssembler contains high-level macros for C2
 
 public:
+  Assembler::AvxVectorLen vector_length_encoding(int vlen_in_bytes);
+
   // special instructions for EVEX
   void setvectmask(Register dst, Register src);
   void restorevectmask();
@@ -71,31 +73,39 @@ public:
   void vabsnegd(int opcode, XMMRegister dst, XMMRegister src, int vector_len, Register scr);
   void vabsnegf(int opcode, XMMRegister dst, XMMRegister src, Register scr);
   void vabsnegf(int opcode, XMMRegister dst, XMMRegister src, int vector_len, Register scr);
-  void pminmax(BasicType typ, XMMRegister dst, XMMRegister src, bool is_min);
-  void vpminmax(BasicType typ, XMMRegister dst, XMMRegister src1, XMMRegister src2, bool is_min, int vector_len);
-  void vminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
-               XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
-               bool is_single, bool is_min, int vector_len);
 
-  void evminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
-                KRegister ktmp, XMMRegister atmp, XMMRegister btmp,
-                bool is_single, bool is_min, int vector_len);
+  void pminmax(int opcode, BasicType elem_bt, XMMRegister dst, XMMRegister src,
+               XMMRegister tmp = xnoreg);
+  void vpminmax(int opcode, BasicType elem_bt,
+                XMMRegister dst, XMMRegister src1, XMMRegister src2,
+                int vlen_enc);
+
+  void vminmax_fp(int opcode, BasicType elem_bt,
+                  XMMRegister dst, XMMRegister a, XMMRegister b,
+                  XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
+                  int vlen_enc);
+  void evminmax_fp(int opcode, BasicType elem_bt,
+                   XMMRegister dst, XMMRegister a, XMMRegister b,
+                   KRegister ktmp, XMMRegister atmp, XMMRegister btmp,
+                   int vlen_enc);
 
   void vextendbw(bool sign, XMMRegister dst, XMMRegister src, int vector_len);
   void vextendbw(bool sign, XMMRegister dst, XMMRegister src);
   void vextendbd(bool sign, XMMRegister dst, XMMRegister src, int vector_len);
   void vextendwd(bool sign, XMMRegister dst, XMMRegister src, int vector_len);
-  void vshiftd(int opcode, XMMRegister dst, XMMRegister src);
-  void vshiftd(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
-  void vshiftw(int opcode, XMMRegister dst, XMMRegister src);
-  void vshiftw(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
-  void vshiftq(int opcode, XMMRegister dst, XMMRegister src);
-  void vshiftq(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
-  void varshiftd(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
-  void varshiftw(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
-  void varshiftq(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+
+  void vshiftd(int opcode, XMMRegister dst, XMMRegister shift);
+  void vshiftd(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc);
+  void vshiftw(int opcode, XMMRegister dst, XMMRegister shift);
+  void vshiftw(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc);
+  void vshiftq(int opcode, XMMRegister dst, XMMRegister shift);
+  void vshiftq(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc);
+  void varshiftd(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc);
+  void varshiftw(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc);
+  void varshiftq(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc, XMMRegister vtmp = xnoreg);
   void varshiftbw(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len, XMMRegister vtmp, Register scratch);
   void evarshiftb(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len, XMMRegister vtmp, Register scratch);
+
   void insert(BasicType typ, XMMRegister dst, Register val, int idx);
   void vinsert(BasicType typ, XMMRegister dst, XMMRegister src, Register val, int idx);
   void vgather(BasicType typ, XMMRegister dst, Register base, XMMRegister idx, XMMRegister mask, int vector_len);
@@ -112,6 +122,9 @@ public:
   void evpcmp(BasicType typ, KRegister kdmask, KRegister ksmask, XMMRegister src1, AddressLiteral adr, int comparison, int vector_len, Register scratch = rscratch1);
   void evpblend(BasicType typ, XMMRegister dst, KRegister kmask, XMMRegister src1, XMMRegister src2, bool merge, int vector_len);
 
+  void load_vector_mask(XMMRegister dst, XMMRegister src, int vlen_in_bytes, BasicType elem_bt);
+  void load_iota_indices(XMMRegister dst, Register scratch, int vlen_in_bytes);
+
   // Reductions for vectors of bytes, shorts, ints, longs, floats, and doubles.
 
   // dst = src1  reduce(op, src2) using vtmp as temps
@@ -127,10 +140,12 @@ public:
   void reduceB(int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
   void mulreduceB(int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
   void reduceS(int opcode, int vlen, Register dst, Register src1, XMMRegister src2, XMMRegister vtmp1, XMMRegister vtmp2);
-  void reduceFloatMinMax(bool is_min, int log2vlen, bool dstvalid, XMMRegister dst, XMMRegister src,
+  void reduceFloatMinMax(int opcode, int vlen, bool is_dst_valid,
+                         XMMRegister dst, XMMRegister src,
                          XMMRegister tmp, XMMRegister atmp, XMMRegister btmp, XMMRegister xmm_0, XMMRegister xmm_1 = xnoreg);
-  void reduceDoubleMinMax(bool is_min, int log2vlen, bool dstvalid, XMMRegister dst, XMMRegister src,
-                         XMMRegister tmp, XMMRegister atmp, XMMRegister btmp, XMMRegister xmm_0, XMMRegister xmm_1 = xnoreg);
+  void reduceDoubleMinMax(int opcode, int vlen, bool is_dst_valid,
+                          XMMRegister dst, XMMRegister src,
+                          XMMRegister tmp, XMMRegister atmp, XMMRegister btmp, XMMRegister xmm_0, XMMRegister xmm_1 = xnoreg);
  private:
   void reduceF(int opcode, int vlen, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
   void reduceD(int opcode, int vlen, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);

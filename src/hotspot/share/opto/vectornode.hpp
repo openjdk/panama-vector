@@ -1182,7 +1182,6 @@ class VectorLoadMaskNode : public VectorNode {
     assert(in->as_LoadVector()->vect_type()->element_basic_type() == T_BOOLEAN, "must be boolean");
   }
 
-  int GetOutMaskSize() const { return type2aelembytes(vect_type()->element_basic_type()); }
   virtual int Opcode() const;
 };
 
@@ -1199,23 +1198,14 @@ public:
 };
 
 class VectorStoreMaskNode : public VectorNode {
- private:
-  int _mask_size;
  protected:
-  uint size_of() const { return sizeof(*this); }
+  VectorStoreMaskNode(Node* in1, ConINode* in2, const TypeVect* vt)
+    : VectorNode(in1, in2, vt) { }
 
  public:
-  VectorStoreMaskNode(Node* in, BasicType in_type, uint num_elem)
-    : VectorNode(in, TypeVect::make(T_BOOLEAN, num_elem)) {
-    _mask_size = type2aelembytes(in_type);
-  }
-
-  virtual uint hash() const { return VectorNode::hash() + _mask_size; }
-  virtual bool cmp( const Node &n ) const {
-    return VectorNode::cmp(n) && _mask_size == ((VectorStoreMaskNode&)n)._mask_size;
-  }
-  int GetInputMaskSize() const { return _mask_size; }
   virtual int Opcode() const;
+
+  static Node* make(PhaseGVN& gvn, Node* in, BasicType in_type, uint num_elem);
 };
 
 // This is intended for use as a simple reinterpret node that has no cast.
