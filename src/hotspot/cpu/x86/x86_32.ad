@@ -3349,7 +3349,7 @@ operand immI() %{
 %}
 
 // Constant for test vs zero
-operand immI0() %{
+operand immI_0() %{
   predicate(n->get_int() == 0);
   match(ConI);
 
@@ -3359,7 +3359,7 @@ operand immI0() %{
 %}
 
 // Constant for increment
-operand immI1() %{
+operand immI_1() %{
   predicate(n->get_int() == 1);
   match(ConI);
 
@@ -3444,15 +3444,6 @@ operand immI_32_63() %{
   interface(CONST_INTER);
 %}
 
-operand immI_1() %{
-  predicate( n->get_int() == 1 );
-  match(ConI);
-
-  op_cost(0);
-  format %{ %}
-  interface(CONST_INTER);
-%}
-
 operand immI_2() %{
   predicate( n->get_int() == 2 );
   match(ConI);
@@ -3464,6 +3455,26 @@ operand immI_2() %{
 
 operand immI_3() %{
   predicate( n->get_int() == 3 );
+  match(ConI);
+
+  op_cost(0);
+  format %{ %}
+  interface(CONST_INTER);
+%}
+
+operand immI_4()
+%{
+  predicate(n->get_int() == 4);
+  match(ConI);
+
+  op_cost(0);
+  format %{ %}
+  interface(CONST_INTER);
+%}
+
+operand immI_8()
+%{
+  predicate(n->get_int() == 8);
   match(ConI);
 
   op_cost(0);
@@ -6073,7 +6084,7 @@ instruct loadConI(rRegI dst, immI src) %{
 %}
 
 // Load Constant zero
-instruct loadConI0(rRegI dst, immI0 src, eFlagsReg cr) %{
+instruct loadConI0(rRegI dst, immI_0 src, eFlagsReg cr) %{
   match(Set dst src);
   effect(KILL cr);
 
@@ -7663,7 +7674,7 @@ instruct subI_mem_eReg(memory dst, rRegI src, eFlagsReg cr) %{
 %}
 
 // Subtract from a pointer
-instruct subP_eReg(eRegP dst, rRegI src, immI0 zero, eFlagsReg cr) %{
+instruct subP_eReg(eRegP dst, rRegI src, immI_0 zero, eFlagsReg cr) %{
   match(Set dst (AddP dst (SubI zero src)));
   effect(KILL cr);
 
@@ -7674,7 +7685,7 @@ instruct subP_eReg(eRegP dst, rRegI src, immI0 zero, eFlagsReg cr) %{
   ins_pipe( ialu_reg_reg );
 %}
 
-instruct negI_eReg(rRegI dst, immI0 zero, eFlagsReg cr) %{
+instruct negI_eReg(rRegI dst, immI_0 zero, eFlagsReg cr) %{
   match(Set dst (SubI zero dst));
   effect(KILL cr);
 
@@ -8377,7 +8388,7 @@ instruct andnI_rReg_rReg_mem(rRegI dst, rRegI src1, memory src2, immI_M1 minus_1
   ins_pipe(ialu_reg_mem);
 %}
 
-instruct blsiI_rReg_rReg(rRegI dst, rRegI src, immI0 imm_zero, eFlagsReg cr) %{
+instruct blsiI_rReg_rReg(rRegI dst, rRegI src, immI_0 imm_zero, eFlagsReg cr) %{
   match(Set dst (AndI (SubI imm_zero src) src));
   predicate(UseBMI1Instructions);
   effect(KILL cr);
@@ -8390,7 +8401,7 @@ instruct blsiI_rReg_rReg(rRegI dst, rRegI src, immI0 imm_zero, eFlagsReg cr) %{
   ins_pipe(ialu_reg);
 %}
 
-instruct blsiI_rReg_mem(rRegI dst, memory src, immI0 imm_zero, eFlagsReg cr) %{
+instruct blsiI_rReg_mem(rRegI dst, memory src, immI_0 imm_zero, eFlagsReg cr) %{
   match(Set dst (AndI (SubI imm_zero (LoadI src) ) (LoadI src) ));
   predicate(UseBMI1Instructions);
   effect(KILL cr);
@@ -8590,7 +8601,7 @@ instruct rolI_eReg_i8(rRegI dst, immI8 lshift, immI8 rshift, eFlagsReg cr) %{
 %}
 
 // ROL 32bit var by var once
-instruct rolI_eReg_Var_C0(ncxRegI dst, eCXRegI shift, immI0 zero, eFlagsReg cr) %{
+instruct rolI_eReg_Var_C0(ncxRegI dst, eCXRegI shift, immI_0 zero, eFlagsReg cr) %{
   match(Set dst ( OrI (LShiftI dst shift) (URShiftI dst (SubI zero shift))));
 
   expand %{
@@ -8656,7 +8667,7 @@ instruct rorI_eReg_i8(rRegI dst, immI8 rshift, immI8 lshift, eFlagsReg cr) %{
 %}
 
 // ROR 32bit var by var once
-instruct rorI_eReg_Var_C0(ncxRegI dst, eCXRegI shift, immI0 zero, eFlagsReg cr) %{
+instruct rorI_eReg_Var_C0(ncxRegI dst, eCXRegI shift, immI_0 zero, eFlagsReg cr) %{
   match(Set dst ( OrI (URShiftI dst shift) (LShiftI dst (SubI zero shift))));
 
   expand %{
@@ -8824,7 +8835,7 @@ instruct cmpLTMask(eCXRegI dst, ncxRegI p, ncxRegI q, eFlagsReg cr) %{
   ins_pipe(pipe_slow);
 %}
 
-instruct cmpLTMask0(rRegI dst, immI0 zero, eFlagsReg cr) %{
+instruct cmpLTMask0(rRegI dst, immI_0 zero, eFlagsReg cr) %{
   match(Set dst (CmpLTMask dst zero));
   effect(DEF dst, KILL cr);
   ins_cost(100);
@@ -8938,7 +8949,7 @@ instruct overflowSubI_rReg_imm(eFlagsReg cr, rRegI op1, immI op2)
   ins_pipe(ialu_reg_reg);
 %}
 
-instruct overflowNegI_rReg(eFlagsReg cr, immI0 zero, eAXRegI op2)
+instruct overflowNegI_rReg(eFlagsReg cr, immI_0 zero, eAXRegI op2)
 %{
   match(Set cr (OverflowSubI zero op2));
   effect(DEF cr, USE_KILL op2);
@@ -12076,7 +12087,7 @@ instruct compI_eReg_mem(eFlagsReg cr, rRegI op1, memory op2) %{
   ins_pipe( ialu_cr_reg_mem );
 %}
 
-instruct testI_reg( eFlagsReg cr, rRegI src, immI0 zero ) %{
+instruct testI_reg( eFlagsReg cr, rRegI src, immI_0 zero ) %{
   match(Set cr (CmpI src zero));
   effect( DEF cr, USE src );
 
@@ -12086,7 +12097,7 @@ instruct testI_reg( eFlagsReg cr, rRegI src, immI0 zero ) %{
   ins_pipe( ialu_cr_reg_imm );
 %}
 
-instruct testI_reg_imm( eFlagsReg cr, rRegI src, immI con, immI0 zero ) %{
+instruct testI_reg_imm( eFlagsReg cr, rRegI src, immI con, immI_0 zero ) %{
   match(Set cr (CmpI (AndI src con) zero));
 
   format %{ "TEST   $src,$con" %}
@@ -12095,7 +12106,7 @@ instruct testI_reg_imm( eFlagsReg cr, rRegI src, immI con, immI0 zero ) %{
   ins_pipe( ialu_cr_reg_imm );
 %}
 
-instruct testI_reg_mem( eFlagsReg cr, rRegI src, memory mem, immI0 zero ) %{
+instruct testI_reg_mem( eFlagsReg cr, rRegI src, memory mem, immI_0 zero ) %{
   match(Set cr (CmpI (AndI src mem) zero));
 
   format %{ "TEST   $src,$mem" %}
@@ -12145,7 +12156,7 @@ instruct compU_eReg_mem(eFlagsRegU cr, rRegI op1, memory op2) %{
 //  ins_encode( OpcP, RegMem( op1, op2) );
 //%}
 
-instruct testU_reg( eFlagsRegU cr, rRegI src, immI0 zero ) %{
+instruct testU_reg( eFlagsRegU cr, rRegI src, immI_0 zero ) %{
   match(Set cr (CmpU src zero));
 
   format %{ "TESTu  $src,$src" %}
@@ -12222,7 +12233,7 @@ instruct testP_reg( eFlagsReg cr, eRegP src, immP0 zero ) %{
 // Cisc-spilled version of testP_reg
 // This will generate a signed flags result. This should be ok
 // since any compare to a zero should be eq/neq.
-instruct testP_Reg_mem( eFlagsReg cr, memory op, immI0 zero ) %{
+instruct testP_Reg_mem( eFlagsReg cr, memory op, immI_0 zero ) %{
   match(Set cr (CmpP (LoadP op) zero));
 
   format %{ "TEST   $op,0xFFFFFFFF" %}

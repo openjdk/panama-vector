@@ -683,6 +683,10 @@ inline bool is_integral_type(BasicType t) {
   return is_subword_type(t) || t == T_INT || t == T_LONG;
 }
 
+inline bool is_floating_point_type(BasicType t) {
+  return (t == T_FLOAT || t == T_DOUBLE);
+}
+
 extern char type2char_tab[T_CONFLICT+1];     // Map a BasicType to a jchar
 inline char type2char(BasicType t) { return (uint)t < T_CONFLICT+1 ? type2char_tab[t] : 0; }
 extern int type2size[T_CONFLICT+1];         // Map BasicType to result stack elements

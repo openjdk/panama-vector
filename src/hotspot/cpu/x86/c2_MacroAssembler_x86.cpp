@@ -33,6 +33,21 @@
 #include "runtime/objectMonitor.hpp"
 #include "runtime/stubRoutines.hpp"
 
+inline Assembler::AvxVectorLen C2_MacroAssembler::vector_length_encoding(int vlen_in_bytes) {
+  switch (vlen_in_bytes) {
+    case  4: // fall-through
+    case  8: // fall-through
+    case 16: return Assembler::AVX_128bit;
+    case 32: return Assembler::AVX_256bit;
+    case 64: return Assembler::AVX_512bit;
+
+    default: {
+      ShouldNotReachHere();
+      return Assembler::AVX_NoVec;
+    }
+  }
+}
+
 void C2_MacroAssembler::setvectmask(Register dst, Register src) {
   guarantee(PostLoopMultiversioning, "must be");
   Assembler::movl(dst, 1);
@@ -855,113 +870,164 @@ void C2_MacroAssembler::vabsnegf(int opcode, XMMRegister dst, XMMRegister src, i
   }
 }
 
-void C2_MacroAssembler::pminmax(BasicType typ, XMMRegister dst, XMMRegister src, bool is_min) {
-  if (is_min) {
-    if (typ == T_BYTE) {
+void C2_MacroAssembler::pminmax(int opcode, BasicType elem_bt, XMMRegister dst, XMMRegister src, XMMRegister tmp) {
+  assert(opcode == Op_MinV || opcode == Op_MaxV, "sanity");
+
+  if (opcode == Op_MinV) {
+    if (elem_bt == T_BYTE) {
       pminsb(dst, src);
-    } else if (typ == T_SHORT) {
+    } else if (elem_bt == T_SHORT) {
       pminsw(dst, src);
-    } else {
-      assert(typ == T_INT,"required.");
+    } else if (elem_bt == T_INT) {
       pminsd(dst, src);
+    } else {
+      assert(elem_bt == T_LONG, "required");
+      assert(tmp == xmm0, "required");
+      movdqu(xmm0, dst);
+      pcmpgtq(xmm0, src);
+      blendvpd(dst, src);  // xmm0 as mask
     }
   } else { // opcode == Op_MaxV
-    if (typ == T_BYTE) {
+    if (elem_bt == T_BYTE) {
       pmaxsb(dst, src);
-    } else if (typ == T_SHORT) {
+    } else if (elem_bt == T_SHORT) {
       pmaxsw(dst, src);
-    } else {
-      assert(typ == T_INT,"required.");
+    } else if (elem_bt == T_INT) {
       pmaxsd(dst, src);
+    } else {
+      assert(elem_bt == T_LONG, "required");
+      assert(tmp == xmm0, "required");
+      movdqu(xmm0, src);
+      pcmpgtq(xmm0, dst);
+      blendvpd(dst, src);  // xmm0 as mask
     }
   }
 }
 
-void C2_MacroAssembler::vpminmax(BasicType typ, XMMRegister dst, XMMRegister src1, XMMRegister src2, bool is_min, int vector_len) {
-  if (is_min) {
-    if (typ == T_BYTE) {
-      vpminsb(dst, src1, src2, vector_len);
-    } else if (typ == T_SHORT) {
-      vpminsw(dst, src1, src2, vector_len);
+void C2_MacroAssembler::vpminmax(int opcode, BasicType elem_bt,
+                                 XMMRegister dst, XMMRegister src1, XMMRegister src2,
+                                 int vlen_enc) {
+  assert(opcode == Op_MinV || opcode == Op_MaxV, "sanity");
+
+  if (opcode == Op_MinV) {
+    if (elem_bt == T_BYTE) {
+      vpminsb(dst, src1, src2, vlen_enc);
+    } else if (elem_bt == T_SHORT) {
+      vpminsw(dst, src1, src2, vlen_enc);
+    } else if (elem_bt == T_INT) {
+      vpminsd(dst, src1, src2, vlen_enc);
     } else {
-      assert(typ == T_INT,"required.");
-      vpminsd(dst, src1, src2, vector_len);
+      assert(elem_bt == T_LONG, "required");
+      if (UseAVX > 2 && (vlen_enc == Assembler::AVX_512bit || VM_Version::supports_avx512vl())) {
+        vpminsq(dst, src1, src2, vlen_enc);
+      } else {
+        vpcmpgtq(dst, src1, src2, vlen_enc);
+        vblendvpd(dst, src1, src2, dst, vlen_enc);
+      }
     }
   } else { // opcode == Op_MaxV
-    if (typ == T_BYTE) {
-      vpmaxsb(dst, src1, src2, vector_len);
-    } else if (typ == T_SHORT) {
-      vpmaxsw(dst, src1, src2, vector_len);
+    if (elem_bt == T_BYTE) {
+      vpmaxsb(dst, src1, src2, vlen_enc);
+    } else if (elem_bt == T_SHORT) {
+      vpmaxsw(dst, src1, src2, vlen_enc);
+    } else if (elem_bt == T_INT) {
+      vpmaxsd(dst, src1, src2, vlen_enc);
     } else {
-      assert(typ == T_INT,"required.");
-      vpmaxsd(dst, src1, src2, vector_len);
+      assert(elem_bt == T_LONG, "required");
+      if (UseAVX > 2 && (vlen_enc == Assembler::AVX_512bit || VM_Version::supports_avx512vl())) {
+        vpmaxsq(dst, src1, src2, vlen_enc);
+      } else {
+        vpcmpgtq(dst, src1, src2, vlen_enc);
+        vblendvpd(dst, src2, src1, dst, vlen_enc);
+      }
     }
   }
 }
 
 // Float/Double min max
-void C2_MacroAssembler::evminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
-                              KRegister ktmp, XMMRegister atmp, XMMRegister btmp,
-                              bool is_single, bool is_min, int vector_len) {
-  if (is_single && is_min) {
-    evpmovd2m(ktmp, a, vector_len);
-    evblendmps(atmp, ktmp, a, b, true, vector_len);
-    evblendmps(btmp, ktmp, b, a, true, vector_len);
-    vminps(dst, atmp, btmp, vector_len);
-    evcmpps(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    evmovdqul(dst, ktmp, atmp, true, vector_len);
-  } else if (is_single && !is_min) {
-    evpmovd2m(ktmp, b, vector_len);
-    evblendmps(atmp, ktmp, a, b, true, vector_len);
-    evblendmps(btmp, ktmp, b, a, true, vector_len);
-    vmaxps(dst, atmp, btmp, vector_len);
-    evcmpps(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    evmovdqul(dst, ktmp, atmp, true, vector_len);
-  } else if (!is_single && is_min) {
-    evpmovq2m(ktmp, a, vector_len);
-    evblendmpd(atmp, ktmp, a, b, true, vector_len);
-    evblendmpd(btmp, ktmp, b, a, true, vector_len);
-    vminpd(dst, atmp, btmp, vector_len);
-    evcmppd(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    evmovdquq(dst, ktmp, atmp, true, vector_len);
+
+void C2_MacroAssembler::vminmax_fp(int opcode, BasicType elem_bt,
+                                   XMMRegister dst, XMMRegister a, XMMRegister b,
+                                   XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
+                                   int vlen_enc) {
+  assert(UseAVX > 0, "required");
+  assert(opcode == Op_MinV || opcode == Op_MinReductionV ||
+         opcode == Op_MaxV || opcode == Op_MaxReductionV, "sanity");
+  assert(elem_bt == T_FLOAT || elem_bt == T_DOUBLE, "sanity");
+
+  bool is_min = (opcode == Op_MinV || opcode == Op_MinReductionV);
+  bool is_double_word = is_double_word_type(elem_bt);
+
+  if (!is_double_word && is_min) {
+    vblendvps(atmp, a, b, a, vlen_enc);
+    vblendvps(btmp, b, a, a, vlen_enc);
+    vminps(tmp, atmp, btmp, vlen_enc);
+    vcmpps(btmp, atmp, atmp, Assembler::UNORD_Q, vlen_enc);
+    vblendvps(dst, tmp, atmp, btmp, vlen_enc);
+  } else if (!is_double_word && !is_min) {
+    vblendvps(btmp, b, a, b, vlen_enc);
+    vblendvps(atmp, a, b, b, vlen_enc);
+    vmaxps(tmp, atmp, btmp, vlen_enc);
+    vcmpps(btmp, atmp, atmp, Assembler::UNORD_Q, vlen_enc);
+    vblendvps(dst, tmp, atmp, btmp, vlen_enc);
+  } else if (is_double_word && is_min) {
+    vblendvpd(atmp, a, b, a, vlen_enc);
+    vblendvpd(btmp, b, a, a, vlen_enc);
+    vminpd(tmp, atmp, btmp, vlen_enc);
+    vcmppd(btmp, atmp, atmp, Assembler::UNORD_Q, vlen_enc);
+    vblendvpd(dst, tmp, atmp, btmp, vlen_enc);
   } else {
-    evpmovq2m(ktmp, b, vector_len);
-    evblendmpd(atmp, ktmp, a, b, true, vector_len);
-    evblendmpd(btmp, ktmp, b, a, true, vector_len);
-    vmaxpd(dst, atmp, btmp, vector_len);
-    evcmppd(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    evmovdquq(dst, ktmp, atmp, true, vector_len);
+    assert(is_double_word && !is_min, "sanity");
+    vblendvpd(btmp, b, a, b, vlen_enc);
+    vblendvpd(atmp, a, b, b, vlen_enc);
+    vmaxpd(tmp, atmp, btmp, vlen_enc);
+    vcmppd(btmp, atmp, atmp, Assembler::UNORD_Q, vlen_enc);
+    vblendvpd(dst, tmp, atmp, btmp, vlen_enc);
   }
 }
 
-// Float/Double min max
-void C2_MacroAssembler::vminmax(XMMRegister dst, XMMRegister a, XMMRegister b,
-                             XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
-                             bool is_single, bool is_min, int vector_len) {
-  if (is_single && is_min) {
-    vblendvps(atmp, a, b, a, vector_len);
-    vblendvps(btmp, b, a, a, vector_len);
-    vminps(tmp, atmp, btmp, vector_len);
-    vcmpps(btmp, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    vblendvps(dst, tmp, atmp, btmp, vector_len);
-  } else if (is_single && !is_min) {
-    vblendvps(btmp, b, a, b, vector_len);
-    vblendvps(atmp, a, b, b, vector_len);
-    vmaxps(tmp, atmp, btmp, vector_len);
-    vcmpps(btmp, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    vblendvps(dst, tmp, atmp, btmp, vector_len);
-  } else if (!is_single && is_min) {
-    vblendvpd(atmp, a, b, a, vector_len);
-    vblendvpd(btmp, b, a, a, vector_len);
-    vminpd(tmp, atmp, btmp, vector_len);
-    vcmppd(btmp, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    vblendvpd(dst, tmp, atmp, btmp, vector_len);
+void C2_MacroAssembler::evminmax_fp(int opcode, BasicType elem_bt,
+                                    XMMRegister dst, XMMRegister a, XMMRegister b,
+                                    KRegister ktmp, XMMRegister atmp, XMMRegister btmp,
+                                    int vlen_enc) {
+  assert(UseAVX > 2, "required");
+  assert(opcode == Op_MinV || opcode == Op_MinReductionV ||
+         opcode == Op_MaxV || opcode == Op_MaxReductionV, "sanity");
+  assert(elem_bt == T_FLOAT || elem_bt == T_DOUBLE, "sanity");
+
+  bool is_min = (opcode == Op_MinV || opcode == Op_MinReductionV);
+  bool is_double_word = is_double_word_type(elem_bt);
+  bool merge = true;
+
+  if (!is_double_word && is_min) {
+    evpmovd2m(ktmp, a, vlen_enc);
+    evblendmps(atmp, ktmp, a, b, merge, vlen_enc);
+    evblendmps(btmp, ktmp, b, a, merge, vlen_enc);
+    vminps(dst, atmp, btmp, vlen_enc);
+    evcmpps(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vlen_enc);
+    evmovdqul(dst, ktmp, atmp, merge, vlen_enc);
+  } else if (!is_double_word && !is_min) {
+    evpmovd2m(ktmp, b, vlen_enc);
+    evblendmps(atmp, ktmp, a, b, merge, vlen_enc);
+    evblendmps(btmp, ktmp, b, a, merge, vlen_enc);
+    vmaxps(dst, atmp, btmp, vlen_enc);
+    evcmpps(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vlen_enc);
+    evmovdqul(dst, ktmp, atmp, merge, vlen_enc);
+  } else if (is_double_word && is_min) {
+    evpmovq2m(ktmp, a, vlen_enc);
+    evblendmpd(atmp, ktmp, a, b, merge, vlen_enc);
+    evblendmpd(btmp, ktmp, b, a, merge, vlen_enc);
+    vminpd(dst, atmp, btmp, vlen_enc);
+    evcmppd(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vlen_enc);
+    evmovdquq(dst, ktmp, atmp, merge, vlen_enc);
   } else {
-    vblendvpd(btmp, b, a, b, vector_len);
-    vblendvpd(atmp, a, b, b, vector_len);
-    vmaxpd(tmp, atmp, btmp, vector_len);
-    vcmppd(btmp, atmp, atmp, Assembler::UNORD_Q, vector_len);
-    vblendvpd(dst, tmp, atmp, btmp, vector_len);
+    assert(is_double_word && !is_min, "sanity");
+    evpmovq2m(ktmp, b, vlen_enc);
+    evblendmpd(atmp, ktmp, a, b, merge, vlen_enc);
+    evblendmpd(btmp, ktmp, b, a, merge, vlen_enc);
+    vmaxpd(dst, atmp, btmp, vlen_enc);
+    evcmppd(ktmp, k0, atmp, atmp, Assembler::UNORD_Q, vlen_enc);
+    evmovdquq(dst, ktmp, atmp, merge, vlen_enc);
   }
 }
 
@@ -997,102 +1063,126 @@ void C2_MacroAssembler::vextendwd(bool sign, XMMRegister dst, XMMRegister src, i
   }
 }
 
-void C2_MacroAssembler::vshiftd(int opcode, XMMRegister dst, XMMRegister src) {
-  if (opcode == Op_RShiftVI) {
-    psrad(dst, src);
-  } else if (opcode == Op_LShiftVI) {
-    pslld(dst, src);
-  } else {
-    assert((opcode == Op_URShiftVI),"opcode should be Op_URShiftVI");
-    psrld(dst, src);
+void C2_MacroAssembler::vshiftd(int opcode, XMMRegister dst, XMMRegister shift) {
+  switch (opcode) {
+    case Op_RShiftVI:  psrad(dst, shift); break;
+    case Op_LShiftVI:  pslld(dst, shift); break;
+    case Op_URShiftVI: psrld(dst, shift); break;
+
+    default: assert(false, "%s", NodeClassNames[opcode]);
   }
 }
 
-void C2_MacroAssembler::vshiftd(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len) {
-  if (opcode == Op_RShiftVI) {
-    vpsrad(dst, nds, src, vector_len);
-  } else if (opcode == Op_LShiftVI) {
-    vpslld(dst, nds, src, vector_len);
-  } else {
-    assert((opcode == Op_URShiftVI),"opcode should be Op_URShiftVI");
-    vpsrld(dst, nds, src, vector_len);
+void C2_MacroAssembler::vshiftd(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc) {
+  switch (opcode) {
+    case Op_RShiftVI:  vpsrad(dst, src, shift, vlen_enc); break;
+    case Op_LShiftVI:  vpslld(dst, src, shift, vlen_enc); break;
+    case Op_URShiftVI: vpsrld(dst, src, shift, vlen_enc); break;
+
+    default: assert(false, "%s", NodeClassNames[opcode]);
   }
 }
 
-void C2_MacroAssembler::vshiftw(int opcode, XMMRegister dst, XMMRegister src) {
-  if ((opcode == Op_RShiftVS) || (opcode == Op_RShiftVB)) {
-    psraw(dst, src);
-  } else if ((opcode == Op_LShiftVS) || (opcode == Op_LShiftVB)) {
-    psllw(dst, src);
-  } else {
-    assert(((opcode == Op_URShiftVS) || (opcode == Op_URShiftVB)),"opcode should be one of Op_URShiftVS or Op_URShiftVB");
-    psrlw(dst, src);
+void C2_MacroAssembler::vshiftw(int opcode, XMMRegister dst, XMMRegister shift) {
+  switch (opcode) {
+    case Op_RShiftVB:  // fall-through
+    case Op_RShiftVS:  psraw(dst, shift); break;
+
+    case Op_LShiftVB:  // fall-through
+    case Op_LShiftVS:  psllw(dst, shift);   break;
+
+    case Op_URShiftVS: // fall-through
+    case Op_URShiftVB: psrlw(dst, shift);  break;
+
+    default: assert(false, "%s", NodeClassNames[opcode]);
   }
 }
 
-void C2_MacroAssembler::vshiftw(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len) {
-  if ((opcode == Op_RShiftVS) || (opcode == Op_RShiftVB)) {
-    vpsraw(dst, nds, src, vector_len);
-  } else if ((opcode == Op_LShiftVS) || (opcode == Op_LShiftVB)) {
-    vpsllw(dst, nds, src, vector_len);
-  } else {
-    assert(((opcode == Op_URShiftVS) || (opcode == Op_URShiftVB)),"opcode should be one of Op_URShiftVS or Op_URShiftVB");
-    vpsrlw(dst, nds, src, vector_len);
+void C2_MacroAssembler::vshiftw(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc) {
+  switch (opcode) {
+    case Op_RShiftVB:  // fall-through
+    case Op_RShiftVS:  vpsraw(dst, src, shift, vlen_enc); break;
+
+    case Op_LShiftVB:  // fall-through
+    case Op_LShiftVS:  vpsllw(dst, src, shift, vlen_enc); break;
+
+    case Op_URShiftVS: // fall-through
+    case Op_URShiftVB: vpsrlw(dst, src, shift, vlen_enc); break;
+
+    default: assert(false, "%s", NodeClassNames[opcode]);
   }
 }
 
-void C2_MacroAssembler::vshiftq(int opcode, XMMRegister dst, XMMRegister src) {
-  if (opcode == Op_RShiftVL) {
-    psrlq(dst, src);  // using srl to implement sra on pre-avs512 systems
-  } else if (opcode == Op_LShiftVL) {
-    psllq(dst, src);
-  } else {
-    assert((opcode == Op_URShiftVL),"opcode should be Op_URShiftVL");
-    psrlq(dst, src);
+void C2_MacroAssembler::vshiftq(int opcode, XMMRegister dst, XMMRegister shift) {
+  switch (opcode) {
+    case Op_RShiftVL:  psrlq(dst, shift); break; // using srl to implement sra on pre-avs512 systems
+    case Op_LShiftVL:  psllq(dst, shift); break;
+    case Op_URShiftVL: psrlq(dst, shift); break;
+
+    default: assert(false, "%s", NodeClassNames[opcode]);
   }
 }
 
-void C2_MacroAssembler::vshiftq(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len) {
-  if (opcode == Op_RShiftVL) {
-    evpsraq(dst, nds, src, vector_len);
-  } else if (opcode == Op_LShiftVL) {
-    vpsllq(dst, nds, src, vector_len);
-  } else {
-    assert((opcode == Op_URShiftVL),"opcode should be Op_URShiftVL");
-    vpsrlq(dst, nds, src, vector_len);
+void C2_MacroAssembler::vshiftq(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc) {
+  switch (opcode) {
+    case Op_RShiftVL: evpsraq(dst, src, shift, vlen_enc); break;
+    case Op_LShiftVL:  vpsllq(dst, src, shift, vlen_enc); break;
+    case Op_URShiftVL: vpsrlq(dst, src, shift, vlen_enc); break;
+
+    default: assert(false, "%s", NodeClassNames[opcode]);
   }
 }
 
-void C2_MacroAssembler::varshiftd(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len) {
-  if (opcode == Op_VRShiftV) {
-    vpsravd(dst, nds, src, vector_len);
-  } else if (opcode == Op_VLShiftV) {
-    vpsllvd(dst, nds, src, vector_len);
-  } else {
-    assert((opcode == Op_VURShiftV),"opcode should be Op_URShiftVI");
-    vpsrlvd(dst, nds, src, vector_len);
+void C2_MacroAssembler::varshiftd(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc) {
+  switch (opcode) {
+    case Op_VRShiftV:  vpsravd(dst, src, shift, vlen_enc); break;
+    case Op_VLShiftV:  vpsllvd(dst, src, shift, vlen_enc); break;
+    case Op_VURShiftV: vpsrlvd(dst, src, shift, vlen_enc); break;
+
+    default: assert(false, "%s", NodeClassNames[opcode]);
   }
 }
 
-void C2_MacroAssembler::varshiftw(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len) {
-  if ((opcode == Op_VRShiftV) || (opcode == Op_VRShiftV)) {
-    evpsravw(dst, nds, src, vector_len);
-  } else if ((opcode == Op_VLShiftV) || (opcode == Op_VLShiftV)) {
-    evpsllvw(dst, nds, src, vector_len);
-  } else {
-    assert(((opcode == Op_VURShiftV) || (opcode == Op_VURShiftV)),"opcode should be one of Op_URShiftVS or Op_URShiftVB");
-    evpsrlvw(dst, nds, src, vector_len);
+void C2_MacroAssembler::varshiftw(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc) {
+  switch (opcode) {
+    case Op_VRShiftV:  evpsravw(dst, src, shift, vlen_enc); break;
+    case Op_VLShiftV:  evpsllvw(dst, src, shift, vlen_enc); break;
+    case Op_VURShiftV: evpsrlvw(dst, src, shift, vlen_enc); break;
+
+    default: assert(false, "%s", NodeClassNames[opcode]);
   }
 }
 
-void C2_MacroAssembler::varshiftq(int opcode, XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len) {
-  if (opcode == Op_VRShiftV) {
-    evpsravq(dst, nds, src, vector_len);
-  } else if (opcode == Op_VLShiftV) {
-    vpsllvq(dst, nds, src, vector_len);
-  } else {
-    assert((opcode == Op_VURShiftV),"opcode should be Op_URShiftVL");
-    vpsrlvq(dst, nds, src, vector_len);
+void C2_MacroAssembler::varshiftq(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc, XMMRegister tmp) {
+  assert(UseAVX >= 2, "required");
+  switch (opcode) {
+    case Op_VRShiftV: {
+      if (UseAVX > 2) {
+        assert(tmp == xnoreg, "not used");
+        if (!VM_Version::supports_avx512vl()) {
+          vlen_enc = Assembler::AVX_512bit;
+        }
+        evpsravq(dst, src, shift, vlen_enc);
+      } else {
+        vmovdqu(tmp, ExternalAddress(StubRoutines::x86::vector_long_sign_mask()));
+        vpsrlvq(dst, src, shift, vlen_enc);
+        vpsrlvq(tmp, tmp, shift, vlen_enc);
+        vpxor(dst, dst, tmp, vlen_enc);
+        vpsubq(dst, dst, tmp, vlen_enc);
+      }
+      break;
+    }
+    case Op_VLShiftV: {
+      assert(tmp == xnoreg, "not used");
+      vpsllvq(dst, src, shift, vlen_enc);
+      break;
+    }
+    case Op_VURShiftV: {
+      assert(tmp == xnoreg, "not used");
+      vpsrlvq(dst, src, shift, vlen_enc);
+      break;
+    }
+    default: assert(false, "%s", NodeClassNames[opcode]);
   }
 }
 
@@ -1226,6 +1316,49 @@ void C2_MacroAssembler::evscatter(BasicType typ, Register base, XMMRegister idx,
   }
 }
 
+void C2_MacroAssembler::load_vector_mask(XMMRegister dst, XMMRegister src, int vlen_in_bytes, BasicType elem_bt) {
+  if (vlen_in_bytes <= 16) {
+    pxor (dst, dst);
+    psubb(dst, src);
+    switch (elem_bt) {
+      case T_BYTE:   /* nothing to do */ break;
+      case T_SHORT:  pmovsxbw(dst, dst); break;
+      case T_INT:    pmovsxbd(dst, dst); break;
+      case T_FLOAT:  pmovsxbd(dst, dst); break;
+      case T_LONG:   pmovsxbq(dst, dst); break;
+      case T_DOUBLE: pmovsxbq(dst, dst); break;
+
+      default: assert(false, "%s", type2name(elem_bt));
+    }
+  } else {
+    int vlen_enc = vector_length_encoding(vlen_in_bytes);
+
+    vpxor (dst, dst, dst, vlen_enc);
+    vpsubb(dst, dst, src, vlen_enc);
+    switch (elem_bt) {
+      case T_BYTE:   /* nothing to do */            break;
+      case T_SHORT:  vpmovsxbw(dst, dst, vlen_enc); break;
+      case T_INT:    vpmovsxbd(dst, dst, vlen_enc); break;
+      case T_FLOAT:  vpmovsxbd(dst, dst, vlen_enc); break;
+      case T_LONG:   vpmovsxbq(dst, dst, vlen_enc); break;
+      case T_DOUBLE: vpmovsxbq(dst, dst, vlen_enc); break;
+
+      default: assert(false, "%s", type2name(elem_bt));
+    }
+  }
+}
+
+void C2_MacroAssembler::load_iota_indices(XMMRegister dst, Register scratch, int vlen_in_bytes) {
+  ExternalAddress addr(StubRoutines::x86::vector_iota_indices());
+  if (vlen_in_bytes <= 16) {
+    movdqu(dst, addr, scratch);
+  } else if (vlen_in_bytes == 32) {
+    vmovdqu(dst, addr, scratch);
+  } else {
+    assert(vlen_in_bytes == 64, "%d", vlen_in_bytes);
+    evmovdqub(dst, k0, addr, false /*merge*/, Assembler::AVX_512bit, scratch);
+  }
+}
 // Reductions for vectors of bytes, shorts, ints, longs, floats, and doubles.
 
 void C2_MacroAssembler::reduce_operation_128(BasicType typ, int opcode, XMMRegister dst, XMMRegister src) {
@@ -1688,65 +1821,78 @@ void C2_MacroAssembler::reduce8D(int opcode, XMMRegister dst, XMMRegister src, X
   reduce4D(opcode, dst, vtmp1, vtmp1, vtmp2);
 }
 
-void C2_MacroAssembler::reduceFloatMinMax(bool is_min, int log2vlen, bool dstvalid, XMMRegister dst, XMMRegister src,
-                                       XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
-                                       XMMRegister xmm_0, XMMRegister xmm_1) {
-  int permconst [] = {1, 14};
+void C2_MacroAssembler::reduceFloatMinMax(int opcode, int vlen, bool is_dst_valid,
+                                          XMMRegister dst, XMMRegister src,
+                                          XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
+                                          XMMRegister xmm_0, XMMRegister xmm_1) {
+  int permconst[] = {1, 14};
   XMMRegister wsrc = src;
   XMMRegister wdst = xmm_0;
   XMMRegister wtmp = (xmm_1 == xnoreg) ? xmm_0: xmm_1;
-  int vector_len = 0;
-  if (log2vlen == 4) vector_len = 1;
-  for (int i = log2vlen-1; i >=0; i--) {
-    if ((i == 0) && !dstvalid) wdst = dst;
-    if (i == 3) vextracti64x4_high(wtmp, wsrc);
-    else if (i == 2) vextracti128_high(wtmp, wsrc);
-    else vpermilps(wtmp, wsrc, permconst[i], vector_len);
-    vminmax(wdst, wtmp, wsrc, tmp, atmp, btmp, true, is_min, vector_len);
-    wsrc = wdst;
-    vector_len = 0;
+
+  int vlen_enc = Assembler::AVX_128bit;
+  if (vlen == 16) {
+    vlen_enc = Assembler::AVX_256bit;
   }
-  if (dstvalid) {
-    vminmax(dst, wdst, dst, tmp, atmp, btmp, true, is_min, vector_len);
+
+  for (int i = log2(vlen) - 1; i >=0; i--) {
+    if (i == 0 && !is_dst_valid) {
+      wdst = dst;
+    }
+    if (i == 3) {
+      vextracti64x4_high(wtmp, wsrc);
+    } else if (i == 2) {
+      vextracti128_high(wtmp, wsrc);
+    } else { // i = [0,1]
+      vpermilps(wtmp, wsrc, permconst[i], vlen_enc);
+    }
+    vminmax_fp(opcode, T_FLOAT, wdst, wtmp, wsrc, tmp, atmp, btmp, vlen_enc);
+    wsrc = wdst;
+    vlen_enc = Assembler::AVX_128bit;
+  }
+  if (is_dst_valid) {
+    vminmax_fp(opcode, T_FLOAT, dst, wdst, dst, tmp, atmp, btmp, Assembler::AVX_128bit);
   }
 }
 
-void C2_MacroAssembler::reduceDoubleMinMax(bool is_min, int log2vlen, bool dstvalid, XMMRegister dst, XMMRegister src,
+void C2_MacroAssembler::reduceDoubleMinMax(int opcode, int vlen, bool is_dst_valid, XMMRegister dst, XMMRegister src,
                                         XMMRegister tmp, XMMRegister atmp, XMMRegister btmp,
                                         XMMRegister xmm_0, XMMRegister xmm_1) {
   XMMRegister wsrc = src;
   XMMRegister wdst = xmm_0;
   XMMRegister wtmp = (xmm_1 == xnoreg) ? xmm_0: xmm_1;
-  int vector_len = 0;
-  if (log2vlen == 3) vector_len = 1;
-  for (int i = log2vlen-1; i >=0; i--) {
-    if ((i == 0) && !dstvalid) wdst = dst;
-    if (i == 2) vextracti64x4_high(wtmp, wsrc);
-    else if (i == 1) vextracti128_high(wtmp, wsrc);
-    else vpermilpd(wtmp, wsrc, 1, vector_len);
-    vminmax(wdst, wtmp, wsrc, tmp, atmp, btmp, false, is_min, vector_len);
-    wsrc = wdst;
-    vector_len = 0;
+  int vlen_enc = Assembler::AVX_128bit;
+  if (vlen == 8) {
+    vlen_enc = Assembler::AVX_256bit;
   }
-  if (dstvalid) {
-    vminmax(dst, wdst, dst, tmp, atmp, btmp, false, is_min, vector_len);
+  for (int i = log2(vlen) - 1; i >=0; i--) {
+    if (i == 0 && !is_dst_valid) {
+      wdst = dst;
+    }
+    if (i == 1) {
+      vextracti128_high(wtmp, wsrc);
+    } else if (i == 2) {
+      vextracti64x4_high(wtmp, wsrc);
+    } else {
+      assert(i == 0, "%d", i);
+      vpermilpd(wtmp, wsrc, 1, vlen_enc);
+    }
+    vminmax_fp(opcode, T_DOUBLE, wdst, wtmp, wsrc, tmp, atmp, btmp, vlen_enc);
+    wsrc = wdst;
+    vlen_enc = Assembler::AVX_128bit;
+  }
+  if (is_dst_valid) {
+    vminmax_fp(opcode, T_DOUBLE, dst, wdst, dst, tmp, atmp, btmp, Assembler::AVX_128bit);
   }
 }
 
-void C2_MacroAssembler::extract(BasicType typ, Register dst, XMMRegister src, int idx) {
-  switch(typ) {
-    case T_BYTE:
-      pextrb(dst, src, idx);
-      break;
-    case T_SHORT:
-      pextrw(dst, src, idx);
-      break;
-    case T_INT:
-      pextrd(dst, src, idx);
-      break;
-    case T_LONG:
-      pextrq(dst, src, idx);
-      break;
+void C2_MacroAssembler::extract(BasicType bt, Register dst, XMMRegister src, int idx) {
+  switch (bt) {
+    case T_BYTE:  pextrb(dst, src, idx); break;
+    case T_SHORT: pextrw(dst, src, idx); break;
+    case T_INT:   pextrd(dst, src, idx); break;
+    case T_LONG:  pextrq(dst, src, idx); break;
+
     default:
       assert(false,"Should not reach here.");
       break;

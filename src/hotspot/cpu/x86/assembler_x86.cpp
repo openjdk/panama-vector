@@ -1938,18 +1938,18 @@ void Assembler::pabsd(XMMRegister dst, XMMRegister src) {
 }
 
 void Assembler::vpabsb(XMMRegister dst, XMMRegister src, int vector_len) {
-  assert(vector_len == AVX_128bit? VM_Version::supports_avx() :
-  vector_len == AVX_256bit? VM_Version::supports_avx2() :
-  vector_len == AVX_512bit? VM_Version::supports_avx512bw() : 0, "");
+  assert(vector_len == AVX_128bit ? VM_Version::supports_avx()      :
+         vector_len == AVX_256bit ? VM_Version::supports_avx2()     :
+         vector_len == AVX_512bit ? VM_Version::supports_avx512bw() : false, "not supported");
   InstructionAttr attributes(vector_len, /* rex_w */ false, /* legacy_mode */ _legacy_mode_bw, /* no_mask_reg */ true, /* uses_vl */ true);
   int encode = vex_prefix_and_encode(dst->encoding(), 0, src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
   emit_int16(0x1C, (0xC0 | encode));
 }
 
 void Assembler::vpabsw(XMMRegister dst, XMMRegister src, int vector_len) {
-  assert(vector_len == AVX_128bit? VM_Version::supports_avx() :
-  vector_len == AVX_256bit? VM_Version::supports_avx2() :
-  vector_len == AVX_512bit? VM_Version::supports_avx512bw() : 0, "");
+  assert(vector_len == AVX_128bit ? VM_Version::supports_avx()      :
+         vector_len == AVX_256bit ? VM_Version::supports_avx2()     :
+         vector_len == AVX_512bit ? VM_Version::supports_avx512bw() : false, "");
   InstructionAttr attributes(vector_len, /* rex_w */ false, /* legacy_mode */ _legacy_mode_bw, /* no_mask_reg */ true, /* uses_vl */ true);
   int encode = vex_prefix_and_encode(dst->encoding(), 0, src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
   emit_int16(0x1D, (0xC0 | encode));
@@ -3590,6 +3590,7 @@ void Assembler::vpackusdw(XMMRegister dst, XMMRegister nds, XMMRegister src, int
 
 void Assembler::vpermq(XMMRegister dst, XMMRegister src, int imm8, int vector_len) {
   assert(VM_Version::supports_avx2(), "");
+  assert(vector_len != AVX_128bit, "");
   // VEX.256.66.0F3A.W1 00 /r ib
   InstructionAttr attributes(vector_len, /* rex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ true, /* uses_vl */ true);
   int encode = vex_prefix_and_encode(dst->encoding(), 0, src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_3A, &attributes);
@@ -3597,7 +3598,8 @@ void Assembler::vpermq(XMMRegister dst, XMMRegister src, int imm8, int vector_le
 }
 
 void Assembler::vpermq(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len) {
-  assert(UseAVX > 2, "requires AVX512F");
+  assert(vector_len == AVX_256bit ? VM_Version::supports_avx512vl() :
+         vector_len == AVX_512bit ? VM_Version::supports_evex()     : false, "not supported");
   InstructionAttr attributes(vector_len, /* rex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ true, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
   int encode = vex_prefix_and_encode(dst->encoding(), nds->encoding(), src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
@@ -3613,7 +3615,9 @@ void Assembler::vpermb(XMMRegister dst, XMMRegister nds, XMMRegister src, int ve
 }
 
 void Assembler::vpermw(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len) {
-  assert(VM_Version::supports_avx512vlbw(), "");
+  assert(vector_len == AVX_128bit ? VM_Version::supports_avx512vlbw() :
+         vector_len == AVX_256bit ? VM_Version::supports_avx512vlbw() :
+         vector_len == AVX_512bit ? VM_Version::supports_avx512bw()   : false, "not supported");
   InstructionAttr attributes(vector_len, /* rex_w */ true, /* legacy_mode */ _legacy_mode_bw, /* no_mask_reg */ true, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
   int encode = vex_prefix_and_encode(dst->encoding(), nds->encoding(), src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
@@ -6901,6 +6905,7 @@ void Assembler::evpsravw(XMMRegister dst, XMMRegister nds, XMMRegister src, int 
 
 void Assembler::evpsravq(XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len) {
   assert(UseAVX > 2, "requires AVX512");
+  assert(vector_len == Assembler::AVX_512bit || VM_Version::supports_avx512vl(), "requires AVX512VL");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ true, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
   int encode = vex_prefix_and_encode(dst->encoding(), src->encoding(), shift->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
