@@ -77,7 +77,7 @@ class VectorSupport : AllStatic {
 
     // Convert
     VECTOR_OP_CAST        = 17,
-    VECTOR_OP_REINTERPRET = 18,
+    VECTOR_OP_REINTERPRET = 18
   };
 
   static int vop2ideal(jint vop, BasicType bt);
