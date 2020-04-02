@@ -24,7 +24,7 @@
 #include "precompiled.hpp"
 #include "memory/allocation.inline.hpp"
 #include "opto/connode.hpp"
-#include "opto/cfgnode.hpp"
+#include "opto/subnode.hpp"
 #include "opto/vectornode.hpp"
 #include "utilities/powerOfTwo.hpp"
 

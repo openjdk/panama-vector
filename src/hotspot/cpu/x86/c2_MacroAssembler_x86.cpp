@@ -1463,8 +1463,8 @@ void C2_MacroAssembler::reduce_operation_256(BasicType typ, int opcode, XMMRegis
 }
 
 void C2_MacroAssembler::reduce_fp(int opcode, int vlen,
-                               XMMRegister dst, XMMRegister src,
-                               XMMRegister vtmp1, XMMRegister vtmp2) {
+                                  XMMRegister dst, XMMRegister src,
+                                  XMMRegister vtmp1, XMMRegister vtmp2) {
   switch (opcode) {
     case Op_AddReductionVF:
     case Op_MulReductionVF:

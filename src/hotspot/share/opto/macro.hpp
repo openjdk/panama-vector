@@ -31,8 +31,6 @@ class  AllocateNode;
 class  AllocateArrayNode;
 class  CallNode;
 class  SubTypeCheckNode;
-class  VectorBoxNode;
-class  VectorUnboxNode;
 class  Node;
 class  PhaseIterGVN;
 

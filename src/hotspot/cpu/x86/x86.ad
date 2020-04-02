@@ -1508,7 +1508,7 @@ const bool Matcher::match_rule_supported(int opcode) {
 
 // Identify extra cases that we might want to provide match rules for vector nodes and
 // other intrinsics guarded with vector length (vlen) and element type (bt).
-const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType bt, int op_arity) {
+const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType bt) {
   if (!match_rule_supported(opcode)) {
     return false;
   }
@@ -1931,6 +1931,31 @@ bool Matcher::clone_address_expressions(AddPNode* m, Matcher::MStack& mstack, Ve
 void Compile::reshape_address(AddPNode* addp) {
 }
 
+static inline Assembler::ComparisonPredicate booltest_pred_to_comparison_pred(int bt) {
+  switch (bt) {
+    case BoolTest::eq: return Assembler::eq;
+    case BoolTest::ne: return Assembler::neq;
+    case BoolTest::le: return Assembler::le;
+    case BoolTest::ge: return Assembler::nlt;
+    case BoolTest::lt: return Assembler::lt;
+    case BoolTest::gt: return Assembler::nle;
+    default : ShouldNotReachHere(); return Assembler::_false;
+  }
+}
+
+static inline Assembler::ComparisonPredicateFP booltest_pred_to_comparison_pred_fp(int bt) {
+  switch (bt) {
+  case BoolTest::eq: return Assembler::EQ_OQ;  // ordered non-signaling
+  // As per JLS 15.21.1, != of NaNs is true. Thus use unordered compare.
+  case BoolTest::ne: return Assembler::NEQ_UQ; // unordered non-signaling
+  case BoolTest::le: return Assembler::LE_OQ;  // ordered non-signaling
+  case BoolTest::ge: return Assembler::GE_OQ;  // ordered non-signaling
+  case BoolTest::lt: return Assembler::LT_OQ;  // ordered non-signaling
+  case BoolTest::gt: return Assembler::GT_OQ;  // ordered non-signaling
+  default: ShouldNotReachHere(); return Assembler::FALSE_OS;
+  }
+}
+
 // Helper methods for MachSpillCopyNode::implementation().
 static int vec_mov_helper(CodeBuffer *cbuf, bool do_size, int src_lo, int dst_lo,
                           int src_hi, int dst_hi, uint ireg, outputStream* st) {
@@ -2204,7 +2229,6 @@ static inline jlong replicate8_imm(int con, int width) {
   return val;
 }
 
-
 #ifndef PRODUCT
   void MachNopNode::format(PhaseRegAlloc*, outputStream* st) const {
     st->print("nop \t# %d bytes pad for loops and calls", _count);
@@ -2234,8 +2258,6 @@ static inline jlong replicate8_imm(int con, int width) {
   uint MachBreakpointNode::size(PhaseRegAlloc* ra_) const {
     return MachNode::size(ra_);
   }
-
-
 
 %}
 
@@ -6632,7 +6654,7 @@ instruct vcmpFD(legVec dst, legVec src1, legVec src2, immI8 cond) %{
   format %{ "vector_compare $dst,$src1,$src2,$cond\t!" %}
   ins_encode %{
     int vlen_enc = vector_length_encoding(this, $src1);
-    Assembler::ComparisonPredicateFP cmp = Assembler::booltest_pred_to_comparison_pred_fp($cond$$constant);
+    Assembler::ComparisonPredicateFP cmp = booltest_pred_to_comparison_pred_fp($cond$$constant);
     if (vector_element_basic_type(this, $src1) == T_FLOAT)
       __ vcmpps($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
     else
@@ -6649,7 +6671,7 @@ instruct evcmpFD(vec dst, vec src1, vec src2, immI8 cond, rRegP scratch) %{
   format %{ "vector_compare $dst,$src1,$src2,$cond\t! using $scratch as TEMP" %}
   ins_encode %{
     int vlen_enc = Assembler::AVX_512bit;
-    Assembler::ComparisonPredicateFP cmp = Assembler::booltest_pred_to_comparison_pred_fp($cond$$constant);
+    Assembler::ComparisonPredicateFP cmp = booltest_pred_to_comparison_pred_fp($cond$$constant);
     KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
     KRegister mask = k0; // The comparison itself is not being masked.
     if (vector_element_basic_type(this, $src1) == T_FLOAT) {
@@ -6672,7 +6694,7 @@ instruct vcmp(legVec dst, legVec src1, legVec src2, immI8 cond, rRegP scratch) %
   format %{ "vector_compare $dst,$src1,$src2,$cond\t! using $scratch as TEMP" %}
   ins_encode %{
     int vlen_enc = vector_length_encoding(this, $src1);
-    Assembler::ComparisonPredicate cmp = Assembler::booltest_pred_to_comparison_pred($cond$$constant);
+    Assembler::ComparisonPredicate cmp = booltest_pred_to_comparison_pred($cond$$constant);
     Assembler::Width ww = widthForType(vector_element_basic_type(this, $src1));
     __ vpcmpCCW($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, ww, vlen_enc, $scratch$$Register);
   %}
@@ -6689,7 +6711,7 @@ instruct evcmp(vec dst, vec src1, vec src2, immI8 cond, rRegP scratch) %{
     assert(UseAVX > 2, "required");
 
     int vlen_enc = Assembler::AVX_512bit;
-    Assembler::ComparisonPredicate cmp = Assembler::booltest_pred_to_comparison_pred($cond$$constant);
+    Assembler::ComparisonPredicate cmp = booltest_pred_to_comparison_pred($cond$$constant);
     KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
     KRegister mask = k0; // The comparison itself is not being masked.
     bool merge = false;

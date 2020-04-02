@@ -7260,10 +7260,10 @@ address generate_avx_ghash_processBlocks() {
     }
 #endif // __VECTOR_API_MATH_INTRINSICS_COMMON
 #endif // COMPILER2
+
     if (UseVectorizedMismatchIntrinsic) {
       StubRoutines::_vectorizedMismatch = generate_vectorizedMismatch();
     }
-
   }
 
  public:

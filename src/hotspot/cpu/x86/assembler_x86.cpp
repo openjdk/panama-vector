@@ -29,7 +29,6 @@
 #include "gc/shared/collectedHeap.inline.hpp"
 #include "interpreter/interpreter.hpp"
 #include "memory/resourceArea.hpp"
-#include "opto/subnode.hpp"
 #include "prims/methodHandles.hpp"
 #include "runtime/biasedLocking.hpp"
 #include "runtime/objectMonitor.hpp"
@@ -204,31 +203,6 @@ Address Address::make_raw(int base, int index, int scale, int disp, relocInfo::r
 }
 
 // Implementation of Assembler
-
-Assembler::ComparisonPredicate Assembler::booltest_pred_to_comparison_pred(int bt) {
-  switch (bt) {
-    case BoolTest::eq: return eq;
-    case BoolTest::ne: return neq;
-    case BoolTest::le: return le;
-    case BoolTest::ge: return nlt;
-    case BoolTest::lt: return lt;
-    case BoolTest::gt: return nle;
-    default : ShouldNotReachHere(); return _false;
-  }
-}
-
-Assembler::ComparisonPredicateFP Assembler::booltest_pred_to_comparison_pred_fp(int bt) {
-  switch (bt) {
-  case BoolTest::eq: return EQ_OQ;  // ordered non-signaling
-  // As per JLS 15.21.1, != of NaNs is true. Thus use unordered compare.
-  case BoolTest::ne: return NEQ_UQ; // unordered non-signaling
-  case BoolTest::le: return LE_OQ;  // ordered non-signaling
-  case BoolTest::ge: return GE_OQ;  // ordered non-signaling
-  case BoolTest::lt: return LT_OQ;  // ordered non-signaling
-  case BoolTest::gt: return GT_OQ;  // ordered non-signaling
-  default: ShouldNotReachHere(); return FALSE_OS;
-  }
-}
 
 int AbstractAssembler::code_fill_byte() {
   return (u_char)'\xF4'; // hlt
@@ -1040,7 +1014,6 @@ address Assembler::locate_operand(address inst, WhichOperand which) {
     return ip;
 
   case 0xF0:                    // Lock
-    assert(os::is_MP(), "only on MP");
     goto again_after_prefix;
 
   case 0xF3:                    // For SSE

@@ -2082,15 +2082,6 @@ bool Matcher::is_bmi_pattern(Node *n, Node *m) {
 }
 #endif // X86
 
-bool Matcher::is_vshift_con(Node *n, Node *m) {
-  if (n != NULL && m != NULL &&
-      VectorNode::is_vshift(n) &&
-      VectorNode::is_vshift_cnt(m) && m->in(1)->is_Con()) {
-    return true;
-  }
-  return false;
-}
-
 bool Matcher::is_vshift_con_pattern(Node *n, Node *m) {
   if (n != NULL && m != NULL) {
     return VectorNode::is_vector_shift(n) &&

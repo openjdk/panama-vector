@@ -11231,7 +11231,6 @@ instruct string_indexof_conL(rdi_RegP str1, rdx_RegI cnt1, rsi_RegP str2, immI i
                         $cnt1$$Register, $cnt2$$Register,
                         icnt2, $result$$Register,
                         $tmp_vec$$XMMRegister, $tmp$$Register, StrIntrinsicNode::LL);
-
     }
   %}
   ins_pipe( pipe_slow );
@@ -12736,7 +12735,7 @@ instruct CallLeafNoFPDirect(method meth)
 
   ins_cost(300);
   format %{ "call_leaf_nofp,runtime " %}
-  ins_encode(Java_To_Runtime(meth));
+  ins_encode(clear_avx, Java_To_Runtime(meth));
   ins_pipe(pipe_slow);
 %}
 

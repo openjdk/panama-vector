@@ -365,9 +365,6 @@ const size_t minimumSymbolTableSize = 1024;
   develop(bool, DeoptimizeRandom, false,                                    \
           "Deoptimize random frames on random exit from the runtime system")\
                                                                             \
-  product(bool, DisableUnstableIfOpt, false,                                \
-          "Used to disable if speculation which leads to deopt creation")   \
-                                                                            \
   notproduct(bool, ZombieALot, false,                                       \
           "Create zombies (non-entrant) at exit from the runtime system")   \
                                                                             \
