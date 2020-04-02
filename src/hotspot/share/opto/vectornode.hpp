@@ -24,12 +24,11 @@
 #ifndef SHARE_OPTO_VECTORNODE_HPP
 #define SHARE_OPTO_VECTORNODE_HPP
 
+#include "opto/callnode.hpp"
 #include "opto/matcher.hpp"
 #include "opto/memnode.hpp"
 #include "opto/node.hpp"
 #include "opto/opcodes.hpp"
-#include "opto/callnode.hpp"
-#include "opto/subnode.hpp"
 
 //------------------------------VectorNode-------------------------------------
 // Vector Operation

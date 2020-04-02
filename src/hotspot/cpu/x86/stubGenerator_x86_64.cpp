@@ -6648,10 +6648,10 @@ address generate_avx_ghash_processBlocks() {
     }
 #endif // WINDOWS
 #endif // COMPILER2
+
     if (UseVectorizedMismatchIntrinsic) {
       StubRoutines::_vectorizedMismatch = generate_vectorizedMismatch();
     }
-
   }
 
  public:

@@ -2747,7 +2747,6 @@ Node* SuperWord::vector_opd(Node_List* p, int opd_idx) {
       _phase->set_ctrl(cnt, _phase->get_ctrl(opd));
       return cnt;
     }
-
     assert(!opd->is_StoreVector(), "such vector is not expected here");
     if (opd->is_StoreVector()) {
       NOT_PRODUCT(if(is_trace_loop_reverse() || TraceLoopOpts) {tty->print_cr("StoreVector is not expected here");})

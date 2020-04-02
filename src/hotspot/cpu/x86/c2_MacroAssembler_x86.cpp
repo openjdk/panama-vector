@@ -858,21 +858,21 @@ void C2_MacroAssembler::vabsnegf(int opcode, XMMRegister dst, XMMRegister src, i
 void C2_MacroAssembler::pminmax(BasicType typ, XMMRegister dst, XMMRegister src, bool is_min) {
   if (is_min) {
     if (typ == T_BYTE) {
-        pminsb(dst, src);
+      pminsb(dst, src);
     } else if (typ == T_SHORT) {
-        pminsw(dst, src);
+      pminsw(dst, src);
     } else {
-        assert(typ == T_INT,"required.");
-        pminsd(dst, src);
+      assert(typ == T_INT,"required.");
+      pminsd(dst, src);
     }
   } else { // opcode == Op_MaxV
     if (typ == T_BYTE) {
-        pmaxsb(dst, src);
+      pmaxsb(dst, src);
     } else if (typ == T_SHORT) {
-        pmaxsw(dst, src);
+      pmaxsw(dst, src);
     } else {
-        assert(typ == T_INT,"required.");
-        pmaxsd(dst, src);
+      assert(typ == T_INT,"required.");
+      pmaxsd(dst, src);
     }
   }
 }
@@ -880,21 +880,21 @@ void C2_MacroAssembler::pminmax(BasicType typ, XMMRegister dst, XMMRegister src,
 void C2_MacroAssembler::vpminmax(BasicType typ, XMMRegister dst, XMMRegister src1, XMMRegister src2, bool is_min, int vector_len) {
   if (is_min) {
     if (typ == T_BYTE) {
-        vpminsb(dst, src1, src2, vector_len);
+      vpminsb(dst, src1, src2, vector_len);
     } else if (typ == T_SHORT) {
-        vpminsw(dst, src1, src2, vector_len);
+      vpminsw(dst, src1, src2, vector_len);
     } else {
-        assert(typ == T_INT,"required.");
-        vpminsd(dst, src1, src2, vector_len);
+      assert(typ == T_INT,"required.");
+      vpminsd(dst, src1, src2, vector_len);
     }
   } else { // opcode == Op_MaxV
     if (typ == T_BYTE) {
-        vpmaxsb(dst, src1, src2, vector_len);
+      vpmaxsb(dst, src1, src2, vector_len);
     } else if (typ == T_SHORT) {
-        vpmaxsw(dst, src1, src2, vector_len);
+      vpmaxsw(dst, src1, src2, vector_len);
     } else {
-        assert(typ == T_INT,"required.");
-        vpmaxsd(dst, src1, src2, vector_len);
+      assert(typ == T_INT,"required.");
+      vpmaxsd(dst, src1, src2, vector_len);
     }
   }
 }
@@ -1330,8 +1330,8 @@ void C2_MacroAssembler::reduce_operation_256(BasicType typ, int opcode, XMMRegis
 }
 
 void C2_MacroAssembler::reduce_fp(int opcode, int vlen,
-                               XMMRegister dst, XMMRegister src,
-                               XMMRegister vtmp1, XMMRegister vtmp2) {
+                                  XMMRegister dst, XMMRegister src,
+                                  XMMRegister vtmp1, XMMRegister vtmp2) {
   switch (opcode) {
     case Op_AddReductionVF:
     case Op_MulReductionVF:

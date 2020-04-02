@@ -22,20 +22,18 @@
  */
 
 import jdk.incubator.vector.*;
-import jdk.internal.misc.Unsafe;
+import jdk.internal.vm.vector.VectorSupport;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 /**
  * @test
- * @modules jdk.incubator.vector java.base/jdk.internal.misc
+ * @modules jdk.incubator.vector java.base/jdk.internal.vm.vector
  * @run testng PreferredSpeciesTest
  */
 
 public class PreferredSpeciesTest {
-    static final Unsafe U = Unsafe.getUnsafe();
-
     @DataProvider
     public static Object[][] classesProvider() {
         return new Object[][]{
@@ -68,8 +66,8 @@ public class PreferredSpeciesTest {
         }
         VectorShape shape = VectorShape.preferredShape();
 
-        System.out.println("class = "+c+"; preferred shape"+shape+"; preferred species = "+species+"; maxSize="+U.getMaxVectorSize(c));
+        System.out.println("class = "+c+"; preferred shape"+shape+"; preferred species = "+species+"; maxSize="+VectorSupport.getMaxLaneCount(c));
         Assert.assertEquals(species.vectorShape(), shape);
-        Assert.assertEquals(species.length(), Math.min(species.length(), U.getMaxVectorSize(c)));
+        Assert.assertEquals(species.length(), Math.min(species.length(), VectorSupport.getMaxLaneCount(c)));
     }
 }

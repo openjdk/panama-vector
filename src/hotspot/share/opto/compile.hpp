@@ -90,9 +90,6 @@ class nmethod;
 class WarmCallInfo;
 class Node_Stack;
 struct Final_Reshape_Counts;
-class VectorBoxNode;
-class VectorBoxAllocateNode;
-class VectorUnboxNode;
 
 enum LoopOptsMode {
   LoopOptsDefault,

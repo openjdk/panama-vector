@@ -30,9 +30,6 @@
 #include "memory/resourceArea.hpp"
 #include "memory/universe.hpp"
 #include "oops/oop.inline.hpp"
-#ifdef COMPILER2
-#include "opto/matcher.hpp"
-#endif
 
 ciType* ciType::_basic_types[T_CONFLICT+1];
 

@@ -913,9 +913,6 @@ private:
     init_attributes();
   }
 
-  static ComparisonPredicate booltest_pred_to_comparison_pred(int bt);
-  static ComparisonPredicateFP booltest_pred_to_comparison_pred_fp(int bt);
-
   // Decoding
   static address locate_operand(address inst, WhichOperand which);
   static address locate_next_instruction(address inst);
