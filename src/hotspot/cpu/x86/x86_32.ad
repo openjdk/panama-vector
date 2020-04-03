@@ -3383,6 +3383,16 @@ operand immI8() %{
   interface(CONST_INTER);
 %}
 
+operand immU8()
+%{
+  predicate((0 <= n->get_int()) && (n->get_int() <= 255));
+  match(ConI);
+
+  op_cost(5);
+  format %{ %}
+  interface(CONST_INTER);
+%}
+
 operand immI16() %{
   predicate((-32768 <= n->get_int()) && (n->get_int() <= 32767));
   match(ConI);
@@ -7183,7 +7193,7 @@ instruct addI_eReg_imm(rRegI dst, immI src, eFlagsReg cr) %{
   ins_pipe( ialu_reg );
 %}
 
-instruct incI_eReg(rRegI dst, immI1 src, eFlagsReg cr) %{
+instruct incI_eReg(rRegI dst, immI_1 src, eFlagsReg cr) %{
   predicate(UseIncDec);
   match(Set dst (AddI dst src));
   effect(KILL cr);
@@ -7283,7 +7293,7 @@ instruct addI_mem_imm(memory dst, immI src, eFlagsReg cr) %{
   ins_pipe( ialu_mem_imm );
 %}
 
-instruct incI_mem(memory dst, immI1 src, eFlagsReg cr) %{
+instruct incI_mem(memory dst, immI_1 src, eFlagsReg cr) %{
   match(Set dst (StoreI dst (AddI (LoadI dst) src)));
   effect(KILL cr);
 
@@ -8126,7 +8136,7 @@ instruct modL_eReg_imm32( eADXRegL dst, immL32 imm, rRegI tmp, rRegI tmp2, eFlag
 
 // Integer Shift Instructions
 // Shift Left by one
-instruct shlI_eReg_1(rRegI dst, immI1 shift, eFlagsReg cr) %{
+instruct shlI_eReg_1(rRegI dst, immI_1 shift, eFlagsReg cr) %{
   match(Set dst (LShiftI dst shift));
   effect(KILL cr);
 
@@ -8162,7 +8172,7 @@ instruct salI_eReg_CL(rRegI dst, eCXRegI shift, eFlagsReg cr) %{
 %}
 
 // Arithmetic shift right by one
-instruct sarI_eReg_1(rRegI dst, immI1 shift, eFlagsReg cr) %{
+instruct sarI_eReg_1(rRegI dst, immI_1 shift, eFlagsReg cr) %{
   match(Set dst (RShiftI dst shift));
   effect(KILL cr);
 
@@ -8174,7 +8184,7 @@ instruct sarI_eReg_1(rRegI dst, immI1 shift, eFlagsReg cr) %{
 %}
 
 // Arithmetic shift right by one
-instruct sarI_mem_1(memory dst, immI1 shift, eFlagsReg cr) %{
+instruct sarI_mem_1(memory dst, immI_1 shift, eFlagsReg cr) %{
   match(Set dst (StoreI dst (RShiftI (LoadI dst) shift)));
   effect(KILL cr);
   format %{ "SAR    $dst,$shift" %}
@@ -8219,7 +8229,7 @@ instruct sarI_eReg_CL(rRegI dst, eCXRegI shift, eFlagsReg cr) %{
 %}
 
 // Logical shift right by one
-instruct shrI_eReg_1(rRegI dst, immI1 shift, eFlagsReg cr) %{
+instruct shrI_eReg_1(rRegI dst, immI_1 shift, eFlagsReg cr) %{
   match(Set dst (URShiftI dst shift));
   effect(KILL cr);
 
@@ -8540,7 +8550,7 @@ instruct orI_mem_imm(memory dst, immI src, eFlagsReg cr) %{
 
 // ROL/ROR
 // ROL expand
-instruct rolI_eReg_imm1(rRegI dst, immI1 shift, eFlagsReg cr) %{
+instruct rolI_eReg_imm1(rRegI dst, immI_1 shift, eFlagsReg cr) %{
   effect(USE_DEF dst, USE shift, KILL cr);
 
   format %{ "ROL    $dst, $shift" %}
@@ -8569,7 +8579,7 @@ instruct rolI_eReg_CL(ncxRegI dst, eCXRegI shift, eFlagsReg cr) %{
 // end of ROL expand
 
 // ROL 32bit by one once
-instruct rolI_eReg_i1(rRegI dst, immI1 lshift, immI_M1 rshift, eFlagsReg cr) %{
+instruct rolI_eReg_i1(rRegI dst, immI_1 lshift, immI_M1 rshift, eFlagsReg cr) %{
   match(Set dst ( OrI (LShiftI dst lshift) (URShiftI dst rshift)));
 
   expand %{
@@ -8606,7 +8616,7 @@ instruct rolI_eReg_Var_C32(ncxRegI dst, eCXRegI shift, immI_32 c32, eFlagsReg cr
 %}
 
 // ROR expand
-instruct rorI_eReg_imm1(rRegI dst, immI1 shift, eFlagsReg cr) %{
+instruct rorI_eReg_imm1(rRegI dst, immI_1 shift, eFlagsReg cr) %{
   effect(USE_DEF dst, USE shift, KILL cr);
 
   format %{ "ROR    $dst, $shift" %}
@@ -8635,7 +8645,7 @@ instruct rorI_eReg_CL(ncxRegI dst, eCXRegI shift, eFlagsReg cr)%{
 // end of ROR expand
 
 // ROR right once
-instruct rorI_eReg_i1(rRegI dst, immI1 rshift, immI_M1 lshift, eFlagsReg cr) %{
+instruct rorI_eReg_i1(rRegI dst, immI_1 rshift, immI_M1 lshift, eFlagsReg cr) %{
   match(Set dst ( OrI (URShiftI dst rshift) (LShiftI dst lshift)));
 
   expand %{
@@ -13591,7 +13601,7 @@ instruct tlsLoadP(eRegP dst, eFlagsReg cr) %{
 //   match(Set dst (CopyI src));
 // %}
 //
-// instruct incI_eReg(rRegI dst, immI1 src, eFlagsReg cr) %{
+// instruct incI_eReg(rRegI dst, immI_1 src, eFlagsReg cr) %{
 //   match(Set dst (AddI dst src));
 //   effect(KILL cr);
 // %}
