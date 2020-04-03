@@ -4023,7 +4023,7 @@ instruct insert(vec dst, rRegI val, immU8 idx) %{
     BasicType elem_bt = vector_element_basic_type(this);
 
     assert(is_integral_type(elem_bt), "");
-    assert($idx$$constant < vector_length(this), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this), "out of bounds");
 
     __ insert(elem_bt, $dst$$XMMRegister, $val$$Register, $idx$$constant);
   %}
@@ -4042,7 +4042,7 @@ instruct insert32(vec dst, vec src, rRegI val, immU8 idx, vec vtmp) %{
     int log2epr = log2(elem_per_lane);
 
     assert(is_integral_type(elem_bt), "sanity");
-    assert($idx$$constant < vector_length(this), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this), "out of bounds");
 
     uint x_idx = $idx$$constant & right_n_bits(log2epr);
     uint y_idx = ($idx$$constant >> log2epr) & 1;
@@ -4066,7 +4066,7 @@ instruct insert64(vec dst, vec src, rRegI val, immU8 idx, legVec vtmp) %{
     int log2epr = log2(elem_per_lane);
 
     assert(is_integral_type(elem_bt), "");
-    assert($idx$$constant < vector_length(this), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this), "out of bounds");
 
     uint x_idx = $idx$$constant & right_n_bits(log2epr);
     uint y_idx = ($idx$$constant >> log2epr) & 3;
@@ -4085,7 +4085,7 @@ instruct insert2L(vec dst, rRegL val, immU8 idx) %{
   ins_encode %{
     assert(UseSSE >= 4, "required");
     assert(vector_element_basic_type(this) == T_LONG, "");
-    assert($idx$$constant < vector_length(this), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this), "out of bounds");
 
     __ pinsrq($dst$$XMMRegister, $val$$Register, $idx$$constant);
   %}
@@ -4099,7 +4099,7 @@ instruct insert4L(vec dst, vec src, rRegL val, immU8 idx, vec vtmp) %{
   format %{ "vector_insert $dst,$src,$val,$idx\t!using $vtmp as TEMP" %}
   ins_encode %{
     assert(vector_element_basic_type(this) == T_LONG, "");
-    assert($idx$$constant < vector_length(this), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this), "out of bounds");
 
     uint x_idx = $idx$$constant & right_n_bits(1);
     uint y_idx = ($idx$$constant >> 1) & 1;
@@ -4118,7 +4118,7 @@ instruct insert8L(vec dst, vec src, rRegL val, immU8 idx, legVec vtmp) %{
   format %{ "vector_insert $dst,$src,$val,$idx\t!using $vtmp as TEMP" %}
   ins_encode %{
     assert(vector_element_basic_type(this) == T_LONG, "sanity");
-    assert($idx$$constant < vector_length(this), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this), "out of bounds");
 
     uint x_idx = $idx$$constant & right_n_bits(1);
     uint y_idx = ($idx$$constant >> 1) & 3;
@@ -4139,7 +4139,7 @@ instruct insertF(vec dst, regF val, immU8 idx) %{
     assert(UseSSE >= 4, "sanity");
 
     assert(vector_element_basic_type(this) == T_FLOAT, "sanity");
-    assert($idx$$constant < vector_length(this), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this), "out of bounds");
 
     __ insertps($dst$$XMMRegister, $val$$XMMRegister, $idx$$constant);
   %}
@@ -4153,7 +4153,7 @@ instruct vinsertF(vec dst, vec src, regF val, immU8 idx, vec vtmp) %{
   format %{ "vector_insert $dst,$src,$val,$idx\t!using $vtmp as TEMP" %}
   ins_encode %{
     assert(vector_element_basic_type(this) == T_FLOAT, "sanity");
-    assert($idx$$constant < vector_length(this), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this), "out of bounds");
 
     int vlen = vector_length(this);
     uint x_idx = $idx$$constant & right_n_bits(2);
@@ -4183,7 +4183,7 @@ instruct insert2D(vec dst, regD val, immU8 idx, rRegL tmp) %{
   ins_encode %{
     assert(UseSSE >= 4, "sanity");
     assert(vector_element_basic_type(this) == T_DOUBLE, "sanity");
-    assert($idx$$constant < vector_length(this), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this), "out of bounds");
 
     __ movq($tmp$$Register, $val$$XMMRegister);
     __ pinsrq($dst$$XMMRegister, $tmp$$Register, $idx$$constant);
@@ -4198,7 +4198,7 @@ instruct insert4D(vec dst, vec src, regD val, immU8 idx, rRegL tmp, vec vtmp) %{
   format %{ "vector_insert $dst,$src,$val,$idx\t!using $tmp, $vtmp as TEMP" %}
   ins_encode %{
     assert(vector_element_basic_type(this) == T_DOUBLE, "sanity");
-    assert($idx$$constant < vector_length(this), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this), "out of bounds");
 
     uint x_idx = $idx$$constant & right_n_bits(1);
     uint y_idx = ($idx$$constant >> 1) & 1;
@@ -4218,7 +4218,7 @@ instruct insert8D(vec dst, vec src, regD val, immI idx, rRegL tmp, legVec vtmp) 
   format %{ "vector_insert $dst,$src,$val,$idx\t!using $vtmp as TEMP" %}
   ins_encode %{
     assert(vector_element_basic_type(this) == T_DOUBLE, "sanity");
-    assert($idx$$constant < vector_length(this), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this), "out of bounds");
 
     uint x_idx = $idx$$constant & right_n_bits(1);
     uint y_idx = ($idx$$constant >> 1) & 3;
@@ -6754,7 +6754,7 @@ instruct extractI(rRegI dst, legVec src, immU8 idx) %{
   match(Set dst (ExtractB src idx));
 #endif
   ins_encode %{
-    assert($idx$$constant < vector_length(this, $src), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this, $src), "out of bounds");
 
     BasicType elem_bt = vector_element_basic_type(this, $src);
     __ get_elem(elem_bt, $dst$$Register, $src$$XMMRegister, $idx$$constant);
@@ -6772,7 +6772,7 @@ instruct vextractI(rRegI dst, legVec src, immI idx, legVec vtmp) %{
 #endif
   effect(TEMP vtmp);
   ins_encode %{
-    assert($idx$$constant < vector_length(this, $src), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this, $src), "out of bounds");
 
     BasicType elem_bt = vector_element_basic_type(this, $src);
     XMMRegister lane_xmm = __ get_lane(elem_bt, $vtmp$$XMMRegister, $src$$XMMRegister, $idx$$constant);
@@ -6787,7 +6787,7 @@ instruct extractL(rRegL dst, legVec src, immU8 idx) %{
   match(Set dst (ExtractL src idx));
   ins_encode %{
     assert(UseSSE >= 4, "required");
-    assert($idx$$constant < vector_length(this, $src), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this, $src), "out of bounds");
 
     __ get_elem(T_LONG, $dst$$Register, $src$$XMMRegister, $idx$$constant);
   %}
@@ -6800,7 +6800,7 @@ instruct vextractL(rRegL dst, legVec src, immU8 idx, legVec vtmp) %{
   match(Set dst (ExtractL src idx));
   effect(TEMP vtmp);
   ins_encode %{
-    assert($idx$$constant < vector_length(this, $src), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this, $src), "out of bounds");
 
     XMMRegister lane_reg = __ get_lane(T_LONG, $vtmp$$XMMRegister, $src$$XMMRegister, $idx$$constant);
     __ get_elem(T_LONG, $dst$$Register, lane_reg, $idx$$constant);
@@ -6814,7 +6814,7 @@ instruct extractF(legRegF dst, legVec src, immU8 idx, rRegI tmp, legVec vtmp) %{
   match(Set dst (ExtractF src idx));
   effect(TEMP dst, TEMP tmp, TEMP vtmp);
   ins_encode %{
-    assert($idx$$constant < vector_length(this, $src), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this, $src), "out of bounds");
 
     __ get_elem(T_FLOAT, $dst$$XMMRegister, $src$$XMMRegister, $idx$$constant, $tmp$$Register, $vtmp$$XMMRegister);
   %}
@@ -6827,7 +6827,7 @@ instruct vextractF(legRegF dst, legVec src, immU8 idx, rRegI tmp, legVec vtmp) %
   match(Set dst (ExtractF src idx));
   effect(TEMP tmp, TEMP vtmp);
   ins_encode %{
-    assert($idx$$constant < vector_length(this, $src), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this, $src), "out of bounds");
 
     XMMRegister lane_reg = __ get_lane(T_FLOAT, $vtmp$$XMMRegister, $src$$XMMRegister, $idx$$constant);
     __ get_elem(T_FLOAT, $dst$$XMMRegister, lane_reg, $idx$$constant, $tmp$$Register);
@@ -6839,7 +6839,7 @@ instruct extractD(legRegD dst, legVec src, immU8 idx) %{
   predicate(vector_length(n->in(1)) == 2); // src
   match(Set dst (ExtractD src idx));
   ins_encode %{
-    assert($idx$$constant < vector_length(this, $src), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this, $src), "out of bounds");
 
     __ get_elem(T_DOUBLE, $dst$$XMMRegister, $src$$XMMRegister, $idx$$constant);
   %}
@@ -6852,7 +6852,7 @@ instruct vextractD(legRegD dst, legVec src, immU8 idx, legVec vtmp) %{
   match(Set dst (ExtractD src idx));
   effect(TEMP vtmp);
   ins_encode %{
-    assert($idx$$constant < vector_length(this, $src), "out of bounds");
+    assert($idx$$constant < (int)vector_length(this, $src), "out of bounds");
 
     XMMRegister lane_reg = __ get_lane(T_DOUBLE, $vtmp$$XMMRegister, $src$$XMMRegister, $idx$$constant);
     __ get_elem(T_DOUBLE, $dst$$XMMRegister, lane_reg, $idx$$constant);
