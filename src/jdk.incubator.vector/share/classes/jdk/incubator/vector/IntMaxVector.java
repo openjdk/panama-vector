@@ -183,6 +183,7 @@ final class IntMaxVector extends IntVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     IntMaxVector uOp(FUnOp f) {
         return (IntMaxVector) super.uOpTemplate(f);  // specialize
@@ -467,6 +468,7 @@ final class IntMaxVector extends IntVector {
     }
 
 
+    @ForceInline
     @Override
     public int lane(int i) {
         if (i < 0 || i >= VLENGTH) {
@@ -481,6 +483,7 @@ final class IntMaxVector extends IntVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public IntMaxVector withLane(int i, int e) {
         if (i < 0 || i >= VLENGTH) {
@@ -537,6 +540,7 @@ final class IntMaxVector extends IntVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -735,6 +739,7 @@ final class IntMaxVector extends IntVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public IntMaxShuffle rearrange(VectorShuffle<Integer> shuffle) {
             IntMaxShuffle s = (IntMaxShuffle) shuffle;

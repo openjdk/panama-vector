@@ -178,6 +178,7 @@ final class LongMaxVector extends LongVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     LongMaxVector uOp(FUnOp f) {
         return (LongMaxVector) super.uOpTemplate(f);  // specialize
@@ -457,6 +458,7 @@ final class LongMaxVector extends LongVector {
     }
 
 
+    @ForceInline
     @Override
     public long lane(int i) {
         if (i < 0 || i >= VLENGTH) {
@@ -471,6 +473,7 @@ final class LongMaxVector extends LongVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public LongMaxVector withLane(int i, long e) {
         if (i < 0 || i >= VLENGTH) {
@@ -527,6 +530,7 @@ final class LongMaxVector extends LongVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -714,6 +718,7 @@ final class LongMaxVector extends LongVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public LongMaxShuffle rearrange(VectorShuffle<Long> shuffle) {
             LongMaxShuffle s = (LongMaxShuffle) shuffle;

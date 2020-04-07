@@ -473,6 +473,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
      * @see Vector#broadcast(long)
      * @see VectorSpecies#broadcast(long)
      */
+    @ForceInline
     public static FloatVector broadcast(VectorSpecies<Float> species, float e) {
         FloatSpecies vsp = (FloatSpecies) species;
         return vsp.broadcast(e);
@@ -516,6 +517,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
      * @see #broadcast(VectorSpecies,float)
      * @see VectorSpecies#checkValue(long)
      */
+    @ForceInline
     public static FloatVector broadcast(VectorSpecies<Float> species, long e) {
         FloatSpecies vsp = (FloatSpecies) species;
         return vsp.broadcast(e);

@@ -473,6 +473,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
      * @see Vector#broadcast(long)
      * @see VectorSpecies#broadcast(long)
      */
+    @ForceInline
     public static IntVector broadcast(VectorSpecies<Integer> species, int e) {
         IntSpecies vsp = (IntSpecies) species;
         return vsp.broadcast(e);
@@ -516,6 +517,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
      * @see #broadcast(VectorSpecies,int)
      * @see VectorSpecies#checkValue(long)
      */
+    @ForceInline
     public static IntVector broadcast(VectorSpecies<Integer> species, long e) {
         IntSpecies vsp = (IntSpecies) species;
         return vsp.broadcast(e);

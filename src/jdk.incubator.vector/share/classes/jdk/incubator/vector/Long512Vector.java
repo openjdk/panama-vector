@@ -178,6 +178,7 @@ final class Long512Vector extends LongVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Long512Vector uOp(FUnOp f) {
         return (Long512Vector) super.uOpTemplate(f);  // specialize
@@ -457,6 +458,7 @@ final class Long512Vector extends LongVector {
     }
 
 
+    @ForceInline
     @Override
     public long lane(int i) {
         if (i < 0 || i >= VLENGTH) {
@@ -471,6 +473,7 @@ final class Long512Vector extends LongVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public Long512Vector withLane(int i, long e) {
         if (i < 0 || i >= VLENGTH) {
@@ -527,6 +530,7 @@ final class Long512Vector extends LongVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -714,6 +718,7 @@ final class Long512Vector extends LongVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Long512Shuffle rearrange(VectorShuffle<Long> shuffle) {
             Long512Shuffle s = (Long512Shuffle) shuffle;

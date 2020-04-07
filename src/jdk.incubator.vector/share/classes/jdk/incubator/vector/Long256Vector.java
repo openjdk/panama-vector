@@ -178,6 +178,7 @@ final class Long256Vector extends LongVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Long256Vector uOp(FUnOp f) {
         return (Long256Vector) super.uOpTemplate(f);  // specialize
@@ -457,6 +458,7 @@ final class Long256Vector extends LongVector {
     }
 
 
+    @ForceInline
     @Override
     public long lane(int i) {
         if (i < 0 || i >= VLENGTH) {
@@ -471,6 +473,7 @@ final class Long256Vector extends LongVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public Long256Vector withLane(int i, long e) {
         if (i < 0 || i >= VLENGTH) {
@@ -527,6 +530,7 @@ final class Long256Vector extends LongVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -714,6 +718,7 @@ final class Long256Vector extends LongVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Long256Shuffle rearrange(VectorShuffle<Long> shuffle) {
             Long256Shuffle s = (Long256Shuffle) shuffle;

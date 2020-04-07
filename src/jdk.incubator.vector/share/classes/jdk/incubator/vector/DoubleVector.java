@@ -473,6 +473,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
      * @see Vector#broadcast(long)
      * @see VectorSpecies#broadcast(long)
      */
+    @ForceInline
     public static DoubleVector broadcast(VectorSpecies<Double> species, double e) {
         DoubleSpecies vsp = (DoubleSpecies) species;
         return vsp.broadcast(e);
@@ -516,6 +517,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
      * @see #broadcast(VectorSpecies,double)
      * @see VectorSpecies#checkValue(long)
      */
+    @ForceInline
     public static DoubleVector broadcast(VectorSpecies<Double> species, long e) {
         DoubleSpecies vsp = (DoubleSpecies) species;
         return vsp.broadcast(e);

@@ -183,6 +183,7 @@ final class ByteMaxVector extends ByteVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     ByteMaxVector uOp(FUnOp f) {
         return (ByteMaxVector) super.uOpTemplate(f);  // specialize
@@ -467,6 +468,7 @@ final class ByteMaxVector extends ByteVector {
     }
 
 
+    @ForceInline
     @Override
     public byte lane(int i) {
         if (i < 0 || i >= VLENGTH) {
@@ -481,6 +483,7 @@ final class ByteMaxVector extends ByteVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public ByteMaxVector withLane(int i, byte e) {
         if (i < 0 || i >= VLENGTH) {
@@ -537,6 +540,7 @@ final class ByteMaxVector extends ByteVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -724,6 +728,7 @@ final class ByteMaxVector extends ByteVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public ByteMaxShuffle rearrange(VectorShuffle<Byte> shuffle) {
             ByteMaxShuffle s = (ByteMaxShuffle) shuffle;

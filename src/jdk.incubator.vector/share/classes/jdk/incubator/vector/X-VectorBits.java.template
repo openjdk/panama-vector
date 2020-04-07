@@ -185,6 +185,7 @@ final class $vectortype$ extends $abstractvectortype$ {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     $vectortype$ uOp(FUnOp f) {
         return ($vectortype$) super.uOpTemplate(f);  // specialize
@@ -474,6 +475,7 @@ final class $vectortype$ extends $abstractvectortype$ {
 
 
 #if[FP]
+    @ForceInline
     @Override
     public $type$ lane(int i) {
         if (i < 0 || i >= VLENGTH) {
@@ -489,6 +491,7 @@ final class $vectortype$ extends $abstractvectortype$ {
         return $Type$.$bitstype$BitsTo$Fptype$(bits);
     }
 
+    @ForceInline
     @Override
     public $vectortype$ withLane(int i, $type$ e) {
         if (i < 0 || i >= VLENGTH) {
@@ -504,6 +507,7 @@ final class $vectortype$ extends $abstractvectortype$ {
                                 });
     }
 #else[FP]
+    @ForceInline
     @Override
     public $type$ lane(int i) {
         if (i < 0 || i >= VLENGTH) {
@@ -518,6 +522,7 @@ final class $vectortype$ extends $abstractvectortype$ {
                                 });
     }
 
+    @ForceInline
     @Override
     public $vectortype$ withLane(int i, $type$ e) {
         if (i < 0 || i >= VLENGTH) {
@@ -575,6 +580,7 @@ final class $vectortype$ extends $abstractvectortype$ {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -777,6 +783,7 @@ final class $vectortype$ extends $abstractvectortype$ {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public $shuffletype$ rearrange(VectorShuffle<$Boxtype$> shuffle) {
             $shuffletype$ s = ($shuffletype$) shuffle;

@@ -183,6 +183,7 @@ final class Byte256Vector extends ByteVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Byte256Vector uOp(FUnOp f) {
         return (Byte256Vector) super.uOpTemplate(f);  // specialize
@@ -467,6 +468,7 @@ final class Byte256Vector extends ByteVector {
     }
 
 
+    @ForceInline
     @Override
     public byte lane(int i) {
         if (i < 0 || i >= VLENGTH) {
@@ -481,6 +483,7 @@ final class Byte256Vector extends ByteVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public Byte256Vector withLane(int i, byte e) {
         if (i < 0 || i >= VLENGTH) {
@@ -537,6 +540,7 @@ final class Byte256Vector extends ByteVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -724,6 +728,7 @@ final class Byte256Vector extends ByteVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Byte256Shuffle rearrange(VectorShuffle<Byte> shuffle) {
             Byte256Shuffle s = (Byte256Shuffle) shuffle;

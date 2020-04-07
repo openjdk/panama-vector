@@ -183,6 +183,7 @@ final class Short512Vector extends ShortVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Short512Vector uOp(FUnOp f) {
         return (Short512Vector) super.uOpTemplate(f);  // specialize
@@ -467,6 +468,7 @@ final class Short512Vector extends ShortVector {
     }
 
 
+    @ForceInline
     @Override
     public short lane(int i) {
         if (i < 0 || i >= VLENGTH) {
@@ -481,6 +483,7 @@ final class Short512Vector extends ShortVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public Short512Vector withLane(int i, short e) {
         if (i < 0 || i >= VLENGTH) {
@@ -537,6 +540,7 @@ final class Short512Vector extends ShortVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -724,6 +728,7 @@ final class Short512Vector extends ShortVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Short512Shuffle rearrange(VectorShuffle<Short> shuffle) {
             Short512Shuffle s = (Short512Shuffle) shuffle;

@@ -183,6 +183,7 @@ final class Short128Vector extends ShortVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Short128Vector uOp(FUnOp f) {
         return (Short128Vector) super.uOpTemplate(f);  // specialize
@@ -467,6 +468,7 @@ final class Short128Vector extends ShortVector {
     }
 
 
+    @ForceInline
     @Override
     public short lane(int i) {
         if (i < 0 || i >= VLENGTH) {
@@ -481,6 +483,7 @@ final class Short128Vector extends ShortVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public Short128Vector withLane(int i, short e) {
         if (i < 0 || i >= VLENGTH) {
@@ -537,6 +540,7 @@ final class Short128Vector extends ShortVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -724,6 +728,7 @@ final class Short128Vector extends ShortVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Short128Shuffle rearrange(VectorShuffle<Short> shuffle) {
             Short128Shuffle s = (Short128Shuffle) shuffle;

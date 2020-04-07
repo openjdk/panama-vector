@@ -183,6 +183,7 @@ final class ShortMaxVector extends ShortVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     ShortMaxVector uOp(FUnOp f) {
         return (ShortMaxVector) super.uOpTemplate(f);  // specialize
@@ -467,6 +468,7 @@ final class ShortMaxVector extends ShortVector {
     }
 
 
+    @ForceInline
     @Override
     public short lane(int i) {
         if (i < 0 || i >= VLENGTH) {
@@ -481,6 +483,7 @@ final class ShortMaxVector extends ShortVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public ShortMaxVector withLane(int i, short e) {
         if (i < 0 || i >= VLENGTH) {
@@ -537,6 +540,7 @@ final class ShortMaxVector extends ShortVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -724,6 +728,7 @@ final class ShortMaxVector extends ShortVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public ShortMaxShuffle rearrange(VectorShuffle<Short> shuffle) {
             ShortMaxShuffle s = (ShortMaxShuffle) shuffle;

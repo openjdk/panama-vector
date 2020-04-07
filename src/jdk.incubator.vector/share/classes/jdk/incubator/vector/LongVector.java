@@ -473,6 +473,7 @@ public abstract class LongVector extends AbstractVector<Long> {
      * @see Vector#broadcast(long)
      * @see VectorSpecies#broadcast(long)
      */
+    @ForceInline
     public static LongVector broadcast(VectorSpecies<Long> species, long e) {
         LongSpecies vsp = (LongSpecies) species;
         return vsp.broadcast(e);

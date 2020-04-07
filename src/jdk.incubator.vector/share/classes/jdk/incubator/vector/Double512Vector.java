@@ -183,6 +183,7 @@ final class Double512Vector extends DoubleVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Double512Vector uOp(FUnOp f) {
         return (Double512Vector) super.uOpTemplate(f);  // specialize
@@ -461,6 +462,7 @@ final class Double512Vector extends DoubleVector {
     }
 
 
+    @ForceInline
     @Override
     public double lane(int i) {
         if (i < 0 || i >= VLENGTH) {
@@ -476,6 +478,7 @@ final class Double512Vector extends DoubleVector {
         return Double.longBitsToDouble(bits);
     }
 
+    @ForceInline
     @Override
     public Double512Vector withLane(int i, double e) {
         if (i < 0 || i >= VLENGTH) {
@@ -532,6 +535,7 @@ final class Double512Vector extends DoubleVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -719,6 +723,7 @@ final class Double512Vector extends DoubleVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Double512Shuffle rearrange(VectorShuffle<Double> shuffle) {
             Double512Shuffle s = (Double512Shuffle) shuffle;

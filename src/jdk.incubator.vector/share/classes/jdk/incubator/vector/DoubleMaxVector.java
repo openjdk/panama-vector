@@ -183,6 +183,7 @@ final class DoubleMaxVector extends DoubleVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     DoubleMaxVector uOp(FUnOp f) {
         return (DoubleMaxVector) super.uOpTemplate(f);  // specialize
@@ -461,6 +462,7 @@ final class DoubleMaxVector extends DoubleVector {
     }
 
 
+    @ForceInline
     @Override
     public double lane(int i) {
         if (i < 0 || i >= VLENGTH) {
@@ -476,6 +478,7 @@ final class DoubleMaxVector extends DoubleVector {
         return Double.longBitsToDouble(bits);
     }
 
+    @ForceInline
     @Override
     public DoubleMaxVector withLane(int i, double e) {
         if (i < 0 || i >= VLENGTH) {
@@ -532,6 +535,7 @@ final class DoubleMaxVector extends DoubleVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -719,6 +723,7 @@ final class DoubleMaxVector extends DoubleVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public DoubleMaxShuffle rearrange(VectorShuffle<Double> shuffle) {
             DoubleMaxShuffle s = (DoubleMaxShuffle) shuffle;

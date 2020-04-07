@@ -473,6 +473,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
      * @see Vector#broadcast(long)
      * @see VectorSpecies#broadcast(long)
      */
+    @ForceInline
     public static ShortVector broadcast(VectorSpecies<Short> species, short e) {
         ShortSpecies vsp = (ShortSpecies) species;
         return vsp.broadcast(e);
@@ -516,6 +517,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
      * @see #broadcast(VectorSpecies,short)
      * @see VectorSpecies#checkValue(long)
      */
+    @ForceInline
     public static ShortVector broadcast(VectorSpecies<Short> species, long e) {
         ShortSpecies vsp = (ShortSpecies) species;
         return vsp.broadcast(e);

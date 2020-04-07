@@ -485,6 +485,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
      * @see Vector#broadcast(long)
      * @see VectorSpecies#broadcast(long)
      */
+    @ForceInline
     public static $abstractvectortype$ broadcast(VectorSpecies<$Boxtype$> species, $type$ e) {
         $Type$Species vsp = ($Type$Species) species;
         return vsp.broadcast(e);
@@ -529,6 +530,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
      * @see #broadcast(VectorSpecies,$type$)
      * @see VectorSpecies#checkValue(long)
      */
+    @ForceInline
     public static $abstractvectortype$ broadcast(VectorSpecies<$Boxtype$> species, long e) {
         $Type$Species vsp = ($Type$Species) species;
         return vsp.broadcast(e);

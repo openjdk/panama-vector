@@ -183,6 +183,7 @@ final class FloatMaxVector extends FloatVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     FloatMaxVector uOp(FUnOp f) {
         return (FloatMaxVector) super.uOpTemplate(f);  // specialize
@@ -461,6 +462,7 @@ final class FloatMaxVector extends FloatVector {
     }
 
 
+    @ForceInline
     @Override
     public float lane(int i) {
         if (i < 0 || i >= VLENGTH) {
@@ -476,6 +478,7 @@ final class FloatMaxVector extends FloatVector {
         return Float.intBitsToFloat(bits);
     }
 
+    @ForceInline
     @Override
     public FloatMaxVector withLane(int i, float e) {
         if (i < 0 || i >= VLENGTH) {
@@ -532,6 +535,7 @@ final class FloatMaxVector extends FloatVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -719,6 +723,7 @@ final class FloatMaxVector extends FloatVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public FloatMaxShuffle rearrange(VectorShuffle<Float> shuffle) {
             FloatMaxShuffle s = (FloatMaxShuffle) shuffle;

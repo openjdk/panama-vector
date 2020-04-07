@@ -472,6 +472,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * @see Vector#broadcast(long)
      * @see VectorSpecies#broadcast(long)
      */
+    @ForceInline
     public static ByteVector broadcast(VectorSpecies<Byte> species, byte e) {
         ByteSpecies vsp = (ByteSpecies) species;
         return vsp.broadcast(e);
@@ -515,6 +516,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * @see #broadcast(VectorSpecies,byte)
      * @see VectorSpecies#checkValue(long)
      */
+    @ForceInline
     public static ByteVector broadcast(VectorSpecies<Byte> species, long e) {
         ByteSpecies vsp = (ByteSpecies) species;
         return vsp.broadcast(e);
