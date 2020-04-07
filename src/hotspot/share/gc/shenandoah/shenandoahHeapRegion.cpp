@@ -28,7 +28,6 @@
 #include "gc/shenandoah/shenandoahHeap.inline.hpp"
 #include "gc/shenandoah/shenandoahHeapRegion.hpp"
 #include "gc/shenandoah/shenandoahMarkingContext.inline.hpp"
-#include "gc/shenandoah/shenandoahTraversalGC.hpp"
 #include "gc/shared/space.inline.hpp"
 #include "jfr/jfrEvents.hpp"
 #include "memory/iterator.inline.hpp"
@@ -53,8 +52,6 @@ size_t ShenandoahHeapRegion::HumongousThresholdWords = 0;
 size_t ShenandoahHeapRegion::MaxTLABSizeBytes = 0;
 size_t ShenandoahHeapRegion::MaxTLABSizeWords = 0;
 
-ShenandoahHeapRegion::PaddedAllocSeqNum ShenandoahHeapRegion::_alloc_seq_num;
-
 ShenandoahHeapRegion::ShenandoahHeapRegion(HeapWord* start, size_t index, bool committed) :
   _index(index),
   _bottom(start),
@@ -65,7 +62,6 @@ ShenandoahHeapRegion::ShenandoahHeapRegion(HeapWord* start, size_t index, bool c
   _top(start),
   _tlab_allocs(0),
   _gclab_allocs(0),
-  _seqnum_last_alloc_mutator(0),
   _live_data(0),
   _critical_pins(0),
   _update_watermark(start) {
@@ -303,32 +299,9 @@ void ShenandoahHeapRegion::make_committed_bypass() {
   }
 }
 
-void ShenandoahHeapRegion::clear_live_data() {
-  Atomic::release_store_fence(&_live_data, (size_t)0);
-}
-
 void ShenandoahHeapRegion::reset_alloc_metadata() {
   _tlab_allocs = 0;
   _gclab_allocs = 0;
-  _seqnum_last_alloc_mutator = 0;
-}
-
-void ShenandoahHeapRegion::reset_alloc_metadata_to_shared() {
-  if (used() > 0) {
-    _tlab_allocs = 0;
-    _gclab_allocs = 0;
-    if (ShenandoahHeap::heap()->is_traversal_mode()) {
-      update_seqnum_last_alloc_mutator();
-    }
-  } else {
-    reset_alloc_metadata();
-  }
-}
-
-void ShenandoahHeapRegion::update_seqnum_last_alloc_mutator() {
-  assert(ShenandoahHeap::heap()->is_traversal_mode(), "Sanity");
-  shenandoah_assert_heaplocked_or_safepoint();
-  _seqnum_last_alloc_mutator = _alloc_seq_num.value++;
 }
 
 size_t ShenandoahHeapRegion::get_shared_allocs() const {
@@ -346,26 +319,6 @@ size_t ShenandoahHeapRegion::get_gclab_allocs() const {
 void ShenandoahHeapRegion::set_live_data(size_t s) {
   assert(Thread::current()->is_VM_thread(), "by VM thread");
   _live_data = (s >> LogHeapWordSize);
-}
-
-size_t ShenandoahHeapRegion::get_live_data_words() const {
-  return Atomic::load_acquire(&_live_data);
-}
-
-size_t ShenandoahHeapRegion::get_live_data_bytes() const {
-  return get_live_data_words() * HeapWordSize;
-}
-
-bool ShenandoahHeapRegion::has_live() const {
-  return get_live_data_words() != 0;
-}
-
-size_t ShenandoahHeapRegion::garbage() const {
-  assert(used() >= get_live_data_bytes(), "Live Data must be a subset of used() live: " SIZE_FORMAT " used: " SIZE_FORMAT,
-         get_live_data_bytes(), used());
-
-  size_t result = used() - get_live_data_bytes();
-  return result;
 }
 
 void ShenandoahHeapRegion::print_on(outputStream* st) const {
@@ -418,7 +371,6 @@ void ShenandoahHeapRegion::print_on(outputStream* st) const {
   st->print("|S " SIZE_FORMAT_W(5) "%1s", byte_size_in_proper_unit(get_shared_allocs()),   proper_unit_for_byte_size(get_shared_allocs()));
   st->print("|L " SIZE_FORMAT_W(5) "%1s", byte_size_in_proper_unit(get_live_data_bytes()), proper_unit_for_byte_size(get_live_data_bytes()));
   st->print("|CP " SIZE_FORMAT_W(3), pin_count());
-  st->print("|SN " UINT64_FORMAT_X_W(12), _seqnum_last_alloc_mutator);
   st->cr();
 }
 
@@ -521,7 +473,7 @@ void ShenandoahHeapRegion::setup_sizes(size_t max_heap_size) {
   }
 
   size_t region_size;
-  if (FLAG_IS_DEFAULT(ShenandoahHeapRegionSize)) {
+  if (FLAG_IS_DEFAULT(ShenandoahRegionSize)) {
     if (ShenandoahMinRegionSize > max_heap_size / MIN_NUM_REGIONS) {
       err_msg message("Max heap size (" SIZE_FORMAT "%s) is too low to afford the minimum number "
                       "of regions (" SIZE_FORMAT ") of minimum region size (" SIZE_FORMAT "%s).",
@@ -564,27 +516,27 @@ void ShenandoahHeapRegion::setup_sizes(size_t max_heap_size) {
     region_size = MIN2(ShenandoahMaxRegionSize, region_size);
 
   } else {
-    if (ShenandoahHeapRegionSize > max_heap_size / MIN_NUM_REGIONS) {
+    if (ShenandoahRegionSize > max_heap_size / MIN_NUM_REGIONS) {
       err_msg message("Max heap size (" SIZE_FORMAT "%s) is too low to afford the minimum number "
                               "of regions (" SIZE_FORMAT ") of requested size (" SIZE_FORMAT "%s).",
                       byte_size_in_proper_unit(max_heap_size), proper_unit_for_byte_size(max_heap_size),
                       MIN_NUM_REGIONS,
-                      byte_size_in_proper_unit(ShenandoahHeapRegionSize), proper_unit_for_byte_size(ShenandoahHeapRegionSize));
-      vm_exit_during_initialization("Invalid -XX:ShenandoahHeapRegionSize option", message);
+                      byte_size_in_proper_unit(ShenandoahRegionSize), proper_unit_for_byte_size(ShenandoahRegionSize));
+      vm_exit_during_initialization("Invalid -XX:ShenandoahRegionSize option", message);
     }
-    if (ShenandoahHeapRegionSize < ShenandoahMinRegionSize) {
+    if (ShenandoahRegionSize < ShenandoahMinRegionSize) {
       err_msg message("Heap region size (" SIZE_FORMAT "%s) should be larger than min region size (" SIZE_FORMAT "%s).",
-                      byte_size_in_proper_unit(ShenandoahHeapRegionSize), proper_unit_for_byte_size(ShenandoahHeapRegionSize),
+                      byte_size_in_proper_unit(ShenandoahRegionSize), proper_unit_for_byte_size(ShenandoahRegionSize),
                       byte_size_in_proper_unit(ShenandoahMinRegionSize),  proper_unit_for_byte_size(ShenandoahMinRegionSize));
-      vm_exit_during_initialization("Invalid -XX:ShenandoahHeapRegionSize option", message);
+      vm_exit_during_initialization("Invalid -XX:ShenandoahRegionSize option", message);
     }
-    if (ShenandoahHeapRegionSize > ShenandoahMaxRegionSize) {
+    if (ShenandoahRegionSize > ShenandoahMaxRegionSize) {
       err_msg message("Heap region size (" SIZE_FORMAT "%s) should be lower than max region size (" SIZE_FORMAT "%s).",
-                      byte_size_in_proper_unit(ShenandoahHeapRegionSize), proper_unit_for_byte_size(ShenandoahHeapRegionSize),
+                      byte_size_in_proper_unit(ShenandoahRegionSize), proper_unit_for_byte_size(ShenandoahRegionSize),
                       byte_size_in_proper_unit(ShenandoahMaxRegionSize),  proper_unit_for_byte_size(ShenandoahMaxRegionSize));
-      vm_exit_during_initialization("Invalid -XX:ShenandoahHeapRegionSize option", message);
+      vm_exit_during_initialization("Invalid -XX:ShenandoahRegionSize option", message);
     }
-    region_size = ShenandoahHeapRegionSize;
+    region_size = ShenandoahRegionSize;
   }
 
   // Make sure region size is at least one large page, if enabled.

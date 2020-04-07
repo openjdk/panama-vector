@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2020, Red Hat, Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,16 +23,23 @@
  */
 
 #include "precompiled.hpp"
-#include "gc/shenandoah/shenandoahTraversalMode.hpp"
-#include "gc/shenandoah/heuristics/shenandoahTraversalAggressiveHeuristics.hpp"
-#include "gc/shenandoah/heuristics/shenandoahTraversalHeuristics.hpp"
+#include "gc/shenandoah/shenandoahConcurrentRoots.hpp"
+#include "gc/shenandoah/shenandoahIUMode.hpp"
+#include "gc/shenandoah/heuristics/shenandoahAdaptiveHeuristics.hpp"
+#include "gc/shenandoah/heuristics/shenandoahAggressiveHeuristics.hpp"
+#include "gc/shenandoah/heuristics/shenandoahCompactHeuristics.hpp"
+#include "gc/shenandoah/heuristics/shenandoahStaticHeuristics.hpp"
 #include "logging/log.hpp"
 #include "logging/logTag.hpp"
 
-void ShenandoahTraversalMode::initialize_flags() const {
-  FLAG_SET_DEFAULT(ShenandoahSATBBarrier,            false);
+void ShenandoahIUMode::initialize_flags() const {
+  if (ShenandoahConcurrentRoots::can_do_concurrent_class_unloading()) {
+    FLAG_SET_DEFAULT(ShenandoahSuspendibleWorkers, true);
+    FLAG_SET_DEFAULT(VerifyBeforeExit, false);
+  }
+
   FLAG_SET_DEFAULT(ShenandoahStoreValEnqueueBarrier, true);
-  FLAG_SET_DEFAULT(ShenandoahAllowMixedAllocs,       false);
+  FLAG_SET_DEFAULT(ShenandoahSATBBarrier, false);
 
   SHENANDOAH_ERGO_ENABLE_FLAG(ExplicitGCInvokesConcurrent);
   SHENANDOAH_ERGO_ENABLE_FLAG(ShenandoahImplicitGCInvokesConcurrent);
@@ -42,18 +49,4 @@ void ShenandoahTraversalMode::initialize_flags() const {
   SHENANDOAH_CHECK_FLAG_SET(ShenandoahStoreValEnqueueBarrier);
   SHENANDOAH_CHECK_FLAG_SET(ShenandoahCASBarrier);
   SHENANDOAH_CHECK_FLAG_SET(ShenandoahCloneBarrier);
-}
-
-ShenandoahHeuristics* ShenandoahTraversalMode::initialize_heuristics() const {
-  if (ShenandoahGCHeuristics != NULL) {
-    if (strcmp(ShenandoahGCHeuristics, "adaptive") == 0) {
-      return new ShenandoahTraversalHeuristics();
-    } else if (strcmp(ShenandoahGCHeuristics, "aggressive") == 0) {
-      return new ShenandoahTraversalAggressiveHeuristics();
-    } else {
-      vm_exit_during_initialization("Unknown -XX:ShenandoahGCHeuristics option");
-    }
-  }
-  ShouldNotReachHere();
-  return NULL;
 }

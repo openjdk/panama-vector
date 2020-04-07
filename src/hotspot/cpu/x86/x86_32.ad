@@ -3383,8 +3383,7 @@ operand immI8() %{
   interface(CONST_INTER);
 %}
 
-operand immU8()
-%{
+operand immU8() %{
   predicate((0 <= n->get_int()) && (n->get_int() <= 255));
   match(ConI);
 
