@@ -128,6 +128,24 @@ do
     bitsvectortype=${typeprefix}${Bitstype}${bits}Vector
     fpvectortype=${typeprefix}${Fptype}${bits}Vector
     vectorindexbits=$((bits * 4 / sizeInBytes))
+
+    numLanes=$((bits / (sizeInBytes * 8)))
+    if [[ "${numLanes}" == "1" ]]; then
+        lanes=1L
+    elif [[ "${numLanes}" == "2" ]]; then
+        lanes=2L
+    elif [[ "${numLanes}" == "4" ]]; then
+        lanes=4L
+    elif [[ "${numLanes}" == "8" ]]; then
+        lanes=8L
+    elif [[ "${numLanes}" == "16" ]]; then
+        lanes=16L
+    elif [[ "${numLanes}" == "32" ]]; then
+        lanes=32L
+    elif [[ "${numLanes}" == "64" ]]; then
+        lanes=64L
+    fi;
+
     if [[ "${bits}" == "Max" ]]; then
         vectorindextype="vix.getClass()"
     else
@@ -144,6 +162,7 @@ do
     shape=S${bits}Bit
     Shape=S_${bits}_BIT
     args="$old_args"
+    args="$args -K$lanes -K$bits"
     if [[ "${vectortype}" == "IntMaxVector" ]]; then
       args="$args -KintAndMax"
     fi

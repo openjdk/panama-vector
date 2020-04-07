@@ -464,6 +464,10 @@ final class LongMaxVector extends LongVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+        return laneHelper(i); 
+    }
+
+    public long laneHelper(int i) {
         return (long) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -479,6 +483,10 @@ final class LongMaxVector extends LongVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+        return withLaneHelper(i, e);
+    }
+
+    public LongMaxVector withLaneHelper(int i, long e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,

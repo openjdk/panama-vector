@@ -465,25 +465,64 @@ final class Float512Vector extends FloatVector {
     @ForceInline
     @Override
     public float lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        int bits;
+        switch(i) {
+            case 0: bits = laneHelper(0); break;
+            case 1: bits = laneHelper(1); break;
+            case 2: bits = laneHelper(2); break;
+            case 3: bits = laneHelper(3); break;
+            case 4: bits = laneHelper(4); break;
+            case 5: bits = laneHelper(5); break;
+            case 6: bits = laneHelper(6); break;
+            case 7: bits = laneHelper(7); break;
+            case 8: bits = laneHelper(8); break;
+            case 9: bits = laneHelper(9); break;
+            case 10: bits = laneHelper(10); break;
+            case 11: bits = laneHelper(11); break;
+            case 12: bits = laneHelper(12); break;
+            case 13: bits = laneHelper(13); break;
+            case 14: bits = laneHelper(14); break;
+            case 15: bits = laneHelper(15); break;
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        int bits = (int) VectorSupport.extract(
-                                VCLASS, ETYPE, VLENGTH,
-                                this, i,
-                                (vec, ix) -> {
-                                    float[] vecarr = vec.vec();
-                                    return (long)Float.floatToIntBits(vecarr[ix]);
-                                });
         return Float.intBitsToFloat(bits);
+    }
+
+    public int laneHelper(int i) {
+        return (int) VectorSupport.extract(
+                     VCLASS, ETYPE, VLENGTH,
+                     this, i,
+                     (vec, ix) -> {
+                     float[] vecarr = vec.vec();
+                     return (long)Float.floatToIntBits(vecarr[ix]);
+                     });
     }
 
     @ForceInline
     @Override
     public Float512Vector withLane(int i, float e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            case 2: return withLaneHelper(2, e);
+            case 3: return withLaneHelper(3, e);
+            case 4: return withLaneHelper(4, e);
+            case 5: return withLaneHelper(5, e);
+            case 6: return withLaneHelper(6, e);
+            case 7: return withLaneHelper(7, e);
+            case 8: return withLaneHelper(8, e);
+            case 9: return withLaneHelper(9, e);
+            case 10: return withLaneHelper(10, e);
+            case 11: return withLaneHelper(11, e);
+            case 12: return withLaneHelper(12, e);
+            case 13: return withLaneHelper(13, e);
+            case 14: return withLaneHelper(14, e);
+            case 15: return withLaneHelper(15, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Float512Vector withLaneHelper(int i, float e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)Float.floatToIntBits(e),

@@ -471,9 +471,44 @@ final class Short512Vector extends ShortVector {
     @ForceInline
     @Override
     public short lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return laneHelper(0);
+            case 1: return laneHelper(1);
+            case 2: return laneHelper(2);
+            case 3: return laneHelper(3);
+            case 4: return laneHelper(4);
+            case 5: return laneHelper(5);
+            case 6: return laneHelper(6);
+            case 7: return laneHelper(7);
+            case 8: return laneHelper(8);
+            case 9: return laneHelper(9);
+            case 10: return laneHelper(10);
+            case 11: return laneHelper(11);
+            case 12: return laneHelper(12);
+            case 13: return laneHelper(13);
+            case 14: return laneHelper(14);
+            case 15: return laneHelper(15);
+            case 16: return laneHelper(16);
+            case 17: return laneHelper(17);
+            case 18: return laneHelper(18);
+            case 19: return laneHelper(19);
+            case 20: return laneHelper(20);
+            case 21: return laneHelper(21);
+            case 22: return laneHelper(22);
+            case 23: return laneHelper(23);
+            case 24: return laneHelper(24);
+            case 25: return laneHelper(25);
+            case 26: return laneHelper(26);
+            case 27: return laneHelper(27);
+            case 28: return laneHelper(28);
+            case 29: return laneHelper(29);
+            case 30: return laneHelper(30);
+            case 31: return laneHelper(31);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public short laneHelper(int i) {
         return (short) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -486,9 +521,44 @@ final class Short512Vector extends ShortVector {
     @ForceInline
     @Override
     public Short512Vector withLane(int i, short e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch (i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            case 2: return withLaneHelper(2, e);
+            case 3: return withLaneHelper(3, e);
+            case 4: return withLaneHelper(4, e);
+            case 5: return withLaneHelper(5, e);
+            case 6: return withLaneHelper(6, e);
+            case 7: return withLaneHelper(7, e);
+            case 8: return withLaneHelper(8, e);
+            case 9: return withLaneHelper(9, e);
+            case 10: return withLaneHelper(10, e);
+            case 11: return withLaneHelper(11, e);
+            case 12: return withLaneHelper(12, e);
+            case 13: return withLaneHelper(13, e);
+            case 14: return withLaneHelper(14, e);
+            case 15: return withLaneHelper(15, e);
+            case 16: return withLaneHelper(16, e);
+            case 17: return withLaneHelper(17, e);
+            case 18: return withLaneHelper(18, e);
+            case 19: return withLaneHelper(19, e);
+            case 20: return withLaneHelper(20, e);
+            case 21: return withLaneHelper(21, e);
+            case 22: return withLaneHelper(22, e);
+            case 23: return withLaneHelper(23, e);
+            case 24: return withLaneHelper(24, e);
+            case 25: return withLaneHelper(25, e);
+            case 26: return withLaneHelper(26, e);
+            case 27: return withLaneHelper(27, e);
+            case 28: return withLaneHelper(28, e);
+            case 29: return withLaneHelper(29, e);
+            case 30: return withLaneHelper(30, e);
+            case 31: return withLaneHelper(31, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Short512Vector withLaneHelper(int i, short e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,

@@ -471,9 +471,14 @@ final class Int64Vector extends IntVector {
     @ForceInline
     @Override
     public int lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return laneHelper(0);
+            case 1: return laneHelper(1);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public int laneHelper(int i) {
         return (int) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -486,9 +491,14 @@ final class Int64Vector extends IntVector {
     @ForceInline
     @Override
     public Int64Vector withLane(int i, int e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch (i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Int64Vector withLaneHelper(int i, int e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,

@@ -474,6 +474,10 @@ final class IntMaxVector extends IntVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+        return laneHelper(i); 
+    }
+
+    public int laneHelper(int i) {
         return (int) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -489,6 +493,10 @@ final class IntMaxVector extends IntVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+        return withLaneHelper(i, e);
+    }
+
+    public IntMaxVector withLaneHelper(int i, int e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,

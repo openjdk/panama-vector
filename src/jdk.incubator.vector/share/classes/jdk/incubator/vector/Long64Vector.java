@@ -461,9 +461,13 @@ final class Long64Vector extends LongVector {
     @ForceInline
     @Override
     public long lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return laneHelper(0);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public long laneHelper(int i) {
         return (long) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -476,9 +480,13 @@ final class Long64Vector extends LongVector {
     @ForceInline
     @Override
     public Long64Vector withLane(int i, long e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch (i) {
+            case 0: return withLaneHelper(0, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Long64Vector withLaneHelper(int i, long e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,

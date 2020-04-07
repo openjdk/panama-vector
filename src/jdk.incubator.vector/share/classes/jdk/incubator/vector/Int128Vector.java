@@ -471,9 +471,16 @@ final class Int128Vector extends IntVector {
     @ForceInline
     @Override
     public int lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return laneHelper(0);
+            case 1: return laneHelper(1);
+            case 2: return laneHelper(2);
+            case 3: return laneHelper(3);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public int laneHelper(int i) {
         return (int) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -486,9 +493,16 @@ final class Int128Vector extends IntVector {
     @ForceInline
     @Override
     public Int128Vector withLane(int i, int e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch (i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            case 2: return withLaneHelper(2, e);
+            case 3: return withLaneHelper(3, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Int128Vector withLaneHelper(int i, int e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,

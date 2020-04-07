@@ -471,9 +471,76 @@ final class Byte512Vector extends ByteVector {
     @ForceInline
     @Override
     public byte lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return laneHelper(0);
+            case 1: return laneHelper(1);
+            case 2: return laneHelper(2);
+            case 3: return laneHelper(3);
+            case 4: return laneHelper(4);
+            case 5: return laneHelper(5);
+            case 6: return laneHelper(6);
+            case 7: return laneHelper(7);
+            case 8: return laneHelper(8);
+            case 9: return laneHelper(9);
+            case 10: return laneHelper(10);
+            case 11: return laneHelper(11);
+            case 12: return laneHelper(12);
+            case 13: return laneHelper(13);
+            case 14: return laneHelper(14);
+            case 15: return laneHelper(15);
+            case 16: return laneHelper(16);
+            case 17: return laneHelper(17);
+            case 18: return laneHelper(18);
+            case 19: return laneHelper(19);
+            case 20: return laneHelper(20);
+            case 21: return laneHelper(21);
+            case 22: return laneHelper(22);
+            case 23: return laneHelper(23);
+            case 24: return laneHelper(24);
+            case 25: return laneHelper(25);
+            case 26: return laneHelper(26);
+            case 27: return laneHelper(27);
+            case 28: return laneHelper(28);
+            case 29: return laneHelper(29);
+            case 30: return laneHelper(30);
+            case 31: return laneHelper(31);
+            case 32: return laneHelper(32);
+            case 33: return laneHelper(33);
+            case 34: return laneHelper(34);
+            case 35: return laneHelper(35);
+            case 36: return laneHelper(36);
+            case 37: return laneHelper(37);
+            case 38: return laneHelper(38);
+            case 39: return laneHelper(39);
+            case 40: return laneHelper(40);
+            case 41: return laneHelper(41);
+            case 42: return laneHelper(42);
+            case 43: return laneHelper(43);
+            case 44: return laneHelper(44);
+            case 45: return laneHelper(45);
+            case 46: return laneHelper(46);
+            case 47: return laneHelper(47);
+            case 48: return laneHelper(48);
+            case 49: return laneHelper(49);
+            case 50: return laneHelper(50);
+            case 51: return laneHelper(51);
+            case 52: return laneHelper(52);
+            case 53: return laneHelper(53);
+            case 54: return laneHelper(54);
+            case 55: return laneHelper(55);
+            case 56: return laneHelper(56);
+            case 57: return laneHelper(57);
+            case 58: return laneHelper(58);
+            case 59: return laneHelper(59);
+            case 60: return laneHelper(60);
+            case 61: return laneHelper(61);
+            case 62: return laneHelper(62);
+            case 63: return laneHelper(63);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public byte laneHelper(int i) {
         return (byte) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -486,9 +553,76 @@ final class Byte512Vector extends ByteVector {
     @ForceInline
     @Override
     public Byte512Vector withLane(int i, byte e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch (i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            case 2: return withLaneHelper(2, e);
+            case 3: return withLaneHelper(3, e);
+            case 4: return withLaneHelper(4, e);
+            case 5: return withLaneHelper(5, e);
+            case 6: return withLaneHelper(6, e);
+            case 7: return withLaneHelper(7, e);
+            case 8: return withLaneHelper(8, e);
+            case 9: return withLaneHelper(9, e);
+            case 10: return withLaneHelper(10, e);
+            case 11: return withLaneHelper(11, e);
+            case 12: return withLaneHelper(12, e);
+            case 13: return withLaneHelper(13, e);
+            case 14: return withLaneHelper(14, e);
+            case 15: return withLaneHelper(15, e);
+            case 16: return withLaneHelper(16, e);
+            case 17: return withLaneHelper(17, e);
+            case 18: return withLaneHelper(18, e);
+            case 19: return withLaneHelper(19, e);
+            case 20: return withLaneHelper(20, e);
+            case 21: return withLaneHelper(21, e);
+            case 22: return withLaneHelper(22, e);
+            case 23: return withLaneHelper(23, e);
+            case 24: return withLaneHelper(24, e);
+            case 25: return withLaneHelper(25, e);
+            case 26: return withLaneHelper(26, e);
+            case 27: return withLaneHelper(27, e);
+            case 28: return withLaneHelper(28, e);
+            case 29: return withLaneHelper(29, e);
+            case 30: return withLaneHelper(30, e);
+            case 31: return withLaneHelper(31, e);
+            case 32: return withLaneHelper(32, e);
+            case 33: return withLaneHelper(33, e);
+            case 34: return withLaneHelper(34, e);
+            case 35: return withLaneHelper(35, e);
+            case 36: return withLaneHelper(36, e);
+            case 37: return withLaneHelper(37, e);
+            case 38: return withLaneHelper(38, e);
+            case 39: return withLaneHelper(39, e);
+            case 40: return withLaneHelper(40, e);
+            case 41: return withLaneHelper(41, e);
+            case 42: return withLaneHelper(42, e);
+            case 43: return withLaneHelper(43, e);
+            case 44: return withLaneHelper(44, e);
+            case 45: return withLaneHelper(45, e);
+            case 46: return withLaneHelper(46, e);
+            case 47: return withLaneHelper(47, e);
+            case 48: return withLaneHelper(48, e);
+            case 49: return withLaneHelper(49, e);
+            case 50: return withLaneHelper(50, e);
+            case 51: return withLaneHelper(51, e);
+            case 52: return withLaneHelper(52, e);
+            case 53: return withLaneHelper(53, e);
+            case 54: return withLaneHelper(54, e);
+            case 55: return withLaneHelper(55, e);
+            case 56: return withLaneHelper(56, e);
+            case 57: return withLaneHelper(57, e);
+            case 58: return withLaneHelper(58, e);
+            case 59: return withLaneHelper(59, e);
+            case 60: return withLaneHelper(60, e);
+            case 61: return withLaneHelper(61, e);
+            case 62: return withLaneHelper(62, e);
+            case 63: return withLaneHelper(63, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Byte512Vector withLaneHelper(int i, byte e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,

@@ -461,9 +461,16 @@ final class Long256Vector extends LongVector {
     @ForceInline
     @Override
     public long lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return laneHelper(0);
+            case 1: return laneHelper(1);
+            case 2: return laneHelper(2);
+            case 3: return laneHelper(3);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public long laneHelper(int i) {
         return (long) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -476,9 +483,16 @@ final class Long256Vector extends LongVector {
     @ForceInline
     @Override
     public Long256Vector withLane(int i, long e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch (i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            case 2: return withLaneHelper(2, e);
+            case 3: return withLaneHelper(3, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Long256Vector withLaneHelper(int i, long e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,

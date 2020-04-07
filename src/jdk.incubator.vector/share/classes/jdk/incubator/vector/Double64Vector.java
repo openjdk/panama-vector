@@ -465,25 +465,34 @@ final class Double64Vector extends DoubleVector {
     @ForceInline
     @Override
     public double lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        long bits;
+        switch(i) {
+            case 0: bits = laneHelper(0); break;
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        long bits = (long) VectorSupport.extract(
-                                VCLASS, ETYPE, VLENGTH,
-                                this, i,
-                                (vec, ix) -> {
-                                    double[] vecarr = vec.vec();
-                                    return (long)Double.doubleToLongBits(vecarr[ix]);
-                                });
         return Double.longBitsToDouble(bits);
+    }
+
+    public long laneHelper(int i) {
+        return (long) VectorSupport.extract(
+                     VCLASS, ETYPE, VLENGTH,
+                     this, i,
+                     (vec, ix) -> {
+                     double[] vecarr = vec.vec();
+                     return (long)Double.doubleToLongBits(vecarr[ix]);
+                     });
     }
 
     @ForceInline
     @Override
     public Double64Vector withLane(int i, double e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return withLaneHelper(0, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Double64Vector withLaneHelper(int i, double e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)Double.doubleToLongBits(e),

@@ -468,14 +468,18 @@ final class FloatMaxVector extends FloatVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        int bits = (int) VectorSupport.extract(
-                                VCLASS, ETYPE, VLENGTH,
-                                this, i,
-                                (vec, ix) -> {
-                                    float[] vecarr = vec.vec();
-                                    return (long)Float.floatToIntBits(vecarr[ix]);
-                                });
+        int bits = laneHelper(i);
         return Float.intBitsToFloat(bits);
+    }
+
+    public int laneHelper(int i) {
+        return (int) VectorSupport.extract(
+                     VCLASS, ETYPE, VLENGTH,
+                     this, i,
+                     (vec, ix) -> {
+                     float[] vecarr = vec.vec();
+                     return (long)Float.floatToIntBits(vecarr[ix]);
+                     });
     }
 
     @ForceInline
@@ -484,6 +488,10 @@ final class FloatMaxVector extends FloatVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+        return withLaneHelper(i, e); 
+    }
+
+    public FloatMaxVector withLaneHelper(int i, float e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)Float.floatToIntBits(e),

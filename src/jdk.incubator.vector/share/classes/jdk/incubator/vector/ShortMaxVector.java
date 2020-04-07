@@ -474,6 +474,10 @@ final class ShortMaxVector extends ShortVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+        return laneHelper(i); 
+    }
+
+    public short laneHelper(int i) {
         return (short) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -489,6 +493,10 @@ final class ShortMaxVector extends ShortVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+        return withLaneHelper(i, e);
+    }
+
+    public ShortMaxVector withLaneHelper(int i, short e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,

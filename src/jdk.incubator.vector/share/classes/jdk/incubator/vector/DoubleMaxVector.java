@@ -468,14 +468,18 @@ final class DoubleMaxVector extends DoubleVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        long bits = (long) VectorSupport.extract(
-                                VCLASS, ETYPE, VLENGTH,
-                                this, i,
-                                (vec, ix) -> {
-                                    double[] vecarr = vec.vec();
-                                    return (long)Double.doubleToLongBits(vecarr[ix]);
-                                });
+        long bits = laneHelper(i);
         return Double.longBitsToDouble(bits);
+    }
+
+    public long laneHelper(int i) {
+        return (long) VectorSupport.extract(
+                     VCLASS, ETYPE, VLENGTH,
+                     this, i,
+                     (vec, ix) -> {
+                     double[] vecarr = vec.vec();
+                     return (long)Double.doubleToLongBits(vecarr[ix]);
+                     });
     }
 
     @ForceInline
@@ -484,6 +488,10 @@ final class DoubleMaxVector extends DoubleVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+        return withLaneHelper(i, e); 
+    }
+
+    public DoubleMaxVector withLaneHelper(int i, double e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)Double.doubleToLongBits(e),

@@ -465,25 +465,48 @@ final class Double512Vector extends DoubleVector {
     @ForceInline
     @Override
     public double lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        long bits;
+        switch(i) {
+            case 0: bits = laneHelper(0); break;
+            case 1: bits = laneHelper(1); break;
+            case 2: bits = laneHelper(2); break;
+            case 3: bits = laneHelper(3); break;
+            case 4: bits = laneHelper(4); break;
+            case 5: bits = laneHelper(5); break;
+            case 6: bits = laneHelper(6); break;
+            case 7: bits = laneHelper(7); break;
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        long bits = (long) VectorSupport.extract(
-                                VCLASS, ETYPE, VLENGTH,
-                                this, i,
-                                (vec, ix) -> {
-                                    double[] vecarr = vec.vec();
-                                    return (long)Double.doubleToLongBits(vecarr[ix]);
-                                });
         return Double.longBitsToDouble(bits);
+    }
+
+    public long laneHelper(int i) {
+        return (long) VectorSupport.extract(
+                     VCLASS, ETYPE, VLENGTH,
+                     this, i,
+                     (vec, ix) -> {
+                     double[] vecarr = vec.vec();
+                     return (long)Double.doubleToLongBits(vecarr[ix]);
+                     });
     }
 
     @ForceInline
     @Override
     public Double512Vector withLane(int i, double e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            case 2: return withLaneHelper(2, e);
+            case 3: return withLaneHelper(3, e);
+            case 4: return withLaneHelper(4, e);
+            case 5: return withLaneHelper(5, e);
+            case 6: return withLaneHelper(6, e);
+            case 7: return withLaneHelper(7, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Double512Vector withLaneHelper(int i, double e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)Double.doubleToLongBits(e),
