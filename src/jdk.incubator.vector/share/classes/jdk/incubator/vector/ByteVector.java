@@ -2911,10 +2911,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                    int[] indexMap, int mapOffset,
                                    VectorMask<Byte> m) {
         ByteSpecies vsp = (ByteSpecies) species;
-
-        // Do it the slow way.
         return vsp.vOp(m, n -> a[offset + indexMap[mapOffset + n]]);
-
     }
 
     /**

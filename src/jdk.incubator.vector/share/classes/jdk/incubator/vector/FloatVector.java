@@ -2803,17 +2803,14 @@ public abstract class FloatVector extends AbstractVector<Float> {
                                    float[] a, int offset,
                                    int[] indexMap, int mapOffset,
                                    VectorMask<Float> m) {
-        FloatSpecies vsp = (FloatSpecies) species;
-
-        // FIXME This can result in out of bounds errors for unset mask lanes
-        // FIX = Use a scatter instruction which routes the unwanted lanes
-        // into a bit-bucket variable (private to implementation).
-        // This requires a 2-D scatter in order to set a second base address.
-        // See notes in https://bugs.openjdk.java.net/browse/JDK-8223367
-        assert(m.allTrue());
-        return (FloatVector)
-            zero(species).blend(fromArray(species, a, offset, indexMap, mapOffset), m);
-
+        if (m.allTrue()) {
+            return fromArray(species, a, offset, indexMap, mapOffset);
+        }
+        else {
+            // FIXME: Cannot vectorize yet, if there's a mask.
+            FloatSpecies vsp = (FloatSpecies) species;
+            return vsp.vOp(m, n -> a[offset + indexMap[mapOffset + n]]);
+        }
     }
 
     /**
@@ -3074,10 +3071,8 @@ public abstract class FloatVector extends AbstractVector<Float> {
     void intoArray(float[] a, int offset,
                    int[] indexMap, int mapOffset,
                    VectorMask<Float> m) {
-        FloatSpecies vsp = vspecies();
         if (m.allTrue()) {
             intoArray(a, offset, indexMap, mapOffset);
-            return;
         }
         else {
             // FIXME: Cannot vectorize yet, if there's a mask.

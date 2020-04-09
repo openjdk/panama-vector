@@ -2912,10 +2912,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                                    int[] indexMap, int mapOffset,
                                    VectorMask<Short> m) {
         ShortSpecies vsp = (ShortSpecies) species;
-
-        // Do it the slow way.
         return vsp.vOp(m, n -> a[offset + indexMap[mapOffset + n]]);
-
     }
 
     /**

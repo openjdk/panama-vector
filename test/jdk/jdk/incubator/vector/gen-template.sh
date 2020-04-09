@@ -435,9 +435,9 @@ gen_unary_alu_op "SQRT" "Math.sqrt((double)a)" $unit_output $perf_output $perf_s
 
 # Gather Scatter operations.
 gen_op_tmpl $gather_template "gather" "" $unit_output $perf_output $perf_scalar_output
-# gen_op_tmpl $gather_masked_template "gather" "" $unit_output $perf_output $perf_scalar_output
+gen_op_tmpl $gather_masked_template "gather" "" $unit_output $perf_output $perf_scalar_output
 gen_op_tmpl $scatter_template "scatter" "" $unit_output $perf_output $perf_scalar_output
-# gen_op_tmpl $scatter_masked_template "scatter" "" $unit_output $perf_output $perf_scalar_output
+gen_op_tmpl $scatter_masked_template "scatter" "" $unit_output $perf_output $perf_scalar_output
 
 gen_unit_footer $unit_output
 gen_perf_footer $perf_output
