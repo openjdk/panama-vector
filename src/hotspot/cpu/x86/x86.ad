@@ -6695,10 +6695,11 @@ instruct vcmpFD(legVec dst, legVec src1, legVec src2, immI8 cond) %{
   ins_encode %{
     int vlen_enc = vector_length_encoding(this, $src1);
     Assembler::ComparisonPredicateFP cmp = booltest_pred_to_comparison_pred_fp($cond$$constant);
-    if (vector_element_basic_type(this, $src1) == T_FLOAT)
+    if (vector_element_basic_type(this, $src1) == T_FLOAT) {
       __ vcmpps($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
-    else
+    } else {
       __ vcmppd($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
+    }
   %}
   ins_pipe( pipe_slow );
 %}

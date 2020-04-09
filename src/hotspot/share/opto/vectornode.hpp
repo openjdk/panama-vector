@@ -1099,11 +1099,7 @@ class VectorMaskCmpNode : public VectorNode {
 
  public:
   VectorMaskCmpNode(BoolTest::mask predicate, Node* in1, Node* in2, ConINode* predicate_node, const TypeVect* vt) :
-#ifdef X86
       VectorNode(in1, in2, predicate_node, vt),
-#else
-      VectorNode(in1, in2, vt),
-#endif
       _predicate(predicate) {
     assert(in1->bottom_type()->is_vect()->element_basic_type() == in2->bottom_type()->is_vect()->element_basic_type(),
            "VectorMaskCmp inputs must have same type for elements");

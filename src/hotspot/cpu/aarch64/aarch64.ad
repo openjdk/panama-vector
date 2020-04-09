@@ -19367,12 +19367,12 @@ instruct vmin2D(vecX dst, vecX src1, vecX src2)
 
 // ------------------------------ Comparison ---------------------------------
 
-instruct vcmeq8B(vecD dst, vecD src1, vecD src2)
+instruct vcmeq8B(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 8 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::eq &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmeq  $dst,$src1,$src2\t# vector cmp (8B)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19382,12 +19382,12 @@ instruct vcmeq8B(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmeq16B(vecX dst, vecX src1, vecX src2)
+instruct vcmeq16B(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 16 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::eq &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmeq  $dst,$src1,$src2\t# vector cmp (16B)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19397,12 +19397,12 @@ instruct vcmeq16B(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmeq4S(vecD dst, vecD src1, vecD src2)
+instruct vcmeq4S(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::eq &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmeq  $dst,$src1,$src2\t# vector cmp (4S)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19412,12 +19412,12 @@ instruct vcmeq4S(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmeq8S(vecX dst, vecX src1, vecX src2)
+instruct vcmeq8S(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 8 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::eq &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmeq  $dst,$src1,$src2\t# vector cmp (8S)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19427,12 +19427,12 @@ instruct vcmeq8S(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmeq2I(vecD dst, vecD src1, vecD src2)
+instruct vcmeq2I(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::eq &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmeq  $dst,$src1,$src2\t# vector cmp (2I)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19442,12 +19442,12 @@ instruct vcmeq2I(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmeq4I(vecX dst, vecX src1, vecX src2)
+instruct vcmeq4I(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::eq &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmeq  $dst,$src1,$src2\t# vector cmp (4I)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19457,12 +19457,12 @@ instruct vcmeq4I(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmeq2L(vecX dst, vecX src1, vecX src2)
+instruct vcmeq2L(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::eq &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmeq  $dst,$src1,$src2\t# vector cmp (2L)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19472,12 +19472,12 @@ instruct vcmeq2L(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmeq2F(vecD dst, vecD src1, vecD src2)
+instruct vcmeq2F(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::eq &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmeq  $dst,$src1,$src2\t# vector cmp (2F)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19487,12 +19487,12 @@ instruct vcmeq2F(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop_fp64);
 %}
 
-instruct vcmeq4F(vecX dst, vecX src1, vecX src2)
+instruct vcmeq4F(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::eq &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmeq  $dst,$src1,$src2\t# vector cmp (4F)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19502,12 +19502,12 @@ instruct vcmeq4F(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop_fp128);
 %}
 
-instruct vcmeq2D(vecX dst, vecX src1, vecX src2)
+instruct vcmeq2D(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::eq &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmeq  $dst,$src1,$src2\t# vector cmp (2D)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19517,12 +19517,12 @@ instruct vcmeq2D(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop_fp128);
 %}
 
-instruct vcmne8B(vecD dst, vecD src1, vecD src2)
+instruct vcmne8B(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 8 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ne &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmeq  $dst,$src1,$src2\n\t# vector cmp (8B)"
             "not   $dst,$dst\t" %}
   ins_cost(INSN_COST);
@@ -19534,12 +19534,12 @@ instruct vcmne8B(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmne16B(vecX dst, vecX src1, vecX src2)
+instruct vcmne16B(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 16 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ne &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmeq  $dst,$src1,$src2\n\t# vector cmp (16B)"
             "not   $dst,$dst\t" %}
   ins_cost(INSN_COST);
@@ -19551,12 +19551,12 @@ instruct vcmne16B(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmne4S(vecD dst, vecD src1, vecD src2)
+instruct vcmne4S(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ne &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmeq  $dst,$src1,$src2\n\t# vector cmp (4S)"
             "not   $dst,$dst\t" %}
   ins_cost(INSN_COST);
@@ -19568,12 +19568,12 @@ instruct vcmne4S(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmne8S(vecX dst, vecX src1, vecX src2)
+instruct vcmne8S(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 8 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ne &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmeq  $dst,$src1,$src2\n\t# vector cmp (8S)"
             "not   $dst,$dst\t" %}
   ins_cost(INSN_COST);
@@ -19585,12 +19585,12 @@ instruct vcmne8S(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmne2I(vecD dst, vecD src1, vecD src2)
+instruct vcmne2I(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ne &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmeq  $dst,$src1,$src2\n\t# vector cmp (2I)"
             "not   $dst,$dst\t" %}
   ins_cost(INSN_COST);
@@ -19602,12 +19602,12 @@ instruct vcmne2I(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmne4I(vecX dst, vecX src1, vecX src2)
+instruct vcmne4I(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ne &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmeq  $dst,$src1,$src2\n\t# vector cmp (4I)"
             "not   $dst,$dst\t" %}
   ins_cost(INSN_COST);
@@ -19619,12 +19619,12 @@ instruct vcmne4I(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmne2L(vecX dst, vecX src1, vecX src2)
+instruct vcmne2L(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ne &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmeq  $dst,$src1,$src2\n\t# vector cmp (2L)"
             "not   $dst,$dst\t" %}
   ins_cost(INSN_COST);
@@ -19636,12 +19636,12 @@ instruct vcmne2L(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmne2F(vecD dst, vecD src1, vecD src2)
+instruct vcmne2F(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ne &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmeq  $dst,$src1,$src2\n\t# vector cmp (2F)"
             "not    $dst,$dst\t" %}
   ins_cost(INSN_COST);
@@ -19653,12 +19653,12 @@ instruct vcmne2F(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop_fp64);
 %}
 
-instruct vcmne4F(vecX dst, vecX src1, vecX src2)
+instruct vcmne4F(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ne &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmeq  $dst,$src1,$src2\n\t# vector cmp (4F)"
             "not    $dst,$dst\t" %}
   ins_cost(INSN_COST);
@@ -19670,12 +19670,12 @@ instruct vcmne4F(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop_fp128);
 %}
 
-instruct vcmne2D(vecX dst, vecX src1, vecX src2)
+instruct vcmne2D(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ne &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmeq  $dst,$src1,$src2\n\t# vector cmp (2D)"
             "not    $dst,$dst\t" %}
   ins_cost(INSN_COST);
@@ -19687,12 +19687,12 @@ instruct vcmne2D(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop_fp128);
 %}
 
-instruct vcmlt8B(vecD dst, vecD src1, vecD src2)
+instruct vcmlt8B(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 8 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::lt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmgt  $dst,$src2,$src1\t# vector cmp (8B)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19702,12 +19702,12 @@ instruct vcmlt8B(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmlt16B(vecX dst, vecX src1, vecX src2)
+instruct vcmlt16B(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 16 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::lt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmgt  $dst,$src2,$src1\t# vector cmp (16B)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19717,12 +19717,12 @@ instruct vcmlt16B(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmlt4S(vecD dst, vecD src1, vecD src2)
+instruct vcmlt4S(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::lt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmgt  $dst,$src2,$src1\t# vector cmp (4S)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19732,12 +19732,12 @@ instruct vcmlt4S(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmlt8S(vecX dst, vecX src1, vecX src2)
+instruct vcmlt8S(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 8 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::lt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmgt  $dst,$src2,$src1\t# vector cmp (8S)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19747,12 +19747,12 @@ instruct vcmlt8S(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmlt2I(vecD dst, vecD src1, vecD src2)
+instruct vcmlt2I(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::lt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmgt  $dst,$src2,$src1\t# vector cmp (2I)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19762,12 +19762,12 @@ instruct vcmlt2I(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmlt4I(vecX dst, vecX src1, vecX src2)
+instruct vcmlt4I(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::lt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmgt  $dst,$src2,$src1\t# vector cmp (4I)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19777,12 +19777,12 @@ instruct vcmlt4I(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmlt2L(vecX dst, vecX src1, vecX src2)
+instruct vcmlt2L(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::lt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmgt  $dst,$src2,$src1\t# vector cmp (2L)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19792,12 +19792,12 @@ instruct vcmlt2L(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmlt2F(vecD dst, vecD src1, vecD src2)
+instruct vcmlt2F(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::lt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmgt  $dst,$src2,$src1\t# vector cmp (2F)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19807,12 +19807,12 @@ instruct vcmlt2F(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop_fp64);
 %}
 
-instruct vcmlt4F(vecX dst, vecX src1, vecX src2)
+instruct vcmlt4F(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::lt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmgt  $dst,$src2,$src1\t# vector cmp (4F)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19822,12 +19822,12 @@ instruct vcmlt4F(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop_fp128);
 %}
 
-instruct vcmlt2D(vecX dst, vecX src1, vecX src2)
+instruct vcmlt2D(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::lt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmgt  $dst,$src2,$src1\t# vector cmp (2D)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19837,12 +19837,12 @@ instruct vcmlt2D(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop_fp128);
 %}
 
-instruct vcmle8B(vecD dst, vecD src1, vecD src2)
+instruct vcmle8B(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 8 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::le &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmge  $dst,$src2,$src1\t# vector cmp (8B)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19852,12 +19852,12 @@ instruct vcmle8B(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmle16B(vecX dst, vecX src1, vecX src2)
+instruct vcmle16B(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 16 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::le &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmge  $dst,$src2,$src1\t# vector cmp (16B)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19867,12 +19867,12 @@ instruct vcmle16B(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmle4S(vecD dst, vecD src1, vecD src2)
+instruct vcmle4S(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::le &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmge  $dst,$src2,$src1\t# vector cmp (4S)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19882,12 +19882,12 @@ instruct vcmle4S(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmle8S(vecX dst, vecX src1, vecX src2)
+instruct vcmle8S(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 8 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::le &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmge  $dst,$src2,$src1\t# vector cmp (8S)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19897,12 +19897,12 @@ instruct vcmle8S(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmle2I(vecD dst, vecD src1, vecD src2)
+instruct vcmle2I(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::le &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmge  $dst,$src2,$src1\t# vector cmp (2I)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19912,12 +19912,12 @@ instruct vcmle2I(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmle4I(vecX dst, vecX src1, vecX src2)
+instruct vcmle4I(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::le &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmge  $dst,$src2,$src1\t# vector cmp (4I)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19927,12 +19927,12 @@ instruct vcmle4I(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmle2L(vecX dst, vecX src1, vecX src2)
+instruct vcmle2L(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::le &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmge  $dst,$src2,$src1\t# vector cmp (2L)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19942,12 +19942,12 @@ instruct vcmle2L(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmle2F(vecD dst, vecD src1, vecD src2)
+instruct vcmle2F(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::le &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmge  $dst,$src2,$src1\t# vector cmp (2F)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19957,12 +19957,12 @@ instruct vcmle2F(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop_fp64);
 %}
 
-instruct vcmle4F(vecX dst, vecX src1, vecX src2)
+instruct vcmle4F(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::le &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmge  $dst,$src2,$src1\t# vector cmp (4F)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19972,12 +19972,12 @@ instruct vcmle4F(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop_fp128);
 %}
 
-instruct vcmle2D(vecX dst, vecX src1, vecX src2)
+instruct vcmle2D(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::le &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmge  $dst,$src2,$src1\t# vector cmp (2D)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -19987,12 +19987,12 @@ instruct vcmle2D(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop_fp128);
 %}
 
-instruct vcmgt8B(vecD dst, vecD src1, vecD src2)
+instruct vcmgt8B(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 8 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::gt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmgt  $dst,$src1,$src2\t# vector cmp (8B)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20002,12 +20002,12 @@ instruct vcmgt8B(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmgt16B(vecX dst, vecX src1, vecX src2)
+instruct vcmgt16B(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 16 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::gt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmgt  $dst,$src1,$src2\t# vector cmp (16B)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20017,12 +20017,12 @@ instruct vcmgt16B(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmgt4S(vecD dst, vecD src1, vecD src2)
+instruct vcmgt4S(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::gt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmgt  $dst,$src1,$src2\t# vector cmp (4S)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20032,12 +20032,12 @@ instruct vcmgt4S(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmgt8S(vecX dst, vecX src1, vecX src2)
+instruct vcmgt8S(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 8 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::gt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmgt  $dst,$src1,$src2\t# vector cmp (8S)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20047,12 +20047,12 @@ instruct vcmgt8S(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmgt2I(vecD dst, vecD src1, vecD src2)
+instruct vcmgt2I(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::gt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmgt  $dst,$src1,$src2\t# vector cmp (2I)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20062,12 +20062,12 @@ instruct vcmgt2I(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmgt4I(vecX dst, vecX src1, vecX src2)
+instruct vcmgt4I(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::gt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmgt  $dst,$src1,$src2\t# vector cmp (4I)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20077,12 +20077,12 @@ instruct vcmgt4I(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmgt2L(vecX dst, vecX src1, vecX src2)
+instruct vcmgt2L(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::gt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmgt  $dst,$src1,$src2\t# vector cmp (2L)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20092,12 +20092,12 @@ instruct vcmgt2L(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmgt2F(vecD dst, vecD src1, vecD src2)
+instruct vcmgt2F(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::gt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmgt  $dst,$src1,$src2\t# vector cmp (2F)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20107,12 +20107,12 @@ instruct vcmgt2F(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop_fp64);
 %}
 
-instruct vcmgt4F(vecX dst, vecX src1, vecX src2)
+instruct vcmgt4F(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::gt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmgt  $dst,$src1,$src2\t# vector cmp (4F)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20122,12 +20122,12 @@ instruct vcmgt4F(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop_fp128);
 %}
 
-instruct vcmgt2D(vecX dst, vecX src1, vecX src2)
+instruct vcmgt2D(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::gt &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmgt  $dst,$src1,$src2\t# vector cmp (2D)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20137,12 +20137,12 @@ instruct vcmgt2D(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop_fp128);
 %}
 
-instruct vcmge8B(vecD dst, vecD src1, vecD src2)
+instruct vcmge8B(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 8 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ge &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmge  $dst,$src1,$src2\t# vector cmp (8B)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20152,12 +20152,12 @@ instruct vcmge8B(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmge16B(vecX dst, vecX src1, vecX src2)
+instruct vcmge16B(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 16 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ge &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmge  $dst,$src1,$src2\t# vector cmp (16B)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20167,12 +20167,12 @@ instruct vcmge16B(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmge4S(vecD dst, vecD src1, vecD src2)
+instruct vcmge4S(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ge &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmge  $dst,$src1,$src2\t# vector cmp (4S)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20182,12 +20182,12 @@ instruct vcmge4S(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmge8S(vecX dst, vecX src1, vecX src2)
+instruct vcmge8S(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 8 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ge &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmge  $dst,$src1,$src2\t# vector cmp (8S)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20197,12 +20197,12 @@ instruct vcmge8S(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmge2I(vecD dst, vecD src1, vecD src2)
+instruct vcmge2I(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ge &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmge  $dst,$src1,$src2\t# vector cmp (2I)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20212,12 +20212,12 @@ instruct vcmge2I(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop64);
 %}
 
-instruct vcmge4I(vecX dst, vecX src1, vecX src2)
+instruct vcmge4I(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ge &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmge  $dst,$src1,$src2\t# vector cmp (4I)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20227,12 +20227,12 @@ instruct vcmge4I(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmge2L(vecX dst, vecX src1, vecX src2)
+instruct vcmge2L(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ge &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "cmge  $dst,$src1,$src2\t# vector cmp (2L)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20242,12 +20242,12 @@ instruct vcmge2L(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop128);
 %}
 
-instruct vcmge2F(vecD dst, vecD src1, vecD src2)
+instruct vcmge2F(vecD dst, vecD src1, vecD src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ge &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmge  $dst,$src1,$src2\t# vector cmp (2F)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20257,12 +20257,12 @@ instruct vcmge2F(vecD dst, vecD src1, vecD src2)
   ins_pipe(vdop_fp64);
 %}
 
-instruct vcmge4F(vecX dst, vecX src1, vecX src2)
+instruct vcmge4F(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 4 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ge &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmge  $dst,$src1,$src2\t# vector cmp (4F)" %}
   ins_cost(INSN_COST);
   ins_encode %{
@@ -20272,12 +20272,12 @@ instruct vcmge4F(vecX dst, vecX src1, vecX src2)
   ins_pipe(vdop_fp128);
 %}
 
-instruct vcmge2D(vecX dst, vecX src1, vecX src2)
+instruct vcmge2D(vecX dst, vecX src1, vecX src2, immI cond)
 %{
   predicate(n->as_Vector()->length() == 2 &&
             n->as_VectorMaskCmp()->get_predicate() == BoolTest::ge &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
-  match(Set dst (VectorMaskCmp src1 src2));
+            n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   format %{ "fcmge  $dst,$src1,$src2\t# vector cmp (2D)" %}
   ins_cost(INSN_COST);
   ins_encode %{
