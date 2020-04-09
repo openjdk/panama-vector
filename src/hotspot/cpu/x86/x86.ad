@@ -7077,48 +7077,6 @@ instruct vabsnegD(vec dst, vec src, rRegI scratch) %{
   ins_pipe( pipe_slow );
 %}
 
-//------------------------------------- NOT --------------------------------------------
-
-instruct vnotB(vec dst, vec src) %{
-  predicate(UseAVX == 0);
-  match(Set dst (NotV src));
-  effect(TEMP dst);
-  format %{ "vector_not  $dst,$src\t!" %}
-  ins_encode %{
-    int vlen = vector_length_in_bytes(this);
-    switch(vlen) {
-      default:
-        assert(0, "Incorrect vector length");
-        break;
-      case 4: {
-        __ movdl($dst$$XMMRegister, ExternalAddress(vector_all_bits_set()));
-        __ pxor($dst$$XMMRegister, $src$$XMMRegister);
-      } break;
-      case 8: {
-        __ movq($dst$$XMMRegister, ExternalAddress(vector_all_bits_set()));
-        __ pxor($dst$$XMMRegister, $src$$XMMRegister);
-      } break;
-      case 16: {
-        __ movdqu($dst$$XMMRegister, ExternalAddress(vector_all_bits_set()));
-        __ pxor($dst$$XMMRegister, $src$$XMMRegister);
-      } break;
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vnotB_reg(vec dst, vec src, rRegP scratch) %{
-  predicate(UseAVX > 0);
-  match(Set dst (NotV src));
-  effect(TEMP scratch);
-  format %{ "vector_not  $dst,$src\t! using $scratch as rRegP" %}
-  ins_encode %{
-    int vlen_enc = vector_length_encoding(this);
-    __ vpxor($dst$$XMMRegister, $src$$XMMRegister, ExternalAddress(vector_all_bits_set()), vlen_enc, $scratch$$Register);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
 //------------------------------------- VectorTest --------------------------------------------
 
 #ifdef _LP64

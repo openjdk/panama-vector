@@ -608,10 +608,7 @@ final class DoubleMaxVector extends DoubleVector {
         @Override
         @ForceInline
         public DoubleMaxMask not() {
-            return (DoubleMaxMask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, DoubleMaxMask.class, long.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -636,6 +633,16 @@ final class DoubleMaxVector extends DoubleVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        DoubleMaxMask xor(VectorMask<Double> mask) {
+            Objects.requireNonNull(mask);
+            DoubleMaxMask m = (DoubleMaxMask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, DoubleMaxMask.class, long.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -654,12 +661,16 @@ final class DoubleMaxVector extends DoubleVector {
                                          (m, __) -> allTrueHelper(((DoubleMaxMask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static DoubleMaxMask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(DoubleMaxMask.class, long.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final DoubleMaxMask TRUE_MASK = new DoubleMaxMask(true);
-        static final DoubleMaxMask FALSE_MASK = new DoubleMaxMask(false);
+        private static final DoubleMaxMask  TRUE_MASK = new DoubleMaxMask(true);
+        private static final DoubleMaxMask FALSE_MASK = new DoubleMaxMask(false);
+
     }
 
     // Shuffle

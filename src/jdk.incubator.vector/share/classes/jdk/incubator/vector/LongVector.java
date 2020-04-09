@@ -526,7 +526,9 @@ public abstract class LongVector extends AbstractVector<Long> {
             if (op == ZOMO) {
                 return blend(broadcast(-1), compare(NE, 0));
             }
-            if (op == NEG) {
+            if (op == NOT) {
+                return broadcast(-1).lanewiseTemplate(XOR, this);
+            } else if (op == NEG) {
                 // FIXME: Support this in the JIT.
                 return broadcast(0).lanewiseTemplate(SUB, this);
             }
@@ -541,8 +543,6 @@ public abstract class LongVector extends AbstractVector<Long> {
                         v0.uOp((i, a) -> (long) -a);
                 case VECTOR_OP_ABS: return v0 ->
                         v0.uOp((i, a) -> (long) Math.abs(a));
-                case VECTOR_OP_NOT: return v0 ->
-                        v0.uOp((i, a) -> (long) ~a);
                 default: return null;
               }}));
     }

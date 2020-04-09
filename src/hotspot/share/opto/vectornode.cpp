@@ -178,8 +178,6 @@ int VectorNode::opcode(int sopc, BasicType bt) {
   case Op_SqrtD:
     assert(bt == T_DOUBLE, "must be");
     return Op_SqrtVD;
-  case Op_Not:
-    return Op_NotV;
   case Op_PopCountI:
     if (bt == T_INT) {
       return Op_PopCountVI;
@@ -489,7 +487,6 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt) {
   case Op_SqrtVD: return new SqrtVDNode(n1, vt);
 
   case Op_PopCountVI: return new PopCountVINode(n1, vt);
-  case Op_NotV: return new NotVNode(n1, vt);
 
   case Op_LShiftVB: return new LShiftVBNode(n1, n2, vt);
   case Op_LShiftVS: return new LShiftVSNode(n1, n2, vt);

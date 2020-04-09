@@ -475,7 +475,7 @@ public abstract class VectorOperators {
     // Unary operators
 
     /** Produce {@code ~a}.  Integral only. */
-    public static final /*bitwise*/ Unary NOT = unary("NOT", "~", VectorSupport.VECTOR_OP_NOT, VO_NOFP);
+    public static final /*bitwise*/ Unary NOT = unary("NOT", "~", -1 /*VectorSupport.VECTOR_OP_NOT*/, VO_NOFP | VO_SPECIAL);
     /** Produce {@code a==0?0:-1} (zero or minus one).  Integral only. */
     public static final /*bitwise*/ Unary ZOMO = unary("ZOMO", "a==0?0:-1", -1 /*VectorSupport.VECTOR_OP_ZOMO*/, VO_NOFP);
     /** Produce {@code abs(a)}. */
@@ -1340,7 +1340,7 @@ public abstract class VectorOperators {
                 // These are all the "-1" opcode guys we know about:
                 assert(op == ZOMO ||
                        op == FIRST_NONZERO ||
-                       op == AND_NOT ||
+                       op == AND_NOT || op == NOT ||
                        op == ROL ||
                        op == ROR ||
                        op == IS_DEFAULT || op == IS_NEGATIVE ||

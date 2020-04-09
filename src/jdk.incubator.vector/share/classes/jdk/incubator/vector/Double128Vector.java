@@ -611,10 +611,7 @@ final class Double128Vector extends DoubleVector {
         @Override
         @ForceInline
         public Double128Mask not() {
-            return (Double128Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Double128Mask.class, long.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -639,6 +636,16 @@ final class Double128Vector extends DoubleVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Double128Mask xor(VectorMask<Double> mask) {
+            Objects.requireNonNull(mask);
+            Double128Mask m = (Double128Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Double128Mask.class, long.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -657,12 +664,16 @@ final class Double128Vector extends DoubleVector {
                                          (m, __) -> allTrueHelper(((Double128Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Double128Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Double128Mask.class, long.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Double128Mask TRUE_MASK = new Double128Mask(true);
-        static final Double128Mask FALSE_MASK = new Double128Mask(false);
+        private static final Double128Mask  TRUE_MASK = new Double128Mask(true);
+        private static final Double128Mask FALSE_MASK = new Double128Mask(false);
+
     }
 
     // Shuffle

@@ -643,10 +643,7 @@ final class Int512Vector extends IntVector {
         @Override
         @ForceInline
         public Int512Mask not() {
-            return (Int512Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Int512Mask.class, int.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -671,6 +668,16 @@ final class Int512Vector extends IntVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Int512Mask xor(VectorMask<Integer> mask) {
+            Objects.requireNonNull(mask);
+            Int512Mask m = (Int512Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Int512Mask.class, int.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -689,12 +696,16 @@ final class Int512Vector extends IntVector {
                                          (m, __) -> allTrueHelper(((Int512Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Int512Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Int512Mask.class, int.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Int512Mask TRUE_MASK = new Int512Mask(true);
-        static final Int512Mask FALSE_MASK = new Int512Mask(false);
+        private static final Int512Mask  TRUE_MASK = new Int512Mask(true);
+        private static final Int512Mask FALSE_MASK = new Int512Mask(false);
+
     }
 
     // Shuffle

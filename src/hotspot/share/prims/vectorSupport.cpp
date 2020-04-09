@@ -342,16 +342,6 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
       }
       break;
     }
-    case VECTOR_OP_NOT: {
-      switch (bt) {
-        case T_BYTE:   // fall-through
-        case T_SHORT:  // fall-through
-        case T_INT:    // fall-through
-        case T_LONG:   return Op_Not;
-        default: fatal("NOT: %s", type2name(bt));
-      }
-      break;
-    }
     case VECTOR_OP_FMA: {
       switch (bt) {
         case T_FLOAT:  return Op_FmaF;

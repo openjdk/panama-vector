@@ -615,10 +615,7 @@ final class Float128Vector extends FloatVector {
         @Override
         @ForceInline
         public Float128Mask not() {
-            return (Float128Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Float128Mask.class, int.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -643,6 +640,16 @@ final class Float128Vector extends FloatVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Float128Mask xor(VectorMask<Float> mask) {
+            Objects.requireNonNull(mask);
+            Float128Mask m = (Float128Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Float128Mask.class, int.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -661,12 +668,16 @@ final class Float128Vector extends FloatVector {
                                          (m, __) -> allTrueHelper(((Float128Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Float128Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Float128Mask.class, int.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Float128Mask TRUE_MASK = new Float128Mask(true);
-        static final Float128Mask FALSE_MASK = new Float128Mask(false);
+        private static final Float128Mask  TRUE_MASK = new Float128Mask(true);
+        private static final Float128Mask FALSE_MASK = new Float128Mask(false);
+
     }
 
     // Shuffle

@@ -603,10 +603,7 @@ final class LongMaxVector extends LongVector {
         @Override
         @ForceInline
         public LongMaxMask not() {
-            return (LongMaxMask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, LongMaxMask.class, long.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -631,6 +628,16 @@ final class LongMaxVector extends LongVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        LongMaxMask xor(VectorMask<Long> mask) {
+            Objects.requireNonNull(mask);
+            LongMaxMask m = (LongMaxMask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, LongMaxMask.class, long.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -649,12 +656,16 @@ final class LongMaxVector extends LongVector {
                                          (m, __) -> allTrueHelper(((LongMaxMask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static LongMaxMask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(LongMaxMask.class, long.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final LongMaxMask TRUE_MASK = new LongMaxMask(true);
-        static final LongMaxMask FALSE_MASK = new LongMaxMask(false);
+        private static final LongMaxMask  TRUE_MASK = new LongMaxMask(true);
+        private static final LongMaxMask FALSE_MASK = new LongMaxMask(false);
+
     }
 
     // Shuffle

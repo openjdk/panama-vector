@@ -611,10 +611,7 @@ final class Float64Vector extends FloatVector {
         @Override
         @ForceInline
         public Float64Mask not() {
-            return (Float64Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Float64Mask.class, int.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -639,6 +636,16 @@ final class Float64Vector extends FloatVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Float64Mask xor(VectorMask<Float> mask) {
+            Objects.requireNonNull(mask);
+            Float64Mask m = (Float64Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Float64Mask.class, int.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -657,12 +664,16 @@ final class Float64Vector extends FloatVector {
                                          (m, __) -> allTrueHelper(((Float64Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Float64Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Float64Mask.class, int.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Float64Mask TRUE_MASK = new Float64Mask(true);
-        static final Float64Mask FALSE_MASK = new Float64Mask(false);
+        private static final Float64Mask  TRUE_MASK = new Float64Mask(true);
+        private static final Float64Mask FALSE_MASK = new Float64Mask(false);
+
     }
 
     // Shuffle

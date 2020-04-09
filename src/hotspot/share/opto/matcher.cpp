@@ -2090,6 +2090,13 @@ bool Matcher::is_vshift_con_pattern(Node *n, Node *m) {
   return false;
 }
 
+bool Matcher::is_vnot_pattern(Node *n, Node *m) {
+  if (n != NULL && m != NULL) {
+    return VectorNode::is_vector_bitwise_not_pattern(n) &&
+           VectorNode::is_all_ones_vector(m);
+  }
+  return false;
+}
 
 bool Matcher::clone_base_plus_offset_address(AddPNode* m, Matcher::MStack& mstack, VectorSet& address_visited) {
   Node *off = m->in(AddPNode::Offset);
@@ -2165,8 +2172,14 @@ void Matcher::find_shared( Node *n ) {
         }
 
         // if 'n' and 'm' are part of a graph for BMI instruction, clone this node.
-#ifdef X86
+#ifdef X86 // FIXME: move to x86.ad/x86_64.ad
         if (UseBMI1Instructions && is_bmi_pattern(n, m)) {
+          mstack.push(m, Visit);
+          continue;
+        }
+#endif
+#ifdef AARCH64 // FIXME: move to aarch64.ad. Doesn't make much difference on x86
+        if (is_vnot_pattern(n, m)) {
           mstack.push(m, Visit);
           continue;
         }

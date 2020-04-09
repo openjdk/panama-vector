@@ -18912,10 +18912,12 @@ instruct vneg2D(vecX dst, vecX src)
 
 // --------------------------------- NOT --------------------------------------
 
-instruct vnot8B(vecD dst, vecD src)
+instruct vnot2I(vecD dst, vecD src, immI_M1 m1)
 %{
   predicate(n->as_Vector()->length_in_bytes() == 8);
-  match(Set dst (NotV src));
+  match(Set dst (XorV src (ReplicateB m1)));
+  match(Set dst (XorV src (ReplicateS m1)));
+  match(Set dst (XorV src (ReplicateI m1)));
   ins_cost(INSN_COST);
   format %{ "not  $dst,$src\t# vector (8B)" %}
   ins_encode %{
@@ -18925,10 +18927,25 @@ instruct vnot8B(vecD dst, vecD src)
   ins_pipe(vlogical64);
 %}
 
-instruct vnot16B(vecX dst, vecX src)
+instruct vnot4I(vecX dst, vecX src, immI_M1 m1)
 %{
   predicate(n->as_Vector()->length_in_bytes() == 16);
-  match(Set dst (NotV src));
+  match(Set dst (XorV src (ReplicateB m1)));
+  match(Set dst (XorV src (ReplicateS m1)));
+  match(Set dst (XorV src (ReplicateI m1)));
+  ins_cost(INSN_COST);
+  format %{ "not  $dst,$src\t# vector (16B)" %}
+  ins_encode %{
+    __ notr(as_FloatRegister($dst$$reg), __ T16B,
+            as_FloatRegister($src$$reg));
+  %}
+  ins_pipe(vlogical128);
+%}
+
+instruct vnot2L(vecX dst, vecX src, immL_M1 m1)
+%{
+  predicate(n->as_Vector()->length_in_bytes() == 16);
+  match(Set dst (XorV src (ReplicateL m1)));
   ins_cost(INSN_COST);
   format %{ "not  $dst,$src\t# vector (16B)" %}
   ins_encode %{

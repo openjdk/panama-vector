@@ -583,7 +583,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 return blend(broadcast(-1), compare(NE, 0));
             }
 #if[BITWISE]
-            if (op == NEG) {
+            if (op == NOT) {
+                return broadcast(-1).lanewiseTemplate(XOR, this);
+            } else if (op == NEG) {
                 // FIXME: Support this in the JIT.
                 return broadcast(0).lanewiseTemplate(SUB, this);
             }
@@ -599,10 +601,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                         v0.uOp((i, a) -> ($type$) -a);
                 case VECTOR_OP_ABS: return v0 ->
                         v0.uOp((i, a) -> ($type$) Math.abs(a));
-#if[BITWISE]
-                case VECTOR_OP_NOT: return v0 ->
-                        v0.uOp((i, a) -> ($type$) ~a);
-#end[BITWISE]
 #if[FP]
                 case VECTOR_OP_SIN: return v0 ->
                         v0.uOp((i, a) -> ($type$) Math.sin(a));

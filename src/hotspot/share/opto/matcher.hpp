@@ -127,6 +127,8 @@ private:
 
   bool is_vshift_con_pattern(Node *n, Node *m);
 
+  bool is_vnot_pattern(Node *n, Node *m);
+
   // Debug and profile information for nodes in old space:
   GrowableArray<Node_Notes*>* _old_node_note_array;
 

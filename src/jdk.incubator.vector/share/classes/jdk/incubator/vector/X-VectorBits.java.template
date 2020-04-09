@@ -886,10 +886,7 @@ final class $vectortype$ extends $abstractvectortype$ {
         @Override
         @ForceInline
         public $masktype$ not() {
-            return ($masktype$) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, $masktype$.class, $bitstype$.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -914,6 +911,16 @@ final class $vectortype$ extends $abstractvectortype$ {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        $masktype$ xor(VectorMask<$Boxtype$> mask) {
+            Objects.requireNonNull(mask);
+            $masktype$ m = ($masktype$)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, $masktype$.class, $bitstype$.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -932,10 +939,16 @@ final class $vectortype$ extends $abstractvectortype$ {
                                          (m, __) -> allTrueHelper((($masktype$)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static $masktype$ maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced($masktype$.class, $bitstype$.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
+        private static final $masktype$  TRUE_MASK = new $masktype$(true);
+        private static final $masktype$ FALSE_MASK = new $masktype$(false);
+
 #if[intAndMax]
 
         static boolean[] maskLowerHalf() {
@@ -948,8 +961,6 @@ final class $vectortype$ extends $abstractvectortype$ {
         }
 
 #end[intAndMax]
-        static final $masktype$ TRUE_MASK = new $masktype$(true);
-        static final $masktype$ FALSE_MASK = new $masktype$(false);
 #if[intAndMax]
         static final IntMaxMask LOWER_HALF_TRUE_MASK = new IntMaxMask(maskLowerHalf());
 #end[intAndMax]

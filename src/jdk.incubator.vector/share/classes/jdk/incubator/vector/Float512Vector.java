@@ -639,10 +639,7 @@ final class Float512Vector extends FloatVector {
         @Override
         @ForceInline
         public Float512Mask not() {
-            return (Float512Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Float512Mask.class, int.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -667,6 +664,16 @@ final class Float512Vector extends FloatVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Float512Mask xor(VectorMask<Float> mask) {
+            Objects.requireNonNull(mask);
+            Float512Mask m = (Float512Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Float512Mask.class, int.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -685,12 +692,16 @@ final class Float512Vector extends FloatVector {
                                          (m, __) -> allTrueHelper(((Float512Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Float512Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Float512Mask.class, int.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Float512Mask TRUE_MASK = new Float512Mask(true);
-        static final Float512Mask FALSE_MASK = new Float512Mask(false);
+        private static final Float512Mask  TRUE_MASK = new Float512Mask(true);
+        private static final Float512Mask FALSE_MASK = new Float512Mask(false);
+
     }
 
     // Shuffle

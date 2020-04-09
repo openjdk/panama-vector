@@ -675,10 +675,7 @@ final class Byte256Vector extends ByteVector {
         @Override
         @ForceInline
         public Byte256Mask not() {
-            return (Byte256Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Byte256Mask.class, byte.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -703,6 +700,16 @@ final class Byte256Vector extends ByteVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Byte256Mask xor(VectorMask<Byte> mask) {
+            Objects.requireNonNull(mask);
+            Byte256Mask m = (Byte256Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Byte256Mask.class, byte.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -721,12 +728,16 @@ final class Byte256Vector extends ByteVector {
                                          (m, __) -> allTrueHelper(((Byte256Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Byte256Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Byte256Mask.class, byte.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Byte256Mask TRUE_MASK = new Byte256Mask(true);
-        static final Byte256Mask FALSE_MASK = new Byte256Mask(false);
+        private static final Byte256Mask  TRUE_MASK = new Byte256Mask(true);
+        private static final Byte256Mask FALSE_MASK = new Byte256Mask(false);
+
     }
 
     // Shuffle

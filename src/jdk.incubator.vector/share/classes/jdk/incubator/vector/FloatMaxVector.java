@@ -608,10 +608,7 @@ final class FloatMaxVector extends FloatVector {
         @Override
         @ForceInline
         public FloatMaxMask not() {
-            return (FloatMaxMask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, FloatMaxMask.class, int.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -636,6 +633,16 @@ final class FloatMaxVector extends FloatVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        FloatMaxMask xor(VectorMask<Float> mask) {
+            Objects.requireNonNull(mask);
+            FloatMaxMask m = (FloatMaxMask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, FloatMaxMask.class, int.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -654,12 +661,16 @@ final class FloatMaxVector extends FloatVector {
                                          (m, __) -> allTrueHelper(((FloatMaxMask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static FloatMaxMask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(FloatMaxMask.class, int.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final FloatMaxMask TRUE_MASK = new FloatMaxMask(true);
-        static final FloatMaxMask FALSE_MASK = new FloatMaxMask(false);
+        private static final FloatMaxMask  TRUE_MASK = new FloatMaxMask(true);
+        private static final FloatMaxMask FALSE_MASK = new FloatMaxMask(false);
+
     }
 
     // Shuffle

@@ -613,10 +613,7 @@ final class IntMaxVector extends IntVector {
         @Override
         @ForceInline
         public IntMaxMask not() {
-            return (IntMaxMask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, IntMaxMask.class, int.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -641,6 +638,16 @@ final class IntMaxVector extends IntVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        IntMaxMask xor(VectorMask<Integer> mask) {
+            Objects.requireNonNull(mask);
+            IntMaxMask m = (IntMaxMask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, IntMaxMask.class, int.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -659,10 +666,16 @@ final class IntMaxVector extends IntVector {
                                          (m, __) -> allTrueHelper(((IntMaxMask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static IntMaxMask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(IntMaxMask.class, int.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
+        private static final IntMaxMask  TRUE_MASK = new IntMaxMask(true);
+        private static final IntMaxMask FALSE_MASK = new IntMaxMask(false);
+
 
         static boolean[] maskLowerHalf() {
             boolean[] a = new boolean[VLENGTH];
@@ -673,8 +686,6 @@ final class IntMaxVector extends IntVector {
             return a;
         }
 
-        static final IntMaxMask TRUE_MASK = new IntMaxMask(true);
-        static final IntMaxMask FALSE_MASK = new IntMaxMask(false);
         static final IntMaxMask LOWER_HALF_TRUE_MASK = new IntMaxMask(maskLowerHalf());
     }
 

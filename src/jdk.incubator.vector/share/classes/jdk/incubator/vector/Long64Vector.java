@@ -603,10 +603,7 @@ final class Long64Vector extends LongVector {
         @Override
         @ForceInline
         public Long64Mask not() {
-            return (Long64Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Long64Mask.class, long.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -631,6 +628,16 @@ final class Long64Vector extends LongVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Long64Mask xor(VectorMask<Long> mask) {
+            Objects.requireNonNull(mask);
+            Long64Mask m = (Long64Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Long64Mask.class, long.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -649,12 +656,16 @@ final class Long64Vector extends LongVector {
                                          (m, __) -> allTrueHelper(((Long64Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Long64Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Long64Mask.class, long.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Long64Mask TRUE_MASK = new Long64Mask(true);
-        static final Long64Mask FALSE_MASK = new Long64Mask(false);
+        private static final Long64Mask  TRUE_MASK = new Long64Mask(true);
+        private static final Long64Mask FALSE_MASK = new Long64Mask(false);
+
     }
 
     // Shuffle

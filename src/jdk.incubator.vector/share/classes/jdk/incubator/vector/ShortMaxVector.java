@@ -613,10 +613,7 @@ final class ShortMaxVector extends ShortVector {
         @Override
         @ForceInline
         public ShortMaxMask not() {
-            return (ShortMaxMask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, ShortMaxMask.class, short.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -641,6 +638,16 @@ final class ShortMaxVector extends ShortVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        ShortMaxMask xor(VectorMask<Short> mask) {
+            Objects.requireNonNull(mask);
+            ShortMaxMask m = (ShortMaxMask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, ShortMaxMask.class, short.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -659,12 +666,16 @@ final class ShortMaxVector extends ShortVector {
                                          (m, __) -> allTrueHelper(((ShortMaxMask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static ShortMaxMask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(ShortMaxMask.class, short.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final ShortMaxMask TRUE_MASK = new ShortMaxMask(true);
-        static final ShortMaxMask FALSE_MASK = new ShortMaxMask(false);
+        private static final ShortMaxMask  TRUE_MASK = new ShortMaxMask(true);
+        private static final ShortMaxMask FALSE_MASK = new ShortMaxMask(false);
+
     }
 
     // Shuffle

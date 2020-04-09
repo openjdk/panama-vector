@@ -617,10 +617,7 @@ final class Long512Vector extends LongVector {
         @Override
         @ForceInline
         public Long512Mask not() {
-            return (Long512Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Long512Mask.class, long.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -645,6 +642,16 @@ final class Long512Vector extends LongVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Long512Mask xor(VectorMask<Long> mask) {
+            Objects.requireNonNull(mask);
+            Long512Mask m = (Long512Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Long512Mask.class, long.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -663,12 +670,16 @@ final class Long512Vector extends LongVector {
                                          (m, __) -> allTrueHelper(((Long512Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Long512Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Long512Mask.class, long.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Long512Mask TRUE_MASK = new Long512Mask(true);
-        static final Long512Mask FALSE_MASK = new Long512Mask(false);
+        private static final Long512Mask  TRUE_MASK = new Long512Mask(true);
+        private static final Long512Mask FALSE_MASK = new Long512Mask(false);
+
     }
 
     // Shuffle

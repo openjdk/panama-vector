@@ -643,10 +643,7 @@ final class Short256Vector extends ShortVector {
         @Override
         @ForceInline
         public Short256Mask not() {
-            return (Short256Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Short256Mask.class, short.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -671,6 +668,16 @@ final class Short256Vector extends ShortVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Short256Mask xor(VectorMask<Short> mask) {
+            Objects.requireNonNull(mask);
+            Short256Mask m = (Short256Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Short256Mask.class, short.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -689,12 +696,16 @@ final class Short256Vector extends ShortVector {
                                          (m, __) -> allTrueHelper(((Short256Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Short256Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Short256Mask.class, short.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Short256Mask TRUE_MASK = new Short256Mask(true);
-        static final Short256Mask FALSE_MASK = new Short256Mask(false);
+        private static final Short256Mask  TRUE_MASK = new Short256Mask(true);
+        private static final Short256Mask FALSE_MASK = new Short256Mask(false);
+
     }
 
     // Shuffle

@@ -623,10 +623,7 @@ final class Float256Vector extends FloatVector {
         @Override
         @ForceInline
         public Float256Mask not() {
-            return (Float256Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Float256Mask.class, int.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -651,6 +648,16 @@ final class Float256Vector extends FloatVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Float256Mask xor(VectorMask<Float> mask) {
+            Objects.requireNonNull(mask);
+            Float256Mask m = (Float256Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Float256Mask.class, int.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -669,12 +676,16 @@ final class Float256Vector extends FloatVector {
                                          (m, __) -> allTrueHelper(((Float256Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Float256Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Float256Mask.class, int.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Float256Mask TRUE_MASK = new Float256Mask(true);
-        static final Float256Mask FALSE_MASK = new Float256Mask(false);
+        private static final Float256Mask  TRUE_MASK = new Float256Mask(true);
+        private static final Float256Mask FALSE_MASK = new Float256Mask(false);
+
     }
 
     // Shuffle
