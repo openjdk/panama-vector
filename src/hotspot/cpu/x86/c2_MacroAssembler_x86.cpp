@@ -1135,9 +1135,17 @@ void C2_MacroAssembler::vshiftq(int opcode, XMMRegister dst, XMMRegister src, XM
 
 void C2_MacroAssembler::varshiftd(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc) {
   switch (opcode) {
-    case Op_VRShiftV:  vpsravd(dst, src, shift, vlen_enc); break;
-    case Op_VLShiftV:  vpsllvd(dst, src, shift, vlen_enc); break;
-    case Op_VURShiftV: vpsrlvd(dst, src, shift, vlen_enc); break;
+    case Op_RShiftVB:  // fall-through
+    case Op_RShiftVS:  // fall-through
+    case Op_RShiftVI:  vpsravd(dst, src, shift, vlen_enc); break;
+
+    case Op_LShiftVB:  // fall-through
+    case Op_LShiftVS:  // fall-through
+    case Op_LShiftVI:  vpsllvd(dst, src, shift, vlen_enc); break;
+
+    case Op_URShiftVB: // fall-through
+    case Op_URShiftVS: // fall-through
+    case Op_URShiftVI: vpsrlvd(dst, src, shift, vlen_enc); break;
 
     default: assert(false, "%s", NodeClassNames[opcode]);
   }
@@ -1145,9 +1153,14 @@ void C2_MacroAssembler::varshiftd(int opcode, XMMRegister dst, XMMRegister src, 
 
 void C2_MacroAssembler::varshiftw(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc) {
   switch (opcode) {
-    case Op_VRShiftV:  evpsravw(dst, src, shift, vlen_enc); break;
-    case Op_VLShiftV:  evpsllvw(dst, src, shift, vlen_enc); break;
-    case Op_VURShiftV: evpsrlvw(dst, src, shift, vlen_enc); break;
+    case Op_RShiftVB:  // fall-through
+    case Op_RShiftVS:  evpsravw(dst, src, shift, vlen_enc); break;
+
+    case Op_LShiftVB:  // fall-through
+    case Op_LShiftVS:  evpsllvw(dst, src, shift, vlen_enc); break;
+
+    case Op_URShiftVB: // fall-through
+    case Op_URShiftVS: evpsrlvw(dst, src, shift, vlen_enc); break;
 
     default: assert(false, "%s", NodeClassNames[opcode]);
   }
@@ -1156,7 +1169,7 @@ void C2_MacroAssembler::varshiftw(int opcode, XMMRegister dst, XMMRegister src, 
 void C2_MacroAssembler::varshiftq(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc, XMMRegister tmp) {
   assert(UseAVX >= 2, "required");
   switch (opcode) {
-    case Op_VRShiftV: {
+    case Op_RShiftVL: {
       if (UseAVX > 2) {
         assert(tmp == xnoreg, "not used");
         if (!VM_Version::supports_avx512vl()) {
@@ -1172,12 +1185,12 @@ void C2_MacroAssembler::varshiftq(int opcode, XMMRegister dst, XMMRegister src, 
       }
       break;
     }
-    case Op_VLShiftV: {
+    case Op_LShiftVL: {
       assert(tmp == xnoreg, "not used");
       vpsllvq(dst, src, shift, vlen_enc);
       break;
     }
-    case Op_VURShiftV: {
+    case Op_URShiftVL: {
       assert(tmp == xnoreg, "not used");
       vpsrlvq(dst, src, shift, vlen_enc);
       break;
@@ -1188,7 +1201,10 @@ void C2_MacroAssembler::varshiftq(int opcode, XMMRegister dst, XMMRegister src, 
 
 // Variable shift src by shift using vtmp and scratch as TEMPs giving word result in dst
 void C2_MacroAssembler::varshiftbw(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len, XMMRegister vtmp, Register scratch) {
-  bool sign = (opcode == Op_VURShiftV) ? false : true;
+  assert(opcode == Op_LShiftVB ||
+         opcode == Op_RShiftVB ||
+         opcode == Op_URShiftVB, "%s", NodeClassNames[opcode]);
+  bool sign = (opcode != Op_URShiftVB);
   assert(vector_len == 0, "required");
   vextendbd(sign, dst, src, 1);
   vpmovzxbd(vtmp, shift, 1);
@@ -1200,7 +1216,10 @@ void C2_MacroAssembler::varshiftbw(int opcode, XMMRegister dst, XMMRegister src,
 
 // Variable shift src by shift using vtmp and scratch as TEMPs giving byte result in dst
 void C2_MacroAssembler::evarshiftb(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len, XMMRegister vtmp, Register scratch) {
-  bool sign = (opcode == Op_VURShiftV) ? false : true;
+  assert(opcode == Op_LShiftVB ||
+         opcode == Op_RShiftVB ||
+         opcode == Op_URShiftVB, "%s", NodeClassNames[opcode]);
+  bool sign = (opcode != Op_URShiftVB);
   int ext_vector_len = vector_len + 1;
   vextendbw(sign, dst, src, ext_vector_len);
   vpmovzxbw(vtmp, shift, ext_vector_len);

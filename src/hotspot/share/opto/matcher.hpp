@@ -344,7 +344,10 @@ public:
   static const uint vector_ideal_reg(int len);
   static const uint vector_shift_count_ideal_reg(int len);
 
-  // CPU supports misaligned vectors store/load.
+  // Does the CPU supports vector variable shift instructions?
+  static bool supports_vector_variable_shifts(void);
+
+// CPU supports misaligned vectors store/load.
   static const bool misaligned_vectors_ok();
 
   // Should original key array reference be passed to AES stubs

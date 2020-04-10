@@ -2095,8 +2095,12 @@ const bool Matcher::has_predicated_vectors(void) {
   return false;
 }
 
+bool Matcher::supports_vector_variable_shifts(void) {
+  return true;
+}
+
 // Vector calling convention not yet implemented.
-const bool Matcher::supports_vector_calling_convention() {
+const bool Matcher::supports_vector_calling_convention(void) {
   return false;
 }
 

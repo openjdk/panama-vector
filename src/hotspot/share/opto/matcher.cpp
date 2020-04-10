@@ -2660,9 +2660,14 @@ MachOper* Matcher::specialize_vector_operand_helper(MachNode* m, uint opnd_idx, 
   // LShiftCntV/RShiftCntV report wide vector type, but Matcher::vector_shift_count_ideal_reg() as ideal register (see vectornode.hpp).
   // Look for shift count use sites as well (at vector shift nodes).
   int opc = m->ideal_Opcode();
-  if ((VectorNode::is_vector_shift_count(opc)  && opnd_idx == 0) || // DEF operand of LShiftCntV/RShiftCntV
-      (VectorNode::is_vector_shift(opc)        && opnd_idx == 2)) { // shift operand of a vector shift node
+  if (VectorNode::is_vector_shift_count(opc)  && opnd_idx == 0) { // DEF operand of LShiftCntV/RShiftCntV
     ideal_reg = Matcher::vector_shift_count_ideal_reg(vt->length_in_bytes());
+  } else if (VectorNode::is_vector_shift(opc) && opnd_idx == 2) { // shift operand of a vector shift node
+    int base_idx = m->operand_index(opnd_idx);
+    Node* shift = m->in(base_idx);
+    if (shift->is_Mach() && VectorNode::is_vector_shift_count(shift->as_Mach()->ideal_Opcode())) {
+      ideal_reg = Matcher::vector_shift_count_ideal_reg(vt->length_in_bytes());
+    }
   }
   return Matcher::specialize_generic_vector_operand(original_opnd, ideal_reg, false);
 }

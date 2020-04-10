@@ -503,11 +503,6 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt) {
   case Op_URShiftVI: return new URShiftVINode(n1, n2, vt);
   case Op_URShiftVL: return new URShiftVLNode(n1, n2, vt);
 
-  // Variable shift left
-  case Op_VLShiftV: return new VLShiftVNode(n1, n2, vt);
-  case Op_VRShiftV: return new VRShiftVNode(n1, n2, vt);
-  case Op_VURShiftV: return new VURShiftVNode(n1, n2, vt);
-
   case Op_AndV: return new AndVNode(n1, n2, vt);
   case Op_OrV:  return new OrVNode (n1, n2, vt);
   case Op_XorV: return new XorVNode(n1, n2, vt);

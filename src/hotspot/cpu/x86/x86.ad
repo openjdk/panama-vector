@@ -1468,9 +1468,6 @@ const bool Matcher::match_rule_supported(int opcode) {
         return false; // 128bit vroundpd is not available
       }
       break;
-    case Op_VLShiftV:
-    case Op_VRShiftV:
-    case Op_VURShiftV:
     case Op_LoadVectorGather:
       if (UseAVX < 2) {
         return false;
@@ -1761,6 +1758,10 @@ bool Matcher::is_generic_vector(MachOper* opnd) {
 }
 
 //------------------------------------------------------------------------
+
+bool Matcher::supports_vector_variable_shifts(void) {
+  return (UseAVX >= 2);
+}
 
 const bool Matcher::has_predicated_vectors(void) {
   bool ret_value = false;
@@ -5764,7 +5765,7 @@ instruct vshiftcnt(vec dst, rRegI cnt) %{
 
 // Byte vector shift
 instruct vshiftB(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
-  predicate(vector_length(n) <= 8);
+  predicate(vector_length(n) <= 8 && VectorNode::is_vshift_cnt(n->in(2)));
   match(Set dst ( LShiftVB src shift));
   match(Set dst ( RShiftVB src shift));
   match(Set dst (URShiftVB src shift));
@@ -5773,7 +5774,7 @@ instruct vshiftB(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
   ins_encode %{
     assert(UseSSE > 3, "required");
     int opcode = this->ideal_Opcode();
-    bool sign = (opcode == Op_URShiftVB) ? false : true;
+    bool sign = (opcode != Op_URShiftVB);
     __ vextendbw(sign, $tmp$$XMMRegister, $src$$XMMRegister);
     __ vshiftw(opcode, $tmp$$XMMRegister, $shift$$XMMRegister);
     __ movdqu($dst$$XMMRegister, ExternalAddress(vector_short_to_byte_mask()), $scratch$$Register);
@@ -5784,7 +5785,8 @@ instruct vshiftB(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
 %}
 
 instruct vshift16B(vec dst, vec src, vec shift, vec tmp1, vec tmp2, rRegI scratch) %{
-  predicate(vector_length(n) == 16 && UseAVX <= 1);
+  predicate(vector_length(n) == 16 && VectorNode::is_vshift_cnt(n->in(2)) &&
+            UseAVX <= 1);
   match(Set dst ( LShiftVB src shift));
   match(Set dst ( RShiftVB src shift));
   match(Set dst (URShiftVB src shift));
@@ -5793,7 +5795,7 @@ instruct vshift16B(vec dst, vec src, vec shift, vec tmp1, vec tmp2, rRegI scratc
   ins_encode %{
     assert(UseSSE > 3, "required");
     int opcode = this->ideal_Opcode();
-    bool sign = (opcode == Op_URShiftVB) ? false : true;
+    bool sign = (opcode != Op_URShiftVB);
     __ vextendbw(sign, $tmp1$$XMMRegister, $src$$XMMRegister);
     __ vshiftw(opcode, $tmp1$$XMMRegister, $shift$$XMMRegister);
     __ pshufd($tmp2$$XMMRegister, $src$$XMMRegister, 0xE);
@@ -5808,7 +5810,8 @@ instruct vshift16B(vec dst, vec src, vec shift, vec tmp1, vec tmp2, rRegI scratc
 %}
 
 instruct vshift16B_avx(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
-  predicate(vector_length(n) == 16 && UseAVX > 1);
+  predicate(vector_length(n) == 16 && VectorNode::is_vshift_cnt(n->in(2)) &&
+            UseAVX > 1);
   match(Set dst ( LShiftVB src shift));
   match(Set dst ( RShiftVB src shift));
   match(Set dst (URShiftVB src shift));
@@ -5816,7 +5819,7 @@ instruct vshift16B_avx(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
   format %{"vector_byte_shift $dst,$src,$shift" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    bool sign = (opcode == Op_URShiftVB) ? false : true;
+    bool sign = (opcode != Op_URShiftVB);
     int vlen_enc = Assembler::AVX_256bit;
     __ vextendbw(sign, $tmp$$XMMRegister, $src$$XMMRegister, vlen_enc);
     __ vshiftw(opcode, $tmp$$XMMRegister, $tmp$$XMMRegister, $shift$$XMMRegister, vlen_enc);
@@ -5828,7 +5831,7 @@ instruct vshift16B_avx(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
 %}
 
 instruct vshift32B_avx(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
-  predicate(vector_length(n) == 32);
+  predicate(vector_length(n) == 32 && VectorNode::is_vshift_cnt(n->in(2)));
   match(Set dst ( LShiftVB src shift));
   match(Set dst ( RShiftVB src shift));
   match(Set dst (URShiftVB src shift));
@@ -5837,7 +5840,7 @@ instruct vshift32B_avx(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
   ins_encode %{
     assert(UseAVX > 1, "required");
     int opcode = this->ideal_Opcode();
-    bool sign = (opcode == Op_URShiftVB) ? false : true;
+    bool sign = (opcode != Op_URShiftVB);
     int vlen_enc = Assembler::AVX_256bit;
     __ vextracti128_high($tmp$$XMMRegister, $src$$XMMRegister);
     __ vextendbw(sign, $tmp$$XMMRegister, $tmp$$XMMRegister, vlen_enc);
@@ -5853,7 +5856,7 @@ instruct vshift32B_avx(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
 %}
 
 instruct vshift64B_avx(vec dst, vec src, vec shift, vec tmp1, vec tmp2, rRegI scratch) %{
-  predicate(vector_length(n) == 64);
+  predicate(vector_length(n) == 64 && VectorNode::is_vshift_cnt(n->in(2)));
   match(Set dst ( LShiftVB src shift));
   match(Set dst  (RShiftVB src shift));
   match(Set dst (URShiftVB src shift));
@@ -5862,7 +5865,7 @@ instruct vshift64B_avx(vec dst, vec src, vec shift, vec tmp1, vec tmp2, rRegI sc
   ins_encode %{
     assert(UseAVX > 2, "required");
     int opcode = this->ideal_Opcode();
-    bool sign = (opcode == Op_URShiftVB) ? false : true;
+    bool sign = (opcode != Op_URShiftVB);
     int vlen_enc = Assembler::AVX_512bit;
     __ vextracti64x4($tmp1$$XMMRegister, $src$$XMMRegister, 1);
     __ vextendbw(sign, $tmp1$$XMMRegister, $tmp1$$XMMRegister, vlen_enc);
@@ -5886,6 +5889,7 @@ instruct vshift64B_avx(vec dst, vec src, vec shift, vec tmp1, vec tmp2, rRegI sc
 // unsigned values.
 // Shorts/Chars vector left shift
 instruct vshiftS(vec dst, vec src, vec shift) %{
+  predicate(VectorNode::is_vshift_cnt(n->in(2)));
   match(Set dst ( LShiftVS src shift));
   match(Set dst ( RShiftVS src shift));
   match(Set dst (URShiftVS src shift));
@@ -5916,6 +5920,7 @@ instruct vshiftS(vec dst, vec src, vec shift) %{
 
 // Integers vector left shift
 instruct vshiftI(vec dst, vec src, vec shift) %{
+  predicate(VectorNode::is_vshift_cnt(n->in(2)));
   match(Set dst ( LShiftVI src shift));
   match(Set dst ( RShiftVI src shift));
   match(Set dst (URShiftVI src shift));
@@ -5943,6 +5948,7 @@ instruct vshiftI(vec dst, vec src, vec shift) %{
 
 // Longs vector shift
 instruct vshiftL(vec dst, vec src, vec shift) %{
+  predicate(VectorNode::is_vshift_cnt(n->in(2)));
   match(Set dst ( LShiftVL src shift));
   match(Set dst (URShiftVL src shift));
   effect(TEMP dst, USE src, USE shift);
@@ -5964,7 +5970,7 @@ instruct vshiftL(vec dst, vec src, vec shift) %{
 // -------------------ArithmeticRightShift -----------------------------------
 // Long vector arithmetic right shift
 instruct vshiftL_arith_reg(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
-  predicate(UseAVX <= 2);
+  predicate(VectorNode::is_vshift_cnt(n->in(2)) && UseAVX <= 2);
   match(Set dst (RShiftVL src shift));
   effect(TEMP dst, TEMP tmp, TEMP scratch);
   format %{ "vshiftq $dst,$src,$shift" %}
@@ -5993,7 +5999,7 @@ instruct vshiftL_arith_reg(vec dst, vec src, vec shift, vec tmp, rRegI scratch) 
 %}
 
 instruct vshiftL_arith_reg_evex(vec dst, vec src, vec shift) %{
-  predicate(UseAVX > 2);
+  predicate(VectorNode::is_vshift_cnt(n->in(2)) && UseAVX > 2);
   match(Set dst (RShiftVL src shift));
   format %{ "vshiftq $dst,$src,$shift" %}
   ins_encode %{
@@ -6006,11 +6012,12 @@ instruct vshiftL_arith_reg_evex(vec dst, vec src, vec shift) %{
 // ------------------- Variable Shift -----------------------------
 // Byte variable shift
 instruct vshift8B_var_nobw(vec dst, vec src, vec shift, vec vtmp, rRegP scratch) %{
-  predicate(vector_length(n) <= 8 && vector_element_basic_type(n) == T_BYTE &&
+  predicate(vector_length(n) <= 8 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             !VM_Version::supports_avx512bw());
-  match(Set dst ( VLShiftV src shift));
-  match(Set dst ( VRShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVB src shift));
+  match(Set dst ( RShiftVB src shift));
+  match(Set dst (URShiftVB src shift));
   effect(TEMP dst, TEMP vtmp, TEMP scratch);
   format %{ "vector_varshift_byte $dst, $src, $shift\n\t! using $vtmp, $scratch as TEMP" %}
   ins_encode %{
@@ -6025,11 +6032,12 @@ instruct vshift8B_var_nobw(vec dst, vec src, vec shift, vec vtmp, rRegP scratch)
 %}
 
 instruct vshift16B_var_nobw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, rRegP scratch) %{
-  predicate(vector_length(n) == 16 && vector_element_basic_type(n) == T_BYTE &&
+  predicate(vector_length(n) == 16 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             !VM_Version::supports_avx512bw());
-  match(Set dst ( VLShiftV src shift));
-  match(Set dst ( VRShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVB src shift));
+  match(Set dst ( RShiftVB src shift));
+  match(Set dst (URShiftVB src shift));
   effect(TEMP dst, TEMP vtmp1, TEMP vtmp2, TEMP scratch);
   format %{ "vector_varshift_byte $dst, $src, $shift\n\t! using $vtmp1, $vtmp2 and $scratch as TEMP" %}
   ins_encode %{
@@ -6052,11 +6060,12 @@ instruct vshift16B_var_nobw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, r
 %}
 
 instruct vshift32B_var_nobw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, vec vtmp3, vec vtmp4, rRegP scratch) %{
-  predicate(vector_length(n) == 32 && vector_element_basic_type(n) == T_BYTE &&
+  predicate(vector_length(n) == 32 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             !VM_Version::supports_avx512bw());
-  match(Set dst ( VLShiftV src shift));
-  match(Set dst ( VRShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVB src shift));
+  match(Set dst ( RShiftVB src shift));
+  match(Set dst (URShiftVB src shift));
   effect(TEMP dst, TEMP vtmp1, TEMP vtmp2, TEMP vtmp3, TEMP vtmp4, TEMP scratch);
   format %{ "vector_varshift_byte $dst, $src, $shift\n\t using $vtmp1, $vtmp2, $vtmp3, $vtmp4 and $scratch as TEMP" %}
   ins_encode %{
@@ -6087,11 +6096,12 @@ instruct vshift32B_var_nobw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, v
 %}
 
 instruct vshiftB_var_evex_bw(vec dst, vec src, vec shift, vec vtmp, rRegP scratch) %{
-  predicate(vector_length(n) <= 32 && vector_element_basic_type(n) == T_BYTE &&
+  predicate(vector_length(n) <= 32 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             VM_Version::supports_avx512bw());
-  match(Set dst ( VLShiftV src shift));
-  match(Set dst ( VRShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVB src shift));
+  match(Set dst ( RShiftVB src shift));
+  match(Set dst (URShiftVB src shift));
   effect(TEMP dst, TEMP vtmp, TEMP scratch);
   format %{ "vector_varshift_byte $dst, $src, $shift\n\t! using $vtmp, $scratch as TEMP" %}
   ins_encode %{
@@ -6105,11 +6115,11 @@ instruct vshiftB_var_evex_bw(vec dst, vec src, vec shift, vec vtmp, rRegP scratc
 %}
 
 instruct vshift64B_var_evex_bw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, rRegP scratch) %{
-  predicate(vector_length(n) == 64 && vector_element_basic_type(n) == T_BYTE &&
+  predicate(vector_length(n) == 64 &&
             VM_Version::supports_avx512bw());
-  match(Set dst ( VLShiftV src shift));
-  match(Set dst ( VRShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVB src shift));
+  match(Set dst ( RShiftVB src shift));
+  match(Set dst (URShiftVB src shift));
   effect(TEMP dst, TEMP vtmp1, TEMP vtmp2, TEMP scratch);
   format %{ "vector_varshift_byte $dst, $src, $shift\n\t! using $vtmp1, $vtmp2 and $scratch as TEMP" %}
   ins_encode %{
@@ -6128,18 +6138,19 @@ instruct vshift64B_var_evex_bw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2
 
 // Short variable shift
 instruct vshift8S_var_nobw(vec dst, vec src, vec shift, vec vtmp, rRegP scratch) %{
-  predicate(vector_length(n) <= 8 && vector_element_basic_type(n) == T_SHORT &&
+  predicate(vector_length(n) <= 8 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             !VM_Version::supports_avx512bw());
-  match(Set dst (VLShiftV  src shift));
-  match(Set dst (VRShiftV  src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVS src shift));
+  match(Set dst ( RShiftVS src shift));
+  match(Set dst (URShiftVS src shift));
   effect(TEMP dst, TEMP vtmp, TEMP scratch);
   format %{ "vector_var_shift_left_short $dst, $src, $shift\n\t" %}
   ins_encode %{
     assert(UseAVX >= 2, "required");
 
     int opcode = this->ideal_Opcode();
-    bool sign = (opcode == Op_VURShiftV) ? false : true;
+    bool sign = (opcode != Op_URShiftVS);
     int vlen_enc = Assembler::AVX_256bit;
     __ vextendwd(sign, $dst$$XMMRegister, $src$$XMMRegister, 1);
     __ vpmovzxwd($vtmp$$XMMRegister, $shift$$XMMRegister, 1);
@@ -6152,18 +6163,19 @@ instruct vshift8S_var_nobw(vec dst, vec src, vec shift, vec vtmp, rRegP scratch)
 %}
 
 instruct vshift16S_var_nobw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, rRegP scratch) %{
-  predicate(vector_length(n) == 16 && vector_element_basic_type(n) == T_SHORT &&
+  predicate(vector_length(n) == 16 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             !VM_Version::supports_avx512bw());
-  match(Set dst (VLShiftV  src shift));
-  match(Set dst (VRShiftV  src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVS src shift));
+  match(Set dst ( RShiftVS src shift));
+  match(Set dst (URShiftVS src shift));
   effect(TEMP dst, TEMP vtmp1, TEMP vtmp2, TEMP scratch);
   format %{ "vector_var_shift_left_short $dst, $src, $shift\n\t" %}
   ins_encode %{
     assert(UseAVX >= 2, "required");
 
     int opcode = this->ideal_Opcode();
-    bool sign = (opcode == Op_VURShiftV) ? false : true;
+    bool sign = (opcode != Op_URShiftVS);
     int vlen_enc = Assembler::AVX_256bit;
     // Shift lower half, with result in vtmp2 usign vtmp1 as TEMP
     __ vextendwd(sign, $vtmp2$$XMMRegister, $src$$XMMRegister, vlen_enc);
@@ -6187,11 +6199,11 @@ instruct vshift16S_var_nobw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, r
 %}
 
 instruct vshift16S_var_evex_bw(vec dst, vec src, vec shift) %{
-  predicate(vector_element_basic_type(n) == T_SHORT &&
+  predicate(!VectorNode::is_vshift_cnt(n->in(2)) &&
             VM_Version::supports_avx512bw());
-  match(Set dst (VLShiftV src shift));
-  match(Set dst (VRShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVS src shift));
+  match(Set dst ( RShiftVS src shift));
+  match(Set dst (URShiftVS src shift));
   format %{ "vector_varshift_short $dst,$src,$shift\t!" %}
   ins_encode %{
     assert(UseAVX > 2, "required");
@@ -6208,10 +6220,10 @@ instruct vshift16S_var_evex_bw(vec dst, vec src, vec shift) %{
 
 //Integer variable shift
 instruct vshiftI_var(vec dst, vec src, vec shift) %{
-  predicate(vector_element_basic_type(n) == T_INT);
-  match(Set dst ( VLShiftV src shift));
-  match(Set dst ( VRShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  predicate(!VectorNode::is_vshift_cnt(n->in(2)));
+  match(Set dst ( LShiftVI src shift));
+  match(Set dst ( RShiftVI src shift));
+  match(Set dst (URShiftVI src shift));
   format %{ "vector_varshift_int $dst,$src,$shift\t!" %}
   ins_encode %{
     assert(UseAVX >= 2, "required");
@@ -6225,9 +6237,9 @@ instruct vshiftI_var(vec dst, vec src, vec shift) %{
 
 //Long variable shift
 instruct vshiftL_var(vec dst, vec src, vec shift) %{
-  predicate(vector_element_basic_type(n) == T_LONG);
-  match(Set dst ( VLShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  predicate(!VectorNode::is_vshift_cnt(n->in(2)));
+  match(Set dst ( LShiftVL src shift));
+  match(Set dst (URShiftVL src shift));
   format %{ "vector_varshift_long $dst,$src,$shift\t!" %}
   ins_encode %{
     assert(UseAVX >= 2, "required");
@@ -6241,9 +6253,10 @@ instruct vshiftL_var(vec dst, vec src, vec shift) %{
 
 //Long variable right shift arithmetic
 instruct vshiftL_arith_var(vec dst, vec src, vec shift, vec vtmp) %{
-  predicate(vector_length(n) <= 4 && vector_element_basic_type(n) == T_LONG &&
+  predicate(vector_length(n) <= 4 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             UseAVX == 2);
-  match(Set dst (VRShiftV src shift));
+  match(Set dst (RShiftVL src shift));
   effect(TEMP dst, TEMP vtmp);
   format %{ "vector_varshift_long  $dst,$src,$shift\n\t! using $vtmp as TEMP" %}
   ins_encode %{
@@ -6256,9 +6269,9 @@ instruct vshiftL_arith_var(vec dst, vec src, vec shift, vec vtmp) %{
 %}
 
 instruct vshiftL_arith_var_evex(vec dst, vec src, vec shift) %{
-  predicate(vector_element_basic_type(n) == T_LONG &&
+  predicate(!VectorNode::is_vshift_cnt(n->in(2)) &&
             UseAVX > 2);
-  match(Set dst (VRShiftV src shift));
+  match(Set dst (RShiftVL src shift));
   format %{ "vector_varfshift_long $dst,$src,$shift\t!" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
@@ -7417,7 +7430,7 @@ instruct loadShuffleS_evex(vec dst, vec src) %{
 
 instruct rearrangeS_evex(vec dst, vec src, vec shuffle) %{
   predicate(vector_element_basic_type(n) == T_SHORT &&
-            VM_Version::supports_avx512bw()); 
+            VM_Version::supports_avx512bw());
   match(Set dst (VectorRearrange src shuffle));
   format %{ "vector_rearrange $dst, $shuffle, $src" %}
   ins_encode %{

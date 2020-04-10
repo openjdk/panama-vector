@@ -1578,7 +1578,7 @@ uint MachUEPNode::size(PhaseRegAlloc* ra_) const
 
 //=============================================================================
 
-const bool Matcher::supports_vector_calling_convention() {
+const bool Matcher::supports_vector_calling_convention(void) {
   return true;
 }
 

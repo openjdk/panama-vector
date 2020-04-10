@@ -646,30 +646,6 @@ class RShiftCntVNode : public VectorNode {
 };
 
 
-//------------------------------VLShiftVNode-----------------------------------
-// Variable vector left shift bytes
-class VLShiftVNode : public VectorNode {
- public:
-  VLShiftVNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1,in2,vt) {}
-  virtual int Opcode() const;
-};
-
-//------------------------------VRShiftVNode-----------------------------------
-// Variable vector right shift bytes
-class VRShiftVNode : public VectorNode {
- public:
-  VRShiftVNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1,in2,vt) {}
-  virtual int Opcode() const;
-};
-
-//------------------------------VURShiftVNode-----------------------------------
-// Variable vector unsigned right shift bytes
-class VURShiftVNode : public VectorNode {
- public:
-  VURShiftVNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1,in2,vt) {}
-  virtual int Opcode() const;
-};
-
 //------------------------------AndVNode---------------------------------------
 // Vector and integer
 class AndVNode : public VectorNode {
@@ -1083,10 +1059,10 @@ class MacroLogicVNode : public VectorNode {
 private:
     MacroLogicVNode(Node* in1, Node* in2, Node* in3, Node* fn, const TypeVect* vt)
     : VectorNode(in1, in2, in3, fn, vt) {}
-    
+
 public:
     virtual int Opcode() const;
-    
+
     static MacroLogicVNode* make(PhaseGVN& igvn, Node* in1, Node* in2, Node* in3, uint truth_table, const TypeVect* vt);
 };
 
