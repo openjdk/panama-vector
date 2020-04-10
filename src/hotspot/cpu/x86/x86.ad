@@ -4054,12 +4054,12 @@ instruct ReplD_zero(vec dst, immD0 zero) %{
 // ====================VECTOR INSERT=======================================
 
 instruct insert(vec dst, rRegI val, immU8 idx) %{
-  predicate(vector_length_in_bytes(n) >=  8 &&
-            vector_length_in_bytes(n) <= 16);
+  predicate(vector_length_in_bytes(n) < 32);
   match(Set dst (VectorInsert (Binary dst val) idx));
   format %{ "vector_insert $dst,$val,$idx" %}
   ins_encode %{
     assert(UseSSE >= 4, "required");
+    assert(vector_length_in_bytes(this) >= 8, "required");
 
     BasicType elem_bt = vector_element_basic_type(this);
 
@@ -4089,7 +4089,7 @@ instruct insert32(vec dst, vec src, rRegI val, immU8 idx, vec vtmp) %{
     uint y_idx = ($idx$$constant >> log2epr) & 1;
     __ vextracti128($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
     __ vinsert(elem_bt, $vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$Register, x_idx);
-    __ vinserti128($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+    __ vinserti128($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4113,7 +4113,7 @@ instruct insert64(vec dst, vec src, rRegI val, immU8 idx, legVec vtmp) %{
     uint y_idx = ($idx$$constant >> log2epr) & 3;
     __ vextracti32x4($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
     __ vinsert(elem_bt, $vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$Register, x_idx);
-    __ vinserti32x4($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+    __ vinserti32x4($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4147,7 +4147,7 @@ instruct insert4L(vec dst, vec src, rRegL val, immU8 idx, vec vtmp) %{
     int vlen_enc = Assembler::AVX_256bit;
     __ vextracti128($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
     __ vpinsrq($vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$Register, x_idx);
-    __ vinserti128($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+    __ vinserti128($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4165,15 +4165,14 @@ instruct insert8L(vec dst, vec src, rRegL val, immU8 idx, legVec vtmp) %{
     uint y_idx = ($idx$$constant >> 1) & 3;
     __ vextracti32x4($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
     __ vpinsrq($vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$Register, x_idx);
-    __ vinserti32x4($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+    __ vinserti32x4($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
   %}
   ins_pipe( pipe_slow );
 %}
 #endif
 
 instruct insertF(vec dst, regF val, immU8 idx) %{
-  predicate(vector_length(n) >= 2 &&
-            vector_length(n) <= 4);
+  predicate(vector_length(n) < 8);
   match(Set dst (VectorInsert (Binary dst val) idx));
   format %{ "vector_insert $dst,$val,$idx" %}
   ins_encode %{
@@ -4203,13 +4202,13 @@ instruct vinsertF(vec dst, vec src, regF val, immU8 idx, vec vtmp) %{
       int vlen_enc = Assembler::AVX_256bit;
       __ vextracti128($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
       __ vinsertps($vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$XMMRegister, x_idx);
-      __ vinserti128($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+      __ vinserti128($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
     } else {
       assert(vlen == 16, "sanity");
       uint y_idx = ($idx$$constant >> 2) & 3;
       __ vextracti32x4($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
       __ vinsertps($vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$XMMRegister, x_idx);
-      __ vinserti32x4($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+      __ vinserti32x4($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
     }
   %}
   ins_pipe( pipe_slow );
@@ -4247,7 +4246,7 @@ instruct insert4D(vec dst, vec src, regD val, immU8 idx, rRegL tmp, vec vtmp) %{
     __ movq($tmp$$Register, $val$$XMMRegister);
     __ vextracti128($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
     __ vpinsrq($vtmp$$XMMRegister, $vtmp$$XMMRegister, $tmp$$Register, x_idx);
-    __ vinserti128($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+    __ vinserti128($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4266,7 +4265,7 @@ instruct insert8D(vec dst, vec src, regD val, immI idx, rRegL tmp, legVec vtmp) 
     __ movq($tmp$$Register, $val$$XMMRegister);
     __ vextracti32x4($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
     __ vpinsrq($vtmp$$XMMRegister, $vtmp$$XMMRegister, $tmp$$Register, x_idx);
-    __ vinserti32x4($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+    __ vinserti32x4($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
   %}
   ins_pipe( pipe_slow );
 %}
