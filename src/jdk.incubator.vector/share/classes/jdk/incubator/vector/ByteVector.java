@@ -729,7 +729,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     public final
     ByteVector lanewise(VectorOperators.Binary op,
                                   byte e) {
-        int opc = opCode(op);
         if (opKind(op, VO_SHIFT) && (byte)(int)e == e) {
             return lanewiseShift(op, (int) e);
         }
@@ -817,7 +816,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     final ByteVector
     lanewiseShiftTemplate(VectorOperators.Binary op, int e) {
         // Special handling for these.  FIXME: Refactor?
-        int opc = opCode(op);
         assert(opKind(op, VO_SHIFT));
         // As per shift specification for Java, mask the shift count.
         e &= SHIFT_MASK;
@@ -826,6 +824,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             ByteVector lo = this.lanewise(LSHR, (op == ROR) ? e : -e);
             return hi.lanewise(OR, lo);
         }
+        int opc = opCode(op);
         return VectorSupport.broadcastInt(
             opc, getClass(), byte.class, length(),
             this, e,

@@ -1410,7 +1410,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i += window) {
                 for (int j = 0; j < window; j++) {
-                    int ix = i + is[i + j];
+                    int ix = is[i + j];
                     rs[i + j] = as[ix];
                 }
             }
@@ -1467,7 +1467,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i += window) {
                 for (int j = 0; j < window; j++) {
-                    int ix = i + is[i + j];
+                    int ix = is[i + j];
                     rs[ix] = as[i + j];
                 }
             }

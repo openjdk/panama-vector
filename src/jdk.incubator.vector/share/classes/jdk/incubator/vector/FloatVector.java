@@ -730,7 +730,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
     public final
     FloatVector lanewise(VectorOperators.Binary op,
                                   float e) {
-        int opc = opCode(op);
         return lanewise(op, broadcast(e));
     }
 

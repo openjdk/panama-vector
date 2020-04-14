@@ -730,7 +730,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     public final
     DoubleVector lanewise(VectorOperators.Binary op,
                                   double e) {
-        int opc = opCode(op);
         return lanewise(op, broadcast(e));
     }
 
