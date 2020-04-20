@@ -47,6 +47,7 @@ import java.lang.invoke.VarHandle;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.IntFunction;
 
@@ -193,6 +194,21 @@ public class FloatMaxVectorLoadStoreTests extends AbstractVectorTest {
             a[i] = f.apply(i);
         }
         return a;
+    }
+
+    @Test(dataProvider = "floatProvider")
+    static void loadStoreValues(IntFunction<float[]> fa) {
+        float[] a = fa.apply(SPECIES.length());
+        float[] r = new float[a.length];
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                float[] values = Arrays.copyOfRange(a, i, i + SPECIES.length());
+                FloatVector av = FloatVector.fromValues(SPECIES, values);
+                System.arraycopy(av.toArray(), 0, r, i, SPECIES.length());
+            }
+        }
+        Assert.assertEquals(a, r);
     }
 
     @Test(dataProvider = "floatProvider")

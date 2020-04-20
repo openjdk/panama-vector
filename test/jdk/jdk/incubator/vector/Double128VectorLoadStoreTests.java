@@ -44,6 +44,7 @@ import org.testng.annotations.Test;
 import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.IntFunction;
 
@@ -185,6 +186,21 @@ public class Double128VectorLoadStoreTests extends AbstractVectorTest {
             a[i] = f.apply(i);
         }
         return a;
+    }
+
+    @Test(dataProvider = "doubleProvider")
+    static void loadStoreValues(IntFunction<double[]> fa) {
+        double[] a = fa.apply(SPECIES.length());
+        double[] r = new double[a.length];
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                double[] values = Arrays.copyOfRange(a, i, i + SPECIES.length());
+                DoubleVector av = DoubleVector.fromValues(SPECIES, values);
+                System.arraycopy(av.toArray(), 0, r, i, SPECIES.length());
+            }
+        }
+        Assert.assertEquals(a, r);
     }
 
     @Test(dataProvider = "doubleProvider")
