@@ -1417,19 +1417,37 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         return lanewise(MUL, e, m);
     }
 
-    /**
-     * {@inheritDoc} <!--workaround-->
 #if[FP]
+    /**
+     * Divides this vector by a second input vector.
+     *
+     * This is a lane-wise binary operation which applies
+     * the primitive division operation ({@code /})
+     * to each pair of corresponding lane values.
+     *
+     * This method is also equivalent to the expression
+     * {@link #lanewise(VectorOperators.Binary,Vector)
+     *    lanewise}{@code (}{@link VectorOperators#DIV
+     *    DIV}{@code , v)}.
+     *
+     * <p>
+     * As a full-service named operation, this method
+     * comes in masked and unmasked overloadings, and
+     * also comes in scalar-broadcast
+     * overloadings (both masked and unmasked).
+     *
      * @apiNote Because the underlying scalar operator is an IEEE
-     * floating point number, division by zero in fact will
-     * not throw an exception, but will yield a signed
+     * floating point number, division by zero will yield a signed
      * infinity or NaN.
-#else[FP]
-     * @apiNote If there is a zero divisor, {@code
-     * ArithmeticException} will be thrown.
-#end[FP]
+     *
+     * @param v a second input vector
+     * @return the result of dividing this vector by the second input vector
+     * @see #div(Vector,VectorMask)
+     * @see #div($type$)
+     * @see VectorOperators#DIV
+     * @see #lanewise(VectorOperators.Binary,Vector)
+     * @see #lanewise(VectorOperators.Binary,$type$)
      */
-    @Override
     @ForceInline
     public final $abstractvectortype$ div(Vector<$Boxtype$> v) {
         return lanewise(DIV, v);
@@ -1446,15 +1464,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
      *    lanewise}{@code (}{@link VectorOperators#DIV
      *    DIV}{@code , e)}.
      *
-#if[FP]
      * @apiNote Because the underlying scalar operator is an IEEE
-     * floating point number, division by zero in fact will
-     * not throw an exception, but will yield a signed
+     * floating point number, division by zero will yield a signed
      * infinity or NaN.
-#else[FP]
-     * @apiNote If there is a zero divisor, {@code
-     * ArithmeticException} will be thrown.
-#end[FP]
      *
      * @param e the input scalar
      * @return the result of dividing each lane of this vector by the scalar
@@ -1471,19 +1483,41 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     }
 
     /**
-     * {@inheritDoc} <!--workaround-->
-     * @see #div($type$,VectorMask)
-#if[FP]
+     * Divides this vector by a second input vector
+     * under the control of a mask.
+     *
+     * This is a lane-wise binary operation which applies
+     * the primitive division operation ({@code /})
+     * to each pair of corresponding lane values.
+     *
+     * For any lane unset in the mask, the primitive operation is
+     * suppressed and this vector retains the original value stored in
+     * that lane.
+     *
+     * This method is also equivalent to the expression
+     * {@link #lanewise(VectorOperators.Binary,Vector,VectorMask)
+     *    lanewise}{@code (}{@link VectorOperators#DIV
+     *    DIV}{@code , v, m)}.
+     *
+     * <p>
+     * As a full-service named operation, this method
+     * comes in masked and unmasked overloadings, and
+     * also comes in scalar-broadcast
+     * overloadings (both masked and unmasked).
+     *
      * @apiNote Because the underlying scalar operator is an IEEE
-     * floating point number, division by zero in fact will
-     * not throw an exception, but will yield a signed
+     * floating point number, division by zero will yield a signed
      * infinity or NaN.
-#else[FP]
-     * @apiNote If there is a zero divisor, {@code
-     * ArithmeticException} will be thrown.
-#end[FP]
+     *
+     * @param v a second input vector
+     * @param m the mask controlling lane selection
+     * @return the result of dividing this vector by the second input vector
+     * @see #div(Vector)
+     * @see #div($type$,VectorMask)
+     * @see VectorOperators#DIV
+     * @see #lanewise(VectorOperators.Binary,Vector,VectorMask)
+     * @see #lanewise(VectorOperators.Binary,$type$,VectorMask)
      */
-    @Override
     @ForceInline
     public final $abstractvectortype$ div(Vector<$Boxtype$> v,
                                           VectorMask<$Boxtype$> m) {
@@ -1502,15 +1536,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
      *    lanewise}{@code (}{@link VectorOperators#DIV
      *    DIV}{@code , s, m)}.
      *
-#if[FP]
      * @apiNote Because the underlying scalar operator is an IEEE
-     * floating point number, division by zero in fact will
-     * not throw an exception, but will yield a signed
+     * floating point number, division by zero will yield a signed
      * infinity or NaN.
-#else[FP]
-     * @apiNote If there is a zero divisor, {@code
-     * ArithmeticException} will be thrown.
-#end[FP]
      *
      * @param e the input scalar
      * @param m the mask controlling lane selection
@@ -1527,6 +1555,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                                           VectorMask<$Boxtype$> m) {
         return lanewise(DIV, e, m);
     }
+#end[FP]
 
     /// END OF FULL-SERVICE BINARY METHODS
 

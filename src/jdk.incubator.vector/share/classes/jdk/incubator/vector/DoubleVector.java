@@ -1271,13 +1271,35 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     }
 
     /**
-     * {@inheritDoc} <!--workaround-->
+     * Divides this vector by a second input vector.
+     *
+     * This is a lane-wise binary operation which applies
+     * the primitive division operation ({@code /})
+     * to each pair of corresponding lane values.
+     *
+     * This method is also equivalent to the expression
+     * {@link #lanewise(VectorOperators.Binary,Vector)
+     *    lanewise}{@code (}{@link VectorOperators#DIV
+     *    DIV}{@code , v)}.
+     *
+     * <p>
+     * As a full-service named operation, this method
+     * comes in masked and unmasked overloadings, and
+     * also comes in scalar-broadcast
+     * overloadings (both masked and unmasked).
+     *
      * @apiNote Because the underlying scalar operator is an IEEE
-     * floating point number, division by zero in fact will
-     * not throw an exception, but will yield a signed
+     * floating point number, division by zero will yield a signed
      * infinity or NaN.
+     *
+     * @param v a second input vector
+     * @return the result of dividing this vector by the second input vector
+     * @see #div(Vector,VectorMask)
+     * @see #div(double)
+     * @see VectorOperators#DIV
+     * @see #lanewise(VectorOperators.Binary,Vector)
+     * @see #lanewise(VectorOperators.Binary,double)
      */
-    @Override
     @ForceInline
     public final DoubleVector div(Vector<Double> v) {
         return lanewise(DIV, v);
@@ -1295,8 +1317,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
      *    DIV}{@code , e)}.
      *
      * @apiNote Because the underlying scalar operator is an IEEE
-     * floating point number, division by zero in fact will
-     * not throw an exception, but will yield a signed
+     * floating point number, division by zero will yield a signed
      * infinity or NaN.
      *
      * @param e the input scalar
@@ -1314,14 +1335,41 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     }
 
     /**
-     * {@inheritDoc} <!--workaround-->
-     * @see #div(double,VectorMask)
+     * Divides this vector by a second input vector
+     * under the control of a mask.
+     *
+     * This is a lane-wise binary operation which applies
+     * the primitive division operation ({@code /})
+     * to each pair of corresponding lane values.
+     *
+     * For any lane unset in the mask, the primitive operation is
+     * suppressed and this vector retains the original value stored in
+     * that lane.
+     *
+     * This method is also equivalent to the expression
+     * {@link #lanewise(VectorOperators.Binary,Vector,VectorMask)
+     *    lanewise}{@code (}{@link VectorOperators#DIV
+     *    DIV}{@code , v, m)}.
+     *
+     * <p>
+     * As a full-service named operation, this method
+     * comes in masked and unmasked overloadings, and
+     * also comes in scalar-broadcast
+     * overloadings (both masked and unmasked).
+     *
      * @apiNote Because the underlying scalar operator is an IEEE
-     * floating point number, division by zero in fact will
-     * not throw an exception, but will yield a signed
+     * floating point number, division by zero will yield a signed
      * infinity or NaN.
+     *
+     * @param v a second input vector
+     * @param m the mask controlling lane selection
+     * @return the result of dividing this vector by the second input vector
+     * @see #div(Vector)
+     * @see #div(double,VectorMask)
+     * @see VectorOperators#DIV
+     * @see #lanewise(VectorOperators.Binary,Vector,VectorMask)
+     * @see #lanewise(VectorOperators.Binary,double,VectorMask)
      */
-    @Override
     @ForceInline
     public final DoubleVector div(Vector<Double> v,
                                           VectorMask<Double> m) {
@@ -1341,8 +1389,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
      *    DIV}{@code , s, m)}.
      *
      * @apiNote Because the underlying scalar operator is an IEEE
-     * floating point number, division by zero in fact will
-     * not throw an exception, but will yield a signed
+     * floating point number, division by zero will yield a signed
      * infinity or NaN.
      *
      * @param e the input scalar
