@@ -113,7 +113,6 @@ PLATFORM_MODULES += \
     jdk.jsobject \
     jdk.localedata \
     jdk.naming.dns \
-    jdk.scripting.nashorn \
     jdk.security.auth \
     jdk.security.jgss \
     jdk.xml.dom \
@@ -131,7 +130,6 @@ endif
 JRE_TOOL_MODULES += \
     jdk.jdwp.agent \
     jdk.incubator.jpackage \
-    jdk.scripting.nashorn.shell \
     #
 
 ################################################################################
@@ -174,7 +172,6 @@ DOCS_MODULES += \
     jdk.naming.rmi \
     jdk.net \
     jdk.nio.mapmode \
-    jdk.scripting.nashorn \
     jdk.sctp \
     jdk.security.auth \
     jdk.security.jgss \
