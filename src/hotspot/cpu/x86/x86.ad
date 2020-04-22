@@ -6260,6 +6260,7 @@ instruct vshiftB_var_evex_bw(vec dst, vec src, vec shift, vec vtmp, rRegP scratc
 
 instruct vshift64B_var_evex_bw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, rRegP scratch) %{
   predicate(vector_length(n) == 64 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             VM_Version::supports_avx512bw());
   match(Set dst ( LShiftVB src shift));
   match(Set dst ( RShiftVB src shift));
