@@ -55,14 +55,6 @@
     }                                                                       \
   } while (0)
 
-#define SHENANDOAH_CHECK_FLAG_SET(name)                                     \
-  do {                                                                      \
-    if (!(name)) {                                                          \
-      err_msg message("Heuristics needs -XX:+" #name " to work correctly"); \
-      vm_exit_during_initialization("Error", message);                      \
-    }                                                                       \
-  } while (0)
-
 class ShenandoahCollectionSet;
 class ShenandoahHeapRegion;
 
@@ -103,10 +95,6 @@ protected:
 public:
   ShenandoahHeuristics();
   virtual ~ShenandoahHeuristics();
-
-  void record_gc_start();
-
-  void record_gc_end();
 
   void record_metaspace_oom()     { _metaspace_oom.set(); }
   void clear_metaspace_oom()      { _metaspace_oom.unset(); }

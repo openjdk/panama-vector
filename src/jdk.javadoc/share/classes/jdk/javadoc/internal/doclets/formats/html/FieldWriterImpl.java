@@ -72,9 +72,9 @@ public class FieldWriterImpl extends AbstractMemberWriter
     }
 
     @Override
-    public void addMemberTree(Content memberSummaryTree, Content memberTree) {
-        writer.addMemberTree(HtmlStyle.fieldSummary,
-                SectionName.FIELD_SUMMARY, memberSummaryTree, memberTree);
+    public void addSummary(Content summariesList, Content content) {
+        writer.addSummary(HtmlStyle.fieldSummary,
+                SectionName.FIELD_SUMMARY, summariesList, content);
     }
 
     @Override
@@ -122,9 +122,11 @@ public class FieldWriterImpl extends AbstractMemberWriter
 
     @Override
     public Content getFieldDetails(Content fieldDetailsTreeHeader, Content fieldDetailsTree) {
-        Content fieldDetails = new ContentBuilder(fieldDetailsTreeHeader, fieldDetailsTree);
-        return getMemberTree(HtmlTree.SECTION(HtmlStyle.fieldDetails, fieldDetails)
-                .setId(SectionName.FIELD_DETAIL.getName()));
+        return writer.getDetailsListItem(
+                HtmlTree.SECTION(HtmlStyle.fieldDetails)
+                        .setId(SectionName.FIELD_DETAIL.getName())
+                        .add(fieldDetailsTreeHeader)
+                        .add(fieldDetailsTree));
     }
 
     @Override

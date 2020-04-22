@@ -1027,6 +1027,13 @@ class HandlerImpl {
   }
 };
 
+class Node::PD {
+public:
+  enum NodeFlags {
+    _last_flag = Node::_last_flag
+  };
+};
+
  bool is_CAS(int opcode, bool maybe_volatile);
 
   // predicates controlling emit of ldr<x>/ldar<x> and associated dmb
@@ -1050,6 +1057,17 @@ class HandlerImpl {
 source %{
 
   // Derived RegMask with conditionally allocatable registers
+
+  void PhaseOutput::pd_perform_mach_node_analysis() {
+  }
+
+  int MachNode::pd_alignment_required() const {
+    return 1;
+  }
+
+  int MachNode::compute_padding(int current_offset) const {
+    return 0;
+  }
 
   RegMask _ANY_REG32_mask;
   RegMask _ANY_REG_mask;
@@ -2377,10 +2395,19 @@ bool size_fits_all_mem_uses(AddPNode* addp, int shift) {
 
 const bool Matcher::convi2l_type_required = false;
 
+// Should the matcher clone input 'm' of node 'n'?
+bool Matcher::pd_clone_node(Node* n, Node* m, Matcher::MStack& mstack) {
+  if (is_vshift_con_pattern(n, m)) { // ShiftV src (ShiftCntV con)
+    mstack.push(m, Visit);           // m = ShiftCntV
+    return true;
+  }
+  return false;
+}
+
 // Should the Matcher clone shifts on addressing modes, expecting them
 // to be subsumed into complex addressing expressions or compute them
 // into registers?
-bool Matcher::clone_address_expressions(AddPNode* m, Matcher::MStack& mstack, VectorSet& address_visited) {
+bool Matcher::pd_clone_address_expressions(AddPNode* m, Matcher::MStack& mstack, VectorSet& address_visited) {
   if (clone_base_plus_offset_address(m, mstack, address_visited)) {
     return true;
   }
@@ -17239,7 +17266,7 @@ instruct reduce_add2I(iRegINoSp dst, iRegIorL2I src1, vecD src2, iRegINoSp tmp, 
   format %{ "umov  $tmp, $src2, S, 0\n\t"
             "umov  $tmp2, $src2, S, 1\n\t"
             "addw  $tmp, $src1, $tmp\n\t"
-            "addw  $dst, $tmp, $tmp2\t add reduction2I"
+            "addw  $dst, $tmp, $tmp2\t# add reduction2I"
   %}
   ins_encode %{
     __ umov($tmp$$Register, as_FloatRegister($src2$$reg), __ S, 0);
@@ -17258,7 +17285,7 @@ instruct reduce_add4I(iRegINoSp dst, iRegIorL2I src1, vecX src2, vecX tmp, iRegI
   effect(TEMP tmp, TEMP tmp2);
   format %{ "addv  $tmp, T4S, $src2\n\t"
             "umov  $tmp2, $tmp, S, 0\n\t"
-            "addw  $dst, $tmp2, $src1\t add reduction4I"
+            "addw  $dst, $tmp2, $src1\t# add reduction4I"
   %}
   ins_encode %{
     __ addv(as_FloatRegister($tmp$$reg), __ T4S,
@@ -17422,7 +17449,7 @@ instruct reduce_mul2I(iRegINoSp dst, iRegIorL2I src1, vecD src2, iRegINoSp tmp)
   format %{ "umov  $tmp, $src2, S, 0\n\t"
             "mul   $dst, $tmp, $src1\n\t"
             "umov  $tmp, $src2, S, 1\n\t"
-            "mul   $dst, $tmp, $dst\t mul reduction2I\n\t"
+            "mul   $dst, $tmp, $dst\t# mul reduction2I\n\t"
   %}
   ins_encode %{
     __ umov($tmp$$Register, as_FloatRegister($src2$$reg), __ S, 0);
@@ -17444,7 +17471,7 @@ instruct reduce_mul4I(iRegINoSp dst, iRegIorL2I src1, vecX src2, vecX tmp, iRegI
             "umov  $tmp2, $tmp, S, 0\n\t"
             "mul   $dst, $tmp2, $src1\n\t"
             "umov  $tmp2, $tmp, S, 1\n\t"
-            "mul   $dst, $tmp2, $dst\t mul reduction4I\n\t"
+            "mul   $dst, $tmp2, $dst\t# mul reduction4I\n\t"
   %}
   ins_encode %{
     __ ins(as_FloatRegister($tmp$$reg), __ D,
@@ -17466,7 +17493,7 @@ instruct reduce_add2F(vRegF dst, vRegF src1, vecD src2, vecD tmp)
   effect(TEMP tmp, TEMP dst);
   format %{ "fadds $dst, $src1, $src2\n\t"
             "ins   $tmp, S, $src2, 0, 1\n\t"
-            "fadds $dst, $dst, $tmp\t add reduction2F"
+            "fadds $dst, $dst, $tmp\t# add reduction2F"
   %}
   ins_encode %{
     __ fadds(as_FloatRegister($dst$$reg),
@@ -17490,7 +17517,7 @@ instruct reduce_add4F(vRegF dst, vRegF src1, vecX src2, vecX tmp)
             "ins   $tmp, S, $src2, 0, 2\n\t"
             "fadds $dst, $dst, $tmp\n\t"
             "ins   $tmp, S, $src2, 0, 3\n\t"
-            "fadds $dst, $dst, $tmp\t add reduction4F"
+            "fadds $dst, $dst, $tmp\t# add reduction4F"
   %}
   ins_encode %{
     __ fadds(as_FloatRegister($dst$$reg),
@@ -17518,7 +17545,7 @@ instruct reduce_mul2F(vRegF dst, vRegF src1, vecD src2, vecD tmp)
   effect(TEMP tmp, TEMP dst);
   format %{ "fmuls $dst, $src1, $src2\n\t"
             "ins   $tmp, S, $src2, 0, 1\n\t"
-            "fmuls $dst, $dst, $tmp\t mul reduction2F"
+            "fmuls $dst, $dst, $tmp\t# mul reduction2F"
   %}
   ins_encode %{
     __ fmuls(as_FloatRegister($dst$$reg),
@@ -17542,7 +17569,7 @@ instruct reduce_mul4F(vRegF dst, vRegF src1, vecX src2, vecX tmp)
             "ins   $tmp, S, $src2, 0, 2\n\t"
             "fmuls $dst, $dst, $tmp\n\t"
             "ins   $tmp, S, $src2, 0, 3\n\t"
-            "fmuls $dst, $dst, $tmp\t mul reduction4F"
+            "fmuls $dst, $dst, $tmp\t# mul reduction4F"
   %}
   ins_encode %{
     __ fmuls(as_FloatRegister($dst$$reg),
@@ -17606,7 +17633,7 @@ instruct reduce_add2D(vRegD dst, vRegD src1, vecX src2, vecX tmp)
   effect(TEMP tmp, TEMP dst);
   format %{ "faddd $dst, $src1, $src2\n\t"
             "ins   $tmp, D, $src2, 0, 1\n\t"
-            "faddd $dst, $dst, $tmp\t add reduction2D"
+            "faddd $dst, $dst, $tmp\t# add reduction2D"
   %}
   ins_encode %{
     __ faddd(as_FloatRegister($dst$$reg),
@@ -17626,7 +17653,7 @@ instruct reduce_mul2D(vRegD dst, vRegD src1, vecX src2, vecX tmp)
   effect(TEMP tmp, TEMP dst);
   format %{ "fmuld $dst, $src1, $src2\n\t"
             "ins   $tmp, D, $src2, 0, 1\n\t"
-            "fmuld $dst, $dst, $tmp\t mul reduction2D"
+            "fmuld $dst, $dst, $tmp\t# mul reduction2D"
   %}
   ins_encode %{
     __ fmuld(as_FloatRegister($dst$$reg),
@@ -17778,7 +17805,7 @@ instruct reduce_max2F(vRegF dst, vRegF src1, vecD src2, vecD tmp) %{
   effect(TEMP_DEF dst, TEMP tmp);
   format %{ "fmaxs $dst, $src1, $src2\n\t"
             "ins   $tmp, S, $src2, 0, 1\n\t"
-            "fmaxs $dst, $dst, $tmp\t max reduction2F" %}
+            "fmaxs $dst, $dst, $tmp\t# max reduction2F" %}
   ins_encode %{
     __ fmaxs(as_FloatRegister($dst$$reg), as_FloatRegister($src1$$reg), as_FloatRegister($src2$$reg));
     __ ins(as_FloatRegister($tmp$$reg), __ S, as_FloatRegister($src2$$reg), 0, 1);
@@ -17793,7 +17820,7 @@ instruct reduce_max4F(vRegF dst, vRegF src1, vecX src2) %{
   ins_cost(INSN_COST);
   effect(TEMP_DEF dst);
   format %{ "fmaxv $dst, T4S, $src2\n\t"
-            "fmaxs $dst, $dst, $src1\t max reduction4F" %}
+            "fmaxs $dst, $dst, $src1\t# max reduction4F" %}
   ins_encode %{
     __ fmaxv(as_FloatRegister($dst$$reg), __ T4S, as_FloatRegister($src2$$reg));
     __ fmaxs(as_FloatRegister($dst$$reg), as_FloatRegister($dst$$reg), as_FloatRegister($src1$$reg));
@@ -17808,7 +17835,7 @@ instruct reduce_max2D(vRegD dst, vRegD src1, vecX src2, vecX tmp) %{
   effect(TEMP_DEF dst, TEMP tmp);
   format %{ "fmaxd $dst, $src1, $src2\n\t"
             "ins   $tmp, D, $src2, 0, 1\n\t"
-            "fmaxd $dst, $dst, $tmp\t max reduction2D" %}
+            "fmaxd $dst, $dst, $tmp\t# max reduction2D" %}
   ins_encode %{
     __ fmaxd(as_FloatRegister($dst$$reg), as_FloatRegister($src1$$reg), as_FloatRegister($src2$$reg));
     __ ins(as_FloatRegister($tmp$$reg), __ D, as_FloatRegister($src2$$reg), 0, 1);
@@ -17956,7 +17983,7 @@ instruct reduce_min2F(vRegF dst, vRegF src1, vecD src2, vecD tmp) %{
   effect(TEMP_DEF dst, TEMP tmp);
   format %{ "fmins $dst, $src1, $src2\n\t"
             "ins   $tmp, S, $src2, 0, 1\n\t"
-            "fmins $dst, $dst, $tmp\t min reduction2F" %}
+            "fmins $dst, $dst, $tmp\t# min reduction2F" %}
   ins_encode %{
     __ fmins(as_FloatRegister($dst$$reg), as_FloatRegister($src1$$reg), as_FloatRegister($src2$$reg));
     __ ins(as_FloatRegister($tmp$$reg), __ S, as_FloatRegister($src2$$reg), 0, 1);
@@ -17971,7 +17998,7 @@ instruct reduce_min4F(vRegF dst, vRegF src1, vecX src2) %{
   ins_cost(INSN_COST);
   effect(TEMP_DEF dst);
   format %{ "fminv $dst, T4S, $src2\n\t"
-            "fmins $dst, $dst, $src1\t min reduction4F" %}
+            "fmins $dst, $dst, $src1\t# min reduction4F" %}
   ins_encode %{
     __ fminv(as_FloatRegister($dst$$reg), __ T4S, as_FloatRegister($src2$$reg));
     __ fmins(as_FloatRegister($dst$$reg), as_FloatRegister($dst$$reg), as_FloatRegister($src1$$reg));
@@ -17986,7 +18013,7 @@ instruct reduce_min2D(vRegD dst, vRegD src1, vecX src2, vecX tmp) %{
   effect(TEMP_DEF dst, TEMP tmp);
   format %{ "fmind $dst, $src1, $src2\n\t"
             "ins   $tmp, D, $src2, 0, 1\n\t"
-            "fmind $dst, $dst, $tmp\t min reduction2D" %}
+            "fmind $dst, $dst, $tmp\t# min reduction2D" %}
   ins_encode %{
     __ fmind(as_FloatRegister($dst$$reg), as_FloatRegister($src1$$reg), as_FloatRegister($src2$$reg));
     __ ins(as_FloatRegister($tmp$$reg), __ D, as_FloatRegister($src2$$reg), 0, 1);

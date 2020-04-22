@@ -62,6 +62,16 @@ class ShenandoahVerifier;
 class ShenandoahWorkGang;
 class VMStructs;
 
+// Used for buffering per-region liveness data.
+// Needed since ShenandoahHeapRegion uses atomics to update liveness.
+// The ShenandoahHeap array has max-workers elements, each of which is an array of
+// uint16_t * max_regions. The choice of uint16_t is not accidental:
+// there is a tradeoff between static/dynamic footprint that translates
+// into cache pressure (which is already high during marking), and
+// too many atomic updates. uint32_t is too large, uint8_t is too small.
+typedef uint16_t ShenandoahLiveData;
+#define SHENANDOAH_LIVEDATA_MAX ((ShenandoahLiveData)-1)
+
 class ShenandoahRegionIterator : public StackObj {
 private:
   ShenandoahHeap* _heap;
@@ -266,7 +276,8 @@ private:
   ShenandoahSharedFlag   _full_gc_in_progress;
   ShenandoahSharedFlag   _full_gc_move_in_progress;
   ShenandoahSharedFlag   _progress_last_gc;
-  ShenandoahSharedFlag   _concurrent_root_in_progress;
+  ShenandoahSharedFlag   _concurrent_strong_root_in_progress;
+  ShenandoahSharedFlag   _concurrent_weak_root_in_progress;
 
   void set_gc_state_all_threads(char state);
   void set_gc_state_mask(uint mask, bool value);
@@ -282,7 +293,8 @@ public:
   void set_full_gc_in_progress(bool in_progress);
   void set_full_gc_move_in_progress(bool in_progress);
   void set_has_forwarded_objects(bool cond);
-  void set_concurrent_root_in_progress(bool cond);
+  void set_concurrent_strong_root_in_progress(bool cond);
+  void set_concurrent_weak_root_in_progress(bool cond);
 
   inline bool is_stable() const;
   inline bool is_idle() const;
@@ -295,7 +307,8 @@ public:
   inline bool has_forwarded_objects() const;
   inline bool is_gc_in_progress_mask(uint mask) const;
   inline bool is_stw_gc_in_progress() const;
-  inline bool is_concurrent_root_in_progress() const;
+  inline bool is_concurrent_strong_root_in_progress() const;
+  inline bool is_concurrent_weak_root_in_progress() const;
 
 // ---------- GC cancellation and degeneration machinery
 //
@@ -384,7 +397,8 @@ public:
   void entry_reset();
   void entry_mark();
   void entry_preclean();
-  void entry_roots();
+  void entry_weak_roots();
+  void entry_strong_roots();
   void entry_cleanup();
   void entry_evac();
   void entry_updaterefs();
@@ -404,7 +418,8 @@ private:
   void op_reset();
   void op_mark();
   void op_preclean();
-  void op_roots();
+  void op_weak_roots();
+  void op_strong_roots();
   void op_cleanup();
   void op_conc_evac();
   void op_stw_evac();
@@ -469,7 +484,7 @@ public:
   GrowableArray<MemoryPool*> memory_pools();
   MemoryUsage memory_usage();
   GCTracer* tracer();
-  GCTimer* gc_timer() const;
+  ConcurrentGCTimer* gc_timer() const;
 
 // ---------- Reference processing
 //
@@ -613,15 +628,7 @@ private:
   bool _bitmap_region_special;
   bool _aux_bitmap_region_special;
 
-  // Used for buffering per-region liveness data.
-  // Needed since ShenandoahHeapRegion uses atomics to update liveness.
-  //
-  // The array has max-workers elements, each of which is an array of
-  // jushort * max_regions. The choice of jushort is not accidental:
-  // there is a tradeoff between static/dynamic footprint that translates
-  // into cache pressure (which is already high during marking), and
-  // too many atomic updates. size_t/jint is too large, jbyte is too small.
-  jushort** _liveness_cache;
+  ShenandoahLiveData** _liveness_cache;
 
 public:
   inline ShenandoahMarkingContext* complete_marking_context() const;
@@ -651,7 +658,7 @@ public:
   bool is_bitmap_slice_committed(ShenandoahHeapRegion* r, bool skip_self = false);
 
   // Liveness caching support
-  jushort* get_liveness_cache(uint worker_id);
+  ShenandoahLiveData* get_liveness_cache(uint worker_id);
   void flush_liveness_cache(uint worker_id);
 
 // ---------- Evacuation support

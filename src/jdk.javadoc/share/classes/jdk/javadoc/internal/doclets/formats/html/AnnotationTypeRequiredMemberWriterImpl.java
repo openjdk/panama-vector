@@ -79,9 +79,9 @@ public class AnnotationTypeRequiredMemberWriterImpl extends AbstractMemberWriter
     }
 
     @Override
-    public void addMemberTree(Content memberSummaryTree, Content memberTree) {
-        writer.addMemberTree(HtmlStyle.memberSummary,
-                SectionName.ANNOTATION_TYPE_REQUIRED_ELEMENT_SUMMARY, memberSummaryTree, memberTree);
+    public void addSummary(Content summariesList, Content content) {
+        writer.addSummary(HtmlStyle.memberSummary,
+                SectionName.ANNOTATION_TYPE_REQUIRED_ELEMENT_SUMMARY, summariesList, content);
     }
 
     @Override
@@ -109,7 +109,7 @@ public class AnnotationTypeRequiredMemberWriterImpl extends AbstractMemberWriter
                 new StringContent(simpleName));
         annotationDocTree.add(heading);
         return HtmlTree.SECTION(HtmlStyle.detail, annotationDocTree)
-                .setId(simpleName + utils.signature((ExecutableElement) member));
+                .setId(simpleName + utils.signature((ExecutableElement) member, typeElement));
     }
 
     @Override

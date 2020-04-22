@@ -46,6 +46,7 @@ public class TestWrongBarrierDisable {
         };
         String[] iu = {
                 "ShenandoahLoadRefBarrier",
+                "ShenandoahStoreValEnqueueBarrier",
                 "ShenandoahCASBarrier",
                 "ShenandoahCloneBarrier",
         };
@@ -71,7 +72,7 @@ public class TestWrongBarrierDisable {
             );
             OutputAnalyzer output = new OutputAnalyzer(pb.start());
             output.shouldNotHaveExitValue(0);
-            output.shouldContain("Heuristics needs ");
+            output.shouldContain("GC mode needs ");
             output.shouldContain("to work correctly");
         }
     }

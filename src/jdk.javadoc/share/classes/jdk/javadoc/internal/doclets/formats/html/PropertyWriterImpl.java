@@ -64,9 +64,9 @@ public class PropertyWriterImpl extends AbstractMemberWriter
     }
 
     @Override
-    public void addMemberTree(Content memberSummaryTree, Content memberTree) {
-        writer.addMemberTree(HtmlStyle.propertySummary,
-                SectionName.PROPERTY_SUMMARY, memberSummaryTree, memberTree);
+    public void addSummary(Content summariesList, Content content) {
+        writer.addSummary(HtmlStyle.propertySummary,
+                SectionName.PROPERTY_SUMMARY, summariesList, content);
     }
 
     @Override
@@ -134,9 +134,11 @@ public class PropertyWriterImpl extends AbstractMemberWriter
 
     @Override
     public Content getPropertyDetails(Content propertyDetailsTreeHeader, Content propertyDetailsTree) {
-        Content propertyDetails = new ContentBuilder(propertyDetailsTreeHeader, propertyDetailsTree);
-        return getMemberTree(HtmlTree.SECTION(HtmlStyle.propertyDetails, propertyDetails)
-                .setId(SectionName.PROPERTY_DETAIL.getName()));
+        return writer.getDetailsListItem(
+                HtmlTree.SECTION(HtmlStyle.propertyDetails)
+                        .setId(SectionName.PROPERTY_DETAIL.getName())
+                        .add(propertyDetailsTreeHeader)
+                        .add(propertyDetailsTree));
     }
 
     @Override
