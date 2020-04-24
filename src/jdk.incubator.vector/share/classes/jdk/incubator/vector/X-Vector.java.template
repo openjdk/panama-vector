@@ -4040,8 +4040,13 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     }
     private static $Type$Buffer wrapper(byte[] a, int offset,
                                         ByteOrder bo) {
+#if[byte]
         return ByteBuffer.wrap(a, offset, a.length - offset)
-            .order(bo){#if[byte]?;:.as$Type$Buffer();}
+            .order(bo).slice();
+#else[byte]
+        return ByteBuffer.wrap(a, offset, a.length - offset)
+            .order(bo).as$Type$Buffer();
+#end[byte]
     }
 
     // ================================================

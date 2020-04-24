@@ -3330,7 +3330,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     private static ByteBuffer wrapper(byte[] a, int offset,
                                         ByteOrder bo) {
         return ByteBuffer.wrap(a, offset, a.length - offset)
-            .order(bo);
+            .order(bo).slice();
     }
 
     // ================================================

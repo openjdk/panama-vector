@@ -93,6 +93,17 @@ public class Float128VectorLoadStoreTests extends AbstractVectorTest {
         }
     }
 
+    static void assertArraysEquals(byte[] a, byte[] r, boolean[] mask) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(mask[(i*8/SPECIES.elementSize()) % SPECIES.length()] ? a[i] : (byte) 0, r[i]);
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(mask[(i*8/SPECIES.elementSize()) % SPECIES.length()] ? a[i] : (byte) 0, r[i], "at index #" + i);
+        }
+    }
+
     static final List<IntFunction<float[]>> FLOAT_GENERATORS = List.of(
             withToString("float[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -158,6 +169,25 @@ public class Float128VectorLoadStoreTests extends AbstractVectorTest {
                 toArray(Object[][]::new);
     }
 
+    @DataProvider
+    public Object[][] floatByteArrayProvider() {
+        return FLOAT_GENERATORS.stream().
+                flatMap(fa -> BYTE_ARRAY_GENERATORS.stream().map(fb -> {
+                    return new Object[]{fa, fb};
+                })).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] floatByteArrayMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> FLOAT_GENERATORS.stream().
+                        flatMap(fa -> BYTE_ARRAY_GENERATORS.stream().map(fb -> {
+                            return new Object[]{fa, fb, fm};
+                        }))).
+                toArray(Object[][]::new);
+    }
+
     static ByteBuffer toBuffer(float[] a, IntFunction<ByteBuffer> fb) {
         ByteBuffer bb = fb.apply(a.length * SPECIES.elementSize() / 8);
         for (float v : a) {
@@ -172,6 +202,16 @@ public class Float128VectorLoadStoreTests extends AbstractVectorTest {
         db.get(d);
         return d;
     }
+
+    static byte[] toByteArray(float[] a, IntFunction<byte[]> fb, ByteOrder bo) {
+        byte[] b = fb.apply(a.length * SPECIES.elementSize() / 8);
+        FloatBuffer bb = ByteBuffer.wrap(b, 0, b.length).order(bo).asFloatBuffer();
+        for (float v : a) {
+            bb.put(v);
+        }
+        return b;
+    }
+
 
     interface ToFloatF {
         float apply(int i);
@@ -367,5 +407,67 @@ public class Float128VectorLoadStoreTests extends AbstractVectorTest {
         Assert.assertEquals(r.position(), 0, "Result buffer position changed");
         Assert.assertEquals(r.limit(), l, "Result buffer limit changed");
         assertArraysEquals(bufferToArray(a), bufferToArray(r), mask);
+    }
+
+    @Test(dataProvider = "floatByteArrayProvider")
+    static void loadStoreByteArray(IntFunction<float[]> fa,
+                                    IntFunction<byte[]> fb) {
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+        byte[] r = fb.apply(a.length);
+
+        int s = SPECIES.length() * SPECIES.elementSize() / 8;
+        int l = a.length;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                FloatVector av = FloatVector.fromByteArray(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN);
+                av.intoByteArray(r, i);
+            }
+        }
+        Assert.assertEquals(a, r, "Byte arrays not equal");
+    }
+
+    @Test(dataProvider = "floatByteArrayMaskProvider")
+    static void loadByteArrayMask(IntFunction<float[]> fa,
+                                  IntFunction<byte[]> fb,
+                                  IntFunction<boolean[]> fm) {
+          byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+          byte[] r = fb.apply(a.length);
+          boolean[] mask = fm.apply(SPECIES.length());
+          VectorMask<Float> vmask = VectorMask.fromValues(SPECIES, mask);
+
+          int s = SPECIES.length() * SPECIES.elementSize() / 8;
+          int l = a.length;
+
+          for (int ic = 0; ic < INVOC_COUNT; ic++) {
+              for (int i = 0; i < l; i += s) {
+                  FloatVector av = FloatVector.fromByteArray(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN, vmask);
+                  av.intoByteArray(r, i);
+              }
+          }
+          assertArraysEquals(a, r, mask);
+    }
+
+    @Test(dataProvider = "floatByteArrayMaskProvider")
+    static void storeByteArrayMask(IntFunction<float[]> fa,
+                                   IntFunction<byte[]> fb,
+                                   IntFunction<boolean[]> fm) {
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+        byte[] r = fb.apply(a.length);
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Float> vmask = VectorMask.fromValues(SPECIES, mask);
+
+        int s = SPECIES.length() * SPECIES.elementSize() / 8;
+        int l = a.length;
+
+        a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+        r = fb.apply(a.length);
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                FloatVector av = FloatVector.fromByteArray(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN);
+                av.intoByteArray(r, i, ByteOrder.LITTLE_ENDIAN, vmask);
+            }
+        }
+        assertArraysEquals(a, r, mask);
     }
 }

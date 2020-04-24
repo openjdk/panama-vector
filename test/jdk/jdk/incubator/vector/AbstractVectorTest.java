@@ -106,6 +106,12 @@ public class AbstractVectorTest {
 //            })
     );
 
+    static final List<IntFunction<byte[]>> BYTE_ARRAY_GENERATORS = List.of(
+            withToString("RW:NE", (int s) -> {
+                return (new byte[s]);
+            })
+    );
+
     static final List<IntFunction<boolean[]>> BOOL_ARRAY_GENERATORS = List.of(
             withToString("boolean[i % 2]", (int s) -> {
                 return fill_boolean(s,

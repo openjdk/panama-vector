@@ -93,6 +93,17 @@ public class Double128VectorLoadStoreTests extends AbstractVectorTest {
         }
     }
 
+    static void assertArraysEquals(byte[] a, byte[] r, boolean[] mask) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(mask[(i*8/SPECIES.elementSize()) % SPECIES.length()] ? a[i] : (byte) 0, r[i]);
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(mask[(i*8/SPECIES.elementSize()) % SPECIES.length()] ? a[i] : (byte) 0, r[i], "at index #" + i);
+        }
+    }
+
     static final List<IntFunction<double[]>> DOUBLE_GENERATORS = List.of(
             withToString("double[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -158,6 +169,25 @@ public class Double128VectorLoadStoreTests extends AbstractVectorTest {
                 toArray(Object[][]::new);
     }
 
+    @DataProvider
+    public Object[][] doubleByteArrayProvider() {
+        return DOUBLE_GENERATORS.stream().
+                flatMap(fa -> BYTE_ARRAY_GENERATORS.stream().map(fb -> {
+                    return new Object[]{fa, fb};
+                })).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] doubleByteArrayMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> DOUBLE_GENERATORS.stream().
+                        flatMap(fa -> BYTE_ARRAY_GENERATORS.stream().map(fb -> {
+                            return new Object[]{fa, fb, fm};
+                        }))).
+                toArray(Object[][]::new);
+    }
+
     static ByteBuffer toBuffer(double[] a, IntFunction<ByteBuffer> fb) {
         ByteBuffer bb = fb.apply(a.length * SPECIES.elementSize() / 8);
         for (double v : a) {
@@ -172,6 +202,16 @@ public class Double128VectorLoadStoreTests extends AbstractVectorTest {
         db.get(d);
         return d;
     }
+
+    static byte[] toByteArray(double[] a, IntFunction<byte[]> fb, ByteOrder bo) {
+        byte[] b = fb.apply(a.length * SPECIES.elementSize() / 8);
+        DoubleBuffer bb = ByteBuffer.wrap(b, 0, b.length).order(bo).asDoubleBuffer();
+        for (double v : a) {
+            bb.put(v);
+        }
+        return b;
+    }
+
 
     interface ToDoubleF {
         double apply(int i);
@@ -367,5 +407,67 @@ public class Double128VectorLoadStoreTests extends AbstractVectorTest {
         Assert.assertEquals(r.position(), 0, "Result buffer position changed");
         Assert.assertEquals(r.limit(), l, "Result buffer limit changed");
         assertArraysEquals(bufferToArray(a), bufferToArray(r), mask);
+    }
+
+    @Test(dataProvider = "doubleByteArrayProvider")
+    static void loadStoreByteArray(IntFunction<double[]> fa,
+                                    IntFunction<byte[]> fb) {
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+        byte[] r = fb.apply(a.length);
+
+        int s = SPECIES.length() * SPECIES.elementSize() / 8;
+        int l = a.length;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                DoubleVector av = DoubleVector.fromByteArray(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN);
+                av.intoByteArray(r, i);
+            }
+        }
+        Assert.assertEquals(a, r, "Byte arrays not equal");
+    }
+
+    @Test(dataProvider = "doubleByteArrayMaskProvider")
+    static void loadByteArrayMask(IntFunction<double[]> fa,
+                                  IntFunction<byte[]> fb,
+                                  IntFunction<boolean[]> fm) {
+          byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+          byte[] r = fb.apply(a.length);
+          boolean[] mask = fm.apply(SPECIES.length());
+          VectorMask<Double> vmask = VectorMask.fromValues(SPECIES, mask);
+
+          int s = SPECIES.length() * SPECIES.elementSize() / 8;
+          int l = a.length;
+
+          for (int ic = 0; ic < INVOC_COUNT; ic++) {
+              for (int i = 0; i < l; i += s) {
+                  DoubleVector av = DoubleVector.fromByteArray(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN, vmask);
+                  av.intoByteArray(r, i);
+              }
+          }
+          assertArraysEquals(a, r, mask);
+    }
+
+    @Test(dataProvider = "doubleByteArrayMaskProvider")
+    static void storeByteArrayMask(IntFunction<double[]> fa,
+                                   IntFunction<byte[]> fb,
+                                   IntFunction<boolean[]> fm) {
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+        byte[] r = fb.apply(a.length);
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Double> vmask = VectorMask.fromValues(SPECIES, mask);
+
+        int s = SPECIES.length() * SPECIES.elementSize() / 8;
+        int l = a.length;
+
+        a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+        r = fb.apply(a.length);
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                DoubleVector av = DoubleVector.fromByteArray(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN);
+                av.intoByteArray(r, i, ByteOrder.LITTLE_ENDIAN, vmask);
+            }
+        }
+        assertArraysEquals(a, r, mask);
     }
 }
