@@ -55,6 +55,24 @@ public class $vectorbenchtype$ extends AbstractVectorBenchmark {
 
     static final int INVOC_COUNT = 1; // get rid of outer loop
 
+#if[BITWISE]
+    static void replaceZero($type$[] a, $type$ v) {
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] == 0) {
+                a[i] = v;
+            }
+        }
+    }
+
+    static void replaceZero($type$[] a, boolean[] mask, $type$ v) {
+        for (int i = 0; i < a.length; i++) {
+            if (mask[i % mask.length] && a[i] == 0) {
+                a[i] = v;
+            }
+        }
+    }
+#end[BITWISE]
+
     @Param("1024")
     int size;
 

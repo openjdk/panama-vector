@@ -745,6 +745,22 @@ public class Short512VectorTests extends AbstractVectorTest {
         return new boolean[length];
     };
 
+    static void replaceZero(short[] a, short v) {
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] == 0) {
+                a[i] = v;
+            }
+        }
+    }
+
+    static void replaceZero(short[] a, boolean[] mask, short v) {
+        for (int i = 0; i < a.length; i++) {
+            if (mask[i % mask.length] && a[i] == 0) {
+                a[i] = v;
+            }
+        }
+    }
+
     @Test
     static void smokeTest1() {
         ShortVector three = ShortVector.broadcast(SPECIES, (byte)-3);
@@ -819,6 +835,26 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+    @Test
+    // Test div by 0.
+    static void bitwiseDivByZeroSmokeTest() {
+        try {
+            ShortVector a = (ShortVector) SPECIES.broadcast(0).addIndex(1);
+            ShortVector b = (ShortVector) SPECIES.broadcast(0);
+            a.div(b);
+            Assert.fail();
+        } catch (ArithmeticException e) {
+        }
+
+        try {
+            ShortVector a = (ShortVector) SPECIES.broadcast(0).addIndex(1);
+            ShortVector b = (ShortVector) SPECIES.broadcast(0);
+            VectorMask<Short> m = a.lt((short) 1);
+            a.div(b, m);
+            Assert.fail();
+        } catch (ArithmeticException e) {
+        }
+    }
     static short ADD(short a, short b) {
         return (short)(a + b);
     }
@@ -1060,6 +1096,98 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertArraysEquals(a, b, r, mask, Short512VectorTests::mul);
     }
 
+
+
+    static short DIV(short a, short b) {
+        return (short)(a / b);
+    }
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void DIVShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        replaceZero(b, (short) 1);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                ShortVector bv = ShortVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.DIV, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(a, b, r, Short512VectorTests::DIV);
+    }
+    static short div(short a, short b) {
+        return (short)(a / b);
+    }
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void divShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        replaceZero(b, (short) 1);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                ShortVector bv = ShortVector.fromArray(SPECIES, b, i);
+                av.div(bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(a, b, r, Short512VectorTests::div);
+    }
+
+
+
+    @Test(dataProvider = "shortBinaryOpMaskProvider")
+    static void DIVShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        replaceZero(b, mask, (short) 1);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                ShortVector bv = ShortVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.DIV, bv, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(a, b, r, mask, Short512VectorTests::DIV);
+    }
+
+    @Test(dataProvider = "shortBinaryOpMaskProvider")
+    static void divShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        replaceZero(b, mask, (short) 1);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                ShortVector bv = ShortVector.fromArray(SPECIES, b, i);
+                av.div(bv, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(a, b, r, mask, Short512VectorTests::div);
+    }
 
     static short FIRST_NONZERO(short a, short b) {
         return (short)((a)!=0?a:b);

@@ -696,8 +696,12 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                   VectorMask<Integer> m) {
         IntVector that = (IntVector) v;
         if (op == DIV) {
+            VectorMask<Integer> eqz = that.eq((int)0);
+            if (eqz.and(m).anyTrue()) {
+                throw that.divZeroException();
+            }
             // suppress div/0 exceptions in unset lanes
-            that = that.lanewise(NOT, that.eq((int)0));
+            that = that.lanewise(NOT, eqz);
             return blend(lanewise(DIV, that), m);
         }
         return blend(lanewise(op, v), m);
@@ -1324,6 +1328,88 @@ public abstract class IntVector extends AbstractVector<Integer> {
         return lanewise(MUL, e, m);
     }
 
+    /**
+     * {@inheritDoc} <!--workaround-->
+     * @apiNote If there is a zero divisor, {@code
+     * ArithmeticException} will be thrown.
+     */
+    @Override
+    @ForceInline
+    public final IntVector div(Vector<Integer> v) {
+        return lanewise(DIV, v);
+    }
+
+    /**
+     * Divides this vector by the broadcast of an input scalar.
+     *
+     * This is a lane-wise binary operation which applies
+     * the primitive division operation ({@code /}) to each lane.
+     *
+     * This method is also equivalent to the expression
+     * {@link #lanewise(VectorOperators.Binary,int)
+     *    lanewise}{@code (}{@link VectorOperators#DIV
+     *    DIV}{@code , e)}.
+     *
+     * @apiNote If there is a zero divisor, {@code
+     * ArithmeticException} will be thrown.
+     *
+     * @param e the input scalar
+     * @return the result of dividing each lane of this vector by the scalar
+     * @see #div(Vector)
+     * @see #broadcast(int)
+     * @see #div(int,VectorMask)
+     * @see VectorOperators#DIV
+     * @see #lanewise(VectorOperators.Binary,Vector)
+     * @see #lanewise(VectorOperators.Binary,int)
+     */
+    @ForceInline
+    public final IntVector div(int e) {
+        return lanewise(DIV, e);
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     * @see #div(int,VectorMask)
+     * @apiNote If there is a zero divisor, {@code
+     * ArithmeticException} will be thrown.
+     */
+    @Override
+    @ForceInline
+    public final IntVector div(Vector<Integer> v,
+                                          VectorMask<Integer> m) {
+        return lanewise(DIV, v, m);
+    }
+
+    /**
+     * Divides this vector by the broadcast of an input scalar,
+     * selecting lane elements controlled by a mask.
+     *
+     * This is a masked lane-wise binary operation which applies
+     * the primitive division operation ({@code /}) to each lane.
+     *
+     * This method is also equivalent to the expression
+     * {@link #lanewise(VectorOperators.Binary,int,VectorMask)
+     *    lanewise}{@code (}{@link VectorOperators#DIV
+     *    DIV}{@code , s, m)}.
+     *
+     * @apiNote If there is a zero divisor, {@code
+     * ArithmeticException} will be thrown.
+     *
+     * @param e the input scalar
+     * @param m the mask controlling lane selection
+     * @return the result of dividing each lane of this vector by the scalar
+     * @see #div(Vector,VectorMask)
+     * @see #broadcast(int)
+     * @see #div(int)
+     * @see VectorOperators#DIV
+     * @see #lanewise(VectorOperators.Binary,Vector)
+     * @see #lanewise(VectorOperators.Binary,int)
+     */
+    @ForceInline
+    public final IntVector div(int e,
+                                          VectorMask<Integer> m) {
+        return lanewise(DIV, e, m);
+    }
 
     /// END OF FULL-SERVICE BINARY METHODS
 

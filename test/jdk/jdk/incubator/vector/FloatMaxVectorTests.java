@@ -802,6 +802,7 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
         return new boolean[length];
     };
 
+
     @Test
     static void smokeTest1() {
         FloatVector three = FloatVector.broadcast(SPECIES, (byte)-3);
@@ -1201,6 +1202,8 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
 
         assertArraysEquals(a, b, r, mask, FloatMaxVectorTests::div);
     }
+
+
 
     static float FIRST_NONZERO(float a, float b) {
         return (float)(Double.doubleToLongBits(a)!=0?a:b);

@@ -797,6 +797,7 @@ public class Float512VectorTests extends AbstractVectorTest {
         return new boolean[length];
     };
 
+
     @Test
     static void smokeTest1() {
         FloatVector three = FloatVector.broadcast(SPECIES, (byte)-3);
@@ -1196,6 +1197,8 @@ public class Float512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(a, b, r, mask, Float512VectorTests::div);
     }
+
+
 
     static float FIRST_NONZERO(float a, float b) {
         return (float)(Double.doubleToLongBits(a)!=0?a:b);

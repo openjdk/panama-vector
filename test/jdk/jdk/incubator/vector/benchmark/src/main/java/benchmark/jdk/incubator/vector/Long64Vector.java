@@ -51,6 +51,22 @@ public class Long64Vector extends AbstractVectorBenchmark {
 
     static final int INVOC_COUNT = 1; // get rid of outer loop
 
+    static void replaceZero(long[] a, long v) {
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] == 0) {
+                a[i] = v;
+            }
+        }
+    }
+
+    static void replaceZero(long[] a, boolean[] mask, long v) {
+        for (int i = 0; i < a.length; i++) {
+            if (mask[i % mask.length] && a[i] == 0) {
+                a[i] = v;
+            }
+        }
+    }
+
     @Param("1024")
     int size;
 
@@ -200,6 +216,50 @@ public class Long64Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
+
+
+
+    @Benchmark
+    public void DIV(Blackhole bh) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        replaceZero(b, (long) 1);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.DIV, bv).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+
+
+    @Benchmark
+    public void DIVMasked(Blackhole bh) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        replaceZero(b, mask, (long) 1);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.DIV, bv, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
 
 
     @Benchmark

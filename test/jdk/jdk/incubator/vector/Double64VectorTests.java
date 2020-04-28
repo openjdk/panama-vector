@@ -797,6 +797,7 @@ public class Double64VectorTests extends AbstractVectorTest {
         return new boolean[length];
     };
 
+
     @Test
     static void smokeTest1() {
         DoubleVector three = DoubleVector.broadcast(SPECIES, (byte)-3);
@@ -1196,6 +1197,8 @@ public class Double64VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(a, b, r, mask, Double64VectorTests::div);
     }
+
+
 
     static double FIRST_NONZERO(double a, double b) {
         return (double)(Double.doubleToLongBits(a)!=0?a:b);

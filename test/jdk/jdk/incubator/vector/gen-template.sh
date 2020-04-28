@@ -170,8 +170,14 @@ function gen_op_tmpl {
     op_name="extract"
   fi
 
-  local unit_filename="${TEMPLATE_FOLDER}/Unit-${template}.template"
   local kernel_filename="${TEMPLATE_FOLDER}/Kernel-${template}.template"
+  local unit_filename="${TEMPLATE_FOLDER}/Unit-${template}.template"
+  if [ ! -f $unit_filename ]; then
+    # Leverage general unit code snippet if no specialization exists
+    unit_filename="${TEMPLATE_FOLDER}/Unit-${template%_*}.template"
+    echo $unit_filename
+  fi
+
   local perf_wrapper_filename="${TEMPLATE_FOLDER}/Perf-wrapper.template"
   local perf_vector_filename="${TEMPLATE_FOLDER}/Perf-${template}.template"
   local perf_scalar_filename="${TEMPLATE_FOLDER}/Perf-Scalar-${template}.template"
@@ -314,6 +320,8 @@ gen_binary_alu_op "ADD+add+withMask" "a + b"  $unit_output $perf_output $perf_sc
 gen_binary_alu_op "SUB+sub+withMask" "a - b"  $unit_output $perf_output $perf_scalar_output
 gen_binary_alu_op "MUL+mul+withMask" "a \* b" $unit_output $perf_output $perf_scalar_output
 gen_binary_alu_op "DIV+div+withMask" "a \/ b" $unit_output $perf_output $perf_scalar_output "FP"
+gen_op_tmpl "Binary-op_bitwise-div" "DIV+div+withMask" "a \/ b" $unit_output $perf_output $perf_scalar_output "BITWISE"
+gen_op_tmpl "Binary-Masked-op_bitwise-div" "DIV+div+withMask" "a \/ b" $unit_output $perf_output $perf_scalar_output "BITWISE"
 gen_binary_alu_op "FIRST_NONZERO" "{#if[FP]?Double.doubleToLongBits}(a)!=0?a:b" $unit_output $perf_output $perf_scalar_output
 gen_binary_alu_op "AND+and"   "a \& b"  $unit_output $perf_output $perf_scalar_output "BITWISE"
 gen_binary_alu_op "AND_NOT" "a \& ~b" $unit_output $perf_output $perf_scalar_output "BITWISE"

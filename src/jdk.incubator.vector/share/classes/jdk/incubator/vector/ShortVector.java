@@ -696,8 +696,12 @@ public abstract class ShortVector extends AbstractVector<Short> {
                                   VectorMask<Short> m) {
         ShortVector that = (ShortVector) v;
         if (op == DIV) {
+            VectorMask<Short> eqz = that.eq((short)0);
+            if (eqz.and(m).anyTrue()) {
+                throw that.divZeroException();
+            }
             // suppress div/0 exceptions in unset lanes
-            that = that.lanewise(NOT, that.eq((short)0));
+            that = that.lanewise(NOT, eqz);
             return blend(lanewise(DIV, that), m);
         }
         return blend(lanewise(op, v), m);
@@ -1325,6 +1329,88 @@ public abstract class ShortVector extends AbstractVector<Short> {
         return lanewise(MUL, e, m);
     }
 
+    /**
+     * {@inheritDoc} <!--workaround-->
+     * @apiNote If there is a zero divisor, {@code
+     * ArithmeticException} will be thrown.
+     */
+    @Override
+    @ForceInline
+    public final ShortVector div(Vector<Short> v) {
+        return lanewise(DIV, v);
+    }
+
+    /**
+     * Divides this vector by the broadcast of an input scalar.
+     *
+     * This is a lane-wise binary operation which applies
+     * the primitive division operation ({@code /}) to each lane.
+     *
+     * This method is also equivalent to the expression
+     * {@link #lanewise(VectorOperators.Binary,short)
+     *    lanewise}{@code (}{@link VectorOperators#DIV
+     *    DIV}{@code , e)}.
+     *
+     * @apiNote If there is a zero divisor, {@code
+     * ArithmeticException} will be thrown.
+     *
+     * @param e the input scalar
+     * @return the result of dividing each lane of this vector by the scalar
+     * @see #div(Vector)
+     * @see #broadcast(short)
+     * @see #div(short,VectorMask)
+     * @see VectorOperators#DIV
+     * @see #lanewise(VectorOperators.Binary,Vector)
+     * @see #lanewise(VectorOperators.Binary,short)
+     */
+    @ForceInline
+    public final ShortVector div(short e) {
+        return lanewise(DIV, e);
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     * @see #div(short,VectorMask)
+     * @apiNote If there is a zero divisor, {@code
+     * ArithmeticException} will be thrown.
+     */
+    @Override
+    @ForceInline
+    public final ShortVector div(Vector<Short> v,
+                                          VectorMask<Short> m) {
+        return lanewise(DIV, v, m);
+    }
+
+    /**
+     * Divides this vector by the broadcast of an input scalar,
+     * selecting lane elements controlled by a mask.
+     *
+     * This is a masked lane-wise binary operation which applies
+     * the primitive division operation ({@code /}) to each lane.
+     *
+     * This method is also equivalent to the expression
+     * {@link #lanewise(VectorOperators.Binary,short,VectorMask)
+     *    lanewise}{@code (}{@link VectorOperators#DIV
+     *    DIV}{@code , s, m)}.
+     *
+     * @apiNote If there is a zero divisor, {@code
+     * ArithmeticException} will be thrown.
+     *
+     * @param e the input scalar
+     * @param m the mask controlling lane selection
+     * @return the result of dividing each lane of this vector by the scalar
+     * @see #div(Vector,VectorMask)
+     * @see #broadcast(short)
+     * @see #div(short)
+     * @see VectorOperators#DIV
+     * @see #lanewise(VectorOperators.Binary,Vector)
+     * @see #lanewise(VectorOperators.Binary,short)
+     */
+    @ForceInline
+    public final ShortVector div(short e,
+                                          VectorMask<Short> m) {
+        return lanewise(DIV, e, m);
+    }
 
     /// END OF FULL-SERVICE BINARY METHODS
 

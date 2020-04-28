@@ -51,6 +51,7 @@ public class DoubleMaxVector extends AbstractVectorBenchmark {
 
     static final int INVOC_COUNT = 1; // get rid of outer loop
 
+
     @Param("1024")
     int size;
 
@@ -238,6 +239,8 @@ public class DoubleMaxVector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
+
+
 
 
     @Benchmark

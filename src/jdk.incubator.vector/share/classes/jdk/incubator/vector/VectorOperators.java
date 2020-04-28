@@ -527,7 +527,7 @@ public abstract class VectorOperators {
     /** Produce {@code a*b}. */
     public static final Associative MUL = assoc("MUL", "*", VectorSupport.VECTOR_OP_MUL, VO_ALL+VO_ASSOC);
     /** Produce {@code a/b}. Floating only. */
-    public static final Binary DIV = binary("DIV", "/", VectorSupport.VECTOR_OP_DIV, VO_ONLYFP);
+    public static final Binary DIV = binary("DIV", "/", VectorSupport.VECTOR_OP_DIV, VO_ALL| VO_SPECIAL);
     /** Produce {@code min(a,b)}. */
     public static final Associative MIN = assoc("MIN", "min", VectorSupport.VECTOR_OP_MIN, VO_ALL+VO_ASSOC);
     /** Produce {@code max(a,b)}. */

@@ -745,6 +745,22 @@ public class Long512VectorTests extends AbstractVectorTest {
         return new boolean[length];
     };
 
+    static void replaceZero(long[] a, long v) {
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] == 0) {
+                a[i] = v;
+            }
+        }
+    }
+
+    static void replaceZero(long[] a, boolean[] mask, long v) {
+        for (int i = 0; i < a.length; i++) {
+            if (mask[i % mask.length] && a[i] == 0) {
+                a[i] = v;
+            }
+        }
+    }
+
     @Test
     static void smokeTest1() {
         LongVector three = LongVector.broadcast(SPECIES, (byte)-3);
@@ -819,6 +835,26 @@ public class Long512VectorTests extends AbstractVectorTest {
         }
     }
 
+    @Test
+    // Test div by 0.
+    static void bitwiseDivByZeroSmokeTest() {
+        try {
+            LongVector a = (LongVector) SPECIES.broadcast(0).addIndex(1);
+            LongVector b = (LongVector) SPECIES.broadcast(0);
+            a.div(b);
+            Assert.fail();
+        } catch (ArithmeticException e) {
+        }
+
+        try {
+            LongVector a = (LongVector) SPECIES.broadcast(0).addIndex(1);
+            LongVector b = (LongVector) SPECIES.broadcast(0);
+            VectorMask<Long> m = a.lt((long) 1);
+            a.div(b, m);
+            Assert.fail();
+        } catch (ArithmeticException e) {
+        }
+    }
     static long ADD(long a, long b) {
         return (long)(a + b);
     }
@@ -1060,6 +1096,98 @@ public class Long512VectorTests extends AbstractVectorTest {
         assertArraysEquals(a, b, r, mask, Long512VectorTests::mul);
     }
 
+
+
+    static long DIV(long a, long b) {
+        return (long)(a / b);
+    }
+
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void DIVLong512VectorTests(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        replaceZero(b, (long) 1);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.DIV, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(a, b, r, Long512VectorTests::DIV);
+    }
+    static long div(long a, long b) {
+        return (long)(a / b);
+    }
+
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void divLong512VectorTests(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        replaceZero(b, (long) 1);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                av.div(bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(a, b, r, Long512VectorTests::div);
+    }
+
+
+
+    @Test(dataProvider = "longBinaryOpMaskProvider")
+    static void DIVLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        replaceZero(b, mask, (long) 1);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.DIV, bv, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(a, b, r, mask, Long512VectorTests::DIV);
+    }
+
+    @Test(dataProvider = "longBinaryOpMaskProvider")
+    static void divLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        replaceZero(b, mask, (long) 1);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                av.div(bv, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(a, b, r, mask, Long512VectorTests::div);
+    }
 
     static long FIRST_NONZERO(long a, long b) {
         return (long)((a)!=0?a:b);
