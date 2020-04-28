@@ -2104,6 +2104,12 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       }
       break;
     }
+    case Op_VectorLoadShuffle:
+    case Op_VectorRearrange:
+      if (vlen < 4) {
+        return false;
+      }
+      break;
   }
 
   return true; // Per default match rules are supported.
@@ -2178,9 +2184,16 @@ const int Matcher::max_vector_size(const BasicType bt) {
 }
 const int Matcher::min_vector_size(const BasicType bt) {
   int max_size = max_vector_size(bt);
-  // To support vector load mask for long data,  set min size
-  // which can be loaded into vector as 2 bytes.
-  int size = 2;
+  // Limit the vector size to 8 bytes
+  int size = 8 / type2aelembytes(bt);
+  if (bt == T_BYTE) {
+    // To support vector api shuffle/rearrange.
+    size = 4;
+  } else if (bt == T_BOOLEAN) {
+    // To support vector api load/store mask.
+    size = 2;
+  }
+  if (size < 2) size = 2;
   return MIN2(size,max_size);
 }
 
@@ -20610,21 +20623,6 @@ instruct loadshuffle8S(vecX dst, vecD src) %{
   ins_pipe(pipe_class_default);
 %}
 
-instruct loadshuffle2I(vecD dst, vecD src) %{
-  predicate(n->as_Vector()->length() == 2 &&
-           (n->bottom_type()->is_vect()->element_basic_type() == T_INT ||
-            n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
-  match(Set dst (VectorLoadShuffle src));
-  ins_cost(INSN_COST);
-  format %{ "uxtl  $dst, $src\t# 2B to 2H \n\t"
-            "uxtl  $dst, $dst\t# 2H to 2S" %}
-  ins_encode %{
-    __ uxtl(as_FloatRegister($dst$$reg), __ T8H, as_FloatRegister($src$$reg), __ T8B);
-    __ uxtl(as_FloatRegister($dst$$reg), __ T4S, as_FloatRegister($dst$$reg), __ T4H);
-  %}
-  ins_pipe(pipe_class_default);
-%}
-
 instruct loadshuffle4I(vecX dst, vecD src) %{
   predicate(n->as_Vector()->length() == 4 &&
            (n->bottom_type()->is_vect()->element_basic_type() == T_INT ||
@@ -20636,23 +20634,6 @@ instruct loadshuffle4I(vecX dst, vecD src) %{
   ins_encode %{
     __ uxtl(as_FloatRegister($dst$$reg), __ T8H, as_FloatRegister($src$$reg), __ T8B);
     __ uxtl(as_FloatRegister($dst$$reg), __ T4S, as_FloatRegister($dst$$reg), __ T4H);
-  %}
-  ins_pipe(pipe_class_default);
-%}
-
-instruct loadshuffle2L(vecX dst, vecD src) %{
-  predicate(n->as_Vector()->length() == 2 &&
-           (n->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
-            n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
-  match(Set dst (VectorLoadShuffle src));
-  ins_cost(INSN_COST);
-  format %{ "uxtl  $dst, $src\t# 2B to 2H \n\t"
-            "uxtl  $dst, $dst\t# 2H to 2S \n\t"
-            "uxtl  $dst, $dst\t# 2S to 4D" %}
-  ins_encode %{
-    __ uxtl(as_FloatRegister($dst$$reg), __ T8H, as_FloatRegister($src$$reg), __ T8B);
-    __ uxtl(as_FloatRegister($dst$$reg), __ T4S, as_FloatRegister($dst$$reg), __ T4H);
-    __ uxtl(as_FloatRegister($dst$$reg), __ T2D, as_FloatRegister($dst$$reg), __ T2S);
   %}
   ins_pipe(pipe_class_default);
 %}
@@ -20754,27 +20735,6 @@ instruct rearrange8S(vecX dst, vecX src, vecX shuffle, vecX vtmp0, vecX vtmp1) %
   ins_pipe(pipe_class_default);
 %}
 
-instruct rearrange2I(vecD dst, vecD src, vecD shuffle, vecD vtmp0, vecD vtmp1) %{
-  predicate(n->as_Vector()->length() == 2 &&
-           (n->bottom_type()->is_vect()->element_basic_type() == T_INT ||
-            n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
-  match(Set dst (VectorRearrange src shuffle));
-  ins_cost(INSN_COST);
-  effect(TEMP_DEF dst, TEMP vtmp0, TEMP vtmp1);
-  format %{ "negr $dst, $shuffle\n\t"
-            "dup  $vtmp0, T2S, $src, 0\n\t"
-            "dup  $vtmp1, T2S, $src, 1\n\t"
-            "bsl  $dst, $vtmp1, $vtmp0\t# rearrange 2L" %}
-  ins_encode %{
-    __ negr(as_FloatRegister($dst$$reg), __ T2S, as_FloatRegister($shuffle$$reg));
-    __ dup(as_FloatRegister($vtmp0$$reg), __ T2S, as_FloatRegister($src$$reg), 0);
-    __ dup(as_FloatRegister($vtmp1$$reg), __ T2S, as_FloatRegister($src$$reg), 1);
-    __ bsl(as_FloatRegister($dst$$reg), __ T8B,
-           as_FloatRegister($vtmp1$$reg), as_FloatRegister($vtmp0$$reg));
-  %}
-  ins_pipe(pipe_class_default);
-%}
-
 instruct rearrange4I(vecX dst, vecX src, vecX shuffle, vecX vtmp0, vecX vtmp1) %{
   predicate(n->as_Vector()->length() == 4 &&
            (n->bottom_type()->is_vect()->element_basic_type() == T_INT ||
@@ -20796,27 +20756,6 @@ instruct rearrange4I(vecX dst, vecX src, vecX shuffle, vecX vtmp0, vecX vtmp1) %
             as_FloatRegister($dst$$reg), as_FloatRegister($vtmp1$$reg));
     __ tbl(as_FloatRegister($dst$$reg), __ T16B,
            as_FloatRegister($src$$reg), 1, as_FloatRegister($dst$$reg));
-  %}
-  ins_pipe(pipe_class_default);
-%}
-
-instruct rearrange2L(vecX dst, vecX src, vecX shuffle, vecX vtmp0, vecX vtmp1) %{
-  predicate(n->as_Vector()->length() == 2 &&
-           (n->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
-            n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
-  match(Set dst (VectorRearrange src shuffle));
-  ins_cost(INSN_COST);
-  effect(TEMP_DEF dst, TEMP vtmp0, TEMP vtmp1);
-  format %{ "negr $dst, $shuffle\n\t"
-            "dup  $vtmp0, T2D, $src, 0\n\t"
-            "dup  $vtmp1, T2D, $src, 1\n\t"
-            "bsl  $dst, $vtmp1, $vtmp0\t# rearrange 2L" %}
-  ins_encode %{
-    __ negr(as_FloatRegister($dst$$reg), __ T2D, as_FloatRegister($shuffle$$reg));
-    __ dup(as_FloatRegister($vtmp0$$reg), __ T2D, as_FloatRegister($src$$reg), 0);
-    __ dup(as_FloatRegister($vtmp1$$reg), __ T2D, as_FloatRegister($src$$reg), 1);
-    __ bsl(as_FloatRegister($dst$$reg), __ T16B,
-           as_FloatRegister($vtmp1$$reg), as_FloatRegister($vtmp0$$reg));
   %}
   ins_pipe(pipe_class_default);
 %}
