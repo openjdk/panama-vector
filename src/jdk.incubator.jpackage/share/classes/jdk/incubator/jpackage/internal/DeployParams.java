@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -295,6 +295,17 @@ public class DeployParams {
                 throw new PackagerException("ERR_LicenseFileNotExit");
             }
         }
+
+        // Validate icon file if set
+        String icon = (String)bundlerArguments.get(
+                Arguments.CLIOptions.ICON.getId());
+        if (icon != null) {
+            File iconFile = new File(icon);
+            if (!iconFile.exists()) {
+                throw new PackagerException("ERR_IconFileNotExit",
+                        iconFile.getAbsolutePath());
+            }
+        }
     }
 
     void setTargetFormat(String t) {
@@ -315,7 +326,8 @@ public class DeployParams {
             StandardBundlerParam.MODULE_PATH.getID(),
             StandardBundlerParam.ADD_MODULES.getID(),
             StandardBundlerParam.LIMIT_MODULES.getID(),
-            StandardBundlerParam.FILE_ASSOCIATIONS.getID()
+            StandardBundlerParam.FILE_ASSOCIATIONS.getID(),
+            StandardBundlerParam.JLINK_OPTIONS.getID()
     ));
 
     @SuppressWarnings("unchecked")

@@ -442,7 +442,7 @@ InstanceKlass* InstanceKlass::allocate_instance_klass(const ClassFileParser& par
       ik = new (loader_data, size, THREAD) InstanceClassLoaderKlass(parser);
     } else {
       // normal
-      ik = new (loader_data, size, THREAD) InstanceKlass(parser, InstanceKlass::_misc_kind_other);
+      ik = new (loader_data, size, THREAD) InstanceKlass(parser, InstanceKlass::_kind_other);
     }
   } else {
     // reference
@@ -483,15 +483,15 @@ Array<int>* InstanceKlass::create_new_default_vtable_indices(int len, TRAPS) {
 InstanceKlass::InstanceKlass(const ClassFileParser& parser, unsigned kind, KlassID id) :
   Klass(id),
   _nest_members(NULL),
-  _nest_host_index(0),
   _nest_host(NULL),
   _record_components(NULL),
   _static_field_size(parser.static_field_size()),
   _nonstatic_oop_map_size(nonstatic_oop_map_size(parser.total_oop_map_count())),
   _itable_len(parser.itable_size()),
-  _init_thread(NULL),
+  _nest_host_index(0),
   _init_state(allocated),
-  _reference_type(parser.reference_type())
+  _reference_type(parser.reference_type()),
+  _init_thread(NULL)
 {
   set_vtable_length(parser.vtable_size());
   set_kind(kind);
@@ -587,9 +587,9 @@ void InstanceKlass::deallocate_contents(ClassLoaderData* loader_data) {
   // to deallocate.
   assert(array_klasses() == NULL, "array classes shouldn't be created for this class yet");
 
-  // Release C heap allocated data that this might point to, which includes
+  // Release C heap allocated data that this points to, which includes
   // reference counting symbol names.
-  release_C_heap_structures();
+  release_C_heap_structures_internal();
 
   deallocate_methods(loader_data, methods());
   set_methods(NULL);
@@ -919,20 +919,22 @@ bool InstanceKlass::link_class_impl(TRAPS) {
       // fabricate new Method*s.
       // also does loader constraint checking
       //
-      // initialize_vtable and initialize_itable need to be rerun for
-      // a shared class if the class is not loaded by the NULL classloader.
-      ClassLoaderData * loader_data = class_loader_data();
-      if (!(is_shared() &&
-            loader_data->is_the_null_class_loader_data())) {
+      // initialize_vtable and initialize_itable need to be rerun
+      // for a shared class if
+      // 1) the class is loaded by custom class loader or
+      // 2) the class is loaded by built-in class loader but failed to add archived loader constraints
+      bool need_init_table = true;
+      if (is_shared() && SystemDictionaryShared::check_linking_constraints(this, THREAD)) {
+        need_init_table = false;
+      }
+      if (need_init_table) {
         vtable().initialize_vtable(true, CHECK_false);
         itable().initialize_itable(true, CHECK_false);
       }
 #ifdef ASSERT
-      else {
-        vtable().verify(tty, true);
-        // In case itable verification is ever added.
-        // itable().verify(tty, true);
-      }
+      vtable().verify(tty, true);
+      // In case itable verification is ever added.
+      // itable().verify(tty, true);
 #endif
       set_init_state(linked);
       if (JvmtiExport::should_post_class_prepare()) {
@@ -1378,14 +1380,14 @@ Klass* InstanceKlass::array_klass_impl(bool or_null, int n, TRAPS) {
 
       // Check if update has already taken place
       if (array_klasses() == NULL) {
-        Klass*    k = ObjArrayKlass::allocate_objArray_klass(class_loader_data(), 1, this, CHECK_NULL);
+        ObjArrayKlass* k = ObjArrayKlass::allocate_objArray_klass(class_loader_data(), 1, this, CHECK_NULL);
         // use 'release' to pair with lock-free load
         release_set_array_klasses(k);
       }
     }
   }
   // _this will always be set at this point
-  ObjArrayKlass* oak = (ObjArrayKlass*)array_klasses();
+  ObjArrayKlass* oak = array_klasses();
   if (or_null) {
     return oak->array_klass_or_null(n);
   }
@@ -1624,12 +1626,12 @@ void InstanceKlass::do_nonstatic_fields(FieldClosure* cl) {
 
 void InstanceKlass::array_klasses_do(void f(Klass* k, TRAPS), TRAPS) {
   if (array_klasses() != NULL)
-    ArrayKlass::cast(array_klasses())->array_klasses_do(f, THREAD);
+    array_klasses()->array_klasses_do(f, THREAD);
 }
 
 void InstanceKlass::array_klasses_do(void f(Klass* k)) {
   if (array_klasses() != NULL)
-    ArrayKlass::cast(array_klasses())->array_klasses_do(f);
+    array_klasses()->array_klasses_do(f);
 }
 
 #ifdef ASSERT
@@ -2386,7 +2388,6 @@ void InstanceKlass::metaspace_pointers_do(MetaspaceClosure* it) {
   it->push((Klass**)&_array_klasses);
   it->push(&_constants);
   it->push(&_inner_classes);
-  it->push(&_array_name);
 #if INCLUDE_JVMTI
   it->push(&_previous_versions);
 #endif
@@ -2513,7 +2514,7 @@ void InstanceKlass::restore_unshareable_info(ClassLoaderData* loader_data, Handl
   if (array_klasses() != NULL) {
     // Array classes have null protection domain.
     // --> see ArrayKlass::complete_create_array_klass()
-    ArrayKlass::cast(array_klasses())->restore_unshareable_info(ClassLoaderData::the_null_class_loader_data(), Handle(), CHECK);
+    array_klasses()->restore_unshareable_info(ClassLoaderData::the_null_class_loader_data(), Handle(), CHECK);
   }
 
   // Initialize current biased locking state.
@@ -2581,17 +2582,19 @@ static void method_release_C_heap_structures(Method* m) {
   m->release_C_heap_structures();
 }
 
-void InstanceKlass::release_C_heap_structures(InstanceKlass* ik) {
+void InstanceKlass::release_C_heap_structures() {
+
   // Clean up C heap
-  ik->release_C_heap_structures();
-  ik->constants()->release_C_heap_structures();
+  release_C_heap_structures_internal();
+  constants()->release_C_heap_structures();
 
   // Deallocate and call destructors for MDO mutexes
-  ik->methods_do(method_release_C_heap_structures);
-
+  methods_do(method_release_C_heap_structures);
 }
 
-void InstanceKlass::release_C_heap_structures() {
+void InstanceKlass::release_C_heap_structures_internal() {
+  Klass::release_C_heap_structures();
+
   // Can't release the constant pool here because the constant pool can be
   // deallocated separately from the InstanceKlass for default methods and
   // redefine classes.
@@ -2629,12 +2632,6 @@ void InstanceKlass::release_C_heap_structures() {
   }
 #endif
 
-  // Decrement symbol reference counts associated with the unloaded class.
-  if (_name != NULL) _name->decrement_refcount();
-
-  // unreference array name derived from this class name (arrays of an unloaded
-  // class can't be referenced anymore).
-  if (_array_name != NULL)  _array_name->decrement_refcount();
   FREE_C_HEAP_ARRAY(char, _source_debug_extension);
 }
 
@@ -3719,9 +3716,6 @@ void InstanceKlass::verify_on(outputStream* st) {
   }
 
   // Verify other fields
-  if (array_klasses() != NULL) {
-    guarantee(array_klasses()->is_klass(), "should be klass");
-  }
   if (constants() != NULL) {
     guarantee(constants()->is_constantPool(), "should be constant pool");
   }
