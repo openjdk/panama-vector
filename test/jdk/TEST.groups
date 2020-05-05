@@ -1,4 +1,4 @@
-#  Copyright (c) 2013, 2019, Oracle and/or its affiliates. All rights reserved.
+#  Copyright (c) 2013, 2020, Oracle and/or its affiliates. All rights reserved.
 #  DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 #  This code is free software; you can redistribute it and/or modify it
@@ -76,7 +76,8 @@ tier3 = \
     :jdk_beans \
     :jdk_imageio \
     :jdk_sound \
-    :jdk_client_sanity
+    :jdk_client_sanity \
+    :jdk_jfr_tier3
 
 ###############################################################################
 #
@@ -264,13 +265,11 @@ jdk_launcher = \
 core_tools = \
     tools \
     jdk/internal/jrtfs \
-    sun/tools/java \
     sun/tools/jrunscript
 
 svc_tools = \
     com/sun/tools/attach \
     sun/tools \
-    -sun/tools/java \
     -sun/tools/jrunscript \
     sun/jvmstat
 
@@ -280,6 +279,9 @@ jdk_tools = \
 
 jdk_jfr = \
     jdk/jfr
+
+jdk_jfr_tier3 = \
+    jdk/jfr/event/metadata/TestLookForUntestedEvents.java
 
 #
 # Catch-all for other areas with a small number of tests

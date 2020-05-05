@@ -472,6 +472,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * @see Vector#broadcast(long)
      * @see VectorSpecies#broadcast(long)
      */
+    @ForceInline
     public static ByteVector broadcast(VectorSpecies<Byte> species, byte e) {
         ByteSpecies vsp = (ByteSpecies) species;
         return vsp.broadcast(e);
@@ -515,6 +516,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * @see #broadcast(VectorSpecies,byte)
      * @see VectorSpecies#checkValue(long)
      */
+    @ForceInline
     public static ByteVector broadcast(VectorSpecies<Byte> species, long e) {
         ByteSpecies vsp = (ByteSpecies) species;
         return vsp.broadcast(e);
@@ -565,7 +567,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             if (op == ZOMO) {
                 return blend(broadcast(-1), compare(NE, 0));
             }
-            if (op == NEG) {
+            if (op == NOT) {
+                return broadcast(-1).lanewiseTemplate(XOR, this);
+            } else if (op == NEG) {
                 // FIXME: Support this in the JIT.
                 return broadcast(0).lanewiseTemplate(SUB, this);
             }
@@ -580,8 +584,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                         v0.uOp((i, a) -> (byte) -a);
                 case VECTOR_OP_ABS: return v0 ->
                         v0.uOp((i, a) -> (byte) Math.abs(a));
-                case VECTOR_OP_NOT: return v0 ->
-                        v0.uOp((i, a) -> (byte) ~a);
                 default: return null;
               }}));
     }
@@ -693,8 +695,12 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                   VectorMask<Byte> m) {
         ByteVector that = (ByteVector) v;
         if (op == DIV) {
+            VectorMask<Byte> eqz = that.eq((byte)0);
+            if (eqz.and(m).anyTrue()) {
+                throw that.divZeroException();
+            }
             // suppress div/0 exceptions in unset lanes
-            that = that.lanewise(NOT, that.eq((byte)0));
+            that = that.lanewise(NOT, eqz);
             return blend(lanewise(DIV, that), m);
         }
         return blend(lanewise(op, v), m);
@@ -727,7 +733,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     public final
     ByteVector lanewise(VectorOperators.Binary op,
                                   byte e) {
-        int opc = opCode(op);
         if (opKind(op, VO_SHIFT) && (byte)(int)e == e) {
             return lanewiseShift(op, (int) e);
         }
@@ -815,7 +820,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     final ByteVector
     lanewiseShiftTemplate(VectorOperators.Binary op, int e) {
         // Special handling for these.  FIXME: Refactor?
-        int opc = opCode(op);
         assert(opKind(op, VO_SHIFT));
         // As per shift specification for Java, mask the shift count.
         e &= SHIFT_MASK;
@@ -824,6 +828,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             ByteVector lo = this.lanewise(LSHR, (op == ROR) ? e : -e);
             return hi.lanewise(OR, lo);
         }
+        int opc = opCode(op);
         return VectorSupport.broadcastInt(
             opc, getClass(), byte.class, length(),
             this, e,
@@ -2909,10 +2914,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                    int[] indexMap, int mapOffset,
                                    VectorMask<Byte> m) {
         ByteSpecies vsp = (ByteSpecies) species;
-
-        // Do it the slow way.
         return vsp.vOp(m, n -> a[offset + indexMap[mapOffset + n]]);
-
     }
 
     /**
@@ -3414,7 +3416,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     private static ByteBuffer wrapper(byte[] a, int offset,
                                         ByteOrder bo) {
         return ByteBuffer.wrap(a, offset, a.length - offset)
-            .order(bo);
+            .order(bo).slice();
     }
 
     // ================================================

@@ -29,9 +29,9 @@
 #include "opto/vectornode.hpp"
 #include "prims/vectorSupport.hpp"
 
-bool LibraryCallKit::arch_supports_vector(int op, int num_elem, BasicType type, VectorMaskUseType mask_use_type) {
+bool LibraryCallKit::arch_supports_vector(int sopc, int num_elem, BasicType type, VectorMaskUseType mask_use_type, bool has_scalar_args) {
   // Check that the operation is valid.
-  if (op <= 0) {
+  if (sopc <= 0) {
 #ifndef PRODUCT
     if (C->print_intrinsics()) {
       tty->print_cr("  ** Rejected intrinsification because no valid vector op could be extracted");
@@ -41,16 +41,25 @@ bool LibraryCallKit::arch_supports_vector(int op, int num_elem, BasicType type, 
   }
 
   // Check that architecture supports this op-size-type combination.
-  if (!Matcher::match_rule_supported_vector(op, num_elem, type)) {
+  if (!Matcher::match_rule_supported_vector(sopc, num_elem, type)) {
 #ifndef PRODUCT
     if (C->print_intrinsics()) {
       tty->print_cr("  ** Rejected vector op (%s,%s,%d) because architecture does not support it",
-                    NodeClassNames[op], type2name(type), num_elem);
+                    NodeClassNames[sopc], type2name(type), num_elem);
     }
 #endif
     return false;
   } else {
-    assert(Matcher::match_rule_supported(op), "must be supported");
+    assert(Matcher::match_rule_supported(sopc), "must be supported");
+  }
+
+  if (!has_scalar_args && VectorNode::is_vector_shift(sopc) &&
+      Matcher::supports_vector_variable_shifts() == false) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** Rejected vector op (%s,%s,%d) because architecture does not support variable vector shifts",
+                    NodeClassNames[sopc], type2name(type), num_elem);
+    }
+    return false;
   }
 
   // Check whether mask unboxing is supported.
@@ -82,27 +91,7 @@ bool LibraryCallKit::arch_supports_vector(int op, int num_elem, BasicType type, 
   return true;
 }
 
-static int get_sopc(int opc, BasicType elem_bt, int arity) {
-#ifdef X86
-  // Variable shift handling
-  if (arity == 2) {
-    switch (opc) {
-      case Op_LShiftI:
-      case Op_LShiftL:
-        return Op_VLShiftV;
-      case Op_RShiftI:
-      case Op_RShiftL:
-        return Op_VRShiftV;
-      case Op_URShiftB:
-      case Op_URShiftS:
-      case Op_URShiftI:
-      case Op_URShiftL:
-        return Op_VURShiftV;
-
-      default: break;
-    }
-  }
-#endif
+static int get_sopc(int opc, BasicType elem_bt) {
   return VectorNode::opcode(opc, elem_bt);
 }
 
@@ -218,7 +207,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
   BasicType elem_bt = elem_type->basic_type();
   int num_elem = vlen->get_con();
   int opc = VectorSupport::vop2ideal(opr->get_con(), elem_bt);
-  int sopc = get_sopc(opc, elem_bt, n);
+  int sopc = get_sopc(opc, elem_bt);
   ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
 
@@ -457,7 +446,7 @@ bool LibraryCallKit::inline_vector_broadcast_coerced() {
 
   // TODO When mask usage is supported, VecMaskNotUsed needs to be VecMaskUseLoad.
   if (!arch_supports_vector(VectorNode::replicate_opcode(elem_bt), num_elem, elem_bt,
-                            is_vector_mask(vbox_klass) ? VecMaskUseStore : VecMaskNotUsed)) {
+                            is_vector_mask(vbox_klass) ? VecMaskUseStore : VecMaskNotUsed), true /*has_scalar_args*/) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** not supported: arity=0 op=broadcast vlen=%d etype=%s ismask=%d",
                     num_elem, type2name(elem_bt),
@@ -1144,11 +1133,11 @@ bool LibraryCallKit::inline_vector_broadcast_int() {
   BasicType elem_bt = elem_type->basic_type();
   int num_elem = vlen->get_con();
   int opc = VectorSupport::vop2ideal(opr->get_con(), elem_bt);
-  int sopc = get_sopc(opc, elem_bt, 1); // get_node_id(opr->get_con(), elem_bt);
+  int sopc = get_sopc(opc, elem_bt); // get_node_id(opr->get_con(), elem_bt);
   ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
 
-  if (!arch_supports_vector(sopc, num_elem, elem_bt, VecMaskNotUsed)) {
+  if (!arch_supports_vector(sopc, num_elem, elem_bt, VecMaskNotUsed, true /*has_scalar_args*/)) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** not supported: arity=0 op=int/%d vlen=%d etype=%s ismask=no",
                     sopc, num_elem, type2name(elem_bt));

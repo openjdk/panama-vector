@@ -97,6 +97,9 @@ HOTSPOT_SETUP_JVM_VARIANTS
 # With basic setup done, call the custom early hook.
 CUSTOM_EARLY_HOOK
 
+# This only needs debug level to be setup
+JDKOPT_ALLOW_ABSOLUTE_PATHS_IN_OUTPUT
+
 # Check if we have devkits, extra paths or sysroot set.
 BASIC_SETUP_DEVKIT
 
@@ -123,12 +126,11 @@ BASIC_SETUP_DEFAULT_LOG
 
 ###############################################################################
 #
-# Determine OpenJDK variants, options and version numbers.
+# Determine OpenJDK variants and version numbers.
 #
 ###############################################################################
 
 # We need build & target for this.
-JDKOPT_SETUP_JDK_OPTIONS
 JDKOPT_SETUP_JLINK_OPTIONS
 JDKVER_SETUP_JDK_VERSION_NUMBERS
 
@@ -140,6 +142,14 @@ JDKVER_SETUP_JDK_VERSION_NUMBERS
 
 BOOTJDK_SETUP_BOOT_JDK
 BOOTJDK_SETUP_BUILD_JDK
+
+###############################################################################
+#
+# Determine JDK specific build time options.
+#
+###############################################################################
+
+JDKOPT_SETUP_JDK_OPTIONS
 
 ###############################################################################
 #
@@ -251,12 +261,10 @@ BPERF_SETUP_BUILD_CORES
 BPERF_SETUP_BUILD_MEMORY
 BPERF_SETUP_BUILD_JOBS
 BPERF_SETUP_TEST_JOBS
+BPERF_SETUP_JAVAC_SERVER
 
 # Setup arguments for the boot jdk (after cores and memory have been setup)
 BOOTJDK_SETUP_BOOT_JDK_ARGUMENTS
-
-# Setup smart javac (after cores and memory have been setup)
-BPERF_SETUP_SMART_JAVAC
 
 # Setup use of icecc if requested
 BPERF_SETUP_ICECC

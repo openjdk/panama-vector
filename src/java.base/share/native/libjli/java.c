@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -241,7 +241,7 @@ JLI_Launch(int argc, char ** argv,              /* main argc, argv */
     char *main_class = NULL;
     int ret;
     InvocationFunctions ifn;
-    jlong start, end;
+    jlong start = 0, end = 0;
     char jvmpath[MAXPATHLEN];
     char jrepath[MAXPATHLEN];
     char jvmcfg[MAXPATHLEN];
@@ -408,7 +408,7 @@ JavaMain(void* _args)
     jmethodID mainID;
     jobjectArray mainArgs;
     int ret = 0;
-    jlong start, end;
+    jlong start = 0, end = 0;
 
     RegisterThread();
 
@@ -1618,7 +1618,7 @@ LoadMainClass(JNIEnv *env, int mode, char *name)
     jmethodID mid;
     jstring str;
     jobject result;
-    jlong start, end;
+    jlong start = 0, end = 0;
     jclass cls = GetLauncherHelperClass(env);
     NULL_CHECK0(cls);
     if (JLI_IsTraceLauncher()) {
@@ -1633,7 +1633,7 @@ LoadMainClass(JNIEnv *env, int mode, char *name)
                                                         USE_STDERR, mode, str));
 
     if (JLI_IsTraceLauncher()) {
-        end   = CounterGet();
+        end = CounterGet();
         printf("%ld micro seconds to load main class\n",
                (long)(jint)Counter2Micros(end-start));
         printf("----%s----\n", JLDEBUG_ENV_ENTRY);
@@ -1958,7 +1958,7 @@ DescribeModule(JNIEnv *env, char *optString)
     NULL_CHECK(cls);
     NULL_CHECK(describeModuleID = (*env)->GetStaticMethodID(env, cls,
             "describeModule", "(Ljava/lang/String;)V"));
-    NULL_CHECK(joptString = (*env)->NewStringUTF(env, optString));
+    NULL_CHECK(joptString = NewPlatformString(env, optString));
     (*env)->CallStaticVoidMethod(env, cls, describeModuleID, joptString);
 }
 
@@ -2080,7 +2080,7 @@ ReadKnownVMs(const char *jvmCfgName, jboolean speculative)
     char line[MAXPATHLEN+20];
     int cnt = 0;
     int lineno = 0;
-    jlong start, end;
+    jlong start = 0, end = 0;
     int vmType;
     char *tmpPtr;
     char *altVMName = NULL;
@@ -2172,7 +2172,7 @@ ReadKnownVMs(const char *jvmCfgName, jboolean speculative)
     knownVMsCount = cnt;
 
     if (JLI_IsTraceLauncher()) {
-        end   = CounterGet();
+        end = CounterGet();
         printf("%ld micro seconds to parse jvm.cfg\n",
                (long)(jint)Counter2Micros(end-start));
     }

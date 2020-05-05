@@ -80,9 +80,7 @@
   template(RedefineClasses)                       \
   template(UpdateForPopTopFrame)                  \
   template(SetFramePop)                           \
-  template(GetOwnedMonitorInfo)                   \
   template(GetObjectMonitorUsage)                 \
-  template(GetCurrentContendedMonitor)            \
   template(GetStackTrace)                         \
   template(GetMultipleStackTraces)                \
   template(GetAllStackTraces)                     \
@@ -101,8 +99,6 @@
   template(ShenandoahFullGC)                      \
   template(ShenandoahInitMark)                    \
   template(ShenandoahFinalMarkStartEvac)          \
-  template(ShenandoahInitTraversalGC)             \
-  template(ShenandoahFinalTraversalGC)            \
   template(ShenandoahInitUpdateRefs)              \
   template(ShenandoahFinalUpdateRefs)             \
   template(ShenandoahDegeneratedGC)               \

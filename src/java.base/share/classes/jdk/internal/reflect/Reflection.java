@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2001, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -51,7 +51,7 @@ public class Reflection {
         fieldFilterMap = Map.of(
             Reflection.class, ALL_MEMBERS,
             AccessibleObject.class, ALL_MEMBERS,
-            Class.class, Set.of("classLoader"),
+            Class.class, Set.of("classLoader", "classData"),
             ClassLoader.class, ALL_MEMBERS,
             Constructor.class, ALL_MEMBERS,
             Field.class, ALL_MEMBERS,
@@ -207,7 +207,7 @@ public class Reflection {
     /*
      * Verify if a member is public and memberClass is a public type
      * in a package that is unconditionally exported and
-     * return {@code true}if it is granted.
+     * return {@code true} if it is granted.
      *
      * @param memberClass the declaring class of the member being accessed
      * @param modifiers the member's access modifiers

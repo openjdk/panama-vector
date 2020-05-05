@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -700,7 +700,7 @@ OUTER:  for (int i = 0; i < n; i += m) {
         PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(theOutputFileName)));
         out.println(commentStart +
             " This file was generated AUTOMATICALLY from a template file " +
-            new java.util.Date() + commentEnd);
+            commentEnd);
         int marklen = commandMarker.length();
         LOOP: while(true) {
             try {
@@ -942,14 +942,15 @@ OUTER:  for (int i = 0; i < n; i += m) {
         int n = sizes.length;
         StringBuffer result = new StringBuffer();
         // liu : Add a comment showing the source of this table
-        result.append(commentStart + " The following tables and code generated using:" +
-                  commentEnd + "\n  ");
-        result.append(commentStart + ' ' + commandLineDescription + commentEnd + "\n  ");
-
-                if (plane == 0 && bLatin1 == false) {
+        if (debug) {
+            result.append(commentStart + " The following tables and code generated using:" +
+                    commentEnd + "\n  ");
+            result.append(commentStart + ' ' + commandLineDescription + commentEnd + "\n  ");
+        }
+        if (plane == 0 && bLatin1 == false) {
             genCaseMapTableDeclaration(result);
             genCaseMapTable(initializers, specialCaseMaps);
-                }
+        }
         int totalBytes = 0;
         for (int k = 0; k < n - 1; k++) {
             genTable(result, tableNames[k], tables[k], 0, bytes[k]<<3, sizes[k], preshifted[k],
@@ -1612,6 +1613,7 @@ OUTER:  for (int i = 0; i < n; i += m) {
      */
 
     static boolean verbose = false;
+    static boolean debug = false;
     static boolean nobidi = false;
     static boolean nomirror = false;
     static boolean identifiers = false;
@@ -1692,6 +1694,8 @@ OUTER:  for (int i = 0; i < n; i += m) {
         for (int j = 0; j < args.length; j++) {
             if (args[j].equals("-verbose") || args[j].equals("-v"))
                 verbose = true;
+            else if (args[j].equals("-d"))
+                debug = true;
             else if (args[j].equals("-nobidi"))
                 nobidi = true;
             else if (args[j].equals("-nomirror"))

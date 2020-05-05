@@ -132,6 +132,8 @@ private:
                                                TRAPS);
   static Handle get_package_name(Symbol*  class_name, TRAPS);
 
+  static PackageEntry* get_package_entry_from_class_name(Handle class_loader, Symbol* class_name);
+
 
   // Package handling:
   //
@@ -165,10 +167,6 @@ private:
                                     Handle manifest,
                                     Handle url,
                                     TRAPS);
-  static void define_shared_package(Symbol* class_name,
-                                    Handle class_loader,
-                                    ModuleEntry* mod_entry,
-                                    TRAPS);
 
   static Handle get_shared_jar_manifest(int shared_path_index, TRAPS);
   static Handle get_shared_jar_url(int shared_path_index, TRAPS);
@@ -180,7 +178,7 @@ private:
                                              TRAPS);
   static Handle get_shared_protection_domain(Handle class_loader,
                                              ModuleEntry* mod, TRAPS);
-  static Handle init_security_info(Handle class_loader, InstanceKlass* ik, TRAPS);
+  static Handle init_security_info(Handle class_loader, InstanceKlass* ik, PackageEntry* pkg_entry, TRAPS);
 
   static void atomic_set_array_index(objArrayOop array, int index, oop o) {
     // Benign race condition:  array.obj_at(index) may already be filled in.
@@ -220,6 +218,7 @@ private:
   static bool should_be_excluded(InstanceKlass* k);
 
   DEBUG_ONLY(static bool _no_class_loading_should_happen;)
+
 public:
   static InstanceKlass* find_builtin_class(Symbol* class_name);
 
@@ -246,14 +245,6 @@ public:
                                                       PackageEntry* pkg_entry,
                                                       ModuleEntry* mod_entry,
                                                       TRAPS);
-  static PackageEntry* get_package_entry(Symbol* pkg,
-                                         ClassLoaderData *loader_data) {
-    if (loader_data != NULL) {
-      PackageEntryTable* pkgEntryTable = loader_data->packages();
-      return pkgEntryTable->lookup_only(pkg);
-    }
-    return NULL;
-  }
 
   static bool add_unregistered_class(InstanceKlass* k, TRAPS);
   static InstanceKlass* dump_time_resolve_super_or_fail(Symbol* child_name,
@@ -294,6 +285,9 @@ public:
                                              TRAPS) NOT_CDS_RETURN;
   static void set_class_has_failed_verification(InstanceKlass* ik) NOT_CDS_RETURN;
   static bool has_class_failed_verification(InstanceKlass* ik) NOT_CDS_RETURN_(false);
+  static bool check_linking_constraints(InstanceKlass* klass, TRAPS) NOT_CDS_RETURN_(false);
+  static void record_linking_constraint(Symbol* name, InstanceKlass* klass,
+                                     Handle loader1, Handle loader2, TRAPS) NOT_CDS_RETURN;
   static bool is_builtin(InstanceKlass* k) {
     return (k->shared_classpath_index() != UNREGISTERED_INDEX);
   }
@@ -332,6 +326,13 @@ public:
     address p = address(ptr) - SharedBaseAddress;
     return primitive_hash<address>(p);
   }
+
+#if INCLUDE_CDS_JAVA_HEAP
+private:
+  static void update_archived_mirror_native_pointers_for(RunTimeSharedDictionary* dict);
+public:
+  static void update_archived_mirror_native_pointers() NOT_CDS_RETURN;
+#endif
 };
 
 #endif // SHARE_CLASSFILE_SYSTEMDICTIONARYSHARED_HPP

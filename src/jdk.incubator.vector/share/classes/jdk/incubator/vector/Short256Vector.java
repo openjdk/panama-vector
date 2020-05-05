@@ -183,6 +183,7 @@ final class Short256Vector extends ShortVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Short256Vector uOp(FUnOp f) {
         return (Short256Vector) super.uOpTemplate(f);  // specialize
@@ -467,11 +468,31 @@ final class Short256Vector extends ShortVector {
     }
 
 
+    @ForceInline
     @Override
     public short lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return laneHelper(0);
+            case 1: return laneHelper(1);
+            case 2: return laneHelper(2);
+            case 3: return laneHelper(3);
+            case 4: return laneHelper(4);
+            case 5: return laneHelper(5);
+            case 6: return laneHelper(6);
+            case 7: return laneHelper(7);
+            case 8: return laneHelper(8);
+            case 9: return laneHelper(9);
+            case 10: return laneHelper(10);
+            case 11: return laneHelper(11);
+            case 12: return laneHelper(12);
+            case 13: return laneHelper(13);
+            case 14: return laneHelper(14);
+            case 15: return laneHelper(15);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public short laneHelper(int i) {
         return (short) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -481,11 +502,31 @@ final class Short256Vector extends ShortVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public Short256Vector withLane(int i, short e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch (i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            case 2: return withLaneHelper(2, e);
+            case 3: return withLaneHelper(3, e);
+            case 4: return withLaneHelper(4, e);
+            case 5: return withLaneHelper(5, e);
+            case 6: return withLaneHelper(6, e);
+            case 7: return withLaneHelper(7, e);
+            case 8: return withLaneHelper(8, e);
+            case 9: return withLaneHelper(9, e);
+            case 10: return withLaneHelper(10, e);
+            case 11: return withLaneHelper(11, e);
+            case 12: return withLaneHelper(12, e);
+            case 13: return withLaneHelper(13, e);
+            case 14: return withLaneHelper(14, e);
+            case 15: return withLaneHelper(15, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Short256Vector withLaneHelper(int i, short e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,
@@ -537,6 +578,7 @@ final class Short256Vector extends ShortVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -601,10 +643,7 @@ final class Short256Vector extends ShortVector {
         @Override
         @ForceInline
         public Short256Mask not() {
-            return (Short256Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Short256Mask.class, short.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -629,6 +668,16 @@ final class Short256Vector extends ShortVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Short256Mask xor(VectorMask<Short> mask) {
+            Objects.requireNonNull(mask);
+            Short256Mask m = (Short256Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Short256Mask.class, short.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -647,12 +696,16 @@ final class Short256Vector extends ShortVector {
                                          (m, __) -> allTrueHelper(((Short256Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Short256Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Short256Mask.class, short.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Short256Mask TRUE_MASK = new Short256Mask(true);
-        static final Short256Mask FALSE_MASK = new Short256Mask(false);
+        private static final Short256Mask  TRUE_MASK = new Short256Mask(true);
+        private static final Short256Mask FALSE_MASK = new Short256Mask(false);
+
     }
 
     // Shuffle
@@ -724,6 +777,7 @@ final class Short256Vector extends ShortVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Short256Shuffle rearrange(VectorShuffle<Short> shuffle) {
             Short256Shuffle s = (Short256Shuffle) shuffle;

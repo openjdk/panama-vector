@@ -59,15 +59,15 @@ void PhaseVector::do_cleanup() {
     Compile::TracePhase tp("vector_pru", &timers[_t_vector_pru]);
     ResourceMark rm;
     PhaseRemoveUseless pru(C->initial_gvn(), C->for_igvn());
+    if (C->failing())  return;
   }
-
-  if (C->failing())  return;
-
   {
     Compile::TracePhase tp("incrementalInline_igvn", &timers[_t_vector_igvn]);
     _igvn = PhaseIterGVN(C->initial_gvn());
     _igvn.optimize();
+    if (C->failing())  return;
   }
+  C->print_method(PHASE_ITER_GVN_BEFORE_EA, 3);
 }
 
 void PhaseVector::scalarize_vbox_nodes() {
@@ -104,7 +104,6 @@ void PhaseVector::expand_vbox_nodes() {
       expand_vbox_node(vbox);
 //      assert(C->inlining_incrementally() == false, "sanity");
       if (C->failing())  return;
-      C->print_method(PHASE_EXPAND_VBOX, vbox, 3);
     }
     if (C->failing())  return;
     macro_idx = MIN2(macro_idx - 1, C->macro_count() - 1);
@@ -273,6 +272,7 @@ void PhaseVector::expand_vbox_node(VectorBoxNode* vec_box) {
     Node* vect = vec_box->in(VectorBoxNode::Value);
     Node* result = expand_vbox_node_helper(vbox, vect, vec_box->box_type(), vec_box->vec_type());
     C->gvn_replace_by(vec_box, result);
+    C->print_method(PHASE_EXPAND_VBOX, vec_box, 3);
   }
   C->remove_macro_node(vec_box);
 }

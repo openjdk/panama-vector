@@ -2063,9 +2063,9 @@ public final class String
      * <blockquote>
      * <code>
      * {@link java.util.regex.Pattern}.{@link
-     * java.util.regex.Pattern#compile compile}(<i>regex</i>).{@link
+     * java.util.regex.Pattern#compile(String) compile}(<i>regex</i>).{@link
      * java.util.regex.Pattern#matcher(java.lang.CharSequence) matcher}(<i>str</i>).{@link
-     * java.util.regex.Matcher#replaceFirst replaceFirst}(<i>repl</i>)
+     * java.util.regex.Matcher#replaceFirst(String) replaceFirst}(<i>repl</i>)
      * </code>
      * </blockquote>
      *
@@ -2108,9 +2108,9 @@ public final class String
      * <blockquote>
      * <code>
      * {@link java.util.regex.Pattern}.{@link
-     * java.util.regex.Pattern#compile compile}(<i>regex</i>).{@link
+     * java.util.regex.Pattern#compile(String) compile}(<i>regex</i>).{@link
      * java.util.regex.Pattern#matcher(java.lang.CharSequence) matcher}(<i>str</i>).{@link
-     * java.util.regex.Matcher#replaceAll replaceAll}(<i>repl</i>)
+     * java.util.regex.Matcher#replaceAll(String) replaceAll}(<i>repl</i>)
      * </code>
      * </blockquote>
      *
@@ -2275,7 +2275,7 @@ public final class String
      * <blockquote>
      * <code>
      * {@link java.util.regex.Pattern}.{@link
-     * java.util.regex.Pattern#compile compile}(<i>regex</i>).{@link
+     * java.util.regex.Pattern#compile(String) compile}(<i>regex</i>).{@link
      * java.util.regex.Pattern#split(java.lang.CharSequence,int) split}(<i>str</i>,&nbsp;<i>n</i>)
      * </code>
      * </blockquote>
@@ -2888,15 +2888,6 @@ public final class String
     }
 
     /**
-     * {@preview Associated with text blocks, a preview feature of
-     *           the Java language.
-     *
-     *           This method is associated with <i>text blocks</i>, a preview
-     *           feature of the Java language. Programs can only use this
-     *           method when preview features are enabled. Preview features
-     *           may be removed in a future release, or upgraded to permanent
-     *           features of the Java language.}
-     *
      * Returns a string whose value is this string, with incidental
      * {@linkplain Character#isWhitespace(int) white space} removed from
      * the beginning and end of every line.
@@ -2970,11 +2961,9 @@ public final class String
      * @see String#indent(int)
      * @see Character#isWhitespace(int)
      *
-     * @since 13
+     * @since 15
      *
      */
-    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.TEXT_BLOCKS,
-                                 essentialAPI=true)
     public String stripIndent() {
         int length = length();
         if (length == 0) {
@@ -3013,15 +3002,6 @@ public final class String
     }
 
     /**
-     * {@preview Associated with text blocks, a preview feature of
-     *           the Java language.
-     *
-     *           This method is associated with <i>text blocks</i>, a preview
-     *           feature of the Java language. Programs can only use this
-     *           method when preview features are enabled. Preview features
-     *           may be removed in a future release, or upgraded to permanent
-     *           features of the Java language.}
-     *
      * Returns a string whose value is this string, with escape sequences
      * translated as if in a string literal.
      * <p>
@@ -3105,10 +3085,8 @@ public final class String
      *
      * @jls 3.10.7 Escape Sequences
      *
-     * @since 13
+     * @since 15
      */
-    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.TEXT_BLOCKS,
-                                 essentialAPI=true)
     public String translateEscapes() {
         if (isEmpty()) {
             return "";
@@ -3369,8 +3347,6 @@ public final class String
      * @since 13
      *
      */
-    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.TEXT_BLOCKS,
-                                 essentialAPI=true)
     public String formatted(Object... args) {
         return new Formatter().format(this, args).toString();
     }

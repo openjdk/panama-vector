@@ -178,8 +178,6 @@ int VectorNode::opcode(int sopc, BasicType bt) {
   case Op_SqrtD:
     assert(bt == T_DOUBLE, "must be");
     return Op_SqrtVD;
-  case Op_Not:
-    return Op_NotV;
   case Op_PopCountI:
     if (bt == T_INT) {
       return Op_PopCountVI;
@@ -473,7 +471,6 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt) {
   case Op_MinV: return new MinVNode(n1, n2, vt);
   case Op_MaxV: return new MaxVNode(n1, n2, vt);
 
-  case Op_AbsV: return new AbsVNode(n1, vt);
   case Op_AbsVF: return new AbsVFNode(n1, vt);
   case Op_AbsVD: return new AbsVDNode(n1, vt);
   case Op_AbsVB: return new AbsVBNode(n1, vt);
@@ -489,7 +486,6 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt) {
   case Op_SqrtVD: return new SqrtVDNode(n1, vt);
 
   case Op_PopCountVI: return new PopCountVINode(n1, vt);
-  case Op_NotV: return new NotVNode(n1, vt);
 
   case Op_LShiftVB: return new LShiftVBNode(n1, n2, vt);
   case Op_LShiftVS: return new LShiftVSNode(n1, n2, vt);
@@ -505,11 +501,6 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt) {
   case Op_URShiftVS: return new URShiftVSNode(n1, n2, vt);
   case Op_URShiftVI: return new URShiftVINode(n1, n2, vt);
   case Op_URShiftVL: return new URShiftVLNode(n1, n2, vt);
-
-  // Variable shift left
-  case Op_VLShiftV: return new VLShiftVNode(n1, n2, vt);
-  case Op_VRShiftV: return new VRShiftVNode(n1, n2, vt);
-  case Op_VURShiftV: return new VURShiftVNode(n1, n2, vt);
 
   case Op_AndV: return new AndVNode(n1, n2, vt);
   case Op_OrV:  return new OrVNode (n1, n2, vt);
@@ -631,6 +622,39 @@ bool VectorNode::is_vector_shift_count(int opc) {
   default:
     return false;
   }
+}
+
+static bool is_con_M1(Node* n) {
+  if (n->is_Con()) {
+    const Type* t = n->bottom_type();
+    if (t->isa_int() && t->is_int()->get_con() == -1) {
+      return true;
+    }
+    if (t->isa_long() && t->is_long()->get_con() == -1) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool VectorNode::is_all_ones_vector(Node* n) {
+  switch (n->Opcode()) {
+  case Op_ReplicateB:
+  case Op_ReplicateS:
+  case Op_ReplicateI:
+  case Op_ReplicateL:
+    return is_con_M1(n->in(1));
+  default:
+    return false;
+  }
+}
+
+bool VectorNode::is_vector_bitwise_not_pattern(Node* n) {
+  if (n->Opcode() == Op_XorV) {
+    return is_all_ones_vector(n->in(1)) ||
+           is_all_ones_vector(n->in(2));
+  }
+  return false;
 }
 
 // Return initial Pack node. Additional operands added with add_opd() calls.
@@ -1053,6 +1077,16 @@ bool ReductionNode::implemented(int opc, uint vlen, BasicType bt) {
     return vopc != opc && Matcher::match_rule_supported(vopc);
   }
   return false;
+}
+
+MacroLogicVNode* MacroLogicVNode::make(PhaseGVN& gvn, Node* in1, Node* in2, Node* in3,
+                                       uint truth_table, const TypeVect* vt) {
+  assert(truth_table <= 0xFF, "invalid");
+  assert(in1->bottom_type()->is_vect()->length_in_bytes() == vt->length_in_bytes(), "mismatch");
+  assert(in2->bottom_type()->is_vect()->length_in_bytes() == vt->length_in_bytes(), "mismatch");
+  assert(in3->bottom_type()->is_vect()->length_in_bytes() == vt->length_in_bytes(), "mismatch");
+  Node* fn = gvn.intcon(truth_table);
+  return new MacroLogicVNode(in1, in2, in3, fn, vt);
 }
 
 #ifndef PRODUCT

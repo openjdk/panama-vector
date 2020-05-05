@@ -52,6 +52,14 @@ class VectorNode : public TypeNode {
     init_req(3, n3);
   }
 
+  VectorNode(Node *n0, Node* n1, Node* n2, Node* n3, const TypeVect* vt) : TypeNode(vt, 5) {
+    init_class_id(Class_Vector);
+    init_req(1, n0);
+    init_req(2, n1);
+    init_req(3, n2);
+    init_req(4, n3);
+  }
+
   const TypeVect* vect_type() const { return type()->is_vect(); }
   uint length() const { return vect_type()->length(); } // Vector length
   uint length_in_bytes() const { return vect_type()->length_in_bytes(); }
@@ -78,6 +86,9 @@ class VectorNode : public TypeNode {
   static bool is_muladds2i(Node* n);
   static bool is_roundopD(Node * n);
   static bool is_invariant_vector(Node* n);
+  static bool is_all_ones_vector(Node* n);
+  static bool is_vector_bitwise_not_pattern(Node* n);
+
   // [Start, end) half-open range defining which operands are vectors
   static void vector_operands(Node* n, uint* start, uint* end);
 
@@ -425,14 +436,6 @@ public:
   virtual int Opcode() const;
 };
 
-//------------------------------AbsVNode--------------------------------------
-// Vector Abs
-class AbsVNode : public VectorNode {
-public:
-  AbsVNode(Node* in, const TypeVect* vt) : VectorNode(in, vt) {}
-  virtual int Opcode() const;
-};
-
 //------------------------------AbsVINode--------------------------------------
 // Vector Abs int
 class AbsVINode : public VectorNode {
@@ -517,14 +520,6 @@ class RoundDoubleModeVNode : public VectorNode {
 class SqrtVDNode : public VectorNode {
  public:
   SqrtVDNode(Node* in, const TypeVect* vt) : VectorNode(in,vt) {}
-  virtual int Opcode() const;
-};
-
-//------------------------------NotVNode--------------------------------------
-// Vector Not
-class NotVNode : public VectorNode {
-public:
-  NotVNode(Node* in, const TypeVect* vt) : VectorNode(in, vt) {}
   virtual int Opcode() const;
 };
 
@@ -630,7 +625,6 @@ class LShiftCntVNode : public VectorNode {
  public:
   LShiftCntVNode(Node* cnt, const TypeVect* vt) : VectorNode(cnt,vt) {}
   virtual int Opcode() const;
-  virtual uint ideal_reg() const { return Matcher::vector_shift_count_ideal_reg(vect_type()->length_in_bytes()); }
 };
 
 //------------------------------RShiftCntVNode---------------------------------
@@ -638,32 +632,6 @@ class LShiftCntVNode : public VectorNode {
 class RShiftCntVNode : public VectorNode {
  public:
   RShiftCntVNode(Node* cnt, const TypeVect* vt) : VectorNode(cnt,vt) {}
-  virtual int Opcode() const;
-  virtual uint ideal_reg() const { return Matcher::vector_shift_count_ideal_reg(vect_type()->length_in_bytes()); }
-};
-
-
-//------------------------------VLShiftVNode-----------------------------------
-// Variable vector left shift bytes
-class VLShiftVNode : public VectorNode {
- public:
-  VLShiftVNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1,in2,vt) {}
-  virtual int Opcode() const;
-};
-
-//------------------------------VRShiftVNode-----------------------------------
-// Variable vector right shift bytes
-class VRShiftVNode : public VectorNode {
- public:
-  VRShiftVNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1,in2,vt) {}
-  virtual int Opcode() const;
-};
-
-//------------------------------VURShiftVNode-----------------------------------
-// Variable vector unsigned right shift bytes
-class VURShiftVNode : public VectorNode {
- public:
-  VURShiftVNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1,in2,vt) {}
   virtual int Opcode() const;
 };
 
@@ -1074,6 +1042,19 @@ public:
   virtual const Type *Value(PhaseGVN *phase) const { return TypeInt::INT; }
 };
 
+//------------------------------MacroLogicVNode-------------------------------
+// Vector logical operations packing node.
+class MacroLogicVNode : public VectorNode {
+private:
+    MacroLogicVNode(Node* in1, Node* in2, Node* in3, Node* fn, const TypeVect* vt)
+    : VectorNode(in1, in2, in3, fn, vt) {}
+
+public:
+    virtual int Opcode() const;
+
+    static MacroLogicVNode* make(PhaseGVN& igvn, Node* in1, Node* in2, Node* in3, uint truth_table, const TypeVect* vt);
+};
+
 class VectorMaskCmpNode : public VectorNode {
  private:
   BoolTest::mask _predicate;
@@ -1083,11 +1064,7 @@ class VectorMaskCmpNode : public VectorNode {
 
  public:
   VectorMaskCmpNode(BoolTest::mask predicate, Node* in1, Node* in2, ConINode* predicate_node, const TypeVect* vt) :
-#ifdef X86
       VectorNode(in1, in2, predicate_node, vt),
-#else
-      VectorNode(in1, in2, vt),
-#endif
       _predicate(predicate) {
     assert(in1->bottom_type()->is_vect()->element_basic_type() == in2->bottom_type()->is_vect()->element_basic_type(),
            "VectorMaskCmp inputs must have same type for elements");

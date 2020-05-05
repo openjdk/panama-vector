@@ -183,6 +183,7 @@ final class Double256Vector extends DoubleVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Double256Vector uOp(FUnOp f) {
         return (Double256Vector) super.uOpTemplate(f);  // specialize
@@ -461,26 +462,43 @@ final class Double256Vector extends DoubleVector {
     }
 
 
+    @ForceInline
     @Override
     public double lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        long bits;
+        switch(i) {
+            case 0: bits = laneHelper(0); break;
+            case 1: bits = laneHelper(1); break;
+            case 2: bits = laneHelper(2); break;
+            case 3: bits = laneHelper(3); break;
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        long bits = (long) VectorSupport.extract(
-                                VCLASS, ETYPE, VLENGTH,
-                                this, i,
-                                (vec, ix) -> {
-                                    double[] vecarr = vec.vec();
-                                    return (long)Double.doubleToLongBits(vecarr[ix]);
-                                });
         return Double.longBitsToDouble(bits);
     }
 
+    public long laneHelper(int i) {
+        return (long) VectorSupport.extract(
+                     VCLASS, ETYPE, VLENGTH,
+                     this, i,
+                     (vec, ix) -> {
+                     double[] vecarr = vec.vec();
+                     return (long)Double.doubleToLongBits(vecarr[ix]);
+                     });
+    }
+
+    @ForceInline
     @Override
     public Double256Vector withLane(int i, double e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            case 2: return withLaneHelper(2, e);
+            case 3: return withLaneHelper(3, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Double256Vector withLaneHelper(int i, double e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)Double.doubleToLongBits(e),
@@ -532,6 +550,7 @@ final class Double256Vector extends DoubleVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -596,10 +615,7 @@ final class Double256Vector extends DoubleVector {
         @Override
         @ForceInline
         public Double256Mask not() {
-            return (Double256Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Double256Mask.class, long.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -624,6 +640,16 @@ final class Double256Vector extends DoubleVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Double256Mask xor(VectorMask<Double> mask) {
+            Objects.requireNonNull(mask);
+            Double256Mask m = (Double256Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Double256Mask.class, long.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -642,12 +668,16 @@ final class Double256Vector extends DoubleVector {
                                          (m, __) -> allTrueHelper(((Double256Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Double256Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Double256Mask.class, long.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Double256Mask TRUE_MASK = new Double256Mask(true);
-        static final Double256Mask FALSE_MASK = new Double256Mask(false);
+        private static final Double256Mask  TRUE_MASK = new Double256Mask(true);
+        private static final Double256Mask FALSE_MASK = new Double256Mask(false);
+
     }
 
     // Shuffle
@@ -719,6 +749,7 @@ final class Double256Vector extends DoubleVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Double256Shuffle rearrange(VectorShuffle<Double> shuffle) {
             Double256Shuffle s = (Double256Shuffle) shuffle;

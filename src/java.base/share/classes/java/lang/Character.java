@@ -25,13 +25,21 @@
 
 package java.lang;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Locale;
-
 import jdk.internal.HotSpotIntrinsicCandidate;
 import jdk.internal.misc.VM;
+
+import java.lang.constant.Constable;
+import java.lang.constant.DynamicConstantDesc;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+
+import static java.lang.constant.ConstantDescs.BSM_EXPLICIT_CAST;
+import static java.lang.constant.ConstantDescs.CD_char;
+import static java.lang.constant.ConstantDescs.CD_int;
+import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
 
 /**
  * The {@code Character} class wraps a value of the primitive
@@ -122,7 +130,7 @@ import jdk.internal.misc.VM;
  * @since   1.0
  */
 public final
-class Character implements java.io.Serializable, Comparable<Character> {
+class Character implements java.io.Serializable, Comparable<Character>, Constable {
     /**
      * The minimum radix available for conversion to and from strings.
      * The constant value of this field is the smallest value permitted
@@ -242,7 +250,7 @@ class Character implements java.io.Serializable, Comparable<Character> {
      * General category "Nd" in the Unicode specification.
      * @since   1.1
      */
-    public static final byte DECIMAL_DIGIT_NUMBER        = 9;
+    public static final byte DECIMAL_DIGIT_NUMBER = 9;
 
     /**
      * General category "Nl" in the Unicode specification.
@@ -602,6 +610,17 @@ class Character implements java.io.Serializable, Comparable<Character> {
      */
     public static final int MAX_CODE_POINT = 0X10FFFF;
 
+    /**
+     * Returns an {@link Optional} containing the nominal descriptor for this
+     * instance.
+     *
+     * @return an {@link Optional} describing the {@linkplain Character} instance
+     * @since 15
+     */
+    @Override
+    public Optional<DynamicConstantDesc<Character>> describeConstable() {
+        return Optional.of(DynamicConstantDesc.ofNamed(BSM_EXPLICIT_CAST, DEFAULT_NAME, CD_char, (int) value));
+    }
 
     /**
      * Instances of this class represent particular subsets of the Unicode
@@ -11072,7 +11091,7 @@ class Character implements java.io.Serializable, Comparable<Character> {
      * Note: if the specified character is not assigned a name by
      * the <i>UnicodeData</i> file (part of the Unicode Character
      * Database maintained by the Unicode Consortium), the returned
-     * name is the same as the result of expression.
+     * name is the same as the result of expression:
      *
      * <blockquote>{@code
      *     Character.UnicodeBlock.of(codePoint).toString().replace('_', ' ')
@@ -11116,7 +11135,7 @@ class Character implements java.io.Serializable, Comparable<Character> {
      * <p>
      * Note: if a character is not assigned a name by the <i>UnicodeData</i>
      * file (part of the Unicode Character Database maintained by the Unicode
-     * Consortium), its name is defined as the result of expression
+     * Consortium), its name is defined as the result of expression:
      *
      * <blockquote>{@code
      *     Character.UnicodeBlock.of(codePoint).toString().replace('_', ' ')

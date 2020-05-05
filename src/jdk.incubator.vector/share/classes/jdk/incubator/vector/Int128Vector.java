@@ -183,6 +183,7 @@ final class Int128Vector extends IntVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Int128Vector uOp(FUnOp f) {
         return (Int128Vector) super.uOpTemplate(f);  // specialize
@@ -467,11 +468,19 @@ final class Int128Vector extends IntVector {
     }
 
 
+    @ForceInline
     @Override
     public int lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return laneHelper(0);
+            case 1: return laneHelper(1);
+            case 2: return laneHelper(2);
+            case 3: return laneHelper(3);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public int laneHelper(int i) {
         return (int) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -481,11 +490,19 @@ final class Int128Vector extends IntVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public Int128Vector withLane(int i, int e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch (i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            case 2: return withLaneHelper(2, e);
+            case 3: return withLaneHelper(3, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Int128Vector withLaneHelper(int i, int e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,
@@ -537,6 +554,7 @@ final class Int128Vector extends IntVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -601,10 +619,7 @@ final class Int128Vector extends IntVector {
         @Override
         @ForceInline
         public Int128Mask not() {
-            return (Int128Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Int128Mask.class, int.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -629,6 +644,16 @@ final class Int128Vector extends IntVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Int128Mask xor(VectorMask<Integer> mask) {
+            Objects.requireNonNull(mask);
+            Int128Mask m = (Int128Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Int128Mask.class, int.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -647,12 +672,16 @@ final class Int128Vector extends IntVector {
                                          (m, __) -> allTrueHelper(((Int128Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Int128Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Int128Mask.class, int.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Int128Mask TRUE_MASK = new Int128Mask(true);
-        static final Int128Mask FALSE_MASK = new Int128Mask(false);
+        private static final Int128Mask  TRUE_MASK = new Int128Mask(true);
+        private static final Int128Mask FALSE_MASK = new Int128Mask(false);
+
     }
 
     // Shuffle
@@ -724,6 +753,7 @@ final class Int128Vector extends IntVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Int128Shuffle rearrange(VectorShuffle<Integer> shuffle) {
             Int128Shuffle s = (Int128Shuffle) shuffle;

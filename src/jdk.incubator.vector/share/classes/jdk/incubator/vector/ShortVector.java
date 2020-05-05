@@ -473,6 +473,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
      * @see Vector#broadcast(long)
      * @see VectorSpecies#broadcast(long)
      */
+    @ForceInline
     public static ShortVector broadcast(VectorSpecies<Short> species, short e) {
         ShortSpecies vsp = (ShortSpecies) species;
         return vsp.broadcast(e);
@@ -516,6 +517,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
      * @see #broadcast(VectorSpecies,short)
      * @see VectorSpecies#checkValue(long)
      */
+    @ForceInline
     public static ShortVector broadcast(VectorSpecies<Short> species, long e) {
         ShortSpecies vsp = (ShortSpecies) species;
         return vsp.broadcast(e);
@@ -566,7 +568,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
             if (op == ZOMO) {
                 return blend(broadcast(-1), compare(NE, 0));
             }
-            if (op == NEG) {
+            if (op == NOT) {
+                return broadcast(-1).lanewiseTemplate(XOR, this);
+            } else if (op == NEG) {
                 // FIXME: Support this in the JIT.
                 return broadcast(0).lanewiseTemplate(SUB, this);
             }
@@ -581,8 +585,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
                         v0.uOp((i, a) -> (short) -a);
                 case VECTOR_OP_ABS: return v0 ->
                         v0.uOp((i, a) -> (short) Math.abs(a));
-                case VECTOR_OP_NOT: return v0 ->
-                        v0.uOp((i, a) -> (short) ~a);
                 default: return null;
               }}));
     }
@@ -694,8 +696,12 @@ public abstract class ShortVector extends AbstractVector<Short> {
                                   VectorMask<Short> m) {
         ShortVector that = (ShortVector) v;
         if (op == DIV) {
+            VectorMask<Short> eqz = that.eq((short)0);
+            if (eqz.and(m).anyTrue()) {
+                throw that.divZeroException();
+            }
             // suppress div/0 exceptions in unset lanes
-            that = that.lanewise(NOT, that.eq((short)0));
+            that = that.lanewise(NOT, eqz);
             return blend(lanewise(DIV, that), m);
         }
         return blend(lanewise(op, v), m);
@@ -728,7 +734,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
     public final
     ShortVector lanewise(VectorOperators.Binary op,
                                   short e) {
-        int opc = opCode(op);
         if (opKind(op, VO_SHIFT) && (short)(int)e == e) {
             return lanewiseShift(op, (int) e);
         }
@@ -816,7 +821,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
     final ShortVector
     lanewiseShiftTemplate(VectorOperators.Binary op, int e) {
         // Special handling for these.  FIXME: Refactor?
-        int opc = opCode(op);
         assert(opKind(op, VO_SHIFT));
         // As per shift specification for Java, mask the shift count.
         e &= SHIFT_MASK;
@@ -825,6 +829,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             ShortVector lo = this.lanewise(LSHR, (op == ROR) ? e : -e);
             return hi.lanewise(OR, lo);
         }
+        int opc = opCode(op);
         return VectorSupport.broadcastInt(
             opc, getClass(), short.class, length(),
             this, e,
@@ -2910,10 +2915,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                                    int[] indexMap, int mapOffset,
                                    VectorMask<Short> m) {
         ShortSpecies vsp = (ShortSpecies) species;
-
-        // Do it the slow way.
         return vsp.vOp(m, n -> a[offset + indexMap[mapOffset + n]]);
-
     }
 
     /**

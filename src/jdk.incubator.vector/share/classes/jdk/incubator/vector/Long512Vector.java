@@ -178,6 +178,7 @@ final class Long512Vector extends LongVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Long512Vector uOp(FUnOp f) {
         return (Long512Vector) super.uOpTemplate(f);  // specialize
@@ -457,11 +458,23 @@ final class Long512Vector extends LongVector {
     }
 
 
+    @ForceInline
     @Override
     public long lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return laneHelper(0);
+            case 1: return laneHelper(1);
+            case 2: return laneHelper(2);
+            case 3: return laneHelper(3);
+            case 4: return laneHelper(4);
+            case 5: return laneHelper(5);
+            case 6: return laneHelper(6);
+            case 7: return laneHelper(7);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public long laneHelper(int i) {
         return (long) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -471,11 +484,23 @@ final class Long512Vector extends LongVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public Long512Vector withLane(int i, long e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch (i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            case 2: return withLaneHelper(2, e);
+            case 3: return withLaneHelper(3, e);
+            case 4: return withLaneHelper(4, e);
+            case 5: return withLaneHelper(5, e);
+            case 6: return withLaneHelper(6, e);
+            case 7: return withLaneHelper(7, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Long512Vector withLaneHelper(int i, long e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,
@@ -527,6 +552,7 @@ final class Long512Vector extends LongVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -591,10 +617,7 @@ final class Long512Vector extends LongVector {
         @Override
         @ForceInline
         public Long512Mask not() {
-            return (Long512Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Long512Mask.class, long.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -619,6 +642,16 @@ final class Long512Vector extends LongVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Long512Mask xor(VectorMask<Long> mask) {
+            Objects.requireNonNull(mask);
+            Long512Mask m = (Long512Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Long512Mask.class, long.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -637,12 +670,16 @@ final class Long512Vector extends LongVector {
                                          (m, __) -> allTrueHelper(((Long512Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Long512Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Long512Mask.class, long.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Long512Mask TRUE_MASK = new Long512Mask(true);
-        static final Long512Mask FALSE_MASK = new Long512Mask(false);
+        private static final Long512Mask  TRUE_MASK = new Long512Mask(true);
+        private static final Long512Mask FALSE_MASK = new Long512Mask(false);
+
     }
 
     // Shuffle
@@ -714,6 +751,7 @@ final class Long512Vector extends LongVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Long512Shuffle rearrange(VectorShuffle<Long> shuffle) {
             Long512Shuffle s = (Long512Shuffle) shuffle;

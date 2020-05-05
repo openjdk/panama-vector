@@ -843,6 +843,24 @@ public class $vectorteststype$ extends AbstractVectorTest {
         return new boolean[length];
     };
 
+#if[BITWISE]
+    static void replaceZero($type$[] a, $type$ v) {
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] == 0) {
+                a[i] = v;
+            }
+        }
+    }
+
+    static void replaceZero($type$[] a, boolean[] mask, $type$ v) {
+        for (int i = 0; i < a.length; i++) {
+            if (mask[i % mask.length] && a[i] == 0) {
+                a[i] = v;
+            }
+        }
+    }
+#end[BITWISE]
+
     @Test
     static void smokeTest1() {
         $abstractvectortype$ three = $abstractvectortype$.broadcast(SPECIES, (byte)-3);
@@ -921,3 +939,25 @@ public class $vectorteststype$ extends AbstractVectorTest {
         }
     }
 
+#if[BITWISE]
+    @Test
+    // Test div by 0.
+    static void bitwiseDivByZeroSmokeTest() {
+        try {
+            $abstractvectortype$ a = ($abstractvectortype$) SPECIES.broadcast(0).addIndex(1);
+            $abstractvectortype$ b = ($abstractvectortype$) SPECIES.broadcast(0);
+            a.div(b);
+            Assert.fail();
+        } catch (ArithmeticException e) {
+        }
+
+        try {
+            $abstractvectortype$ a = ($abstractvectortype$) SPECIES.broadcast(0).addIndex(1);
+            $abstractvectortype$ b = ($abstractvectortype$) SPECIES.broadcast(0);
+            VectorMask<$Boxtype$> m = a.lt(($type$) 1);
+            a.div(b, m);
+            Assert.fail();
+        } catch (ArithmeticException e) {
+        }
+    }
+#end[BITWISE]

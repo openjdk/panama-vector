@@ -34,6 +34,53 @@
 #include "runtime/signature.hpp"
 #include "utilities/hashtable.hpp"
 
+class ClassInstanceInfo : public StackObj {
+ private:
+  InstanceKlass* _dynamic_nest_host;
+  Handle _class_data;
+
+ public:
+  ClassInstanceInfo() {
+    _dynamic_nest_host = NULL;
+    _class_data = Handle();
+  }
+  ClassInstanceInfo(InstanceKlass* dynamic_nest_host, Handle class_data) {
+    _dynamic_nest_host = dynamic_nest_host;
+    _class_data = class_data;
+  }
+
+  InstanceKlass* dynamic_nest_host() const { return _dynamic_nest_host; }
+  Handle class_data() const { return _class_data; }
+  friend class ClassLoadInfo;
+};
+
+class ClassLoadInfo : public StackObj {
+ private:
+  Handle                 _protection_domain;
+  const InstanceKlass*   _unsafe_anonymous_host;
+  GrowableArray<Handle>* _cp_patches;
+  ClassInstanceInfo      _class_hidden_info;
+  bool                   _is_hidden;
+  bool                   _is_strong_hidden;
+  bool                   _can_access_vm_annotations;
+
+ public:
+  ClassLoadInfo();
+  ClassLoadInfo(Handle protection_domain);
+  ClassLoadInfo(Handle protection_domain, const InstanceKlass* unsafe_anonymous_host,
+                GrowableArray<Handle>* cp_patches, InstanceKlass* dynamic_nest_host,
+                Handle class_data, bool is_hidden, bool is_strong_hidden,
+                bool can_access_vm_annotations);
+
+  Handle protection_domain()             const { return _protection_domain; }
+  const InstanceKlass* unsafe_anonymous_host() const { return _unsafe_anonymous_host; }
+  GrowableArray<Handle>* cp_patches()    const { return _cp_patches; }
+  const ClassInstanceInfo* class_hidden_info_ptr() const { return &_class_hidden_info; }
+  bool is_hidden()                       const { return _is_hidden; }
+  bool is_strong_hidden()                const { return _is_strong_hidden; }
+  bool can_access_vm_annotations()       const { return _can_access_vm_annotations; }
+};
+
 // The dictionary in each ClassLoaderData stores all loaded classes, either
 // initiatied by its class loader or defined by its class loader:
 //
@@ -278,28 +325,13 @@ public:
                                               bool is_superclass,
                                               TRAPS);
 
-  // Parse new stream. This won't update the dictionary or
-  // class hierarchy, simply parse the stream. Used by JVMTI RedefineClasses.
-  // Also used by Unsafe_DefineAnonymousClass
+  // Parse new stream. This won't update the dictionary or class
+  // hierarchy, simply parse the stream. Used by JVMTI RedefineClasses
+  // and by Unsafe_DefineAnonymousClass and jvm_lookup_define_class.
   static InstanceKlass* parse_stream(Symbol* class_name,
                                      Handle class_loader,
-                                     Handle protection_domain,
                                      ClassFileStream* st,
-                                     TRAPS) {
-    return parse_stream(class_name,
-                        class_loader,
-                        protection_domain,
-                        st,
-                        NULL, // unsafe_anonymous_host
-                        NULL, // cp_patches
-                        THREAD);
-  }
-  static InstanceKlass* parse_stream(Symbol* class_name,
-                                     Handle class_loader,
-                                     Handle protection_domain,
-                                     ClassFileStream* st,
-                                     const InstanceKlass* unsafe_anonymous_host,
-                                     GrowableArray<Handle>* cp_patches,
+                                     const ClassLoadInfo& cl_info,
                                      TRAPS);
 
   // Resolve from stream (called by jni_DefineClass and JVM_DefineClass)
@@ -469,10 +501,10 @@ public:
   // Note:  java_lang_Class::primitive_type is the inverse of java_mirror
 
   // Check class loader constraints
-  static bool add_loader_constraint(Symbol* name, Handle loader1,
+  static bool add_loader_constraint(Symbol* name, Klass* klass_being_linked,  Handle loader1,
                                     Handle loader2, TRAPS);
-  static Symbol* check_signature_loaders(Symbol* signature, Handle loader1,
-                                         Handle loader2, bool is_method, TRAPS);
+  static Symbol* check_signature_loaders(Symbol* signature, Klass* klass_being_linked,
+                                         Handle loader1, Handle loader2, bool is_method, TRAPS);
 
   // JSR 292
   // find a java.lang.invoke.MethodHandle.invoke* method for a given signature
@@ -537,6 +569,11 @@ public:
                                        Symbol** message);
 
 
+  // Record a nest host resolution/validation error
+  static void add_nest_host_error(const constantPoolHandle& pool, int which,
+                                  const char* message);
+  static const char* find_nest_host_error(const constantPoolHandle& pool, int which);
+
   static ProtectionDomainCacheEntry* cache_get(Handle protection_domain);
 
  protected:
@@ -599,6 +636,7 @@ protected:
                                                 Handle class_loader,
                                                 InstanceKlass* k, TRAPS);
   static bool is_shared_class_visible(Symbol* class_name, InstanceKlass* ik,
+                                      PackageEntry* pkg_entry,
                                       Handle class_loader, TRAPS);
   static bool check_shared_class_super_type(InstanceKlass* child, InstanceKlass* super,
                                             Handle class_loader,  Handle protection_domain,
@@ -609,10 +647,12 @@ protected:
                                           Handle class_loader,
                                           Handle protection_domain,
                                           const ClassFileStream *cfs,
+                                          PackageEntry* pkg_entry,
                                           TRAPS);
   // Second part of load_shared_class
   static void load_shared_class_misc(InstanceKlass* ik, ClassLoaderData* loader_data, TRAPS) NOT_CDS_RETURN;
   static InstanceKlass* load_shared_boot_class(Symbol* class_name,
+                                               PackageEntry* pkg_entry,
                                                TRAPS);
   static InstanceKlass* load_instance_class(Symbol* class_name, Handle class_loader, TRAPS);
   static Handle compute_loader_lock_object(Handle class_loader, TRAPS);
@@ -623,7 +663,12 @@ protected:
 public:
   static bool is_system_class_loader(oop class_loader);
   static bool is_platform_class_loader(oop class_loader);
-
+  static bool is_boot_class_loader(oop class_loader) { return class_loader == NULL; }
+  static bool is_builtin_class_loader(oop class_loader) {
+    return is_boot_class_loader(class_loader)      ||
+           is_platform_class_loader(class_loader)  ||
+           is_system_class_loader(class_loader);
+  }
   // Returns TRUE if the method is a non-public member of class java.lang.Object.
   static bool is_nonpublic_Object_method(Method* m) {
     assert(m != NULL, "Unexpected NULL Method*");

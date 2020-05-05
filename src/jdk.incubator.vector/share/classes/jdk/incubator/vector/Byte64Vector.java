@@ -183,6 +183,7 @@ final class Byte64Vector extends ByteVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Byte64Vector uOp(FUnOp f) {
         return (Byte64Vector) super.uOpTemplate(f);  // specialize
@@ -467,11 +468,23 @@ final class Byte64Vector extends ByteVector {
     }
 
 
+    @ForceInline
     @Override
     public byte lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return laneHelper(0);
+            case 1: return laneHelper(1);
+            case 2: return laneHelper(2);
+            case 3: return laneHelper(3);
+            case 4: return laneHelper(4);
+            case 5: return laneHelper(5);
+            case 6: return laneHelper(6);
+            case 7: return laneHelper(7);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public byte laneHelper(int i) {
         return (byte) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -481,11 +494,23 @@ final class Byte64Vector extends ByteVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public Byte64Vector withLane(int i, byte e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch (i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            case 2: return withLaneHelper(2, e);
+            case 3: return withLaneHelper(3, e);
+            case 4: return withLaneHelper(4, e);
+            case 5: return withLaneHelper(5, e);
+            case 6: return withLaneHelper(6, e);
+            case 7: return withLaneHelper(7, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Byte64Vector withLaneHelper(int i, byte e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,
@@ -537,6 +562,7 @@ final class Byte64Vector extends ByteVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -601,10 +627,7 @@ final class Byte64Vector extends ByteVector {
         @Override
         @ForceInline
         public Byte64Mask not() {
-            return (Byte64Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Byte64Mask.class, byte.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -629,6 +652,16 @@ final class Byte64Vector extends ByteVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Byte64Mask xor(VectorMask<Byte> mask) {
+            Objects.requireNonNull(mask);
+            Byte64Mask m = (Byte64Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Byte64Mask.class, byte.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -647,12 +680,16 @@ final class Byte64Vector extends ByteVector {
                                          (m, __) -> allTrueHelper(((Byte64Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Byte64Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Byte64Mask.class, byte.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Byte64Mask TRUE_MASK = new Byte64Mask(true);
-        static final Byte64Mask FALSE_MASK = new Byte64Mask(false);
+        private static final Byte64Mask  TRUE_MASK = new Byte64Mask(true);
+        private static final Byte64Mask FALSE_MASK = new Byte64Mask(false);
+
     }
 
     // Shuffle
@@ -724,6 +761,7 @@ final class Byte64Vector extends ByteVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Byte64Shuffle rearrange(VectorShuffle<Byte> shuffle) {
             Byte64Shuffle s = (Byte64Shuffle) shuffle;

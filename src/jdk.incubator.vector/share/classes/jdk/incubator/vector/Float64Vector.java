@@ -183,6 +183,7 @@ final class Float64Vector extends FloatVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Float64Vector uOp(FUnOp f) {
         return (Float64Vector) super.uOpTemplate(f);  // specialize
@@ -461,26 +462,39 @@ final class Float64Vector extends FloatVector {
     }
 
 
+    @ForceInline
     @Override
     public float lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        int bits;
+        switch(i) {
+            case 0: bits = laneHelper(0); break;
+            case 1: bits = laneHelper(1); break;
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        int bits = (int) VectorSupport.extract(
-                                VCLASS, ETYPE, VLENGTH,
-                                this, i,
-                                (vec, ix) -> {
-                                    float[] vecarr = vec.vec();
-                                    return (long)Float.floatToIntBits(vecarr[ix]);
-                                });
         return Float.intBitsToFloat(bits);
     }
 
+    public int laneHelper(int i) {
+        return (int) VectorSupport.extract(
+                     VCLASS, ETYPE, VLENGTH,
+                     this, i,
+                     (vec, ix) -> {
+                     float[] vecarr = vec.vec();
+                     return (long)Float.floatToIntBits(vecarr[ix]);
+                     });
+    }
+
+    @ForceInline
     @Override
     public Float64Vector withLane(int i, float e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Float64Vector withLaneHelper(int i, float e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)Float.floatToIntBits(e),
@@ -532,6 +546,7 @@ final class Float64Vector extends FloatVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -596,10 +611,7 @@ final class Float64Vector extends FloatVector {
         @Override
         @ForceInline
         public Float64Mask not() {
-            return (Float64Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Float64Mask.class, int.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -624,6 +636,16 @@ final class Float64Vector extends FloatVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Float64Mask xor(VectorMask<Float> mask) {
+            Objects.requireNonNull(mask);
+            Float64Mask m = (Float64Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Float64Mask.class, int.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -642,12 +664,16 @@ final class Float64Vector extends FloatVector {
                                          (m, __) -> allTrueHelper(((Float64Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Float64Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Float64Mask.class, int.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Float64Mask TRUE_MASK = new Float64Mask(true);
-        static final Float64Mask FALSE_MASK = new Float64Mask(false);
+        private static final Float64Mask  TRUE_MASK = new Float64Mask(true);
+        private static final Float64Mask FALSE_MASK = new Float64Mask(false);
+
     }
 
     // Shuffle
@@ -719,6 +745,7 @@ final class Float64Vector extends FloatVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Float64Shuffle rearrange(VectorShuffle<Float> shuffle) {
             Float64Shuffle s = (Float64Shuffle) shuffle;

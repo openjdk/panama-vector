@@ -220,9 +220,9 @@ Symbol* ClassLoader::package_from_class_name(const Symbol* name, bool* bad_class
   return SymbolTable::new_symbol(name, start - base, end - base);
 }
 
-// Given a fully qualified class name, find its defining package in the class loader's
+// Given a fully qualified package name, find its defining package in the class loader's
 // package entry table.
-PackageEntry* ClassLoader::get_package_entry(Symbol* pkg_name, ClassLoaderData* loader_data, TRAPS) {
+PackageEntry* ClassLoader::get_package_entry(Symbol* pkg_name, ClassLoaderData* loader_data) {
   if (pkg_name == NULL) {
     return NULL;
   }
@@ -396,9 +396,9 @@ ClassFileStream* ClassPathImageEntry::open_stream_for_loader(const char* name, C
       if (!Universe::is_module_initialized()) {
         location = (*JImageFindResource)(_jimage, JAVA_BASE_NAME, get_jimage_version_string(), name, &size);
       } else {
-        PackageEntry* package_entry = ClassLoader::get_package_entry(pkg_name, loader_data, CHECK_NULL);
+        PackageEntry* package_entry = ClassLoader::get_package_entry(pkg_name, loader_data);
         if (package_entry != NULL) {
-          ResourceMark rm;
+          ResourceMark rm(THREAD);
           // Get the module name
           ModuleEntry* module = package_entry->module();
           assert(module != NULL, "Boot classLoader package missing module");
@@ -1011,32 +1011,6 @@ int ClassLoader::crc32(int crc, const char* buf, int len) {
   return (*Crc32)(crc, (const jbyte*)buf, len);
 }
 
-// Function add_package checks if the package of the InstanceKlass is in the
-// boot loader's package entry table.  If so, then it sets the classpath_index
-// in the package entry record.
-//
-// The classpath_index field is used to find the entry on the boot loader class
-// path for packages with classes loaded by the boot loader from -Xbootclasspath/a
-// in an unnamed module.  It is also used to indicate (for all packages whose
-// classes are loaded by the boot loader) that at least one of the package's
-// classes has been loaded.
-bool ClassLoader::add_package(const InstanceKlass* ik, s2 classpath_index, TRAPS) {
-  assert(ik != NULL, "just checking");
-
-  PackageEntry* ik_pkg = ik->package();
-  if (ik_pkg != NULL) {
-    PackageEntryTable* pkg_entry_tbl = ClassLoaderData::the_null_class_loader_data()->packages();
-    PackageEntry* pkg_entry = pkg_entry_tbl->lookup_only(ik_pkg->name());
-    if (pkg_entry != NULL) {
-      assert(classpath_index != -1, "Unexpected classpath_index");
-      pkg_entry->set_classpath_index(classpath_index);
-    } else {
-      return false;
-    }
-  }
-  return true;
-}
-
 oop ClassLoader::get_system_package(const char* name, TRAPS) {
   // Look up the name in the boot loader's package entry table.
   if (name != NULL) {
@@ -1147,7 +1121,7 @@ ClassFileStream* ClassLoader::search_module_entries(const GrowableArray<ModuleCl
   // Find the class' defining module in the boot loader's module entry table
   TempNewSymbol class_name_symbol = SymbolTable::new_symbol(class_name);
   TempNewSymbol pkg_name = package_from_class_name(class_name_symbol);
-  PackageEntry* pkg_entry = get_package_entry(pkg_name, ClassLoaderData::the_null_class_loader_data(), CHECK_NULL);
+  PackageEntry* pkg_entry = get_package_entry(pkg_name, ClassLoaderData::the_null_class_loader_data());
   ModuleEntry* mod_entry = (pkg_entry != NULL) ? pkg_entry->module() : NULL;
 
   // If the module system has not defined java.base yet, then
@@ -1283,13 +1257,12 @@ InstanceKlass* ClassLoader::load_class(Symbol* name, bool search_append_only, TR
 
   ClassLoaderData* loader_data = ClassLoaderData::the_null_class_loader_data();
   Handle protection_domain;
+  ClassLoadInfo cl_info(protection_domain);
 
   InstanceKlass* result = KlassFactory::create_from_stream(stream,
                                                            name,
                                                            loader_data,
-                                                           protection_domain,
-                                                           NULL, // unsafe_anonymous_host
-                                                           NULL, // cp_patches
+                                                           cl_info,
                                                            THREAD);
   if (HAS_PENDING_EXCEPTION) {
     if (DumpSharedSpaces) {
@@ -1298,10 +1271,7 @@ InstanceKlass* ClassLoader::load_class(Symbol* name, bool search_append_only, TR
     return NULL;
   }
 
-  if (!add_package(result, classpath_index, THREAD)) {
-    return NULL;
-  }
-
+  result->set_classpath_index(classpath_index, THREAD);
   return result;
 }
 
@@ -1331,8 +1301,8 @@ void ClassLoader::record_result(InstanceKlass* ik, const ClassFileStream* stream
   Arguments::assert_is_dumping_archive();
   assert(stream != NULL, "sanity");
 
-  if (ik->is_unsafe_anonymous()) {
-    // We do not archive unsafe anonymous classes.
+  if (ik->is_hidden() || ik->is_unsafe_anonymous()) {
+    // We do not archive hidden or unsafe anonymous classes.
     return;
   }
 

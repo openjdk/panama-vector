@@ -183,6 +183,7 @@ final class IntMaxVector extends IntVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     IntMaxVector uOp(FUnOp f) {
         return (IntMaxVector) super.uOpTemplate(f);  // specialize
@@ -467,11 +468,16 @@ final class IntMaxVector extends IntVector {
     }
 
 
+    @ForceInline
     @Override
     public int lane(int i) {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+        return laneHelper(i); 
+    }
+
+    public int laneHelper(int i) {
         return (int) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -481,11 +487,16 @@ final class IntMaxVector extends IntVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public IntMaxVector withLane(int i, int e) {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+        return withLaneHelper(i, e);
+    }
+
+    public IntMaxVector withLaneHelper(int i, int e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,
@@ -537,6 +548,7 @@ final class IntMaxVector extends IntVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -601,10 +613,7 @@ final class IntMaxVector extends IntVector {
         @Override
         @ForceInline
         public IntMaxMask not() {
-            return (IntMaxMask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, IntMaxMask.class, int.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -629,6 +638,16 @@ final class IntMaxVector extends IntVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        IntMaxMask xor(VectorMask<Integer> mask) {
+            Objects.requireNonNull(mask);
+            IntMaxMask m = (IntMaxMask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, IntMaxMask.class, int.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -647,10 +666,16 @@ final class IntMaxVector extends IntVector {
                                          (m, __) -> allTrueHelper(((IntMaxMask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static IntMaxMask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(IntMaxMask.class, int.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
+        private static final IntMaxMask  TRUE_MASK = new IntMaxMask(true);
+        private static final IntMaxMask FALSE_MASK = new IntMaxMask(false);
+
 
         static boolean[] maskLowerHalf() {
             boolean[] a = new boolean[VLENGTH];
@@ -661,8 +686,6 @@ final class IntMaxVector extends IntVector {
             return a;
         }
 
-        static final IntMaxMask TRUE_MASK = new IntMaxMask(true);
-        static final IntMaxMask FALSE_MASK = new IntMaxMask(false);
         static final IntMaxMask LOWER_HALF_TRUE_MASK = new IntMaxMask(maskLowerHalf());
     }
 
@@ -735,6 +758,7 @@ final class IntMaxVector extends IntVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public IntMaxShuffle rearrange(VectorShuffle<Integer> shuffle) {
             IntMaxShuffle s = (IntMaxShuffle) shuffle;

@@ -116,6 +116,13 @@ class HandlerImpl {
 
 };
 
+class Node::PD {
+public:
+  enum NodeFlags {
+    _last_flag = Node::_last_flag
+  };
+};
+
 %}
 
 source %{
@@ -124,6 +131,16 @@ source %{
 static FloatRegister reg_to_FloatRegister_object(int register_encoding);
 static Register reg_to_register_object(int register_encoding);
 
+void PhaseOutput::pd_perform_mach_node_analysis() {
+}
+
+int MachNode::pd_alignment_required() const {
+  return 1;
+}
+
+int MachNode::compute_padding(int current_offset) const {
+  return 0;
+}
 
 // ****************************************************************************
 
@@ -976,6 +993,24 @@ const bool Matcher::has_predicated_vectors(void) {
   return false;
 }
 
+bool Matcher::supports_vector_variable_shifts(void) {
+  return VM_Version::has_simd();
+}
+
+// Vector calling convention not yet implemented.
+const bool Matcher::supports_vector_calling_convention(void) {
+  return false;
+}
+
+void Matcher::vector_calling_convention(VMRegPair *regs, uint num_bits, uint total_args_passed) {
+  (void) SharedRuntime::vector_calling_convention(regs, num_bits, total_args_passed);
+}
+
+OptoRegPair Matcher::vector_return_value(uint ideal_reg) {
+  Unimplemented();
+  return OptoRegPair(0, 0);
+}
+
 const int Matcher::float_pressure(int default_pressure_threshold) {
   return default_pressure_threshold;
 }
@@ -998,10 +1033,6 @@ const uint Matcher::vector_ideal_reg(int size) {
   }
   ShouldNotReachHere();
   return 0;
-}
-
-const uint Matcher::vector_shift_count_ideal_reg(int size) {
-  return vector_ideal_reg(size);
 }
 
 // Limits on vector size (number of elements) loaded into vector.
@@ -1070,7 +1101,7 @@ const bool Matcher::convi2l_type_required = true;
 // No support for generic vector operands.
 const bool Matcher::supports_generic_vector_operands  = false;
 
-MachOper* Matcher::specialize_generic_vector_operand(MachOper* original_opnd, uint ideal_reg, bool is_temp) {
+MachOper* Matcher::pd_specialize_generic_vector_operand(MachOper* original_opnd, uint ideal_reg, bool is_temp) {
   ShouldNotReachHere(); // generic vector operands not supported
   return NULL;
 }
@@ -1085,10 +1116,19 @@ bool Matcher::is_generic_vector(MachOper* opnd)  {
   return false;
 }
 
+// Should the matcher clone input 'm' of node 'n'?
+bool Matcher::pd_clone_node(Node* n, Node* m, Matcher::MStack& mstack) {
+  if (is_vshift_con_pattern(n, m)) { // ShiftV src (ShiftCntV con)
+    mstack.push(m, Visit);           // m = ShiftCntV
+    return true;
+  }
+  return false;
+}
+
 // Should the Matcher clone shifts on addressing modes, expecting them
 // to be subsumed into complex addressing expressions or compute them
 // into registers?
-bool Matcher::clone_address_expressions(AddPNode* m, Matcher::MStack& mstack, VectorSet& address_visited) {
+bool Matcher::pd_clone_address_expressions(AddPNode* m, Matcher::MStack& mstack, VectorSet& address_visited) {
   return clone_base_plus_offset_address(m, mstack, address_visited);
 }
 
@@ -5285,14 +5325,6 @@ instruct castPP( iRegP dst ) %{
 instruct castII( iRegI dst ) %{
   match(Set dst (CastII dst));
   format %{ "! castII of $dst" %}
-  ins_encode( /*empty encoding*/ );
-  ins_cost(0);
-  ins_pipe(empty);
-%}
-
-instruct castLL( iRegL dst ) %{
-  match(Set dst (CastLL dst));
-  format %{ "! castLL of $dst" %}
   ins_encode( /*empty encoding*/ );
   ins_cost(0);
   ins_pipe(empty);

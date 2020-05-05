@@ -183,6 +183,7 @@ final class FloatMaxVector extends FloatVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     FloatMaxVector uOp(FUnOp f) {
         return (FloatMaxVector) super.uOpTemplate(f);  // specialize
@@ -461,26 +462,36 @@ final class FloatMaxVector extends FloatVector {
     }
 
 
+    @ForceInline
     @Override
     public float lane(int i) {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        int bits = (int) VectorSupport.extract(
-                                VCLASS, ETYPE, VLENGTH,
-                                this, i,
-                                (vec, ix) -> {
-                                    float[] vecarr = vec.vec();
-                                    return (long)Float.floatToIntBits(vecarr[ix]);
-                                });
+        int bits = laneHelper(i);
         return Float.intBitsToFloat(bits);
     }
 
+    public int laneHelper(int i) {
+        return (int) VectorSupport.extract(
+                     VCLASS, ETYPE, VLENGTH,
+                     this, i,
+                     (vec, ix) -> {
+                     float[] vecarr = vec.vec();
+                     return (long)Float.floatToIntBits(vecarr[ix]);
+                     });
+    }
+
+    @ForceInline
     @Override
     public FloatMaxVector withLane(int i, float e) {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+        return withLaneHelper(i, e); 
+    }
+
+    public FloatMaxVector withLaneHelper(int i, float e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)Float.floatToIntBits(e),
@@ -532,6 +543,7 @@ final class FloatMaxVector extends FloatVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -596,10 +608,7 @@ final class FloatMaxVector extends FloatVector {
         @Override
         @ForceInline
         public FloatMaxMask not() {
-            return (FloatMaxMask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, FloatMaxMask.class, int.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -624,6 +633,16 @@ final class FloatMaxVector extends FloatVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        FloatMaxMask xor(VectorMask<Float> mask) {
+            Objects.requireNonNull(mask);
+            FloatMaxMask m = (FloatMaxMask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, FloatMaxMask.class, int.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -642,12 +661,16 @@ final class FloatMaxVector extends FloatVector {
                                          (m, __) -> allTrueHelper(((FloatMaxMask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static FloatMaxMask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(FloatMaxMask.class, int.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final FloatMaxMask TRUE_MASK = new FloatMaxMask(true);
-        static final FloatMaxMask FALSE_MASK = new FloatMaxMask(false);
+        private static final FloatMaxMask  TRUE_MASK = new FloatMaxMask(true);
+        private static final FloatMaxMask FALSE_MASK = new FloatMaxMask(false);
+
     }
 
     // Shuffle
@@ -719,6 +742,7 @@ final class FloatMaxVector extends FloatVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public FloatMaxShuffle rearrange(VectorShuffle<Float> shuffle) {
             FloatMaxShuffle s = (FloatMaxShuffle) shuffle;

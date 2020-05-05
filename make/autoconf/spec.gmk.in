@@ -246,7 +246,7 @@ ifneq ($(COMPANY_NAME),)
   # Only export "VENDOR" to the build if COMPANY_NAME contains a real value.
   # Otherwise the default value for VENDOR, which is used to set the "java.vendor"
   # and "java.vm.vendor" properties is hard-coded into the source code (i.e. in
-  # VersionProps.java.template in the jdk for "vm.vendor" and
+  # VersionProps.java.template in the jdk for "java.vendor" and
   # vm_version.cpp in the VM for "java.vm.vendor")
   ifneq ($(COMPANY_NAME), N/A)
     VERSION_CFLAGS += -DVENDOR='"$(COMPANY_NAME)"'
@@ -338,6 +338,8 @@ BUILD_MANPAGES := @BUILD_MANPAGES@
 
 BUILD_CDS_ARCHIVE := @BUILD_CDS_ARCHIVE@
 
+ALLOW_ABSOLUTE_PATHS_IN_OUTPUT := @ALLOW_ABSOLUTE_PATHS_IN_OUTPUT@
+
 # The boot jdk to use. This is overridden in bootcycle-spec.gmk. Make sure to keep
 # it in sync.
 BOOT_JDK:=@BOOT_JDK@
@@ -353,9 +355,6 @@ BOOT_JDK_SOURCETARGET:=@BOOT_JDK_SOURCETARGET@
 # Information about the build system
 NUM_CORES:=@NUM_CORES@
 MEMORY_SIZE:=@MEMORY_SIZE@
-# Enable sjavac support = use a javac server,
-# multi core javac compilation and dependency tracking.
-ENABLE_SJAVAC:=@ENABLE_SJAVAC@
 ENABLE_JAVAC_SERVER:=@ENABLE_JAVAC_SERVER@
 # Store sjavac server synchronization files here, and
 # the sjavac server log files.
@@ -381,6 +380,7 @@ LIBFFI_CFLAGS:=@LIBFFI_CFLAGS@
 ENABLE_LIBFFI_BUNDLING:=@ENABLE_LIBFFI_BUNDLING@
 LIBFFI_LIB_FILE:=@LIBFFI_LIB_FILE@
 GRAALUNIT_LIB := @GRAALUNIT_LIB@
+FILE_MACRO_CFLAGS := @FILE_MACRO_CFLAGS@
 
 STATIC_LIBS_CFLAGS := @STATIC_LIBS_CFLAGS@
 
@@ -617,9 +617,8 @@ STRIPFLAGS:=@STRIPFLAGS@
 JAVA_FLAGS:=@JAVA_FLAGS@
 JAVA_FLAGS_BIG:=@JAVA_FLAGS_BIG@
 JAVA_FLAGS_SMALL:=@JAVA_FLAGS_SMALL@
-JAVA_FLAGS_JAVAC:=@JAVA_FLAGS_JAVAC@
+BUILDJDK_JAVA_FLAGS_SMALL:=@BUILDJDK_JAVA_FLAGS_SMALL@
 JAVA_TOOL_FLAGS_SMALL:=@JAVA_TOOL_FLAGS_SMALL@
-SJAVAC_SERVER_JAVA_FLAGS:=@SJAVAC_SERVER_JAVA_FLAGS@
 
 # The *_CMD variables are defined separately to be easily overridden in bootcycle-spec.gmk
 # for bootcycle-images build. Make sure to keep them in sync. Do not use the *_CMD
@@ -631,27 +630,19 @@ JAR_CMD:=@JAR@
 JLINK_CMD := @JLINK@
 JMOD_CMD := @JMOD@
 JARSIGNER_CMD:=@JARSIGNER@
-SJAVAC_SERVER_JAVA_CMD:=@SJAVAC_SERVER_JAVA@
+JJS_CMD:=@JJS@
 # These variables are meant to be used. They are defined with = instead of := to make
 # it possible to override only the *_CMD variables.
 JAVA=@FIXPATH@ $(JAVA_CMD) $(JAVA_FLAGS_BIG) $(JAVA_FLAGS)
 JAVA_SMALL=@FIXPATH@ $(JAVA_CMD) $(JAVA_FLAGS_SMALL) $(JAVA_FLAGS)
-JAVA_JAVAC=@FIXPATH@ $(JAVA_CMD) $(JAVA_FLAGS_JAVAC) $(JAVA_FLAGS)
+JAVA_DETACH =@FIXPATH@ @FIXPATH_DETACH_FLAG@ $(JAVA_CMD) $(JAVA_FLAGS_BIG) $(JAVA_FLAGS)
 JAVAC=@FIXPATH@ $(JAVAC_CMD)
 JAVADOC=@FIXPATH@ $(JAVADOC_CMD)
 JAR=@FIXPATH@ $(JAR_CMD)
 JLINK = @FIXPATH@ $(JLINK_CMD) $(JAVA_TOOL_FLAGS_SMALL)
 JMOD = @FIXPATH@ $(JMOD_CMD) $(JAVA_TOOL_FLAGS_SMALL)
 JARSIGNER=@FIXPATH@ $(JARSIGNER_CMD)
-# A specific java binary with specific options can be used to run
-# the long running background sjavac servers and other long running tasks.
-SJAVAC_SERVER_JAVA=@FIXPATH@ @FIXPATH_DETACH_FLAG@ $(SJAVAC_SERVER_JAVA_CMD) \
-    $(SJAVAC_SERVER_JAVA_FLAGS)
-
-# Hotspot sets this variable before reading the SPEC when compiling sa-jdi.jar. Avoid
-# overriding that value by using ?=.
-JAVAC_FLAGS?=@JAVAC_FLAGS@
-
+JJS=@FIXPATH@ $(JJS_CMD) $(JAVA_TOOL_FLAGS_SMALL)
 
 BUILD_JAVA_FLAGS := @BOOTCYCLE_JVM_ARGS_BIG@
 BUILD_JAVA=@FIXPATH@ $(BUILD_JDK)/bin/java $(BUILD_JAVA_FLAGS)
@@ -783,6 +774,7 @@ LIBZ_CFLAGS:=@LIBZ_CFLAGS@
 LIBZ_LIBS:=@LIBZ_LIBS@
 LIBZIP_CAN_USE_MMAP:=@LIBZIP_CAN_USE_MMAP@
 MSVCR_DLL:=@MSVCR_DLL@
+VCRUNTIME_1_DLL:=@VCRUNTIME_1_DLL@
 MSVCP_DLL:=@MSVCP_DLL@
 UCRT_DLL_DIR:=@UCRT_DLL_DIR@
 STLPORT_LIB:=@STLPORT_LIB@

@@ -473,6 +473,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
      * @see Vector#broadcast(long)
      * @see VectorSpecies#broadcast(long)
      */
+    @ForceInline
     public static IntVector broadcast(VectorSpecies<Integer> species, int e) {
         IntSpecies vsp = (IntSpecies) species;
         return vsp.broadcast(e);
@@ -516,6 +517,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
      * @see #broadcast(VectorSpecies,int)
      * @see VectorSpecies#checkValue(long)
      */
+    @ForceInline
     public static IntVector broadcast(VectorSpecies<Integer> species, long e) {
         IntSpecies vsp = (IntSpecies) species;
         return vsp.broadcast(e);
@@ -566,7 +568,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
             if (op == ZOMO) {
                 return blend(broadcast(-1), compare(NE, 0));
             }
-            if (op == NEG) {
+            if (op == NOT) {
+                return broadcast(-1).lanewiseTemplate(XOR, this);
+            } else if (op == NEG) {
                 // FIXME: Support this in the JIT.
                 return broadcast(0).lanewiseTemplate(SUB, this);
             }
@@ -581,8 +585,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
                         v0.uOp((i, a) -> (int) -a);
                 case VECTOR_OP_ABS: return v0 ->
                         v0.uOp((i, a) -> (int) Math.abs(a));
-                case VECTOR_OP_NOT: return v0 ->
-                        v0.uOp((i, a) -> (int) ~a);
                 default: return null;
               }}));
     }
@@ -694,8 +696,12 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                   VectorMask<Integer> m) {
         IntVector that = (IntVector) v;
         if (op == DIV) {
+            VectorMask<Integer> eqz = that.eq((int)0);
+            if (eqz.and(m).anyTrue()) {
+                throw that.divZeroException();
+            }
             // suppress div/0 exceptions in unset lanes
-            that = that.lanewise(NOT, that.eq((int)0));
+            that = that.lanewise(NOT, eqz);
             return blend(lanewise(DIV, that), m);
         }
         return blend(lanewise(op, v), m);
@@ -728,7 +734,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
     public final
     IntVector lanewise(VectorOperators.Binary op,
                                   int e) {
-        int opc = opCode(op);
         if (opKind(op, VO_SHIFT) && (int)(int)e == e) {
             return lanewiseShift(op, (int) e);
         }
@@ -816,7 +821,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
     final IntVector
     lanewiseShiftTemplate(VectorOperators.Binary op, int e) {
         // Special handling for these.  FIXME: Refactor?
-        int opc = opCode(op);
         assert(opKind(op, VO_SHIFT));
         // As per shift specification for Java, mask the shift count.
         e &= SHIFT_MASK;
@@ -825,6 +829,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
             IntVector lo = this.lanewise(LSHR, (op == ROR) ? e : -e);
             return hi.lanewise(OR, lo);
         }
+        int opc = opCode(op);
         return VectorSupport.broadcastInt(
             opc, getClass(), int.class, length(),
             this, e,
@@ -2919,17 +2924,14 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                    int[] a, int offset,
                                    int[] indexMap, int mapOffset,
                                    VectorMask<Integer> m) {
-        IntSpecies vsp = (IntSpecies) species;
-
-        // FIXME This can result in out of bounds errors for unset mask lanes
-        // FIX = Use a scatter instruction which routes the unwanted lanes
-        // into a bit-bucket variable (private to implementation).
-        // This requires a 2-D scatter in order to set a second base address.
-        // See notes in https://bugs.openjdk.java.net/browse/JDK-8223367
-        assert(m.allTrue());
-        return (IntVector)
-            zero(species).blend(fromArray(species, a, offset, indexMap, mapOffset), m);
-
+        if (m.allTrue()) {
+            return fromArray(species, a, offset, indexMap, mapOffset);
+        }
+        else {
+            // FIXME: Cannot vectorize yet, if there's a mask.
+            IntSpecies vsp = (IntSpecies) species;
+            return vsp.vOp(m, n -> a[offset + indexMap[mapOffset + n]]);
+        }
     }
 
     /**
@@ -3190,10 +3192,8 @@ public abstract class IntVector extends AbstractVector<Integer> {
     void intoArray(int[] a, int offset,
                    int[] indexMap, int mapOffset,
                    VectorMask<Integer> m) {
-        IntSpecies vsp = vspecies();
         if (m.allTrue()) {
             intoArray(a, offset, indexMap, mapOffset);
-            return;
         }
         else {
             // FIXME: Cannot vectorize yet, if there's a mask.

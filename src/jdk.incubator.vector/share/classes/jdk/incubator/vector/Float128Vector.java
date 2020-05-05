@@ -183,6 +183,7 @@ final class Float128Vector extends FloatVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Float128Vector uOp(FUnOp f) {
         return (Float128Vector) super.uOpTemplate(f);  // specialize
@@ -461,26 +462,43 @@ final class Float128Vector extends FloatVector {
     }
 
 
+    @ForceInline
     @Override
     public float lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        int bits;
+        switch(i) {
+            case 0: bits = laneHelper(0); break;
+            case 1: bits = laneHelper(1); break;
+            case 2: bits = laneHelper(2); break;
+            case 3: bits = laneHelper(3); break;
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        int bits = (int) VectorSupport.extract(
-                                VCLASS, ETYPE, VLENGTH,
-                                this, i,
-                                (vec, ix) -> {
-                                    float[] vecarr = vec.vec();
-                                    return (long)Float.floatToIntBits(vecarr[ix]);
-                                });
         return Float.intBitsToFloat(bits);
     }
 
+    public int laneHelper(int i) {
+        return (int) VectorSupport.extract(
+                     VCLASS, ETYPE, VLENGTH,
+                     this, i,
+                     (vec, ix) -> {
+                     float[] vecarr = vec.vec();
+                     return (long)Float.floatToIntBits(vecarr[ix]);
+                     });
+    }
+
+    @ForceInline
     @Override
     public Float128Vector withLane(int i, float e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            case 2: return withLaneHelper(2, e);
+            case 3: return withLaneHelper(3, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Float128Vector withLaneHelper(int i, float e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)Float.floatToIntBits(e),
@@ -532,6 +550,7 @@ final class Float128Vector extends FloatVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -596,10 +615,7 @@ final class Float128Vector extends FloatVector {
         @Override
         @ForceInline
         public Float128Mask not() {
-            return (Float128Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Float128Mask.class, int.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -624,6 +640,16 @@ final class Float128Vector extends FloatVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Float128Mask xor(VectorMask<Float> mask) {
+            Objects.requireNonNull(mask);
+            Float128Mask m = (Float128Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Float128Mask.class, int.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -642,12 +668,16 @@ final class Float128Vector extends FloatVector {
                                          (m, __) -> allTrueHelper(((Float128Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Float128Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Float128Mask.class, int.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Float128Mask TRUE_MASK = new Float128Mask(true);
-        static final Float128Mask FALSE_MASK = new Float128Mask(false);
+        private static final Float128Mask  TRUE_MASK = new Float128Mask(true);
+        private static final Float128Mask FALSE_MASK = new Float128Mask(false);
+
     }
 
     // Shuffle
@@ -719,6 +749,7 @@ final class Float128Vector extends FloatVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Float128Shuffle rearrange(VectorShuffle<Float> shuffle) {
             Float128Shuffle s = (Float128Shuffle) shuffle;

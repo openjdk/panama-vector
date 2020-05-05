@@ -52,7 +52,6 @@ class CallNode;
 class CallRuntimeNode;
 class CallStaticJavaNode;
 class CastIINode;
-class CastLLNode;
 class CatchNode;
 class CatchProjNode;
 class CheckCastPPNode;
@@ -672,8 +671,7 @@ public:
       DEFINE_CLASS_ID(Phi,   Type, 0)
       DEFINE_CLASS_ID(ConstraintCast, Type, 1)
         DEFINE_CLASS_ID(CastII, ConstraintCast, 0)
-        DEFINE_CLASS_ID(CastLL, ConstraintCast, 1)
-        DEFINE_CLASS_ID(CheckCastPP, ConstraintCast, 2)
+        DEFINE_CLASS_ID(CheckCastPP, ConstraintCast, 1)
       DEFINE_CLASS_ID(CMove, Type, 3)
       DEFINE_CLASS_ID(SafePointScalarObject, Type, 4)
       DEFINE_CLASS_ID(DecodeNarrowPtr, Type, 5)
@@ -749,13 +747,16 @@ public:
     Flag_is_scheduled                = Flag_is_reduction << 1,
     Flag_has_vector_mask_set         = Flag_is_scheduled << 1,
     Flag_is_expensive                = Flag_has_vector_mask_set << 1,
-    Flag_intel_jcc_erratum           = Flag_is_expensive << 1,
-    _max_flags = (Flag_intel_jcc_erratum << 1) - 1 // allow flags combination
+    _last_flag                       = Flag_is_expensive
   };
+
+  class PD;
 
 private:
   jushort _class_id;
   jushort _flags;
+
+  static juint max_flags();
 
 protected:
   // These methods should be called from constructors only.
@@ -763,11 +764,11 @@ protected:
     _class_id = c; // cast out const
   }
   void init_flags(uint fl) {
-    assert(fl <= _max_flags, "invalid node flag");
+    assert(fl <= max_flags(), "invalid node flag");
     _flags |= fl;
   }
   void clear_flag(uint fl) {
-    assert(fl <= _max_flags, "invalid node flag");
+    assert(fl <= max_flags(), "invalid node flag");
     _flags &= ~fl;
   }
 
@@ -817,7 +818,6 @@ public:
   DEFINE_CLASS_QUERY(CatchProj)
   DEFINE_CLASS_QUERY(CheckCastPP)
   DEFINE_CLASS_QUERY(CastII)
-  DEFINE_CLASS_QUERY(CastLL)
   DEFINE_CLASS_QUERY(ConstraintCast)
   DEFINE_CLASS_QUERY(ClearArray)
   DEFINE_CLASS_QUERY(CMove)
@@ -1570,7 +1570,7 @@ public:
 
   // Used after parsing to remove useless nodes before Iterative GVN
   void remove_useless_nodes(VectorSet& useful);
-
+  
   void remove_useless_nodes(Unique_Node_List& useful) {
     remove_useless_nodes(useful.member_set());
   }

@@ -797,6 +797,7 @@ public class Double256VectorTests extends AbstractVectorTest {
         return new boolean[length];
     };
 
+
     @Test
     static void smokeTest1() {
         DoubleVector three = DoubleVector.broadcast(SPECIES, (byte)-3);
@@ -1196,6 +1197,8 @@ public class Double256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(a, b, r, mask, Double256VectorTests::div);
     }
+
+
 
     static double FIRST_NONZERO(double a, double b) {
         return (double)(Double.doubleToLongBits(a)!=0?a:b);
@@ -3137,6 +3140,35 @@ public class Double256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(a, b, r, Double256VectorTests::gather);
     }
+    static double[] gatherMasked(double a[], int ix, boolean[] mask, int[] b, int iy) {
+        double[] res = new double[SPECIES.length()];
+        for (int i = 0; i < SPECIES.length(); i++) {
+            int bi = iy + i;
+            if (mask[i]) {
+              res[i] = a[b[bi] + ix];
+            }
+        }
+        return res;
+    }
+
+    @Test(dataProvider = "doubleUnaryMaskedOpIndexProvider")
+    static void gatherMaskedDouble256VectorTests(IntFunction<double[]> fa, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
+        double[] a = fa.apply(SPECIES.length());
+        int[] b    = fs.apply(a.length, SPECIES.length());
+        double[] r = new double[a.length];
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Double> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                DoubleVector av = DoubleVector.fromArray(SPECIES, a, i, b, i, vmask);
+                av.intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(a, b, r, mask, Double256VectorTests::gatherMasked);
+    }
+
     static double[] scatter(double a[], int ix, int[] b, int iy) {
       double[] res = new double[SPECIES.length()];
       for (int i = 0; i < SPECIES.length(); i++) {
@@ -3160,6 +3192,44 @@ public class Double256VectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(a, b, r, Double256VectorTests::scatter);
+    }
+
+    static double[] scatterMasked(double r[], double a[], int ix, boolean[] mask, int[] b, int iy) {
+      // First, gather r.
+      double[] oldVal = gather(r, ix, b, iy);
+      double[] newVal = new double[SPECIES.length()];
+
+      // Second, blending it with a.
+      for (int i = 0; i < SPECIES.length(); i++) {
+        newVal[i] = blend(oldVal[i], a[i+ix], mask[i]);
+      }
+
+      // Third, scatter: copy old value of r, and scatter it manually.
+      double[] res = Arrays.copyOfRange(r, ix, ix+SPECIES.length());
+      for (int i = 0; i < SPECIES.length(); i++) {
+        int bi = iy + i;
+        res[b[bi]] = newVal[i];
+      }
+
+      return res;
+    }
+
+    @Test(dataProvider = "scatterMaskedOpIndexProvider")
+    static void scatterMaskedDouble256VectorTests(IntFunction<double[]> fa, IntFunction<double[]> fb, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
+        double[] a = fa.apply(SPECIES.length());
+        int[] b = fs.apply(a.length, SPECIES.length());
+        double[] r = fb.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Double> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
+                av.intoArray(r, i, b, i, vmask);
+            }
+        }
+
+        assertArraysEquals(a, b, r, mask, Double256VectorTests::scatterMasked);
     }
 
 }

@@ -183,6 +183,7 @@ final class Int64Vector extends IntVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Int64Vector uOp(FUnOp f) {
         return (Int64Vector) super.uOpTemplate(f);  // specialize
@@ -467,11 +468,17 @@ final class Int64Vector extends IntVector {
     }
 
 
+    @ForceInline
     @Override
     public int lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return laneHelper(0);
+            case 1: return laneHelper(1);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public int laneHelper(int i) {
         return (int) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -481,11 +488,17 @@ final class Int64Vector extends IntVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public Int64Vector withLane(int i, int e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch (i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Int64Vector withLaneHelper(int i, int e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,
@@ -537,6 +550,7 @@ final class Int64Vector extends IntVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -601,10 +615,7 @@ final class Int64Vector extends IntVector {
         @Override
         @ForceInline
         public Int64Mask not() {
-            return (Int64Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Int64Mask.class, int.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -629,6 +640,16 @@ final class Int64Vector extends IntVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Int64Mask xor(VectorMask<Integer> mask) {
+            Objects.requireNonNull(mask);
+            Int64Mask m = (Int64Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Int64Mask.class, int.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -647,12 +668,16 @@ final class Int64Vector extends IntVector {
                                          (m, __) -> allTrueHelper(((Int64Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Int64Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Int64Mask.class, int.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Int64Mask TRUE_MASK = new Int64Mask(true);
-        static final Int64Mask FALSE_MASK = new Int64Mask(false);
+        private static final Int64Mask  TRUE_MASK = new Int64Mask(true);
+        private static final Int64Mask FALSE_MASK = new Int64Mask(false);
+
     }
 
     // Shuffle
@@ -724,6 +749,7 @@ final class Int64Vector extends IntVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Int64Shuffle rearrange(VectorShuffle<Integer> shuffle) {
             Int64Shuffle s = (Int64Shuffle) shuffle;

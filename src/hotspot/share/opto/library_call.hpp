@@ -156,6 +156,7 @@ class LibraryCallKit : public GraphKit {
                                     int modifier_mask, int modifier_bits,
                                     RegionNode* region);
   Node* generate_interface_guard(Node* kls, RegionNode* region);
+  Node* generate_hidden_class_guard(Node* kls, RegionNode* region);
   Node* generate_array_guard(Node* kls, RegionNode* region) {
     return generate_array_guard_common(kls, region, false, false);
   }
@@ -333,7 +334,7 @@ class LibraryCallKit : public GraphKit {
     VecMaskNotUsed
   };
 
-  bool arch_supports_vector(int op, int num_elem, BasicType type, VectorMaskUseType mask_use_type);
+  bool arch_supports_vector(int op, int num_elem, BasicType type, VectorMaskUseType mask_use_type, bool has_scalar_args = false);
 
   void clear_upper_avx() {
 #ifdef X86

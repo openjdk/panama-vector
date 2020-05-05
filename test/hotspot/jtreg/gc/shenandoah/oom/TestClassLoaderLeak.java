@@ -28,7 +28,7 @@
  * @key gc
  * @requires vm.gc.Shenandoah & !vm.graal.enabled
  * @library /test/lib
- * @run main TestClassLoaderLeak
+ * @run driver TestClassLoaderLeak
  */
 
 import java.util.*;
@@ -126,9 +126,9 @@ public class TestClassLoaderLeak {
         }
 
         String[][][] modeHeuristics = new String[][][] {
-             {{"normal"},    {"adaptive", "compact", "static", "aggressive"}},
-             {{"traversal"}, {"adaptive", "aggressive"}},
-             {{"passive"},   {"passive"}}
+             {{"normal"},  {"adaptive", "compact", "static", "aggressive"}},
+             {{"iu"},      {"adaptive", "aggressive"}},
+             {{"passive"}, {"passive"}}
         };
 
         for (String[][] mh : modeHeuristics) {

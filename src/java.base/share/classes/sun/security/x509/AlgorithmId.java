@@ -26,6 +26,7 @@
 package sun.security.x509;
 
 import java.io.*;
+import java.security.interfaces.RSAKey;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.MGF1ParameterSpec;
@@ -124,9 +125,9 @@ public class AlgorithmId implements Serializable, DerEncoder {
     }
 
     protected void decodeParams() throws IOException {
-        String algidString = algid.toString();
+        String algidName = getName();
         try {
-            algParams = AlgorithmParameters.getInstance(algidString);
+            algParams = AlgorithmParameters.getInstance(algidName);
         } catch (NoSuchAlgorithmException e) {
             /*
              * This algorithm parameter type is not supported, so we cannot
@@ -971,7 +972,7 @@ public class AlgorithmId implements Serializable, DerEncoder {
     /**
      * Extracts the encryption algorithm name from a signature
      * algorithm name.
-      */
+     */
     public static String getEncAlgFromSigAlg(String signatureAlgorithm) {
         signatureAlgorithm = signatureAlgorithm.toUpperCase(Locale.ENGLISH);
         int with = signatureAlgorithm.indexOf("WITH");
@@ -993,7 +994,7 @@ public class AlgorithmId implements Serializable, DerEncoder {
     /**
      * Extracts the digest algorithm name from a signature
      * algorithm name.
-      */
+     */
     public static String getDigAlgFromSigAlg(String signatureAlgorithm) {
         signatureAlgorithm = signatureAlgorithm.toUpperCase(Locale.ENGLISH);
         int with = signatureAlgorithm.indexOf("WITH");
@@ -1041,6 +1042,8 @@ public class AlgorithmId implements Serializable, DerEncoder {
             case "RSA":
                 return ifcFfcStrength(KeyUtil.getKeySize(k))
                     + "withRSA";
+            case "RSASSA-PSS":
+                return "RSASSA-PSS";
             default:
                 return null;
         }
@@ -1103,9 +1106,15 @@ public class AlgorithmId implements Serializable, DerEncoder {
         }
     }
 
-    public static PSSParameterSpec getDefaultAlgorithmParameterSpec(
+    public static AlgorithmParameterSpec getDefaultAlgorithmParameterSpec(
             String sigAlg, PrivateKey k) {
         if (sigAlg.equalsIgnoreCase("RSASSA-PSS")) {
+            if (k instanceof RSAKey) {
+                AlgorithmParameterSpec spec = ((RSAKey) k).getParams();
+                if (spec instanceof PSSParameterSpec) {
+                    return spec;
+                }
+            }
             switch (ifcFfcStrength(KeyUtil.getKeySize(k))) {
                 case "SHA256":
                     return PSSParamsHolder.PSS_256_SPEC;

@@ -4060,8 +4060,8 @@ int MatchRule::is_expensive() const {
         strcmp(opType,"MulReductionVL")==0 ||
         strcmp(opType,"MulReductionVF")==0 ||
         strcmp(opType,"MulReductionVD")==0 ||
-        strcmp(opType,"MinReductionV")== 0 ||
-        strcmp(opType,"MaxReductionV")== 0 ||
+        strcmp(opType,"MinReductionV")==0 ||
+        strcmp(opType,"MaxReductionV")==0 ||
         strcmp(opType,"AndReductionV")==0 ||
         strcmp(opType,"OrReductionV")==0 ||
         strcmp(opType,"XorReductionV")==0 ||
@@ -4162,20 +4162,19 @@ bool MatchRule::is_vector() const {
     "AbsVB","AbsVS","AbsVI","AbsVL","AbsVF","AbsVD",
     "NegVF","NegVD","NegVI",
     "SqrtVD","SqrtVF",
-    "AndV" ,"XorV" ,"OrV", "NotV",
+    "AndV" ,"XorV" ,"OrV",
     "MaxV", "MinV",
     "AddReductionVI", "AddReductionVL",
     "AddReductionVF", "AddReductionVD",
     "MulReductionVI", "MulReductionVL",
     "MulReductionVF", "MulReductionVD",
-    "MulAddVS2VI",
+    "MulAddVS2VI", "MacroLogicV",
     "MaxReductionV", "MinReductionV",
     "AndReductionV", "OrReductionV", "XorReductionV",
     "LShiftCntV","RShiftCntV",
     "LShiftVB","LShiftVS","LShiftVI","LShiftVL",
     "RShiftVB","RShiftVS","RShiftVI","RShiftVL",
     "URShiftVB","URShiftVS","URShiftVI","URShiftVL",
-    "VLShiftV","VRShiftV","VURShiftV",
     "ReplicateB","ReplicateS","ReplicateI","ReplicateL","ReplicateF","ReplicateD",
     "RoundDoubleModeV","LoadVector","StoreVector","LoadVectorGather", "StoreVectorScatter",
     "VectorTest", "VectorLoadMask", "VectorStoreMask", "VectorBlend", "VectorInsert",

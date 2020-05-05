@@ -22,12 +22,12 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package jdk.javadoc.internal.doclets.formats.html;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 
 import com.sun.source.doctree.DocTree;
@@ -43,6 +43,7 @@ import jdk.javadoc.internal.doclets.toolkit.util.DocFileIOException;
 import jdk.javadoc.internal.doclets.toolkit.util.DocPath;
 import jdk.javadoc.internal.doclets.toolkit.util.DocPaths;
 import jdk.javadoc.internal.doclets.toolkit.util.IndexBuilder;
+import jdk.javadoc.internal.doclets.toolkit.util.IndexItem;
 
 /**
  * Generate the file with list of all the classes in this run.
@@ -119,10 +120,11 @@ public class AllClassesIndexWriter extends HtmlDocletWriter {
      * @param content HtmlTree content to which the links will be added
      */
     protected void addContents(Content content) {
-        Table table = new Table(HtmlStyle.typeSummary)
+        Table table = new Table(HtmlStyle.typeSummary, HtmlStyle.summaryTable)
                 .setHeader(new TableHeader(contents.classLabel, contents.descriptionLabel))
                 .setRowScopeColumn(1)
                 .setColumnStyles(HtmlStyle.colFirst, HtmlStyle.colLast)
+                .setId("all-classes-table")
                 .setDefaultTab(resources.getText("doclet.All_Classes"))
                 .addTab(resources.interfaceSummary, utils::isInterface)
                 .addTab(resources.classSummary, e -> utils.isOrdinaryClass((TypeElement)e))
@@ -132,9 +134,9 @@ public class AllClassesIndexWriter extends HtmlDocletWriter {
                 .addTab(resources.annotationTypeSummary, utils::isAnnotationType)
                 .setTabScript(i -> "show(" + i + ");");
         for (Character unicode : indexBuilder.keys()) {
-            for (Element element : indexBuilder.getMemberList(unicode)) {
-                TypeElement typeElement = (TypeElement) element;
-                if (!utils.isCoreClass(typeElement)) {
+            for (IndexItem indexItem : indexBuilder.getMemberList(unicode)) {
+                TypeElement typeElement = (TypeElement) indexItem.getElement();
+                if (typeElement == null || !utils.isCoreClass(typeElement)) {
                     continue;
                 }
                 addTableRow(table, typeElement);

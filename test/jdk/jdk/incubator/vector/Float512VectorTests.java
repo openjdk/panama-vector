@@ -797,6 +797,7 @@ public class Float512VectorTests extends AbstractVectorTest {
         return new boolean[length];
     };
 
+
     @Test
     static void smokeTest1() {
         FloatVector three = FloatVector.broadcast(SPECIES, (byte)-3);
@@ -1196,6 +1197,8 @@ public class Float512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(a, b, r, mask, Float512VectorTests::div);
     }
+
+
 
     static float FIRST_NONZERO(float a, float b) {
         return (float)(Double.doubleToLongBits(a)!=0?a:b);
@@ -3123,6 +3126,35 @@ public class Float512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(a, b, r, Float512VectorTests::gather);
     }
+    static float[] gatherMasked(float a[], int ix, boolean[] mask, int[] b, int iy) {
+        float[] res = new float[SPECIES.length()];
+        for (int i = 0; i < SPECIES.length(); i++) {
+            int bi = iy + i;
+            if (mask[i]) {
+              res[i] = a[b[bi] + ix];
+            }
+        }
+        return res;
+    }
+
+    @Test(dataProvider = "floatUnaryMaskedOpIndexProvider")
+    static void gatherMaskedFloat512VectorTests(IntFunction<float[]> fa, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
+        float[] a = fa.apply(SPECIES.length());
+        int[] b    = fs.apply(a.length, SPECIES.length());
+        float[] r = new float[a.length];
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Float> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                FloatVector av = FloatVector.fromArray(SPECIES, a, i, b, i, vmask);
+                av.intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(a, b, r, mask, Float512VectorTests::gatherMasked);
+    }
+
     static float[] scatter(float a[], int ix, int[] b, int iy) {
       float[] res = new float[SPECIES.length()];
       for (int i = 0; i < SPECIES.length(); i++) {
@@ -3146,6 +3178,44 @@ public class Float512VectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(a, b, r, Float512VectorTests::scatter);
+    }
+
+    static float[] scatterMasked(float r[], float a[], int ix, boolean[] mask, int[] b, int iy) {
+      // First, gather r.
+      float[] oldVal = gather(r, ix, b, iy);
+      float[] newVal = new float[SPECIES.length()];
+
+      // Second, blending it with a.
+      for (int i = 0; i < SPECIES.length(); i++) {
+        newVal[i] = blend(oldVal[i], a[i+ix], mask[i]);
+      }
+
+      // Third, scatter: copy old value of r, and scatter it manually.
+      float[] res = Arrays.copyOfRange(r, ix, ix+SPECIES.length());
+      for (int i = 0; i < SPECIES.length(); i++) {
+        int bi = iy + i;
+        res[b[bi]] = newVal[i];
+      }
+
+      return res;
+    }
+
+    @Test(dataProvider = "scatterMaskedOpIndexProvider")
+    static void scatterMaskedFloat512VectorTests(IntFunction<float[]> fa, IntFunction<float[]> fb, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
+        float[] a = fa.apply(SPECIES.length());
+        int[] b = fs.apply(a.length, SPECIES.length());
+        float[] r = fb.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Float> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+                av.intoArray(r, i, b, i, vmask);
+            }
+        }
+
+        assertArraysEquals(a, b, r, mask, Float512VectorTests::scatterMasked);
     }
 
 }

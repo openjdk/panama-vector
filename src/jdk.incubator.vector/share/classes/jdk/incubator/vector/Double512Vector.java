@@ -183,6 +183,7 @@ final class Double512Vector extends DoubleVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Double512Vector uOp(FUnOp f) {
         return (Double512Vector) super.uOpTemplate(f);  // specialize
@@ -461,26 +462,51 @@ final class Double512Vector extends DoubleVector {
     }
 
 
+    @ForceInline
     @Override
     public double lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        long bits;
+        switch(i) {
+            case 0: bits = laneHelper(0); break;
+            case 1: bits = laneHelper(1); break;
+            case 2: bits = laneHelper(2); break;
+            case 3: bits = laneHelper(3); break;
+            case 4: bits = laneHelper(4); break;
+            case 5: bits = laneHelper(5); break;
+            case 6: bits = laneHelper(6); break;
+            case 7: bits = laneHelper(7); break;
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        long bits = (long) VectorSupport.extract(
-                                VCLASS, ETYPE, VLENGTH,
-                                this, i,
-                                (vec, ix) -> {
-                                    double[] vecarr = vec.vec();
-                                    return (long)Double.doubleToLongBits(vecarr[ix]);
-                                });
         return Double.longBitsToDouble(bits);
     }
 
+    public long laneHelper(int i) {
+        return (long) VectorSupport.extract(
+                     VCLASS, ETYPE, VLENGTH,
+                     this, i,
+                     (vec, ix) -> {
+                     double[] vecarr = vec.vec();
+                     return (long)Double.doubleToLongBits(vecarr[ix]);
+                     });
+    }
+
+    @ForceInline
     @Override
     public Double512Vector withLane(int i, double e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            case 2: return withLaneHelper(2, e);
+            case 3: return withLaneHelper(3, e);
+            case 4: return withLaneHelper(4, e);
+            case 5: return withLaneHelper(5, e);
+            case 6: return withLaneHelper(6, e);
+            case 7: return withLaneHelper(7, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Double512Vector withLaneHelper(int i, double e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)Double.doubleToLongBits(e),
@@ -532,6 +558,7 @@ final class Double512Vector extends DoubleVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -596,10 +623,7 @@ final class Double512Vector extends DoubleVector {
         @Override
         @ForceInline
         public Double512Mask not() {
-            return (Double512Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Double512Mask.class, long.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -624,6 +648,16 @@ final class Double512Vector extends DoubleVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Double512Mask xor(VectorMask<Double> mask) {
+            Objects.requireNonNull(mask);
+            Double512Mask m = (Double512Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Double512Mask.class, long.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -642,12 +676,16 @@ final class Double512Vector extends DoubleVector {
                                          (m, __) -> allTrueHelper(((Double512Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Double512Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Double512Mask.class, long.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Double512Mask TRUE_MASK = new Double512Mask(true);
-        static final Double512Mask FALSE_MASK = new Double512Mask(false);
+        private static final Double512Mask  TRUE_MASK = new Double512Mask(true);
+        private static final Double512Mask FALSE_MASK = new Double512Mask(false);
+
     }
 
     // Shuffle
@@ -719,6 +757,7 @@ final class Double512Vector extends DoubleVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Double512Shuffle rearrange(VectorShuffle<Double> shuffle) {
             Double512Shuffle s = (Double512Shuffle) shuffle;

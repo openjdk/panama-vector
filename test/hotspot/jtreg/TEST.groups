@@ -177,8 +177,7 @@ ctw_3 = \
   applications/ctw/modules/jdk_compiler.java \
   applications/ctw/modules/jdk_internal_vm_compiler.java \
   applications/ctw/modules/jdk_localedata.java \
-  applications/ctw/modules/jdk_localedata_2.java \
-  applications/ctw/modules/jdk_scripting_nashorn.java \
+  applications/ctw/modules/jdk_localedata_2.java
 
 tier1_gc = \
   :tier1_gc_1 \
@@ -324,6 +323,7 @@ hotspot_appcds_dynamic = \
  -runtime/cds/appcds/cacheObject \
  -runtime/cds/appcds/customLoader \
  -runtime/cds/appcds/dynamicArchive \
+ -runtime/cds/appcds/loaderConstraints/DynamicLoaderConstraintsTest.java \
  -runtime/cds/appcds/javaldr/ArrayTest.java \
  -runtime/cds/appcds/javaldr/GCSharedStringsDuringDump.java \
  -runtime/cds/appcds/javaldr/HumongousDuringDump.java \

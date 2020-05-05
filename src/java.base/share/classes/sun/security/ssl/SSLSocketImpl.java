@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -360,7 +360,7 @@ public final class SSLSocketImpl
                 SSLLogger.severe("handshake failed", ioe);
             }
 
-            return SSLSessionImpl.nullSession;
+            return new SSLSessionImpl();
         }
 
         return conContext.conSession;
@@ -619,6 +619,15 @@ public final class SSLSocketImpl
             }
         }
 
+        // Deliver the user_canceled alert and the close notify alert.
+        closeNotify(useUserCanceled);
+
+        if (!isInputShutdown()) {
+            bruteForceCloseInput(hasCloseReceipt);
+        }
+    }
+
+    void closeNotify(boolean useUserCanceled) throws IOException {
         // Need a lock here so that the user_canceled alert and the
         // close_notify alert can be delivered together.
         int linger = getSoLinger();
@@ -633,7 +642,7 @@ public final class SSLSocketImpl
                         conContext.outputRecord.recordLock.tryLock(
                                 linger, TimeUnit.SECONDS)) {
                     try {
-                        handleClosedNotifyAlert(useUserCanceled);
+                        deliverClosedNotify(useUserCanceled);
                     } finally {
                         conContext.outputRecord.recordLock.unlock();
                     }
@@ -687,18 +696,14 @@ public final class SSLSocketImpl
         } else {
             conContext.outputRecord.recordLock.lock();
             try {
-                handleClosedNotifyAlert(useUserCanceled);
+                deliverClosedNotify(useUserCanceled);
             } finally {
                 conContext.outputRecord.recordLock.unlock();
             }
         }
-
-        if (!isInputShutdown()) {
-            bruteForceCloseInput(hasCloseReceipt);
-        }
     }
 
-    private void handleClosedNotifyAlert(
+    private void deliverClosedNotify(
             boolean useUserCanceled) throws IOException {
         try {
             // send a user_canceled alert if needed.
@@ -1111,9 +1116,17 @@ public final class SSLSocketImpl
          * or has been closed, throw an Exception.
          */
         private boolean checkEOF() throws IOException {
-            if (conContext.isInboundClosed()) {
+            if (conContext.isBroken) {
+                if (conContext.closeReason == null) {
+                    return true;
+                } else {
+                    throw new SSLException(
+                            "Connection has closed: " + conContext.closeReason,
+                            conContext.closeReason);
+                }
+            } else if (conContext.isInboundClosed()) {
                 return true;
-            } else if (conContext.isInputCloseNotified || conContext.isBroken) {
+            } else if (conContext.isInputCloseNotified) {
                 if (conContext.closeReason == null) {
                     return true;
                 } else {

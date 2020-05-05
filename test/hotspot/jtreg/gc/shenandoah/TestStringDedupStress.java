@@ -25,7 +25,7 @@
 /*
  * @test TestStringDedupStress
  * @summary Test Shenandoah string deduplication implementation
- * @key gc
+ * @key gc randomness
  * @requires vm.gc.Shenandoah & !vm.graal.enabled
  * @library /test/lib
  * @modules java.base/jdk.internal.misc:open
@@ -46,7 +46,7 @@
 /*
  * @test TestStringDedupStress
  * @summary Test Shenandoah string deduplication implementation
- * @key gc
+ * @key gc randomness
  * @requires vm.gc.Shenandoah & !vm.graal.enabled
  * @library /test/lib
  * @modules java.base/jdk.internal.misc:open
@@ -77,7 +77,7 @@
  /*
  * @test TestStringDedupStress
  * @summary Test Shenandoah string deduplication implementation
- * @key gc
+ * @key gc randomness
  * @requires vm.gc.Shenandoah & !vm.graal.enabled
  * @library /test/lib
  * @modules java.base/jdk.internal.misc:open
@@ -85,22 +85,22 @@
  *          java.management
  *
  * @run main/othervm -Xmx1g -Xlog:gc+stats -Xlog:gc -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -XX:+UseStringDeduplication
- *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=traversal
+ *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=iu
  *      TestStringDedupStress
  *
  * @run main/othervm -Xmx1g -Xlog:gc+stats -Xlog:gc -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -XX:+UseStringDeduplication
- *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=traversal -XX:ShenandoahGCHeuristics=aggressive
+ *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=iu -XX:ShenandoahGCHeuristics=aggressive
  *      -DtargetStrings=2000000
  *      TestStringDedupStress
  *
  * @run main/othervm -Xmx1g -Xlog:gc+stats -Xlog:gc -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -XX:+UseStringDeduplication
- *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=traversal
+ *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=iu
  *      -XX:+ShenandoahOOMDuringEvacALot
  *      -DtargetStrings=2000000
  *      TestStringDedupStress
  *
  * @run main/othervm -Xmx1g -Xlog:gc+stats -Xlog:gc -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -XX:+UseStringDeduplication
- *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=traversal -XX:ShenandoahGCHeuristics=aggressive
+ *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=iu -XX:ShenandoahGCHeuristics=aggressive
  *      -XX:+ShenandoahOOMDuringEvacALot
  *      -DtargetStrings=2000000
  *      TestStringDedupStress
@@ -109,6 +109,7 @@
 import java.lang.management.*;
 import java.lang.reflect.*;
 import java.util.*;
+import jdk.test.lib.Utils;
 
 import sun.misc.*;
 
@@ -163,7 +164,7 @@ public class TestStringDedupStress {
 
     // Generate uniqueStrings number of strings
     private static void generateStrings(ArrayList<StringAndId> strs, int uniqueStrings) {
-        Random rn = new Random();
+        Random rn = Utils.getRandomInstance();
         for (int u = 0; u < uniqueStrings; u++) {
             int n = rn.nextInt(uniqueStrings);
             strs.add(new StringAndId("Unique String " + n, n));
@@ -200,7 +201,7 @@ public class TestStringDedupStress {
     static GarbageCollectorMXBean gcCycleMBean;
 
     public static void main(String[] args) {
-        Random rn = new Random();
+        Random rn = Utils.getRandomInstance();
 
         for (GarbageCollectorMXBean bean : ManagementFactory.getGarbageCollectorMXBeans()) {
             if ("Shenandoah Cycles".equals(bean.getName())) {

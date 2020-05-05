@@ -28,7 +28,6 @@
 #include "gc/shenandoah/shenandoahHeap.inline.hpp"
 #include "gc/shenandoah/shenandoahHeapRegionSet.hpp"
 #include "gc/shenandoah/shenandoahMarkingContext.inline.hpp"
-#include "gc/shenandoah/shenandoahTraversalGC.hpp"
 #include "logging/logStream.hpp"
 #include "runtime/orderAccess.hpp"
 
@@ -126,18 +125,10 @@ HeapWord* ShenandoahFreeSet::allocate_single(ShenandoahAllocRequest& req, bool& 
         }
       }
 
-      // Try to mix the allocation into the mutator view:
-      if (ShenandoahAllowMixedAllocs) {
-        for (size_t c = _mutator_rightmost + 1; c > _mutator_leftmost; c--) {
-          size_t idx = c - 1;
-          if (is_mutator_free(idx)) {
-            HeapWord* result = try_allocate_in(_heap->get_region(idx), req, in_new_region);
-            if (result != NULL) {
-              return result;
-            }
-          }
-        }
-      }
+      // No dice. Do not try to mix mutator and GC allocations, because
+      // URWM moves due to GC allocations would expose unparsable mutator
+      // allocations.
+
       break;
     }
     default:
@@ -150,7 +141,7 @@ HeapWord* ShenandoahFreeSet::allocate_single(ShenandoahAllocRequest& req, bool& 
 HeapWord* ShenandoahFreeSet::try_allocate_in(ShenandoahHeapRegion* r, ShenandoahAllocRequest& req, bool& in_new_region) {
   assert (!has_no_alloc_capacity(r), "Performance: should avoid full regions on this path: " SIZE_FORMAT, r->index());
 
-  if (_heap->is_concurrent_root_in_progress() &&
+  if (_heap->is_concurrent_weak_root_in_progress() &&
       r->is_trash()) {
     return NULL;
   }
@@ -179,9 +170,6 @@ HeapWord* ShenandoahFreeSet::try_allocate_in(ShenandoahHeapRegion* r, Shenandoah
     // Allocation successful, bump stats:
     if (req.is_mutator_alloc()) {
       increase_used(size * HeapWordSize);
-      if (_heap->is_traversal_mode()) {
-        r->update_seqnum_last_alloc_mutator();
-      }
     }
 
     // Record actual allocation size
@@ -189,14 +177,6 @@ HeapWord* ShenandoahFreeSet::try_allocate_in(ShenandoahHeapRegion* r, Shenandoah
 
     if (req.is_gc_alloc()) {
       r->set_update_watermark(r->top());
-      if (_heap->is_concurrent_traversal_in_progress()) {
-        // Traversal needs to traverse through GC allocs. Adjust TAMS to the new top
-        // so that these allocations appear below TAMS, and thus get traversed.
-        // See top of shenandoahTraversal.cpp for an explanation.
-        _heap->marking_context()->capture_top_at_mark_start(r);
-        _heap->traversal_gc()->traversal_set()->add_region_check_for_duplicates(r);
-        OrderAccess::fence();
-      }
     }
   }
 
@@ -325,7 +305,6 @@ HeapWord* ShenandoahFreeSet::allocate_contiguous(ShenandoahAllocRequest& req) {
     }
 
     r->set_top(r->bottom() + used_words);
-    r->reset_alloc_metadata_to_shared();
 
     _mutator_free_bitmap.clear_bit(r->index());
   }
@@ -350,7 +329,7 @@ HeapWord* ShenandoahFreeSet::allocate_contiguous(ShenandoahAllocRequest& req) {
 }
 
 bool ShenandoahFreeSet::can_allocate_from(ShenandoahHeapRegion *r) {
-  return r->is_empty() || (r->is_trash() && !_heap->is_concurrent_root_in_progress());
+  return r->is_empty() || (r->is_trash() && !_heap->is_concurrent_weak_root_in_progress());
 }
 
 size_t ShenandoahFreeSet::alloc_capacity(ShenandoahHeapRegion *r) {

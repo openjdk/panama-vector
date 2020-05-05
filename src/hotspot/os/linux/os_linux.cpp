@@ -110,6 +110,7 @@
 # include <stdint.h>
 # include <inttypes.h>
 # include <sys/ioctl.h>
+# include <linux/elf-em.h>
 
 #ifndef _GNU_SOURCE
   #define _GNU_SOURCE
@@ -1845,11 +1846,11 @@ void * os::dll_load(const char *filename, char *ebuf, int ebuflen) {
     char*         name;         // String representation
   } arch_t;
 
-#ifndef EM_486
-  #define EM_486          6               /* Intel 80486 */
-#endif
 #ifndef EM_AARCH64
   #define EM_AARCH64    183               /* ARM AARCH64 */
+#endif
+#ifndef EM_RISCV
+  #define EM_RISCV      243               /* RISC-V */
 #endif
 
   static const arch_t arch_array[]={
@@ -1877,6 +1878,7 @@ void * os::dll_load(const char *filename, char *ebuf, int ebuflen) {
     {EM_PARISC,      EM_PARISC,  ELFCLASS32, ELFDATA2MSB, (char*)"PARISC"},
     {EM_68K,         EM_68K,     ELFCLASS32, ELFDATA2MSB, (char*)"M68k"},
     {EM_AARCH64,     EM_AARCH64, ELFCLASS64, ELFDATA2LSB, (char*)"AARCH64"},
+    {EM_RISCV,       EM_RISCV,   ELFCLASS64, ELFDATA2LSB, (char*)"RISC-V"},
   };
 
 #if  (defined IA32)
@@ -1911,9 +1913,11 @@ void * os::dll_load(const char *filename, char *ebuf, int ebuflen) {
   static  Elf32_Half running_arch_code=EM_68K;
 #elif  (defined SH)
   static  Elf32_Half running_arch_code=EM_SH;
+#elif  (defined RISCV)
+  static  Elf32_Half running_arch_code=EM_RISCV;
 #else
     #error Method os::dll_load requires that one of following is defined:\
-        AARCH64, ALPHA, ARM, AMD64, IA32, IA64, M68K, MIPS, MIPSEL, PARISC, __powerpc__, __powerpc64__, S390, SH, __sparc
+        AARCH64, ALPHA, ARM, AMD64, IA32, IA64, M68K, MIPS, MIPSEL, PARISC, __powerpc__, __powerpc64__, RISCV, S390, SH, __sparc
 #endif
 
   // Identify compatibility class for VM's architecture and library's architecture
@@ -2055,6 +2059,13 @@ static bool _print_ascii_file(const char* filename, outputStream* st, const char
   return true;
 }
 
+static void _print_ascii_file_h(const char* header, const char* filename, outputStream* st) {
+  st->print("%s", header);
+  if (!_print_ascii_file(filename, st)) {
+    st->print_cr("<Not Available>");
+  }
+}
+
 void os::print_dll_info(outputStream *st) {
   st->print_cr("Dynamic libraries:");
 
@@ -2078,20 +2089,18 @@ int os::get_loaded_modules_info(os::LoadedModulesCallbackFunc callback, void *pa
 
     // Read line by line from 'file'
     while (fgets(line, sizeof(line), procmapsFile) != NULL) {
-      u8 base, top, offset, inode;
-      char permissions[5];
-      char device[6];
+      u8 base, top, inode;
       char name[sizeof(line)];
 
-      // Parse fields from line
-      int matches = sscanf(line, UINT64_FORMAT_X "-" UINT64_FORMAT_X " %4s " UINT64_FORMAT_X " %5s " INT64_FORMAT " %s",
-             &base, &top, permissions, &offset, device, &inode, name);
-      // the last entry 'name' is empty for some entries, so we might have 6 matches instead of 7 for some lines
-      if (matches < 6) continue;
-      if (matches == 6) name[0] = '\0';
+      // Parse fields from line, discard perms, offset and device
+      int matches = sscanf(line, UINT64_FORMAT_X "-" UINT64_FORMAT_X " %*s %*s %*s " INT64_FORMAT " %s",
+             &base, &top, &inode, name);
+      // the last entry 'name' is empty for some entries, so we might have 3 matches instead of 4 for some lines
+      if (matches < 3) continue;
+      if (matches == 3) name[0] = '\0';
 
-      // Filter by device id '00:00' so that we only get file system mapped files.
-      if (strcmp(device, "00:00") != 0) {
+      // Filter by inode 0 so that we only get file system mapped files.
+      if (inode != 0) {
 
         // Call callback with the fields of interest
         if(callback(name, (address)base, (address)top, param)) {
@@ -2499,6 +2508,54 @@ static bool print_model_name_and_flags(outputStream* st, char* buf, size_t bufle
   return false;
 }
 
+// additional information about CPU e.g. available frequency ranges
+static void print_sys_devices_cpu_info(outputStream* st, char* buf, size_t buflen) {
+  _print_ascii_file_h("Online cpus:", "/sys/devices/system/cpu/online", st);
+  _print_ascii_file_h("Offline cpus:", "/sys/devices/system/cpu/offline", st);
+
+  if (ExtensiveErrorReports) {
+    // cache related info (cpu 0, should be similar for other CPUs)
+    for (unsigned int i=0; i < 10; i++) { // handle max. 10 cache entries
+      char hbuf_level[60];
+      char hbuf_type[60];
+      char hbuf_size[60];
+      char hbuf_coherency_line_size[80];
+      snprintf(hbuf_level, 60, "/sys/devices/system/cpu/cpu0/cache/index%u/level", i);
+      snprintf(hbuf_type, 60, "/sys/devices/system/cpu/cpu0/cache/index%u/type", i);
+      snprintf(hbuf_size, 60, "/sys/devices/system/cpu/cpu0/cache/index%u/size", i);
+      snprintf(hbuf_coherency_line_size, 80, "/sys/devices/system/cpu/cpu0/cache/index%u/coherency_line_size", i);
+      if (file_exists(hbuf_level)) {
+        _print_ascii_file_h("cache level:", hbuf_level, st);
+        _print_ascii_file_h("cache type:", hbuf_type, st);
+        _print_ascii_file_h("cache size:", hbuf_size, st);
+        _print_ascii_file_h("cache coherency line size:", hbuf_coherency_line_size, st);
+      }
+    }
+  }
+
+  // we miss the cpufreq entries on Power and s390x
+#if defined(IA32) || defined(AMD64)
+  _print_ascii_file_h("BIOS frequency limitation:", "/sys/devices/system/cpu/cpu0/cpufreq/bios_limit", st);
+  _print_ascii_file_h("Frequency switch latency (ns):", "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_transition_latency", st);
+  _print_ascii_file_h("Available cpu frequencies:", "/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies", st);
+  // min and max should be in the Available range but still print them (not all info might be available for all kernels)
+  if (ExtensiveErrorReports) {
+    _print_ascii_file_h("Maximum cpu frequency:", "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", st);
+    _print_ascii_file_h("Minimum cpu frequency:", "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq", st);
+    _print_ascii_file_h("Current cpu frequency:", "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", st);
+  }
+  // governors are power schemes, see https://wiki.archlinux.org/index.php/CPU_frequency_scaling
+  if (ExtensiveErrorReports) {
+    _print_ascii_file_h("Available governors:", "/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors", st);
+  }
+  _print_ascii_file_h("Current governor:", "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor", st);
+  // Core performance boost, see https://www.kernel.org/doc/Documentation/cpu-freq/boost.txt
+  // Raise operating frequency of some cores in a multi-core package if certain conditions apply, e.g.
+  // whole chip is not fully utilized
+  _print_ascii_file_h("Core performance/turbo boost:", "/sys/devices/system/cpu/cpufreq/boost", st);
+#endif
+}
+
 void os::pd_print_cpu_info(outputStream* st, char* buf, size_t buflen) {
   // Only print the model name if the platform provides this as a summary
   if (!print_model_name_and_flags(st, buf, buflen)) {
@@ -2507,6 +2564,7 @@ void os::pd_print_cpu_info(outputStream* st, char* buf, size_t buflen) {
       st->print_cr("  <Not Available>");
     }
   }
+  print_sys_devices_cpu_info(st, buf, buflen);
 }
 
 #if defined(AMD64) || defined(IA32) || defined(X32)

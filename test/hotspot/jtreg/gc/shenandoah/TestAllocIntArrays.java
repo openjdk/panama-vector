@@ -25,8 +25,9 @@
 /*
  * @test TestAllocIntArrays
  * @summary Acceptance tests: collector can withstand allocation
- * @key gc
+ * @key gc randomness
  * @requires vm.gc.Shenandoah & !vm.graal.enabled
+ * @library /test/lib
  *
  * @run main/othervm -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -Xmx1g -Xms1g
  *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=passive
@@ -52,8 +53,9 @@
 /*
  * @test TestAllocIntArrays
  * @summary Acceptance tests: collector can withstand allocation
- * @key gc
+ * @key gc randomness
  * @requires vm.gc.Shenandoah & !vm.graal.enabled
+ * @library /test/lib
  *
  * @run main/othervm -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -Xmx1g -Xms1g
  *      -XX:+UseShenandoahGC -XX:ShenandoahGCHeuristics=aggressive
@@ -105,44 +107,46 @@
 /*
  * @test TestAllocIntArrays
  * @summary Acceptance tests: collector can withstand allocation
- * @key gc
+ * @key gc randomness
  * @requires vm.gc.Shenandoah & !vm.graal.enabled
+ * @library /test/lib
  *
  * @run main/othervm -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -Xmx1g -Xms1g
- *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=traversal -XX:ShenandoahGCHeuristics=aggressive
+ *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=iu -XX:ShenandoahGCHeuristics=aggressive
  *      -XX:+ShenandoahOOMDuringEvacALot -XX:+ShenandoahVerify
  *      TestAllocIntArrays
  *
  * @run main/othervm -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -Xmx1g -Xms1g
- *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=traversal -XX:ShenandoahGCHeuristics=aggressive
+ *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=iu -XX:ShenandoahGCHeuristics=aggressive
  *      -XX:+ShenandoahAllocFailureALot -XX:+ShenandoahVerify
  *      TestAllocIntArrays
  *
  * @run main/othervm -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -Xmx1g -Xms1g
- *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=traversal -XX:ShenandoahGCHeuristics=aggressive
+ *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=iu -XX:ShenandoahGCHeuristics=aggressive
  *      -XX:+ShenandoahOOMDuringEvacALot
  *      TestAllocIntArrays
  *
  * @run main/othervm -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -Xmx1g -Xms1g
- *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=traversal -XX:ShenandoahGCHeuristics=aggressive
+ *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=iu -XX:ShenandoahGCHeuristics=aggressive
  *      -XX:+ShenandoahAllocFailureALot
  *      TestAllocIntArrays
  *
  * @run main/othervm -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -Xmx1g -Xms1g
- *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=traversal -XX:ShenandoahGCHeuristics=aggressive
+ *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=iu -XX:ShenandoahGCHeuristics=aggressive
  *      TestAllocIntArrays
  *
  * @run main/othervm -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -Xmx1g -Xms1g
- *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=traversal
+ *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=iu
  *      -XX:+ShenandoahVerify
  *      TestAllocIntArrays
  *
  * @run main/othervm -XX:+UnlockDiagnosticVMOptions -XX:+UnlockExperimentalVMOptions -Xmx1g -Xms1g
- *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=traversal
+ *      -XX:+UseShenandoahGC -XX:ShenandoahGCMode=iu
  *      TestAllocIntArrays
  */
 
 import java.util.Random;
+import jdk.test.lib.Utils;
 
 public class TestAllocIntArrays {
 
@@ -155,7 +159,7 @@ public class TestAllocIntArrays {
         final int max = 384 * 1024;
         long count = TARGET_MB * 1024 * 1024 / (16 + 4 * (min + (max - min) / 2));
 
-        Random r = new Random();
+        Random r = Utils.getRandomInstance();
         for (long c = 0; c < count; c++) {
             sink = new int[min + r.nextInt(max - min)];
         }

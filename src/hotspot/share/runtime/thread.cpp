@@ -349,7 +349,6 @@ void Thread::record_stack_base_and_size() {
   // If possible, refrain from doing anything which may crash or assert since
   // quite probably those crash dumps will be useless.
   set_stack_base(os::current_stack_base());
-  assert(_stack_base != NULL, "current_stack_base failed for %s", name());
   set_stack_size(os::current_stack_size());
 
 #ifdef SOLARIS
@@ -1691,6 +1690,7 @@ void JavaThread::initialize() {
   _SleepEvent = ParkEvent::Allocate(this);
   // Setup safepoint state info for this thread
   ThreadSafepointState::create(this);
+  _handshake.set_handshakee(this);
 
   debug_only(_java_call_counter = 0);
 
@@ -4427,6 +4427,16 @@ bool Threads::destroy_vm() {
 
   thread->exit(true);
 
+  // We are no longer on the main thread list but could still be in a
+  // secondary list where another thread may try to interact with us.
+  // So wait until all such interactions are complete before we bring
+  // the VM to the termination safepoint. Normally this would be done
+  // using thread->smr_delete() below where we delete the thread, but
+  // we can't call that after the termination safepoint is active as
+  // we will deadlock on the Threads_lock. Once all interactions are
+  // complete it is safe to directly delete the thread at any time.
+  ThreadsSMRSupport::wait_until_not_protected(thread);
+
   // Stop VM thread.
   {
     // 4945125 The vm thread comes to a safepoint during exit.
@@ -4466,11 +4476,8 @@ bool Threads::destroy_vm() {
   // exit_globals() will delete tty
   exit_globals();
 
-  // We are after VM_Exit::set_vm_exited() so we can't call
-  // thread->smr_delete() or we will block on the Threads_lock.
-  // Deleting the shutdown thread here is safe because another
-  // JavaThread cannot have an active ThreadsListHandle for
-  // this JavaThread.
+  // Deleting the shutdown thread here is safe. See comment on
+  // wait_until_not_protected() above.
   delete thread;
 
 #if INCLUDE_JVMCI

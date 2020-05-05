@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,14 +32,12 @@
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
 import java.io.ObjectStreamField;
 import java.io.Serializable;
-import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
@@ -229,13 +227,6 @@ public class SerialPersistentFieldsTest {
         ClassReader reader = new ClassReader(classBytes);
         ClassWriter writer = new ClassWriter(reader, COMPUTE_MAXS | COMPUTE_FRAMES);
         reader.accept(new SerialPersistentFieldsVisitor(writer, spf), 0);
-        try {
-            FileOutputStream fos = new FileOutputStream("R1.class");
-            fos.write(writer.toByteArray());
-            fos.close();
-        } catch (IOException ioe) {
-            throw new UncheckedIOException(ioe);
-        }
         return writer.toByteArray();
     }
 
@@ -246,7 +237,7 @@ public class SerialPersistentFieldsTest {
         final ObjectStreamField[] spf;
         String className;
         SerialPersistentFieldsVisitor(ClassVisitor cv, ObjectStreamField[] spf) {
-            super(ASM7, cv);
+            super(ASM8, cv);
             this.spf = spf;
         }
         @Override

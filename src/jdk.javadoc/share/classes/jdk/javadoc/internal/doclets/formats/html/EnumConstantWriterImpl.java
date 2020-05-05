@@ -69,9 +69,9 @@ public class EnumConstantWriterImpl extends AbstractMemberWriter
     }
 
     @Override
-    public void addMemberTree(Content memberSummaryTree, Content memberTree) {
-        writer.addMemberTree(HtmlStyle.constantsSummary,
-                SectionName.ENUM_CONSTANT_SUMMARY, memberSummaryTree, memberTree);
+    public void addSummary(Content summariesList, Content content) {
+        writer.addSummary(HtmlStyle.constantsSummary,
+                SectionName.ENUM_CONSTANT_SUMMARY, summariesList, content);
     }
 
     @Override
@@ -121,10 +121,11 @@ public class EnumConstantWriterImpl extends AbstractMemberWriter
     @Override
     public Content getEnumConstantsDetails(Content enumConstantsDetailsTreeHeader,
             Content enumConstantsDetailsTree) {
-        Content enumConstantsDetails =
-                new ContentBuilder(enumConstantsDetailsTreeHeader, enumConstantsDetailsTree);
-        return getMemberTree(HtmlTree.SECTION(HtmlStyle.constantDetails, enumConstantsDetails)
-                .setId(SectionName.ENUM_CONSTANT_DETAIL.getName()));
+        return writer.getDetailsListItem(
+                HtmlTree.SECTION(HtmlStyle.constantDetails)
+                        .setId(SectionName.ENUM_CONSTANT_DETAIL.getName())
+                        .add(enumConstantsDetailsTreeHeader)
+                        .add(enumConstantsDetailsTree));
     }
 
     @Override
@@ -141,7 +142,7 @@ public class EnumConstantWriterImpl extends AbstractMemberWriter
 
     @Override
     protected Table createSummaryTable() {
-        return new Table(HtmlStyle.memberSummary)
+        return new Table(HtmlStyle.memberSummary, HtmlStyle.summaryTable)
                 .setCaption(contents.getContent("doclet.Enum_Constants"))
                 .setHeader(getSummaryTableHeader(typeElement))
                 .setColumnStyles(HtmlStyle.colFirst, HtmlStyle.colLast);

@@ -47,6 +47,7 @@ import java.lang.invoke.VarHandle;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.IntFunction;
 
@@ -97,6 +98,17 @@ public class IntMaxVectorLoadStoreTests extends AbstractVectorTest {
             }
         } catch (AssertionError e) {
             Assert.assertEquals(mask[i % SPECIES.length()] ? a[im[i]] : (int) 0, r[i], "at index #" + i);
+        }
+    }
+
+    static void assertArraysEquals(byte[] a, byte[] r, boolean[] mask) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(mask[(i*8/SPECIES.elementSize()) % SPECIES.length()] ? a[i] : (byte) 0, r[i]);
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(mask[(i*8/SPECIES.elementSize()) % SPECIES.length()] ? a[i] : (byte) 0, r[i], "at index #" + i);
         }
     }
 
@@ -165,6 +177,25 @@ public class IntMaxVectorLoadStoreTests extends AbstractVectorTest {
                 toArray(Object[][]::new);
     }
 
+    @DataProvider
+    public Object[][] intByteArrayProvider() {
+        return INT_GENERATORS.stream().
+                flatMap(fa -> BYTE_ARRAY_GENERATORS.stream().map(fb -> {
+                    return new Object[]{fa, fb};
+                })).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] intByteArrayMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> INT_GENERATORS.stream().
+                        flatMap(fa -> BYTE_ARRAY_GENERATORS.stream().map(fb -> {
+                            return new Object[]{fa, fb, fm};
+                        }))).
+                toArray(Object[][]::new);
+    }
+
     static ByteBuffer toBuffer(int[] a, IntFunction<ByteBuffer> fb) {
         ByteBuffer bb = fb.apply(a.length * SPECIES.elementSize() / 8);
         for (int v : a) {
@@ -180,6 +211,16 @@ public class IntMaxVectorLoadStoreTests extends AbstractVectorTest {
         return d;
     }
 
+    static byte[] toByteArray(int[] a, IntFunction<byte[]> fb, ByteOrder bo) {
+        byte[] b = fb.apply(a.length * SPECIES.elementSize() / 8);
+        IntBuffer bb = ByteBuffer.wrap(b, 0, b.length).order(bo).asIntBuffer();
+        for (int v : a) {
+            bb.put(v);
+        }
+        return b;
+    }
+
+
     interface ToIntF {
         int apply(int i);
     }
@@ -193,6 +234,21 @@ public class IntMaxVectorLoadStoreTests extends AbstractVectorTest {
             a[i] = f.apply(i);
         }
         return a;
+    }
+
+    @Test(dataProvider = "intProvider")
+    static void loadStoreValues(IntFunction<int[]> fa) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = new int[a.length];
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                int[] values = Arrays.copyOfRange(a, i, i + SPECIES.length());
+                IntVector av = IntVector.fromValues(SPECIES, values);
+                System.arraycopy(av.toArray(), 0, r, i, SPECIES.length());
+            }
+        }
+        Assert.assertEquals(a, r);
     }
 
     @Test(dataProvider = "intProvider")
@@ -359,5 +415,67 @@ public class IntMaxVectorLoadStoreTests extends AbstractVectorTest {
         Assert.assertEquals(r.position(), 0, "Result buffer position changed");
         Assert.assertEquals(r.limit(), l, "Result buffer limit changed");
         assertArraysEquals(bufferToArray(a), bufferToArray(r), mask);
+    }
+
+    @Test(dataProvider = "intByteArrayProvider")
+    static void loadStoreByteArray(IntFunction<int[]> fa,
+                                    IntFunction<byte[]> fb) {
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+        byte[] r = fb.apply(a.length);
+
+        int s = SPECIES.length() * SPECIES.elementSize() / 8;
+        int l = a.length;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                IntVector av = IntVector.fromByteArray(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN);
+                av.intoByteArray(r, i);
+            }
+        }
+        Assert.assertEquals(a, r, "Byte arrays not equal");
+    }
+
+    @Test(dataProvider = "intByteArrayMaskProvider")
+    static void loadByteArrayMask(IntFunction<int[]> fa,
+                                  IntFunction<byte[]> fb,
+                                  IntFunction<boolean[]> fm) {
+          byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+          byte[] r = fb.apply(a.length);
+          boolean[] mask = fm.apply(SPECIES.length());
+          VectorMask<Integer> vmask = VectorMask.fromValues(SPECIES, mask);
+
+          int s = SPECIES.length() * SPECIES.elementSize() / 8;
+          int l = a.length;
+
+          for (int ic = 0; ic < INVOC_COUNT; ic++) {
+              for (int i = 0; i < l; i += s) {
+                  IntVector av = IntVector.fromByteArray(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN, vmask);
+                  av.intoByteArray(r, i);
+              }
+          }
+          assertArraysEquals(a, r, mask);
+    }
+
+    @Test(dataProvider = "intByteArrayMaskProvider")
+    static void storeByteArrayMask(IntFunction<int[]> fa,
+                                   IntFunction<byte[]> fb,
+                                   IntFunction<boolean[]> fm) {
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+        byte[] r = fb.apply(a.length);
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromValues(SPECIES, mask);
+
+        int s = SPECIES.length() * SPECIES.elementSize() / 8;
+        int l = a.length;
+
+        a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+        r = fb.apply(a.length);
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                IntVector av = IntVector.fromByteArray(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN);
+                av.intoByteArray(r, i, ByteOrder.LITTLE_ENDIAN, vmask);
+            }
+        }
+        assertArraysEquals(a, r, mask);
     }
 }

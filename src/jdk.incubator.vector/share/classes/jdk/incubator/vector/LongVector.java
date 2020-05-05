@@ -473,6 +473,7 @@ public abstract class LongVector extends AbstractVector<Long> {
      * @see Vector#broadcast(long)
      * @see VectorSpecies#broadcast(long)
      */
+    @ForceInline
     public static LongVector broadcast(VectorSpecies<Long> species, long e) {
         LongSpecies vsp = (LongSpecies) species;
         return vsp.broadcast(e);
@@ -525,7 +526,9 @@ public abstract class LongVector extends AbstractVector<Long> {
             if (op == ZOMO) {
                 return blend(broadcast(-1), compare(NE, 0));
             }
-            if (op == NEG) {
+            if (op == NOT) {
+                return broadcast(-1).lanewiseTemplate(XOR, this);
+            } else if (op == NEG) {
                 // FIXME: Support this in the JIT.
                 return broadcast(0).lanewiseTemplate(SUB, this);
             }
@@ -540,8 +543,6 @@ public abstract class LongVector extends AbstractVector<Long> {
                         v0.uOp((i, a) -> (long) -a);
                 case VECTOR_OP_ABS: return v0 ->
                         v0.uOp((i, a) -> (long) Math.abs(a));
-                case VECTOR_OP_NOT: return v0 ->
-                        v0.uOp((i, a) -> (long) ~a);
                 default: return null;
               }}));
     }
@@ -653,8 +654,12 @@ public abstract class LongVector extends AbstractVector<Long> {
                                   VectorMask<Long> m) {
         LongVector that = (LongVector) v;
         if (op == DIV) {
+            VectorMask<Long> eqz = that.eq((long)0);
+            if (eqz.and(m).anyTrue()) {
+                throw that.divZeroException();
+            }
             // suppress div/0 exceptions in unset lanes
-            that = that.lanewise(NOT, that.eq((long)0));
+            that = that.lanewise(NOT, eqz);
             return blend(lanewise(DIV, that), m);
         }
         return blend(lanewise(op, v), m);
@@ -687,7 +692,6 @@ public abstract class LongVector extends AbstractVector<Long> {
     public final
     LongVector lanewise(VectorOperators.Binary op,
                                   long e) {
-        int opc = opCode(op);
         if (opKind(op, VO_SHIFT) && (long)(int)e == e) {
             return lanewiseShift(op, (int) e);
         }
@@ -735,7 +739,6 @@ public abstract class LongVector extends AbstractVector<Long> {
     final LongVector
     lanewiseShiftTemplate(VectorOperators.Binary op, int e) {
         // Special handling for these.  FIXME: Refactor?
-        int opc = opCode(op);
         assert(opKind(op, VO_SHIFT));
         // As per shift specification for Java, mask the shift count.
         e &= SHIFT_MASK;
@@ -744,6 +747,7 @@ public abstract class LongVector extends AbstractVector<Long> {
             LongVector lo = this.lanewise(LSHR, (op == ROR) ? e : -e);
             return hi.lanewise(OR, lo);
         }
+        int opc = opCode(op);
         return VectorSupport.broadcastInt(
             opc, getClass(), long.class, length(),
             this, e,
@@ -2804,17 +2808,14 @@ public abstract class LongVector extends AbstractVector<Long> {
                                    long[] a, int offset,
                                    int[] indexMap, int mapOffset,
                                    VectorMask<Long> m) {
-        LongSpecies vsp = (LongSpecies) species;
-
-        // FIXME This can result in out of bounds errors for unset mask lanes
-        // FIX = Use a scatter instruction which routes the unwanted lanes
-        // into a bit-bucket variable (private to implementation).
-        // This requires a 2-D scatter in order to set a second base address.
-        // See notes in https://bugs.openjdk.java.net/browse/JDK-8223367
-        assert(m.allTrue());
-        return (LongVector)
-            zero(species).blend(fromArray(species, a, offset, indexMap, mapOffset), m);
-
+        if (m.allTrue()) {
+            return fromArray(species, a, offset, indexMap, mapOffset);
+        }
+        else {
+            // FIXME: Cannot vectorize yet, if there's a mask.
+            LongSpecies vsp = (LongSpecies) species;
+            return vsp.vOp(m, n -> a[offset + indexMap[mapOffset + n]]);
+        }
     }
 
     /**
@@ -3094,10 +3095,8 @@ public abstract class LongVector extends AbstractVector<Long> {
     void intoArray(long[] a, int offset,
                    int[] indexMap, int mapOffset,
                    VectorMask<Long> m) {
-        LongSpecies vsp = vspecies();
         if (m.allTrue()) {
             intoArray(a, offset, indexMap, mapOffset);
-            return;
         }
         else {
             // FIXME: Cannot vectorize yet, if there's a mask.

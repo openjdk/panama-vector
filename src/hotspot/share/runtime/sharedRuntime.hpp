@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -341,6 +341,9 @@ class SharedRuntime: AllStatic {
   // Find the method that called us.
   static methodHandle find_callee_method(JavaThread* thread, TRAPS);
 
+  static void monitor_enter_helper(oopDesc* obj, BasicLock* lock, JavaThread* thread);
+
+  static void monitor_exit_helper(oopDesc* obj, BasicLock* lock, JavaThread* thread);
 
  private:
   static Handle find_callee_info(JavaThread* thread,
@@ -390,6 +393,10 @@ class SharedRuntime: AllStatic {
   // passed in a register OR in a stack slot.
   static int c_calling_convention(const BasicType *sig_bt, VMRegPair *regs, VMRegPair *regs2,
                                   int total_args_passed);
+
+  static int vector_calling_convention(VMRegPair *regs,
+                                       uint num_bits,
+                                       uint total_args_passed);
 
   static size_t trampoline_size();
 

@@ -1224,11 +1224,51 @@ static inline Assembler::AvxVectorLen vector_length_encoding(const MachNode* use
   return vector_length_encoding(def);
 }
 
+class Node::PD {
+public:
+  enum NodeFlags {
+    Flag_intel_jcc_erratum = Node::_last_flag << 1,
+    _last_flag             = Flag_intel_jcc_erratum
+  };
+};
+
 %} // end source_hpp
 
 source %{
 
 #include "opto/addnode.hpp"
+#include "c2_intelJccErratum_x86.hpp"
+
+void PhaseOutput::pd_perform_mach_node_analysis() {
+  if (VM_Version::has_intel_jcc_erratum()) {
+    int extra_padding = IntelJccErratum::tag_affected_machnodes(C, C->cfg(), C->regalloc());
+    _buf_sizes._code += extra_padding;
+  }
+}
+
+int MachNode::pd_alignment_required() const {
+  PhaseOutput* output = Compile::current()->output();
+  Block* block = output->block();
+  int index = output->index();
+  if (VM_Version::has_intel_jcc_erratum() && IntelJccErratum::is_jcc_erratum_branch(block, this, index)) {
+    // Conservatively add worst case padding. We assume that relocInfo::addr_unit() is 1 on x86.
+    return IntelJccErratum::largest_jcc_size() + 1;
+  } else {
+    return 1;
+  }
+}
+
+int MachNode::compute_padding(int current_offset) const {
+  if (flags() & Node::PD::Flag_intel_jcc_erratum) {
+    Compile* C = Compile::current();
+    PhaseOutput* output = C->output();
+    Block* block = output->block();
+    int index = output->index();
+    return IntelJccErratum::compute_padding(current_offset, this, block, index, C->regalloc());
+  } else {
+    return 0;
+  }
+}
 
 // Emit exception handler code.
 // Stuff framesize into a register and call a VM stub routine.
@@ -1468,9 +1508,6 @@ const bool Matcher::match_rule_supported(int opcode) {
         return false; // 128bit vroundpd is not available
       }
       break;
-    case Op_VLShiftV:
-    case Op_VRShiftV:
-    case Op_VURShiftV:
     case Op_LoadVectorGather:
       if (UseAVX < 2) {
         return false;
@@ -1479,6 +1516,11 @@ const bool Matcher::match_rule_supported(int opcode) {
     case Op_FmaVD:
     case Op_FmaVF:
       if (!UseFMA) {
+        return false;
+      }
+      break;
+    case Op_MacroLogicV:
+      if (UseAVX < 3 || !UseVectorMacroLogic) {
         return false;
       }
       break;
@@ -1520,8 +1562,6 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
   //   * AVX512BW supports 512bit vectors for BYTE, SHORT, and CHAR types.
   // There's also a limit on minimum vector size supported: 2 elements (or 4 bytes for BYTE).
   // And MaxVectorSize is taken into account as well.
-
-  int size_in_bits = vlen * type2aelembytes(bt) * BitsPerByte;
   if (!vector_size_supported(bt, vlen)) {
     return false;
   }
@@ -1529,6 +1569,7 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
   //   * implementation limitations
   //   * some 512bit vector operations on FLOAT and DOUBLE types require AVX512DQ
   //   * 128bit vroundpd instruction is present only in AVX1
+  int size_in_bits = vlen * type2aelembytes(bt) * BitsPerByte;
   switch (opcode) {
     case Op_AbsVF:
     case Op_NegVF:
@@ -1546,6 +1587,12 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
     case Op_CMoveVF:
       if (vlen != 8) {
         return false; // implementation limitation (only vcmov8F_reg is present)
+      }
+      break;
+    case Op_MacroLogicV:
+      if (!VM_Version::supports_evex() ||
+          ((size_in_bits != 512) && !VM_Version::supports_avx512vl())) {
+        return false;
       }
       break;
     case Op_CMoveVD:
@@ -1696,7 +1743,7 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
 // x86 supports generic vector operands: vec and legVec.
 const bool Matcher::supports_generic_vector_operands = true;
 
-MachOper* Matcher::specialize_generic_vector_operand(MachOper* generic_opnd, uint ideal_reg, bool is_temp) {
+MachOper* Matcher::pd_specialize_generic_vector_operand(MachOper* generic_opnd, uint ideal_reg, bool is_temp) {
   assert(Matcher::is_generic_vector(generic_opnd), "not generic");
   bool legacy = (generic_opnd->opcode() == LEGVEC);
   if (!VM_Version::supports_avx512vlbwdq() && // KNL
@@ -1746,6 +1793,10 @@ bool Matcher::is_generic_vector(MachOper* opnd) {
 }
 
 //------------------------------------------------------------------------
+
+bool Matcher::supports_vector_variable_shifts(void) {
+  return (UseAVX >= 2);
+}
 
 const bool Matcher::has_predicated_vectors(void) {
   bool ret_value = false;
@@ -1836,11 +1887,6 @@ const uint Matcher::vector_ideal_reg(int size) {
   return 0;
 }
 
-// Only lowest bits of xmm reg are used for vector shift count.
-const uint Matcher::vector_shift_count_ideal_reg(int size) {
-  return Op_VecS;
-}
-
 // x86 supports misaligned vectors store/load.
 const bool Matcher::misaligned_vectors_ok() {
   return true;
@@ -1882,10 +1928,119 @@ static bool clone_shift(Node* shift, Matcher* matcher, Matcher::MStack& mstack, 
   return false;
 }
 
+// This function identifies sub-graphs in which a 'load' node is
+// input to two different nodes, and such that it can be matched
+// with BMI instructions like blsi, blsr, etc.
+// Example : for b = -a[i] & a[i] can be matched to blsi r32, m32.
+// The graph is (AndL (SubL Con0 LoadL*) LoadL*), where LoadL*
+// refers to the same node.
+//
+// Match the generic fused operations pattern (op1 (op2 Con{ConType} mop) mop)
+// This is a temporary solution until we make DAGs expressible in ADL.
+template<typename ConType>
+class FusedPatternMatcher {
+  Node* _op1_node;
+  Node* _mop_node;
+  int _con_op;
+
+  static int match_next(Node* n, int next_op, int next_op_idx) {
+    if (n->in(1) == NULL || n->in(2) == NULL) {
+      return -1;
+    }
+
+    if (next_op_idx == -1) { // n is commutative, try rotations
+      if (n->in(1)->Opcode() == next_op) {
+        return 1;
+      } else if (n->in(2)->Opcode() == next_op) {
+        return 2;
+      }
+    } else {
+      assert(next_op_idx > 0 && next_op_idx <= 2, "Bad argument index");
+      if (n->in(next_op_idx)->Opcode() == next_op) {
+        return next_op_idx;
+      }
+    }
+    return -1;
+  }
+
+ public:
+  FusedPatternMatcher(Node* op1_node, Node* mop_node, int con_op) :
+    _op1_node(op1_node), _mop_node(mop_node), _con_op(con_op) { }
+
+  bool match(int op1, int op1_op2_idx,  // op1 and the index of the op1->op2 edge, -1 if op1 is commutative
+             int op2, int op2_con_idx,  // op2 and the index of the op2->con edge, -1 if op2 is commutative
+             typename ConType::NativeType con_value) {
+    if (_op1_node->Opcode() != op1) {
+      return false;
+    }
+    if (_mop_node->outcnt() > 2) {
+      return false;
+    }
+    op1_op2_idx = match_next(_op1_node, op2, op1_op2_idx);
+    if (op1_op2_idx == -1) {
+      return false;
+    }
+    // Memory operation must be the other edge
+    int op1_mop_idx = (op1_op2_idx & 1) + 1;
+
+    // Check that the mop node is really what we want
+    if (_op1_node->in(op1_mop_idx) == _mop_node) {
+      Node* op2_node = _op1_node->in(op1_op2_idx);
+      if (op2_node->outcnt() > 1) {
+        return false;
+      }
+      assert(op2_node->Opcode() == op2, "Should be");
+      op2_con_idx = match_next(op2_node, _con_op, op2_con_idx);
+      if (op2_con_idx == -1) {
+        return false;
+      }
+      // Memory operation must be the other edge
+      int op2_mop_idx = (op2_con_idx & 1) + 1;
+      // Check that the memory operation is the same node
+      if (op2_node->in(op2_mop_idx) == _mop_node) {
+        // Now check the constant
+        const Type* con_type = op2_node->in(op2_con_idx)->bottom_type();
+        if (con_type != Type::TOP && ConType::as_self(con_type)->get_con() == con_value) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+};
+
+static bool is_bmi_pattern(Node* n, Node* m) {
+  assert(UseBMI1Instructions, "sanity");
+  if (n != NULL && m != NULL) {
+    if (m->Opcode() == Op_LoadI) {
+      FusedPatternMatcher<TypeInt> bmii(n, m, Op_ConI);
+      return bmii.match(Op_AndI, -1, Op_SubI,  1,  0)  ||
+             bmii.match(Op_AndI, -1, Op_AddI, -1, -1)  ||
+             bmii.match(Op_XorI, -1, Op_AddI, -1, -1);
+    } else if (m->Opcode() == Op_LoadL) {
+      FusedPatternMatcher<TypeLong> bmil(n, m, Op_ConL);
+      return bmil.match(Op_AndL, -1, Op_SubL,  1,  0) ||
+             bmil.match(Op_AndL, -1, Op_AddL, -1, -1) ||
+             bmil.match(Op_XorL, -1, Op_AddL, -1, -1);
+    }
+  }
+  return false;
+}
+
+// Should the matcher clone input 'm' of node 'n'?
+bool Matcher::pd_clone_node(Node* n, Node* m, Matcher::MStack& mstack) {
+  // If 'n' and 'm' are part of a graph for BMI instruction, clone the input 'm'.
+  if (UseBMI1Instructions && is_bmi_pattern(n, m)) {
+    mstack.push(m, Visit);
+    return true;
+  }
+  return false;
+}
+
 // Should the Matcher clone shifts on addressing modes, expecting them
 // to be subsumed into complex addressing expressions or compute them
 // into registers?
-bool Matcher::clone_address_expressions(AddPNode* m, Matcher::MStack& mstack, VectorSet& address_visited) {
+bool Matcher::pd_clone_address_expressions(AddPNode* m, Matcher::MStack& mstack, VectorSet& address_visited) {
   Node *off = m->in(AddPNode::Offset);
   if (off->is_Con()) {
     address_visited.test_set(m->_idx); // Flag as address_visited
@@ -3771,6 +3926,20 @@ instruct ReplI_zero(vec dst, immI_0 zero) %{
   ins_pipe( fpu_reg_reg );
 %}
 
+instruct ReplI_M1(vec dst, immI_M1 con) %{
+  predicate(UseAVX > 0);
+  match(Set dst (ReplicateB con));
+  match(Set dst (ReplicateS con));
+  match(Set dst (ReplicateI con));
+  effect(TEMP dst);
+  format %{ "vallones $dst" %}
+  ins_encode %{
+    int vector_len = vector_length_encoding(this);
+    __ vallones($dst$$XMMRegister, vector_len);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 // ====================ReplicateL=======================================
 
 #ifdef _LP64
@@ -3903,6 +4072,18 @@ instruct ReplL_zero(vec dst, immL0 zero) %{
   ins_pipe( fpu_reg_reg );
 %}
 
+instruct ReplL_M1(vec dst, immL_M1 con) %{
+  predicate(UseAVX > 0);
+  match(Set dst (ReplicateL con));
+  effect(TEMP dst);
+  format %{ "vallones $dst" %}
+  ins_encode %{
+    int vector_len = vector_length_encoding(this);
+    __ vallones($dst$$XMMRegister, vector_len);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 // ====================ReplicateF=======================================
 
 instruct ReplF_reg(vec dst, vlRegF src) %{
@@ -4013,12 +4194,12 @@ instruct ReplD_zero(vec dst, immD0 zero) %{
 // ====================VECTOR INSERT=======================================
 
 instruct insert(vec dst, rRegI val, immU8 idx) %{
-  predicate(vector_length_in_bytes(n) >=  8 &&
-            vector_length_in_bytes(n) <= 16);
+  predicate(vector_length_in_bytes(n) < 32);
   match(Set dst (VectorInsert (Binary dst val) idx));
   format %{ "vector_insert $dst,$val,$idx" %}
   ins_encode %{
     assert(UseSSE >= 4, "required");
+    assert(vector_length_in_bytes(this) >= 8, "required");
 
     BasicType elem_bt = vector_element_basic_type(this);
 
@@ -4048,7 +4229,7 @@ instruct insert32(vec dst, vec src, rRegI val, immU8 idx, vec vtmp) %{
     uint y_idx = ($idx$$constant >> log2epr) & 1;
     __ vextracti128($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
     __ vinsert(elem_bt, $vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$Register, x_idx);
-    __ vinserti128($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+    __ vinserti128($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4072,7 +4253,7 @@ instruct insert64(vec dst, vec src, rRegI val, immU8 idx, legVec vtmp) %{
     uint y_idx = ($idx$$constant >> log2epr) & 3;
     __ vextracti32x4($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
     __ vinsert(elem_bt, $vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$Register, x_idx);
-    __ vinserti32x4($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+    __ vinserti32x4($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4106,7 +4287,7 @@ instruct insert4L(vec dst, vec src, rRegL val, immU8 idx, vec vtmp) %{
     int vlen_enc = Assembler::AVX_256bit;
     __ vextracti128($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
     __ vpinsrq($vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$Register, x_idx);
-    __ vinserti128($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+    __ vinserti128($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4124,15 +4305,14 @@ instruct insert8L(vec dst, vec src, rRegL val, immU8 idx, legVec vtmp) %{
     uint y_idx = ($idx$$constant >> 1) & 3;
     __ vextracti32x4($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
     __ vpinsrq($vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$Register, x_idx);
-    __ vinserti32x4($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+    __ vinserti32x4($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
   %}
   ins_pipe( pipe_slow );
 %}
 #endif
 
 instruct insertF(vec dst, regF val, immU8 idx) %{
-  predicate(vector_length(n) >= 2 &&
-            vector_length(n) <= 4);
+  predicate(vector_length(n) < 8);
   match(Set dst (VectorInsert (Binary dst val) idx));
   format %{ "vector_insert $dst,$val,$idx" %}
   ins_encode %{
@@ -4162,13 +4342,13 @@ instruct vinsertF(vec dst, vec src, regF val, immU8 idx, vec vtmp) %{
       int vlen_enc = Assembler::AVX_256bit;
       __ vextracti128($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
       __ vinsertps($vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$XMMRegister, x_idx);
-      __ vinserti128($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+      __ vinserti128($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
     } else {
       assert(vlen == 16, "sanity");
       uint y_idx = ($idx$$constant >> 2) & 3;
       __ vextracti32x4($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
       __ vinsertps($vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$XMMRegister, x_idx);
-      __ vinserti32x4($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+      __ vinserti32x4($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
     }
   %}
   ins_pipe( pipe_slow );
@@ -4206,7 +4386,7 @@ instruct insert4D(vec dst, vec src, regD val, immU8 idx, rRegL tmp, vec vtmp) %{
     __ movq($tmp$$Register, $val$$XMMRegister);
     __ vextracti128($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
     __ vpinsrq($vtmp$$XMMRegister, $vtmp$$XMMRegister, $tmp$$Register, x_idx);
-    __ vinserti128($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+    __ vinserti128($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4225,7 +4405,7 @@ instruct insert8D(vec dst, vec src, regD val, immI idx, rRegL tmp, legVec vtmp) 
     __ movq($tmp$$Register, $val$$XMMRegister);
     __ vextracti32x4($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
     __ vpinsrq($vtmp$$XMMRegister, $vtmp$$XMMRegister, $tmp$$Register, x_idx);
-    __ vinserti32x4($dst$$XMMRegister, $dst$$XMMRegister, $vtmp$$XMMRegister, y_idx);
+    __ vinserti32x4($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -5724,7 +5904,7 @@ instruct vshiftcnt(vec dst, rRegI cnt) %{
 
 // Byte vector shift
 instruct vshiftB(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
-  predicate(vector_length(n) <= 8);
+  predicate(vector_length(n) <= 8 && VectorNode::is_vshift_cnt(n->in(2)));
   match(Set dst ( LShiftVB src shift));
   match(Set dst ( RShiftVB src shift));
   match(Set dst (URShiftVB src shift));
@@ -5733,7 +5913,7 @@ instruct vshiftB(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
   ins_encode %{
     assert(UseSSE > 3, "required");
     int opcode = this->ideal_Opcode();
-    bool sign = (opcode == Op_URShiftVB) ? false : true;
+    bool sign = (opcode != Op_URShiftVB);
     __ vextendbw(sign, $tmp$$XMMRegister, $src$$XMMRegister);
     __ vshiftw(opcode, $tmp$$XMMRegister, $shift$$XMMRegister);
     __ movdqu($dst$$XMMRegister, ExternalAddress(vector_short_to_byte_mask()), $scratch$$Register);
@@ -5744,7 +5924,8 @@ instruct vshiftB(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
 %}
 
 instruct vshift16B(vec dst, vec src, vec shift, vec tmp1, vec tmp2, rRegI scratch) %{
-  predicate(vector_length(n) == 16 && UseAVX <= 1);
+  predicate(vector_length(n) == 16 && VectorNode::is_vshift_cnt(n->in(2)) &&
+            UseAVX <= 1);
   match(Set dst ( LShiftVB src shift));
   match(Set dst ( RShiftVB src shift));
   match(Set dst (URShiftVB src shift));
@@ -5753,7 +5934,7 @@ instruct vshift16B(vec dst, vec src, vec shift, vec tmp1, vec tmp2, rRegI scratc
   ins_encode %{
     assert(UseSSE > 3, "required");
     int opcode = this->ideal_Opcode();
-    bool sign = (opcode == Op_URShiftVB) ? false : true;
+    bool sign = (opcode != Op_URShiftVB);
     __ vextendbw(sign, $tmp1$$XMMRegister, $src$$XMMRegister);
     __ vshiftw(opcode, $tmp1$$XMMRegister, $shift$$XMMRegister);
     __ pshufd($tmp2$$XMMRegister, $src$$XMMRegister, 0xE);
@@ -5768,7 +5949,8 @@ instruct vshift16B(vec dst, vec src, vec shift, vec tmp1, vec tmp2, rRegI scratc
 %}
 
 instruct vshift16B_avx(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
-  predicate(vector_length(n) == 16 && UseAVX > 1);
+  predicate(vector_length(n) == 16 && VectorNode::is_vshift_cnt(n->in(2)) &&
+            UseAVX > 1);
   match(Set dst ( LShiftVB src shift));
   match(Set dst ( RShiftVB src shift));
   match(Set dst (URShiftVB src shift));
@@ -5776,7 +5958,7 @@ instruct vshift16B_avx(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
   format %{"vector_byte_shift $dst,$src,$shift" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
-    bool sign = (opcode == Op_URShiftVB) ? false : true;
+    bool sign = (opcode != Op_URShiftVB);
     int vlen_enc = Assembler::AVX_256bit;
     __ vextendbw(sign, $tmp$$XMMRegister, $src$$XMMRegister, vlen_enc);
     __ vshiftw(opcode, $tmp$$XMMRegister, $tmp$$XMMRegister, $shift$$XMMRegister, vlen_enc);
@@ -5788,7 +5970,7 @@ instruct vshift16B_avx(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
 %}
 
 instruct vshift32B_avx(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
-  predicate(vector_length(n) == 32);
+  predicate(vector_length(n) == 32 && VectorNode::is_vshift_cnt(n->in(2)));
   match(Set dst ( LShiftVB src shift));
   match(Set dst ( RShiftVB src shift));
   match(Set dst (URShiftVB src shift));
@@ -5797,7 +5979,7 @@ instruct vshift32B_avx(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
   ins_encode %{
     assert(UseAVX > 1, "required");
     int opcode = this->ideal_Opcode();
-    bool sign = (opcode == Op_URShiftVB) ? false : true;
+    bool sign = (opcode != Op_URShiftVB);
     int vlen_enc = Assembler::AVX_256bit;
     __ vextracti128_high($tmp$$XMMRegister, $src$$XMMRegister);
     __ vextendbw(sign, $tmp$$XMMRegister, $tmp$$XMMRegister, vlen_enc);
@@ -5813,7 +5995,7 @@ instruct vshift32B_avx(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
 %}
 
 instruct vshift64B_avx(vec dst, vec src, vec shift, vec tmp1, vec tmp2, rRegI scratch) %{
-  predicate(vector_length(n) == 64);
+  predicate(vector_length(n) == 64 && VectorNode::is_vshift_cnt(n->in(2)));
   match(Set dst ( LShiftVB src shift));
   match(Set dst  (RShiftVB src shift));
   match(Set dst (URShiftVB src shift));
@@ -5822,7 +6004,7 @@ instruct vshift64B_avx(vec dst, vec src, vec shift, vec tmp1, vec tmp2, rRegI sc
   ins_encode %{
     assert(UseAVX > 2, "required");
     int opcode = this->ideal_Opcode();
-    bool sign = (opcode == Op_URShiftVB) ? false : true;
+    bool sign = (opcode != Op_URShiftVB);
     int vlen_enc = Assembler::AVX_512bit;
     __ vextracti64x4($tmp1$$XMMRegister, $src$$XMMRegister, 1);
     __ vextendbw(sign, $tmp1$$XMMRegister, $tmp1$$XMMRegister, vlen_enc);
@@ -5846,6 +6028,7 @@ instruct vshift64B_avx(vec dst, vec src, vec shift, vec tmp1, vec tmp2, rRegI sc
 // unsigned values.
 // Shorts/Chars vector left shift
 instruct vshiftS(vec dst, vec src, vec shift) %{
+  predicate(VectorNode::is_vshift_cnt(n->in(2)));
   match(Set dst ( LShiftVS src shift));
   match(Set dst ( RShiftVS src shift));
   match(Set dst (URShiftVS src shift));
@@ -5876,6 +6059,7 @@ instruct vshiftS(vec dst, vec src, vec shift) %{
 
 // Integers vector left shift
 instruct vshiftI(vec dst, vec src, vec shift) %{
+  predicate(VectorNode::is_vshift_cnt(n->in(2)));
   match(Set dst ( LShiftVI src shift));
   match(Set dst ( RShiftVI src shift));
   match(Set dst (URShiftVI src shift));
@@ -5903,6 +6087,7 @@ instruct vshiftI(vec dst, vec src, vec shift) %{
 
 // Longs vector shift
 instruct vshiftL(vec dst, vec src, vec shift) %{
+  predicate(VectorNode::is_vshift_cnt(n->in(2)));
   match(Set dst ( LShiftVL src shift));
   match(Set dst (URShiftVL src shift));
   effect(TEMP dst, USE src, USE shift);
@@ -5924,7 +6109,7 @@ instruct vshiftL(vec dst, vec src, vec shift) %{
 // -------------------ArithmeticRightShift -----------------------------------
 // Long vector arithmetic right shift
 instruct vshiftL_arith_reg(vec dst, vec src, vec shift, vec tmp, rRegI scratch) %{
-  predicate(UseAVX <= 2);
+  predicate(VectorNode::is_vshift_cnt(n->in(2)) && UseAVX <= 2);
   match(Set dst (RShiftVL src shift));
   effect(TEMP dst, TEMP tmp, TEMP scratch);
   format %{ "vshiftq $dst,$src,$shift" %}
@@ -5953,7 +6138,7 @@ instruct vshiftL_arith_reg(vec dst, vec src, vec shift, vec tmp, rRegI scratch) 
 %}
 
 instruct vshiftL_arith_reg_evex(vec dst, vec src, vec shift) %{
-  predicate(UseAVX > 2);
+  predicate(VectorNode::is_vshift_cnt(n->in(2)) && UseAVX > 2);
   match(Set dst (RShiftVL src shift));
   format %{ "vshiftq $dst,$src,$shift" %}
   ins_encode %{
@@ -5966,11 +6151,12 @@ instruct vshiftL_arith_reg_evex(vec dst, vec src, vec shift) %{
 // ------------------- Variable Shift -----------------------------
 // Byte variable shift
 instruct vshift8B_var_nobw(vec dst, vec src, vec shift, vec vtmp, rRegP scratch) %{
-  predicate(vector_length(n) <= 8 && vector_element_basic_type(n) == T_BYTE &&
+  predicate(vector_length(n) <= 8 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             !VM_Version::supports_avx512bw());
-  match(Set dst ( VLShiftV src shift));
-  match(Set dst ( VRShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVB src shift));
+  match(Set dst ( RShiftVB src shift));
+  match(Set dst (URShiftVB src shift));
   effect(TEMP dst, TEMP vtmp, TEMP scratch);
   format %{ "vector_varshift_byte $dst, $src, $shift\n\t! using $vtmp, $scratch as TEMP" %}
   ins_encode %{
@@ -5985,11 +6171,12 @@ instruct vshift8B_var_nobw(vec dst, vec src, vec shift, vec vtmp, rRegP scratch)
 %}
 
 instruct vshift16B_var_nobw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, rRegP scratch) %{
-  predicate(vector_length(n) == 16 && vector_element_basic_type(n) == T_BYTE &&
+  predicate(vector_length(n) == 16 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             !VM_Version::supports_avx512bw());
-  match(Set dst ( VLShiftV src shift));
-  match(Set dst ( VRShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVB src shift));
+  match(Set dst ( RShiftVB src shift));
+  match(Set dst (URShiftVB src shift));
   effect(TEMP dst, TEMP vtmp1, TEMP vtmp2, TEMP scratch);
   format %{ "vector_varshift_byte $dst, $src, $shift\n\t! using $vtmp1, $vtmp2 and $scratch as TEMP" %}
   ins_encode %{
@@ -6012,11 +6199,12 @@ instruct vshift16B_var_nobw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, r
 %}
 
 instruct vshift32B_var_nobw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, vec vtmp3, vec vtmp4, rRegP scratch) %{
-  predicate(vector_length(n) == 32 && vector_element_basic_type(n) == T_BYTE &&
+  predicate(vector_length(n) == 32 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             !VM_Version::supports_avx512bw());
-  match(Set dst ( VLShiftV src shift));
-  match(Set dst ( VRShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVB src shift));
+  match(Set dst ( RShiftVB src shift));
+  match(Set dst (URShiftVB src shift));
   effect(TEMP dst, TEMP vtmp1, TEMP vtmp2, TEMP vtmp3, TEMP vtmp4, TEMP scratch);
   format %{ "vector_varshift_byte $dst, $src, $shift\n\t using $vtmp1, $vtmp2, $vtmp3, $vtmp4 and $scratch as TEMP" %}
   ins_encode %{
@@ -6047,11 +6235,12 @@ instruct vshift32B_var_nobw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, v
 %}
 
 instruct vshiftB_var_evex_bw(vec dst, vec src, vec shift, vec vtmp, rRegP scratch) %{
-  predicate(vector_length(n) <= 32 && vector_element_basic_type(n) == T_BYTE &&
+  predicate(vector_length(n) <= 32 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             VM_Version::supports_avx512bw());
-  match(Set dst ( VLShiftV src shift));
-  match(Set dst ( VRShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVB src shift));
+  match(Set dst ( RShiftVB src shift));
+  match(Set dst (URShiftVB src shift));
   effect(TEMP dst, TEMP vtmp, TEMP scratch);
   format %{ "vector_varshift_byte $dst, $src, $shift\n\t! using $vtmp, $scratch as TEMP" %}
   ins_encode %{
@@ -6065,11 +6254,12 @@ instruct vshiftB_var_evex_bw(vec dst, vec src, vec shift, vec vtmp, rRegP scratc
 %}
 
 instruct vshift64B_var_evex_bw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, rRegP scratch) %{
-  predicate(vector_length(n) == 64 && vector_element_basic_type(n) == T_BYTE &&
+  predicate(vector_length(n) == 64 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             VM_Version::supports_avx512bw());
-  match(Set dst ( VLShiftV src shift));
-  match(Set dst ( VRShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVB src shift));
+  match(Set dst ( RShiftVB src shift));
+  match(Set dst (URShiftVB src shift));
   effect(TEMP dst, TEMP vtmp1, TEMP vtmp2, TEMP scratch);
   format %{ "vector_varshift_byte $dst, $src, $shift\n\t! using $vtmp1, $vtmp2 and $scratch as TEMP" %}
   ins_encode %{
@@ -6088,18 +6278,19 @@ instruct vshift64B_var_evex_bw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2
 
 // Short variable shift
 instruct vshift8S_var_nobw(vec dst, vec src, vec shift, vec vtmp, rRegP scratch) %{
-  predicate(vector_length(n) <= 8 && vector_element_basic_type(n) == T_SHORT &&
+  predicate(vector_length(n) <= 8 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             !VM_Version::supports_avx512bw());
-  match(Set dst (VLShiftV  src shift));
-  match(Set dst (VRShiftV  src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVS src shift));
+  match(Set dst ( RShiftVS src shift));
+  match(Set dst (URShiftVS src shift));
   effect(TEMP dst, TEMP vtmp, TEMP scratch);
   format %{ "vector_var_shift_left_short $dst, $src, $shift\n\t" %}
   ins_encode %{
     assert(UseAVX >= 2, "required");
 
     int opcode = this->ideal_Opcode();
-    bool sign = (opcode == Op_VURShiftV) ? false : true;
+    bool sign = (opcode != Op_URShiftVS);
     int vlen_enc = Assembler::AVX_256bit;
     __ vextendwd(sign, $dst$$XMMRegister, $src$$XMMRegister, 1);
     __ vpmovzxwd($vtmp$$XMMRegister, $shift$$XMMRegister, 1);
@@ -6112,18 +6303,19 @@ instruct vshift8S_var_nobw(vec dst, vec src, vec shift, vec vtmp, rRegP scratch)
 %}
 
 instruct vshift16S_var_nobw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, rRegP scratch) %{
-  predicate(vector_length(n) == 16 && vector_element_basic_type(n) == T_SHORT &&
+  predicate(vector_length(n) == 16 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             !VM_Version::supports_avx512bw());
-  match(Set dst (VLShiftV  src shift));
-  match(Set dst (VRShiftV  src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVS src shift));
+  match(Set dst ( RShiftVS src shift));
+  match(Set dst (URShiftVS src shift));
   effect(TEMP dst, TEMP vtmp1, TEMP vtmp2, TEMP scratch);
   format %{ "vector_var_shift_left_short $dst, $src, $shift\n\t" %}
   ins_encode %{
     assert(UseAVX >= 2, "required");
 
     int opcode = this->ideal_Opcode();
-    bool sign = (opcode == Op_VURShiftV) ? false : true;
+    bool sign = (opcode != Op_URShiftVS);
     int vlen_enc = Assembler::AVX_256bit;
     // Shift lower half, with result in vtmp2 usign vtmp1 as TEMP
     __ vextendwd(sign, $vtmp2$$XMMRegister, $src$$XMMRegister, vlen_enc);
@@ -6147,11 +6339,11 @@ instruct vshift16S_var_nobw(vec dst, vec src, vec shift, vec vtmp1, vec vtmp2, r
 %}
 
 instruct vshift16S_var_evex_bw(vec dst, vec src, vec shift) %{
-  predicate(vector_element_basic_type(n) == T_SHORT &&
+  predicate(!VectorNode::is_vshift_cnt(n->in(2)) &&
             VM_Version::supports_avx512bw());
-  match(Set dst (VLShiftV src shift));
-  match(Set dst (VRShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  match(Set dst ( LShiftVS src shift));
+  match(Set dst ( RShiftVS src shift));
+  match(Set dst (URShiftVS src shift));
   format %{ "vector_varshift_short $dst,$src,$shift\t!" %}
   ins_encode %{
     assert(UseAVX > 2, "required");
@@ -6168,10 +6360,10 @@ instruct vshift16S_var_evex_bw(vec dst, vec src, vec shift) %{
 
 //Integer variable shift
 instruct vshiftI_var(vec dst, vec src, vec shift) %{
-  predicate(vector_element_basic_type(n) == T_INT);
-  match(Set dst ( VLShiftV src shift));
-  match(Set dst ( VRShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  predicate(!VectorNode::is_vshift_cnt(n->in(2)));
+  match(Set dst ( LShiftVI src shift));
+  match(Set dst ( RShiftVI src shift));
+  match(Set dst (URShiftVI src shift));
   format %{ "vector_varshift_int $dst,$src,$shift\t!" %}
   ins_encode %{
     assert(UseAVX >= 2, "required");
@@ -6185,9 +6377,9 @@ instruct vshiftI_var(vec dst, vec src, vec shift) %{
 
 //Long variable shift
 instruct vshiftL_var(vec dst, vec src, vec shift) %{
-  predicate(vector_element_basic_type(n) == T_LONG);
-  match(Set dst ( VLShiftV src shift));
-  match(Set dst (VURShiftV src shift));
+  predicate(!VectorNode::is_vshift_cnt(n->in(2)));
+  match(Set dst ( LShiftVL src shift));
+  match(Set dst (URShiftVL src shift));
   format %{ "vector_varshift_long $dst,$src,$shift\t!" %}
   ins_encode %{
     assert(UseAVX >= 2, "required");
@@ -6201,9 +6393,10 @@ instruct vshiftL_var(vec dst, vec src, vec shift) %{
 
 //Long variable right shift arithmetic
 instruct vshiftL_arith_var(vec dst, vec src, vec shift, vec vtmp) %{
-  predicate(vector_length(n) <= 4 && vector_element_basic_type(n) == T_LONG &&
+  predicate(vector_length(n) <= 4 &&
+            !VectorNode::is_vshift_cnt(n->in(2)) &&
             UseAVX == 2);
-  match(Set dst (VRShiftV src shift));
+  match(Set dst (RShiftVL src shift));
   effect(TEMP dst, TEMP vtmp);
   format %{ "vector_varshift_long  $dst,$src,$shift\n\t! using $vtmp as TEMP" %}
   ins_encode %{
@@ -6216,9 +6409,9 @@ instruct vshiftL_arith_var(vec dst, vec src, vec shift, vec vtmp) %{
 %}
 
 instruct vshiftL_arith_var_evex(vec dst, vec src, vec shift) %{
-  predicate(vector_element_basic_type(n) == T_LONG &&
+  predicate(!VectorNode::is_vshift_cnt(n->in(2)) &&
             UseAVX > 2);
-  match(Set dst (VRShiftV src shift));
+  match(Set dst (RShiftVL src shift));
   format %{ "vector_varfshift_long $dst,$src,$shift\t!" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
@@ -6654,10 +6847,11 @@ instruct vcmpFD(legVec dst, legVec src1, legVec src2, immI8 cond) %{
   ins_encode %{
     int vlen_enc = vector_length_encoding(this, $src1);
     Assembler::ComparisonPredicateFP cmp = booltest_pred_to_comparison_pred_fp($cond$$constant);
-    if (vector_element_basic_type(this, $src1) == T_FLOAT)
+    if (vector_element_basic_type(this, $src1) == T_FLOAT) {
       __ vcmpps($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
-    else
+    } else {
       __ vcmppd($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
+    }
   %}
   ins_pipe( pipe_slow );
 %}
@@ -7036,48 +7230,6 @@ instruct vabsnegD(vec dst, vec src, rRegI scratch) %{
   ins_pipe( pipe_slow );
 %}
 
-//------------------------------------- NOT --------------------------------------------
-
-instruct vnotB(vec dst, vec src) %{
-  predicate(UseAVX == 0);
-  match(Set dst (NotV src));
-  effect(TEMP dst);
-  format %{ "vector_not  $dst,$src\t!" %}
-  ins_encode %{
-    int vlen = vector_length_in_bytes(this);
-    switch(vlen) {
-      default:
-        assert(0, "Incorrect vector length");
-        break;
-      case 4: {
-        __ movdl($dst$$XMMRegister, ExternalAddress(vector_all_bits_set()));
-        __ pxor($dst$$XMMRegister, $src$$XMMRegister);
-      } break;
-      case 8: {
-        __ movq($dst$$XMMRegister, ExternalAddress(vector_all_bits_set()));
-        __ pxor($dst$$XMMRegister, $src$$XMMRegister);
-      } break;
-      case 16: {
-        __ movdqu($dst$$XMMRegister, ExternalAddress(vector_all_bits_set()));
-        __ pxor($dst$$XMMRegister, $src$$XMMRegister);
-      } break;
-    }
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vnotB_reg(vec dst, vec src, rRegP scratch) %{
-  predicate(UseAVX > 0);
-  match(Set dst (NotV src));
-  effect(TEMP scratch);
-  format %{ "vector_not  $dst,$src\t! using $scratch as rRegP" %}
-  ins_encode %{
-    int vlen_enc = vector_length_encoding(this);
-    __ vpxor($dst$$XMMRegister, $src$$XMMRegister, ExternalAddress(vector_all_bits_set()), vlen_enc, $scratch$$Register);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
 //------------------------------------- VectorTest --------------------------------------------
 
 #ifdef _LP64
@@ -7418,7 +7570,7 @@ instruct loadShuffleS_evex(vec dst, vec src) %{
 
 instruct rearrangeS_evex(vec dst, vec src, vec shuffle) %{
   predicate(vector_element_basic_type(n) == T_SHORT &&
-            VM_Version::supports_avx512bw()); 
+            VM_Version::supports_avx512bw());
   match(Set dst (VectorRearrange src shuffle));
   format %{ "vector_rearrange $dst, $shuffle, $src" %}
   ins_encode %{
@@ -7679,3 +7831,26 @@ instruct vpopcountI(vec dst, vec src) %{
   ins_pipe( pipe_slow );
 %}
 
+// --------------------------------- Bitwise Ternary Logic ----------------------------------
+
+instruct vpternlog(vec dst, vec src2, vec src3, immU8 func) %{
+  match(Set dst (MacroLogicV (Binary dst src2) (Binary src3 func)));
+  effect(TEMP dst);
+  format %{ "vpternlogd $dst,$src2,$src3,$func\t! vector ternary logic" %}
+  ins_encode %{
+    int vector_len = vector_length_encoding(this);
+    __ vpternlogd($dst$$XMMRegister, $func$$constant, $src2$$XMMRegister, $src3$$XMMRegister, vector_len);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vpternlog_mem(vec dst, vec src2, memory src3, immU8 func) %{
+  match(Set dst (MacroLogicV (Binary dst src2) (Binary (LoadVector src3) func)));
+  effect(TEMP dst);
+  format %{ "vpternlogd $dst,$src2,$src3,$func\t! vector ternary logic" %}
+  ins_encode %{
+    int vector_len = vector_length_encoding(this);
+    __ vpternlogd($dst$$XMMRegister, $func$$constant, $src2$$XMMRegister, $src3$$Address, vector_len);
+  %}
+  ins_pipe( pipe_slow );
+%}

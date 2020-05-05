@@ -536,7 +536,7 @@ CC: Sun C++ 5.13 SunOS_i386 151846-10 2015/10/30</code></pre>
 <li><code>dist-clean</code> - Remove all files, including configuration</li>
 </ul>
 <p>Run <code>make help</code> to get an up-to-date list of important make targets and make control variables.</p>
-<p>It is possible to build just a single module, a single phase, or a single phase of a single module, by creating make targets according to these followin patterns. A phase can be either of <code>gensrc</code>, <code>gendata</code>, <code>copy</code>, <code>java</code>, <code>launchers</code>, <code>libs</code> or <code>rmic</code>. See <a href="#using-fine-grained-make-targets">Using Fine-Grained Make Targets</a> for more details about this functionality.</p>
+<p>It is possible to build just a single module, a single phase, or a single phase of a single module, by creating make targets according to these followin patterns. A phase can be either of <code>gensrc</code>, <code>gendata</code>, <code>copy</code>, <code>java</code>, <code>launchers</code>, or <code>libs</code>. See <a href="#using-fine-grained-make-targets">Using Fine-Grained Make Targets</a> for more details about this functionality.</p>
 <ul>
 <li><code>&lt;phase&gt;</code> - Build the specified phase and everything it depends on</li>
 <li><code>&lt;module&gt;</code> - Build the specified module and everything it depends on</li>
@@ -578,7 +578,7 @@ CC: Sun C++ 5.13 SunOS_i386 151846-10 2015/10/30</code></pre>
 </ul>
 <h2 id="running-tests">Running Tests</h2>
 <p>Most of the JDK tests are using the <a href="http://openjdk.java.net/jtreg">JTReg</a> test framework. Make sure that your configuration knows where to find your installation of JTReg. If this is not picked up automatically, use the <code>--with-jtreg=&lt;path to jtreg home&gt;</code> option to point to the JTReg framework. Note that this option should point to the JTReg home, i.e. the top directory, containing <code>lib/jtreg.jar</code> etc.</p>
-<p>The <a href="https://wiki.openjdk.java.net/display/Adoption">Adoption Group</a> provides recent builds of jtreg <a href="https://adopt-openjdk.ci.cloudbees.com/job/jtreg/lastSuccessfulBuild/artifact">here</a>. Download the latest <code>.tar.gz</code> file, unpack it, and point <code>--with-jtreg</code> to the <code>jtreg</code> directory that you just unpacked.</p>
+<p>The <a href="https://wiki.openjdk.java.net/display/Adoption">Adoption Group</a> provides recent builds of jtreg <a href="https://ci.adoptopenjdk.net/view/Dependencies/job/jtreg/lastSuccessfulBuild/artifact">here</a>. Download the latest <code>.tar.gz</code> file, unpack it, and point <code>--with-jtreg</code> to the <code>jtreg</code> directory that you just unpacked.</p>
 <p>To execute the most basic tests (tier 1), use:</p>
 <pre><code>make run-test-tier1</code></pre>
 <p>For more details on how to run tests, please see the <a href="testing.html">Testing the JDK</a> document.</p>
@@ -929,7 +929,6 @@ sudo mv /tmp/configure /usr/local/bin</code></pre>
 <li><code>java</code> (Compile Java code)</li>
 <li><code>launchers</code> (Compile native executables)</li>
 <li><code>libs</code> (Compile native libraries)</li>
-<li><code>rmic</code> (Run the <code>rmic</code> tool)</li>
 </ul>
 <p>You can build only a single phase for a module by using the notation <code>$MODULE-$PHASE</code>. For instance, to build the <code>gensrc</code> phase for <code>java.base</code>, use <code>make java.base-gensrc</code>.</p>
 <p>Note that some phases may depend on others, e.g. <code>java</code> depends on <code>gensrc</code> (if present). Make will build all needed prerequisites before building the requested phase.</p>

@@ -178,6 +178,7 @@ final class Long256Vector extends LongVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Long256Vector uOp(FUnOp f) {
         return (Long256Vector) super.uOpTemplate(f);  // specialize
@@ -457,11 +458,19 @@ final class Long256Vector extends LongVector {
     }
 
 
+    @ForceInline
     @Override
     public long lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return laneHelper(0);
+            case 1: return laneHelper(1);
+            case 2: return laneHelper(2);
+            case 3: return laneHelper(3);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public long laneHelper(int i) {
         return (long) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -471,11 +480,19 @@ final class Long256Vector extends LongVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public Long256Vector withLane(int i, long e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch (i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            case 2: return withLaneHelper(2, e);
+            case 3: return withLaneHelper(3, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Long256Vector withLaneHelper(int i, long e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,
@@ -527,6 +544,7 @@ final class Long256Vector extends LongVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -591,10 +609,7 @@ final class Long256Vector extends LongVector {
         @Override
         @ForceInline
         public Long256Mask not() {
-            return (Long256Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Long256Mask.class, long.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -619,6 +634,16 @@ final class Long256Vector extends LongVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Long256Mask xor(VectorMask<Long> mask) {
+            Objects.requireNonNull(mask);
+            Long256Mask m = (Long256Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Long256Mask.class, long.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -637,12 +662,16 @@ final class Long256Vector extends LongVector {
                                          (m, __) -> allTrueHelper(((Long256Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Long256Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Long256Mask.class, long.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Long256Mask TRUE_MASK = new Long256Mask(true);
-        static final Long256Mask FALSE_MASK = new Long256Mask(false);
+        private static final Long256Mask  TRUE_MASK = new Long256Mask(true);
+        private static final Long256Mask FALSE_MASK = new Long256Mask(false);
+
     }
 
     // Shuffle
@@ -714,6 +743,7 @@ final class Long256Vector extends LongVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Long256Shuffle rearrange(VectorShuffle<Long> shuffle) {
             Long256Shuffle s = (Long256Shuffle) shuffle;

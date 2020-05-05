@@ -3369,8 +3369,7 @@ operand immI8() %{
   interface(CONST_INTER);
 %}
 
-operand immU8()
-%{
+operand immU8() %{
   predicate((0 <= n->get_int()) && (n->get_int() <= 255));
   match(ConI);
 
@@ -7325,15 +7324,6 @@ instruct castII( rRegI dst ) %{
   ins_cost(0);
   ins_pipe( empty );
 %}
-
-instruct castLL( eRegL dst ) %{
-  match(Set dst (CastLL dst));
-  format %{ "#castLL of $dst" %}
-  ins_encode( /*empty encoding*/ );
-  ins_cost(0);
-  ins_pipe( empty );
-%}
-
 
 // Load-locked - same as a regular pointer load when used with compare-swap
 instruct loadPLocked(eRegP dst, memory mem) %{

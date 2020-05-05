@@ -183,6 +183,7 @@ final class Short64Vector extends ShortVector {
 
     // Unary operator
 
+    @ForceInline
     final @Override
     Short64Vector uOp(FUnOp f) {
         return (Short64Vector) super.uOpTemplate(f);  // specialize
@@ -467,11 +468,19 @@ final class Short64Vector extends ShortVector {
     }
 
 
+    @ForceInline
     @Override
     public short lane(int i) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch(i) {
+            case 0: return laneHelper(0);
+            case 1: return laneHelper(1);
+            case 2: return laneHelper(2);
+            case 3: return laneHelper(3);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public short laneHelper(int i) {
         return (short) VectorSupport.extract(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i,
@@ -481,11 +490,19 @@ final class Short64Vector extends ShortVector {
                                 });
     }
 
+    @ForceInline
     @Override
     public Short64Vector withLane(int i, short e) {
-        if (i < 0 || i >= VLENGTH) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
+        switch (i) {
+            case 0: return withLaneHelper(0, e);
+            case 1: return withLaneHelper(1, e);
+            case 2: return withLaneHelper(2, e);
+            case 3: return withLaneHelper(3, e);
+            default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
+    }
+
+    public Short64Vector withLaneHelper(int i, short e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
                                 this, i, (long)e,
@@ -537,6 +554,7 @@ final class Short64Vector extends ShortVector {
             return VSPECIES;
         }
 
+        @ForceInline
         boolean[] getBits() {
             return (boolean[])getPayload();
         }
@@ -601,10 +619,7 @@ final class Short64Vector extends ShortVector {
         @Override
         @ForceInline
         public Short64Mask not() {
-            return (Short64Mask) VectorSupport.unaryOp(
-                                             VECTOR_OP_NOT, Short64Mask.class, short.class, VLENGTH,
-                                             this,
-                                             (m1) -> m1.uOp((i, a) -> !a));
+            return xor(maskAll(true));
         }
 
         // Binary operations
@@ -629,6 +644,16 @@ final class Short64Vector extends ShortVector {
                                              (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @ForceInline
+        /* package-private */
+        Short64Mask xor(VectorMask<Short> mask) {
+            Objects.requireNonNull(mask);
+            Short64Mask m = (Short64Mask)mask;
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Short64Mask.class, short.class, VLENGTH,
+                                          this, m,
+                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+        }
+
         // Reductions
 
         @Override
@@ -647,12 +672,16 @@ final class Short64Vector extends ShortVector {
                                          (m, __) -> allTrueHelper(((Short64Mask)m).getBits()));
         }
 
+        @ForceInline
         /*package-private*/
         static Short64Mask maskAll(boolean bit) {
-            return bit ? TRUE_MASK : FALSE_MASK;
+            return VectorSupport.broadcastCoerced(Short64Mask.class, short.class, VLENGTH,
+                                                  (bit ? -1 : 0), null,
+                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
-        static final Short64Mask TRUE_MASK = new Short64Mask(true);
-        static final Short64Mask FALSE_MASK = new Short64Mask(false);
+        private static final Short64Mask  TRUE_MASK = new Short64Mask(true);
+        private static final Short64Mask FALSE_MASK = new Short64Mask(false);
+
     }
 
     // Shuffle
@@ -724,6 +753,7 @@ final class Short64Vector extends ShortVector {
             throw new AssertionError(species);
         }
 
+        @ForceInline
         @Override
         public Short64Shuffle rearrange(VectorShuffle<Short> shuffle) {
             Short64Shuffle s = (Short64Shuffle) shuffle;

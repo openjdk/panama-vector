@@ -121,11 +121,9 @@ private:
   bool find_shared_visit(MStack& mstack, Node* n, uint opcode, bool& mem_op, int& mem_addr_idx);
   void find_shared_post_visit(Node* n, uint opcode);
 
-#ifdef X86
-  bool is_bmi_pattern(Node *n, Node *m);
-#endif
-
   bool is_vshift_con_pattern(Node *n, Node *m);
+
+  bool is_vnot_pattern(Node *n, Node *m);
 
   // Debug and profile information for nodes in old space:
   GrowableArray<Node_Notes*>* _old_node_note_array;
@@ -340,9 +338,11 @@ public:
 
   // Vector ideal reg
   static const uint vector_ideal_reg(int len);
-  static const uint vector_shift_count_ideal_reg(int len);
 
-  // CPU supports misaligned vectors store/load.
+  // Does the CPU supports vector variable shift instructions?
+  static bool supports_vector_variable_shifts(void);
+
+// CPU supports misaligned vectors store/load.
   static const bool misaligned_vectors_ok();
 
   // Should original key array reference be passed to AES stubs
@@ -437,6 +437,13 @@ public:
   OptoReg::Name  c_frame_pointer() const;
   static RegMask c_frame_ptr_mask;
 
+  // Java-Native vector calling convention
+  static const bool supports_vector_calling_convention();
+  static void vector_calling_convention(VMRegPair *regs,
+                                        uint num_bits,
+                                        uint total_args_passed);
+  static OptoRegPair vector_return_value(uint ideal_reg);
+
   // !!!!! Special stuff for building ScopeDescs
   virtual int      regnum_to_fpu_offset(int regnum);
 
@@ -452,10 +459,15 @@ public:
   // Some hardware have expensive CMOV for float and double.
   static const int float_cmove_cost();
 
+  // Should the input 'm' of node 'n' be cloned during matching?
+  // Reports back whether the node was cloned or not.
+  bool    clone_node(Node* n, Node* m, Matcher::MStack& mstack);
+  bool pd_clone_node(Node* n, Node* m, Matcher::MStack& mstack);
+
   // Should the Matcher clone shifts on addressing modes, expecting them to
   // be subsumed into complex addressing expressions or compute them into
   // registers?  True for Intel but false for most RISCs
-  bool clone_address_expressions(AddPNode* m, MStack& mstack, VectorSet& address_visited);
+  bool pd_clone_address_expressions(AddPNode* m, MStack& mstack, VectorSet& address_visited);
   // Clone base + offset address expression
   bool clone_base_plus_offset_address(AddPNode* m, MStack& mstack, VectorSet& address_visited);
 
@@ -519,10 +531,8 @@ public:
   void specialize_mach_node(MachNode* m);
   void specialize_temp_node(MachTempNode* tmp, MachNode* use, uint idx);
   MachOper* specialize_vector_operand(MachNode* m, uint opnd_idx);
-  MachOper* specialize_vector_operand_helper(MachNode* m, uint opnd_idx, const TypeVect* vt);
 
-  static MachOper* specialize_generic_vector_operand(MachOper* generic_opnd, uint ideal_reg, bool is_temp);
-
+  static MachOper* pd_specialize_generic_vector_operand(MachOper* generic_opnd, uint ideal_reg, bool is_temp);
   static bool is_generic_reg2reg_move(MachNode* m);
   static bool is_generic_vector(MachOper* opnd);
 

@@ -43,7 +43,6 @@ private:
   ShenandoahHeap* const _heap;
 
   size_t                _garbage;
-  size_t                _live_data;
   size_t                _used;
   size_t                _region_count;
 
@@ -56,15 +55,6 @@ public:
 
   // Add region to collection set
   void add_region(ShenandoahHeapRegion* r);
-  bool add_region_check_for_duplicates(ShenandoahHeapRegion* r);
-
-  // Bring per-region statuses to consistency with this collection.
-  // TODO: This is a transitional interface that bridges the gap between
-  // region statuses and this collection. Should go away after we merge them.
-  void update_region_status();
-
-  // Remove region from collection set
-  void remove_region(ShenandoahHeapRegion* r);
 
   // MT version
   ShenandoahHeapRegion* claim_next();
@@ -87,7 +77,6 @@ public:
   void print_on(outputStream* out) const;
 
   size_t used()      const { return _used; }
-  size_t live_data() const { return _live_data; }
   size_t garbage()   const { return _garbage;   }
   void clear();
 

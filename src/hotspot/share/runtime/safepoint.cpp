@@ -463,8 +463,6 @@ void SafepointSynchronize::disarm_safepoint() {
       assert(!cur_state->is_running(), "Thread not suspended at safepoint");
       cur_state->restart(); // TSS _running
       assert(cur_state->is_running(), "safepoint state has not been reset");
-
-      SafepointMechanism::disarm_if_needed(current, false /* NO release */);
     }
   } // ~JavaThreadIteratorWithHandle
 
@@ -501,10 +499,6 @@ bool SafepointSynchronize::is_cleanup_needed() {
   return false;
 }
 
-bool SafepointSynchronize::is_forced_cleanup_needed() {
-  return ObjectSynchronizer::needs_monitor_scavenge();
-}
-
 class ParallelSPCleanupThreadClosure : public ThreadClosure {
 private:
   CodeBlobClosure* _nmethod_cl;
@@ -534,7 +528,7 @@ private:
 public:
   ParallelSPCleanupTask(uint num_workers, DeflateMonitorCounters* counters) :
     AbstractGangTask("Parallel Safepoint Cleanup"),
-    _subtasks(SubTasksDone(SafepointSynchronize::SAFEPOINT_CLEANUP_NUM_TASKS)),
+    _subtasks(SafepointSynchronize::SAFEPOINT_CLEANUP_NUM_TASKS),
     _cleanup_threads_cl(ParallelSPCleanupThreadClosure(counters)),
     _num_workers(num_workers),
     _counters(counters) {}
@@ -705,7 +699,6 @@ static bool safepoint_safe_with(JavaThread *thread, JavaThreadState state) {
 }
 
 bool SafepointSynchronize::handshake_safe(JavaThread *thread) {
-  assert(Thread::current()->is_VM_thread(), "Must be VMThread");
   if (thread->is_ext_suspended() || thread->is_terminated()) {
     return true;
   }

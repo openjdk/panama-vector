@@ -47,6 +47,7 @@ import java.lang.invoke.VarHandle;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.IntFunction;
 
@@ -97,6 +98,17 @@ public class LongMaxVectorLoadStoreTests extends AbstractVectorTest {
             }
         } catch (AssertionError e) {
             Assert.assertEquals(mask[i % SPECIES.length()] ? a[im[i]] : (long) 0, r[i], "at index #" + i);
+        }
+    }
+
+    static void assertArraysEquals(byte[] a, byte[] r, boolean[] mask) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(mask[(i*8/SPECIES.elementSize()) % SPECIES.length()] ? a[i] : (byte) 0, r[i]);
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(mask[(i*8/SPECIES.elementSize()) % SPECIES.length()] ? a[i] : (byte) 0, r[i], "at index #" + i);
         }
     }
 
@@ -165,6 +177,25 @@ public class LongMaxVectorLoadStoreTests extends AbstractVectorTest {
                 toArray(Object[][]::new);
     }
 
+    @DataProvider
+    public Object[][] longByteArrayProvider() {
+        return LONG_GENERATORS.stream().
+                flatMap(fa -> BYTE_ARRAY_GENERATORS.stream().map(fb -> {
+                    return new Object[]{fa, fb};
+                })).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] longByteArrayMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> LONG_GENERATORS.stream().
+                        flatMap(fa -> BYTE_ARRAY_GENERATORS.stream().map(fb -> {
+                            return new Object[]{fa, fb, fm};
+                        }))).
+                toArray(Object[][]::new);
+    }
+
     static ByteBuffer toBuffer(long[] a, IntFunction<ByteBuffer> fb) {
         ByteBuffer bb = fb.apply(a.length * SPECIES.elementSize() / 8);
         for (long v : a) {
@@ -180,6 +211,16 @@ public class LongMaxVectorLoadStoreTests extends AbstractVectorTest {
         return d;
     }
 
+    static byte[] toByteArray(long[] a, IntFunction<byte[]> fb, ByteOrder bo) {
+        byte[] b = fb.apply(a.length * SPECIES.elementSize() / 8);
+        LongBuffer bb = ByteBuffer.wrap(b, 0, b.length).order(bo).asLongBuffer();
+        for (long v : a) {
+            bb.put(v);
+        }
+        return b;
+    }
+
+
     interface ToLongF {
         long apply(int i);
     }
@@ -193,6 +234,21 @@ public class LongMaxVectorLoadStoreTests extends AbstractVectorTest {
             a[i] = f.apply(i);
         }
         return a;
+    }
+
+    @Test(dataProvider = "longProvider")
+    static void loadStoreValues(IntFunction<long[]> fa) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = new long[a.length];
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                long[] values = Arrays.copyOfRange(a, i, i + SPECIES.length());
+                LongVector av = LongVector.fromValues(SPECIES, values);
+                System.arraycopy(av.toArray(), 0, r, i, SPECIES.length());
+            }
+        }
+        Assert.assertEquals(a, r);
     }
 
     @Test(dataProvider = "longProvider")
@@ -359,5 +415,67 @@ public class LongMaxVectorLoadStoreTests extends AbstractVectorTest {
         Assert.assertEquals(r.position(), 0, "Result buffer position changed");
         Assert.assertEquals(r.limit(), l, "Result buffer limit changed");
         assertArraysEquals(bufferToArray(a), bufferToArray(r), mask);
+    }
+
+    @Test(dataProvider = "longByteArrayProvider")
+    static void loadStoreByteArray(IntFunction<long[]> fa,
+                                    IntFunction<byte[]> fb) {
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+        byte[] r = fb.apply(a.length);
+
+        int s = SPECIES.length() * SPECIES.elementSize() / 8;
+        int l = a.length;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                LongVector av = LongVector.fromByteArray(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN);
+                av.intoByteArray(r, i);
+            }
+        }
+        Assert.assertEquals(a, r, "Byte arrays not equal");
+    }
+
+    @Test(dataProvider = "longByteArrayMaskProvider")
+    static void loadByteArrayMask(IntFunction<long[]> fa,
+                                  IntFunction<byte[]> fb,
+                                  IntFunction<boolean[]> fm) {
+          byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+          byte[] r = fb.apply(a.length);
+          boolean[] mask = fm.apply(SPECIES.length());
+          VectorMask<Long> vmask = VectorMask.fromValues(SPECIES, mask);
+
+          int s = SPECIES.length() * SPECIES.elementSize() / 8;
+          int l = a.length;
+
+          for (int ic = 0; ic < INVOC_COUNT; ic++) {
+              for (int i = 0; i < l; i += s) {
+                  LongVector av = LongVector.fromByteArray(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN, vmask);
+                  av.intoByteArray(r, i);
+              }
+          }
+          assertArraysEquals(a, r, mask);
+    }
+
+    @Test(dataProvider = "longByteArrayMaskProvider")
+    static void storeByteArrayMask(IntFunction<long[]> fa,
+                                   IntFunction<byte[]> fb,
+                                   IntFunction<boolean[]> fm) {
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+        byte[] r = fb.apply(a.length);
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromValues(SPECIES, mask);
+
+        int s = SPECIES.length() * SPECIES.elementSize() / 8;
+        int l = a.length;
+
+        a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+        r = fb.apply(a.length);
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                LongVector av = LongVector.fromByteArray(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN);
+                av.intoByteArray(r, i, ByteOrder.LITTLE_ENDIAN, vmask);
+            }
+        }
+        assertArraysEquals(a, r, mask);
     }
 }

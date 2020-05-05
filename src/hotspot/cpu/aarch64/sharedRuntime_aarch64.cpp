@@ -29,6 +29,7 @@
 #include "code/debugInfoRec.hpp"
 #include "code/icBuffer.hpp"
 #include "code/vtableStubs.hpp"
+#include "gc/shared/barrierSetAssembler.hpp"
 #include "interpreter/interpreter.hpp"
 #include "interpreter/interp_masm.hpp"
 #include "logging/log.hpp"
@@ -170,12 +171,12 @@ OopMap* RegisterSaver::save_live_registers(MacroAssembler* masm, int additional_
 }
 
 void RegisterSaver::restore_live_registers(MacroAssembler* masm, bool restore_vectors) {
-#if COMPILER2_OR_JVMCI
-  __ pop_CPU_state(restore_vectors);
-  __ leave();
-#else
+#if !COMPILER2_OR_JVMCI
   assert(!restore_vectors, "vectors are generated only by C2 and JVMCI");
 #endif
+  __ pop_CPU_state(restore_vectors);
+  __ leave();
+
 }
 
 void RegisterSaver::restore_result_registers(MacroAssembler* masm) {
@@ -732,6 +733,9 @@ AdapterHandlerEntry* SharedRuntime::generate_i2c2i_adapters(MacroAssembler *masm
     c2i_no_clinit_check_entry = __ pc();
   }
 
+  BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
+  bs->c2i_entry_barrier(masm);
+
   gen_c2i_adapter(masm, total_args_passed, comp_args_on_stack, sig_bt, regs, skip_fixup);
 
   __ flush();
@@ -815,6 +819,14 @@ int SharedRuntime::c_calling_convention(const BasicType *sig_bt,
     }
 
   return stk_args;
+}
+
+int SharedRuntime::vector_calling_convention(VMRegPair *regs,
+                                             uint num_bits,
+                                             uint total_args_passed) {
+  assert(!Matcher::supports_vector_calling_convention(), "not implemented");
+  Unimplemented();
+  return 0;
 }
 
 // On 64 bit we will store integer like items to the stack as
@@ -1503,6 +1515,9 @@ nmethod* SharedRuntime::generate_native_wrapper(MacroAssembler* masm,
   __ enter();
   // -2 because return address is already present and so is saved rfp
   __ sub(sp, sp, stack_size - 2*wordSize);
+
+  BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
+  bs->nmethod_entry_barrier(masm);
 
   // Frame is now completed as far as size and linkage.
   int frame_complete = ((intptr_t)__ pc()) - start;
