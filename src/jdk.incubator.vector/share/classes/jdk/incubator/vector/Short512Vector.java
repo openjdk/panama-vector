@@ -144,9 +144,11 @@ final class Short512Vector extends ShortVector {
     @ForceInline
     Short512Shuffle iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return (Short512Shuffle)VectorSupport.shuffleIota(ETYPE, Short512Shuffle.class, VSPECIES, VLENGTH, start, step, 1, (l, lstart, lstep) -> new Short512Shuffle(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
+        return (Short512Shuffle)VectorSupport.shuffleIota(ETYPE, Short512Shuffle.class, VSPECIES, VLENGTH, start, step, 1,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
       } else {
-        return (Short512Shuffle)VectorSupport.shuffleIota(ETYPE, Short512Shuffle.class, VSPECIES, VLENGTH, start, step, 0, (l, lstart, lstep) -> new Short512Shuffle(i -> (i*lstep + lstart)));
+        return (Short512Shuffle)VectorSupport.shuffleIota(ETYPE, Short512Shuffle.class, VSPECIES, VLENGTH, start, step, 0,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i*lstep + lstart)));
       }
     }
 
@@ -388,9 +390,9 @@ final class Short512Vector extends ShortVector {
        if ((origin < 0) || (origin >= VLENGTH)) {
          throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
        } else {
-         Short512Shuffle Iota = (Short512Shuffle)VectorShuffle.iota(VSPECIES, 0, 1, true);
+         Short512Shuffle Iota = iotaShuffle();
          VectorMask<Short> BlendMask = Iota.toVector().compare(VectorOperators.LT, (broadcast((short)(VLENGTH-origin))));
-         Iota = (Short512Shuffle)VectorShuffle.iota(VSPECIES, origin, 1, true);
+         Iota = iotaShuffle(origin, 1, true);
          return ZERO.blend(this.rearrange(Iota), BlendMask);
        }
     }
@@ -416,9 +418,9 @@ final class Short512Vector extends ShortVector {
        if ((origin < 0) || (origin >= VLENGTH)) {
          throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
        } else {
-         Short512Shuffle Iota = (Short512Shuffle)VectorShuffle.iota(VSPECIES, 0, 1, true);
+         Short512Shuffle Iota = iotaShuffle();
          VectorMask<Short> BlendMask = Iota.toVector().compare(VectorOperators.GE, (broadcast((short)(origin))));
-         Iota = (Short512Shuffle)VectorShuffle.iota(VSPECIES, -origin, 1, true);
+         Iota = iotaShuffle(-origin, 1, true);
          return ZERO.blend(this.rearrange(Iota), BlendMask);
        }
     }
