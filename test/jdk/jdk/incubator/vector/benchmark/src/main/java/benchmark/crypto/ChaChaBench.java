@@ -25,6 +25,8 @@ package benchmark.crypto;
 
 import org.openjdk.jmh.annotations.*;
 import jdk.incubator.vector.*;
+
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 @State(Scope.Thread)
@@ -338,15 +340,15 @@ public class ChaChaBench {
 
                 // xor keystream with input
                 int inOff = stateLenBytes * j;
-                IntVector ina = IntVector.fromByteArray(intSpecies, in, inOff);
-                IntVector inb = IntVector.fromByteArray(intSpecies, in, inOff + 4 * len);
-                IntVector inc = IntVector.fromByteArray(intSpecies, in, inOff + 8 * len);
-                IntVector ind = IntVector.fromByteArray(intSpecies, in, inOff + 12 * len);
+                IntVector ina = IntVector.fromByteArray(intSpecies, in, inOff, ByteOrder.LITTLE_ENDIAN);
+                IntVector inb = IntVector.fromByteArray(intSpecies, in, inOff + 4 * len, ByteOrder.LITTLE_ENDIAN);
+                IntVector inc = IntVector.fromByteArray(intSpecies, in, inOff + 8 * len, ByteOrder.LITTLE_ENDIAN);
+                IntVector ind = IntVector.fromByteArray(intSpecies, in, inOff + 12 * len, ByteOrder.LITTLE_ENDIAN);
 
-                ina.lanewise(VectorOperators.XOR, a).intoByteArray(out, inOff);
-                inb.lanewise(VectorOperators.XOR, b).intoByteArray(out, inOff + 4 * len);
-                inc.lanewise(VectorOperators.XOR, c).intoByteArray(out, inOff + 8 * len);
-                ind.lanewise(VectorOperators.XOR, d).intoByteArray(out, inOff + 12 * len);
+                ina.lanewise(VectorOperators.XOR, a).intoByteArray(out, inOff, ByteOrder.LITTLE_ENDIAN);
+                inb.lanewise(VectorOperators.XOR, b).intoByteArray(out, inOff + 4 * len, ByteOrder.LITTLE_ENDIAN);
+                inc.lanewise(VectorOperators.XOR, c).intoByteArray(out, inOff + 8 * len, ByteOrder.LITTLE_ENDIAN);
+                ind.lanewise(VectorOperators.XOR, d).intoByteArray(out, inOff + 12 * len, ByteOrder.LITTLE_ENDIAN);
 
                 // increment counter
                 sd = sd.add(counterAdd);

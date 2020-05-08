@@ -2477,39 +2477,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     /**
      * Loads a vector from a byte array starting at an offset.
      * Bytes are composed into primitive lane elements according
-     * to {@linkplain ByteOrder#LITTLE_ENDIAN little endian} ordering.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it returns the result of calling
-     * {@link #fromByteBuffer(VectorSpecies,ByteBuffer,int,ByteOrder,VectorMask)
-     * fromByteBuffer()} as follows:
-     * <pre>{@code
-     * var bb = ByteBuffer.wrap(a);
-     * var bo = ByteOrder.LITTLE_ENDIAN;
-     * var m = species.maskAll(true);
-     * return fromByteBuffer(species, bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param species species of desired vector
-     * @param a the byte array
-     * @param offset the offset into the array
-     * @return a vector loaded from a byte array
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*ESIZE < 0}
-     *         or {@code offset+(N+1)*ESIZE > a.length}
-     *         for any lane {@code N} in the vector
-     */
-    @ForceInline
-    public static
-    DoubleVector fromByteArray(VectorSpecies<Double> species,
-                                       byte[] a, int offset) {
-        return fromByteArray(species, a, offset, ByteOrder.LITTLE_ENDIAN);
-    }
-
-    /**
-     * Loads a vector from a byte array starting at an offset.
-     * Bytes are composed into primitive lane elements according
      * to the specified byte order.
      * The vector is arranged into lanes according to
      * <a href="Vector.html#lane-order">memory ordering</a>.
@@ -2544,44 +2511,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                     a.length);
         return vsp.dummyVector()
             .fromByteArray0(a, offset).maybeSwap(bo);
-    }
-
-    /**
-     * Loads a vector from a byte array starting at an offset
-     * and using a mask.
-     * Lanes where the mask is unset are filled with the default
-     * value of {@code double} (positive zero).
-     * Bytes are composed into primitive lane elements according
-     * to {@linkplain ByteOrder#LITTLE_ENDIAN little endian} ordering.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it returns the result of calling
-     * {@link #fromByteBuffer(VectorSpecies,ByteBuffer,int,ByteOrder,VectorMask)
-     * fromByteBuffer()} as follows:
-     * <pre>{@code
-     * var bb = ByteBuffer.wrap(a);
-     * var bo = ByteOrder.LITTLE_ENDIAN;
-     * return fromByteBuffer(species, bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param species species of desired vector
-     * @param a the byte array
-     * @param offset the offset into the array
-     * @param m the mask controlling lane selection
-     * @return a vector loaded from a byte array
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*ESIZE < 0}
-     *         or {@code offset+(N+1)*ESIZE > a.length}
-     *         for any lane {@code N} in the vector where
-     *         the mask is set
-     */
-    @ForceInline
-    public static
-    DoubleVector fromByteArray(VectorSpecies<Double> species,
-                                       byte[] a, int offset,
-                                       VectorMask<Double> m) {
-        return fromByteArray(species, a, offset, ByteOrder.LITTLE_ENDIAN, m);
     }
 
     /**
@@ -3122,36 +3051,12 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     @Override
     @ForceInline
     public final
-    void intoByteArray(byte[] a, int offset) {
+    void intoByteArray(byte[] a, int offset,
+                       ByteOrder bo) {
         offset = checkFromIndexSize(offset,
                                     bitSize() / Byte.SIZE,
                                     a.length);
-        this.maybeSwap(ByteOrder.LITTLE_ENDIAN)
-            .intoByteArray0(a, offset);
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    void intoByteArray(byte[] a, int offset,
-                       VectorMask<Double> m) {
-        if (m.allTrue()) {
-            intoByteArray(a, offset);
-            return;
-        }
-        DoubleSpecies vsp = vspecies();
-        if (offset >= 0 && offset <= (a.length - vsp.length() * 8)) {
-            var oldVal = fromByteArray0(a, offset);
-            var newVal = oldVal.blend(this, m);
-            newVal.intoByteArray0(a, offset);
-        } else {
-            checkMaskFromIndexSize(offset, vsp, m, 8, a.length);
-            DoubleBuffer tb = wrapper(a, offset, NATIVE_ENDIAN);
-            this.stOp(tb, 0, m, (tb_, __, i, e) -> tb_.put(i, e));
-        }
+        maybeSwap(bo).intoByteArray0(a, offset);
     }
 
     /**
@@ -3163,7 +3068,20 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     void intoByteArray(byte[] a, int offset,
                        ByteOrder bo,
                        VectorMask<Double> m) {
-        maybeSwap(bo).intoByteArray(a, offset, m);
+        if (m.allTrue()) {
+            maybeSwap(bo).intoByteArray0(a, offset);
+            return;
+        }
+        DoubleSpecies vsp = vspecies();
+        if (offset >= 0 && offset <= (a.length - vsp.length() * 8)) {
+            var oldVal = fromByteArray0(a, offset);
+            var newVal = oldVal.blend(this.maybeSwap(bo), m);
+            newVal.intoByteArray0(a, offset);
+        } else {
+            checkMaskFromIndexSize(offset, vsp, m, 8, a.length);
+            DoubleBuffer tb = wrapper(a, offset, bo);
+            this.stOp(tb, 0, m, (tb_, __, i, e) -> tb_.put(i, e));
+        }
     }
 
     /**

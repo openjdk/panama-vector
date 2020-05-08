@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,6 @@ package jdk.incubator.vector;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * A
@@ -2799,13 +2798,13 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      * assert (part == 0) || (part > 0) == (domSize > ranSize);
      * byte[] ra = new byte[Math.max(domSize, ranSize)];
      * if (domSize > ranSize) {  // expansion
-     *     this.intoByteArray(ra, 0);
+     *     this.intoByteArray(ra, 0, ByteOrder.native());
      *     int origin = part * ranSize;
-     *     return species.fromByteArray(ra, origin);
+     *     return species.fromByteArray(ra, origin, ByteOrder.native());
      * } else {  // contraction or size-invariant
      *     int origin = (-part) * domSize;
-     *     this.intoByteArray(ra, origin);
-     *     return species.fromByteArray(ra, 0);
+     *     this.intoByteArray(ra, origin, ByteOrder.native());
+     *     return species.fromByteArray(ra, 0, ByteOrder.native());
      * }
      * }</pre>
      *
@@ -2842,8 +2841,8 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *
      * @return a {@code ByteVector} with the same shape and information content
      * @see Vector#reinterpretShape(VectorSpecies,int)
-     * @see IntVector#intoByteArray(byte[], int)
-     * @see FloatVector#intoByteArray(byte[], int)
+     * @see IntVector#intoByteArray(byte[], int, ByteOrder)
+     * @see FloatVector#intoByteArray(byte[], int, ByteOrder)
      * @see VectorSpecies#withLanes(Class)
      */
     public abstract ByteVector reinterpretAsBytes();
@@ -3263,10 +3262,11 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
     //Array stores
 
     /**
-     * Stores this vector into a byte array starting at an offset.
+     * Stores this vector into a byte array starting at an offset
+     * using explicit byte order.
      * <p>
      * Bytes are extracted from primitive lane elements according
-     * to {@linkplain ByteOrder#LITTLE_ENDIAN little endian} ordering.
+     * to the specified byte ordering.
      * The lanes are stored according to their
      * <a href="Vector.html#lane-order">memory ordering</a>.
      * <p>
@@ -3275,49 +3275,20 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      * intoByteBuffer()} as follows:
      * <pre>{@code
      * var bb = ByteBuffer.wrap(a);
-     * var bo = ByteOrder.LITTLE_ENDIAN;
      * var m = maskAll(true);
      * intoByteBuffer(bb, offset, bo, m);
      * }</pre>
      *
      * @param a the byte array
      * @param offset the offset into the array
+     * @param bo the intended byte order
      * @throws IndexOutOfBoundsException
      *         if {@code offset+N*ESIZE < 0}
      *         or {@code offset+(N+1)*ESIZE > a.length}
      *         for any lane {@code N} in the vector
-     */
-    public abstract void intoByteArray(byte[] a, int offset);
-
-    /**
-     * Stores this vector into a byte array starting at an offset
-     * using a mask.
-     * <p>
-     * Bytes are extracted from primitive lane elements according
-     * to {@linkplain ByteOrder#LITTLE_ENDIAN little endian} ordering.
-     * The lanes are stored according to their
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it calls
-     * {@link #intoByteBuffer(ByteBuffer,int,ByteOrder,VectorMask)
-     * intoByteBuffer()} as follows:
-     * <pre>{@code
-     * var bb = ByteBuffer.wrap(a);
-     * var bo = ByteOrder.LITTLE_ENDIAN;
-     * intoByteBuffer(bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param a the byte array
-     * @param offset the offset into the array
-     * @param m the mask controlling lane selection
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*ESIZE < 0}
-     *         or {@code offset+(N+1)*ESIZE > a.length}
-     *         for any lane {@code N} in the vector
-     *         where the mask is set
      */
     public abstract void intoByteArray(byte[] a, int offset,
-                                       VectorMask<E> m);
+                                       ByteOrder bo);
 
     /**
      * Stores this vector into a byte array starting at an offset

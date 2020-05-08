@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -153,9 +153,10 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
     @DataProvider
     public Object[][] shortByteBufferProvider() {
         return SHORT_GENERATORS.stream().
-                flatMap(fa -> BYTE_BUFFER_GENERATORS.stream().map(fb -> {
-                    return new Object[]{fa, fb};
-                })).
+                flatMap(fa -> BYTE_BUFFER_GENERATORS.stream().
+                        flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
+                            return new Object[]{fa, fb, bo};
+                }))).
                 toArray(Object[][]::new);
     }
 
@@ -163,18 +164,20 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
     public Object[][] shortByteBufferMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
                 flatMap(fm -> SHORT_GENERATORS.stream().
-                        flatMap(fa -> BYTE_BUFFER_GENERATORS.stream().map(fb -> {
-                            return new Object[]{fa, fb, fm};
-                        }))).
+                        flatMap(fa -> BYTE_BUFFER_GENERATORS.stream().
+                                flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
+                            return new Object[]{fa, fb, fm, bo};
+                        })))).
                 toArray(Object[][]::new);
     }
 
     @DataProvider
     public Object[][] shortByteArrayProvider() {
         return SHORT_GENERATORS.stream().
-                flatMap(fa -> BYTE_ARRAY_GENERATORS.stream().map(fb -> {
-                    return new Object[]{fa, fb};
-                })).
+                flatMap(fa -> BYTE_ARRAY_GENERATORS.stream().
+                        flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
+                    return new Object[]{fa, fb, bo};
+                }))).
                 toArray(Object[][]::new);
     }
 
@@ -182,9 +185,10 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
     public Object[][] shortByteArrayMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
                 flatMap(fm -> SHORT_GENERATORS.stream().
-                        flatMap(fa -> BYTE_ARRAY_GENERATORS.stream().map(fb -> {
-                            return new Object[]{fa, fb, fm};
-                        }))).
+                        flatMap(fa -> BYTE_ARRAY_GENERATORS.stream().
+                                flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
+                            return new Object[]{fa, fb, fm, bo};
+                        })))).
                 toArray(Object[][]::new);
     }
 
@@ -301,7 +305,8 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
 
     @Test(dataProvider = "shortByteBufferProvider")
     static void loadStoreByteBuffer(IntFunction<short[]> fa,
-                                    IntFunction<ByteBuffer> fb) {
+                                    IntFunction<ByteBuffer> fb,
+                                    ByteOrder bo) {
         ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), fb);
         ByteBuffer r = fb.apply(a.limit());
 
@@ -310,8 +315,8 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN);
-                av.intoByteBuffer(r, i, ByteOrder.LITTLE_ENDIAN);
+                ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, i, bo);
+                av.intoByteBuffer(r, i, bo);
             }
         }
         Assert.assertEquals(a.position(), 0, "Input buffer position changed");
@@ -323,7 +328,8 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
 
     @Test(dataProvider = "shortByteBufferProvider")
     static void loadReadOnlyStoreByteBuffer(IntFunction<short[]> fa,
-                                            IntFunction<ByteBuffer> fb) {
+                                            IntFunction<ByteBuffer> fb,
+                                            ByteOrder bo) {
         ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), fb);
         a = a.asReadOnlyBuffer().order(a.order());
         ByteBuffer r = fb.apply(a.limit());
@@ -333,8 +339,8 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN);
-                av.intoByteBuffer(r, i, ByteOrder.LITTLE_ENDIAN);
+                ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, i, bo);
+                av.intoByteBuffer(r, i, bo);
             }
         }
         Assert.assertEquals(a.position(), 0, "Input buffer position changed");
@@ -347,7 +353,8 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
     @Test(dataProvider = "shortByteBufferMaskProvider")
     static void loadStoreByteBufferMask(IntFunction<short[]> fa,
                                         IntFunction<ByteBuffer> fb,
-                                        IntFunction<boolean[]> fm) {
+                                        IntFunction<boolean[]> fm,
+                                        ByteOrder bo) {
         ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), fb);
         ByteBuffer r = fb.apply(a.limit());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -358,8 +365,8 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN, vmask);
-                av.intoByteBuffer(r, i, ByteOrder.LITTLE_ENDIAN);
+                ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, i, bo, vmask);
+                av.intoByteBuffer(r, i, bo);
             }
         }
         Assert.assertEquals(a.position(), 0, "Input buffer position changed");
@@ -372,8 +379,8 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
         r = fb.apply(a.limit());
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN);
-                av.intoByteBuffer(r, i, ByteOrder.LITTLE_ENDIAN, vmask);
+                ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, i, bo);
+                av.intoByteBuffer(r, i, bo, vmask);
             }
         }
         Assert.assertEquals(a.position(), 0, "Input buffer position changed");
@@ -386,7 +393,8 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
     @Test(dataProvider = "shortByteBufferMaskProvider")
     static void loadReadOnlyStoreByteBufferMask(IntFunction<short[]> fa,
                                                 IntFunction<ByteBuffer> fb,
-                                                IntFunction<boolean[]> fm) {
+                                                IntFunction<boolean[]> fm,
+                                                ByteOrder bo) {
         ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), fb);
         a = a.asReadOnlyBuffer().order(a.order());
         ByteBuffer r = fb.apply(a.limit());
@@ -398,8 +406,8 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN, vmask);
-                av.intoByteBuffer(r, i, ByteOrder.LITTLE_ENDIAN);
+                ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, i, bo, vmask);
+                av.intoByteBuffer(r, i, bo);
             }
         }
         Assert.assertEquals(a.position(), 0, "Input buffer position changed");
@@ -411,8 +419,9 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
 
     @Test(dataProvider = "shortByteArrayProvider")
     static void loadStoreByteArray(IntFunction<short[]> fa,
-                                    IntFunction<byte[]> fb) {
-        byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+                                    IntFunction<byte[]> fb,
+                                    ByteOrder bo) {
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, bo);
         byte[] r = fb.apply(a.length);
 
         int s = SPECIES.length() * SPECIES.elementSize() / 8;
@@ -420,8 +429,8 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteArray(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN);
-                av.intoByteArray(r, i);
+                ShortVector av = ShortVector.fromByteArray(SPECIES, a, i, bo);
+                av.intoByteArray(r, i, bo);
             }
         }
         Assert.assertEquals(a, r, "Byte arrays not equal");
@@ -430,8 +439,9 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
     @Test(dataProvider = "shortByteArrayMaskProvider")
     static void loadByteArrayMask(IntFunction<short[]> fa,
                                   IntFunction<byte[]> fb,
-                                  IntFunction<boolean[]> fm) {
-          byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+                                  IntFunction<boolean[]> fm,
+                                  ByteOrder bo) {
+          byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, bo);
           byte[] r = fb.apply(a.length);
           boolean[] mask = fm.apply(SPECIES.length());
           VectorMask<Short> vmask = VectorMask.fromValues(SPECIES, mask);
@@ -441,8 +451,8 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
 
           for (int ic = 0; ic < INVOC_COUNT; ic++) {
               for (int i = 0; i < l; i += s) {
-                  ShortVector av = ShortVector.fromByteArray(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN, vmask);
-                  av.intoByteArray(r, i);
+                  ShortVector av = ShortVector.fromByteArray(SPECIES, a, i, bo, vmask);
+                  av.intoByteArray(r, i, bo);
               }
           }
           assertArraysEquals(a, r, mask);
@@ -451,8 +461,9 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
     @Test(dataProvider = "shortByteArrayMaskProvider")
     static void storeByteArrayMask(IntFunction<short[]> fa,
                                    IntFunction<byte[]> fb,
-                                   IntFunction<boolean[]> fm) {
-        byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+                                   IntFunction<boolean[]> fm,
+                                   ByteOrder bo) {
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, bo);
         byte[] r = fb.apply(a.length);
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Short> vmask = VectorMask.fromValues(SPECIES, mask);
@@ -460,12 +471,12 @@ public class Short64VectorLoadStoreTests extends AbstractVectorTest {
         int s = SPECIES.length() * SPECIES.elementSize() / 8;
         int l = a.length;
 
-        a = toByteArray(fa.apply(SPECIES.length()), fb, ByteOrder.LITTLE_ENDIAN);
+        a = toByteArray(fa.apply(SPECIES.length()), fb, bo);
         r = fb.apply(a.length);
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteArray(SPECIES, a, i, ByteOrder.LITTLE_ENDIAN);
-                av.intoByteArray(r, i, ByteOrder.LITTLE_ENDIAN, vmask);
+                ShortVector av = ShortVector.fromByteArray(SPECIES, a, i, bo);
+                av.intoByteArray(r, i, bo, vmask);
             }
         }
         assertArraysEquals(a, r, mask);

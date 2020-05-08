@@ -355,10 +355,10 @@ abstract class AbstractSpecies<E> extends jdk.internal.vm.vector.VectorSupport.V
 
     @ForceInline
     @Override
-    public final Vector<E> fromByteArray(byte[] a, int offset) {
+    public final Vector<E> fromByteArray(byte[] a, int offset, ByteOrder bo) {
         return dummyVector()
             .fromByteArray0(a, offset)
-            .maybeSwap(ByteOrder.LITTLE_ENDIAN);
+            .maybeSwap(bo);
     }
 
     @Override

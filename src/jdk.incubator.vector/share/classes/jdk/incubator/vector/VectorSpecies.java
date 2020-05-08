@@ -24,6 +24,7 @@
  */
 package jdk.incubator.vector;
 
+import java.nio.ByteOrder;
 import java.util.function.IntUnaryOperator;
 
 /**
@@ -474,27 +475,31 @@ public interface VectorSpecies<E> {
     Vector<E> fromValues(long... values);
 
     /**
-     * Returns a vector of this species
-     * where lane elements are initialized
-     * from the given byte array at the given offset.
-     *
+     * Loads a vector of this species from a byte array starting
+     * at an offset.
+     * Bytes are composed into primitive lane elements according
+     * to the specified byte order.
+     * The vector is arranged into lanes according to
+     * <a href="Vector.html#lane-order">memory ordering</a>.
+     * <p>
      * Equivalent to
-     * {@code IntVector.fromByteArray(this,a,offset)}
+     * {@code IntVector.fromByteArray(this,a,offset,bo)}
      * or an equivalent {@code fromByteArray} method,
      * on the vector type corresponding to
      * this species.
      *
      * @param a a byte array
      * @param offset the index of the first byte to load
+     * @param bo the intended byte order
      * @return a vector of the given species filled from the byte array
      * @throws IndexOutOfBoundsException
      *         if {@code offset+N*ESIZE < 0}
      *         or {@code offset+(N+1)*ESIZE > a.length}
      *         for any lane {@code N} in the vector
-     * @see IntVector#fromByteArray(VectorSpecies,byte[],int)
-     * @see FloatVector#fromByteArray(VectorSpecies,byte[],int)
+     * @see IntVector#fromByteArray(VectorSpecies,byte[],int,ByteOrder)
+     * @see FloatVector#fromByteArray(VectorSpecies,byte[],int,ByteOrder)
      */
-    Vector<E> fromByteArray(byte[] a, int offset);
+    Vector<E> fromByteArray(byte[] a, int offset, ByteOrder bo);
 
     /**
      * Returns a mask of this species

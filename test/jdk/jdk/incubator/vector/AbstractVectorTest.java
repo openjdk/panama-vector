@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,11 +25,12 @@ import java.lang.Integer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.IntFunction;
 import java.util.Random;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.IntFunction;
 
 public class AbstractVectorTest {
 
@@ -77,6 +78,9 @@ public class AbstractVectorTest {
             }
         };
     }
+
+    static final Collection<ByteOrder> BYTE_ORDER_VALUES = Set.of(
+            ByteOrder.BIG_ENDIAN, ByteOrder.LITTLE_ENDIAN);
 
     static final List<IntFunction<ByteBuffer>> BYTE_BUFFER_GENERATORS = List.of(
             withToString("HB:RW:NE", (int s) -> {
