@@ -3414,14 +3414,8 @@ public abstract class LongVector extends AbstractVector<Long> {
 
         @Override
         @ForceInline
-        public final Class<Long> genericElementType() {
+        final Class<Long> genericElementType() {
             return Long.class;
-        }
-
-        @Override
-        @ForceInline
-        public final Class<long[]> arrayType() {
-            return long[].class;
         }
 
         @SuppressWarnings("unchecked")

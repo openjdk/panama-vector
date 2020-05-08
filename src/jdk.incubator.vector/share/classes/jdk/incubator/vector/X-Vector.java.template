@@ -4093,14 +4093,8 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 
         @Override
         @ForceInline
-        public final Class<$Boxtype$> genericElementType() {
+        final Class<$Boxtype$> genericElementType() {
             return $Boxtype$.class;
-        }
-
-        @Override
-        @ForceInline
-        public final Class<$type$[]> arrayType() {
-            return $type$[].class;
         }
 
         @SuppressWarnings("unchecked")

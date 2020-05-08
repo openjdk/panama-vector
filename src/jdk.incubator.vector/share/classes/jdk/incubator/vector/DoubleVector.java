@@ -3422,14 +3422,8 @@ public abstract class DoubleVector extends AbstractVector<Double> {
 
         @Override
         @ForceInline
-        public final Class<Double> genericElementType() {
+        final Class<Double> genericElementType() {
             return Double.class;
-        }
-
-        @Override
-        @ForceInline
-        public final Class<double[]> arrayType() {
-            return double[].class;
         }
 
         @SuppressWarnings("unchecked")

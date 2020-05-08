@@ -3466,14 +3466,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
 
         @Override
         @ForceInline
-        public final Class<Byte> genericElementType() {
+        final Class<Byte> genericElementType() {
             return Byte.class;
-        }
-
-        @Override
-        @ForceInline
-        public final Class<byte[]> arrayType() {
-            return byte[].class;
         }
 
         @SuppressWarnings("unchecked")

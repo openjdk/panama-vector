@@ -3481,14 +3481,8 @@ public abstract class ShortVector extends AbstractVector<Short> {
 
         @Override
         @ForceInline
-        public final Class<Short> genericElementType() {
+        final Class<Short> genericElementType() {
             return Short.class;
-        }
-
-        @Override
-        @ForceInline
-        public final Class<short[]> arrayType() {
-            return short[].class;
         }
 
         @SuppressWarnings("unchecked")

@@ -58,25 +58,9 @@ public interface VectorSpecies<E> {
      * species.
      *
      * @return the primitive element type ({@code ETYPE})
+     * @see Class#arrayType()
      */
     Class<E> elementType();
-
-    /**
-     * Returns the generic parameter type {@code E} corresponding
-     * to the element type {@code ETYPE} of this species.
-     *
-     * @return the parameter type {@code E}
-     */
-    Class<E> genericElementType();
-
-    /**
-     * Returns the primitive array type {@code ETYPE[]},
-     * which can carry packed lane values of vectors of
-     * this species.
-     *
-     * @return the primitive array type {@code ETYPE[]}
-     */
-    Class<?> arrayType();
 
     /**
      * Returns the vector type of this species.

@@ -3511,14 +3511,8 @@ public abstract class IntVector extends AbstractVector<Integer> {
 
         @Override
         @ForceInline
-        public final Class<Integer> genericElementType() {
+        final Class<Integer> genericElementType() {
             return Integer.class;
-        }
-
-        @Override
-        @ForceInline
-        public final Class<int[]> arrayType() {
-            return int[].class;
         }
 
         @SuppressWarnings("unchecked")

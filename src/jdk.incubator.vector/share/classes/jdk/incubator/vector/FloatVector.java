@@ -3389,14 +3389,8 @@ public abstract class FloatVector extends AbstractVector<Float> {
 
         @Override
         @ForceInline
-        public final Class<Float> genericElementType() {
+        final Class<Float> genericElementType() {
             return Float.class;
-        }
-
-        @Override
-        @ForceInline
-        public final Class<float[]> arrayType() {
-            return float[].class;
         }
 
         @SuppressWarnings("unchecked")
