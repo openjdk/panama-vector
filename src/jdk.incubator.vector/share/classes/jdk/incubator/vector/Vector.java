@@ -91,7 +91,7 @@ import java.util.Arrays;
  * <!-- The preceding paragraphs are shared verbatim
  *   -- between Vector.java and package-info.java -->
  *
- * <p> The {@linkplain #elementType element type} of a vector,
+ * <p><a id="ETYPE"></a> The {@linkplain #elementType element type} of a vector,
  * sometimes called {@code ETYPE}, is one of the primitive types
  * {@code byte}, {@code short}, {@code int}, {@code long}, {@code
  * float}, or {@code double}.
@@ -104,8 +104,8 @@ import java.util.Arrays;
  * vector, each lane carries a primitive {@code int} value.  This
  * pattern continues for the other primitive types as well.
  *
- * <p> The {@linkplain #length() length} of a vector is the number of
- * lanes it contains.
+ * <p><a id="VLENGTH"></a> The {@linkplain #length() length} of a vector
+ * is the lane count, the number of lanes it contains.
  *
  * This number is also called {@code VLENGTH} when the context makes
  * clear which vector it belongs to.  Each vector has its own fixed
@@ -1109,7 +1109,8 @@ import java.util.Arrays;
  * <!-- The preceding paragraph is shared verbatim
  *   -- between Vector.java and package-info.java -->
  *
- * @param <E> the generic (boxed) version of the vector {@code ETYPE}
+ * @param <E> the boxed element type for the vector element
+ *        type ({@code ETYPE})
  *
  */
 @SuppressWarnings("exports")
@@ -1129,7 +1130,8 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
     public abstract VectorSpecies<E> species();
 
     /**
-     * Returns the primitive element type ({@code ETYPE}) of this vector.
+     * Returns the primitive <a href="Vector.html#ETYPE">element type</a>
+     * ({@code ETYPE}) of this vector.
      * This is the same value as {@code this.species().elementType()}.
      *
      * @return the primitive element type of this vector
@@ -1153,9 +1155,10 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
     public abstract VectorShape shape();
 
     /**
-     * Returns the number of vector lanes ({@code VLENGTH}).
+     * Returns the lane count, or <a href="Vector.html#VLENGTH">vector length</a>
+     * ({@code VLENGTH}).
      *
-     * @return the number of vector lanes
+     * @return the lane count
      */
     public abstract int length();
 

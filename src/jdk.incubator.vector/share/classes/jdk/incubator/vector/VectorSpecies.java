@@ -29,7 +29,8 @@ import java.util.function.IntUnaryOperator;
 
 /**
  * Interface for managing all vectors of the same combination
- * of element type ({@code ETYPE}) and {@link VectorShape shape}.
+ * of <a href="Vector.html#ETYPE">element type</a> ({@code ETYPE})
+ * and {@link VectorShape shape}.
  *
  * @apiNote
  * User code should not implement this interface.  A future release of

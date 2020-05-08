@@ -33,16 +33,22 @@ import java.util.Objects;
 
 /**
  * A {@code VectorMask} represents an ordered immutable sequence of {@code boolean}
- * values.  Some vector operations accept masks to
- * control the selection and operation of lane elements of input vectors.
+ * values.
  * <p>
- * The number of values in the sequence is referred to as the VectorMask
+ * A {@code VectorMask} and {@code Vector} of the same
+ * <a href="Vector.html#ETYPE">element type</a>
+ * ({@code ETYPE}) and {@link VectorShape shape} have the same number of lanes,
+ * and are therefore compatible (specifically, their {@link #vectorSpecies()
+ * vector species} are compatible).
+ * <p>
+ * Some vector operations accept (compatible) masks to control the
+ * selection and operation of lane elements of input vectors.
+ * <p>
+ * The number of values in the sequence is referred to as the {@code VectorMask}
  * {@link #length() length}. The length also corresponds to the number of
  * VectorMask lanes.  The lane element at lane index {@code N} (from {@code 0},
  * inclusive, to length, exclusive) corresponds to the {@code N + 1}'th
  * value in the sequence.
- * A VectorMask and Vector of the same element type and shape have the same number
- * of lanes.
  * <p>
  * A lane is said to be <em>set</em> if the lane element is {@code true},
  * otherwise a lane is said to be <em>unset</em> if the lane element is
@@ -102,7 +108,8 @@ import java.util.Objects;
  * }</pre>
  *
  * </ul>
- * @param <E> the boxed element type of this mask
+ * @param <E> the boxed element type for the vector element
+ *        type ({@code ETYPE})
  *
  * <h2>Value-based classes and identity operations</h2>
  *
