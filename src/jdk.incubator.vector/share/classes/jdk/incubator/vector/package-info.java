@@ -83,6 +83,30 @@
  * transcendental operations on values of floating point element
  * types.
  *
+ * <p> Some lane-wise operations, such as the {@code add} operator, are defined as
+ * a full-service named operation, where a corresponding method on {@code Vector}
+ * comes in masked and unmasked overloadings, and (in subclasses) also comes in
+ * covariant overrides (returning the subclass) and additional scalar-broadcast
+ * overloadings (both masked and unmasked).
+ *
+ * Other lane-wise operations, such as the {@code min} operator, are defined as a
+ * partially serviced (not a full-service) named operation, where a corresponding
+ * method on {@code Vector} and/or a subclass provide some but all possible
+ * overloadings and overrides (commonly the unmasked varient with scalar-broadcast
+ * overloadings).
+ *
+ * Finally, all lane-wise operations (those named as previously described,
+ * or otherwise unnamed method-wise) have a corresponding
+ * {@link VectorOperators.Operator operator token}
+ * declared as a static constant on {@link VectorOperators}.
+ * Each operator token defines a symbolic Java expression for the operation,
+ * such as {@code a + b} for the
+ * {@link VectorOperators#ADD ADD} operator token.
+ * General lane-wise operation-token accepting methods, such as for a
+ * {@link Vector#lanewise(VectorOperators.Unary) unary lane-wise}
+ * operation, are provided on {@code Vector} and come in the same variants as
+ * a full-service named operation.
+ *
  * <p>This package contains a public subtype of {@link Vector}
  * corresponding to each supported element type:
  * {@link ByteVector}, {@link ShortVector},
