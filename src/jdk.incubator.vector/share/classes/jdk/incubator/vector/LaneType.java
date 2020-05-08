@@ -167,7 +167,7 @@ enum LaneType {
             return new ClassCastException(msg);
         } else {
             // Failure mode for VectorSpecies.{of*,withLanes}.
-            return new IllegalArgumentException(msg);
+            return new UnsupportedOperationException(msg);
         }
     }
 

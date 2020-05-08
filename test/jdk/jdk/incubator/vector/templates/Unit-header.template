@@ -939,6 +939,46 @@ public class $vectorteststype$ extends AbstractVectorTest {
         }
     }
 
+    @Test
+    void viewAsIntegeralLanesTest() {
+#if[FP]
+        Vector<?> asIntegral = SPECIES.zero().viewAsIntegralLanes();
+        VectorSpecies<?> asIntegralSpecies = asIntegral.species();
+        Assert.assertNotEquals(asIntegralSpecies.elementType(), SPECIES.elementType());
+        Assert.assertEquals(asIntegralSpecies.vectorShape(), SPECIES.vectorShape());
+        Assert.assertEquals(asIntegralSpecies.length(), SPECIES.length());
+        Assert.assertEquals(asIntegral.viewAsFloatingLanes().species(), SPECIES);
+#else[FP]
+        Vector<?> asIntegral = SPECIES.zero().viewAsIntegralLanes();
+        Assert.assertEquals(asIntegral.species(), SPECIES);
+#end[FP]
+    }
+
+#if[FP]
+    @Test
+    void viewAsFloatingLanesTest() {
+        Vector<?> asFloating = SPECIES.zero().viewAsFloatingLanes();
+        Assert.assertEquals(asFloating.species(), SPECIES);
+    }
+#else[FP]
+#if[byteOrShort]
+    @Test(expectedExceptions = UnsupportedOperationException.class)
+    void viewAsFloatingLanesTest() {
+        SPECIES.zero().viewAsFloatingLanes();
+    }
+#else[byteOrShort]
+    @Test
+    void viewAsFloatingLanesTest() {
+        Vector<?> asFloating = SPECIES.zero().viewAsFloatingLanes();
+        VectorSpecies<?> asFloatingSpecies = asFloating.species();
+        Assert.assertNotEquals(asFloatingSpecies.elementType(), SPECIES.elementType());
+        Assert.assertEquals(asFloatingSpecies.vectorShape(), SPECIES.vectorShape());
+        Assert.assertEquals(asFloatingSpecies.length(), SPECIES.length());
+        Assert.assertEquals(asFloating.viewAsIntegralLanes().species(), SPECIES);
+    }
+#end[byteOrShort]
+#end[FP]
+
 #if[BITWISE]
     @Test
     // Test div by 0.

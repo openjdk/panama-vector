@@ -2555,7 +2555,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * When this method is used on used on vectors
      * of type {@code ByteVector},
      * there will be no loss of precision or range,
-     * and so no {@code IllegalArgumentException} will
+     * and so no {@code UnsupportedOperationException} will
      * be thrown.
      */
     @ForceInline
@@ -2575,7 +2575,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * When this method is used on used on vectors
      * of type {@code ByteVector},
      * there will be no loss of precision or range,
-     * and so no {@code IllegalArgumentException} will
+     * and so no {@code UnsupportedOperationException} will
      * be thrown.
      */
     @ForceInline
@@ -3365,7 +3365,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * {@inheritDoc} <!--workaround-->
      *
      * @implNote This method always throws
-     * {@code IllegalArgumentException}, because there is no floating
+     * {@code UnsupportedOperationException}, because there is no floating
      * point type of the same size as {@code byte}.  The return type
      * of this method is arbitrarily designated as
      * {@code Vector<?>}.  Future versions of this API may change the return
@@ -3377,7 +3377,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     Vector<?>
     viewAsFloatingLanes() {
         LaneType flt = LaneType.BYTE.asFloating();
-        throw new AssertionError();  // should already throw IAE
+        // asFloating() will throw UnsupportedOperationException for the unsupported type byte
+        throw new AssertionError("Cannot reach here");
     }
 
     // ================================================

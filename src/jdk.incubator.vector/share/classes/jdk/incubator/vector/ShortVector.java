@@ -2556,7 +2556,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
      * When this method is used on used on vectors
      * of type {@code ShortVector},
      * there will be no loss of precision or range,
-     * and so no {@code IllegalArgumentException} will
+     * and so no {@code UnsupportedOperationException} will
      * be thrown.
      */
     @ForceInline
@@ -2576,7 +2576,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
      * When this method is used on used on vectors
      * of type {@code ShortVector},
      * there will be no loss of precision or range,
-     * and so no {@code IllegalArgumentException} will
+     * and so no {@code UnsupportedOperationException} will
      * be thrown.
      */
     @ForceInline
@@ -3380,7 +3380,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
      * {@inheritDoc} <!--workaround-->
      *
      * @implNote This method always throws
-     * {@code IllegalArgumentException}, because there is no floating
+     * {@code UnsupportedOperationException}, because there is no floating
      * point type of the same size as {@code short}.  The return type
      * of this method is arbitrarily designated as
      * {@code Vector<?>}.  Future versions of this API may change the return
@@ -3392,7 +3392,8 @@ public abstract class ShortVector extends AbstractVector<Short> {
     Vector<?>
     viewAsFloatingLanes() {
         LaneType flt = LaneType.SHORT.asFloating();
-        throw new AssertionError();  // should already throw IAE
+        // asFloating() will throw UnsupportedOperationException for the unsupported type short
+        throw new AssertionError("Cannot reach here");
     }
 
     // ================================================

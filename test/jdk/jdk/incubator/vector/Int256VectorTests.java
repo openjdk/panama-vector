@@ -836,6 +836,22 @@ public class Int256VectorTests extends AbstractVectorTest {
     }
 
     @Test
+    void viewAsIntegeralLanesTest() {
+        Vector<?> asIntegral = SPECIES.zero().viewAsIntegralLanes();
+        Assert.assertEquals(asIntegral.species(), SPECIES);
+    }
+
+    @Test
+    void viewAsFloatingLanesTest() {
+        Vector<?> asFloating = SPECIES.zero().viewAsFloatingLanes();
+        VectorSpecies<?> asFloatingSpecies = asFloating.species();
+        Assert.assertNotEquals(asFloatingSpecies.elementType(), SPECIES.elementType());
+        Assert.assertEquals(asFloatingSpecies.vectorShape(), SPECIES.vectorShape());
+        Assert.assertEquals(asFloatingSpecies.length(), SPECIES.length());
+        Assert.assertEquals(asFloating.viewAsIntegralLanes().species(), SPECIES);
+    }
+
+    @Test
     // Test div by 0.
     static void bitwiseDivByZeroSmokeTest() {
         try {

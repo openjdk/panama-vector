@@ -286,9 +286,11 @@ public abstract class VectorMask<E> extends jdk.internal.vm.vector.VectorSupport
      *
      * @return the lane elements of this mask packed into a {@code long}
      *         value.
-     * @throws IllegalArgumentException if there are more than 64 lanes
+     * @throws UnsupportedOperationException if there are more than 64 lanes
      *         in this mask
      */
+    // FIXME: Consider changing method to accept part locating where to extract
+    // out a 64bit value (in effect a contracting operation)
     public abstract long toLong();
 
     /**

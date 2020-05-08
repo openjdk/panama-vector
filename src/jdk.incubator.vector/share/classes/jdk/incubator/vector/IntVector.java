@@ -2568,7 +2568,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
      * When this method is used on used on vectors
      * of type {@code IntVector},
      * there will be no loss of precision or range,
-     * and so no {@code IllegalArgumentException} will
+     * and so no {@code UnsupportedOperationException} will
      * be thrown.
      */
     @ForceInline

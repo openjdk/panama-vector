@@ -2963,7 +2963,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      * the return type.
      *
      * @return the original vector, reinterpreted as floating point
-     * @throws IllegalArgumentException if there is no floating point
+     * @throws UnsupportedOperationException if there is no floating point
      *         type the same size as the lanes of this vector
      * @see VectorOperators.Conversion#ofReinterpret(Class,Class)
      * @see Vector#convert(VectorOperators.Conversion,int)
@@ -3448,7 +3448,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *
      * @return an {@code int[]} array containing
      *         the lane values of this vector
-     * @throws IllegalArgumentException
+     * @throws UnsupportedOperationException
      *         if any lane value cannot be represented as an
      *         {@code int} array element
      * @see #toArray()
@@ -3477,7 +3477,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *
      * @return a {@code long[]} array containing
      *         the lane values of this vector
-     * @throws IllegalArgumentException
+     * @throws UnsupportedOperationException
      *         if any lane value cannot be represented as a
      *         {@code long} array element
      * @see #toArray()
