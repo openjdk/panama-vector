@@ -24,8 +24,9 @@
  */
 
 /**
- * Defines an API for expressing computations that can reliably be compiled
- * at runtime into SIMD instructions, such as AVX instructions on x64.
+ * Defines an API for expressing computations that can be reliably compiled
+ * at runtime into SIMD instructions, such as AVX instructions on x64, and
+ * NEON instructions on AArch64.
  * {@Incubating}
  *
  * @moduleGraph

@@ -121,7 +121,7 @@
  * the first {@code a.length % SPECIES.length()} lanes set.
  *
  * Since a mask is used in all iterations, the above implementation
- * may not achieve optimal performance(for large array lengths). The
+ * may not achieve optimal performance (for large array lengths). The
  * same computation can be implemented without masks as follows:
  *
  * <pre>{@code
