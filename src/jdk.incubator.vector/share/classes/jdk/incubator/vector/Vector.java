@@ -1960,6 +1960,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *         equal to the second input vector
      * @see #compare(VectorOperators.Comparison,Vector)
      * @see VectorOperators#EQ
+     * @see #equals
      */
     public abstract VectorMask<E> eq(Vector<E> v);
 
@@ -3531,13 +3532,13 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      * Indicates whether this vector is identical to some other object.
      * Two vectors are identical only if they have the same species
      * and same lane values, in the same order.
-
      * <p>The comparison of lane values is produced as if by a call to
      * {@link Arrays#equals(int[],int[]) Arrays.equals()},
      * as appropriate to the arrays returned by
      * {@link #toArray toArray()} on both vectors.
      *
      * @return whether this vector is identical to some other object
+     * @see #eq
      */
     @Override
     public abstract boolean equals(Object obj);

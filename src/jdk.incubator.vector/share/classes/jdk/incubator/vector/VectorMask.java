@@ -401,8 +401,9 @@ public abstract class VectorMask<E> extends jdk.internal.vm.vector.VectorSupport
      *
      * @param m the input mask
      * @return a mask showing where the two input masks were equal
+     * @see #equals
      */
-    public abstract VectorMask<E> equal(VectorMask<E> m);
+    public abstract VectorMask<E> eq(VectorMask<E> m);
 
     /**
      * Logically subtracts a second input mask
@@ -564,8 +565,9 @@ public abstract class VectorMask<E> extends jdk.internal.vm.vector.VectorSupport
      * Indicates whether this mask is identical to some other object.
      * Two masks are identical only if they have the same species
      * and same source indexes, in the same order.
-
+     *
      * @return whether this vector is identical to some other object
+     * @see #eq
      */
     @Override
     public final boolean equals(Object obj) {
@@ -574,7 +576,7 @@ public abstract class VectorMask<E> extends jdk.internal.vm.vector.VectorSupport
             if (this.vectorSpecies().equals(that.vectorSpecies())) {
                 @SuppressWarnings("unchecked")
                 VectorMask<E> that2 = (VectorMask<E>) that;
-                return this.equal(that2).allTrue();
+                return this.eq(that2).allTrue();
             }
         }
         return false;

@@ -145,7 +145,7 @@ abstract class AbstractMask<E> extends VectorMask<E> {
     }
 
     @Override
-    public VectorMask<E> equal(VectorMask<E> m) {
+    public VectorMask<E> eq(VectorMask<E> m) {
         // FIXME: Generate good code here.
         return bOp(m, (i, a, b) -> a == b);
     }
