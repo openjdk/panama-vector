@@ -1,6 +1,0 @@
-
-    @Benchmark
-    public void [[TEST]][[TEST_TYPE]][[OP_NAME]](Blackhole bh) {
-[[KERNEL]]
-        bh.consume(r);
-    }
