@@ -1835,8 +1835,10 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *
      * This is an associative cross-lane reduction operation which
      * applies the specified operation to all the lane elements.
-     * The result is delivered as a {@code long} value, rather
-     * than the vector's native {@code ETYPE}.
+     * The return value will be equal to this expression:
+     * {@code (long) ((EVector)this).reduceLanes(op)}, where {@code EVector}
+     * is the vector class specific to this vector's element type
+     * {@code ETYPE}.
      * <p>
      * In the case of operations {@code ADD} and {@code MUL},
      * when {@code ETYPE} is {@code float} or {@code double},
@@ -1872,8 +1874,10 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *
      * This is an associative cross-lane reduction operation which
      * applies the specified operation to the selected lane elements.
-     * The result is delivered as a {@code long} value, rather
-     * than the vector's native {@code ETYPE}.
+     * The return value will be equal to this expression:
+     * {@code (long) ((EVector)this).reduceLanes(op, m)}, where {@code EVector}
+     * is the vector class specific to this vector's element type
+     * {@code ETYPE}.
      * <p>
      * If no elements are selected, an operation-specific identity
      * value is returned.
@@ -2063,7 +2067,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *
      * <p>
      * The result is the same as
-     * {@code this.compare(op, this.broadcast(s))}.
+     * {@code this.compare(op, this.broadcast(e))}.
      * That is, the scalar may be regarded as broadcast to
      * a vector of the same species, and then compared
      * against the original vector, using the selected
@@ -2102,7 +2106,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      * to each lane value, paired with the broadcast value.
      *
      * The returned result is equal to the expression
-     * {@code compare(op,s).and(m)}.
+     * {@code compare(op,e).and(m)}.
      *
      * @apiNote
      * The {@code long} value {@code e} must be accurately
