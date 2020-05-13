@@ -139,8 +139,8 @@ int SharedRuntime::c_calling_convention(const BasicType *sig_bt,
 }
 
 int SharedRuntime::vector_calling_convention(VMRegPair *regs,
-                                             int num_bits,
-                                             int total_args_passed) {
+                                             uint num_bits,
+                                             uint total_args_passed) {
   ShouldNotCallThis();
   return 0;
 }

@@ -1991,7 +1991,7 @@ LibraryCallKit::classify_unsafe_addr(Node* &base, Node* &offset, BasicType type)
   }
 }
 
-inline Node* LibraryCallKit::make_unsafe_address(Node*& base, Node* offset, DecoratorSet decorators, BasicType type, bool can_cast) {
+Node* LibraryCallKit::make_unsafe_address(Node*& base, Node* offset, DecoratorSet decorators, BasicType type, bool can_cast) {
   Node* uncasted_base = base;
   int kind = classify_unsafe_addr(uncasted_base, offset, type);
   if (kind == Type::RawPtr) {
