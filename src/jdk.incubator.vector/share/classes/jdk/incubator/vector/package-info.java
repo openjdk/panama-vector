@@ -169,7 +169,7 @@
  *
  * The scalar computation after the vector computation is required to
  * process a <em>tail</em> of {@code TLENGTH} array elements, where
- * {@code TLENGTH <= VLENGTH} for the vector species.
+ * {@code TLENGTH < SPECIES.length()} for the vector species.
  *
  * The example above uses vectors hardcoded to a concrete shape
  * (512-bit). Instead, we could use preferred species as shown below,
@@ -184,7 +184,7 @@
  * is used in the above code to find the end of the vector loop.
  * A primitive masking expression such as
  * {@code (a.length & ~(SPECIES.length() - 1))} might also be used
- * here, since the species {@code VLENGTH} is known to be 8, which
+ * here, since {@code SPECIES.length()} is known to be 8, which
  * is a power of two.  But this is not always a correct assumption.
  * For example, if the {@code FloatVector.SPECIES_PREFERRED} turns
  * out to have the platform-dependent shape
