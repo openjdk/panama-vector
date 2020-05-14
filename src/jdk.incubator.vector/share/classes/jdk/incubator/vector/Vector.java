@@ -1080,7 +1080,7 @@ import java.util.Arrays;
  *
  * @implNote
  *
- * <h2>Hardware platform dependencies</h2>
+ * <h2>Hardware platform dependencies and limitations</h2>
  *
  * The Vector API is to accelerate computations in style of Single
  * Instruction Multiple Data (SIMD), using available hardware
@@ -1092,6 +1092,33 @@ import java.util.Arrays;
  * do not include specialized hardware support for SIMD computations.
  * The Vector API is not likely to provide any special performance
  * benefit on such platforms.
+ *
+ * <p> Currently the implementation is optimized to work best on:
+ *
+ * <ul>
+ *
+ * <li> Intel x64 platforms supporting at least AVX2 up to AVX-512.
+ * Masking using mask registers and mask accepting hardware
+ * instructions on AVX-512 are not currently supported.
+ *
+ * <li> ARM AArch64 platforms supporting NEON.  Although the API has
+ * been designed to ensure ARM SVE instructions can be supported
+ * (vector sizes between 128 to 2048 bits) there is currently no
+ * implementation of such instructions and the general masking
+ * capability.
+ *
+ * </ul>
+ * The implementation currently supports masked lane-wise operations
+ * in a cross-platform manner by composing the unmasked lane-wise
+ * operation with {@link #blend(Vector, VectorMask) blend} as in
+ * the expression {@code a.blend(a.lanewise(op, b), m)}, where
+ * {@code a} and {@code b} are vectors, {@code op} is the vector
+ * operation, and {@code m} is the mask.
+ *
+ * <p> The implementation does not currently support optimal
+ * vectorized instructions for floating point transcendental
+ * functions (such as operators {@link VectorOperators#SIN SIN}
+ * and {@link VectorOperators#LOG LOG}).
  *
  * <h2>No boxing of primitives</h2>
  *
