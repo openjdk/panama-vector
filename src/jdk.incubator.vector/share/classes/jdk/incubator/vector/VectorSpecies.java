@@ -433,33 +433,6 @@ public interface VectorSpecies<E> {
     // Defined when ETYPE is known.
 
     /**
-     * Returns a vector of this species
-     * where lane elements are initialized
-     * from the given sequence of {@code long}s.
-     * The {@code long} values must all be representable
-     * by the {@code ETYPE} of this species.
-     *
-     * Equivalent to
-     * {@code IntVector.fromArray(this,a,offset)}
-     * or an equivalent {@code fromArray} method,
-     * on the vector type corresponding to
-     * this species, after the values are copied
-     * (without loss of value or precision) to
-     * an appropriately typed array.
-     *
-     * @param values an array of values to load into the vector
-     * @return a vector of the given species filled from the array
-     * @throws IllegalArgumentException
-     *         if {@code values.length != species.length()}
-     *         or if any of the values cannot be represented
-     *         by the {@code ETYPE} of this species
-     * @see IntVector#fromArray(VectorSpecies,int[],int)
-     * @see FloatVector#fromArray(VectorSpecies,float[],int)
-     * @see #checkValue(long)
-     */
-    Vector<E> fromValues(long... values);
-
-    /**
      * Loads a vector of this species from a byte array starting
      * at an offset.
      * Bytes are composed into primitive lane elements according

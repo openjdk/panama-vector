@@ -233,21 +233,6 @@ public class Float256VectorLoadStoreTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "floatProvider")
-    static void loadStoreValues(IntFunction<float[]> fa) {
-        float[] a = fa.apply(SPECIES.length());
-        float[] r = new float[a.length];
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                float[] values = Arrays.copyOfRange(a, i, i + SPECIES.length());
-                FloatVector av = FloatVector.fromValues(SPECIES, values);
-                System.arraycopy(av.toArray(), 0, r, i, SPECIES.length());
-            }
-        }
-        Assert.assertEquals(a, r);
-    }
-
-    @Test(dataProvider = "floatProvider")
     static void loadStoreArray(IntFunction<float[]> fa) {
         float[] a = fa.apply(SPECIES.length());
         float[] r = new float[a.length];

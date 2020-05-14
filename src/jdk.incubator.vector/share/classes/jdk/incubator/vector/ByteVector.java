@@ -528,30 +528,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         return vspecies().broadcast(e);
     }
 
-    /**
-     * Returns a vector where each lane element is set to given
-     * primitive values.
-     * <p>
-     * For each vector lane, where {@code N} is the vector lane index, the
-     * the primitive value at index {@code N} is placed into the resulting
-     * vector at lane index {@code N}.
-     *
-     * @param species species of the desired vector
-     * @param es the given primitive values
-     * @return a vector where each lane element is set to given primitive
-     * values
-     * @throws IllegalArgumentException
-     *         if {@code es.length != species.length()}
-     */
-    @ForceInline
-    public static ByteVector fromValues(VectorSpecies<Byte> species, byte... es) {
-        ByteSpecies vsp = (ByteSpecies) species;
-        int vlength = vsp.laneCount();
-        VectorIntrinsics.requireLength(es.length, vlength);
-        // Get an unaliased copy and use it directly:
-        return vsp.vectorFactory(Arrays.copyOf(es, vlength));
-    }
-
     // Unary lanewise support
 
     /**
@@ -3529,22 +3505,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             return value;
         }
 
-        @Override
-        @ForceInline
-        public final ByteVector fromValues(long... values) {
-            VectorIntrinsics.requireLength(values.length, laneCount);
-            byte[] va = new byte[laneCount()];
-            for (int i = 0; i < va.length; i++) {
-                long lv = values[i];
-                byte v = (byte) lv;
-                va[i] = v;
-                if ((long)v != lv) {
-                    throw badElementBits(lv, v);
-                }
-            }
-            return dummyVector().fromArray0(va, 0);
-        }
-
         /* this non-public one is for internal conversions */
         @Override
         @ForceInline
@@ -3576,13 +3536,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         @Override final
         ByteVector dummyVector() {
             return (ByteVector) super.dummyVector();
-        }
-
-        final
-        ByteVector vectorFactory(byte[] vec) {
-            // Species delegates all factory requests to its dummy
-            // vector.  The dummy knows all about it.
-            return dummyVector().vectorFactory(vec);
         }
 
         /*package-private*/

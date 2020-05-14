@@ -337,11 +337,15 @@ public class PopulationCount extends AbstractVectorBenchmark {
     // FIGURE 9. A C function using SSE intrinsics implementing Mula’s algorithm to compute sixteen population counts,
     // corresponding to sixteen input bytes.
 
-    static final ByteVector MULA128_LOOKUP = IntVector.fromValues(I128, 0x02_01_01_00, // 0, 1, 1, 2,
-                                                          0x03_02_02_01, // 1, 2, 2, 3,
-                                                          0x03_02_02_01, // 1, 2, 2, 3,
-                                                          0x04_03_03_02  // 2, 3, 3, 4
-                                                          ).reinterpretAsBytes();
+    static final ByteVector MULA128_LOOKUP = IntVector.fromArray(I128,
+            new int[]{
+                    0x02_01_01_00, // 0, 1, 1, 2,
+                    0x03_02_02_01, // 1, 2, 2, 3,
+                    0x03_02_02_01, // 1, 2, 2, 3,
+                    0x04_03_03_02  // 2, 3, 3, 4
+            },
+            0
+            ).reinterpretAsBytes();
 
     ByteVector popcntB128(ByteVector v) {
         var low_mask = ByteVector.broadcast(B128, (byte)0x0f);

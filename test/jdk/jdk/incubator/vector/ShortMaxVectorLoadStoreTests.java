@@ -241,21 +241,6 @@ public class ShortMaxVectorLoadStoreTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "shortProvider")
-    static void loadStoreValues(IntFunction<short[]> fa) {
-        short[] a = fa.apply(SPECIES.length());
-        short[] r = new short[a.length];
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                short[] values = Arrays.copyOfRange(a, i, i + SPECIES.length());
-                ShortVector av = ShortVector.fromValues(SPECIES, values);
-                System.arraycopy(av.toArray(), 0, r, i, SPECIES.length());
-            }
-        }
-        Assert.assertEquals(a, r);
-    }
-
-    @Test(dataProvider = "shortProvider")
     static void loadStoreArray(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = new short[a.length];

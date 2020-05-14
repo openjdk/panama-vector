@@ -233,21 +233,6 @@ public class Long256VectorLoadStoreTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "longProvider")
-    static void loadStoreValues(IntFunction<long[]> fa) {
-        long[] a = fa.apply(SPECIES.length());
-        long[] r = new long[a.length];
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                long[] values = Arrays.copyOfRange(a, i, i + SPECIES.length());
-                LongVector av = LongVector.fromValues(SPECIES, values);
-                System.arraycopy(av.toArray(), 0, r, i, SPECIES.length());
-            }
-        }
-        Assert.assertEquals(a, r);
-    }
-
-    @Test(dataProvider = "longProvider")
     static void loadStoreArray(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = new long[a.length];
