@@ -25,8 +25,8 @@
 package jdk.incubator.vector;
 
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.nio.ByteOrder;
+import java.nio.ReadOnlyBufferException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BinaryOperator;
@@ -3022,6 +3022,9 @@ public abstract class FloatVector extends AbstractVector<Float> {
     public final
     void intoByteBuffer(ByteBuffer bb, int offset,
                         ByteOrder bo) {
+        if (bb.isReadOnly()) {
+            throw new ReadOnlyBufferException();
+        }
         offset = checkFromIndexSize(offset, byteSize(), bb.limit());
         maybeSwap(bo).intoByteBuffer0(bb, offset);
     }
@@ -3039,6 +3042,9 @@ public abstract class FloatVector extends AbstractVector<Float> {
             intoByteBuffer(bb, offset, bo);
         } else {
             // FIXME: optimize
+            if (bb.isReadOnly()) {
+                throw new ReadOnlyBufferException();
+            }
             FloatSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 4, bb.limit());
             ByteBuffer wb = wrapper(bb, bo);

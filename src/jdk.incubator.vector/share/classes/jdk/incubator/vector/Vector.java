@@ -3404,6 +3404,8 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *         if {@code offset+N*ESIZE < 0}
      *         or {@code offset+(N+1)*ESIZE > bb.limit()}
      *         for any lane {@code N} in the vector
+     * @throws java.nio.ReadOnlyBufferException
+     *         if the byte buffer is read-only
      */
     public abstract void intoByteBuffer(ByteBuffer bb, int offset, ByteOrder bo);
 
@@ -3460,6 +3462,8 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *         or {@code offset+(N+1)*ESIZE > bb.limit()}
      *         for any lane {@code N} in the vector
      *         where the mask is set
+     * @throws java.nio.ReadOnlyBufferException
+     *         if the byte buffer is read-only
      */
     public abstract void intoByteBuffer(ByteBuffer bb, int offset,
                                         ByteOrder bo, VectorMask<E> m);

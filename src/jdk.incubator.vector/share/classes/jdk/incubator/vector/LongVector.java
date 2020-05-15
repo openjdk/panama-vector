@@ -25,8 +25,8 @@
 package jdk.incubator.vector;
 
 import java.nio.ByteBuffer;
-import java.nio.LongBuffer;
 import java.nio.ByteOrder;
+import java.nio.ReadOnlyBufferException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BinaryOperator;
@@ -3047,6 +3047,9 @@ public abstract class LongVector extends AbstractVector<Long> {
     public final
     void intoByteBuffer(ByteBuffer bb, int offset,
                         ByteOrder bo) {
+        if (bb.isReadOnly()) {
+            throw new ReadOnlyBufferException();
+        }
         offset = checkFromIndexSize(offset, byteSize(), bb.limit());
         maybeSwap(bo).intoByteBuffer0(bb, offset);
     }
@@ -3064,6 +3067,9 @@ public abstract class LongVector extends AbstractVector<Long> {
             intoByteBuffer(bb, offset, bo);
         } else {
             // FIXME: optimize
+            if (bb.isReadOnly()) {
+                throw new ReadOnlyBufferException();
+            }
             LongSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 8, bb.limit());
             ByteBuffer wb = wrapper(bb, bo);

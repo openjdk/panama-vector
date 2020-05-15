@@ -41,6 +41,7 @@ import org.testng.annotations.Test;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.nio.ByteOrder;
+import java.nio.ReadOnlyBufferException;
 import java.util.List;
 import java.util.function.IntFunction;
 
@@ -736,6 +737,40 @@ public class Long64VectorLoadStoreTests extends AbstractVectorTest {
             if (!shouldFail) {
                 Assert.fail("Unexpected IndexOutOfBoundsException");
             }
+        }
+    }
+
+
+    @Test(dataProvider = "longByteBufferProvider")
+    static void loadStoreReadonlyByteBuffer(IntFunction<long[]> fa,
+                                    IntFunction<ByteBuffer> fb,
+                                    ByteOrder bo) {
+        ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), fb).asReadOnlyBuffer();
+
+        try {
+            SPECIES.zero().intoByteBuffer(a, 0, bo);
+            Assert.fail("ReadOnlyBufferException expected");
+        } catch (ReadOnlyBufferException e) {
+        }
+
+        try {
+            SPECIES.zero().intoByteBuffer(a, 0, bo, SPECIES.maskAll(true));
+            Assert.fail("ReadOnlyBufferException expected");
+        } catch (ReadOnlyBufferException e) {
+        }
+
+        try {
+            SPECIES.zero().intoByteBuffer(a, 0, bo, SPECIES.maskAll(false));
+            Assert.fail("ReadOnlyBufferException expected");
+        } catch (ReadOnlyBufferException e) {
+        }
+
+        try {
+            VectorMask<Long> m = SPECIES.shuffleFromOp(i -> i % 2 == 0 ? 1 : -1)
+                    .laneIsValid();
+            SPECIES.zero().intoByteBuffer(a, 0, bo, m);
+            Assert.fail("ReadOnlyBufferException expected");
+        } catch (ReadOnlyBufferException e) {
         }
     }
 
