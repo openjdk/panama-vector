@@ -2481,12 +2481,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     DoubleVector fromByteArray(VectorSpecies<Double> species,
                                        byte[] a, int offset,
                                        ByteOrder bo) {
+        offset = checkFromIndexSize(offset, species.vectorByteSize(), a.length);
         DoubleSpecies vsp = (DoubleSpecies) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.vectorBitSize() / Byte.SIZE,
-                                    a.length);
-        return vsp.dummyVector()
-            .fromByteArray0(a, offset).maybeSwap(bo);
+        return vsp.dummyVector().fromByteArray0(a, offset).maybeSwap(bo);
     }
 
     /**
@@ -2526,18 +2523,17 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                        ByteOrder bo,
                                        VectorMask<Double> m) {
         DoubleSpecies vsp = (DoubleSpecies) species;
-        DoubleVector zero = vsp.zero();
-
-        if (offset >= 0 && offset <= (a.length - vsp.length() * 8)) {
+        if (offset >= 0 && offset <= (a.length - species.vectorByteSize())) {
+            DoubleVector zero = vsp.zero();
             DoubleVector v = zero.fromByteArray0(a, offset);
             return zero.blend(v.maybeSwap(bo), m);
         }
-        DoubleVector iota = zero.addIndex(1);
-        ((AbstractMask<Double>)m)
-            .checkIndexByLane(offset, a.length, iota, 8);
-        DoubleBuffer tb = wrapper(a, offset, bo);
-        return vsp.ldOp(tb, 0, (AbstractMask<Double>)m,
-                   (tb_, __, i)  -> tb_.get(i));
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 8, a.length);
+        ByteBuffer wb = wrapper(a, bo);
+        return vsp.ldOp(wb, offset, (AbstractMask<Double>)m,
+                   (wb_, o, i)  -> wb_.getDouble(o + i * 8));
     }
 
     /**
@@ -2559,10 +2555,8 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     public static
     DoubleVector fromArray(VectorSpecies<Double> species,
                                    double[] a, int offset) {
+        offset = checkFromIndexSize(offset, species.length(), a.length);
         DoubleSpecies vsp = (DoubleSpecies) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    a.length);
         return vsp.dummyVector().fromArray0(a, offset);
     }
 
@@ -2597,9 +2591,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             DoubleVector zero = vsp.zero();
             return zero.blend(zero.fromArray0(a, offset), m);
         }
-        DoubleVector iota = vsp.iota();
-        ((AbstractMask<Double>)m)
-            .checkIndexByLane(offset, a.length, iota, 1);
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
         return vsp.vOp(m, i -> a[offset + i]);
     }
 
@@ -2762,12 +2756,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     DoubleVector fromByteBuffer(VectorSpecies<Double> species,
                                         ByteBuffer bb, int offset,
                                         ByteOrder bo) {
+        offset = checkFromIndexSize(offset, species.vectorByteSize(), bb.limit());
         DoubleSpecies vsp = (DoubleSpecies) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    bb.limit());
-        return vsp.dummyVector()
-            .fromByteBuffer0(bb, offset).maybeSwap(bo);
+        return vsp.dummyVector().fromByteBuffer0(bb, offset).maybeSwap(bo);
     }
 
     /**
@@ -2820,16 +2811,18 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                         ByteBuffer bb, int offset,
                                         ByteOrder bo,
                                         VectorMask<Double> m) {
-        if (m.allTrue()) {
-            return fromByteBuffer(species, bb, offset, bo);
-        }
         DoubleSpecies vsp = (DoubleSpecies) species;
-        checkMaskFromIndexSize(offset,
-                               vsp, m, 1,
-                               bb.limit());
-        DoubleVector zero = zero(vsp);
-        DoubleVector v = zero.fromByteBuffer0(bb, offset);
-        return zero.blend(v.maybeSwap(bo), m);
+        if (offset >= 0 && offset <= (bb.limit() - species.vectorByteSize())) {
+            DoubleVector zero = vsp.zero();
+            DoubleVector v = zero.fromByteBuffer0(bb, offset);
+            return zero.blend(v.maybeSwap(bo), m);
+        }
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 8, bb.limit());
+        ByteBuffer wb = wrapper(bb, bo);
+        return vsp.ldOp(wb, offset, (AbstractMask<Double>)m,
+                   (wb_, o, i)  -> wb_.getDouble(o + i * 8));
     }
 
     // Memory store operations
@@ -2851,10 +2844,8 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     @ForceInline
     public final
     void intoArray(double[] a, int offset) {
+        offset = checkFromIndexSize(offset, length(), a.length);
         DoubleSpecies vsp = vspecies();
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    a.length);
         VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
@@ -2896,7 +2887,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         if (m.allTrue()) {
             intoArray(a, offset);
         } else {
-            // FIXME: Cannot vectorize yet, if there's a mask.
+            // FIXME: optimize
+            DoubleSpecies vsp = vspecies();
+            checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
             stOp(a, offset, m, (arr, off, i, v) -> arr[off+i] = v);
         }
     }
@@ -3029,9 +3022,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     public final
     void intoByteArray(byte[] a, int offset,
                        ByteOrder bo) {
-        offset = checkFromIndexSize(offset,
-                                    bitSize() / Byte.SIZE,
-                                    a.length);
+        offset = checkFromIndexSize(offset, byteSize(), a.length);
         maybeSwap(bo).intoByteArray0(a, offset);
     }
 
@@ -3045,18 +3036,14 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                        ByteOrder bo,
                        VectorMask<Double> m) {
         if (m.allTrue()) {
-            maybeSwap(bo).intoByteArray0(a, offset);
-            return;
-        }
-        DoubleSpecies vsp = vspecies();
-        if (offset >= 0 && offset <= (a.length - vsp.length() * 8)) {
-            var oldVal = fromByteArray0(a, offset);
-            var newVal = oldVal.blend(this.maybeSwap(bo), m);
-            newVal.intoByteArray0(a, offset);
+            intoByteArray(a, offset, bo);
         } else {
+            // FIXME: optimize
+            DoubleSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 8, a.length);
-            DoubleBuffer tb = wrapper(a, offset, bo);
-            this.stOp(tb, 0, m, (tb_, __, i, e) -> tb_.put(i, e));
+            ByteBuffer wb = wrapper(a, bo);
+            this.stOp(wb, offset, m,
+                    (wb_, o, i, e) -> wb_.putDouble(o + i * 8, e));
         }
     }
 
@@ -3068,6 +3055,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     public final
     void intoByteBuffer(ByteBuffer bb, int offset,
                         ByteOrder bo) {
+        offset = checkFromIndexSize(offset, byteSize(), bb.limit());
         maybeSwap(bo).intoByteBuffer0(bb, offset);
     }
 
@@ -3082,14 +3070,14 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                         VectorMask<Double> m) {
         if (m.allTrue()) {
             intoByteBuffer(bb, offset, bo);
-            return;
+        } else {
+            // FIXME: optimize
+            DoubleSpecies vsp = vspecies();
+            checkMaskFromIndexSize(offset, vsp, m, 8, bb.limit());
+            ByteBuffer wb = wrapper(bb, bo);
+            this.stOp(wb, offset, m,
+                    (wb_, o, i, e) -> wb_.putDouble(o + i * 8, e));
         }
-        DoubleSpecies vsp = vspecies();
-        checkMaskFromIndexSize(offset, vsp, m, 8, bb.limit());
-        conditionalStoreNYI(offset, vsp, m, 8, bb.limit());
-        var oldVal = fromByteBuffer0(bb, offset);
-        var newVal = oldVal.blend(this.maybeSwap(bo), m);
-        newVal.intoByteBuffer0(bb, offset);
     }
 
     // ================================================
@@ -3138,8 +3126,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             a, byteArrayAddress(a, offset),
             a, offset, vsp,
             (arr, off, s) -> {
-                DoubleBuffer tb = wrapper(arr, off, NATIVE_ENDIAN);
-                return s.ldOp(tb, 0, (tb_, __, i) -> tb_.get(i));
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                return s.ldOp(wb, off,
+                        (wb_, o, i) -> wb_.getDouble(o + i * 8));
             });
     }
 
@@ -3154,8 +3143,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             bufferBase(bb), bufferAddress(bb, offset),
             bb, offset, vsp,
             (buf, off, s) -> {
-                DoubleBuffer tb = wrapper(buf, off, NATIVE_ENDIAN);
-                return s.ldOp(tb, 0, (tb_, __, i) -> tb_.get(i));
+                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                return s.ldOp(wb, off,
+                        (wb_, o, i) -> wb_.getDouble(o + i * 8));
            });
     }
 
@@ -3189,8 +3179,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             a, byteArrayAddress(a, offset),
             this, a, offset,
             (arr, off, v) -> {
-                DoubleBuffer tb = wrapper(arr, off, NATIVE_ENDIAN);
-                v.stOp(tb, 0, (tb_, __, i, e) -> tb_.put(i, e));
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                v.stOp(wb, off,
+                        (tb_, o, i, e) -> tb_.putDouble(o + i * 8, e));
             });
     }
 
@@ -3203,8 +3194,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             bufferBase(bb), bufferAddress(bb, offset),
             this, bb, offset,
             (buf, off, v) -> {
-                DoubleBuffer tb = wrapper(buf, off, NATIVE_ENDIAN);
-                v.stOp(tb, 0, (tb_, __, i, e) -> tb_.put(i, e));
+                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                v.stOp(wb, off,
+                        (wb_, o, i, e) -> wb_.putDouble(o + i * 8, e));
             });
     }
 
@@ -3260,18 +3252,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     @ForceInline
     static long byteArrayAddress(byte[] a, int index) {
         return Unsafe.ARRAY_BYTE_BASE_OFFSET + index;
-    }
-
-    // Byte buffer wrappers.
-    private static DoubleBuffer wrapper(ByteBuffer bb, int offset,
-                                        ByteOrder bo) {
-        return bb.duplicate().position(offset).slice()
-            .order(bo).asDoubleBuffer();
-    }
-    private static DoubleBuffer wrapper(byte[] a, int offset,
-                                        ByteOrder bo) {
-        return ByteBuffer.wrap(a, offset, a.length - offset)
-            .order(bo).asDoubleBuffer();
     }
 
     // ================================================

@@ -2485,12 +2485,9 @@ public abstract class FloatVector extends AbstractVector<Float> {
     FloatVector fromByteArray(VectorSpecies<Float> species,
                                        byte[] a, int offset,
                                        ByteOrder bo) {
+        offset = checkFromIndexSize(offset, species.vectorByteSize(), a.length);
         FloatSpecies vsp = (FloatSpecies) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.vectorBitSize() / Byte.SIZE,
-                                    a.length);
-        return vsp.dummyVector()
-            .fromByteArray0(a, offset).maybeSwap(bo);
+        return vsp.dummyVector().fromByteArray0(a, offset).maybeSwap(bo);
     }
 
     /**
@@ -2530,18 +2527,17 @@ public abstract class FloatVector extends AbstractVector<Float> {
                                        ByteOrder bo,
                                        VectorMask<Float> m) {
         FloatSpecies vsp = (FloatSpecies) species;
-        FloatVector zero = vsp.zero();
-
-        if (offset >= 0 && offset <= (a.length - vsp.length() * 4)) {
+        if (offset >= 0 && offset <= (a.length - species.vectorByteSize())) {
+            FloatVector zero = vsp.zero();
             FloatVector v = zero.fromByteArray0(a, offset);
             return zero.blend(v.maybeSwap(bo), m);
         }
-        FloatVector iota = zero.addIndex(1);
-        ((AbstractMask<Float>)m)
-            .checkIndexByLane(offset, a.length, iota, 4);
-        FloatBuffer tb = wrapper(a, offset, bo);
-        return vsp.ldOp(tb, 0, (AbstractMask<Float>)m,
-                   (tb_, __, i)  -> tb_.get(i));
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 4, a.length);
+        ByteBuffer wb = wrapper(a, bo);
+        return vsp.ldOp(wb, offset, (AbstractMask<Float>)m,
+                   (wb_, o, i)  -> wb_.getFloat(o + i * 4));
     }
 
     /**
@@ -2563,10 +2559,8 @@ public abstract class FloatVector extends AbstractVector<Float> {
     public static
     FloatVector fromArray(VectorSpecies<Float> species,
                                    float[] a, int offset) {
+        offset = checkFromIndexSize(offset, species.length(), a.length);
         FloatSpecies vsp = (FloatSpecies) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    a.length);
         return vsp.dummyVector().fromArray0(a, offset);
     }
 
@@ -2601,9 +2595,9 @@ public abstract class FloatVector extends AbstractVector<Float> {
             FloatVector zero = vsp.zero();
             return zero.blend(zero.fromArray0(a, offset), m);
         }
-        FloatVector iota = vsp.iota();
-        ((AbstractMask<Float>)m)
-            .checkIndexByLane(offset, a.length, iota, 1);
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
         return vsp.vOp(m, i -> a[offset + i]);
     }
 
@@ -2748,12 +2742,9 @@ public abstract class FloatVector extends AbstractVector<Float> {
     FloatVector fromByteBuffer(VectorSpecies<Float> species,
                                         ByteBuffer bb, int offset,
                                         ByteOrder bo) {
+        offset = checkFromIndexSize(offset, species.vectorByteSize(), bb.limit());
         FloatSpecies vsp = (FloatSpecies) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    bb.limit());
-        return vsp.dummyVector()
-            .fromByteBuffer0(bb, offset).maybeSwap(bo);
+        return vsp.dummyVector().fromByteBuffer0(bb, offset).maybeSwap(bo);
     }
 
     /**
@@ -2806,16 +2797,18 @@ public abstract class FloatVector extends AbstractVector<Float> {
                                         ByteBuffer bb, int offset,
                                         ByteOrder bo,
                                         VectorMask<Float> m) {
-        if (m.allTrue()) {
-            return fromByteBuffer(species, bb, offset, bo);
-        }
         FloatSpecies vsp = (FloatSpecies) species;
-        checkMaskFromIndexSize(offset,
-                               vsp, m, 1,
-                               bb.limit());
-        FloatVector zero = zero(vsp);
-        FloatVector v = zero.fromByteBuffer0(bb, offset);
-        return zero.blend(v.maybeSwap(bo), m);
+        if (offset >= 0 && offset <= (bb.limit() - species.vectorByteSize())) {
+            FloatVector zero = vsp.zero();
+            FloatVector v = zero.fromByteBuffer0(bb, offset);
+            return zero.blend(v.maybeSwap(bo), m);
+        }
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 4, bb.limit());
+        ByteBuffer wb = wrapper(bb, bo);
+        return vsp.ldOp(wb, offset, (AbstractMask<Float>)m,
+                   (wb_, o, i)  -> wb_.getFloat(o + i * 4));
     }
 
     // Memory store operations
@@ -2837,10 +2830,8 @@ public abstract class FloatVector extends AbstractVector<Float> {
     @ForceInline
     public final
     void intoArray(float[] a, int offset) {
+        offset = checkFromIndexSize(offset, length(), a.length);
         FloatSpecies vsp = vspecies();
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    a.length);
         VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
@@ -2882,7 +2873,9 @@ public abstract class FloatVector extends AbstractVector<Float> {
         if (m.allTrue()) {
             intoArray(a, offset);
         } else {
-            // FIXME: Cannot vectorize yet, if there's a mask.
+            // FIXME: optimize
+            FloatSpecies vsp = vspecies();
+            checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
             stOp(a, offset, m, (arr, off, i, v) -> arr[off+i] = v);
         }
     }
@@ -2996,9 +2989,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
     public final
     void intoByteArray(byte[] a, int offset,
                        ByteOrder bo) {
-        offset = checkFromIndexSize(offset,
-                                    bitSize() / Byte.SIZE,
-                                    a.length);
+        offset = checkFromIndexSize(offset, byteSize(), a.length);
         maybeSwap(bo).intoByteArray0(a, offset);
     }
 
@@ -3012,18 +3003,14 @@ public abstract class FloatVector extends AbstractVector<Float> {
                        ByteOrder bo,
                        VectorMask<Float> m) {
         if (m.allTrue()) {
-            maybeSwap(bo).intoByteArray0(a, offset);
-            return;
-        }
-        FloatSpecies vsp = vspecies();
-        if (offset >= 0 && offset <= (a.length - vsp.length() * 4)) {
-            var oldVal = fromByteArray0(a, offset);
-            var newVal = oldVal.blend(this.maybeSwap(bo), m);
-            newVal.intoByteArray0(a, offset);
+            intoByteArray(a, offset, bo);
         } else {
+            // FIXME: optimize
+            FloatSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 4, a.length);
-            FloatBuffer tb = wrapper(a, offset, bo);
-            this.stOp(tb, 0, m, (tb_, __, i, e) -> tb_.put(i, e));
+            ByteBuffer wb = wrapper(a, bo);
+            this.stOp(wb, offset, m,
+                    (wb_, o, i, e) -> wb_.putFloat(o + i * 4, e));
         }
     }
 
@@ -3035,6 +3022,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
     public final
     void intoByteBuffer(ByteBuffer bb, int offset,
                         ByteOrder bo) {
+        offset = checkFromIndexSize(offset, byteSize(), bb.limit());
         maybeSwap(bo).intoByteBuffer0(bb, offset);
     }
 
@@ -3049,14 +3037,14 @@ public abstract class FloatVector extends AbstractVector<Float> {
                         VectorMask<Float> m) {
         if (m.allTrue()) {
             intoByteBuffer(bb, offset, bo);
-            return;
+        } else {
+            // FIXME: optimize
+            FloatSpecies vsp = vspecies();
+            checkMaskFromIndexSize(offset, vsp, m, 4, bb.limit());
+            ByteBuffer wb = wrapper(bb, bo);
+            this.stOp(wb, offset, m,
+                    (wb_, o, i, e) -> wb_.putFloat(o + i * 4, e));
         }
-        FloatSpecies vsp = vspecies();
-        checkMaskFromIndexSize(offset, vsp, m, 4, bb.limit());
-        conditionalStoreNYI(offset, vsp, m, 4, bb.limit());
-        var oldVal = fromByteBuffer0(bb, offset);
-        var newVal = oldVal.blend(this.maybeSwap(bo), m);
-        newVal.intoByteBuffer0(bb, offset);
     }
 
     // ================================================
@@ -3105,8 +3093,9 @@ public abstract class FloatVector extends AbstractVector<Float> {
             a, byteArrayAddress(a, offset),
             a, offset, vsp,
             (arr, off, s) -> {
-                FloatBuffer tb = wrapper(arr, off, NATIVE_ENDIAN);
-                return s.ldOp(tb, 0, (tb_, __, i) -> tb_.get(i));
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                return s.ldOp(wb, off,
+                        (wb_, o, i) -> wb_.getFloat(o + i * 4));
             });
     }
 
@@ -3121,8 +3110,9 @@ public abstract class FloatVector extends AbstractVector<Float> {
             bufferBase(bb), bufferAddress(bb, offset),
             bb, offset, vsp,
             (buf, off, s) -> {
-                FloatBuffer tb = wrapper(buf, off, NATIVE_ENDIAN);
-                return s.ldOp(tb, 0, (tb_, __, i) -> tb_.get(i));
+                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                return s.ldOp(wb, off,
+                        (wb_, o, i) -> wb_.getFloat(o + i * 4));
            });
     }
 
@@ -3156,8 +3146,9 @@ public abstract class FloatVector extends AbstractVector<Float> {
             a, byteArrayAddress(a, offset),
             this, a, offset,
             (arr, off, v) -> {
-                FloatBuffer tb = wrapper(arr, off, NATIVE_ENDIAN);
-                v.stOp(tb, 0, (tb_, __, i, e) -> tb_.put(i, e));
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                v.stOp(wb, off,
+                        (tb_, o, i, e) -> tb_.putFloat(o + i * 4, e));
             });
     }
 
@@ -3170,8 +3161,9 @@ public abstract class FloatVector extends AbstractVector<Float> {
             bufferBase(bb), bufferAddress(bb, offset),
             this, bb, offset,
             (buf, off, v) -> {
-                FloatBuffer tb = wrapper(buf, off, NATIVE_ENDIAN);
-                v.stOp(tb, 0, (tb_, __, i, e) -> tb_.put(i, e));
+                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                v.stOp(wb, off,
+                        (wb_, o, i, e) -> wb_.putFloat(o + i * 4, e));
             });
     }
 
@@ -3227,18 +3219,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
     @ForceInline
     static long byteArrayAddress(byte[] a, int index) {
         return Unsafe.ARRAY_BYTE_BASE_OFFSET + index;
-    }
-
-    // Byte buffer wrappers.
-    private static FloatBuffer wrapper(ByteBuffer bb, int offset,
-                                        ByteOrder bo) {
-        return bb.duplicate().position(offset).slice()
-            .order(bo).asFloatBuffer();
-    }
-    private static FloatBuffer wrapper(byte[] a, int offset,
-                                        ByteOrder bo) {
-        return ByteBuffer.wrap(a, offset, a.length - offset)
-            .order(bo).asFloatBuffer();
     }
 
     // ================================================

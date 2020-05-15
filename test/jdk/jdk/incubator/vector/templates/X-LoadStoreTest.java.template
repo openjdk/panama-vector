@@ -23,7 +23,7 @@
 
 /*
  * @test
- * @modules jdk.incubator.vector
+ * @modules jdk.incubator.vector java.base/jdk.internal.vm.annotation
 #if[MaxBit]
  * @run testng/othervm --add-opens jdk.incubator.vector/jdk.incubator.vector=ALL-UNNAMED
  *      $vectorteststype$
@@ -35,13 +35,13 @@
 
 #warn This file is preprocessed before being compiled
 
-import jdk.incubator.vector.VectorShape;
-import jdk.incubator.vector.VectorSpecies;
-import jdk.incubator.vector.VectorMask;
-import jdk.incubator.vector.Vector;
-
 import jdk.incubator.vector.$Type$Vector;
-
+import jdk.incubator.vector.VectorMask;
+#if[MaxBit]
+import jdk.incubator.vector.VectorShape;
+#end[MaxBit]
+import jdk.incubator.vector.VectorSpecies;
+import jdk.internal.vm.annotation.DontInline;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -55,7 +55,6 @@ import java.nio.ByteBuffer;
 import java.nio.$Type$Buffer;
 #end[!byte]
 import java.nio.ByteOrder;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.IntFunction;
 
@@ -140,6 +139,62 @@ public class $vectorteststype$ extends AbstractVectorTest {
             })
     );
 
+    // Relative to array.length
+    static final List<IntFunction<Integer>> INDEX_GENERATORS = List.of(
+            withToString("-1", (int l) -> {
+                return -1;
+            }),
+            withToString("l", (int l) -> {
+                return l;
+            }),
+            withToString("l - 1", (int l) -> {
+                return l - 1;
+            }),
+            withToString("l + 1", (int l) -> {
+                return l + 1;
+            }),
+            withToString("l - speciesl + 1", (int l) -> {
+                return l - SPECIES.length() + 1;
+            }),
+            withToString("l + speciesl - 1", (int l) -> {
+                return l + SPECIES.length() - 1;
+            }),
+            withToString("l + speciesl", (int l) -> {
+                return l + SPECIES.length();
+            }),
+            withToString("l + speciesl + 1", (int l) -> {
+                return l + SPECIES.length() + 1;
+            })
+    );
+
+    // Relative to byte[] array.length or ByteBuffer.limit()
+    static final List<IntFunction<Integer>> BYTE_INDEX_GENERATORS = List.of(
+            withToString("-1", (int l) -> {
+                return -1;
+            }),
+            withToString("l", (int l) -> {
+                return l;
+            }),
+            withToString("l - 1", (int l) -> {
+                return l - 1;
+            }),
+            withToString("l + 1", (int l) -> {
+                return l + 1;
+            }),
+            withToString("l - speciesl*ebsize + 1", (int l) -> {
+                return l - SPECIES.vectorByteSize() + 1;
+            }),
+            withToString("l + speciesl*ebsize - 1", (int l) -> {
+                return l + SPECIES.vectorByteSize() - 1;
+            }),
+            withToString("l + speciesl*ebsize", (int l) -> {
+                return l + SPECIES.vectorByteSize();
+            }),
+            withToString("l + speciesl*ebsize + 1", (int l) -> {
+                return l + SPECIES.vectorByteSize() + 1;
+            })
+    );
+
     @DataProvider
     public Object[][] $type$Provider() {
         return $TYPE$_GENERATORS.stream().
@@ -148,10 +203,29 @@ public class $vectorteststype$ extends AbstractVectorTest {
     }
 
     @DataProvider
+    public Object[][] $type$ProviderForIOOBE() {
+        var f = $TYPE$_GENERATORS.get(0);
+        return INDEX_GENERATORS.stream().map(fi -> {
+                    return new Object[] {f, fi};
+                }).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
     public Object[][] $type$MaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
                 flatMap(fm -> $TYPE$_GENERATORS.stream().map(fa -> {
                     return new Object[] {fa, fm};
+                })).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] $type$MaskProviderForIOOBE() {
+        var f = $TYPE$_GENERATORS.get(0);
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> INDEX_GENERATORS.stream().map(fi -> {
+                    return new Object[] {f, fi, fm};
                 })).
                 toArray(Object[][]::new);
     }
@@ -171,7 +245,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
                 flatMap(fm -> INDEX_GENERATORS.stream().
                     flatMap(fim -> $TYPE$_GENERATORS.stream().map(fa -> {
                         return new Object[] {fa, fim, fm};
-                }))).
+                    }))).
                 toArray(Object[][]::new);
     }
 
@@ -181,7 +255,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
                 flatMap(fa -> BYTE_BUFFER_GENERATORS.stream().
                         flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
                             return new Object[]{fa, fb, bo};
-                }))).
+                        }))).
                 toArray(Object[][]::new);
     }
 
@@ -199,10 +273,9 @@ public class $vectorteststype$ extends AbstractVectorTest {
     @DataProvider
     public Object[][] $type$ByteArrayProvider() {
         return $TYPE$_GENERATORS.stream().
-                flatMap(fa -> BYTE_ARRAY_GENERATORS.stream().
-                        flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
-                    return new Object[]{fa, fb, bo};
-                }))).
+                flatMap(fa -> BYTE_ORDER_VALUES.stream().map(bo -> {
+                    return new Object[]{fa, bo};
+                })).
                 toArray(Object[][]::new);
     }
 
@@ -210,10 +283,28 @@ public class $vectorteststype$ extends AbstractVectorTest {
     public Object[][] $type$ByteArrayMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
                 flatMap(fm -> $TYPE$_GENERATORS.stream().
-                        flatMap(fa -> BYTE_ARRAY_GENERATORS.stream().
-                                flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
-                            return new Object[]{fa, fb, fm, bo};
-                        })))).
+                    flatMap(fa -> BYTE_ORDER_VALUES.stream().map(bo -> {
+                        return new Object[]{fa, fm, bo};
+                    }))).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] $type$ByteProviderForIOOBE() {
+        var f = $TYPE$_GENERATORS.get(0);
+        return BYTE_INDEX_GENERATORS.stream().map(fi -> {
+                    return new Object[] {f, fi};
+                }).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] $type$ByteMaskProviderForIOOBE() {
+        var f = $TYPE$_GENERATORS.get(0);
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> BYTE_INDEX_GENERATORS.stream().map(fi -> {
+                    return new Object[] {f, fi, fm};
+                })).
                 toArray(Object[][]::new);
     }
 
@@ -228,7 +319,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
     static $type$[] bufferToArray(ByteBuffer bb) {
         $Type$Buffer db = bb{#if[byte]?;:.as$Type$Buffer();}
         $type$[] d = new $type$[db.capacity()];
-        db.get(d);
+        db.get(0, d);
         return d;
     }
 
@@ -261,6 +352,67 @@ public class $vectorteststype$ extends AbstractVectorTest {
         return a;
     }
 
+    @DontInline
+    static $abstractvectortype$ fromArray($type$[] a, int i) {
+        return $abstractvectortype$.fromArray(SPECIES, a, i);
+    }
+
+    @DontInline
+    static $abstractvectortype$ fromArray($type$[] a, int i, VectorMask<$Boxtype$> m) {
+        return $abstractvectortype$.fromArray(SPECIES, a, i, m);
+    }
+
+    @DontInline
+    static void intoArray($abstractvectortype$ v, $type$[] a, int i) {
+        v.intoArray(a, i);
+    }
+
+    @DontInline
+    static void intoArray($abstractvectortype$ v, $type$[] a, int i, VectorMask<$Boxtype$> m) {
+        v.intoArray(a, i, m);
+    }
+
+    @DontInline
+    static $abstractvectortype$ fromByteArray(byte[] a, int i, ByteOrder bo) {
+        return $abstractvectortype$.fromByteArray(SPECIES, a, i, bo);
+    }
+
+    @DontInline
+    static $abstractvectortype$ fromByteArray(byte[] a, int i, ByteOrder bo, VectorMask<$Boxtype$> m) {
+        return $abstractvectortype$.fromByteArray(SPECIES, a, i, bo, m);
+    }
+
+    @DontInline
+    static void intoByteArray($abstractvectortype$ v, byte[] a, int i, ByteOrder bo) {
+        v.intoByteArray(a, i, bo);
+    }
+
+    @DontInline
+    static void intoByteArray($abstractvectortype$ v, byte[] a, int i, ByteOrder bo, VectorMask<$Boxtype$> m) {
+        v.intoByteArray(a, i, bo, m);
+    }
+
+    @DontInline
+    static $abstractvectortype$ fromByteBuffer(ByteBuffer a, int i, ByteOrder bo) {
+        return $abstractvectortype$.fromByteBuffer(SPECIES, a, i, bo);
+    }
+
+    @DontInline
+    static $abstractvectortype$ fromByteBuffer(ByteBuffer a, int i, ByteOrder bo, VectorMask<$Boxtype$> m) {
+        return $abstractvectortype$.fromByteBuffer(SPECIES, a, i, bo, m);
+    }
+
+    @DontInline
+    static void intoByteBuffer($abstractvectortype$ v, ByteBuffer a, int i, ByteOrder bo) {
+        v.intoByteBuffer(a, i, bo);
+    }
+
+    @DontInline
+    static void intoByteBuffer($abstractvectortype$ v, ByteBuffer a, int i, ByteOrder bo, VectorMask<$Boxtype$> m) {
+        v.intoByteBuffer(a, i, bo, m);
+    }
+
+
     @Test(dataProvider = "$type$Provider")
     static void loadStoreArray(IntFunction<$type$[]> fa) {
         $type$[] a = fa.apply(SPECIES.length());
@@ -274,6 +426,60 @@ public class $vectorteststype$ extends AbstractVectorTest {
         }
         Assert.assertEquals(a, r);
     }
+
+    @Test(dataProvider = "$type$ProviderForIOOBE")
+    static void loadArrayIOOBE(IntFunction<$type$[]> fa, IntFunction<Integer> fi) {
+        $type$[] a = fa.apply(SPECIES.length());
+        $type$[] r = new $type$[a.length];
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                $abstractvectortype$ av = fromArray(a, i);
+                av.intoArray(r, i);
+            }
+        }
+
+        int index = fi.apply(a.length);
+        boolean shouldFail = isIndexOutOfBounds(SPECIES.length(), index, a.length);
+        try {
+            fromArray(a, index);
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
+    }
+
+    @Test(dataProvider = "$type$ProviderForIOOBE")
+    static void storeArrayIOOBE(IntFunction<$type$[]> fa, IntFunction<Integer> fi) {
+        $type$[] a = fa.apply(SPECIES.length());
+        $type$[] r = new $type$[a.length];
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
+                intoArray(av, r, i);
+            }
+        }
+
+        int index = fi.apply(a.length);
+        boolean shouldFail = isIndexOutOfBounds(SPECIES.length(), index, a.length);
+        try {
+            $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, 0);
+            intoArray(av, r, index);
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
+    }
+
 
     @Test(dataProvider = "$type$MaskProvider")
     static void loadStoreMaskArray(IntFunction<$type$[]> fa,
@@ -291,16 +497,75 @@ public class $vectorteststype$ extends AbstractVectorTest {
         }
         assertArraysEquals(a, r, mask);
 
+
         r = new $type$[a.length];
+
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
                 av.intoArray(r, i, vmask);
             }
         }
-
         assertArraysEquals(a, r, mask);
     }
+
+    @Test(dataProvider = "$type$MaskProviderForIOOBE")
+    static void loadArrayMaskIOOBE(IntFunction<$type$[]> fa, IntFunction<Integer> fi, IntFunction<boolean[]> fm) {
+        $type$[] a = fa.apply(SPECIES.length());
+        $type$[] r = new $type$[a.length];
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<$Boxtype$> vmask = VectorMask.fromValues(SPECIES, mask);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                $abstractvectortype$ av = fromArray(a, i, vmask);
+                av.intoArray(r, i);
+            }
+        }
+
+        int index = fi.apply(a.length);
+        boolean shouldFail = isIndexOutOfBoundsForMask(mask, index, a.length);
+        try {
+            fromArray(a, index, vmask);
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
+    }
+
+    @Test(dataProvider = "$type$MaskProviderForIOOBE")
+    static void storeArrayMaskIOOBE(IntFunction<$type$[]> fa, IntFunction<Integer> fi, IntFunction<boolean[]> fm) {
+        $type$[] a = fa.apply(SPECIES.length());
+        $type$[] r = new $type$[a.length];
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<$Boxtype$> vmask = VectorMask.fromValues(SPECIES, mask);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
+                intoArray(av, r, i, vmask);
+            }
+        }
+
+        int index = fi.apply(a.length);
+        boolean shouldFail = isIndexOutOfBoundsForMask(mask, index, a.length);
+        try {
+            $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, 0);
+            intoArray(av, a, index, vmask);
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
+    }
+
 
     @Test(dataProvider = "$type$MaskProvider")
     static void loadStoreMask(IntFunction<$type$[]> fa,
@@ -317,6 +582,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
         Assert.assertEquals(mask, r);
     }
 
+
     @Test(dataProvider = "$type$ByteBufferProvider")
     static void loadStoreByteBuffer(IntFunction<$type$[]> fa,
                                     IntFunction<ByteBuffer> fb,
@@ -325,7 +591,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
         ByteBuffer r = fb.apply(a.limit());
 
         int l = a.limit();
-        int s = SPECIES.length() * SPECIES.elementSize() / 8;
+        int s = SPECIES.vectorByteSize();
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < l; i += s) {
@@ -340,42 +606,79 @@ public class $vectorteststype$ extends AbstractVectorTest {
         Assert.assertEquals(a, r, "Buffers not equal");
     }
 
-    @Test(dataProvider = "$type$ByteBufferProvider")
-    static void loadReadOnlyStoreByteBuffer(IntFunction<$type$[]> fa,
-                                            IntFunction<ByteBuffer> fb,
-                                            ByteOrder bo) {
-        ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), fb);
-        a = a.asReadOnlyBuffer().order(a.order());
-        ByteBuffer r = fb.apply(a.limit());
+    @Test(dataProvider = "$type$ByteProviderForIOOBE")
+    static void loadByteBufferIOOBE(IntFunction<$type$[]> fa, IntFunction<Integer> fi) {
+        ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), ByteBuffer::allocateDirect);
+        ByteBuffer r = ByteBuffer.allocateDirect(a.limit());
 
         int l = a.limit();
-        int s = SPECIES.length() * SPECIES.elementSize() / 8;
+        int s = SPECIES.vectorByteSize();
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < l; i += s) {
-                $abstractvectortype$ av = $abstractvectortype$.fromByteBuffer(SPECIES, a, i, bo);
-                av.intoByteBuffer(r, i, bo);
+                $abstractvectortype$ av = fromByteBuffer(a, i, ByteOrder.nativeOrder());
+                av.intoByteBuffer(r, i, ByteOrder.nativeOrder());
             }
         }
-        Assert.assertEquals(a.position(), 0, "Input buffer position changed");
-        Assert.assertEquals(a.limit(), l, "Input buffer limit changed");
-        Assert.assertEquals(r.position(), 0, "Result buffer position changed");
-        Assert.assertEquals(r.limit(), l, "Result buffer limit changed");
-        Assert.assertEquals(a, r, "Buffers not equal");
+
+        int index = fi.apply(a.limit());
+        boolean shouldFail = isIndexOutOfBounds(SPECIES.vectorByteSize(), index, a.limit());
+        try {
+            fromByteBuffer(a, index, ByteOrder.nativeOrder());
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
     }
+
+    @Test(dataProvider = "$type$ByteProviderForIOOBE")
+    static void storeByteBufferIOOBE(IntFunction<$type$[]> fa, IntFunction<Integer> fi) {
+        ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), ByteBuffer::allocateDirect);
+        ByteBuffer r = ByteBuffer.allocateDirect(a.limit());
+
+        int l = a.limit();
+        int s = SPECIES.vectorByteSize();
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                $abstractvectortype$ av = $abstractvectortype$.fromByteBuffer(SPECIES, a, i, ByteOrder.nativeOrder());
+                intoByteBuffer(av, r, i, ByteOrder.nativeOrder());
+            }
+        }
+
+        int index = fi.apply(a.limit());
+        boolean shouldFail = isIndexOutOfBounds(SPECIES.vectorByteSize(), index, a.limit());
+        try {
+            $abstractvectortype$ av = $abstractvectortype$.fromByteBuffer(SPECIES, a, 0, ByteOrder.nativeOrder());
+            intoByteBuffer(av, r, index, ByteOrder.nativeOrder());
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
+    }
+
 
     @Test(dataProvider = "$type$ByteBufferMaskProvider")
     static void loadStoreByteBufferMask(IntFunction<$type$[]> fa,
                                         IntFunction<ByteBuffer> fb,
                                         IntFunction<boolean[]> fm,
                                         ByteOrder bo) {
-        ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), fb);
+        $type$[] _a = fa.apply(SPECIES.length());
+        ByteBuffer a = toBuffer(_a, fb);
         ByteBuffer r = fb.apply(a.limit());
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<$Boxtype$> vmask = VectorMask.fromValues(SPECIES, mask);
 
         int l = a.limit();
-        int s = SPECIES.length() * SPECIES.elementSize() / 8;
+        int s = SPECIES.vectorByteSize();
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < l; i += s) {
@@ -387,10 +690,11 @@ public class $vectorteststype$ extends AbstractVectorTest {
         Assert.assertEquals(a.limit(), l, "Input buffer limit changed");
         Assert.assertEquals(r.position(), 0, "Result buffer position changed");
         Assert.assertEquals(r.limit(), l, "Result buffer limit changed");
-        assertArraysEquals(bufferToArray(a), bufferToArray(r), mask);
+        assertArraysEquals(_a, bufferToArray(r), mask);
 
-        a = toBuffer(fa.apply(SPECIES.length()), fb);
+
         r = fb.apply(a.limit());
+
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < l; i += s) {
                 $abstractvectortype$ av = $abstractvectortype$.fromByteBuffer(SPECIES, a, i, bo);
@@ -401,44 +705,80 @@ public class $vectorteststype$ extends AbstractVectorTest {
         Assert.assertEquals(a.limit(), l, "Input buffer limit changed");
         Assert.assertEquals(r.position(), 0, "Result buffer position changed");
         Assert.assertEquals(r.limit(), l, "Result buffer limit changed");
-        assertArraysEquals(bufferToArray(a), bufferToArray(r), mask);
+        assertArraysEquals(_a, bufferToArray(r), mask);
     }
 
-    @Test(dataProvider = "$type$ByteBufferMaskProvider")
-    static void loadReadOnlyStoreByteBufferMask(IntFunction<$type$[]> fa,
-                                                IntFunction<ByteBuffer> fb,
-                                                IntFunction<boolean[]> fm,
-                                                ByteOrder bo) {
-        ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), fb);
-        a = a.asReadOnlyBuffer().order(a.order());
-        ByteBuffer r = fb.apply(a.limit());
+    @Test(dataProvider = "$type$ByteMaskProviderForIOOBE")
+    static void loadByteBufferMaskIOOBE(IntFunction<$type$[]> fa, IntFunction<Integer> fi, IntFunction<boolean[]> fm) {
+        ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), ByteBuffer::allocateDirect);
+        ByteBuffer r = ByteBuffer.allocateDirect(a.limit());
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<$Boxtype$> vmask = VectorMask.fromValues(SPECIES, mask);
 
         int l = a.limit();
-        int s = SPECIES.length() * SPECIES.elementSize() / 8;
+        int s = SPECIES.vectorByteSize();
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < l; i += s) {
-                $abstractvectortype$ av = $abstractvectortype$.fromByteBuffer(SPECIES, a, i, bo, vmask);
-                av.intoByteBuffer(r, i, bo);
+                $abstractvectortype$ av = fromByteBuffer(a, i, ByteOrder.nativeOrder(), vmask);
+                av.intoByteBuffer(r, i, ByteOrder.nativeOrder());
             }
         }
-        Assert.assertEquals(a.position(), 0, "Input buffer position changed");
-        Assert.assertEquals(a.limit(), l, "Input buffer limit changed");
-        Assert.assertEquals(r.position(), 0, "Result buffer position changed");
-        Assert.assertEquals(r.limit(), l, "Result buffer limit changed");
-        assertArraysEquals(bufferToArray(a), bufferToArray(r), mask);
+
+        int index = fi.apply(a.limit());
+        boolean shouldFail = isIndexOutOfBoundsForMask(mask, index, a.limit(), SPECIES.elementSize() / 8);
+        try {
+            fromByteBuffer(a, index, ByteOrder.nativeOrder(), vmask);
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
     }
+
+    @Test(dataProvider = "$type$ByteMaskProviderForIOOBE")
+    static void storeByteBufferMaskIOOBE(IntFunction<$type$[]> fa, IntFunction<Integer> fi, IntFunction<boolean[]> fm) {
+        ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), ByteBuffer::allocateDirect);
+        ByteBuffer r = ByteBuffer.allocateDirect(a.limit());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<$Boxtype$> vmask = VectorMask.fromValues(SPECIES, mask);
+
+        int l = a.limit();
+        int s = SPECIES.vectorByteSize();
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                $abstractvectortype$ av = $abstractvectortype$.fromByteBuffer(SPECIES, a, i, ByteOrder.nativeOrder());
+                intoByteBuffer(av, r, i, ByteOrder.nativeOrder(), vmask);
+            }
+        }
+
+        int index = fi.apply(a.limit());
+        boolean shouldFail = isIndexOutOfBoundsForMask(mask, index, a.limit(), SPECIES.elementSize() / 8);
+        try {
+            $abstractvectortype$ av = $abstractvectortype$.fromByteBuffer(SPECIES, a, 0, ByteOrder.nativeOrder());
+            intoByteBuffer(av, a, index, ByteOrder.nativeOrder(), vmask);
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
+    }
+
 
     @Test(dataProvider = "$type$ByteArrayProvider")
     static void loadStoreByteArray(IntFunction<$type$[]> fa,
-                                    IntFunction<byte[]> fb,
                                     ByteOrder bo) {
-        byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, bo);
-        byte[] r = fb.apply(a.length);
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), byte[]::new, bo);
+        byte[] r = new byte[a.length];
 
-        int s = SPECIES.length() * SPECIES.elementSize() / 8;
+        int s = SPECIES.vectorByteSize();
         int l = a.length;
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
@@ -450,43 +790,89 @@ public class $vectorteststype$ extends AbstractVectorTest {
         Assert.assertEquals(a, r, "Byte arrays not equal");
     }
 
-    @Test(dataProvider = "$type$ByteArrayMaskProvider")
-    static void loadByteArrayMask(IntFunction<$type$[]> fa,
-                                  IntFunction<byte[]> fb,
-                                  IntFunction<boolean[]> fm,
-                                  ByteOrder bo) {
-          byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, bo);
-          byte[] r = fb.apply(a.length);
-          boolean[] mask = fm.apply(SPECIES.length());
-          VectorMask<$Boxtype$> vmask = VectorMask.fromValues(SPECIES, mask);
+    @Test(dataProvider = "$type$ByteProviderForIOOBE")
+    static void loadByteArrayIOOBE(IntFunction<$type$[]> fa, IntFunction<Integer> fi) {
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), byte[]::new, ByteOrder.nativeOrder());
+        byte[] r = new byte[a.length];
 
-          int s = SPECIES.length() * SPECIES.elementSize() / 8;
-          int l = a.length;
+        int s = SPECIES.vectorByteSize();
+        int l = a.length;
 
-          for (int ic = 0; ic < INVOC_COUNT; ic++) {
-              for (int i = 0; i < l; i += s) {
-                  $abstractvectortype$ av = $abstractvectortype$.fromByteArray(SPECIES, a, i, bo, vmask);
-                  av.intoByteArray(r, i, bo);
-              }
-          }
-          assertArraysEquals(a, r, mask);
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                $abstractvectortype$ av = fromByteArray(a, i, ByteOrder.nativeOrder());
+                av.intoByteArray(r, i, ByteOrder.nativeOrder());
+            }
+        }
+
+        int index = fi.apply(a.length);
+        boolean shouldFail = isIndexOutOfBounds(SPECIES.vectorByteSize(), index, a.length);
+        try {
+            fromByteArray(a, index, ByteOrder.nativeOrder());
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
     }
 
+    @Test(dataProvider = "$type$ByteProviderForIOOBE")
+    static void storeByteArrayIOOBE(IntFunction<$type$[]> fa, IntFunction<Integer> fi) {
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), byte[]::new, ByteOrder.nativeOrder());
+        byte[] r = new byte[a.length];
+
+        int s = SPECIES.vectorByteSize();
+        int l = a.length;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                $abstractvectortype$ av = $abstractvectortype$.fromByteArray(SPECIES, a, i, ByteOrder.nativeOrder());
+                intoByteArray(av, r, i, ByteOrder.nativeOrder());
+            }
+        }
+
+        int index = fi.apply(a.length);
+        boolean shouldFail = isIndexOutOfBounds(SPECIES.vectorByteSize(), index, a.length);
+        try {
+            $abstractvectortype$ av = $abstractvectortype$.fromByteArray(SPECIES, a, 0, ByteOrder.nativeOrder());
+            intoByteArray(av, r, index, ByteOrder.nativeOrder());
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
+    }
+
+
     @Test(dataProvider = "$type$ByteArrayMaskProvider")
-    static void storeByteArrayMask(IntFunction<$type$[]> fa,
-                                   IntFunction<byte[]> fb,
-                                   IntFunction<boolean[]> fm,
-                                   ByteOrder bo) {
-        byte[] a = toByteArray(fa.apply(SPECIES.length()), fb, bo);
-        byte[] r = fb.apply(a.length);
+    static void loadStoreByteArrayMask(IntFunction<$type$[]> fa,
+                                  IntFunction<boolean[]> fm,
+                                  ByteOrder bo) {
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), byte[]::new, bo);
+        byte[] r = new byte[a.length];
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<$Boxtype$> vmask = VectorMask.fromValues(SPECIES, mask);
 
-        int s = SPECIES.length() * SPECIES.elementSize() / 8;
+        int s = SPECIES.vectorByteSize();
         int l = a.length;
 
-        a = toByteArray(fa.apply(SPECIES.length()), fb, bo);
-        r = fb.apply(a.length);
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+          for (int i = 0; i < l; i += s) {
+              $abstractvectortype$ av = $abstractvectortype$.fromByteArray(SPECIES, a, i, bo, vmask);
+              av.intoByteArray(r, i, bo);
+          }
+        }
+        assertArraysEquals(a, r, mask);
+
+
+        r = new byte[a.length];
+
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < l; i += s) {
                 $abstractvectortype$ av = $abstractvectortype$.fromByteArray(SPECIES, a, i, bo);
@@ -494,5 +880,68 @@ public class $vectorteststype$ extends AbstractVectorTest {
             }
         }
         assertArraysEquals(a, r, mask);
+    }
+
+    @Test(dataProvider = "$type$ByteMaskProviderForIOOBE")
+    static void loadByteArrayMaskIOOBE(IntFunction<$type$[]> fa, IntFunction<Integer> fi, IntFunction<boolean[]> fm) {
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), byte[]::new, ByteOrder.nativeOrder());
+        byte[] r = new byte[a.length];
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<$Boxtype$> vmask = VectorMask.fromValues(SPECIES, mask);
+
+        int s = SPECIES.vectorByteSize();
+        int l = a.length;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                $abstractvectortype$ av = fromByteArray(a, i, ByteOrder.nativeOrder(), vmask);
+                av.intoByteArray(r, i, ByteOrder.nativeOrder());
+            }
+        }
+
+        int index = fi.apply(a.length);
+        boolean shouldFail = isIndexOutOfBoundsForMask(mask, index, a.length, SPECIES.elementSize() / 8);
+        try {
+            fromByteArray(a, index, ByteOrder.nativeOrder(), vmask);
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
+    }
+
+    @Test(dataProvider = "$type$ByteMaskProviderForIOOBE")
+    static void storeByteArrayMaskIOOBE(IntFunction<$type$[]> fa, IntFunction<Integer> fi, IntFunction<boolean[]> fm) {
+        byte[] a = toByteArray(fa.apply(SPECIES.length()), byte[]::new, ByteOrder.nativeOrder());
+        byte[] r = new byte[a.length];
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<$Boxtype$> vmask = VectorMask.fromValues(SPECIES, mask);
+
+        int s = SPECIES.vectorByteSize();
+        int l = a.length;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                $abstractvectortype$ av = $abstractvectortype$.fromByteArray(SPECIES, a, i, ByteOrder.nativeOrder());
+                intoByteArray(av, r, i, ByteOrder.nativeOrder(), vmask);
+            }
+        }
+
+        int index = fi.apply(a.length);
+        boolean shouldFail = isIndexOutOfBoundsForMask(mask, index, a.length, SPECIES.elementSize() / 8);
+        try {
+            $abstractvectortype$ av = $abstractvectortype$.fromByteArray(SPECIES, a, 0, ByteOrder.nativeOrder());
+            intoByteArray(av, a, index, ByteOrder.nativeOrder(), vmask);
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
     }
 }

@@ -91,29 +91,6 @@ public class AbstractVectorTest {
                 return ByteBuffer.allocateDirect(s)
                         .order(ByteOrder.nativeOrder());
             })
-            // @@@ Add when endianness design issues are resolved
-//            , withToString("HB:RW:BE", (int s) -> {
-//                return ByteBuffer.allocate(s)
-//                        .order(ByteOrder.BIG_ENDIAN);
-//            }),
-//            withToString("DB:RW:BE", (int s) -> {
-//                return ByteBuffer.allocateDirect(s)
-//                        .order(ByteOrder.BIG_ENDIAN);
-//            }),
-//            withToString("HB:RW:LE", (int s) -> {
-//                return ByteBuffer.allocate(s)
-//                        .order(ByteOrder.LITTLE_ENDIAN);
-//            }),
-//            withToString("DB:RW:LE", (int s) -> {
-//                return ByteBuffer.allocateDirect(s)
-//                        .order(ByteOrder.LITTLE_ENDIAN);
-//            })
-    );
-
-    static final List<IntFunction<byte[]>> BYTE_ARRAY_GENERATORS = List.of(
-            withToString("RW:NE", (int s) -> {
-                return (new byte[s]);
-            })
     );
 
     static final List<IntFunction<boolean[]>> BOOL_ARRAY_GENERATORS = List.of(
@@ -188,5 +165,26 @@ public class AbstractVectorTest {
         int i;
         for (i = m.length - 1; i >= 0 && !m[i]; i--);
         return m.length - 1 - i;
+    }
+
+    static boolean isIndexOutOfBoundsForMask(boolean[] mask, int offset, int length) {
+        return isIndexOutOfBoundsForMask(mask, offset, length, 1);
+    }
+
+    static boolean isIndexOutOfBoundsForMask(boolean[] mask, int offset, int length, int eSize) {
+        for (int i = 0; i < mask.length; i++) {
+            int index = i * eSize + offset;
+            if (mask[i]) {
+                if (index < 0 || index > length - eSize) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    static boolean isIndexOutOfBounds(int size, int offset, int length) {
+        int upperBound = offset + size;
+        return upperBound < size || upperBound > length;
     }
 }

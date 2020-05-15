@@ -2473,12 +2473,9 @@ public abstract class LongVector extends AbstractVector<Long> {
     LongVector fromByteArray(VectorSpecies<Long> species,
                                        byte[] a, int offset,
                                        ByteOrder bo) {
+        offset = checkFromIndexSize(offset, species.vectorByteSize(), a.length);
         LongSpecies vsp = (LongSpecies) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.vectorBitSize() / Byte.SIZE,
-                                    a.length);
-        return vsp.dummyVector()
-            .fromByteArray0(a, offset).maybeSwap(bo);
+        return vsp.dummyVector().fromByteArray0(a, offset).maybeSwap(bo);
     }
 
     /**
@@ -2518,18 +2515,17 @@ public abstract class LongVector extends AbstractVector<Long> {
                                        ByteOrder bo,
                                        VectorMask<Long> m) {
         LongSpecies vsp = (LongSpecies) species;
-        LongVector zero = vsp.zero();
-
-        if (offset >= 0 && offset <= (a.length - vsp.length() * 8)) {
+        if (offset >= 0 && offset <= (a.length - species.vectorByteSize())) {
+            LongVector zero = vsp.zero();
             LongVector v = zero.fromByteArray0(a, offset);
             return zero.blend(v.maybeSwap(bo), m);
         }
-        LongVector iota = zero.addIndex(1);
-        ((AbstractMask<Long>)m)
-            .checkIndexByLane(offset, a.length, iota, 8);
-        LongBuffer tb = wrapper(a, offset, bo);
-        return vsp.ldOp(tb, 0, (AbstractMask<Long>)m,
-                   (tb_, __, i)  -> tb_.get(i));
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 8, a.length);
+        ByteBuffer wb = wrapper(a, bo);
+        return vsp.ldOp(wb, offset, (AbstractMask<Long>)m,
+                   (wb_, o, i)  -> wb_.getLong(o + i * 8));
     }
 
     /**
@@ -2551,10 +2547,8 @@ public abstract class LongVector extends AbstractVector<Long> {
     public static
     LongVector fromArray(VectorSpecies<Long> species,
                                    long[] a, int offset) {
+        offset = checkFromIndexSize(offset, species.length(), a.length);
         LongSpecies vsp = (LongSpecies) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    a.length);
         return vsp.dummyVector().fromArray0(a, offset);
     }
 
@@ -2589,9 +2583,9 @@ public abstract class LongVector extends AbstractVector<Long> {
             LongVector zero = vsp.zero();
             return zero.blend(zero.fromArray0(a, offset), m);
         }
-        LongVector iota = vsp.iota();
-        ((AbstractMask<Long>)m)
-            .checkIndexByLane(offset, a.length, iota, 1);
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
         return vsp.vOp(m, i -> a[offset + i]);
     }
 
@@ -2754,12 +2748,9 @@ public abstract class LongVector extends AbstractVector<Long> {
     LongVector fromByteBuffer(VectorSpecies<Long> species,
                                         ByteBuffer bb, int offset,
                                         ByteOrder bo) {
+        offset = checkFromIndexSize(offset, species.vectorByteSize(), bb.limit());
         LongSpecies vsp = (LongSpecies) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    bb.limit());
-        return vsp.dummyVector()
-            .fromByteBuffer0(bb, offset).maybeSwap(bo);
+        return vsp.dummyVector().fromByteBuffer0(bb, offset).maybeSwap(bo);
     }
 
     /**
@@ -2812,16 +2803,18 @@ public abstract class LongVector extends AbstractVector<Long> {
                                         ByteBuffer bb, int offset,
                                         ByteOrder bo,
                                         VectorMask<Long> m) {
-        if (m.allTrue()) {
-            return fromByteBuffer(species, bb, offset, bo);
-        }
         LongSpecies vsp = (LongSpecies) species;
-        checkMaskFromIndexSize(offset,
-                               vsp, m, 1,
-                               bb.limit());
-        LongVector zero = zero(vsp);
-        LongVector v = zero.fromByteBuffer0(bb, offset);
-        return zero.blend(v.maybeSwap(bo), m);
+        if (offset >= 0 && offset <= (bb.limit() - species.vectorByteSize())) {
+            LongVector zero = vsp.zero();
+            LongVector v = zero.fromByteBuffer0(bb, offset);
+            return zero.blend(v.maybeSwap(bo), m);
+        }
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 8, bb.limit());
+        ByteBuffer wb = wrapper(bb, bo);
+        return vsp.ldOp(wb, offset, (AbstractMask<Long>)m,
+                   (wb_, o, i)  -> wb_.getLong(o + i * 8));
     }
 
     // Memory store operations
@@ -2843,10 +2836,8 @@ public abstract class LongVector extends AbstractVector<Long> {
     @ForceInline
     public final
     void intoArray(long[] a, int offset) {
+        offset = checkFromIndexSize(offset, length(), a.length);
         LongSpecies vsp = vspecies();
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    a.length);
         VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
@@ -2888,7 +2879,9 @@ public abstract class LongVector extends AbstractVector<Long> {
         if (m.allTrue()) {
             intoArray(a, offset);
         } else {
-            // FIXME: Cannot vectorize yet, if there's a mask.
+            // FIXME: optimize
+            LongSpecies vsp = vspecies();
+            checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
             stOp(a, offset, m, (arr, off, i, v) -> arr[off+i] = v);
         }
     }
@@ -3021,9 +3014,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     public final
     void intoByteArray(byte[] a, int offset,
                        ByteOrder bo) {
-        offset = checkFromIndexSize(offset,
-                                    bitSize() / Byte.SIZE,
-                                    a.length);
+        offset = checkFromIndexSize(offset, byteSize(), a.length);
         maybeSwap(bo).intoByteArray0(a, offset);
     }
 
@@ -3037,18 +3028,14 @@ public abstract class LongVector extends AbstractVector<Long> {
                        ByteOrder bo,
                        VectorMask<Long> m) {
         if (m.allTrue()) {
-            maybeSwap(bo).intoByteArray0(a, offset);
-            return;
-        }
-        LongSpecies vsp = vspecies();
-        if (offset >= 0 && offset <= (a.length - vsp.length() * 8)) {
-            var oldVal = fromByteArray0(a, offset);
-            var newVal = oldVal.blend(this.maybeSwap(bo), m);
-            newVal.intoByteArray0(a, offset);
+            intoByteArray(a, offset, bo);
         } else {
+            // FIXME: optimize
+            LongSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 8, a.length);
-            LongBuffer tb = wrapper(a, offset, bo);
-            this.stOp(tb, 0, m, (tb_, __, i, e) -> tb_.put(i, e));
+            ByteBuffer wb = wrapper(a, bo);
+            this.stOp(wb, offset, m,
+                    (wb_, o, i, e) -> wb_.putLong(o + i * 8, e));
         }
     }
 
@@ -3060,6 +3047,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     public final
     void intoByteBuffer(ByteBuffer bb, int offset,
                         ByteOrder bo) {
+        offset = checkFromIndexSize(offset, byteSize(), bb.limit());
         maybeSwap(bo).intoByteBuffer0(bb, offset);
     }
 
@@ -3074,14 +3062,14 @@ public abstract class LongVector extends AbstractVector<Long> {
                         VectorMask<Long> m) {
         if (m.allTrue()) {
             intoByteBuffer(bb, offset, bo);
-            return;
+        } else {
+            // FIXME: optimize
+            LongSpecies vsp = vspecies();
+            checkMaskFromIndexSize(offset, vsp, m, 8, bb.limit());
+            ByteBuffer wb = wrapper(bb, bo);
+            this.stOp(wb, offset, m,
+                    (wb_, o, i, e) -> wb_.putLong(o + i * 8, e));
         }
-        LongSpecies vsp = vspecies();
-        checkMaskFromIndexSize(offset, vsp, m, 8, bb.limit());
-        conditionalStoreNYI(offset, vsp, m, 8, bb.limit());
-        var oldVal = fromByteBuffer0(bb, offset);
-        var newVal = oldVal.blend(this.maybeSwap(bo), m);
-        newVal.intoByteBuffer0(bb, offset);
     }
 
     // ================================================
@@ -3130,8 +3118,9 @@ public abstract class LongVector extends AbstractVector<Long> {
             a, byteArrayAddress(a, offset),
             a, offset, vsp,
             (arr, off, s) -> {
-                LongBuffer tb = wrapper(arr, off, NATIVE_ENDIAN);
-                return s.ldOp(tb, 0, (tb_, __, i) -> tb_.get(i));
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                return s.ldOp(wb, off,
+                        (wb_, o, i) -> wb_.getLong(o + i * 8));
             });
     }
 
@@ -3146,8 +3135,9 @@ public abstract class LongVector extends AbstractVector<Long> {
             bufferBase(bb), bufferAddress(bb, offset),
             bb, offset, vsp,
             (buf, off, s) -> {
-                LongBuffer tb = wrapper(buf, off, NATIVE_ENDIAN);
-                return s.ldOp(tb, 0, (tb_, __, i) -> tb_.get(i));
+                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                return s.ldOp(wb, off,
+                        (wb_, o, i) -> wb_.getLong(o + i * 8));
            });
     }
 
@@ -3181,8 +3171,9 @@ public abstract class LongVector extends AbstractVector<Long> {
             a, byteArrayAddress(a, offset),
             this, a, offset,
             (arr, off, v) -> {
-                LongBuffer tb = wrapper(arr, off, NATIVE_ENDIAN);
-                v.stOp(tb, 0, (tb_, __, i, e) -> tb_.put(i, e));
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                v.stOp(wb, off,
+                        (tb_, o, i, e) -> tb_.putLong(o + i * 8, e));
             });
     }
 
@@ -3195,8 +3186,9 @@ public abstract class LongVector extends AbstractVector<Long> {
             bufferBase(bb), bufferAddress(bb, offset),
             this, bb, offset,
             (buf, off, v) -> {
-                LongBuffer tb = wrapper(buf, off, NATIVE_ENDIAN);
-                v.stOp(tb, 0, (tb_, __, i, e) -> tb_.put(i, e));
+                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                v.stOp(wb, off,
+                        (wb_, o, i, e) -> wb_.putLong(o + i * 8, e));
             });
     }
 
@@ -3252,18 +3244,6 @@ public abstract class LongVector extends AbstractVector<Long> {
     @ForceInline
     static long byteArrayAddress(byte[] a, int index) {
         return Unsafe.ARRAY_BYTE_BASE_OFFSET + index;
-    }
-
-    // Byte buffer wrappers.
-    private static LongBuffer wrapper(ByteBuffer bb, int offset,
-                                        ByteOrder bo) {
-        return bb.duplicate().position(offset).slice()
-            .order(bo).asLongBuffer();
-    }
-    private static LongBuffer wrapper(byte[] a, int offset,
-                                        ByteOrder bo) {
-        return ByteBuffer.wrap(a, offset, a.length - offset)
-            .order(bo).asLongBuffer();
     }
 
     // ================================================
