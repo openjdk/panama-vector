@@ -24,11 +24,13 @@
  */
 package jdk.incubator.vector;
 
+import java.nio.ByteOrder;
 import java.util.function.IntUnaryOperator;
 
 /**
  * Interface for managing all vectors of the same combination
- * of element type ({@code ETYPE}) and {@link VectorShape shape}.
+ * of <a href="Vector.html#ETYPE">element type</a> ({@code ETYPE})
+ * and {@link VectorShape shape}.
  *
  * @apiNote
  * User code should not implement this interface.  A future release of
@@ -57,25 +59,9 @@ public interface VectorSpecies<E> {
      * species.
      *
      * @return the primitive element type ({@code ETYPE})
+     * @see Class#arrayType()
      */
     Class<E> elementType();
-
-    /**
-     * Returns the generic parameter type {@code E} corresponding
-     * to the element type {@code ETYPE} of this species.
-     *
-     * @return the parameter type {@code E}
-     */
-    Class<E> genericElementType();
-
-    /**
-     * Returns the primitive array type {@code ETYPE[]},
-     * which can carry packed lane values of vectors of
-     * this species.
-     *
-     * @return the primitive array type {@code ETYPE[]}
-     */
-    Class<?> arrayType();
 
     /**
      * Returns the vector type of this species.
@@ -447,54 +433,31 @@ public interface VectorSpecies<E> {
     // Defined when ETYPE is known.
 
     /**
-     * Returns a vector of this species
-     * where lane elements are initialized
-     * from the given sequence of {@code long}s.
-     * The {@code long} values must all be representable
-     * by the {@code ETYPE} of this species.
-     *
+     * Loads a vector of this species from a byte array starting
+     * at an offset.
+     * Bytes are composed into primitive lane elements according
+     * to the specified byte order.
+     * The vector is arranged into lanes according to
+     * <a href="Vector.html#lane-order">memory ordering</a>.
+     * <p>
      * Equivalent to
-     * {@code IntVector.fromArray(this,a,offset)}
-     * or an equivalent {@code fromArray} method,
-     * on the vector type corresponding to
-     * this species, after the values are copied
-     * (without loss of value or precision) to
-     * an appropriately typed array.
-     *
-     * @param values an array of values to load into the vector
-     * @return a vector of the given species filled from the array
-     * @throws IllegalArgumentException
-     *         if {@code values.length != species.length()}
-     *         or if any of the values cannot be represented
-     *         by the {@code ETYPE} of this species
-     * @see IntVector#fromArray(VectorSpecies,int[],int)
-     * @see FloatVector#fromArray(VectorSpecies,float[],int)
-     * @see #checkValue(long)
-     */
-    Vector<E> fromValues(long... values);
-
-    /**
-     * Returns a vector of this species
-     * where lane elements are initialized
-     * from the given byte array at the given offset.
-     *
-     * Equivalent to
-     * {@code IntVector.fromByteArray(this,a,offset)}
+     * {@code IntVector.fromByteArray(this,a,offset,bo)}
      * or an equivalent {@code fromByteArray} method,
      * on the vector type corresponding to
      * this species.
      *
      * @param a a byte array
      * @param offset the index of the first byte to load
+     * @param bo the intended byte order
      * @return a vector of the given species filled from the byte array
      * @throws IndexOutOfBoundsException
      *         if {@code offset+N*ESIZE < 0}
      *         or {@code offset+(N+1)*ESIZE > a.length}
      *         for any lane {@code N} in the vector
-     * @see IntVector#fromByteArray(VectorSpecies,byte[],int)
-     * @see FloatVector#fromByteArray(VectorSpecies,byte[],int)
+     * @see IntVector#fromByteArray(VectorSpecies,byte[],int,ByteOrder)
+     * @see FloatVector#fromByteArray(VectorSpecies,byte[],int,ByteOrder)
      */
-    Vector<E> fromByteArray(byte[] a, int offset);
+    Vector<E> fromByteArray(byte[] a, int offset, ByteOrder bo);
 
     /**
      * Returns a mask of this species

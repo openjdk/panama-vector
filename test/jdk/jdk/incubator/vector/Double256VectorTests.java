@@ -874,6 +874,22 @@ public class Double256VectorTests extends AbstractVectorTest {
         }
     }
 
+    @Test
+    void viewAsIntegeralLanesTest() {
+        Vector<?> asIntegral = SPECIES.zero().viewAsIntegralLanes();
+        VectorSpecies<?> asIntegralSpecies = asIntegral.species();
+        Assert.assertNotEquals(asIntegralSpecies.elementType(), SPECIES.elementType());
+        Assert.assertEquals(asIntegralSpecies.vectorShape(), SPECIES.vectorShape());
+        Assert.assertEquals(asIntegralSpecies.length(), SPECIES.length());
+        Assert.assertEquals(asIntegral.viewAsFloatingLanes().species(), SPECIES);
+    }
+
+    @Test
+    void viewAsFloatingLanesTest() {
+        Vector<?> asFloating = SPECIES.zero().viewAsFloatingLanes();
+        Assert.assertEquals(asFloating.species(), SPECIES);
+    }
+
     static double ADD(double a, double b) {
         return (double)(a + b);
     }

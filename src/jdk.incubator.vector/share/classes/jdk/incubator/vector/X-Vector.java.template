@@ -25,10 +25,8 @@
 package jdk.incubator.vector;
 
 import java.nio.ByteBuffer;
-#if[!byte]
-import java.nio.$Type$Buffer;
-#end[!byte]
 import java.nio.ByteOrder;
+import java.nio.ReadOnlyBufferException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BinaryOperator;
@@ -542,30 +540,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         return vspecies().broadcast(e);
     }
 #end[!long]
-
-    /**
-     * Returns a vector where each lane element is set to given
-     * primitive values.
-     * <p>
-     * For each vector lane, where {@code N} is the vector lane index, the
-     * the primitive value at index {@code N} is placed into the resulting
-     * vector at lane index {@code N}.
-     *
-     * @param species species of the desired vector
-     * @param es the given primitive values
-     * @return a vector where each lane element is set to given primitive
-     * values
-     * @throws IllegalArgumentException
-     *         if {@code es.length != species.length()}
-     */
-    @ForceInline
-    public static $abstractvectortype$ fromValues(VectorSpecies<$Boxtype$> species, $type$... es) {
-        $Type$Species vsp = ($Type$Species) species;
-        int vlength = vsp.laneCount();
-        VectorIntrinsics.requireLength(es.length, vlength);
-        // Get an unaliased copy and use it directly:
-        return vsp.vectorFactory(Arrays.copyOf(es, vlength));
-    }
 
     // Unary lanewise support
 
@@ -2952,7 +2926,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
      * When this method is used on used on vectors
      * of type {@code $abstractvectortype$},
      * there will be no loss of precision or range,
-     * and so no {@code IllegalArgumentException} will
+     * and so no {@code UnsupportedOperationException} will
      * be thrown.
 #end[!long]
 #end[!FP]
@@ -2990,7 +2964,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
      * When this method is used on used on vectors
      * of type {@code $abstractvectortype$},
      * there will be no loss of precision or range,
-     * and so no {@code IllegalArgumentException} will
+     * and so no {@code UnsupportedOperationException} will
      * be thrown.
 #end[!FP]
      */
@@ -3050,39 +3024,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     /**
      * Loads a vector from a byte array starting at an offset.
      * Bytes are composed into primitive lane elements according
-     * to {@linkplain ByteOrder#LITTLE_ENDIAN little endian} ordering.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it returns the result of calling
-     * {@link #fromByteBuffer(VectorSpecies,ByteBuffer,int,ByteOrder,VectorMask)
-     * fromByteBuffer()} as follows:
-     * <pre>{@code
-     * var bb = ByteBuffer.wrap(a);
-     * var bo = ByteOrder.LITTLE_ENDIAN;
-     * var m = species.maskAll(true);
-     * return fromByteBuffer(species, bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param species species of desired vector
-     * @param a the byte array
-     * @param offset the offset into the array
-     * @return a vector loaded from a byte array
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*ESIZE < 0}
-     *         or {@code offset+(N+1)*ESIZE > a.length}
-     *         for any lane {@code N} in the vector
-     */
-    @ForceInline
-    public static
-    $abstractvectortype$ fromByteArray(VectorSpecies<$Boxtype$> species,
-                                       byte[] a, int offset) {
-        return fromByteArray(species, a, offset, ByteOrder.LITTLE_ENDIAN);
-    }
-
-    /**
-     * Loads a vector from a byte array starting at an offset.
-     * Bytes are composed into primitive lane elements according
      * to the specified byte order.
      * The vector is arranged into lanes according to
      * <a href="Vector.html#lane-order">memory ordering</a>.
@@ -3111,50 +3052,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     $abstractvectortype$ fromByteArray(VectorSpecies<$Boxtype$> species,
                                        byte[] a, int offset,
                                        ByteOrder bo) {
+        offset = checkFromIndexSize(offset, species.vectorByteSize(), a.length);
         $Type$Species vsp = ($Type$Species) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.vectorBitSize() / Byte.SIZE,
-                                    a.length);
-        return vsp.dummyVector()
-            .fromByteArray0(a, offset).maybeSwap(bo);
-    }
-
-    /**
-     * Loads a vector from a byte array starting at an offset
-     * and using a mask.
-     * Lanes where the mask is unset are filled with the default
-     * value of {@code $type$} ({#if[FP]?positive }zero).
-     * Bytes are composed into primitive lane elements according
-     * to {@linkplain ByteOrder#LITTLE_ENDIAN little endian} ordering.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it returns the result of calling
-     * {@link #fromByteBuffer(VectorSpecies,ByteBuffer,int,ByteOrder,VectorMask)
-     * fromByteBuffer()} as follows:
-     * <pre>{@code
-     * var bb = ByteBuffer.wrap(a);
-     * var bo = ByteOrder.LITTLE_ENDIAN;
-     * return fromByteBuffer(species, bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param species species of desired vector
-     * @param a the byte array
-     * @param offset the offset into the array
-     * @param m the mask controlling lane selection
-     * @return a vector loaded from a byte array
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*ESIZE < 0}
-     *         or {@code offset+(N+1)*ESIZE > a.length}
-     *         for any lane {@code N} in the vector where
-     *         the mask is set
-     */
-    @ForceInline
-    public static
-    $abstractvectortype$ fromByteArray(VectorSpecies<$Boxtype$> species,
-                                       byte[] a, int offset,
-                                       VectorMask<$Boxtype$> m) {
-        return fromByteArray(species, a, offset, ByteOrder.LITTLE_ENDIAN, m);
+        return vsp.dummyVector().fromByteArray0(a, offset).maybeSwap(bo);
     }
 
     /**
@@ -3194,18 +3094,17 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                                        ByteOrder bo,
                                        VectorMask<$Boxtype$> m) {
         $Type$Species vsp = ($Type$Species) species;
-        $abstractvectortype$ zero = vsp.zero();
-
-        if (offset >= 0 && offset <= (a.length - vsp.length() * $sizeInBytes$)) {
+        if (offset >= 0 && offset <= (a.length - species.vectorByteSize())) {
+            $abstractvectortype$ zero = vsp.zero();
             $abstractvectortype$ v = zero.fromByteArray0(a, offset);
             return zero.blend(v.maybeSwap(bo), m);
         }
-        $abstractvectortype$ iota = zero.addIndex(1);
-        ((AbstractMask<$Boxtype$>)m)
-            .checkIndexByLane(offset, a.length, iota, $sizeInBytes$);
-        $Type$Buffer tb = wrapper(a, offset, bo);
-        return vsp.ldOp(tb, 0, (AbstractMask<$Boxtype$>)m,
-                   (tb_, __, i)  -> tb_.get(i));
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, $sizeInBytes$, a.length);
+        ByteBuffer wb = wrapper(a, bo);
+        return vsp.ldOp(wb, offset, (AbstractMask<$Boxtype$>)m,
+                   (wb_, o, i)  -> wb_.get{#if[byte]?(:$Type$(}o + i * $sizeInBytes$));
     }
 
     /**
@@ -3227,10 +3126,8 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     public static
     $abstractvectortype$ fromArray(VectorSpecies<$Boxtype$> species,
                                    $type$[] a, int offset) {
+        offset = checkFromIndexSize(offset, species.length(), a.length);
         $Type$Species vsp = ($Type$Species) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    a.length);
         return vsp.dummyVector().fromArray0(a, offset);
     }
 
@@ -3265,9 +3162,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             $abstractvectortype$ zero = vsp.zero();
             return zero.blend(zero.fromArray0(a, offset), m);
         }
-        $abstractvectortype$ iota = vsp.iota();
-        ((AbstractMask<$Boxtype$>)m)
-            .checkIndexByLane(offset, a.length, iota, 1);
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
         return vsp.vOp(m, i -> a[offset + i]);
     }
 
@@ -3460,12 +3357,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     $abstractvectortype$ fromByteBuffer(VectorSpecies<$Boxtype$> species,
                                         ByteBuffer bb, int offset,
                                         ByteOrder bo) {
+        offset = checkFromIndexSize(offset, species.vectorByteSize(), bb.limit());
         $Type$Species vsp = ($Type$Species) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    bb.limit());
-        return vsp.dummyVector()
-            .fromByteBuffer0(bb, offset).maybeSwap(bo);
+        return vsp.dummyVector().fromByteBuffer0(bb, offset).maybeSwap(bo);
     }
 
     /**
@@ -3524,16 +3418,18 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                                         ByteBuffer bb, int offset,
                                         ByteOrder bo,
                                         VectorMask<$Boxtype$> m) {
-        if (m.allTrue()) {
-            return fromByteBuffer(species, bb, offset, bo);
-        }
         $Type$Species vsp = ($Type$Species) species;
-        checkMaskFromIndexSize(offset,
-                               vsp, m, 1,
-                               bb.limit());
-        $abstractvectortype$ zero = zero(vsp);
-        $abstractvectortype$ v = zero.fromByteBuffer0(bb, offset);
-        return zero.blend(v.maybeSwap(bo), m);
+        if (offset >= 0 && offset <= (bb.limit() - species.vectorByteSize())) {
+            $abstractvectortype$ zero = vsp.zero();
+            $abstractvectortype$ v = zero.fromByteBuffer0(bb, offset);
+            return zero.blend(v.maybeSwap(bo), m);
+        }
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, $sizeInBytes$, bb.limit());
+        ByteBuffer wb = wrapper(bb, bo);
+        return vsp.ldOp(wb, offset, (AbstractMask<$Boxtype$>)m,
+                   (wb_, o, i)  -> wb_.get{#if[byte]?(:$Type$(}o + i * $sizeInBytes$));
     }
 
     // Memory store operations
@@ -3555,10 +3451,8 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     @ForceInline
     public final
     void intoArray($type$[] a, int offset) {
+        offset = checkFromIndexSize(offset, length(), a.length);
         $Type$Species vsp = vspecies();
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    a.length);
         VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
@@ -3600,7 +3494,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         if (m.allTrue()) {
             intoArray(a, offset);
         } else {
-            // FIXME: Cannot vectorize yet, if there's a mask.
+            // FIXME: optimize
+            $Type$Species vsp = vspecies();
+            checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
             stOp(a, offset, m, (arr, off, i, v) -> arr[off+i] = v);
         }
     }
@@ -3765,36 +3661,10 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     @Override
     @ForceInline
     public final
-    void intoByteArray(byte[] a, int offset) {
-        offset = checkFromIndexSize(offset,
-                                    bitSize() / Byte.SIZE,
-                                    a.length);
-        this.maybeSwap(ByteOrder.LITTLE_ENDIAN)
-            .intoByteArray0(a, offset);
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
     void intoByteArray(byte[] a, int offset,
-                       VectorMask<$Boxtype$> m) {
-        if (m.allTrue()) {
-            intoByteArray(a, offset);
-            return;
-        }
-        $Type$Species vsp = vspecies();
-        if (offset >= 0 && offset <= (a.length - vsp.length() * $sizeInBytes$)) {
-            var oldVal = fromByteArray0(a, offset);
-            var newVal = oldVal.blend(this, m);
-            newVal.intoByteArray0(a, offset);
-        } else {
-            checkMaskFromIndexSize(offset, vsp, m, $sizeInBytes$, a.length);
-            $Type$Buffer tb = wrapper(a, offset, NATIVE_ENDIAN);
-            this.stOp(tb, 0, m, (tb_, __, i, e) -> tb_.put(i, e));
-        }
+                       ByteOrder bo) {
+        offset = checkFromIndexSize(offset, byteSize(), a.length);
+        maybeSwap(bo).intoByteArray0(a, offset);
     }
 
     /**
@@ -3806,7 +3676,16 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     void intoByteArray(byte[] a, int offset,
                        ByteOrder bo,
                        VectorMask<$Boxtype$> m) {
-        maybeSwap(bo).intoByteArray(a, offset, m);
+        if (m.allTrue()) {
+            intoByteArray(a, offset, bo);
+        } else {
+            // FIXME: optimize
+            $Type$Species vsp = vspecies();
+            checkMaskFromIndexSize(offset, vsp, m, $sizeInBytes$, a.length);
+            ByteBuffer wb = wrapper(a, bo);
+            this.stOp(wb, offset, m,
+                    (wb_, o, i, e) -> wb_.put{#if[byte]?(:$Type$(}o + i * $sizeInBytes$, e));
+        }
     }
 
     /**
@@ -3817,6 +3696,10 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     public final
     void intoByteBuffer(ByteBuffer bb, int offset,
                         ByteOrder bo) {
+        if (bb.isReadOnly()) {
+            throw new ReadOnlyBufferException();
+        }
+        offset = checkFromIndexSize(offset, byteSize(), bb.limit());
         maybeSwap(bo).intoByteBuffer0(bb, offset);
     }
 
@@ -3831,14 +3714,17 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                         VectorMask<$Boxtype$> m) {
         if (m.allTrue()) {
             intoByteBuffer(bb, offset, bo);
-            return;
+        } else {
+            // FIXME: optimize
+            if (bb.isReadOnly()) {
+                throw new ReadOnlyBufferException();
+            }
+            $Type$Species vsp = vspecies();
+            checkMaskFromIndexSize(offset, vsp, m, $sizeInBytes$, bb.limit());
+            ByteBuffer wb = wrapper(bb, bo);
+            this.stOp(wb, offset, m,
+                    (wb_, o, i, e) -> wb_.put{#if[byte]?(:$Type$(}o + i * $sizeInBytes$, e));
         }
-        $Type$Species vsp = vspecies();
-        checkMaskFromIndexSize(offset, vsp, m, $sizeInBytes$, bb.limit());
-        conditionalStoreNYI(offset, vsp, m, $sizeInBytes$, bb.limit());
-        var oldVal = fromByteBuffer0(bb, offset);
-        var newVal = oldVal.blend(this.maybeSwap(bo), m);
-        newVal.intoByteBuffer0(bb, offset);
     }
 
     // ================================================
@@ -3887,8 +3773,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             a, byteArrayAddress(a, offset),
             a, offset, vsp,
             (arr, off, s) -> {
-                $Type$Buffer tb = wrapper(arr, off, NATIVE_ENDIAN);
-                return s.ldOp(tb, 0, (tb_, __, i) -> tb_.get(i));
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                return s.ldOp(wb, off,
+                        (wb_, o, i) -> wb_.get{#if[byte]?(:$Type$(}o + i * $sizeInBytes$));
             });
     }
 
@@ -3903,8 +3790,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             bufferBase(bb), bufferAddress(bb, offset),
             bb, offset, vsp,
             (buf, off, s) -> {
-                $Type$Buffer tb = wrapper(buf, off, NATIVE_ENDIAN);
-                return s.ldOp(tb, 0, (tb_, __, i) -> tb_.get(i));
+                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                return s.ldOp(wb, off,
+                        (wb_, o, i) -> wb_.get{#if[byte]?(:$Type$(}o + i * $sizeInBytes$));
            });
     }
 
@@ -3938,8 +3826,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             a, byteArrayAddress(a, offset),
             this, a, offset,
             (arr, off, v) -> {
-                $Type$Buffer tb = wrapper(arr, off, NATIVE_ENDIAN);
-                v.stOp(tb, 0, (tb_, __, i, e) -> tb_.put(i, e));
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                v.stOp(wb, off,
+                        (tb_, o, i, e) -> tb_.put{#if[byte]?(:$Type$(}o + i * $sizeInBytes$, e));
             });
     }
 
@@ -3952,8 +3841,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             bufferBase(bb), bufferAddress(bb, offset),
             this, bb, offset,
             (buf, off, v) -> {
-                $Type$Buffer tb = wrapper(buf, off, NATIVE_ENDIAN);
-                v.stOp(tb, 0, (tb_, __, i, e) -> tb_.put(i, e));
+                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                v.stOp(wb, off,
+                        (wb_, o, i, e) -> wb_.put{#if[byte]?(:$Type$(}o + i * $sizeInBytes$, e));
             });
     }
 
@@ -4013,23 +3903,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         return Unsafe.ARRAY_BYTE_BASE_OFFSET + index;
     }
 
-    // Byte buffer wrappers.
-    private static $Type$Buffer wrapper(ByteBuffer bb, int offset,
-                                        ByteOrder bo) {
-        return bb.duplicate().position(offset).slice()
-            .order(bo){#if[byte]?;:.as$Type$Buffer();}
-    }
-    private static $Type$Buffer wrapper(byte[] a, int offset,
-                                        ByteOrder bo) {
-#if[byte]
-        return ByteBuffer.wrap(a, offset, a.length - offset)
-            .order(bo).slice();
-#else[byte]
-        return ByteBuffer.wrap(a, offset, a.length - offset)
-            .order(bo).as$Type$Buffer();
-#end[byte]
-    }
-
     // ================================================
 
     /// Reinterpreting view methods:
@@ -4071,7 +3944,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 #if[byteOrShort]
      *
      * @implNote This method always throws
-     * {@code IllegalArgumentException}, because there is no floating
+     * {@code UnsupportedOperationException}, because there is no floating
      * point type of the same size as {@code $type$}.  The return type
      * of this method is arbitrarily designated as
      * {@code Vector<?>}.  Future versions of this API may change the return
@@ -4090,7 +3963,8 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 #if[!byteOrShort]
         return ($Fptype$Vector) asVectorRaw(flt);
 #else[!byteOrShort]
-        throw new AssertionError();  // should already throw IAE
+        // asFloating() will throw UnsupportedOperationException for the unsupported type $type$
+        throw new AssertionError("Cannot reach here");
 #end[!byteOrShort]
 #end[FP]
     }
@@ -4180,14 +4054,8 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 
         @Override
         @ForceInline
-        public final Class<$Boxtype$> genericElementType() {
+        final Class<$Boxtype$> genericElementType() {
             return $Boxtype$.class;
-        }
-
-        @Override
-        @ForceInline
-        public final Class<$type$[]> arrayType() {
-            return $type$[].class;
         }
 
         @SuppressWarnings("unchecked")
@@ -4256,22 +4124,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             return value;
         }
 
-        @Override
-        @ForceInline
-        public final $abstractvectortype$ fromValues(long... values) {
-            VectorIntrinsics.requireLength(values.length, laneCount);
-            $type$[] va = new $type$[laneCount()];
-            for (int i = 0; i < va.length; i++) {
-                long lv = values[i];
-                $type$ v = ($type$) lv;
-                va[i] = v;
-                if ((long)v != lv) {
-                    throw badElementBits(lv, v);
-                }
-            }
-            return dummyVector().fromArray0(va, 0);
-        }
-
         /* this non-public one is for internal conversions */
         @Override
         @ForceInline
@@ -4303,13 +4155,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         @Override final
         $abstractvectortype$ dummyVector() {
             return ($abstractvectortype$) super.dummyVector();
-        }
-
-        final
-        $abstractvectortype$ vectorFactory($type$[] vec) {
-            // Species delegates all factory requests to its dummy
-            // vector.  The dummy knows all about it.
-            return dummyVector().vectorFactory(vec);
         }
 
         /*package-private*/

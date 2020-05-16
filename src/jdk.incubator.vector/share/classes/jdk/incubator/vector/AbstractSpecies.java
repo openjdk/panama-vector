@@ -139,19 +139,13 @@ abstract class AbstractSpecies<E> extends jdk.internal.vm.vector.VectorSupport.V
         return (Class<E>) laneType.elementType;
     }
 
-    @Override
+    // FIXME: appeal to general method (see https://bugs.openjdk.java.net/browse/JDK-6176992)
+    // replace usages of this method and remove
     @ForceInline
     @SuppressWarnings("unchecked")
     //NOT FINAL: SPECIALIZED
-    public Class<E> genericElementType() {
+    Class<E> genericElementType() {
         return (Class<E>) laneType.genericElementType;
-    }
-
-    @Override
-    @ForceInline
-    //NOT FINAL: SPECIALIZED
-    public Class<?> arrayType() {
-        return laneType.arrayType;
     }
 
     @Override
@@ -355,10 +349,10 @@ abstract class AbstractSpecies<E> extends jdk.internal.vm.vector.VectorSupport.V
 
     @ForceInline
     @Override
-    public final Vector<E> fromByteArray(byte[] a, int offset) {
+    public final Vector<E> fromByteArray(byte[] a, int offset, ByteOrder bo) {
         return dummyVector()
             .fromByteArray0(a, offset)
-            .maybeSwap(ByteOrder.LITTLE_ENDIAN);
+            .maybeSwap(bo);
     }
 
     @Override
@@ -514,19 +508,19 @@ abstract class AbstractSpecies<E> extends jdk.internal.vm.vector.VectorSupport.V
     /*package-private*/
     static ClassCastException checkFailed(Object what, Object required) {
         // Find a species for the thing that's failing.
-        VectorSpecies<?> whatSpecies = null;
+        AbstractSpecies<?> whatSpecies = null;
         String where;
         if (what instanceof VectorSpecies) {
-            whatSpecies = (VectorSpecies<?>) what;
+            whatSpecies = (AbstractSpecies<?>) what;
             where = whatSpecies.toString();
         } else if (what instanceof Vector) {
-            whatSpecies = ((Vector<?>) what).species();
+            whatSpecies = (AbstractSpecies<?>) ((Vector<?>) what).species();
             where = "a Vector<"+whatSpecies.genericElementType()+">";
         } else if (what instanceof VectorMask) {
-            whatSpecies = ((VectorMask<?>) what).vectorSpecies();
+            whatSpecies = (AbstractSpecies<?>) ((VectorMask<?>) what).vectorSpecies();
             where = "a VectorMask<"+whatSpecies.genericElementType()+">";
         } else if (what instanceof VectorShuffle) {
-            whatSpecies = ((VectorShuffle<?>) what).vectorSpecies();
+            whatSpecies = (AbstractSpecies<?>) ((VectorShuffle<?>) what).vectorSpecies();
             where = "a VectorShuffle<"+whatSpecies.genericElementType()+">";
         } else {
             where = what.toString();

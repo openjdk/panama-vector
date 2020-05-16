@@ -836,6 +836,17 @@ public class Short64VectorTests extends AbstractVectorTest {
     }
 
     @Test
+    void viewAsIntegeralLanesTest() {
+        Vector<?> asIntegral = SPECIES.zero().viewAsIntegralLanes();
+        Assert.assertEquals(asIntegral.species(), SPECIES);
+    }
+
+    @Test(expectedExceptions = UnsupportedOperationException.class)
+    void viewAsFloatingLanesTest() {
+        SPECIES.zero().viewAsFloatingLanes();
+    }
+
+    @Test
     // Test div by 0.
     static void bitwiseDivByZeroSmokeTest() {
         try {

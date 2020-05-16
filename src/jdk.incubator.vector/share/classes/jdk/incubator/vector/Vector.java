@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,6 @@ package jdk.incubator.vector;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * A
@@ -83,6 +82,30 @@ import java.util.List;
  * transcendental operations on values of floating point element
  * types.
  *
+ * <p> Some lane-wise operations, such as the {@code add} operator, are defined as
+ * a full-service named operation, where a corresponding method on {@code Vector}
+ * comes in masked and unmasked overloadings, and (in subclasses) also comes in
+ * covariant overrides (returning the subclass) and additional scalar-broadcast
+ * overloadings (both masked and unmasked).
+ *
+ * Other lane-wise operations, such as the {@code min} operator, are defined as a
+ * partially serviced (not a full-service) named operation, where a corresponding
+ * method on {@code Vector} and/or a subclass provide some but all possible
+ * overloadings and overrides (commonly the unmasked varient with scalar-broadcast
+ * overloadings).
+ *
+ * Finally, all lane-wise operations (those named as previously described,
+ * or otherwise unnamed method-wise) have a corresponding
+ * {@link VectorOperators.Operator operator token}
+ * declared as a static constant on {@link VectorOperators}.
+ * Each operator token defines a symbolic Java expression for the operation,
+ * such as {@code a + b} for the
+ * {@link VectorOperators#ADD ADD} operator token.
+ * General lane-wise operation-token accepting methods, such as for a
+ * {@link Vector#lanewise(VectorOperators.Unary) unary lane-wise}
+ * operation, are provided on {@code Vector} and come in the same variants as
+ * a full-service named operation.
+ *
  * <p>This package contains a public subtype of {@link Vector}
  * corresponding to each supported element type:
  * {@link ByteVector}, {@link ShortVector},
@@ -92,7 +115,7 @@ import java.util.List;
  * <!-- The preceding paragraphs are shared verbatim
  *   -- between Vector.java and package-info.java -->
  *
- * <p> The {@linkplain #elementType element type} of a vector,
+ * <p><a id="ETYPE"></a> The {@linkplain #elementType element type} of a vector,
  * sometimes called {@code ETYPE}, is one of the primitive types
  * {@code byte}, {@code short}, {@code int}, {@code long}, {@code
  * float}, or {@code double}.
@@ -105,8 +128,8 @@ import java.util.List;
  * vector, each lane carries a primitive {@code int} value.  This
  * pattern continues for the other primitive types as well.
  *
- * <p> The {@linkplain #length() length} of a vector is the number of
- * lanes it contains.
+ * <p><a id="VLENGTH"></a> The {@linkplain #length() length} of a vector
+ * is the lane count, the number of lanes it contains.
  *
  * This number is also called {@code VLENGTH} when the context makes
  * clear which vector it belongs to.  Each vector has its own fixed
@@ -1057,7 +1080,7 @@ import java.util.List;
  *
  * @implNote
  *
- * <h2>Hardware platform dependencies</h2>
+ * <h2>Hardware platform dependencies and limitations</h2>
  *
  * The Vector API is to accelerate computations in style of Single
  * Instruction Multiple Data (SIMD), using available hardware
@@ -1069,6 +1092,33 @@ import java.util.List;
  * do not include specialized hardware support for SIMD computations.
  * The Vector API is not likely to provide any special performance
  * benefit on such platforms.
+ *
+ * <p> Currently the implementation is optimized to work best on:
+ *
+ * <ul>
+ *
+ * <li> Intel x64 platforms supporting at least AVX2 up to AVX-512.
+ * Masking using mask registers and mask accepting hardware
+ * instructions on AVX-512 are not currently supported.
+ *
+ * <li> ARM AArch64 platforms supporting NEON.  Although the API has
+ * been designed to ensure ARM SVE instructions can be supported
+ * (vector sizes between 128 to 2048 bits) there is currently no
+ * implementation of such instructions and the general masking
+ * capability.
+ *
+ * </ul>
+ * The implementation currently supports masked lane-wise operations
+ * in a cross-platform manner by composing the unmasked lane-wise
+ * operation with {@link #blend(Vector, VectorMask) blend} as in
+ * the expression {@code a.blend(a.lanewise(op, b), m)}, where
+ * {@code a} and {@code b} are vectors, {@code op} is the vector
+ * operation, and {@code m} is the mask.
+ *
+ * <p> The implementation does not currently support optimal
+ * vectorized instructions for floating point transcendental
+ * functions (such as operators {@link VectorOperators#SIN SIN}
+ * and {@link VectorOperators#LOG LOG}).
  *
  * <h2>No boxing of primitives</h2>
  *
@@ -1110,7 +1160,8 @@ import java.util.List;
  * <!-- The preceding paragraph is shared verbatim
  *   -- between Vector.java and package-info.java -->
  *
- * @param <E> the generic (boxed) version of the vector {@code ETYPE}
+ * @param <E> the boxed element type for the vector element
+ *        type ({@code ETYPE})
  *
  */
 @SuppressWarnings("exports")
@@ -1130,7 +1181,8 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
     public abstract VectorSpecies<E> species();
 
     /**
-     * Returns the primitive element type ({@code ETYPE}) of this vector.
+     * Returns the primitive <a href="Vector.html#ETYPE">element type</a>
+     * ({@code ETYPE}) of this vector.
      * This is the same value as {@code this.species().elementType()}.
      *
      * @return the primitive element type of this vector
@@ -1154,9 +1206,10 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
     public abstract VectorShape shape();
 
     /**
-     * Returns the number of vector lanes ({@code VLENGTH}).
+     * Returns the lane count, or <a href="Vector.html#VLENGTH">vector length</a>
+     * ({@code VLENGTH}).
      *
-     * @return the number of vector lanes
+     * @return the lane count
      */
     public abstract int length();
 
@@ -1809,8 +1862,10 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *
      * This is an associative cross-lane reduction operation which
      * applies the specified operation to all the lane elements.
-     * The result is delivered as a {@code long} value, rather
-     * than the vector's native {@code ETYPE}.
+     * The return value will be equal to this expression:
+     * {@code (long) ((EVector)this).reduceLanes(op)}, where {@code EVector}
+     * is the vector class specific to this vector's element type
+     * {@code ETYPE}.
      * <p>
      * In the case of operations {@code ADD} and {@code MUL},
      * when {@code ETYPE} is {@code float} or {@code double},
@@ -1846,8 +1901,10 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *
      * This is an associative cross-lane reduction operation which
      * applies the specified operation to the selected lane elements.
-     * The result is delivered as a {@code long} value, rather
-     * than the vector's native {@code ETYPE}.
+     * The return value will be equal to this expression:
+     * {@code (long) ((EVector)this).reduceLanes(op, m)}, where {@code EVector}
+     * is the vector class specific to this vector's element type
+     * {@code ETYPE}.
      * <p>
      * If no elements are selected, an operation-specific identity
      * value is returned.
@@ -1961,6 +2018,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *         equal to the second input vector
      * @see #compare(VectorOperators.Comparison,Vector)
      * @see VectorOperators#EQ
+     * @see #equals
      */
     public abstract VectorMask<E> eq(Vector<E> v);
 
@@ -2036,7 +2094,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *
      * <p>
      * The result is the same as
-     * {@code this.compare(op, this.broadcast(s))}.
+     * {@code this.compare(op, this.broadcast(e))}.
      * That is, the scalar may be regarded as broadcast to
      * a vector of the same species, and then compared
      * against the original vector, using the selected
@@ -2075,7 +2133,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      * to each lane value, paired with the broadcast value.
      *
      * The returned result is equal to the expression
-     * {@code compare(op,s).and(m)}.
+     * {@code compare(op,e).and(m)}.
      *
      * @apiNote
      * The {@code long} value {@code e} must be accurately
@@ -2799,13 +2857,13 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      * assert (part == 0) || (part > 0) == (domSize > ranSize);
      * byte[] ra = new byte[Math.max(domSize, ranSize)];
      * if (domSize > ranSize) {  // expansion
-     *     this.intoByteArray(ra, 0);
+     *     this.intoByteArray(ra, 0, ByteOrder.native());
      *     int origin = part * ranSize;
-     *     return species.fromByteArray(ra, origin);
+     *     return species.fromByteArray(ra, origin, ByteOrder.native());
      * } else {  // contraction or size-invariant
      *     int origin = (-part) * domSize;
-     *     this.intoByteArray(ra, origin);
-     *     return species.fromByteArray(ra, 0);
+     *     this.intoByteArray(ra, origin, ByteOrder.native());
+     *     return species.fromByteArray(ra, 0, ByteOrder.native());
      * }
      * }</pre>
      *
@@ -2842,8 +2900,8 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *
      * @return a {@code ByteVector} with the same shape and information content
      * @see Vector#reinterpretShape(VectorSpecies,int)
-     * @see IntVector#intoByteArray(byte[], int)
-     * @see FloatVector#intoByteArray(byte[], int)
+     * @see IntVector#intoByteArray(byte[], int, ByteOrder)
+     * @see FloatVector#intoByteArray(byte[], int, ByteOrder)
      * @see VectorSpecies#withLanes(Class)
      */
     public abstract ByteVector reinterpretAsBytes();
@@ -2963,7 +3021,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      * the return type.
      *
      * @return the original vector, reinterpreted as floating point
-     * @throws IllegalArgumentException if there is no floating point
+     * @throws UnsupportedOperationException if there is no floating point
      *         type the same size as the lanes of this vector
      * @see VectorOperators.Conversion#ofReinterpret(Class,Class)
      * @see Vector#convert(VectorOperators.Conversion,int)
@@ -3263,10 +3321,11 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
     //Array stores
 
     /**
-     * Stores this vector into a byte array starting at an offset.
+     * Stores this vector into a byte array starting at an offset
+     * using explicit byte order.
      * <p>
      * Bytes are extracted from primitive lane elements according
-     * to {@linkplain ByteOrder#LITTLE_ENDIAN little endian} ordering.
+     * to the specified byte ordering.
      * The lanes are stored according to their
      * <a href="Vector.html#lane-order">memory ordering</a>.
      * <p>
@@ -3275,49 +3334,20 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      * intoByteBuffer()} as follows:
      * <pre>{@code
      * var bb = ByteBuffer.wrap(a);
-     * var bo = ByteOrder.LITTLE_ENDIAN;
      * var m = maskAll(true);
      * intoByteBuffer(bb, offset, bo, m);
      * }</pre>
      *
      * @param a the byte array
      * @param offset the offset into the array
+     * @param bo the intended byte order
      * @throws IndexOutOfBoundsException
      *         if {@code offset+N*ESIZE < 0}
      *         or {@code offset+(N+1)*ESIZE > a.length}
      *         for any lane {@code N} in the vector
-     */
-    public abstract void intoByteArray(byte[] a, int offset);
-
-    /**
-     * Stores this vector into a byte array starting at an offset
-     * using a mask.
-     * <p>
-     * Bytes are extracted from primitive lane elements according
-     * to {@linkplain ByteOrder#LITTLE_ENDIAN little endian} ordering.
-     * The lanes are stored according to their
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it calls
-     * {@link #intoByteBuffer(ByteBuffer,int,ByteOrder,VectorMask)
-     * intoByteBuffer()} as follows:
-     * <pre>{@code
-     * var bb = ByteBuffer.wrap(a);
-     * var bo = ByteOrder.LITTLE_ENDIAN;
-     * intoByteBuffer(bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param a the byte array
-     * @param offset the offset into the array
-     * @param m the mask controlling lane selection
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*ESIZE < 0}
-     *         or {@code offset+(N+1)*ESIZE > a.length}
-     *         for any lane {@code N} in the vector
-     *         where the mask is set
      */
     public abstract void intoByteArray(byte[] a, int offset,
-                                       VectorMask<E> m);
+                                       ByteOrder bo);
 
     /**
      * Stores this vector into a byte array starting at an offset
@@ -3374,6 +3404,8 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *         if {@code offset+N*ESIZE < 0}
      *         or {@code offset+(N+1)*ESIZE > bb.limit()}
      *         for any lane {@code N} in the vector
+     * @throws java.nio.ReadOnlyBufferException
+     *         if the byte buffer is read-only
      */
     public abstract void intoByteBuffer(ByteBuffer bb, int offset, ByteOrder bo);
 
@@ -3430,6 +3462,8 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *         or {@code offset+(N+1)*ESIZE > bb.limit()}
      *         for any lane {@code N} in the vector
      *         where the mask is set
+     * @throws java.nio.ReadOnlyBufferException
+     *         if the byte buffer is read-only
      */
     public abstract void intoByteBuffer(ByteBuffer bb, int offset,
                                         ByteOrder bo, VectorMask<E> m);
@@ -3476,7 +3510,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *
      * @return an {@code int[]} array containing
      *         the lane values of this vector
-     * @throws IllegalArgumentException
+     * @throws UnsupportedOperationException
      *         if any lane value cannot be represented as an
      *         {@code int} array element
      * @see #toArray()
@@ -3505,7 +3539,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *
      * @return a {@code long[]} array containing
      *         the lane values of this vector
-     * @throws IllegalArgumentException
+     * @throws UnsupportedOperationException
      *         if any lane value cannot be represented as a
      *         {@code long} array element
      * @see #toArray()
@@ -3560,13 +3594,13 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      * Indicates whether this vector is identical to some other object.
      * Two vectors are identical only if they have the same species
      * and same lane values, in the same order.
-
      * <p>The comparison of lane values is produced as if by a call to
      * {@link Arrays#equals(int[],int[]) Arrays.equals()},
      * as appropriate to the arrays returned by
      * {@link #toArray toArray()} on both vectors.
      *
      * @return whether this vector is identical to some other object
+     * @see #eq
      */
     @Override
     public abstract boolean equals(Object obj);

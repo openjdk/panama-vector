@@ -6,6 +6,7 @@ import org.testng.annotations.DataProvider;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.IntFunction;
@@ -309,7 +310,7 @@ public class VectorReshapeTests {
     static <E>
     void testVectorReshape(VectorSpecies<E> a, VectorSpecies<E> b, byte[] input, byte[] output, boolean lanewise) {
         Class<?> atype = a.elementType(), btype = b.elementType();
-        Vector<E> av = a.fromByteArray(input, 0);
+        Vector<E> av = a.fromByteArray(input, 0, ByteOrder.nativeOrder());
         int partLimit = partLimit(a, b, lanewise);
         int block = Math.min(a.vectorByteSize(), b.vectorByteSize());
         if (false)
@@ -324,7 +325,7 @@ public class VectorReshapeTests {
                 Vector<E> bv = (lanewise
                                 ? av.castShape(b, part)
                                 : av.reinterpretShape(b, part));
-                bv.intoByteArray(output, 0);
+                bv.intoByteArray(output, 0, ByteOrder.nativeOrder());
                 // expansion: slice some of the input
                 origin = part * block;
                 expected = Arrays.copyOfRange(input, origin, origin + block);
@@ -339,7 +340,7 @@ public class VectorReshapeTests {
                 Vector<E> bv = (lanewise
                                 ? av.castShape(b, part)
                                 : av.reinterpretShape(b, part));
-                bv.intoByteArray(output, 0);
+                bv.intoByteArray(output, 0, ByteOrder.nativeOrder());
                 // contraction: unslice the input into part of the output
                 byte[] logical = input;
                 if (lanewise) {
@@ -357,7 +358,7 @@ public class VectorReshapeTests {
             Vector<E> bv = (lanewise
                             ? av.castShape(b, part)
                             : av.reinterpretShape(b, part));
-            bv.intoByteArray(output, 0);
+            bv.intoByteArray(output, 0, ByteOrder.nativeOrder());
             // in-place copy, no resize
             expected = input;
             origin = 0;
@@ -686,7 +687,7 @@ public class VectorReshapeTests {
     static <E,F>
     void testVectorRebracket(VectorSpecies<E> a, VectorSpecies<F> b, byte[] input, byte[] output, boolean lanewise) {
         Class<?> atype = a.elementType(), btype = b.elementType();
-        Vector<E> av = a.fromByteArray(input, 0);
+        Vector<E> av = a.fromByteArray(input, 0, ByteOrder.nativeOrder());
         int partLimit = partLimit(a, b, lanewise);
         int block;
         assert(input.length == output.length);
@@ -713,7 +714,7 @@ public class VectorReshapeTests {
                 Vector<F> bv = (lanewise
                                 ? av.castShape(b, part)
                                 : av.reinterpretShape(b, part));
-                bv.intoByteArray(output, 0);
+                bv.intoByteArray(output, 0, ByteOrder.nativeOrder());
                 // expansion: slice some of the input
                 origin = part * block;
                 expected = Arrays.copyOfRange(input, origin, origin + block);
@@ -728,7 +729,7 @@ public class VectorReshapeTests {
                 Vector<F> bv = (lanewise
                                 ? av.castShape(b, part)
                                 : av.reinterpretShape(b, part));
-                bv.intoByteArray(output, 0);
+                bv.intoByteArray(output, 0, ByteOrder.nativeOrder());
                 // contraction: unslice the input into part of the output
                 byte[] logical = input;
                 if (lanewise) {
@@ -746,7 +747,7 @@ public class VectorReshapeTests {
             Vector<F> bv = (lanewise
                             ? av.castShape(b, part)
                             : av.reinterpretShape(b, part));
-            bv.intoByteArray(output, 0);
+            bv.intoByteArray(output, 0, ByteOrder.nativeOrder());
             // in-place copy, no resize
             expected = input;
             origin = 0;

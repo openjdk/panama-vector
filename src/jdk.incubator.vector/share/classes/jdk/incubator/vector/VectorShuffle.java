@@ -32,16 +32,22 @@ import java.util.function.IntUnaryOperator;
 /**
  * A {@code VectorShuffle} represents an ordered immutable sequence of
  * {@code int} values called <em>source indexes</em>, where each source
- * index numerically selects a source lane from a {@link Vector} of a
- * compatible {@linkplain Vector#species() vector species}.
+ * index numerically selects a source lane from a compatible {@link Vector}.
+ * <p>
+ * A {@code VectorShuffle} and {@code Vector} of the same
+ * <a href="Vector.html#ETYPE">element type</a>
+ * ({@code ETYPE}) and {@link VectorShape shape} have the same number of lanes,
+ * and are therefore compatible (specifically, their {@link #vectorSpecies()
+ * vector species} are compatible).
+ * <p>
+ * A shuffle is applied to a (compatible) source vector with the
+ * {@link Vector#rearrange(VectorShuffle) rearrange}
+ * method.
+ * <p>
  * A shuffle has a lane structure derived from its vector
  * species, but it stores lane indexes, as {@code int}s,
  * rather than lane values.
- *
- * <p> A shuffle is applied to a source vector with the
- * {@link Vector#rearrange(VectorShuffle) rearrange}
- * method.
- *
+ * <p>
  * This method gathers lane values by random access to the source
  * vector, selecting lanes by consulting the source indexes.  If a
  * source index appears more than once in a shuffle, then the selected
@@ -51,8 +57,8 @@ import java.util.function.IntUnaryOperator;
  * lane values selected by the source indexes of the shuffle.  The
  * resulting lane values are ordered according to the shuffle's source
  * indexes, not according to the original vector's lane order.
- *
- * <p> Each shuffle has a {@link #vectorSpecies() vectorSpecies()}
+ * <p>
+ * Each shuffle has a {@link #vectorSpecies() vectorSpecies()}
  * property which determines the compatibility of vectors the shuffle
  * operates on.  This ensures that the {@link #length() length()} of a
  * shuffle is always equal to the {@linkplain Vector#length() VLENGTH}
@@ -122,7 +128,8 @@ import java.util.function.IntUnaryOperator;
  * possible, but instead should be stored in loop-invariant locals or
  * as {@code static final} constants.
  *
- * @param <E> the boxed element type of any vector to which this shuffle applies
+ * @param <E> the boxed element type for the vector element
+ *        type ({@code ETYPE})
  */
 @SuppressWarnings("exports")
 public abstract class VectorShuffle<E> extends jdk.internal.vm.vector.VectorSupport.VectorShuffle<E> {

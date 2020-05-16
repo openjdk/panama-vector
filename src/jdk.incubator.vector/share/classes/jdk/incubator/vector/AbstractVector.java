@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -708,6 +708,15 @@ abstract class AbstractVector<E> extends Vector<E> {
         return (AbstractVector<F>)
             v.convert0('C', rspi)
             .lanewise(AND, rspi.broadcast(mask));
+    }
+
+    // Byte buffer wrappers.
+    static ByteBuffer wrapper(ByteBuffer bb, ByteOrder bo) {
+        return bb.duplicate().order(bo);
+    }
+
+    static ByteBuffer wrapper(byte[] a, ByteOrder bo) {
+        return ByteBuffer.wrap(a).order(bo);
     }
 
     static {

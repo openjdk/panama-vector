@@ -33,16 +33,22 @@ import java.util.Objects;
 
 /**
  * A {@code VectorMask} represents an ordered immutable sequence of {@code boolean}
- * values.  Some vector operations accept masks to
- * control the selection and operation of lane elements of input vectors.
+ * values.
  * <p>
- * The number of values in the sequence is referred to as the VectorMask
+ * A {@code VectorMask} and {@code Vector} of the same
+ * <a href="Vector.html#ETYPE">element type</a>
+ * ({@code ETYPE}) and {@link VectorShape shape} have the same number of lanes,
+ * and are therefore compatible (specifically, their {@link #vectorSpecies()
+ * vector species} are compatible).
+ * <p>
+ * Some vector operations accept (compatible) masks to control the
+ * selection and operation of lane elements of input vectors.
+ * <p>
+ * The number of values in the sequence is referred to as the {@code VectorMask}
  * {@link #length() length}. The length also corresponds to the number of
  * VectorMask lanes.  The lane element at lane index {@code N} (from {@code 0},
  * inclusive, to length, exclusive) corresponds to the {@code N + 1}'th
  * value in the sequence.
- * A VectorMask and Vector of the same element type and shape have the same number
- * of lanes.
  * <p>
  * A lane is said to be <em>set</em> if the lane element is {@code true},
  * otherwise a lane is said to be <em>unset</em> if the lane element is
@@ -102,7 +108,8 @@ import java.util.Objects;
  * }</pre>
  *
  * </ul>
- * @param <E> the boxed element type of this mask
+ * @param <E> the boxed element type for the vector element
+ *        type ({@code ETYPE})
  *
  * <h2>Value-based classes and identity operations</h2>
  *
@@ -286,9 +293,11 @@ public abstract class VectorMask<E> extends jdk.internal.vm.vector.VectorSupport
      *
      * @return the lane elements of this mask packed into a {@code long}
      *         value.
-     * @throws IllegalArgumentException if there are more than 64 lanes
+     * @throws UnsupportedOperationException if there are more than 64 lanes
      *         in this mask
      */
+    // FIXME: Consider changing method to accept part locating where to extract
+    // out a 64bit value (in effect a contracting operation)
     public abstract long toLong();
 
     /**
@@ -401,8 +410,9 @@ public abstract class VectorMask<E> extends jdk.internal.vm.vector.VectorSupport
      *
      * @param m the input mask
      * @return a mask showing where the two input masks were equal
+     * @see #equals
      */
-    public abstract VectorMask<E> equal(VectorMask<E> m);
+    public abstract VectorMask<E> eq(VectorMask<E> m);
 
     /**
      * Logically subtracts a second input mask
@@ -564,8 +574,9 @@ public abstract class VectorMask<E> extends jdk.internal.vm.vector.VectorSupport
      * Indicates whether this mask is identical to some other object.
      * Two masks are identical only if they have the same species
      * and same source indexes, in the same order.
-
+     *
      * @return whether this vector is identical to some other object
+     * @see #eq
      */
     @Override
     public final boolean equals(Object obj) {
@@ -574,7 +585,7 @@ public abstract class VectorMask<E> extends jdk.internal.vm.vector.VectorSupport
             if (this.vectorSpecies().equals(that.vectorSpecies())) {
                 @SuppressWarnings("unchecked")
                 VectorMask<E> that2 = (VectorMask<E>) that;
-                return this.equal(that2).allTrue();
+                return this.eq(that2).allTrue();
             }
         }
         return false;

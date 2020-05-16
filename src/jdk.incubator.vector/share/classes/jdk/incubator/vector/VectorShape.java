@@ -228,7 +228,7 @@ public enum VectorShape {
      * for various lane types will have a common underlying shape.
      *
      * @return a preferred shape for all element types
-     * @throws IllegalArgumentException if no such shape exists
+     * @throws UnsupportedOperationException if no such shape exists
      * @see VectorSpecies#ofPreferred(Class)
      */
     @ForceInline
@@ -246,9 +246,10 @@ public enum VectorShape {
             Class<?> etype = type.elementType;
             int maxLaneCount = VectorSupport.getMaxLaneCount(etype);
             int maxSize = type.elementSize * maxLaneCount;
+            // FIXME: Consider removing, since unlikely to occur on modern hardware
             if (maxSize < Double.SIZE) {
                 String msg = "shape unavailable for lane type: " + etype.getName();
-                throw new IllegalArgumentException(msg);
+                throw new UnsupportedOperationException(msg);
             }
             prefBitSize = Math.min(prefBitSize, maxSize);
         }

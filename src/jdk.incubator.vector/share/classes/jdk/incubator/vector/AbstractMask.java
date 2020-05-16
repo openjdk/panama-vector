@@ -70,7 +70,7 @@ abstract class AbstractMask<E> extends VectorMask<E> {
     public long toLong() {
         // FIXME: This should be an intrinsic.
         if (length() > Long.SIZE) {
-            throw new IllegalArgumentException("too many lanes for one long");
+            throw new UnsupportedOperationException("too many lanes for one long");
         }
         long res = 0;
         long set = 1;
@@ -145,7 +145,7 @@ abstract class AbstractMask<E> extends VectorMask<E> {
     }
 
     @Override
-    public VectorMask<E> equal(VectorMask<E> m) {
+    public VectorMask<E> eq(VectorMask<E> m) {
         // FIXME: Generate good code here.
         return bOp(m, (i, a, b) -> a == b);
     }

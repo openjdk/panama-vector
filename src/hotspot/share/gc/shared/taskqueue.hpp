@@ -202,10 +202,22 @@ protected:
     // threads attempting to perform the pop_global will all perform the same
     // CAS, and only one can succeed.)  Any stealing thread that reads after
     // either the increment or decrement will see an empty queue, and will not
-    // join the competitors.  The "sz == -1 || sz == N-1" state will not be
-    // modified by concurrent queues, so the owner thread can reset the state to
-    // _bottom == top so subsequent pushes will be performed normally.
+    // join the competitors.  The "sz == -1" / "sz == N-1" state will not be
+    // modified by concurrent threads, so the owner thread can reset the state
+    // to _bottom == top so subsequent pushes will be performed normally.
     return (sz == N - 1) ? 0 : sz;
+  }
+
+  // Assert that we're not in the underflow state where bottom has
+  // been decremented past top, so that _bottom+1 mod N == top.  See
+  // the discussion in clean_size.
+
+  void assert_not_underflow(uint bot, uint top) const {
+    assert_not_underflow(dirty_size(bot, top));
+  }
+
+  void assert_not_underflow(uint dirty_size) const {
+    assert(dirty_size != N - 1, "invariant");
   }
 
 private:
@@ -228,10 +240,10 @@ private:
 public:
   TaskQueueSuper() : _bottom(0), _age() {}
 
-  // Return true if the TaskQueue contains any tasks.
+  // Assert the queue is empty.
   // Unreliable if there are concurrent pushes or pops.
-  bool peek() const {
-    return bottom_relaxed() != age_top_relaxed();
+  void assert_empty() const {
+    assert(bottom_relaxed() == age_top_relaxed(), "not empty");
   }
 
   bool is_empty() const {
@@ -313,6 +325,7 @@ protected:
   using TaskQueueSuper<N, F>::decrement_index;
   using TaskQueueSuper<N, F>::dirty_size;
   using TaskQueueSuper<N, F>::clean_size;
+  using TaskQueueSuper<N, F>::assert_not_underflow;
 
 public:
   using TaskQueueSuper<N, F>::max_elems;
@@ -426,8 +439,10 @@ private:
 
 class TaskQueueSetSuper {
 public:
-  // Returns "true" if some TaskQueue in the set contains a task.
-  virtual bool peek() = 0;
+  // Assert all queues in the set are empty.
+  NOT_DEBUG(void assert_empty() const {})
+  DEBUG_ONLY(virtual void assert_empty() const = 0;)
+
   // Tasks in queue
   virtual uint tasks() const = 0;
 };
@@ -458,8 +473,9 @@ public:
   // Returns if stealing succeeds, and sets "t" to the stolen task.
   bool steal(uint queue_num, E& t);
 
-  bool peek();
-  uint tasks() const;
+  DEBUG_ONLY(virtual void assert_empty() const;)
+
+  virtual uint tasks() const;
 
   uint size() const { return _n; }
 };
@@ -475,15 +491,14 @@ GenericTaskQueueSet<T, F>::queue(uint i) {
   return _queues[i];
 }
 
+#ifdef ASSERT
 template<class T, MEMFLAGS F>
-bool GenericTaskQueueSet<T, F>::peek() {
-  // Try all the queues.
+void GenericTaskQueueSet<T, F>::assert_empty() const {
   for (uint j = 0; j < _n; j++) {
-    if (_queues[j]->peek())
-      return true;
+    _queues[j]->assert_empty();
   }
-  return false;
 }
+#endif // ASSERT
 
 template<class T, MEMFLAGS F>
 uint GenericTaskQueueSet<T, F>::tasks() const {
@@ -547,6 +562,90 @@ public:
 private:
   oop _obj;
   int _index;
+};
+
+// Wrapper over an oop that is a partially scanned array.
+// Can be converted to a ScannerTask for placement in associated task queues.
+// Refers to the partially copied source array oop.
+class PartialArrayScanTask {
+  oop _src;
+
+public:
+  PartialArrayScanTask() : _src() {}
+  explicit PartialArrayScanTask(oop src_array) : _src(src_array) {}
+  // Trivially copyable.
+
+  oop to_source_array() const { return _src; }
+};
+
+// Discriminated union over oop*, narrowOop*, and PartialArrayScanTask.
+// Uses a low tag in the associated pointer to identify the category.
+// Used as a task queue element type.
+class ScannerTask {
+  void* _p;
+
+  static const uintptr_t OopTag = 0;
+  static const uintptr_t NarrowOopTag = 1;
+  static const uintptr_t PartialArrayTag = 2;
+  static const uintptr_t TagSize = 2;
+  static const uintptr_t TagAlignment = 1 << TagSize;
+  static const uintptr_t TagMask = TagAlignment - 1;
+
+  static void* encode(void* p, uintptr_t tag) {
+    assert(is_aligned(p, TagAlignment), "misaligned: " PTR_FORMAT, p2i(p));
+    return static_cast<char*>(p) + tag;
+  }
+
+  uintptr_t raw_value() const {
+    return reinterpret_cast<uintptr_t>(_p);
+  }
+
+  bool has_tag(uintptr_t tag) const {
+    return (raw_value() & TagMask) == tag;
+  }
+
+  void* decode(uintptr_t tag) const {
+    assert(has_tag(tag), "precondition");
+    return static_cast<char*>(_p) - tag;
+  }
+
+public:
+  ScannerTask() : _p(NULL) {}
+
+  explicit ScannerTask(oop* p) : _p(encode(p, OopTag)) {}
+
+  explicit ScannerTask(narrowOop* p) : _p(encode(p, NarrowOopTag)) {}
+
+  explicit ScannerTask(PartialArrayScanTask t) :
+    _p(encode(t.to_source_array(), PartialArrayTag)) {}
+
+  // Trivially copyable.
+
+  // Predicate implementations assume OopTag == 0, others are powers of 2.
+
+  bool is_oop_ptr() const {
+    return (raw_value() & (NarrowOopTag | PartialArrayTag)) == 0;
+  }
+
+  bool is_narrow_oop_ptr() const {
+    return (raw_value() & NarrowOopTag) != 0;
+  }
+
+  bool is_partial_array_task() const {
+    return (raw_value() & PartialArrayTag) != 0;
+  }
+
+  oop* to_oop_ptr() const {
+    return static_cast<oop*>(decode(OopTag));
+  }
+
+  narrowOop* to_narrow_oop_ptr() const {
+    return static_cast<narrowOop*>(decode(NarrowOopTag));
+  }
+
+  PartialArrayScanTask to_partial_array_task() const {
+    return PartialArrayScanTask(oop(decode(PartialArrayTag)));
+  }
 };
 
 #endif // SHARE_GC_SHARED_TASKQUEUE_HPP

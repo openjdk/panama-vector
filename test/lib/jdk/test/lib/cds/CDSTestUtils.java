@@ -256,7 +256,7 @@ public class CDSTestUtils {
         for (String s : opts.suffix) cmd.add(s);
 
         String[] cmdLine = cmd.toArray(new String[cmd.size()]);
-        ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(true, cmdLine);
+        ProcessBuilder pb = ProcessTools.createTestJvm(cmdLine);
         return executeAndLog(pb, "dump");
     }
 
@@ -283,6 +283,12 @@ public class CDSTestUtils {
         return output;
     }
 
+    // check result of dumping base archive
+    public static OutputAnalyzer checkBaseDump(OutputAnalyzer output) throws Exception {
+        output.shouldContain("Loading classes to share");
+        output.shouldHaveExitValue(0);
+        return output;
+    }
 
     // A commonly used convenience methods to create an archive and check the results
     // Creates an archive and checks for errors
@@ -414,7 +420,7 @@ public class CDSTestUtils {
         for (String s : opts.suffix) cmd.add(s);
 
         String[] cmdLine = cmd.toArray(new String[cmd.size()]);
-        ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(true, cmdLine);
+        ProcessBuilder pb = ProcessTools.createTestJvm(cmdLine);
         return executeAndLog(pb, "exec");
     }
 

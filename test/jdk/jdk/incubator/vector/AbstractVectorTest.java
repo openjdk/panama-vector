@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,11 +25,12 @@ import java.lang.Integer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.IntFunction;
 import java.util.Random;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.IntFunction;
 
 public class AbstractVectorTest {
 
@@ -78,6 +79,9 @@ public class AbstractVectorTest {
         };
     }
 
+    static final Collection<ByteOrder> BYTE_ORDER_VALUES = Set.of(
+            ByteOrder.BIG_ENDIAN, ByteOrder.LITTLE_ENDIAN);
+
     static final List<IntFunction<ByteBuffer>> BYTE_BUFFER_GENERATORS = List.of(
             withToString("HB:RW:NE", (int s) -> {
                 return ByteBuffer.allocate(s)
@@ -86,29 +90,6 @@ public class AbstractVectorTest {
             withToString("DB:RW:NE", (int s) -> {
                 return ByteBuffer.allocateDirect(s)
                         .order(ByteOrder.nativeOrder());
-            })
-            // @@@ Add when endianness design issues are resolved
-//            , withToString("HB:RW:BE", (int s) -> {
-//                return ByteBuffer.allocate(s)
-//                        .order(ByteOrder.BIG_ENDIAN);
-//            }),
-//            withToString("DB:RW:BE", (int s) -> {
-//                return ByteBuffer.allocateDirect(s)
-//                        .order(ByteOrder.BIG_ENDIAN);
-//            }),
-//            withToString("HB:RW:LE", (int s) -> {
-//                return ByteBuffer.allocate(s)
-//                        .order(ByteOrder.LITTLE_ENDIAN);
-//            }),
-//            withToString("DB:RW:LE", (int s) -> {
-//                return ByteBuffer.allocateDirect(s)
-//                        .order(ByteOrder.LITTLE_ENDIAN);
-//            })
-    );
-
-    static final List<IntFunction<byte[]>> BYTE_ARRAY_GENERATORS = List.of(
-            withToString("RW:NE", (int s) -> {
-                return (new byte[s]);
             })
     );
 
@@ -184,5 +165,26 @@ public class AbstractVectorTest {
         int i;
         for (i = m.length - 1; i >= 0 && !m[i]; i--);
         return m.length - 1 - i;
+    }
+
+    static boolean isIndexOutOfBoundsForMask(boolean[] mask, int offset, int length) {
+        return isIndexOutOfBoundsForMask(mask, offset, length, 1);
+    }
+
+    static boolean isIndexOutOfBoundsForMask(boolean[] mask, int offset, int length, int eSize) {
+        for (int i = 0; i < mask.length; i++) {
+            int index = i * eSize + offset;
+            if (mask[i]) {
+                if (index < 0 || index > length - eSize) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    static boolean isIndexOutOfBounds(int size, int offset, int length) {
+        int upperBound = offset + size;
+        return upperBound < size || upperBound > length;
     }
 }

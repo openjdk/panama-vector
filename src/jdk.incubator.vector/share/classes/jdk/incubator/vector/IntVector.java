@@ -25,8 +25,8 @@
 package jdk.incubator.vector;
 
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.nio.ByteOrder;
+import java.nio.ReadOnlyBufferException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BinaryOperator;
@@ -527,30 +527,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
     @ForceInline
     final IntVector broadcastTemplate(long e) {
         return vspecies().broadcast(e);
-    }
-
-    /**
-     * Returns a vector where each lane element is set to given
-     * primitive values.
-     * <p>
-     * For each vector lane, where {@code N} is the vector lane index, the
-     * the primitive value at index {@code N} is placed into the resulting
-     * vector at lane index {@code N}.
-     *
-     * @param species species of the desired vector
-     * @param es the given primitive values
-     * @return a vector where each lane element is set to given primitive
-     * values
-     * @throws IllegalArgumentException
-     *         if {@code es.length != species.length()}
-     */
-    @ForceInline
-    public static IntVector fromValues(VectorSpecies<Integer> species, int... es) {
-        IntSpecies vsp = (IntSpecies) species;
-        int vlength = vsp.laneCount();
-        VectorIntrinsics.requireLength(es.length, vlength);
-        // Get an unaliased copy and use it directly:
-        return vsp.vectorFactory(Arrays.copyOf(es, vlength));
     }
 
     // Unary lanewise support
@@ -2568,7 +2544,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
      * When this method is used on used on vectors
      * of type {@code IntVector},
      * there will be no loss of precision or range,
-     * and so no {@code IllegalArgumentException} will
+     * and so no {@code UnsupportedOperationException} will
      * be thrown.
      */
     @ForceInline
@@ -2603,39 +2579,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
     /**
      * Loads a vector from a byte array starting at an offset.
      * Bytes are composed into primitive lane elements according
-     * to {@linkplain ByteOrder#LITTLE_ENDIAN little endian} ordering.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it returns the result of calling
-     * {@link #fromByteBuffer(VectorSpecies,ByteBuffer,int,ByteOrder,VectorMask)
-     * fromByteBuffer()} as follows:
-     * <pre>{@code
-     * var bb = ByteBuffer.wrap(a);
-     * var bo = ByteOrder.LITTLE_ENDIAN;
-     * var m = species.maskAll(true);
-     * return fromByteBuffer(species, bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param species species of desired vector
-     * @param a the byte array
-     * @param offset the offset into the array
-     * @return a vector loaded from a byte array
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*ESIZE < 0}
-     *         or {@code offset+(N+1)*ESIZE > a.length}
-     *         for any lane {@code N} in the vector
-     */
-    @ForceInline
-    public static
-    IntVector fromByteArray(VectorSpecies<Integer> species,
-                                       byte[] a, int offset) {
-        return fromByteArray(species, a, offset, ByteOrder.LITTLE_ENDIAN);
-    }
-
-    /**
-     * Loads a vector from a byte array starting at an offset.
-     * Bytes are composed into primitive lane elements according
      * to the specified byte order.
      * The vector is arranged into lanes according to
      * <a href="Vector.html#lane-order">memory ordering</a>.
@@ -2664,50 +2607,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
     IntVector fromByteArray(VectorSpecies<Integer> species,
                                        byte[] a, int offset,
                                        ByteOrder bo) {
+        offset = checkFromIndexSize(offset, species.vectorByteSize(), a.length);
         IntSpecies vsp = (IntSpecies) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.vectorBitSize() / Byte.SIZE,
-                                    a.length);
-        return vsp.dummyVector()
-            .fromByteArray0(a, offset).maybeSwap(bo);
-    }
-
-    /**
-     * Loads a vector from a byte array starting at an offset
-     * and using a mask.
-     * Lanes where the mask is unset are filled with the default
-     * value of {@code int} (zero).
-     * Bytes are composed into primitive lane elements according
-     * to {@linkplain ByteOrder#LITTLE_ENDIAN little endian} ordering.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it returns the result of calling
-     * {@link #fromByteBuffer(VectorSpecies,ByteBuffer,int,ByteOrder,VectorMask)
-     * fromByteBuffer()} as follows:
-     * <pre>{@code
-     * var bb = ByteBuffer.wrap(a);
-     * var bo = ByteOrder.LITTLE_ENDIAN;
-     * return fromByteBuffer(species, bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param species species of desired vector
-     * @param a the byte array
-     * @param offset the offset into the array
-     * @param m the mask controlling lane selection
-     * @return a vector loaded from a byte array
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*ESIZE < 0}
-     *         or {@code offset+(N+1)*ESIZE > a.length}
-     *         for any lane {@code N} in the vector where
-     *         the mask is set
-     */
-    @ForceInline
-    public static
-    IntVector fromByteArray(VectorSpecies<Integer> species,
-                                       byte[] a, int offset,
-                                       VectorMask<Integer> m) {
-        return fromByteArray(species, a, offset, ByteOrder.LITTLE_ENDIAN, m);
+        return vsp.dummyVector().fromByteArray0(a, offset).maybeSwap(bo);
     }
 
     /**
@@ -2747,18 +2649,17 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                        ByteOrder bo,
                                        VectorMask<Integer> m) {
         IntSpecies vsp = (IntSpecies) species;
-        IntVector zero = vsp.zero();
-
-        if (offset >= 0 && offset <= (a.length - vsp.length() * 4)) {
+        if (offset >= 0 && offset <= (a.length - species.vectorByteSize())) {
+            IntVector zero = vsp.zero();
             IntVector v = zero.fromByteArray0(a, offset);
             return zero.blend(v.maybeSwap(bo), m);
         }
-        IntVector iota = zero.addIndex(1);
-        ((AbstractMask<Integer>)m)
-            .checkIndexByLane(offset, a.length, iota, 4);
-        IntBuffer tb = wrapper(a, offset, bo);
-        return vsp.ldOp(tb, 0, (AbstractMask<Integer>)m,
-                   (tb_, __, i)  -> tb_.get(i));
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 4, a.length);
+        ByteBuffer wb = wrapper(a, bo);
+        return vsp.ldOp(wb, offset, (AbstractMask<Integer>)m,
+                   (wb_, o, i)  -> wb_.getInt(o + i * 4));
     }
 
     /**
@@ -2780,10 +2681,8 @@ public abstract class IntVector extends AbstractVector<Integer> {
     public static
     IntVector fromArray(VectorSpecies<Integer> species,
                                    int[] a, int offset) {
+        offset = checkFromIndexSize(offset, species.length(), a.length);
         IntSpecies vsp = (IntSpecies) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    a.length);
         return vsp.dummyVector().fromArray0(a, offset);
     }
 
@@ -2818,9 +2717,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
             IntVector zero = vsp.zero();
             return zero.blend(zero.fromArray0(a, offset), m);
         }
-        IntVector iota = vsp.iota();
-        ((AbstractMask<Integer>)m)
-            .checkIndexByLane(offset, a.length, iota, 1);
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
         return vsp.vOp(m, i -> a[offset + i]);
     }
 
@@ -2965,12 +2864,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
     IntVector fromByteBuffer(VectorSpecies<Integer> species,
                                         ByteBuffer bb, int offset,
                                         ByteOrder bo) {
+        offset = checkFromIndexSize(offset, species.vectorByteSize(), bb.limit());
         IntSpecies vsp = (IntSpecies) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    bb.limit());
-        return vsp.dummyVector()
-            .fromByteBuffer0(bb, offset).maybeSwap(bo);
+        return vsp.dummyVector().fromByteBuffer0(bb, offset).maybeSwap(bo);
     }
 
     /**
@@ -3023,16 +2919,18 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                         ByteBuffer bb, int offset,
                                         ByteOrder bo,
                                         VectorMask<Integer> m) {
-        if (m.allTrue()) {
-            return fromByteBuffer(species, bb, offset, bo);
-        }
         IntSpecies vsp = (IntSpecies) species;
-        checkMaskFromIndexSize(offset,
-                               vsp, m, 1,
-                               bb.limit());
-        IntVector zero = zero(vsp);
-        IntVector v = zero.fromByteBuffer0(bb, offset);
-        return zero.blend(v.maybeSwap(bo), m);
+        if (offset >= 0 && offset <= (bb.limit() - species.vectorByteSize())) {
+            IntVector zero = vsp.zero();
+            IntVector v = zero.fromByteBuffer0(bb, offset);
+            return zero.blend(v.maybeSwap(bo), m);
+        }
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 4, bb.limit());
+        ByteBuffer wb = wrapper(bb, bo);
+        return vsp.ldOp(wb, offset, (AbstractMask<Integer>)m,
+                   (wb_, o, i)  -> wb_.getInt(o + i * 4));
     }
 
     // Memory store operations
@@ -3054,10 +2952,8 @@ public abstract class IntVector extends AbstractVector<Integer> {
     @ForceInline
     public final
     void intoArray(int[] a, int offset) {
+        offset = checkFromIndexSize(offset, length(), a.length);
         IntSpecies vsp = vspecies();
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    a.length);
         VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
@@ -3099,7 +2995,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
         if (m.allTrue()) {
             intoArray(a, offset);
         } else {
-            // FIXME: Cannot vectorize yet, if there's a mask.
+            // FIXME: optimize
+            IntSpecies vsp = vspecies();
+            checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
             stOp(a, offset, m, (arr, off, i, v) -> arr[off+i] = v);
         }
     }
@@ -3211,36 +3109,10 @@ public abstract class IntVector extends AbstractVector<Integer> {
     @Override
     @ForceInline
     public final
-    void intoByteArray(byte[] a, int offset) {
-        offset = checkFromIndexSize(offset,
-                                    bitSize() / Byte.SIZE,
-                                    a.length);
-        this.maybeSwap(ByteOrder.LITTLE_ENDIAN)
-            .intoByteArray0(a, offset);
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
     void intoByteArray(byte[] a, int offset,
-                       VectorMask<Integer> m) {
-        if (m.allTrue()) {
-            intoByteArray(a, offset);
-            return;
-        }
-        IntSpecies vsp = vspecies();
-        if (offset >= 0 && offset <= (a.length - vsp.length() * 4)) {
-            var oldVal = fromByteArray0(a, offset);
-            var newVal = oldVal.blend(this, m);
-            newVal.intoByteArray0(a, offset);
-        } else {
-            checkMaskFromIndexSize(offset, vsp, m, 4, a.length);
-            IntBuffer tb = wrapper(a, offset, NATIVE_ENDIAN);
-            this.stOp(tb, 0, m, (tb_, __, i, e) -> tb_.put(i, e));
-        }
+                       ByteOrder bo) {
+        offset = checkFromIndexSize(offset, byteSize(), a.length);
+        maybeSwap(bo).intoByteArray0(a, offset);
     }
 
     /**
@@ -3252,7 +3124,16 @@ public abstract class IntVector extends AbstractVector<Integer> {
     void intoByteArray(byte[] a, int offset,
                        ByteOrder bo,
                        VectorMask<Integer> m) {
-        maybeSwap(bo).intoByteArray(a, offset, m);
+        if (m.allTrue()) {
+            intoByteArray(a, offset, bo);
+        } else {
+            // FIXME: optimize
+            IntSpecies vsp = vspecies();
+            checkMaskFromIndexSize(offset, vsp, m, 4, a.length);
+            ByteBuffer wb = wrapper(a, bo);
+            this.stOp(wb, offset, m,
+                    (wb_, o, i, e) -> wb_.putInt(o + i * 4, e));
+        }
     }
 
     /**
@@ -3263,6 +3144,10 @@ public abstract class IntVector extends AbstractVector<Integer> {
     public final
     void intoByteBuffer(ByteBuffer bb, int offset,
                         ByteOrder bo) {
+        if (bb.isReadOnly()) {
+            throw new ReadOnlyBufferException();
+        }
+        offset = checkFromIndexSize(offset, byteSize(), bb.limit());
         maybeSwap(bo).intoByteBuffer0(bb, offset);
     }
 
@@ -3277,14 +3162,17 @@ public abstract class IntVector extends AbstractVector<Integer> {
                         VectorMask<Integer> m) {
         if (m.allTrue()) {
             intoByteBuffer(bb, offset, bo);
-            return;
+        } else {
+            // FIXME: optimize
+            if (bb.isReadOnly()) {
+                throw new ReadOnlyBufferException();
+            }
+            IntSpecies vsp = vspecies();
+            checkMaskFromIndexSize(offset, vsp, m, 4, bb.limit());
+            ByteBuffer wb = wrapper(bb, bo);
+            this.stOp(wb, offset, m,
+                    (wb_, o, i, e) -> wb_.putInt(o + i * 4, e));
         }
-        IntSpecies vsp = vspecies();
-        checkMaskFromIndexSize(offset, vsp, m, 4, bb.limit());
-        conditionalStoreNYI(offset, vsp, m, 4, bb.limit());
-        var oldVal = fromByteBuffer0(bb, offset);
-        var newVal = oldVal.blend(this.maybeSwap(bo), m);
-        newVal.intoByteBuffer0(bb, offset);
     }
 
     // ================================================
@@ -3333,8 +3221,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
             a, byteArrayAddress(a, offset),
             a, offset, vsp,
             (arr, off, s) -> {
-                IntBuffer tb = wrapper(arr, off, NATIVE_ENDIAN);
-                return s.ldOp(tb, 0, (tb_, __, i) -> tb_.get(i));
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                return s.ldOp(wb, off,
+                        (wb_, o, i) -> wb_.getInt(o + i * 4));
             });
     }
 
@@ -3349,8 +3238,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
             bufferBase(bb), bufferAddress(bb, offset),
             bb, offset, vsp,
             (buf, off, s) -> {
-                IntBuffer tb = wrapper(buf, off, NATIVE_ENDIAN);
-                return s.ldOp(tb, 0, (tb_, __, i) -> tb_.get(i));
+                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                return s.ldOp(wb, off,
+                        (wb_, o, i) -> wb_.getInt(o + i * 4));
            });
     }
 
@@ -3384,8 +3274,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
             a, byteArrayAddress(a, offset),
             this, a, offset,
             (arr, off, v) -> {
-                IntBuffer tb = wrapper(arr, off, NATIVE_ENDIAN);
-                v.stOp(tb, 0, (tb_, __, i, e) -> tb_.put(i, e));
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                v.stOp(wb, off,
+                        (tb_, o, i, e) -> tb_.putInt(o + i * 4, e));
             });
     }
 
@@ -3398,8 +3289,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
             bufferBase(bb), bufferAddress(bb, offset),
             this, bb, offset,
             (buf, off, v) -> {
-                IntBuffer tb = wrapper(buf, off, NATIVE_ENDIAN);
-                v.stOp(tb, 0, (tb_, __, i, e) -> tb_.put(i, e));
+                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                v.stOp(wb, off,
+                        (wb_, o, i, e) -> wb_.putInt(o + i * 4, e));
             });
     }
 
@@ -3455,18 +3347,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
     @ForceInline
     static long byteArrayAddress(byte[] a, int index) {
         return Unsafe.ARRAY_BYTE_BASE_OFFSET + index;
-    }
-
-    // Byte buffer wrappers.
-    private static IntBuffer wrapper(ByteBuffer bb, int offset,
-                                        ByteOrder bo) {
-        return bb.duplicate().position(offset).slice()
-            .order(bo).asIntBuffer();
-    }
-    private static IntBuffer wrapper(byte[] a, int offset,
-                                        ByteOrder bo) {
-        return ByteBuffer.wrap(a, offset, a.length - offset)
-            .order(bo).asIntBuffer();
     }
 
     // ================================================
@@ -3593,14 +3473,8 @@ public abstract class IntVector extends AbstractVector<Integer> {
 
         @Override
         @ForceInline
-        public final Class<Integer> genericElementType() {
+        final Class<Integer> genericElementType() {
             return Integer.class;
-        }
-
-        @Override
-        @ForceInline
-        public final Class<int[]> arrayType() {
-            return int[].class;
         }
 
         @SuppressWarnings("unchecked")
@@ -3662,22 +3536,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
             return value;
         }
 
-        @Override
-        @ForceInline
-        public final IntVector fromValues(long... values) {
-            VectorIntrinsics.requireLength(values.length, laneCount);
-            int[] va = new int[laneCount()];
-            for (int i = 0; i < va.length; i++) {
-                long lv = values[i];
-                int v = (int) lv;
-                va[i] = v;
-                if ((long)v != lv) {
-                    throw badElementBits(lv, v);
-                }
-            }
-            return dummyVector().fromArray0(va, 0);
-        }
-
         /* this non-public one is for internal conversions */
         @Override
         @ForceInline
@@ -3709,13 +3567,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
         @Override final
         IntVector dummyVector() {
             return (IntVector) super.dummyVector();
-        }
-
-        final
-        IntVector vectorFactory(int[] vec) {
-            // Species delegates all factory requests to its dummy
-            // vector.  The dummy knows all about it.
-            return dummyVector().vectorFactory(vec);
         }
 
         /*package-private*/

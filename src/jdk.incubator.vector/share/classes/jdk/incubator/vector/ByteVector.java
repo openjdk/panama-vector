@@ -26,6 +26,7 @@ package jdk.incubator.vector;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.ReadOnlyBufferException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BinaryOperator;
@@ -526,30 +527,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     @ForceInline
     final ByteVector broadcastTemplate(long e) {
         return vspecies().broadcast(e);
-    }
-
-    /**
-     * Returns a vector where each lane element is set to given
-     * primitive values.
-     * <p>
-     * For each vector lane, where {@code N} is the vector lane index, the
-     * the primitive value at index {@code N} is placed into the resulting
-     * vector at lane index {@code N}.
-     *
-     * @param species species of the desired vector
-     * @param es the given primitive values
-     * @return a vector where each lane element is set to given primitive
-     * values
-     * @throws IllegalArgumentException
-     *         if {@code es.length != species.length()}
-     */
-    @ForceInline
-    public static ByteVector fromValues(VectorSpecies<Byte> species, byte... es) {
-        ByteSpecies vsp = (ByteSpecies) species;
-        int vlength = vsp.laneCount();
-        VectorIntrinsics.requireLength(es.length, vlength);
-        // Get an unaliased copy and use it directly:
-        return vsp.vectorFactory(Arrays.copyOf(es, vlength));
     }
 
     // Unary lanewise support
@@ -2555,7 +2532,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * When this method is used on used on vectors
      * of type {@code ByteVector},
      * there will be no loss of precision or range,
-     * and so no {@code IllegalArgumentException} will
+     * and so no {@code UnsupportedOperationException} will
      * be thrown.
      */
     @ForceInline
@@ -2575,7 +2552,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * When this method is used on used on vectors
      * of type {@code ByteVector},
      * there will be no loss of precision or range,
-     * and so no {@code IllegalArgumentException} will
+     * and so no {@code UnsupportedOperationException} will
      * be thrown.
      */
     @ForceInline
@@ -2610,39 +2587,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     /**
      * Loads a vector from a byte array starting at an offset.
      * Bytes are composed into primitive lane elements according
-     * to {@linkplain ByteOrder#LITTLE_ENDIAN little endian} ordering.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it returns the result of calling
-     * {@link #fromByteBuffer(VectorSpecies,ByteBuffer,int,ByteOrder,VectorMask)
-     * fromByteBuffer()} as follows:
-     * <pre>{@code
-     * var bb = ByteBuffer.wrap(a);
-     * var bo = ByteOrder.LITTLE_ENDIAN;
-     * var m = species.maskAll(true);
-     * return fromByteBuffer(species, bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param species species of desired vector
-     * @param a the byte array
-     * @param offset the offset into the array
-     * @return a vector loaded from a byte array
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*ESIZE < 0}
-     *         or {@code offset+(N+1)*ESIZE > a.length}
-     *         for any lane {@code N} in the vector
-     */
-    @ForceInline
-    public static
-    ByteVector fromByteArray(VectorSpecies<Byte> species,
-                                       byte[] a, int offset) {
-        return fromByteArray(species, a, offset, ByteOrder.LITTLE_ENDIAN);
-    }
-
-    /**
-     * Loads a vector from a byte array starting at an offset.
-     * Bytes are composed into primitive lane elements according
      * to the specified byte order.
      * The vector is arranged into lanes according to
      * <a href="Vector.html#lane-order">memory ordering</a>.
@@ -2671,50 +2615,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     ByteVector fromByteArray(VectorSpecies<Byte> species,
                                        byte[] a, int offset,
                                        ByteOrder bo) {
+        offset = checkFromIndexSize(offset, species.vectorByteSize(), a.length);
         ByteSpecies vsp = (ByteSpecies) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.vectorBitSize() / Byte.SIZE,
-                                    a.length);
-        return vsp.dummyVector()
-            .fromByteArray0(a, offset).maybeSwap(bo);
-    }
-
-    /**
-     * Loads a vector from a byte array starting at an offset
-     * and using a mask.
-     * Lanes where the mask is unset are filled with the default
-     * value of {@code byte} (zero).
-     * Bytes are composed into primitive lane elements according
-     * to {@linkplain ByteOrder#LITTLE_ENDIAN little endian} ordering.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it returns the result of calling
-     * {@link #fromByteBuffer(VectorSpecies,ByteBuffer,int,ByteOrder,VectorMask)
-     * fromByteBuffer()} as follows:
-     * <pre>{@code
-     * var bb = ByteBuffer.wrap(a);
-     * var bo = ByteOrder.LITTLE_ENDIAN;
-     * return fromByteBuffer(species, bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param species species of desired vector
-     * @param a the byte array
-     * @param offset the offset into the array
-     * @param m the mask controlling lane selection
-     * @return a vector loaded from a byte array
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*ESIZE < 0}
-     *         or {@code offset+(N+1)*ESIZE > a.length}
-     *         for any lane {@code N} in the vector where
-     *         the mask is set
-     */
-    @ForceInline
-    public static
-    ByteVector fromByteArray(VectorSpecies<Byte> species,
-                                       byte[] a, int offset,
-                                       VectorMask<Byte> m) {
-        return fromByteArray(species, a, offset, ByteOrder.LITTLE_ENDIAN, m);
+        return vsp.dummyVector().fromByteArray0(a, offset).maybeSwap(bo);
     }
 
     /**
@@ -2754,18 +2657,17 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                        ByteOrder bo,
                                        VectorMask<Byte> m) {
         ByteSpecies vsp = (ByteSpecies) species;
-        ByteVector zero = vsp.zero();
-
-        if (offset >= 0 && offset <= (a.length - vsp.length() * 1)) {
+        if (offset >= 0 && offset <= (a.length - species.vectorByteSize())) {
+            ByteVector zero = vsp.zero();
             ByteVector v = zero.fromByteArray0(a, offset);
             return zero.blend(v.maybeSwap(bo), m);
         }
-        ByteVector iota = zero.addIndex(1);
-        ((AbstractMask<Byte>)m)
-            .checkIndexByLane(offset, a.length, iota, 1);
-        ByteBuffer tb = wrapper(a, offset, bo);
-        return vsp.ldOp(tb, 0, (AbstractMask<Byte>)m,
-                   (tb_, __, i)  -> tb_.get(i));
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
+        ByteBuffer wb = wrapper(a, bo);
+        return vsp.ldOp(wb, offset, (AbstractMask<Byte>)m,
+                   (wb_, o, i)  -> wb_.get(o + i * 1));
     }
 
     /**
@@ -2787,10 +2689,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     public static
     ByteVector fromArray(VectorSpecies<Byte> species,
                                    byte[] a, int offset) {
+        offset = checkFromIndexSize(offset, species.length(), a.length);
         ByteSpecies vsp = (ByteSpecies) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    a.length);
         return vsp.dummyVector().fromArray0(a, offset);
     }
 
@@ -2825,9 +2725,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             ByteVector zero = vsp.zero();
             return zero.blend(zero.fromArray0(a, offset), m);
         }
-        ByteVector iota = vsp.iota();
-        ((AbstractMask<Byte>)m)
-            .checkIndexByLane(offset, a.length, iota, 1);
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
         return vsp.vOp(m, i -> a[offset + i]);
     }
 
@@ -2948,12 +2848,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     ByteVector fromByteBuffer(VectorSpecies<Byte> species,
                                         ByteBuffer bb, int offset,
                                         ByteOrder bo) {
+        offset = checkFromIndexSize(offset, species.vectorByteSize(), bb.limit());
         ByteSpecies vsp = (ByteSpecies) species;
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    bb.limit());
-        return vsp.dummyVector()
-            .fromByteBuffer0(bb, offset).maybeSwap(bo);
+        return vsp.dummyVector().fromByteBuffer0(bb, offset).maybeSwap(bo);
     }
 
     /**
@@ -3000,16 +2897,18 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                         ByteBuffer bb, int offset,
                                         ByteOrder bo,
                                         VectorMask<Byte> m) {
-        if (m.allTrue()) {
-            return fromByteBuffer(species, bb, offset, bo);
-        }
         ByteSpecies vsp = (ByteSpecies) species;
-        checkMaskFromIndexSize(offset,
-                               vsp, m, 1,
-                               bb.limit());
-        ByteVector zero = zero(vsp);
-        ByteVector v = zero.fromByteBuffer0(bb, offset);
-        return zero.blend(v.maybeSwap(bo), m);
+        if (offset >= 0 && offset <= (bb.limit() - species.vectorByteSize())) {
+            ByteVector zero = vsp.zero();
+            ByteVector v = zero.fromByteBuffer0(bb, offset);
+            return zero.blend(v.maybeSwap(bo), m);
+        }
+
+        // FIXME: optimize
+        checkMaskFromIndexSize(offset, vsp, m, 1, bb.limit());
+        ByteBuffer wb = wrapper(bb, bo);
+        return vsp.ldOp(wb, offset, (AbstractMask<Byte>)m,
+                   (wb_, o, i)  -> wb_.get(o + i * 1));
     }
 
     // Memory store operations
@@ -3031,10 +2930,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     @ForceInline
     public final
     void intoArray(byte[] a, int offset) {
+        offset = checkFromIndexSize(offset, length(), a.length);
         ByteSpecies vsp = vspecies();
-        offset = checkFromIndexSize(offset,
-                                    vsp.laneCount(),
-                                    a.length);
         VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
@@ -3076,7 +2973,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         if (m.allTrue()) {
             intoArray(a, offset);
         } else {
-            // FIXME: Cannot vectorize yet, if there's a mask.
+            // FIXME: optimize
+            ByteSpecies vsp = vspecies();
+            checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
             stOp(a, offset, m, (arr, off, i, v) -> arr[off+i] = v);
         }
     }
@@ -3166,36 +3065,10 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     @Override
     @ForceInline
     public final
-    void intoByteArray(byte[] a, int offset) {
-        offset = checkFromIndexSize(offset,
-                                    bitSize() / Byte.SIZE,
-                                    a.length);
-        this.maybeSwap(ByteOrder.LITTLE_ENDIAN)
-            .intoByteArray0(a, offset);
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
     void intoByteArray(byte[] a, int offset,
-                       VectorMask<Byte> m) {
-        if (m.allTrue()) {
-            intoByteArray(a, offset);
-            return;
-        }
-        ByteSpecies vsp = vspecies();
-        if (offset >= 0 && offset <= (a.length - vsp.length() * 1)) {
-            var oldVal = fromByteArray0(a, offset);
-            var newVal = oldVal.blend(this, m);
-            newVal.intoByteArray0(a, offset);
-        } else {
-            checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
-            ByteBuffer tb = wrapper(a, offset, NATIVE_ENDIAN);
-            this.stOp(tb, 0, m, (tb_, __, i, e) -> tb_.put(i, e));
-        }
+                       ByteOrder bo) {
+        offset = checkFromIndexSize(offset, byteSize(), a.length);
+        maybeSwap(bo).intoByteArray0(a, offset);
     }
 
     /**
@@ -3207,7 +3080,16 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     void intoByteArray(byte[] a, int offset,
                        ByteOrder bo,
                        VectorMask<Byte> m) {
-        maybeSwap(bo).intoByteArray(a, offset, m);
+        if (m.allTrue()) {
+            intoByteArray(a, offset, bo);
+        } else {
+            // FIXME: optimize
+            ByteSpecies vsp = vspecies();
+            checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
+            ByteBuffer wb = wrapper(a, bo);
+            this.stOp(wb, offset, m,
+                    (wb_, o, i, e) -> wb_.put(o + i * 1, e));
+        }
     }
 
     /**
@@ -3218,6 +3100,10 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     public final
     void intoByteBuffer(ByteBuffer bb, int offset,
                         ByteOrder bo) {
+        if (bb.isReadOnly()) {
+            throw new ReadOnlyBufferException();
+        }
+        offset = checkFromIndexSize(offset, byteSize(), bb.limit());
         maybeSwap(bo).intoByteBuffer0(bb, offset);
     }
 
@@ -3232,14 +3118,17 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                         VectorMask<Byte> m) {
         if (m.allTrue()) {
             intoByteBuffer(bb, offset, bo);
-            return;
+        } else {
+            // FIXME: optimize
+            if (bb.isReadOnly()) {
+                throw new ReadOnlyBufferException();
+            }
+            ByteSpecies vsp = vspecies();
+            checkMaskFromIndexSize(offset, vsp, m, 1, bb.limit());
+            ByteBuffer wb = wrapper(bb, bo);
+            this.stOp(wb, offset, m,
+                    (wb_, o, i, e) -> wb_.put(o + i * 1, e));
         }
-        ByteSpecies vsp = vspecies();
-        checkMaskFromIndexSize(offset, vsp, m, 1, bb.limit());
-        conditionalStoreNYI(offset, vsp, m, 1, bb.limit());
-        var oldVal = fromByteBuffer0(bb, offset);
-        var newVal = oldVal.blend(this.maybeSwap(bo), m);
-        newVal.intoByteBuffer0(bb, offset);
     }
 
     // ================================================
@@ -3288,8 +3177,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             a, byteArrayAddress(a, offset),
             a, offset, vsp,
             (arr, off, s) -> {
-                ByteBuffer tb = wrapper(arr, off, NATIVE_ENDIAN);
-                return s.ldOp(tb, 0, (tb_, __, i) -> tb_.get(i));
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                return s.ldOp(wb, off,
+                        (wb_, o, i) -> wb_.get(o + i * 1));
             });
     }
 
@@ -3304,8 +3194,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             bufferBase(bb), bufferAddress(bb, offset),
             bb, offset, vsp,
             (buf, off, s) -> {
-                ByteBuffer tb = wrapper(buf, off, NATIVE_ENDIAN);
-                return s.ldOp(tb, 0, (tb_, __, i) -> tb_.get(i));
+                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                return s.ldOp(wb, off,
+                        (wb_, o, i) -> wb_.get(o + i * 1));
            });
     }
 
@@ -3339,8 +3230,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             a, byteArrayAddress(a, offset),
             this, a, offset,
             (arr, off, v) -> {
-                ByteBuffer tb = wrapper(arr, off, NATIVE_ENDIAN);
-                v.stOp(tb, 0, (tb_, __, i, e) -> tb_.put(i, e));
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                v.stOp(wb, off,
+                        (tb_, o, i, e) -> tb_.put(o + i * 1, e));
             });
     }
 
@@ -3353,8 +3245,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             bufferBase(bb), bufferAddress(bb, offset),
             this, bb, offset,
             (buf, off, v) -> {
-                ByteBuffer tb = wrapper(buf, off, NATIVE_ENDIAN);
-                v.stOp(tb, 0, (tb_, __, i, e) -> tb_.put(i, e));
+                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                v.stOp(wb, off,
+                        (wb_, o, i, e) -> wb_.put(o + i * 1, e));
             });
     }
 
@@ -3407,18 +3300,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         return Unsafe.ARRAY_BYTE_BASE_OFFSET + index;
     }
 
-    // Byte buffer wrappers.
-    private static ByteBuffer wrapper(ByteBuffer bb, int offset,
-                                        ByteOrder bo) {
-        return bb.duplicate().position(offset).slice()
-            .order(bo);
-    }
-    private static ByteBuffer wrapper(byte[] a, int offset,
-                                        ByteOrder bo) {
-        return ByteBuffer.wrap(a, offset, a.length - offset)
-            .order(bo).slice();
-    }
-
     // ================================================
 
     /// Reinterpreting view methods:
@@ -3447,7 +3328,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * {@inheritDoc} <!--workaround-->
      *
      * @implNote This method always throws
-     * {@code IllegalArgumentException}, because there is no floating
+     * {@code UnsupportedOperationException}, because there is no floating
      * point type of the same size as {@code byte}.  The return type
      * of this method is arbitrarily designated as
      * {@code Vector<?>}.  Future versions of this API may change the return
@@ -3459,7 +3340,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     Vector<?>
     viewAsFloatingLanes() {
         LaneType flt = LaneType.BYTE.asFloating();
-        throw new AssertionError();  // should already throw IAE
+        // asFloating() will throw UnsupportedOperationException for the unsupported type byte
+        throw new AssertionError("Cannot reach here");
     }
 
     // ================================================
@@ -3547,14 +3429,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
 
         @Override
         @ForceInline
-        public final Class<Byte> genericElementType() {
+        final Class<Byte> genericElementType() {
             return Byte.class;
-        }
-
-        @Override
-        @ForceInline
-        public final Class<byte[]> arrayType() {
-            return byte[].class;
         }
 
         @SuppressWarnings("unchecked")
@@ -3616,22 +3492,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             return value;
         }
 
-        @Override
-        @ForceInline
-        public final ByteVector fromValues(long... values) {
-            VectorIntrinsics.requireLength(values.length, laneCount);
-            byte[] va = new byte[laneCount()];
-            for (int i = 0; i < va.length; i++) {
-                long lv = values[i];
-                byte v = (byte) lv;
-                va[i] = v;
-                if ((long)v != lv) {
-                    throw badElementBits(lv, v);
-                }
-            }
-            return dummyVector().fromArray0(va, 0);
-        }
-
         /* this non-public one is for internal conversions */
         @Override
         @ForceInline
@@ -3663,13 +3523,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         @Override final
         ByteVector dummyVector() {
             return (ByteVector) super.dummyVector();
-        }
-
-        final
-        ByteVector vectorFactory(byte[] vec) {
-            // Species delegates all factory requests to its dummy
-            // vector.  The dummy knows all about it.
-            return dummyVector().vectorFactory(vec);
         }
 
         /*package-private*/
