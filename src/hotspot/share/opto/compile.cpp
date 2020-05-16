@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,6 +35,7 @@
 #include "compiler/oopMap.hpp"
 #include "gc/shared/barrierSet.hpp"
 #include "gc/shared/c2/barrierSetC2.hpp"
+#include "jfr/jfrEvents.hpp"
 #include "memory/resourceArea.hpp"
 #include "opto/addnode.hpp"
 #include "opto/block.hpp"
@@ -2265,22 +2266,6 @@ void Compile::Optimize() {
  }
 
  print_method(PHASE_OPTIMIZE_FINISHED, 2);
-}
-
-void Compile::print_method(CompilerPhaseType cpt, Node* n, int level) {
-  ResourceMark rm;
-  stringStream ss;
-  ss.print_raw(CompilerPhaseTypeHelper::to_string(cpt));
-  if (n != NULL) {
-#ifndef PRODUCT
-    ss.print(": %s %d", n->Name(), n->_idx);
-#else
-    ss.print(": %d %d", n->Opcode(), n->_idx);
-#endif // !PRODUCT
-  } else {
-    ss.print_raw(": NULL");
-  }
-  C->print_method(cpt, ss.as_string(), level);
 }
 
 void Compile::inline_vector_reboxing_calls() {
@@ -4611,7 +4596,6 @@ void CloneMap::dump(node_idx_t key) const {
   }
 }
 
-
 // Move Allocate nodes to the start of the list
 void Compile::sort_macro_nodes() {
   int count = macro_count();
@@ -4628,3 +4612,133 @@ void Compile::sort_macro_nodes() {
     }
   }
 }
+
+void Compile::print_method(CompilerPhaseType cpt, const char *name, int level, int idx) {
+  EventCompilerPhase event;
+  if (event.should_commit()) {
+    CompilerEvent::PhaseEvent::post(event, C->_latest_stage_start_counter, cpt, C->_compile_id, level);
+  }
+#ifndef PRODUCT
+  if (should_print(level)) {
+    _printer->print_method(name, level);
+  }
+#endif
+  C->_latest_stage_start_counter.stamp();
+}
+
+void Compile::print_method(CompilerPhaseType cpt, int level, int idx) {
+    char output[1024];
+#ifndef PRODUCT
+    if (idx != 0) {
+      jio_snprintf(output, sizeof(output), "%s:%d", CompilerPhaseTypeHelper::to_string(cpt), idx);
+    } else {
+      jio_snprintf(output, sizeof(output), "%s", CompilerPhaseTypeHelper::to_string(cpt));
+    }
+#endif
+    print_method(cpt, output, level, idx);
+}
+
+void Compile::print_method(CompilerPhaseType cpt, Node* n, int level) {
+  ResourceMark rm;
+  stringStream ss;
+  ss.print_raw(CompilerPhaseTypeHelper::to_string(cpt));
+  if (n != NULL) {
+#ifndef PRODUCT
+    ss.print(": %s %d", n->Name(), n->_idx);
+#else
+    ss.print(": %d %d", n->Opcode(), n->_idx);
+#endif // !PRODUCT
+  } else {
+    ss.print_raw(": NULL");
+  }
+  C->print_method(cpt, ss.as_string(), level);
+}
+
+void Compile::end_method(int level) {
+  EventCompilerPhase event;
+  if (event.should_commit()) {
+    CompilerEvent::PhaseEvent::post(event, C->_latest_stage_start_counter, PHASE_END, C->_compile_id, level);
+  }
+
+#ifndef PRODUCT
+  if (_printer && _printer->should_print(level)) {
+    _printer->end_method();
+  }
+#endif
+}
+
+
+#ifndef PRODUCT
+IdealGraphPrinter* Compile::_debug_file_printer = NULL;
+IdealGraphPrinter* Compile::_debug_network_printer = NULL;
+
+// Called from debugger. Prints method to the default file with the default phase name.
+// This works regardless of any Ideal Graph Visualizer flags set or not.
+void igv_print() {
+  Compile::current()->igv_print_method_to_file();
+}
+
+// Same as igv_print() above but with a specified phase name.
+void igv_print(const char* phase_name) {
+  Compile::current()->igv_print_method_to_file(phase_name);
+}
+
+// Called from debugger. Prints method with the default phase name to the default network or the one specified with
+// the network flags for the Ideal Graph Visualizer, or to the default file depending on the 'network' argument.
+// This works regardless of any Ideal Graph Visualizer flags set or not.
+void igv_print(bool network) {
+  if (network) {
+    Compile::current()->igv_print_method_to_network();
+  } else {
+    Compile::current()->igv_print_method_to_file();
+  }
+}
+
+// Same as igv_print(bool network) above but with a specified phase name.
+void igv_print(bool network, const char* phase_name) {
+  if (network) {
+    Compile::current()->igv_print_method_to_network(phase_name);
+  } else {
+    Compile::current()->igv_print_method_to_file(phase_name);
+  }
+}
+
+// Called from debugger. Normal write to the default _printer. Only works if Ideal Graph Visualizer printing flags are set.
+void igv_print_default() {
+  Compile::current()->print_method(PHASE_DEBUG, 0, 0);
+}
+
+// Called from debugger, especially when replaying a trace in which the program state cannot be altered like with rr replay.
+// A method is appended to an existing default file with the default phase name. This means that igv_append() must follow
+// an earlier igv_print(*) call which sets up the file. This works regardless of any Ideal Graph Visualizer flags set or not.
+void igv_append() {
+  Compile::current()->igv_print_method_to_file("Debug", true);
+}
+
+// Same as igv_append() above but with a specified phase name.
+void igv_append(const char* phase_name) {
+  Compile::current()->igv_print_method_to_file(phase_name, true);
+}
+
+void Compile::igv_print_method_to_file(const char* phase_name, bool append) {
+  const char* file_name = "custom_debug.xml";
+  if (_debug_file_printer == NULL) {
+    _debug_file_printer = new IdealGraphPrinter(C, file_name, append);
+  } else {
+    _debug_file_printer->update_compiled_method(C->method());
+  }
+  tty->print_cr("Method %s to %s", append ? "appended" : "printed", file_name);
+  _debug_file_printer->print_method(phase_name, 0);
+}
+
+void Compile::igv_print_method_to_network(const char* phase_name) {
+  if (_debug_network_printer == NULL) {
+    _debug_network_printer = new IdealGraphPrinter(C);
+  } else {
+    _debug_network_printer->update_compiled_method(C->method());
+  }
+  tty->print_cr("Method printed over network stream to IGV");
+  _debug_network_printer->print_method(phase_name, 0);
+}
+#endif
+

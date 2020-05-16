@@ -318,6 +318,8 @@ class Compile : public Phase {
   ConnectionGraph*      _congraph;
 #ifndef PRODUCT
   IdealGraphPrinter*    _printer;
+  static IdealGraphPrinter* _debug_file_printer;
+  static IdealGraphPrinter* _debug_network_printer;
 #endif
 
 
@@ -632,46 +634,18 @@ class Compile : public Phase {
 #endif
   }
 
-
-  void print_method(CompilerPhaseType cpt, const char *name, int level = 1, int idx = 0) {
-    EventCompilerPhase event;
-    if (event.should_commit()) {
-      CompilerEvent::PhaseEvent::post(event, C->_latest_stage_start_counter, cpt, C->_compile_id, level);
-    }
-#ifndef PRODUCT
-    if (should_print(level)) {
-      _printer->print_method(name, level);
-    }
-#endif
-    C->_latest_stage_start_counter.stamp();
-  }
-
-  void print_method(CompilerPhaseType cpt, int level = 1, int idx = 0) {
-      char output[1024];
-#ifndef PRODUCT
-      if (idx != 0) {
-        sprintf(output, "%s:%d", CompilerPhaseTypeHelper::to_string(cpt), idx);
-      } else {
-        sprintf(output, "%s", CompilerPhaseTypeHelper::to_string(cpt));
-      }
-#endif
-      print_method(cpt, output, level, idx);
-  }
-
+  void print_method(CompilerPhaseType cpt, const char *name, int level = 1, int idx = 0);
+  void print_method(CompilerPhaseType cpt, int level = 1, int idx = 0);
   void print_method(CompilerPhaseType cpt, Node* n, int level = 3);
 
-  void end_method(int level = 1) {
-    EventCompilerPhase event;
-    if (event.should_commit()) {
-      CompilerEvent::PhaseEvent::post(event, C->_latest_stage_start_counter, PHASE_END, C->_compile_id, level);
-    }
-
 #ifndef PRODUCT
-    if (_printer && _printer->should_print(level)) {
-      _printer->end_method();
-    }
+  void igv_print_method_to_file(const char* phase_name = "Debug", bool append = false);
+  void igv_print_method_to_network(const char* phase_name = "Debug");
+  static IdealGraphPrinter* debug_file_printer() { return _debug_file_printer; }
+  static IdealGraphPrinter* debug_network_printer() { return _debug_network_printer; }
 #endif
-  }
+
+  void end_method(int level = 1);
 
   int           macro_count()             const { return _macro_nodes->length(); }
   int           predicate_count()         const { return _predicate_opaqs->length();}
