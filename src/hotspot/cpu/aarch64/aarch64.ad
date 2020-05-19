@@ -2106,11 +2106,6 @@ const bool Matcher::match_rule_supported(int opcode) {
 // Identify extra cases that we might want to provide match rules for vector nodes and
 // other intrinsics guarded with vector length (vlen) and element type (bt).
 const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType bt) {
-  int bit_size = vlen * type2aelembytes(bt) * 8;
-  if (bit_size > 128) {
-    return false;
-  }
-
   if (!match_rule_supported(opcode) || !vector_size_supported(bt, vlen)) {
     return false;
   }
@@ -2175,7 +2170,7 @@ const bool Matcher::convL2FSupported(void) {
 
 // Vector width in bytes.
 const int Matcher::vector_width_in_bytes(BasicType bt) {
-  int size = MIN2((UseSVE > 0) ? 256 : 16, (int)MaxVectorSize);
+  int size = MIN2(16,(int)MaxVectorSize);
   // Minimum 2 values in vector
   if (size < 2*type2aelembytes(bt)) size = 0;
   // But never < 4

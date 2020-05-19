@@ -460,10 +460,6 @@ void VM_Version::get_processor_features() {
       warning("MaxVectorSize must be at least %i on this platform", min_vector_size);
       FLAG_SET_DEFAULT(MaxVectorSize, min_vector_size);
     }
-  } else {
-    if (UseSVE > 0) {
-      MaxVectorSize = 256;
-    }
   }
 
   if (FLAG_IS_DEFAULT(OptoScheduling)) {
