@@ -2350,9 +2350,9 @@ public:
 #define INSN(NAME, opc, opc2, accepted) \
   void NAME(FloatRegister Vd, SIMD_Arrangement T, FloatRegister Vn) {                   \
     guarantee(T != T1Q && T != T1D, "incorrect arrangement");                           \
-    if (accepted == 2) guarantee(T != T2D, "incorrect arrangement");                    \
-    if (accepted == 1) guarantee(T != T2S && T != T2D, "incorrect arrangement");        \
-    if (accepted == 0) guarantee(T == T8B || T == T16B, "incorrect arrangement");       \
+    if (accepted < 3) guarantee(T != T2D, "incorrect arrangement");                     \
+    if (accepted < 2) guarantee(T != T2S, "incorrect arrangement");                     \
+    if (accepted < 1) guarantee(T == T8B || T == T16B, "incorrect arrangement");        \
     starti;                                                                             \
     f(0, 31), f((int)T & 1, 30), f(opc, 29), f(0b01110, 28, 24);                        \
     f((int)T >> 1, 23, 22), f(opc2, 21, 10);                                            \
