@@ -2572,8 +2572,7 @@ Node *StoreNode::Ideal(PhaseGVN *phase, bool can_reshape) {
   // Capture an unaliased, unconditional, simple store into an initializer.
   // Or, if it is independent of the allocation, hoist it above the allocation.
   if (ReduceFieldZeroing && /*can_reshape &&*/
-      mem->is_Proj() && mem->in(0)->is_Initialize() &&
-      (as_Store()->in(MemNode::ValueIn)->bottom_type()->isa_vect() == NULL)) {
+      mem->is_Proj() && mem->in(0)->is_Initialize()) {
     InitializeNode* init = mem->in(0)->as_Initialize();
     intptr_t offset = init->can_capture_store(this, phase, can_reshape);
     if (offset > 0) {
