@@ -1230,7 +1230,7 @@ public class Short128Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void extract(Blackhole bh) {
+    public void laneextract(Blackhole bh) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
 

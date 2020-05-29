@@ -760,7 +760,7 @@ public class Double64Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void extract(Blackhole bh) {
+    public void laneextract(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
 

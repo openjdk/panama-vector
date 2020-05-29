@@ -760,7 +760,7 @@ public class Float512Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void extract(Blackhole bh) {
+    public void laneextract(Blackhole bh) {
         float[] a = fa.apply(SPECIES.length());
         float[] r = fr.apply(SPECIES.length());
 

@@ -1230,7 +1230,7 @@ public class Long512Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void extract(Blackhole bh) {
+    public void laneextract(Blackhole bh) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
 

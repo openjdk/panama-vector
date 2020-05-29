@@ -40,6 +40,8 @@ ternary_masked="Ternary-Masked-op"
 ternary_scalar="Ternary-Scalar-op"
 binary="Binary-op"
 binary_masked="Binary-Masked-op"
+binary_broadcast="Binary-Broadcast-op"
+binary_broadcast_masked="Binary-Broadcast-Masked-op"
 binary_scalar="Binary-Scalar-op"
 blend="Blend-op"
 test_template="Test"
@@ -105,10 +107,17 @@ function replace_variables {
   local test_func=""
   local withMask=""
   local tests=($(awk -F+ '{$1=$1} 1' <<< $test))
-  if [ "${tests[1]}" != "" ]; then
+  if [ "${tests[2]}" == "withMask" ]; then
     test=${tests[0]}
     test_func=${tests[1]}
     withMask=${tests[2]}
+  elif [ "${tests[1]}" == "withMask" ]; then
+    test=""
+    test_func=${tests[0]}
+    withMask=${tests[1]}
+  elif [ "${tests[1]}" != "" ]; then
+    test=${tests[0]}
+    test_func=${tests[1]}
   fi
 
   sed_prog="
@@ -133,7 +142,9 @@ function replace_variables {
   if [ "$guard" != "" ]; then
     echo -e "#if[${guard}]\n" >> $output
   fi
-  sed -e "$sed_prog" < ${filename}.current >> $output
+  if [ "$test" != "" ]; then
+    sed -e "$sed_prog" < ${filename}.current >> $output
+  fi
   # If we also have a dedicated function for the operation then use 2nd sed expression
   if [[ "$filename" == *"Unit"* ]] && [ "$test_func" != "" ]; then
     if [ "$masked" == "" ] || [ "$withMask" != "" ]; then 
@@ -188,7 +199,11 @@ function gen_op_tmpl {
   # Replace template variables in unit test files (if any)
   replace_variables $unit_filename $unit_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name"
 
-  if [ $generate_perf_tests == true ]; then
+  local gen_perf_tests=$generate_perf_tests
+  if [[ $template == *"-Broadcast-"* ]]; then
+    gen_perf_tests=false
+  fi
+  if [ $gen_perf_tests == true ]; then
     # Replace template variables in performance test files (if any)
     local perf_wrapper_filename="${TEMPLATE_FOLDER}/Perf-wrapper.template"
     local perf_vector_filename="${TEMPLATE_FOLDER}/Perf-${template}.template"
@@ -214,6 +229,12 @@ function gen_binary_alu_op {
   echo "Generating binary op $1 ($2)..."
   gen_op_tmpl $binary "$@"
   gen_op_tmpl $binary_masked "$@"
+}
+
+function gen_binary_alu_bcst_op {
+  echo "Generating binary broadcast op $1 ($2)..."
+  gen_op_tmpl $binary_broadcast "$@"
+  gen_op_tmpl $binary_broadcast_masked "$@"
 }
 
 function gen_shift_cst_op {
@@ -247,6 +268,11 @@ function gen_binary_op_no_masked {
   echo "Generating binary op $1 ($2)..."
 #  gen_op_tmpl $binary_scalar "$@"
   gen_op_tmpl $binary "$@"
+}
+
+function gen_binary_bcst_op_no_masked {
+  echo "Generating binary op $1 ($2)..."
+  gen_op_tmpl $binary_broadcast "$@"
 }
 
 function gen_reduction_op {
@@ -331,9 +357,17 @@ gen_op_tmpl "Binary-Masked-op_bitwise-div" "DIV+div+withMask" "a \/ b" "BITWISE"
 gen_binary_alu_op "FIRST_NONZERO" "{#if[FP]?Double.doubleToLongBits}(a)!=0?a:b"
 gen_binary_alu_op "AND+and"   "a \& b"  "BITWISE"
 gen_binary_alu_op "AND_NOT" "a \& ~b" "BITWISE"
-gen_binary_alu_op "OR"    "a | b"   "BITWISE"
+gen_binary_alu_op "OR+or"    "a | b"   "BITWISE"
 # Missing:        "OR_UNCHECKED"
 gen_binary_alu_op "XOR"   "a ^ b"   "BITWISE"
+# Generate the broadcast versions
+gen_binary_alu_bcst_op "add+withMask" "a + b" 
+gen_binary_alu_bcst_op "sub+withMask" "a - b" 
+gen_binary_alu_bcst_op "mul+withMask" "a \* b"
+gen_binary_alu_bcst_op "div+withMask" "a \/ b" "FP"
+gen_op_tmpl "Binary-Broadcast-op_bitwise-div" "div+withMask" "a \/ b" "BITWISE"
+gen_op_tmpl "Binary-Broadcast-Masked-op_bitwise-div" "div+withMask" "a \/ b" "BITWISE"
+gen_binary_alu_bcst_op "OR+or"    "a | b"   "BITWISE"
 
 # Shifts
 gen_binary_alu_op "LSHL" "(a << b)" "intOrLong"
@@ -358,6 +392,8 @@ gen_shift_cst_op  "ASHR" "(a >> (b \& 15))" "short"
 # Masked reductions.
 gen_binary_op_no_masked "MIN+min" "Math.min(a, b)"
 gen_binary_op_no_masked "MAX+max" "Math.max(a, b)"
+gen_binary_bcst_op_no_masked "MIN+min" "Math.min(a, b)"
+gen_binary_bcst_op_no_masked "MAX+max" "Math.max(a, b)"
 
 # Reductions.
 gen_reduction_op "AND" "\&" "BITWISE" "-1"
@@ -398,7 +434,7 @@ gen_op_tmpl $blend "blend" ""
 gen_op_tmpl $rearrange_template "rearrange" ""
 
 # Get
-gen_get_op "" ""
+gen_get_op "lane" ""
 
 # Broadcast
 gen_op_tmpl $broadcast_template "broadcast" ""
@@ -441,9 +477,9 @@ gen_ternary_alu_op "FMA" "Math.fma(a, b, c)" "FP"
 gen_ternary_alu_op "BITWISE_BLEND" "(a\&~(c))|(b\&c)" "BITWISE"
 
 # Unary operations.
-gen_unary_alu_op "NEG" "-((\$type\$)a)"
+gen_unary_alu_op "NEG+neg" "-((\$type\$)a)"
 gen_unary_alu_op "ABS+abs" "Math.abs((\$type\$)a)"
-gen_unary_alu_op "NOT" "~((\$type\$)a)" "BITWISE"
+gen_unary_alu_op "NOT+not" "~((\$type\$)a)" "BITWISE"
 gen_unary_alu_op "ZOMO" "(a==0?0:-1)" "BITWISE"
 gen_unary_alu_op "SQRT" "Math.sqrt((double)a)" "FP"
 

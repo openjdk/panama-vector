@@ -1230,7 +1230,7 @@ public class Byte64Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void extract(Blackhole bh) {
+    public void laneextract(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
         byte[] r = fr.apply(SPECIES.length());
 
