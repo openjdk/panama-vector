@@ -37,6 +37,10 @@ unary_masked="Unary-Masked-op"
 unary_scalar="Unary-Scalar-op"
 ternary="Ternary-op"
 ternary_masked="Ternary-Masked-op"
+ternary_broadcast="Ternary-Broadcast-op"
+ternary_broadcast_masked="Ternary-Broadcast-Masked-op"
+ternary_double_broadcast="Ternary-Double-Broadcast-op"
+ternary_double_broadcast_masked="Ternary-Double-Broadcast-Masked-op"
 ternary_scalar="Ternary-Scalar-op"
 binary="Binary-op"
 binary_masked="Binary-Masked-op"
@@ -90,6 +94,7 @@ function replace_variables {
   local guard=$7
   local masked=$8
   local op_name=$9
+  local kernel_smoke=${10}
 
   if [ "x${kernel}" != "x" ]; then
     local kernel_escaped=$(echo -e "$kernel" | tr '\n' '|')
@@ -148,7 +153,16 @@ function replace_variables {
   # If we also have a dedicated function for the operation then use 2nd sed expression
   if [[ "$filename" == *"Unit"* ]] && [ "$test_func" != "" ]; then
     if [ "$masked" == "" ] || [ "$withMask" != "" ]; then 
-      sed -e "$sed_prog_2" < ${filename}.current >> $output
+      if [ ! -z "$kernel_smoke" ]; then
+        local kernel_smoke_escaped=$(echo -e "$kernel_smoke" | tr '\n' '|')
+        sed "s/\[\[KERNEL\]\]/${kernel_smoke_escaped}/g" $filename > ${filename}.scurrent1
+        cat ${filename}.scurrent1 | tr '|' "\n" > ${filename}.scurrent
+        rm -f "${filename}.scurrent1"
+      else
+        cp $filename.current ${filename}.scurrent
+      fi
+      sed -e "$sed_prog_2" < ${filename}.scurrent >> $output
+      rm -f ${filename}.scurrent
     fi
   fi
   if [ "$guard" != "" ]; then
@@ -184,6 +198,7 @@ function gen_op_tmpl {
   fi
 
   local kernel_filename="${TEMPLATE_FOLDER}/Kernel-${template}.template"
+  local kernel_smoke_filename="${TEMPLATE_FOLDER}/Kernel-${template}-smoke.template"
   local unit_filename="${TEMPLATE_FOLDER}/Unit-${template}.template"
   if [ ! -f $unit_filename ]; then
     # Leverage general unit code snippet if no specialization exists
@@ -196,8 +211,15 @@ function gen_op_tmpl {
     kernel="$(cat $kernel_filename)"
   fi
 
+  local kernel_smoke=""
+  if [ -f $kernel_smoke_filename ]; then
+    kernel_smoke="$(cat $kernel_smoke_filename)"
+  else 
+    kernel_smoke="$kernel"
+  fi
+
   # Replace template variables in unit test files (if any)
-  replace_variables $unit_filename $unit_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name"
+  replace_variables $unit_filename $unit_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" "$kernel_smoke"
 
   local gen_perf_tests=$generate_perf_tests
   if [[ $template == *"-Broadcast-"* ]]; then
@@ -210,15 +232,15 @@ function gen_op_tmpl {
     local perf_scalar_filename="${TEMPLATE_FOLDER}/Perf-Scalar-${template}.template"
 
     if [ -f $perf_vector_filename ]; then
-      replace_variables $perf_vector_filename  $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name"
+      replace_variables $perf_vector_filename  $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
     elif [ -f $kernel_filename ]; then
-      replace_variables $perf_wrapper_filename $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name"
+      replace_variables $perf_wrapper_filename $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
     elif [[ $template != *"-Scalar-"* ]] && [[ $template != "Get-op" ]] && [[ $template != "With-Op" ]]; then
       echo "Warning: missing perf: $@"
     fi
 
     if [ -f $perf_scalar_filename ]; then
-      replace_variables $perf_scalar_filename $perf_scalar_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name"
+      replace_variables $perf_scalar_filename $perf_scalar_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
     elif [[ $template != *"-Scalar-"* ]] && [[ $template != "Get-op" ]] && [[ $template != "With-Op" ]]; then
       echo "Warning: Missing PERF SCALAR: $perf_scalar_filename"
     fi
@@ -257,6 +279,18 @@ function gen_ternary_alu_op {
   gen_op_tmpl $ternary_masked "$@"
 }
 
+function gen_ternary_alu_bcst_op {
+  echo "Generating ternary broadcast op $1 ($2)..."
+  gen_op_tmpl $ternary_broadcast "$@"
+  gen_op_tmpl $ternary_broadcast_masked "$@"
+}
+
+function gen_ternary_alu_double_bcst_op {
+  echo "Generating ternary double broadcast op $1 ($2)..."
+  gen_op_tmpl $ternary_double_broadcast "$@"
+  gen_op_tmpl $ternary_double_broadcast_masked "$@"
+}
+
 function gen_binary_op {
   echo "Generating binary op $1 ($2)..."
 #  gen_op_tmpl $binary_scalar "$@"
@@ -271,7 +305,7 @@ function gen_binary_op_no_masked {
 }
 
 function gen_binary_bcst_op_no_masked {
-  echo "Generating binary op $1 ($2)..."
+  echo "Generating binary broadcast op $1 ($2)..."
   gen_op_tmpl $binary_broadcast "$@"
 }
 
@@ -473,8 +507,12 @@ gen_op_tmpl $binary_math_template "POW" "Math.pow((double)a, (double)b)" "FP"
 gen_op_tmpl $binary_math_template "ATAN2" "Math.atan2((double)a, (double)b)" "FP"
 
 # Ternary operations.
-gen_ternary_alu_op "FMA" "Math.fma(a, b, c)" "FP"
-gen_ternary_alu_op "BITWISE_BLEND" "(a\&~(c))|(b\&c)" "BITWISE"
+gen_ternary_alu_op "FMA+fma" "Math.fma(a, b, c)" "FP"
+gen_ternary_alu_op "BITWISE_BLEND+bitwiseBlend" "(a\&~(c))|(b\&c)" "BITWISE"
+gen_ternary_alu_bcst_op "FMA" "Math.fma(a, b, c)" "FP"
+gen_ternary_alu_bcst_op "BITWISE_BLEND+bitwiseBlend" "(a\&~(c))|(b\&c)" "BITWISE"
+gen_ternary_alu_double_bcst_op "FMA" "Math.fma(a, b, c)" "FP"
+gen_ternary_alu_double_bcst_op "BITWISE_BLEND+bitwiseBlend" "(a\&~(c))|(b\&c)" "BITWISE"
 
 # Unary operations.
 gen_unary_alu_op "NEG+neg" "-((\$type\$)a)"
