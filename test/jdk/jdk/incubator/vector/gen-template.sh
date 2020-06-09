@@ -50,6 +50,8 @@ binary_scalar="Binary-Scalar-op"
 blend="Blend-op"
 test_template="Test"
 compare_template="Compare"
+compare_masked_template="Compare-Masked"
+compare_broadcast_template="Compare-Broadcast"
 reduction_scalar="Reduction-Scalar-op"
 reduction_scalar_min="Reduction-Scalar-Min-op"
 reduction_scalar_max="Reduction-Scalar-Max-op"
@@ -222,7 +224,7 @@ function gen_op_tmpl {
   replace_variables $unit_filename $unit_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" "$kernel_smoke"
 
   local gen_perf_tests=$generate_perf_tests
-  if [[ $template == *"-Broadcast-"* ]]; then
+  if [[ $template == *"-Broadcast-"* ]] || [[ $template == *"Compare-Masked"* ]] || [[ $template == *"Compare-Broadcast"* ]]; then
     gen_perf_tests=false
   fi
   if [ $gen_perf_tests == true ]; then
@@ -307,6 +309,17 @@ function gen_binary_op_no_masked {
 function gen_binary_bcst_op_no_masked {
   echo "Generating binary broadcast op $1 ($2)..."
   gen_op_tmpl $binary_broadcast "$@"
+}
+
+function gen_compare_op {
+  echo "Generating compare op $1 ($2)..."
+  gen_op_tmpl $compare_template "$@"
+  gen_op_tmpl $compare_masked_template "$@"
+}
+
+function gen_compare_bcst_op {
+  echo "Generating compare broadcast op $1 ($2)..."
+  gen_op_tmpl $compare_broadcast_template "$@"
 }
 
 function gen_reduction_op {
@@ -454,12 +467,14 @@ gen_op_tmpl $test_template "IS_NAN" "\$Boxtype\$.isNaN(a)" "FP"
 gen_op_tmpl $test_template "IS_INFINITE" "\$Boxtype\$.isInfinite(a)" "FP"
 
 # Compares
-gen_op_tmpl $compare_template "LT+lt" "<"
-gen_op_tmpl $compare_template "GT" ">"
-gen_op_tmpl $compare_template "EQ+eq" "=="
-gen_op_tmpl $compare_template "NE" "!="
-gen_op_tmpl $compare_template "LE" "<="
-gen_op_tmpl $compare_template "GE" ">="
+gen_compare_op "LT+lt" "<"
+gen_compare_op "GT" ">"
+gen_compare_op "EQ+eq" "=="
+gen_compare_op "NE" "!="
+gen_compare_op "LE" "<="
+gen_compare_op "GE" ">="
+gen_compare_bcst_op "LT" "<"
+gen_compare_bcst_op "EQ" "=="
 
 # Blend.
 gen_op_tmpl $blend "blend" ""
