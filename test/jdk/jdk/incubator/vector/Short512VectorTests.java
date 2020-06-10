@@ -253,6 +253,18 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+    static void assertBroadcastLongArraysEquals(short[] a, short[] b, short[] r, FBinOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], (short)((long)b[(i / SPECIES.length()) * SPECIES.length()])));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], f.apply(a[i], (short)((long)b[(i / SPECIES.length()) * SPECIES.length()])),
+                                "(" + a[i] + ", " + b[(i / SPECIES.length()) * SPECIES.length()] + ") at index #" + i);
+        }
+    }
+
     static void assertArraysEquals(short[] a, short[] b, short[] r, boolean[] mask, FBinOp f) {
         assertArraysEquals(a, b, r, mask, FBinMaskOp.lift(f));
     }
@@ -279,8 +291,26 @@ public class Short512VectorTests extends AbstractVectorTest {
                 Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()], mask[i % SPECIES.length()]));
             }
         } catch (AssertionError err) {
-            Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()], 
-                                mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] + 
+            Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()],
+                                mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] +
+                                ", input2 = " + b[(i / SPECIES.length()) * SPECIES.length()] + ", mask = " +
+                                mask[i % SPECIES.length()]);
+        }
+    }
+
+    static void assertBroadcastLongArraysEquals(short[] a, short[] b, short[] r, boolean[] mask, FBinOp f) {
+        assertBroadcastLongArraysEquals(a, b, r, mask, FBinMaskOp.lift(f));
+    }
+
+    static void assertBroadcastLongArraysEquals(short[] a, short[] b, short[] r, boolean[] mask, FBinMaskOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], (short)((long)b[(i / SPECIES.length()) * SPECIES.length()]), mask[i % SPECIES.length()]));
+            }
+        } catch (AssertionError err) {
+            Assert.assertEquals(r[i], f.apply(a[i], (short)((long)b[(i / SPECIES.length()) * SPECIES.length()]),
+                                mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] +
                                 ", input2 = " + b[(i / SPECIES.length()) * SPECIES.length()] + ", mask = " +
                                 mask[i % SPECIES.length()]);
         }
@@ -370,6 +400,19 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+    static void assertAltBroadcastArraysEquals(short[] a, short[] b, short[] c, short[] r, FTernOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()], c[i]));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()], c[i]), "at index #" +
+                                i + ", input1 = " + a[i] + ", input2 = " +
+                                b[(i / SPECIES.length()) * SPECIES.length()] + ",  input3 = " + c[i]);
+        }
+    }
+
     static void assertBroadcastArraysEquals(short[] a, short[] b, short[] c, short[] r, boolean[] mask,
                                             FTernOp f) {
         assertBroadcastArraysEquals(a, b, c, r, mask, FTernMaskOp.lift(f));
@@ -388,6 +431,27 @@ public class Short512VectorTests extends AbstractVectorTest {
                                 mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] + ", input2 = " +
                                 b[i] + ", input3 = " + c[(i / SPECIES.length()) * SPECIES.length()] + ", mask = " +
                                 mask[i % SPECIES.length()]);
+        }
+    }
+
+    static void assertAltBroadcastArraysEquals(short[] a, short[] b, short[] c, short[] r, boolean[] mask,
+                                            FTernOp f) {
+        assertAltBroadcastArraysEquals(a, b, c, r, mask, FTernMaskOp.lift(f));
+    }
+
+    static void assertAltBroadcastArraysEquals(short[] a, short[] b, short[] c, short[] r, boolean[] mask,
+                                            FTernMaskOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()], c[i],
+                                    mask[i % SPECIES.length()]));
+            }
+        } catch (AssertionError err) {
+            Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()], c[i],
+                                mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] +
+                                ", input2 = " + b[(i / SPECIES.length()) * SPECIES.length()] +
+                                ", input3 = " + c[i] + ", mask = " + mask[i % SPECIES.length()]);
         }
     }
 
@@ -411,7 +475,7 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertDoubleBroadcastArraysEquals(a, b, c, r, mask, FTernMaskOp.lift(f));
     }
 
-    static void assertDoubleBroadcastArraysEquals(short[] a, short[] b, short[] c, short[] r, boolean[] mask, 
+    static void assertDoubleBroadcastArraysEquals(short[] a, short[] b, short[] c, short[] r, boolean[] mask,
                                                   FTernMaskOp f) {
         int i = 0;
         try {
@@ -1736,6 +1800,41 @@ public class Short512VectorTests extends AbstractVectorTest {
 
 
 
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void ORShort512VectorTestsBroadcastLongSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.OR, (long)b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastLongArraysEquals(a, b, r, Short512VectorTests::OR);
+    }
+
+
+
+    @Test(dataProvider = "shortBinaryOpMaskProvider")
+    static void ORShort512VectorTestsBroadcastMaskedLongSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.OR, (long)b[i], vmask).intoArray(r, i);
+        }
+
+        assertBroadcastLongArraysEquals(a, b, r, mask, Short512VectorTests::OR);
+    }
+
+
+
 
 
 
@@ -2882,8 +2981,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-   
-                 Assert.assertEquals(mv.laneIsSet(j), testIS_DEFAULT(a[i + j]));
+                    Assert.assertEquals(mv.laneIsSet(j), testIS_DEFAULT(a[i + j]));
                 }
             }
         }
@@ -2904,8 +3002,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-   
-                 Assert.assertEquals(mv.laneIsSet(j), testIS_NEGATIVE(a[i + j]));
+                    Assert.assertEquals(mv.laneIsSet(j), testIS_NEGATIVE(a[i + j]));
                 }
             }
         }
@@ -3231,7 +3328,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
-    static void LTShort512VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa, 
+    static void LTShort512VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa,
                                 IntFunction<short[]> fb, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
         short[] b = fb.apply(SPECIES.length());
@@ -3268,7 +3365,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
-    static void LTShort512VectorTestsBroadcastLongMaskedSmokeTest(IntFunction<short[]> fa, 
+    static void LTShort512VectorTestsBroadcastLongMaskedSmokeTest(IntFunction<short[]> fa,
                                 IntFunction<short[]> fb, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
         short[] b = fb.apply(SPECIES.length());
@@ -3305,7 +3402,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
-    static void EQShort512VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa, 
+    static void EQShort512VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa,
                                 IntFunction<short[]> fb, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
         short[] b = fb.apply(SPECIES.length());
@@ -3342,7 +3439,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
-    static void EQShort512VectorTestsBroadcastLongMaskedSmokeTest(IntFunction<short[]> fa, 
+    static void EQShort512VectorTestsBroadcastLongMaskedSmokeTest(IntFunction<short[]> fa,
                                 IntFunction<short[]> fb, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
         short[] b = fb.apply(SPECIES.length());
@@ -3827,6 +3924,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
 
 
+
     static short BITWISE_BLEND(short a, short b, short c) {
         return (short)((a&~(c))|(b&c));
     }
@@ -3908,8 +4006,22 @@ public class Short512VectorTests extends AbstractVectorTest {
             ShortVector bv = ShortVector.fromArray(SPECIES, b, i);
             av.lanewise(VectorOperators.BITWISE_BLEND, bv, c[i]).intoArray(r, i);
         }
-
         assertBroadcastArraysEquals(a, b, c, r, Short512VectorTests::BITWISE_BLEND);
+    }
+
+    @Test(dataProvider = "shortTernaryOpProvider")
+    static void BITWISE_BLENDShort512VectorTestsAltBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] c = fc.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+            ShortVector cv = ShortVector.fromArray(SPECIES, c, i);
+            av.lanewise(VectorOperators.BITWISE_BLEND, b[i], cv).intoArray(r, i);
+        }
+        assertAltBroadcastArraysEquals(a, b, c, r, Short512VectorTests::BITWISE_BLEND);
     }
     @Test(dataProvider = "shortTernaryOpProvider")
     static void bitwiseBlendShort512VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
@@ -3923,8 +4035,22 @@ public class Short512VectorTests extends AbstractVectorTest {
             ShortVector bv = ShortVector.fromArray(SPECIES, b, i);
             av.bitwiseBlend(bv, c[i]).intoArray(r, i);
         }
-
         assertBroadcastArraysEquals(a, b, c, r, Short512VectorTests::bitwiseBlend);
+    }
+
+    @Test(dataProvider = "shortTernaryOpProvider")
+    static void bitwiseBlendShort512VectorTestsAltBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] c = fc.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+            ShortVector cv = ShortVector.fromArray(SPECIES, c, i);
+            av.bitwiseBlend(b[i], cv).intoArray(r, i);
+        }
+        assertAltBroadcastArraysEquals(a, b, c, r, Short512VectorTests::bitwiseBlend);
     }
 
 
@@ -3945,6 +4071,25 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
 
         assertBroadcastArraysEquals(a, b, c, r, mask, Short512VectorTests::BITWISE_BLEND);
+    }
+
+    @Test(dataProvider = "shortTernaryOpMaskProvider")
+    static void BITWISE_BLENDShort512VectorTestsAltBroadcastMaskedSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb,
+                                          IntFunction<short[]> fc, IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] c = fc.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+            ShortVector cv = ShortVector.fromArray(SPECIES, c, i);
+            av.lanewise(VectorOperators.BITWISE_BLEND, b[i], cv, vmask).intoArray(r, i);
+        }
+
+        assertAltBroadcastArraysEquals(a, b, c, r, mask, Short512VectorTests::BITWISE_BLEND);
     }
 
 

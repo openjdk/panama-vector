@@ -17,7 +17,7 @@
 
 
     @Test(dataProvider = "$type$CompareOpMaskProvider")
-    static void [[TEST]]$vectorteststype$BroadcastMaskedSmokeTest(IntFunction<$type$[]> fa, 
+    static void [[TEST]]$vectorteststype$BroadcastMaskedSmokeTest(IntFunction<$type$[]> fa,
                                 IntFunction<$type$[]> fb, IntFunction<boolean[]> fm) {
         $type$[] a = fa.apply(SPECIES.length());
         $type$[] b = fb.apply(SPECIES.length());
@@ -55,7 +55,7 @@
 
 
     @Test(dataProvider = "$type$CompareOpMaskProvider")
-    static void [[TEST]]$vectorteststype$BroadcastLongMaskedSmokeTest(IntFunction<$type$[]> fa, 
+    static void [[TEST]]$vectorteststype$BroadcastLongMaskedSmokeTest(IntFunction<$type$[]> fa,
                                 IntFunction<$type$[]> fb, IntFunction<boolean[]> fm) {
         $type$[] a = fa.apply(SPECIES.length());
         $type$[] b = fb.apply(SPECIES.length());

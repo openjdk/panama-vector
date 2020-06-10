@@ -46,6 +46,8 @@ binary="Binary-op"
 binary_masked="Binary-Masked-op"
 binary_broadcast="Binary-Broadcast-op"
 binary_broadcast_masked="Binary-Broadcast-Masked-op"
+binary_broadcast_long="Binary-Broadcast-Long-op"
+binary_broadcast_masked_long="Binary-Broadcast-Masked-Long-op"
 binary_scalar="Binary-Scalar-op"
 blend="Blend-op"
 test_template="Test"
@@ -66,6 +68,7 @@ reduction_op_min_masked="Reduction-Masked-Min-op"
 reduction_op_max_masked="Reduction-Masked-Max-op"
 unary_math_template="Unary-op-math"
 binary_math_template="Binary-op-math"
+binary_math_broadcast_template="Binary-Broadcast-op-math"
 bool_reduction_scalar="BoolReduction-Scalar-op"
 bool_reduction_template="BoolReduction-op"
 with_op_template="With-Op"
@@ -261,6 +264,12 @@ function gen_binary_alu_bcst_op {
   gen_op_tmpl $binary_broadcast_masked "$@"
 }
 
+function gen_binary_alu_bcst_long_op {
+  echo "Generating binary broadcast long op $1 ($2)..."
+  gen_op_tmpl $binary_broadcast_long "$@"
+  gen_op_tmpl $binary_broadcast_masked_long "$@"
+}
+
 function gen_shift_cst_op {
   echo "Generating Shift constant op $1 ($2)..."
   gen_op_tmpl $shift_template "$@"
@@ -415,6 +424,7 @@ gen_binary_alu_bcst_op "div+withMask" "a \/ b" "FP"
 gen_op_tmpl "Binary-Broadcast-op_bitwise-div" "div+withMask" "a \/ b" "BITWISE"
 gen_op_tmpl "Binary-Broadcast-Masked-op_bitwise-div" "div+withMask" "a \/ b" "BITWISE"
 gen_binary_alu_bcst_op "OR+or"    "a | b"   "BITWISE"
+gen_binary_alu_bcst_long_op "OR"    "a | b"   "BITWISE"
 
 # Shifts
 gen_binary_alu_op "LSHL" "(a << b)" "intOrLong"
@@ -518,15 +528,16 @@ gen_op_tmpl $unary_math_template "ACOS" "Math.acos((double)a)" "FP"
 gen_op_tmpl $unary_math_template "ATAN" "Math.atan((double)a)" "FP"
 gen_op_tmpl $unary_math_template "CBRT" "Math.cbrt((double)a)" "FP"
 gen_op_tmpl $binary_math_template "HYPOT" "Math.hypot((double)a, (double)b)" "FP"
-gen_op_tmpl $binary_math_template "POW" "Math.pow((double)a, (double)b)" "FP"
+gen_op_tmpl $binary_math_template "POW+pow" "Math.pow((double)a, (double)b)" "FP"
 gen_op_tmpl $binary_math_template "ATAN2" "Math.atan2((double)a, (double)b)" "FP"
+gen_op_tmpl $binary_math_broadcast_template "POW+pow" "Math.pow((double)a, (double)b)" "FP"
 
 # Ternary operations.
 gen_ternary_alu_op "FMA+fma" "Math.fma(a, b, c)" "FP"
 gen_ternary_alu_op "BITWISE_BLEND+bitwiseBlend" "(a\&~(c))|(b\&c)" "BITWISE"
 gen_ternary_alu_bcst_op "FMA" "Math.fma(a, b, c)" "FP"
 gen_ternary_alu_bcst_op "BITWISE_BLEND+bitwiseBlend" "(a\&~(c))|(b\&c)" "BITWISE"
-gen_ternary_alu_double_bcst_op "FMA" "Math.fma(a, b, c)" "FP"
+gen_ternary_alu_double_bcst_op "FMA+fma" "Math.fma(a, b, c)" "FP"
 gen_ternary_alu_double_bcst_op "BITWISE_BLEND+bitwiseBlend" "(a\&~(c))|(b\&c)" "BITWISE"
 
 # Unary operations.
@@ -534,7 +545,7 @@ gen_unary_alu_op "NEG+neg" "-((\$type\$)a)"
 gen_unary_alu_op "ABS+abs" "Math.abs((\$type\$)a)"
 gen_unary_alu_op "NOT+not" "~((\$type\$)a)" "BITWISE"
 gen_unary_alu_op "ZOMO" "(a==0?0:-1)" "BITWISE"
-gen_unary_alu_op "SQRT" "Math.sqrt((double)a)" "FP"
+gen_unary_alu_op "SQRT+sqrt" "Math.sqrt((double)a)" "FP"
 
 # Gather Scatter operations.
 gen_op_tmpl $gather_template "gather" ""
