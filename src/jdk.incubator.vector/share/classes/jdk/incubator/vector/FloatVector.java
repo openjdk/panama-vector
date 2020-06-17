@@ -2030,7 +2030,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             shuffle.checkIndexes();
             throw new AssertionError();
         }
-        return broadcast((float)0).blend(unmasked, valid);
+        return broadcast((float)0).blend(unmasked, m);
     }
 
     /**

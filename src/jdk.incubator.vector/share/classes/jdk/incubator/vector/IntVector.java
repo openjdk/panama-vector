@@ -2119,7 +2119,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
             shuffle.checkIndexes();
             throw new AssertionError();
         }
-        return broadcast((int)0).blend(unmasked, valid);
+        return broadcast((int)0).blend(unmasked, m);
     }
 
     /**

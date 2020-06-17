@@ -2030,7 +2030,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             shuffle.checkIndexes();
             throw new AssertionError();
         }
-        return broadcast((double)0).blend(unmasked, valid);
+        return broadcast((double)0).blend(unmasked, m);
     }
 
     /**

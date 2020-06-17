@@ -2366,7 +2366,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             shuffle.checkIndexes();
             throw new AssertionError();
         }
-        return broadcast(($type$)0).blend(unmasked, valid);
+        return broadcast(($type$)0).blend(unmasked, m);
     }
 
     /**

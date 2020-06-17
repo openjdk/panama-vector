@@ -153,6 +153,50 @@ public class Short128VectorTests extends AbstractVectorTest {
         }
     }
 
+    interface FReductionOpLong {
+        long apply(short[] a, int idx);
+    }
+
+    interface FReductionAllOpLong {
+        long apply(short[] a);
+    }
+
+    static void assertReductionLongArraysEquals(short[] a, long[] b, long c,
+                                            FReductionOpLong f, FReductionAllOpLong fa) {
+        int i = 0;
+        try {
+            Assert.assertEquals(c, fa.apply(a));
+            for (; i < a.length; i += SPECIES.length()) {
+                Assert.assertEquals(b[i], f.apply(a, i));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(c, fa.apply(a), "Final result is incorrect!");
+            Assert.assertEquals(b[i], f.apply(a, i), "at index #" + i);
+        }
+    }
+
+    interface FReductionMaskedOpLong {
+        long apply(short[] a, int idx, boolean[] mask);
+    }
+
+    interface FReductionAllMaskedOpLong {
+        long apply(short[] a, boolean[] mask);
+    }
+
+    static void assertReductionLongArraysEqualsMasked(short[] a, long[] b, long c, boolean[] mask,
+                                            FReductionMaskedOpLong f, FReductionAllMaskedOpLong fa) {
+        int i = 0;
+        try {
+            Assert.assertEquals(c, fa.apply(a, mask));
+            for (; i < a.length; i += SPECIES.length()) {
+                Assert.assertEquals(b[i], f.apply(a, i, mask));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(c, fa.apply(a, mask), "Final result is incorrect!");
+            Assert.assertEquals(b[i], f.apply(a, i, mask), "at index #" + i);
+        }
+    }
+
     interface FBoolReductionOp {
         boolean apply(boolean[] a, int idx);
     }
@@ -198,6 +242,60 @@ public class Short128VectorTests extends AbstractVectorTest {
         } catch (AssertionError e) {
             int idx = i + j;
             Assert.assertEquals(r[i+j], a[i+order[i+j]], "at index #" + idx + ", input = " + a[i+order[i+j]]);
+        }
+    }
+
+    static void assertSelectFromArraysEquals(short[] a, short[] r, short[] order, int vector_len) {
+        int i = 0, j = 0;
+        try {
+            for (; i < a.length; i += vector_len) {
+                for (j = 0; j < vector_len; j++) {
+                    Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                }
+            }
+        } catch (AssertionError e) {
+            int idx = i + j;
+            Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]]);
+        }
+    }
+
+    static void assertRearrangeArraysEquals(short[] a, short[] r, int[] order, boolean[] mask, int vector_len) {
+        int i = 0, j = 0;
+        try {
+            for (; i < a.length; i += vector_len) {
+                for (j = 0; j < vector_len; j++) {
+                    if (mask[j % SPECIES.length()])
+                         Assert.assertEquals(r[i+j], a[i+order[i+j]]);
+                    else
+                         Assert.assertEquals(r[i+j], (short)0);
+                }
+            }
+        } catch (AssertionError e) {
+            int idx = i + j;
+            if (mask[j % SPECIES.length()])
+                Assert.assertEquals(r[i+j], a[i+order[i+j]], "at index #" + idx + ", input = " + a[i+order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+            else
+                Assert.assertEquals(r[i+j], (short)0, "at index #" + idx + ", input = " + a[i+order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+        }
+    }
+
+    static void assertSelectFromArraysEquals(short[] a, short[] r, short[] order, boolean[] mask, int vector_len) {
+        int i = 0, j = 0;
+        try {
+            for (; i < a.length; i += vector_len) {
+                for (j = 0; j < vector_len; j++) {
+                    if (mask[j % SPECIES.length()])
+                         Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                    else
+                         Assert.assertEquals(r[i+j], (short)0);
+                }
+            }
+        } catch (AssertionError e) {
+            int idx = i + j;
+            if (mask[j % SPECIES.length()])
+                Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+            else
+                Assert.assertEquals(r[i+j], (short)0, "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
         }
     }
 
@@ -794,6 +892,46 @@ public class Short128VectorTests extends AbstractVectorTest {
     }
 
     @DataProvider
+    public Object[][] shortUnaryOpShuffleMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> INT_SHUFFLE_GENERATORS.stream().
+                    flatMap(fs -> SHORT_GENERATORS.stream().map(fa -> {
+                        return new Object[] {fa, fs, fm};
+                }))).
+                toArray(Object[][]::new);
+    }
+
+    static final List<BiFunction<Integer,Integer,short[]>> SHORT_SHUFFLE_GENERATORS = List.of(
+            withToStringBi("shuffle[random]", (Integer l, Integer m) -> {
+                short[] a = new short[l];
+                for (int i = 0; i < 1; i++) {
+                    a[i] = (short)RAND.nextInt(m);
+                }
+                return a;
+            })
+    );
+
+    @DataProvider
+    public Object[][] shortUnaryOpSelectFromProvider() {
+        return SHORT_SHUFFLE_GENERATORS.stream().
+                flatMap(fs -> SHORT_GENERATORS.stream().map(fa -> {
+                    return new Object[] {fa, fs};
+                })).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] shortUnaryOpSelectFromMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> SHORT_SHUFFLE_GENERATORS.stream().
+                    flatMap(fs -> SHORT_GENERATORS.stream().map(fa -> {
+                        return new Object[] {fa, fs, fm};
+                }))).
+                toArray(Object[][]::new);
+    }
+
+
+    @DataProvider
     public Object[][] shortUnaryOpIndexProvider() {
         return INT_INDEX_GENERATORS.stream().
                 flatMap(fs -> SHORT_GENERATORS.stream().map(fa -> {
@@ -906,11 +1044,11 @@ public class Short128VectorTests extends AbstractVectorTest {
                 return (short)0;
         }
     }
-   static short get(short[] a, int i) {
-       return (short) a[i];
-   }
+    static short get(short[] a, int i) {
+        return (short) a[i];
+    }
 
-   static final IntFunction<short[]> fr = (vl) -> {
+    static final IntFunction<short[]> fr = (vl) -> {
         int length = BUFFER_REPS * vl;
         return new short[length];
     };
@@ -918,6 +1056,11 @@ public class Short128VectorTests extends AbstractVectorTest {
     static final IntFunction<boolean[]> fmr = (vl) -> {
         int length = BUFFER_REPS * vl;
         return new boolean[length];
+    };
+
+    static final IntFunction<long[]> lfr = (vl) -> {
+        int length = BUFFER_REPS * vl;
+        return new long[length];
     };
 
     static void replaceZero(short[] a, short v) {
@@ -3499,9 +3642,23 @@ public class Short128VectorTests extends AbstractVectorTest {
         assertRearrangeArraysEquals(a, r, order, SPECIES.length());
     }
 
+    @Test(dataProvider = "shortUnaryOpShuffleMaskProvider")
+    static void RearrangeShort128VectorTestsMaskedSmokeTest(IntFunction<short[]> fa,
+                                                          BiFunction<Integer,Integer,int[]> fs,
+                                                          IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        int[] order = fs.apply(a.length, SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+            av.rearrange(VectorShuffle.fromArray(SPECIES, order, i), vmask).intoArray(r, i);
+        }
 
-
+        assertRearrangeArraysEquals(a, r, order, mask, SPECIES.length());
+    }
     @Test(dataProvider = "shortUnaryOpProvider")
     static void getShort128VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -4479,5 +4636,131 @@ public class Short128VectorTests extends AbstractVectorTest {
         assertArraysEquals(a, b, r, mask, Short128VectorTests::scatterMasked);
     }
 
+
+    static long ADDLong(short[] a, int idx) {
+        short res = 0;
+        for (int i = idx; i < (idx + SPECIES.length()); i++) {
+            res += a[i];
+        }
+
+        return (long)res;
+    }
+
+    static long ADDLong(short[] a) {
+        long res = 0;
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            res += ADDLong(a, i);
+        }
+
+        return res;
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void ADDReductionLongShort128VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        long[] r = lfr.apply(SPECIES.length());
+        long ra = 0;
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+            r[i] = av.reduceLanesToLong(VectorOperators.ADD);
+        }
+
+        ra = 0;
+        for (int i = 0; i < a.length; i ++) {
+            ra += r[i];
+        }
+
+        assertReductionLongArraysEquals(a, r, ra, Short128VectorTests::ADDLong, Short128VectorTests::ADDLong);
+    }
+
+    static long ADDLongMasked(short[] a, int idx, boolean[] mask) {
+        short res = 0;
+        for (int i = idx; i < (idx + SPECIES.length()); i++) {
+            if(mask[i % SPECIES.length()])
+                res += a[i];
+        }
+
+        return (long)res;
+    }
+
+    static long ADDLongMasked(short[] a, boolean[] mask) {
+        long res = 0;
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            res += ADDLongMasked(a, i, mask);
+        }
+
+        return res;
+    }
+
+    @Test(dataProvider = "shortUnaryOpMaskProvider")
+    static void ADDReductionLongShort128VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        long[] r = lfr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        long ra = 0;
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+            r[i] = av.reduceLanesToLong(VectorOperators.ADD, vmask);
+        }
+
+        ra = 0;
+        for (int i = 0; i < a.length; i ++) {
+            ra += r[i];
+        }
+
+        assertReductionLongArraysEqualsMasked(a, r, ra, mask, Short128VectorTests::ADDLongMasked, Short128VectorTests::ADDLongMasked);
+    }
+
+    @Test(dataProvider = "shortUnaryOpSelectFromProvider")
+    static void SelectFromShort128VectorTests(IntFunction<short[]> fa,
+                                           BiFunction<Integer,Integer,short[]> fs) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] order = fs.apply(a.length, SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+            ShortVector bv = ShortVector.fromArray(SPECIES, order, i);
+            bv.selectFrom(av).intoArray(r, i);
+        }
+
+        assertSelectFromArraysEquals(a, r, order, SPECIES.length());
+    }
+
+    @Test(dataProvider = "shortUnaryOpSelectFromMaskProvider")
+    static void SelectFromShort128VectorTestsMaskedSmokeTest(IntFunction<short[]> fa,
+                                                           BiFunction<Integer,Integer,short[]> fs,
+                                                           IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] order = fs.apply(a.length, SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+            ShortVector bv = ShortVector.fromArray(SPECIES, order, i);
+            bv.selectFrom(av, vmask).intoArray(r, i);
+        }
+
+        assertSelectFromArraysEquals(a, r, order, mask, SPECIES.length());
+    }
+
+    @Test
+    static void ElementSizeShort128VectorTests() {
+        ShortVector av = ShortVector.zero(SPECIES);
+        int elsize = av.elementSize();
+        Assert.assertEquals(elsize, Short.SIZE);
+    }
+
+    @Test
+    static void VectorShapeShort128VectorTests() {
+        ShortVector av = ShortVector.zero(SPECIES);
+        VectorShape vsh = av.shape();
+        assert(vsh.equals(VectorShape.S_128_BIT));
+    }
 }
 

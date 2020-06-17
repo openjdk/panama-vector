@@ -88,6 +88,7 @@ slice1_masked_template="Slice-Masked-bop"
 unslice_template="Unslice-op"
 unslice1_template="Unslice-bop"
 unslice1_masked_template="Unslice-Masked-bop"
+miscellaneous_template="Miscellaneous"
 
 function replace_variables {
   local filename=$1
@@ -227,7 +228,8 @@ function gen_op_tmpl {
   replace_variables $unit_filename $unit_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" "$kernel_smoke"
 
   local gen_perf_tests=$generate_perf_tests
-  if [[ $template == *"-Broadcast-"* ]] || [[ $template == *"Compare-Masked"* ]] || [[ $template == *"Compare-Broadcast"* ]]; then
+  if [[ $template == *"-Broadcast-"* ]] || [[ $template == "Miscellaneous" ]] ||
+     [[ $template == *"Compare-Masked"* ]] || [[ $template == *"Compare-Broadcast"* ]]; then
     gen_perf_tests=false
   fi
   if [ $gen_perf_tests == true ]; then
@@ -552,6 +554,9 @@ gen_op_tmpl $gather_template "gather" ""
 gen_op_tmpl $gather_masked_template "gather" ""
 gen_op_tmpl $scatter_template "scatter" ""
 gen_op_tmpl $scatter_masked_template "scatter" ""
+
+# Miscellaneous Smoke Tests
+gen_op_tmpl $miscellaneous_template "MISC" "" ""
 
 gen_unit_footer $unit_output
 

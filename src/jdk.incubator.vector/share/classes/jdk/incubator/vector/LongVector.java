@@ -1990,7 +1990,7 @@ public abstract class LongVector extends AbstractVector<Long> {
             shuffle.checkIndexes();
             throw new AssertionError();
         }
-        return broadcast((long)0).blend(unmasked, valid);
+        return broadcast((long)0).blend(unmasked, m);
     }
 
     /**

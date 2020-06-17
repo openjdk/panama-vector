@@ -2120,7 +2120,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             shuffle.checkIndexes();
             throw new AssertionError();
         }
-        return broadcast((byte)0).blend(unmasked, valid);
+        return broadcast((byte)0).blend(unmasked, m);
     }
 
     /**

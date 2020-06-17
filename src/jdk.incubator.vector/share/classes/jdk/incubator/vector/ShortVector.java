@@ -2120,7 +2120,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             shuffle.checkIndexes();
             throw new AssertionError();
         }
-        return broadcast((short)0).blend(unmasked, valid);
+        return broadcast((short)0).blend(unmasked, m);
     }
 
     /**
