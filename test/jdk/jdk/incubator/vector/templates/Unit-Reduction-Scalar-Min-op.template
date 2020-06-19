@@ -1,4 +1,4 @@
-    static $type$ [[TEST]]($type$[] a, int idx) {
+    static $type$ [[TEST]]Reduce($type$[] a, int idx) {
         $type$ res = [[TEST_INIT]];
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res = ($type$)Math.min(res, a[i]);
@@ -7,7 +7,7 @@
         return res;
     }
 
-    static $type$ [[TEST]]($type$[] a) {
+    static $type$ [[TEST]]ReduceAll($type$[] a) {
         $type$ res = [[TEST_INIT]];
         for (int i = 0; i < a.length; i++) {
             res = ($type$)Math.min(res, a[i]);

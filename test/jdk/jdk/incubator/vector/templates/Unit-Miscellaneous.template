@@ -1,6 +1,6 @@
 #if[!Long]
 
-    static long ADDLong($type$[] a, int idx) {
+    static long ADDReduceLong($type$[] a, int idx) {
         $type$ res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res += a[i];
@@ -9,17 +9,17 @@
         return (long)res;
     }
 
-    static long ADDLong($type$[] a) {
+    static long ADDReduceAllLong($type$[] a) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            res += ADDLong(a, i);
+            res += ADDReduceLong(a, i);
         }
 
         return res;
     }
 
     @Test(dataProvider = "$type$UnaryOpProvider")
-    static void ADDReductionLong$vectorteststype$(IntFunction<$type$[]> fa) {
+    static void ADDReduceLong$vectorteststype$(IntFunction<$type$[]> fa) {
         $type$[] a = fa.apply(SPECIES.length());
         long[] r = lfr.apply(SPECIES.length());
         long ra = 0;
@@ -34,10 +34,11 @@
             ra += r[i];
         }
 
-        assertReductionLongArraysEquals(a, r, ra, $vectorteststype$::ADDLong, $vectorteststype$::ADDLong);
+        assertReductionLongArraysEquals(a, r, ra,
+                $vectorteststype$::ADDReduceLong, $vectorteststype$::ADDReduceAllLong);
     }
 
-    static long ADDLongMasked($type$[] a, int idx, boolean[] mask) {
+    static long ADDReduceLongMasked($type$[] a, int idx, boolean[] mask) {
         $type$ res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -47,17 +48,17 @@
         return (long)res;
     }
 
-    static long ADDLongMasked($type$[] a, boolean[] mask) {
+    static long ADDReduceAllLongMasked($type$[] a, boolean[] mask) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            res += ADDLongMasked(a, i, mask);
+            res += ADDReduceLongMasked(a, i, mask);
         }
 
         return res;
     }
 
     @Test(dataProvider = "$type$UnaryOpMaskProvider")
-    static void ADDReductionLong$vectorteststype$Masked(IntFunction<$type$[]> fa, IntFunction<boolean[]> fm) {
+    static void ADDReduceLong$vectorteststype$Masked(IntFunction<$type$[]> fa, IntFunction<boolean[]> fm) {
         $type$[] a = fa.apply(SPECIES.length());
         long[] r = lfr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -74,7 +75,8 @@
             ra += r[i];
         }
 
-        assertReductionLongArraysEqualsMasked(a, r, ra, mask, $vectorteststype$::ADDLongMasked, $vectorteststype$::ADDLongMasked);
+        assertReductionLongArraysEqualsMasked(a, r, ra, mask,
+                $vectorteststype$::ADDReduceLongMasked, $vectorteststype$::ADDReduceAllLongMasked);
     }
 #end[!Long]
 

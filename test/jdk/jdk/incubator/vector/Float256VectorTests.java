@@ -1878,7 +1878,7 @@ public class Float256VectorTests extends AbstractVectorTest {
 
 
 
-    static float ADD(float[] a, int idx) {
+    static float ADDReduce(float[] a, int idx) {
         float res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res += a[i];
@@ -1887,20 +1887,16 @@ public class Float256VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static float ADD(float[] a) {
+    static float ADDReduceAll(float[] a) {
         float res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            float tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp += a[i + j];
-            }
-            res += tmp;
+            res += ADDReduce(a, i);
         }
 
         return res;
     }
     @Test(dataProvider = "floatUnaryOpProvider")
-    static void ADDFloat256VectorTests(IntFunction<float[]> fa) {
+    static void ADDReduceFloat256VectorTests(IntFunction<float[]> fa) {
         float[] a = fa.apply(SPECIES.length());
         float[] r = fr.apply(SPECIES.length());
         float ra = 0;
@@ -1920,33 +1916,29 @@ public class Float256VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Float256VectorTests::ADD, Float256VectorTests::ADD);
+        assertReductionArraysEquals(a, r, ra,
+                Float256VectorTests::ADDReduce, Float256VectorTests::ADDReduceAll);
     }
-    static float ADDMasked(float[] a, int idx, boolean[] mask) {
+    static float ADDReduceMasked(float[] a, int idx, boolean[] mask) {
         float res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res += a[i];
         }
 
         return res;
     }
 
-    static float ADDMasked(float[] a, boolean[] mask) {
+    static float ADDReduceAllMasked(float[] a, boolean[] mask) {
         float res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            float tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp += a[i + j];
-            }
-            res += tmp;
+            res += ADDReduceMasked(a, i, mask);
         }
 
         return res;
     }
     @Test(dataProvider = "floatUnaryOpMaskProvider")
-    static void ADDFloat256VectorTestsMasked(IntFunction<float[]> fa, IntFunction<boolean[]> fm) {
+    static void ADDReduceFloat256VectorTestsMasked(IntFunction<float[]> fa, IntFunction<boolean[]> fm) {
         float[] a = fa.apply(SPECIES.length());
         float[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -1968,9 +1960,10 @@ public class Float256VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Float256VectorTests::ADDMasked, Float256VectorTests::ADDMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Float256VectorTests::ADDReduceMasked, Float256VectorTests::ADDReduceAllMasked);
     }
-    static float MUL(float[] a, int idx) {
+    static float MULReduce(float[] a, int idx) {
         float res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res *= a[i];
@@ -1979,20 +1972,16 @@ public class Float256VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static float MUL(float[] a) {
+    static float MULReduceAll(float[] a) {
         float res = 1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            float tmp = 1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp *= a[i + j];
-            }
-            res *= tmp;
+            res *= MULReduce(a, i);
         }
 
         return res;
     }
     @Test(dataProvider = "floatUnaryOpProvider")
-    static void MULFloat256VectorTests(IntFunction<float[]> fa) {
+    static void MULReduceFloat256VectorTests(IntFunction<float[]> fa) {
         float[] a = fa.apply(SPECIES.length());
         float[] r = fr.apply(SPECIES.length());
         float ra = 1;
@@ -2012,33 +2001,29 @@ public class Float256VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Float256VectorTests::MUL, Float256VectorTests::MUL);
+        assertReductionArraysEquals(a, r, ra,
+                Float256VectorTests::MULReduce, Float256VectorTests::MULReduceAll);
     }
-    static float MULMasked(float[] a, int idx, boolean[] mask) {
+    static float MULReduceMasked(float[] a, int idx, boolean[] mask) {
         float res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res *= a[i];
         }
 
         return res;
     }
 
-    static float MULMasked(float[] a, boolean[] mask) {
+    static float MULReduceAllMasked(float[] a, boolean[] mask) {
         float res = 1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            float tmp = 1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp *= a[i + j];
-            }
-            res *= tmp;
+            res *= MULReduceMasked(a, i, mask);
         }
 
         return res;
     }
     @Test(dataProvider = "floatUnaryOpMaskProvider")
-    static void MULFloat256VectorTestsMasked(IntFunction<float[]> fa, IntFunction<boolean[]> fm) {
+    static void MULReduceFloat256VectorTestsMasked(IntFunction<float[]> fa, IntFunction<boolean[]> fm) {
         float[] a = fa.apply(SPECIES.length());
         float[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2060,9 +2045,10 @@ public class Float256VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Float256VectorTests::MULMasked, Float256VectorTests::MULMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Float256VectorTests::MULReduceMasked, Float256VectorTests::MULReduceAllMasked);
     }
-    static float MIN(float[] a, int idx) {
+    static float MINReduce(float[] a, int idx) {
         float res = Float.POSITIVE_INFINITY;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res = (float)Math.min(res, a[i]);
@@ -2071,7 +2057,7 @@ public class Float256VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static float MIN(float[] a) {
+    static float MINReduceAll(float[] a) {
         float res = Float.POSITIVE_INFINITY;
         for (int i = 0; i < a.length; i++) {
             res = (float)Math.min(res, a[i]);
@@ -2080,7 +2066,7 @@ public class Float256VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "floatUnaryOpProvider")
-    static void MINFloat256VectorTests(IntFunction<float[]> fa) {
+    static void MINReduceFloat256VectorTests(IntFunction<float[]> fa) {
         float[] a = fa.apply(SPECIES.length());
         float[] r = fr.apply(SPECIES.length());
         float ra = Float.POSITIVE_INFINITY;
@@ -2100,9 +2086,10 @@ public class Float256VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Float256VectorTests::MIN, Float256VectorTests::MIN);
+        assertReductionArraysEquals(a, r, ra,
+                Float256VectorTests::MINReduce, Float256VectorTests::MINReduceAll);
     }
-    static float MINMasked(float[] a, int idx, boolean[] mask) {
+    static float MINReduceMasked(float[] a, int idx, boolean[] mask) {
         float res = Float.POSITIVE_INFINITY;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -2112,7 +2099,7 @@ public class Float256VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static float MINMasked(float[] a, boolean[] mask) {
+    static float MINReduceAllMasked(float[] a, boolean[] mask) {
         float res = Float.POSITIVE_INFINITY;
         for (int i = 0; i < a.length; i++) {
             if(mask[i % SPECIES.length()])
@@ -2122,7 +2109,7 @@ public class Float256VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "floatUnaryOpMaskProvider")
-    static void MINFloat256VectorTestsMasked(IntFunction<float[]> fa, IntFunction<boolean[]> fm) {
+    static void MINReduceFloat256VectorTestsMasked(IntFunction<float[]> fa, IntFunction<boolean[]> fm) {
         float[] a = fa.apply(SPECIES.length());
         float[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2144,9 +2131,10 @@ public class Float256VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Float256VectorTests::MINMasked, Float256VectorTests::MINMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Float256VectorTests::MINReduceMasked, Float256VectorTests::MINReduceAllMasked);
     }
-    static float MAX(float[] a, int idx) {
+    static float MAXReduce(float[] a, int idx) {
         float res = Float.NEGATIVE_INFINITY;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res = (float)Math.max(res, a[i]);
@@ -2155,7 +2143,7 @@ public class Float256VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static float MAX(float[] a) {
+    static float MAXReduceAll(float[] a) {
         float res = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < a.length; i++) {
             res = (float)Math.max(res, a[i]);
@@ -2164,7 +2152,7 @@ public class Float256VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "floatUnaryOpProvider")
-    static void MAXFloat256VectorTests(IntFunction<float[]> fa) {
+    static void MAXReduceFloat256VectorTests(IntFunction<float[]> fa) {
         float[] a = fa.apply(SPECIES.length());
         float[] r = fr.apply(SPECIES.length());
         float ra = Float.NEGATIVE_INFINITY;
@@ -2184,9 +2172,10 @@ public class Float256VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Float256VectorTests::MAX, Float256VectorTests::MAX);
+        assertReductionArraysEquals(a, r, ra,
+                Float256VectorTests::MAXReduce, Float256VectorTests::MAXReduceAll);
     }
-    static float MAXMasked(float[] a, int idx, boolean[] mask) {
+    static float MAXReduceMasked(float[] a, int idx, boolean[] mask) {
         float res = Float.NEGATIVE_INFINITY;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -2196,7 +2185,7 @@ public class Float256VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static float MAXMasked(float[] a, boolean[] mask) {
+    static float MAXReduceAllMasked(float[] a, boolean[] mask) {
         float res = Float.NEGATIVE_INFINITY;
         for (int i = 0; i < a.length; i++) {
             if(mask[i % SPECIES.length()])
@@ -2206,7 +2195,7 @@ public class Float256VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "floatUnaryOpMaskProvider")
-    static void MAXFloat256VectorTestsMasked(IntFunction<float[]> fa, IntFunction<boolean[]> fm) {
+    static void MAXReduceFloat256VectorTestsMasked(IntFunction<float[]> fa, IntFunction<boolean[]> fm) {
         float[] a = fa.apply(SPECIES.length());
         float[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2228,7 +2217,8 @@ public class Float256VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Float256VectorTests::MAXMasked, Float256VectorTests::MAXMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Float256VectorTests::MAXReduceMasked, Float256VectorTests::MAXReduceAllMasked);
     }
 
 
@@ -4251,7 +4241,7 @@ public class Float256VectorTests extends AbstractVectorTest {
     }
 
 
-    static long ADDLong(float[] a, int idx) {
+    static long ADDReduceLong(float[] a, int idx) {
         float res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res += a[i];
@@ -4260,17 +4250,17 @@ public class Float256VectorTests extends AbstractVectorTest {
         return (long)res;
     }
 
-    static long ADDLong(float[] a) {
+    static long ADDReduceAllLong(float[] a) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            res += ADDLong(a, i);
+            res += ADDReduceLong(a, i);
         }
 
         return res;
     }
 
     @Test(dataProvider = "floatUnaryOpProvider")
-    static void ADDReductionLongFloat256VectorTests(IntFunction<float[]> fa) {
+    static void ADDReduceLongFloat256VectorTests(IntFunction<float[]> fa) {
         float[] a = fa.apply(SPECIES.length());
         long[] r = lfr.apply(SPECIES.length());
         long ra = 0;
@@ -4285,10 +4275,11 @@ public class Float256VectorTests extends AbstractVectorTest {
             ra += r[i];
         }
 
-        assertReductionLongArraysEquals(a, r, ra, Float256VectorTests::ADDLong, Float256VectorTests::ADDLong);
+        assertReductionLongArraysEquals(a, r, ra,
+                Float256VectorTests::ADDReduceLong, Float256VectorTests::ADDReduceAllLong);
     }
 
-    static long ADDLongMasked(float[] a, int idx, boolean[] mask) {
+    static long ADDReduceLongMasked(float[] a, int idx, boolean[] mask) {
         float res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -4298,17 +4289,17 @@ public class Float256VectorTests extends AbstractVectorTest {
         return (long)res;
     }
 
-    static long ADDLongMasked(float[] a, boolean[] mask) {
+    static long ADDReduceAllLongMasked(float[] a, boolean[] mask) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            res += ADDLongMasked(a, i, mask);
+            res += ADDReduceLongMasked(a, i, mask);
         }
 
         return res;
     }
 
     @Test(dataProvider = "floatUnaryOpMaskProvider")
-    static void ADDReductionLongFloat256VectorTestsMasked(IntFunction<float[]> fa, IntFunction<boolean[]> fm) {
+    static void ADDReduceLongFloat256VectorTestsMasked(IntFunction<float[]> fa, IntFunction<boolean[]> fm) {
         float[] a = fa.apply(SPECIES.length());
         long[] r = lfr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -4325,7 +4316,8 @@ public class Float256VectorTests extends AbstractVectorTest {
             ra += r[i];
         }
 
-        assertReductionLongArraysEqualsMasked(a, r, ra, mask, Float256VectorTests::ADDLongMasked, Float256VectorTests::ADDLongMasked);
+        assertReductionLongArraysEqualsMasked(a, r, ra, mask,
+                Float256VectorTests::ADDReduceLongMasked, Float256VectorTests::ADDReduceAllLongMasked);
     }
 
     @Test(dataProvider = "floatUnaryOpSelectFromProvider")

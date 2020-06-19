@@ -1883,7 +1883,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
 
 
 
-    static double ADD(double[] a, int idx) {
+    static double ADDReduce(double[] a, int idx) {
         double res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res += a[i];
@@ -1892,20 +1892,16 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static double ADD(double[] a) {
+    static double ADDReduceAll(double[] a) {
         double res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            double tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp += a[i + j];
-            }
-            res += tmp;
+            res += ADDReduce(a, i);
         }
 
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpProvider")
-    static void ADDDoubleMaxVectorTests(IntFunction<double[]> fa) {
+    static void ADDReduceDoubleMaxVectorTests(IntFunction<double[]> fa) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         double ra = 0;
@@ -1925,33 +1921,29 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, DoubleMaxVectorTests::ADD, DoubleMaxVectorTests::ADD);
+        assertReductionArraysEquals(a, r, ra,
+                DoubleMaxVectorTests::ADDReduce, DoubleMaxVectorTests::ADDReduceAll);
     }
-    static double ADDMasked(double[] a, int idx, boolean[] mask) {
+    static double ADDReduceMasked(double[] a, int idx, boolean[] mask) {
         double res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res += a[i];
         }
 
         return res;
     }
 
-    static double ADDMasked(double[] a, boolean[] mask) {
+    static double ADDReduceAllMasked(double[] a, boolean[] mask) {
         double res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            double tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp += a[i + j];
-            }
-            res += tmp;
+            res += ADDReduceMasked(a, i, mask);
         }
 
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpMaskProvider")
-    static void ADDDoubleMaxVectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
+    static void ADDReduceDoubleMaxVectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -1973,9 +1965,10 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, DoubleMaxVectorTests::ADDMasked, DoubleMaxVectorTests::ADDMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                DoubleMaxVectorTests::ADDReduceMasked, DoubleMaxVectorTests::ADDReduceAllMasked);
     }
-    static double MUL(double[] a, int idx) {
+    static double MULReduce(double[] a, int idx) {
         double res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res *= a[i];
@@ -1984,20 +1977,16 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static double MUL(double[] a) {
+    static double MULReduceAll(double[] a) {
         double res = 1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            double tmp = 1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp *= a[i + j];
-            }
-            res *= tmp;
+            res *= MULReduce(a, i);
         }
 
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpProvider")
-    static void MULDoubleMaxVectorTests(IntFunction<double[]> fa) {
+    static void MULReduceDoubleMaxVectorTests(IntFunction<double[]> fa) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         double ra = 1;
@@ -2017,33 +2006,29 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, DoubleMaxVectorTests::MUL, DoubleMaxVectorTests::MUL);
+        assertReductionArraysEquals(a, r, ra,
+                DoubleMaxVectorTests::MULReduce, DoubleMaxVectorTests::MULReduceAll);
     }
-    static double MULMasked(double[] a, int idx, boolean[] mask) {
+    static double MULReduceMasked(double[] a, int idx, boolean[] mask) {
         double res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res *= a[i];
         }
 
         return res;
     }
 
-    static double MULMasked(double[] a, boolean[] mask) {
+    static double MULReduceAllMasked(double[] a, boolean[] mask) {
         double res = 1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            double tmp = 1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp *= a[i + j];
-            }
-            res *= tmp;
+            res *= MULReduceMasked(a, i, mask);
         }
 
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpMaskProvider")
-    static void MULDoubleMaxVectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
+    static void MULReduceDoubleMaxVectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2065,9 +2050,10 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, DoubleMaxVectorTests::MULMasked, DoubleMaxVectorTests::MULMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                DoubleMaxVectorTests::MULReduceMasked, DoubleMaxVectorTests::MULReduceAllMasked);
     }
-    static double MIN(double[] a, int idx) {
+    static double MINReduce(double[] a, int idx) {
         double res = Double.POSITIVE_INFINITY;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res = (double)Math.min(res, a[i]);
@@ -2076,7 +2062,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static double MIN(double[] a) {
+    static double MINReduceAll(double[] a) {
         double res = Double.POSITIVE_INFINITY;
         for (int i = 0; i < a.length; i++) {
             res = (double)Math.min(res, a[i]);
@@ -2085,7 +2071,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpProvider")
-    static void MINDoubleMaxVectorTests(IntFunction<double[]> fa) {
+    static void MINReduceDoubleMaxVectorTests(IntFunction<double[]> fa) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         double ra = Double.POSITIVE_INFINITY;
@@ -2105,9 +2091,10 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, DoubleMaxVectorTests::MIN, DoubleMaxVectorTests::MIN);
+        assertReductionArraysEquals(a, r, ra,
+                DoubleMaxVectorTests::MINReduce, DoubleMaxVectorTests::MINReduceAll);
     }
-    static double MINMasked(double[] a, int idx, boolean[] mask) {
+    static double MINReduceMasked(double[] a, int idx, boolean[] mask) {
         double res = Double.POSITIVE_INFINITY;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -2117,7 +2104,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static double MINMasked(double[] a, boolean[] mask) {
+    static double MINReduceAllMasked(double[] a, boolean[] mask) {
         double res = Double.POSITIVE_INFINITY;
         for (int i = 0; i < a.length; i++) {
             if(mask[i % SPECIES.length()])
@@ -2127,7 +2114,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpMaskProvider")
-    static void MINDoubleMaxVectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
+    static void MINReduceDoubleMaxVectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2149,9 +2136,10 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, DoubleMaxVectorTests::MINMasked, DoubleMaxVectorTests::MINMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                DoubleMaxVectorTests::MINReduceMasked, DoubleMaxVectorTests::MINReduceAllMasked);
     }
-    static double MAX(double[] a, int idx) {
+    static double MAXReduce(double[] a, int idx) {
         double res = Double.NEGATIVE_INFINITY;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res = (double)Math.max(res, a[i]);
@@ -2160,7 +2148,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static double MAX(double[] a) {
+    static double MAXReduceAll(double[] a) {
         double res = Double.NEGATIVE_INFINITY;
         for (int i = 0; i < a.length; i++) {
             res = (double)Math.max(res, a[i]);
@@ -2169,7 +2157,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpProvider")
-    static void MAXDoubleMaxVectorTests(IntFunction<double[]> fa) {
+    static void MAXReduceDoubleMaxVectorTests(IntFunction<double[]> fa) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         double ra = Double.NEGATIVE_INFINITY;
@@ -2189,9 +2177,10 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, DoubleMaxVectorTests::MAX, DoubleMaxVectorTests::MAX);
+        assertReductionArraysEquals(a, r, ra,
+                DoubleMaxVectorTests::MAXReduce, DoubleMaxVectorTests::MAXReduceAll);
     }
-    static double MAXMasked(double[] a, int idx, boolean[] mask) {
+    static double MAXReduceMasked(double[] a, int idx, boolean[] mask) {
         double res = Double.NEGATIVE_INFINITY;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -2201,7 +2190,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static double MAXMasked(double[] a, boolean[] mask) {
+    static double MAXReduceAllMasked(double[] a, boolean[] mask) {
         double res = Double.NEGATIVE_INFINITY;
         for (int i = 0; i < a.length; i++) {
             if(mask[i % SPECIES.length()])
@@ -2211,7 +2200,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpMaskProvider")
-    static void MAXDoubleMaxVectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
+    static void MAXReduceDoubleMaxVectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2233,7 +2222,8 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, DoubleMaxVectorTests::MAXMasked, DoubleMaxVectorTests::MAXMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                DoubleMaxVectorTests::MAXReduceMasked, DoubleMaxVectorTests::MAXReduceAllMasked);
     }
 
 
@@ -4298,7 +4288,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
     }
 
 
-    static long ADDLong(double[] a, int idx) {
+    static long ADDReduceLong(double[] a, int idx) {
         double res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res += a[i];
@@ -4307,17 +4297,17 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         return (long)res;
     }
 
-    static long ADDLong(double[] a) {
+    static long ADDReduceAllLong(double[] a) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            res += ADDLong(a, i);
+            res += ADDReduceLong(a, i);
         }
 
         return res;
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
-    static void ADDReductionLongDoubleMaxVectorTests(IntFunction<double[]> fa) {
+    static void ADDReduceLongDoubleMaxVectorTests(IntFunction<double[]> fa) {
         double[] a = fa.apply(SPECIES.length());
         long[] r = lfr.apply(SPECIES.length());
         long ra = 0;
@@ -4332,10 +4322,11 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
             ra += r[i];
         }
 
-        assertReductionLongArraysEquals(a, r, ra, DoubleMaxVectorTests::ADDLong, DoubleMaxVectorTests::ADDLong);
+        assertReductionLongArraysEquals(a, r, ra,
+                DoubleMaxVectorTests::ADDReduceLong, DoubleMaxVectorTests::ADDReduceAllLong);
     }
 
-    static long ADDLongMasked(double[] a, int idx, boolean[] mask) {
+    static long ADDReduceLongMasked(double[] a, int idx, boolean[] mask) {
         double res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -4345,17 +4336,17 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         return (long)res;
     }
 
-    static long ADDLongMasked(double[] a, boolean[] mask) {
+    static long ADDReduceAllLongMasked(double[] a, boolean[] mask) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            res += ADDLongMasked(a, i, mask);
+            res += ADDReduceLongMasked(a, i, mask);
         }
 
         return res;
     }
 
     @Test(dataProvider = "doubleUnaryOpMaskProvider")
-    static void ADDReductionLongDoubleMaxVectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
+    static void ADDReduceLongDoubleMaxVectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
         double[] a = fa.apply(SPECIES.length());
         long[] r = lfr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -4372,7 +4363,8 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
             ra += r[i];
         }
 
-        assertReductionLongArraysEqualsMasked(a, r, ra, mask, DoubleMaxVectorTests::ADDLongMasked, DoubleMaxVectorTests::ADDLongMasked);
+        assertReductionLongArraysEqualsMasked(a, r, ra, mask,
+                DoubleMaxVectorTests::ADDReduceLongMasked, DoubleMaxVectorTests::ADDReduceAllLongMasked);
     }
 
     @Test(dataProvider = "doubleUnaryOpSelectFromProvider")

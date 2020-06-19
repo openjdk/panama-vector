@@ -1878,7 +1878,7 @@ public class Double64VectorTests extends AbstractVectorTest {
 
 
 
-    static double ADD(double[] a, int idx) {
+    static double ADDReduce(double[] a, int idx) {
         double res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res += a[i];
@@ -1887,20 +1887,16 @@ public class Double64VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static double ADD(double[] a) {
+    static double ADDReduceAll(double[] a) {
         double res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            double tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp += a[i + j];
-            }
-            res += tmp;
+            res += ADDReduce(a, i);
         }
 
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpProvider")
-    static void ADDDouble64VectorTests(IntFunction<double[]> fa) {
+    static void ADDReduceDouble64VectorTests(IntFunction<double[]> fa) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         double ra = 0;
@@ -1920,33 +1916,29 @@ public class Double64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Double64VectorTests::ADD, Double64VectorTests::ADD);
+        assertReductionArraysEquals(a, r, ra,
+                Double64VectorTests::ADDReduce, Double64VectorTests::ADDReduceAll);
     }
-    static double ADDMasked(double[] a, int idx, boolean[] mask) {
+    static double ADDReduceMasked(double[] a, int idx, boolean[] mask) {
         double res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res += a[i];
         }
 
         return res;
     }
 
-    static double ADDMasked(double[] a, boolean[] mask) {
+    static double ADDReduceAllMasked(double[] a, boolean[] mask) {
         double res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            double tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp += a[i + j];
-            }
-            res += tmp;
+            res += ADDReduceMasked(a, i, mask);
         }
 
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpMaskProvider")
-    static void ADDDouble64VectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
+    static void ADDReduceDouble64VectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -1968,9 +1960,10 @@ public class Double64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Double64VectorTests::ADDMasked, Double64VectorTests::ADDMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Double64VectorTests::ADDReduceMasked, Double64VectorTests::ADDReduceAllMasked);
     }
-    static double MUL(double[] a, int idx) {
+    static double MULReduce(double[] a, int idx) {
         double res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res *= a[i];
@@ -1979,20 +1972,16 @@ public class Double64VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static double MUL(double[] a) {
+    static double MULReduceAll(double[] a) {
         double res = 1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            double tmp = 1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp *= a[i + j];
-            }
-            res *= tmp;
+            res *= MULReduce(a, i);
         }
 
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpProvider")
-    static void MULDouble64VectorTests(IntFunction<double[]> fa) {
+    static void MULReduceDouble64VectorTests(IntFunction<double[]> fa) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         double ra = 1;
@@ -2012,33 +2001,29 @@ public class Double64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Double64VectorTests::MUL, Double64VectorTests::MUL);
+        assertReductionArraysEquals(a, r, ra,
+                Double64VectorTests::MULReduce, Double64VectorTests::MULReduceAll);
     }
-    static double MULMasked(double[] a, int idx, boolean[] mask) {
+    static double MULReduceMasked(double[] a, int idx, boolean[] mask) {
         double res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res *= a[i];
         }
 
         return res;
     }
 
-    static double MULMasked(double[] a, boolean[] mask) {
+    static double MULReduceAllMasked(double[] a, boolean[] mask) {
         double res = 1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            double tmp = 1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp *= a[i + j];
-            }
-            res *= tmp;
+            res *= MULReduceMasked(a, i, mask);
         }
 
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpMaskProvider")
-    static void MULDouble64VectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
+    static void MULReduceDouble64VectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2060,9 +2045,10 @@ public class Double64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Double64VectorTests::MULMasked, Double64VectorTests::MULMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Double64VectorTests::MULReduceMasked, Double64VectorTests::MULReduceAllMasked);
     }
-    static double MIN(double[] a, int idx) {
+    static double MINReduce(double[] a, int idx) {
         double res = Double.POSITIVE_INFINITY;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res = (double)Math.min(res, a[i]);
@@ -2071,7 +2057,7 @@ public class Double64VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static double MIN(double[] a) {
+    static double MINReduceAll(double[] a) {
         double res = Double.POSITIVE_INFINITY;
         for (int i = 0; i < a.length; i++) {
             res = (double)Math.min(res, a[i]);
@@ -2080,7 +2066,7 @@ public class Double64VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpProvider")
-    static void MINDouble64VectorTests(IntFunction<double[]> fa) {
+    static void MINReduceDouble64VectorTests(IntFunction<double[]> fa) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         double ra = Double.POSITIVE_INFINITY;
@@ -2100,9 +2086,10 @@ public class Double64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Double64VectorTests::MIN, Double64VectorTests::MIN);
+        assertReductionArraysEquals(a, r, ra,
+                Double64VectorTests::MINReduce, Double64VectorTests::MINReduceAll);
     }
-    static double MINMasked(double[] a, int idx, boolean[] mask) {
+    static double MINReduceMasked(double[] a, int idx, boolean[] mask) {
         double res = Double.POSITIVE_INFINITY;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -2112,7 +2099,7 @@ public class Double64VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static double MINMasked(double[] a, boolean[] mask) {
+    static double MINReduceAllMasked(double[] a, boolean[] mask) {
         double res = Double.POSITIVE_INFINITY;
         for (int i = 0; i < a.length; i++) {
             if(mask[i % SPECIES.length()])
@@ -2122,7 +2109,7 @@ public class Double64VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpMaskProvider")
-    static void MINDouble64VectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
+    static void MINReduceDouble64VectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2144,9 +2131,10 @@ public class Double64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Double64VectorTests::MINMasked, Double64VectorTests::MINMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Double64VectorTests::MINReduceMasked, Double64VectorTests::MINReduceAllMasked);
     }
-    static double MAX(double[] a, int idx) {
+    static double MAXReduce(double[] a, int idx) {
         double res = Double.NEGATIVE_INFINITY;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res = (double)Math.max(res, a[i]);
@@ -2155,7 +2143,7 @@ public class Double64VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static double MAX(double[] a) {
+    static double MAXReduceAll(double[] a) {
         double res = Double.NEGATIVE_INFINITY;
         for (int i = 0; i < a.length; i++) {
             res = (double)Math.max(res, a[i]);
@@ -2164,7 +2152,7 @@ public class Double64VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpProvider")
-    static void MAXDouble64VectorTests(IntFunction<double[]> fa) {
+    static void MAXReduceDouble64VectorTests(IntFunction<double[]> fa) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         double ra = Double.NEGATIVE_INFINITY;
@@ -2184,9 +2172,10 @@ public class Double64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Double64VectorTests::MAX, Double64VectorTests::MAX);
+        assertReductionArraysEquals(a, r, ra,
+                Double64VectorTests::MAXReduce, Double64VectorTests::MAXReduceAll);
     }
-    static double MAXMasked(double[] a, int idx, boolean[] mask) {
+    static double MAXReduceMasked(double[] a, int idx, boolean[] mask) {
         double res = Double.NEGATIVE_INFINITY;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -2196,7 +2185,7 @@ public class Double64VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static double MAXMasked(double[] a, boolean[] mask) {
+    static double MAXReduceAllMasked(double[] a, boolean[] mask) {
         double res = Double.NEGATIVE_INFINITY;
         for (int i = 0; i < a.length; i++) {
             if(mask[i % SPECIES.length()])
@@ -2206,7 +2195,7 @@ public class Double64VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "doubleUnaryOpMaskProvider")
-    static void MAXDouble64VectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
+    static void MAXReduceDouble64VectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2228,7 +2217,8 @@ public class Double64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Double64VectorTests::MAXMasked, Double64VectorTests::MAXMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Double64VectorTests::MAXReduceMasked, Double64VectorTests::MAXReduceAllMasked);
     }
 
 
@@ -4293,7 +4283,7 @@ public class Double64VectorTests extends AbstractVectorTest {
     }
 
 
-    static long ADDLong(double[] a, int idx) {
+    static long ADDReduceLong(double[] a, int idx) {
         double res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res += a[i];
@@ -4302,17 +4292,17 @@ public class Double64VectorTests extends AbstractVectorTest {
         return (long)res;
     }
 
-    static long ADDLong(double[] a) {
+    static long ADDReduceAllLong(double[] a) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            res += ADDLong(a, i);
+            res += ADDReduceLong(a, i);
         }
 
         return res;
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
-    static void ADDReductionLongDouble64VectorTests(IntFunction<double[]> fa) {
+    static void ADDReduceLongDouble64VectorTests(IntFunction<double[]> fa) {
         double[] a = fa.apply(SPECIES.length());
         long[] r = lfr.apply(SPECIES.length());
         long ra = 0;
@@ -4327,10 +4317,11 @@ public class Double64VectorTests extends AbstractVectorTest {
             ra += r[i];
         }
 
-        assertReductionLongArraysEquals(a, r, ra, Double64VectorTests::ADDLong, Double64VectorTests::ADDLong);
+        assertReductionLongArraysEquals(a, r, ra,
+                Double64VectorTests::ADDReduceLong, Double64VectorTests::ADDReduceAllLong);
     }
 
-    static long ADDLongMasked(double[] a, int idx, boolean[] mask) {
+    static long ADDReduceLongMasked(double[] a, int idx, boolean[] mask) {
         double res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -4340,17 +4331,17 @@ public class Double64VectorTests extends AbstractVectorTest {
         return (long)res;
     }
 
-    static long ADDLongMasked(double[] a, boolean[] mask) {
+    static long ADDReduceAllLongMasked(double[] a, boolean[] mask) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            res += ADDLongMasked(a, i, mask);
+            res += ADDReduceLongMasked(a, i, mask);
         }
 
         return res;
     }
 
     @Test(dataProvider = "doubleUnaryOpMaskProvider")
-    static void ADDReductionLongDouble64VectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
+    static void ADDReduceLongDouble64VectorTestsMasked(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
         double[] a = fa.apply(SPECIES.length());
         long[] r = lfr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -4367,7 +4358,8 @@ public class Double64VectorTests extends AbstractVectorTest {
             ra += r[i];
         }
 
-        assertReductionLongArraysEqualsMasked(a, r, ra, mask, Double64VectorTests::ADDLongMasked, Double64VectorTests::ADDLongMasked);
+        assertReductionLongArraysEqualsMasked(a, r, ra, mask,
+                Double64VectorTests::ADDReduceLongMasked, Double64VectorTests::ADDReduceAllLongMasked);
     }
 
     @Test(dataProvider = "doubleUnaryOpSelectFromProvider")

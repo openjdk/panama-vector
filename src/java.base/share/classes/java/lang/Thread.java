@@ -2058,7 +2058,7 @@ public class Thread implements Runnable {
 
     // The following three initially uninitialized fields are exclusively
     // managed by class java.util.concurrent.ThreadLocalRandom. These
-    // fields are used to build the high-performance PRNGs in the
+    // fields are used to build the high-performance PRNGs in theExec
     // concurrent code, and we can not risk accidental false sharing.
     // Hence, the fields are isolated with @Contended.
 

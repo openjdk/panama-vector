@@ -2349,7 +2349,7 @@ public class Long512VectorTests extends AbstractVectorTest {
         assertBroadcastArraysEquals(a, b, r, Long512VectorTests::max);
     }
 
-    static long AND(long[] a, int idx) {
+    static long ANDReduce(long[] a, int idx) {
         long res = -1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res &= a[i];
@@ -2358,14 +2358,10 @@ public class Long512VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long AND(long[] a) {
+    static long ANDReduceAll(long[] a) {
         long res = -1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = -1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp &= a[i + j];
-            }
-            res &= tmp;
+            res &= ANDReduce(a, i);
         }
 
         return res;
@@ -2373,7 +2369,7 @@ public class Long512VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "longUnaryOpProvider")
-    static void ANDLong512VectorTests(IntFunction<long[]> fa) {
+    static void ANDReduceLong512VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         long ra = -1;
@@ -2393,29 +2389,25 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Long512VectorTests::AND, Long512VectorTests::AND);
+        assertReductionArraysEquals(a, r, ra,
+                Long512VectorTests::ANDReduce, Long512VectorTests::ANDReduceAll);
     }
 
 
-    static long ANDMasked(long[] a, int idx, boolean[] mask) {
+    static long ANDReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = -1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res &= a[i];
         }
 
         return res;
     }
 
-    static long ANDMasked(long[] a, boolean[] mask) {
+    static long ANDReduceAllMasked(long[] a, boolean[] mask) {
         long res = -1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = -1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp &= a[i + j];
-            }
-            res &= tmp;
+            res &= ANDReduceMasked(a, i, mask);
         }
 
         return res;
@@ -2423,7 +2415,7 @@ public class Long512VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void ANDLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
+    static void ANDReduceLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2445,11 +2437,12 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Long512VectorTests::ANDMasked, Long512VectorTests::ANDMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Long512VectorTests::ANDReduceMasked, Long512VectorTests::ANDReduceAllMasked);
     }
 
 
-    static long OR(long[] a, int idx) {
+    static long ORReduce(long[] a, int idx) {
         long res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res |= a[i];
@@ -2458,14 +2451,10 @@ public class Long512VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long OR(long[] a) {
+    static long ORReduceAll(long[] a) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp |= a[i + j];
-            }
-            res |= tmp;
+            res |= ORReduce(a, i);
         }
 
         return res;
@@ -2473,7 +2462,7 @@ public class Long512VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "longUnaryOpProvider")
-    static void ORLong512VectorTests(IntFunction<long[]> fa) {
+    static void ORReduceLong512VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         long ra = 0;
@@ -2493,29 +2482,25 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Long512VectorTests::OR, Long512VectorTests::OR);
+        assertReductionArraysEquals(a, r, ra,
+                Long512VectorTests::ORReduce, Long512VectorTests::ORReduceAll);
     }
 
 
-    static long ORMasked(long[] a, int idx, boolean[] mask) {
+    static long ORReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res |= a[i];
         }
 
         return res;
     }
 
-    static long ORMasked(long[] a, boolean[] mask) {
+    static long ORReduceAllMasked(long[] a, boolean[] mask) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp |= a[i + j];
-            }
-            res |= tmp;
+            res |= ORReduceMasked(a, i, mask);
         }
 
         return res;
@@ -2523,7 +2508,7 @@ public class Long512VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void ORLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
+    static void ORReduceLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2545,11 +2530,12 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Long512VectorTests::ORMasked, Long512VectorTests::ORMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Long512VectorTests::ORReduceMasked, Long512VectorTests::ORReduceAllMasked);
     }
 
 
-    static long XOR(long[] a, int idx) {
+    static long XORReduce(long[] a, int idx) {
         long res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res ^= a[i];
@@ -2558,14 +2544,10 @@ public class Long512VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long XOR(long[] a) {
+    static long XORReduceAll(long[] a) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp ^= a[i + j];
-            }
-            res ^= tmp;
+            res ^= XORReduce(a, i);
         }
 
         return res;
@@ -2573,7 +2555,7 @@ public class Long512VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "longUnaryOpProvider")
-    static void XORLong512VectorTests(IntFunction<long[]> fa) {
+    static void XORReduceLong512VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         long ra = 0;
@@ -2593,29 +2575,25 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Long512VectorTests::XOR, Long512VectorTests::XOR);
+        assertReductionArraysEquals(a, r, ra,
+                Long512VectorTests::XORReduce, Long512VectorTests::XORReduceAll);
     }
 
 
-    static long XORMasked(long[] a, int idx, boolean[] mask) {
+    static long XORReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res ^= a[i];
         }
 
         return res;
     }
 
-    static long XORMasked(long[] a, boolean[] mask) {
+    static long XORReduceAllMasked(long[] a, boolean[] mask) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp ^= a[i + j];
-            }
-            res ^= tmp;
+            res ^= XORReduceMasked(a, i, mask);
         }
 
         return res;
@@ -2623,7 +2601,7 @@ public class Long512VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void XORLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
+    static void XORReduceLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2645,10 +2623,11 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Long512VectorTests::XORMasked, Long512VectorTests::XORMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Long512VectorTests::XORReduceMasked, Long512VectorTests::XORReduceAllMasked);
     }
 
-    static long ADD(long[] a, int idx) {
+    static long ADDReduce(long[] a, int idx) {
         long res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res += a[i];
@@ -2657,20 +2636,16 @@ public class Long512VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long ADD(long[] a) {
+    static long ADDReduceAll(long[] a) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp += a[i + j];
-            }
-            res += tmp;
+            res += ADDReduce(a, i);
         }
 
         return res;
     }
     @Test(dataProvider = "longUnaryOpProvider")
-    static void ADDLong512VectorTests(IntFunction<long[]> fa) {
+    static void ADDReduceLong512VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         long ra = 0;
@@ -2690,33 +2665,29 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Long512VectorTests::ADD, Long512VectorTests::ADD);
+        assertReductionArraysEquals(a, r, ra,
+                Long512VectorTests::ADDReduce, Long512VectorTests::ADDReduceAll);
     }
-    static long ADDMasked(long[] a, int idx, boolean[] mask) {
+    static long ADDReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res += a[i];
         }
 
         return res;
     }
 
-    static long ADDMasked(long[] a, boolean[] mask) {
+    static long ADDReduceAllMasked(long[] a, boolean[] mask) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp += a[i + j];
-            }
-            res += tmp;
+            res += ADDReduceMasked(a, i, mask);
         }
 
         return res;
     }
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void ADDLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
+    static void ADDReduceLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2738,9 +2709,10 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Long512VectorTests::ADDMasked, Long512VectorTests::ADDMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Long512VectorTests::ADDReduceMasked, Long512VectorTests::ADDReduceAllMasked);
     }
-    static long MUL(long[] a, int idx) {
+    static long MULReduce(long[] a, int idx) {
         long res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res *= a[i];
@@ -2749,20 +2721,16 @@ public class Long512VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long MUL(long[] a) {
+    static long MULReduceAll(long[] a) {
         long res = 1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp *= a[i + j];
-            }
-            res *= tmp;
+            res *= MULReduce(a, i);
         }
 
         return res;
     }
     @Test(dataProvider = "longUnaryOpProvider")
-    static void MULLong512VectorTests(IntFunction<long[]> fa) {
+    static void MULReduceLong512VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         long ra = 1;
@@ -2782,33 +2750,29 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Long512VectorTests::MUL, Long512VectorTests::MUL);
+        assertReductionArraysEquals(a, r, ra,
+                Long512VectorTests::MULReduce, Long512VectorTests::MULReduceAll);
     }
-    static long MULMasked(long[] a, int idx, boolean[] mask) {
+    static long MULReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res *= a[i];
         }
 
         return res;
     }
 
-    static long MULMasked(long[] a, boolean[] mask) {
+    static long MULReduceAllMasked(long[] a, boolean[] mask) {
         long res = 1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp *= a[i + j];
-            }
-            res *= tmp;
+            res *= MULReduceMasked(a, i, mask);
         }
 
         return res;
     }
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void MULLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
+    static void MULReduceLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2830,9 +2794,10 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Long512VectorTests::MULMasked, Long512VectorTests::MULMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Long512VectorTests::MULReduceMasked, Long512VectorTests::MULReduceAllMasked);
     }
-    static long MIN(long[] a, int idx) {
+    static long MINReduce(long[] a, int idx) {
         long res = Long.MAX_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res = (long)Math.min(res, a[i]);
@@ -2841,7 +2806,7 @@ public class Long512VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long MIN(long[] a) {
+    static long MINReduceAll(long[] a) {
         long res = Long.MAX_VALUE;
         for (int i = 0; i < a.length; i++) {
             res = (long)Math.min(res, a[i]);
@@ -2850,7 +2815,7 @@ public class Long512VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "longUnaryOpProvider")
-    static void MINLong512VectorTests(IntFunction<long[]> fa) {
+    static void MINReduceLong512VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         long ra = Long.MAX_VALUE;
@@ -2870,9 +2835,10 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Long512VectorTests::MIN, Long512VectorTests::MIN);
+        assertReductionArraysEquals(a, r, ra,
+                Long512VectorTests::MINReduce, Long512VectorTests::MINReduceAll);
     }
-    static long MINMasked(long[] a, int idx, boolean[] mask) {
+    static long MINReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = Long.MAX_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -2882,7 +2848,7 @@ public class Long512VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long MINMasked(long[] a, boolean[] mask) {
+    static long MINReduceAllMasked(long[] a, boolean[] mask) {
         long res = Long.MAX_VALUE;
         for (int i = 0; i < a.length; i++) {
             if(mask[i % SPECIES.length()])
@@ -2892,7 +2858,7 @@ public class Long512VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void MINLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
+    static void MINReduceLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2914,9 +2880,10 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Long512VectorTests::MINMasked, Long512VectorTests::MINMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Long512VectorTests::MINReduceMasked, Long512VectorTests::MINReduceAllMasked);
     }
-    static long MAX(long[] a, int idx) {
+    static long MAXReduce(long[] a, int idx) {
         long res = Long.MIN_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res = (long)Math.max(res, a[i]);
@@ -2925,7 +2892,7 @@ public class Long512VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long MAX(long[] a) {
+    static long MAXReduceAll(long[] a) {
         long res = Long.MIN_VALUE;
         for (int i = 0; i < a.length; i++) {
             res = (long)Math.max(res, a[i]);
@@ -2934,7 +2901,7 @@ public class Long512VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "longUnaryOpProvider")
-    static void MAXLong512VectorTests(IntFunction<long[]> fa) {
+    static void MAXReduceLong512VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         long ra = Long.MIN_VALUE;
@@ -2954,9 +2921,10 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Long512VectorTests::MAX, Long512VectorTests::MAX);
+        assertReductionArraysEquals(a, r, ra,
+                Long512VectorTests::MAXReduce, Long512VectorTests::MAXReduceAll);
     }
-    static long MAXMasked(long[] a, int idx, boolean[] mask) {
+    static long MAXReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = Long.MIN_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -2966,7 +2934,7 @@ public class Long512VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long MAXMasked(long[] a, boolean[] mask) {
+    static long MAXReduceAllMasked(long[] a, boolean[] mask) {
         long res = Long.MIN_VALUE;
         for (int i = 0; i < a.length; i++) {
             if(mask[i % SPECIES.length()])
@@ -2976,7 +2944,7 @@ public class Long512VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void MAXLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
+    static void MAXReduceLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2998,7 +2966,8 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Long512VectorTests::MAXMasked, Long512VectorTests::MAXMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Long512VectorTests::MAXReduceMasked, Long512VectorTests::MAXReduceAllMasked);
     }
 
     static boolean anyTrue(boolean[] a, int idx) {

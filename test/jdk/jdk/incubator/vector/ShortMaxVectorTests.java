@@ -2396,7 +2396,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         assertBroadcastArraysEquals(a, b, r, ShortMaxVectorTests::max);
     }
 
-    static short AND(short[] a, int idx) {
+    static short ANDReduce(short[] a, int idx) {
         short res = -1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res &= a[i];
@@ -2405,14 +2405,10 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static short AND(short[] a) {
+    static short ANDReduceAll(short[] a) {
         short res = -1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            short tmp = -1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp &= a[i + j];
-            }
-            res &= tmp;
+            res &= ANDReduce(a, i);
         }
 
         return res;
@@ -2420,7 +2416,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "shortUnaryOpProvider")
-    static void ANDShortMaxVectorTests(IntFunction<short[]> fa) {
+    static void ANDReduceShortMaxVectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         short ra = -1;
@@ -2440,29 +2436,25 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, ShortMaxVectorTests::AND, ShortMaxVectorTests::AND);
+        assertReductionArraysEquals(a, r, ra,
+                ShortMaxVectorTests::ANDReduce, ShortMaxVectorTests::ANDReduceAll);
     }
 
 
-    static short ANDMasked(short[] a, int idx, boolean[] mask) {
+    static short ANDReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = -1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res &= a[i];
         }
 
         return res;
     }
 
-    static short ANDMasked(short[] a, boolean[] mask) {
+    static short ANDReduceAllMasked(short[] a, boolean[] mask) {
         short res = -1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            short tmp = -1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp &= a[i + j];
-            }
-            res &= tmp;
+            res &= ANDReduceMasked(a, i, mask);
         }
 
         return res;
@@ -2470,7 +2462,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void ANDShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
+    static void ANDReduceShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2492,11 +2484,12 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, ShortMaxVectorTests::ANDMasked, ShortMaxVectorTests::ANDMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                ShortMaxVectorTests::ANDReduceMasked, ShortMaxVectorTests::ANDReduceAllMasked);
     }
 
 
-    static short OR(short[] a, int idx) {
+    static short ORReduce(short[] a, int idx) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res |= a[i];
@@ -2505,14 +2498,10 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static short OR(short[] a) {
+    static short ORReduceAll(short[] a) {
         short res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            short tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp |= a[i + j];
-            }
-            res |= tmp;
+            res |= ORReduce(a, i);
         }
 
         return res;
@@ -2520,7 +2509,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "shortUnaryOpProvider")
-    static void ORShortMaxVectorTests(IntFunction<short[]> fa) {
+    static void ORReduceShortMaxVectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         short ra = 0;
@@ -2540,29 +2529,25 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, ShortMaxVectorTests::OR, ShortMaxVectorTests::OR);
+        assertReductionArraysEquals(a, r, ra,
+                ShortMaxVectorTests::ORReduce, ShortMaxVectorTests::ORReduceAll);
     }
 
 
-    static short ORMasked(short[] a, int idx, boolean[] mask) {
+    static short ORReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res |= a[i];
         }
 
         return res;
     }
 
-    static short ORMasked(short[] a, boolean[] mask) {
+    static short ORReduceAllMasked(short[] a, boolean[] mask) {
         short res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            short tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp |= a[i + j];
-            }
-            res |= tmp;
+            res |= ORReduceMasked(a, i, mask);
         }
 
         return res;
@@ -2570,7 +2555,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void ORShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
+    static void ORReduceShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2592,11 +2577,12 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, ShortMaxVectorTests::ORMasked, ShortMaxVectorTests::ORMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                ShortMaxVectorTests::ORReduceMasked, ShortMaxVectorTests::ORReduceAllMasked);
     }
 
 
-    static short XOR(short[] a, int idx) {
+    static short XORReduce(short[] a, int idx) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res ^= a[i];
@@ -2605,14 +2591,10 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static short XOR(short[] a) {
+    static short XORReduceAll(short[] a) {
         short res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            short tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp ^= a[i + j];
-            }
-            res ^= tmp;
+            res ^= XORReduce(a, i);
         }
 
         return res;
@@ -2620,7 +2602,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "shortUnaryOpProvider")
-    static void XORShortMaxVectorTests(IntFunction<short[]> fa) {
+    static void XORReduceShortMaxVectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         short ra = 0;
@@ -2640,29 +2622,25 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, ShortMaxVectorTests::XOR, ShortMaxVectorTests::XOR);
+        assertReductionArraysEquals(a, r, ra,
+                ShortMaxVectorTests::XORReduce, ShortMaxVectorTests::XORReduceAll);
     }
 
 
-    static short XORMasked(short[] a, int idx, boolean[] mask) {
+    static short XORReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res ^= a[i];
         }
 
         return res;
     }
 
-    static short XORMasked(short[] a, boolean[] mask) {
+    static short XORReduceAllMasked(short[] a, boolean[] mask) {
         short res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            short tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp ^= a[i + j];
-            }
-            res ^= tmp;
+            res ^= XORReduceMasked(a, i, mask);
         }
 
         return res;
@@ -2670,7 +2648,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void XORShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
+    static void XORReduceShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2692,10 +2670,11 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, ShortMaxVectorTests::XORMasked, ShortMaxVectorTests::XORMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                ShortMaxVectorTests::XORReduceMasked, ShortMaxVectorTests::XORReduceAllMasked);
     }
 
-    static short ADD(short[] a, int idx) {
+    static short ADDReduce(short[] a, int idx) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res += a[i];
@@ -2704,20 +2683,16 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static short ADD(short[] a) {
+    static short ADDReduceAll(short[] a) {
         short res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            short tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp += a[i + j];
-            }
-            res += tmp;
+            res += ADDReduce(a, i);
         }
 
         return res;
     }
     @Test(dataProvider = "shortUnaryOpProvider")
-    static void ADDShortMaxVectorTests(IntFunction<short[]> fa) {
+    static void ADDReduceShortMaxVectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         short ra = 0;
@@ -2737,33 +2712,29 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, ShortMaxVectorTests::ADD, ShortMaxVectorTests::ADD);
+        assertReductionArraysEquals(a, r, ra,
+                ShortMaxVectorTests::ADDReduce, ShortMaxVectorTests::ADDReduceAll);
     }
-    static short ADDMasked(short[] a, int idx, boolean[] mask) {
+    static short ADDReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res += a[i];
         }
 
         return res;
     }
 
-    static short ADDMasked(short[] a, boolean[] mask) {
+    static short ADDReduceAllMasked(short[] a, boolean[] mask) {
         short res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            short tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp += a[i + j];
-            }
-            res += tmp;
+            res += ADDReduceMasked(a, i, mask);
         }
 
         return res;
     }
     @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void ADDShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
+    static void ADDReduceShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2785,9 +2756,10 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, ShortMaxVectorTests::ADDMasked, ShortMaxVectorTests::ADDMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                ShortMaxVectorTests::ADDReduceMasked, ShortMaxVectorTests::ADDReduceAllMasked);
     }
-    static short MUL(short[] a, int idx) {
+    static short MULReduce(short[] a, int idx) {
         short res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res *= a[i];
@@ -2796,20 +2768,16 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static short MUL(short[] a) {
+    static short MULReduceAll(short[] a) {
         short res = 1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            short tmp = 1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp *= a[i + j];
-            }
-            res *= tmp;
+            res *= MULReduce(a, i);
         }
 
         return res;
     }
     @Test(dataProvider = "shortUnaryOpProvider")
-    static void MULShortMaxVectorTests(IntFunction<short[]> fa) {
+    static void MULReduceShortMaxVectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         short ra = 1;
@@ -2829,33 +2797,29 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, ShortMaxVectorTests::MUL, ShortMaxVectorTests::MUL);
+        assertReductionArraysEquals(a, r, ra,
+                ShortMaxVectorTests::MULReduce, ShortMaxVectorTests::MULReduceAll);
     }
-    static short MULMasked(short[] a, int idx, boolean[] mask) {
+    static short MULReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res *= a[i];
         }
 
         return res;
     }
 
-    static short MULMasked(short[] a, boolean[] mask) {
+    static short MULReduceAllMasked(short[] a, boolean[] mask) {
         short res = 1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            short tmp = 1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp *= a[i + j];
-            }
-            res *= tmp;
+            res *= MULReduceMasked(a, i, mask);
         }
 
         return res;
     }
     @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void MULShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
+    static void MULReduceShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2877,9 +2841,10 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, ShortMaxVectorTests::MULMasked, ShortMaxVectorTests::MULMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                ShortMaxVectorTests::MULReduceMasked, ShortMaxVectorTests::MULReduceAllMasked);
     }
-    static short MIN(short[] a, int idx) {
+    static short MINReduce(short[] a, int idx) {
         short res = Short.MAX_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res = (short)Math.min(res, a[i]);
@@ -2888,7 +2853,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static short MIN(short[] a) {
+    static short MINReduceAll(short[] a) {
         short res = Short.MAX_VALUE;
         for (int i = 0; i < a.length; i++) {
             res = (short)Math.min(res, a[i]);
@@ -2897,7 +2862,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "shortUnaryOpProvider")
-    static void MINShortMaxVectorTests(IntFunction<short[]> fa) {
+    static void MINReduceShortMaxVectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         short ra = Short.MAX_VALUE;
@@ -2917,9 +2882,10 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, ShortMaxVectorTests::MIN, ShortMaxVectorTests::MIN);
+        assertReductionArraysEquals(a, r, ra,
+                ShortMaxVectorTests::MINReduce, ShortMaxVectorTests::MINReduceAll);
     }
-    static short MINMasked(short[] a, int idx, boolean[] mask) {
+    static short MINReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = Short.MAX_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -2929,7 +2895,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static short MINMasked(short[] a, boolean[] mask) {
+    static short MINReduceAllMasked(short[] a, boolean[] mask) {
         short res = Short.MAX_VALUE;
         for (int i = 0; i < a.length; i++) {
             if(mask[i % SPECIES.length()])
@@ -2939,7 +2905,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void MINShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
+    static void MINReduceShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2961,9 +2927,10 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, ShortMaxVectorTests::MINMasked, ShortMaxVectorTests::MINMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                ShortMaxVectorTests::MINReduceMasked, ShortMaxVectorTests::MINReduceAllMasked);
     }
-    static short MAX(short[] a, int idx) {
+    static short MAXReduce(short[] a, int idx) {
         short res = Short.MIN_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res = (short)Math.max(res, a[i]);
@@ -2972,7 +2939,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static short MAX(short[] a) {
+    static short MAXReduceAll(short[] a) {
         short res = Short.MIN_VALUE;
         for (int i = 0; i < a.length; i++) {
             res = (short)Math.max(res, a[i]);
@@ -2981,7 +2948,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "shortUnaryOpProvider")
-    static void MAXShortMaxVectorTests(IntFunction<short[]> fa) {
+    static void MAXReduceShortMaxVectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         short ra = Short.MIN_VALUE;
@@ -3001,9 +2968,10 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, ShortMaxVectorTests::MAX, ShortMaxVectorTests::MAX);
+        assertReductionArraysEquals(a, r, ra,
+                ShortMaxVectorTests::MAXReduce, ShortMaxVectorTests::MAXReduceAll);
     }
-    static short MAXMasked(short[] a, int idx, boolean[] mask) {
+    static short MAXReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = Short.MIN_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -3013,7 +2981,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static short MAXMasked(short[] a, boolean[] mask) {
+    static short MAXReduceAllMasked(short[] a, boolean[] mask) {
         short res = Short.MIN_VALUE;
         for (int i = 0; i < a.length; i++) {
             if(mask[i % SPECIES.length()])
@@ -3023,7 +2991,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void MAXShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
+    static void MAXReduceShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -3045,7 +3013,8 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, ShortMaxVectorTests::MAXMasked, ShortMaxVectorTests::MAXMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                ShortMaxVectorTests::MAXReduceMasked, ShortMaxVectorTests::MAXReduceAllMasked);
     }
 
     static boolean anyTrue(boolean[] a, int idx) {
@@ -4642,7 +4611,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
     }
 
 
-    static long ADDLong(short[] a, int idx) {
+    static long ADDReduceLong(short[] a, int idx) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res += a[i];
@@ -4651,17 +4620,17 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return (long)res;
     }
 
-    static long ADDLong(short[] a) {
+    static long ADDReduceAllLong(short[] a) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            res += ADDLong(a, i);
+            res += ADDReduceLong(a, i);
         }
 
         return res;
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
-    static void ADDReductionLongShortMaxVectorTests(IntFunction<short[]> fa) {
+    static void ADDReduceLongShortMaxVectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
         long[] r = lfr.apply(SPECIES.length());
         long ra = 0;
@@ -4676,10 +4645,11 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             ra += r[i];
         }
 
-        assertReductionLongArraysEquals(a, r, ra, ShortMaxVectorTests::ADDLong, ShortMaxVectorTests::ADDLong);
+        assertReductionLongArraysEquals(a, r, ra,
+                ShortMaxVectorTests::ADDReduceLong, ShortMaxVectorTests::ADDReduceAllLong);
     }
 
-    static long ADDLongMasked(short[] a, int idx, boolean[] mask) {
+    static long ADDReduceLongMasked(short[] a, int idx, boolean[] mask) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -4689,17 +4659,17 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return (long)res;
     }
 
-    static long ADDLongMasked(short[] a, boolean[] mask) {
+    static long ADDReduceAllLongMasked(short[] a, boolean[] mask) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            res += ADDLongMasked(a, i, mask);
+            res += ADDReduceLongMasked(a, i, mask);
         }
 
         return res;
     }
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void ADDReductionLongShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
+    static void ADDReduceLongShortMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
         long[] r = lfr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -4716,7 +4686,8 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             ra += r[i];
         }
 
-        assertReductionLongArraysEqualsMasked(a, r, ra, mask, ShortMaxVectorTests::ADDLongMasked, ShortMaxVectorTests::ADDLongMasked);
+        assertReductionLongArraysEqualsMasked(a, r, ra, mask,
+                ShortMaxVectorTests::ADDReduceLongMasked, ShortMaxVectorTests::ADDReduceAllLongMasked);
     }
 
     @Test(dataProvider = "shortUnaryOpSelectFromProvider")
