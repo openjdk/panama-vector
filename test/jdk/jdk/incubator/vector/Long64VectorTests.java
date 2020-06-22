@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -17,7 +17,7 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
- * or visit www.oracle.com if you need additional information or have
+ * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
 
@@ -153,6 +153,7 @@ public class Long64VectorTests extends AbstractVectorTest {
         }
     }
 
+
     interface FBoolReductionOp {
         boolean apply(boolean[] a, int idx);
     }
@@ -201,6 +202,60 @@ public class Long64VectorTests extends AbstractVectorTest {
         }
     }
 
+    static void assertSelectFromArraysEquals(long[] a, long[] r, long[] order, int vector_len) {
+        int i = 0, j = 0;
+        try {
+            for (; i < a.length; i += vector_len) {
+                for (j = 0; j < vector_len; j++) {
+                    Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                }
+            }
+        } catch (AssertionError e) {
+            int idx = i + j;
+            Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]]);
+        }
+    }
+
+    static void assertRearrangeArraysEquals(long[] a, long[] r, int[] order, boolean[] mask, int vector_len) {
+        int i = 0, j = 0;
+        try {
+            for (; i < a.length; i += vector_len) {
+                for (j = 0; j < vector_len; j++) {
+                    if (mask[j % SPECIES.length()])
+                         Assert.assertEquals(r[i+j], a[i+order[i+j]]);
+                    else
+                         Assert.assertEquals(r[i+j], (long)0);
+                }
+            }
+        } catch (AssertionError e) {
+            int idx = i + j;
+            if (mask[j % SPECIES.length()])
+                Assert.assertEquals(r[i+j], a[i+order[i+j]], "at index #" + idx + ", input = " + a[i+order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+            else
+                Assert.assertEquals(r[i+j], (long)0, "at index #" + idx + ", input = " + a[i+order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+        }
+    }
+
+    static void assertSelectFromArraysEquals(long[] a, long[] r, long[] order, boolean[] mask, int vector_len) {
+        int i = 0, j = 0;
+        try {
+            for (; i < a.length; i += vector_len) {
+                for (j = 0; j < vector_len; j++) {
+                    if (mask[j % SPECIES.length()])
+                         Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                    else
+                         Assert.assertEquals(r[i+j], (long)0);
+                }
+            }
+        } catch (AssertionError e) {
+            int idx = i + j;
+            if (mask[j % SPECIES.length()])
+                Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+            else
+                Assert.assertEquals(r[i+j], (long)0, "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+        }
+    }
+
     static void assertBroadcastArraysEquals(long[]a, long[]r) {
         int i = 0;
         for (; i < a.length; i += SPECIES.length()) {
@@ -241,6 +296,30 @@ public class Long64VectorTests extends AbstractVectorTest {
         }
     }
 
+    static void assertBroadcastArraysEquals(long[] a, long[] b, long[] r, FBinOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()]));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()]),
+                                "(" + a[i] + ", " + b[(i / SPECIES.length()) * SPECIES.length()] + ") at index #" + i);
+        }
+    }
+
+    static void assertBroadcastLongArraysEquals(long[] a, long[] b, long[] r, FBinOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], (long)((long)b[(i / SPECIES.length()) * SPECIES.length()])));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], f.apply(a[i], (long)((long)b[(i / SPECIES.length()) * SPECIES.length()])),
+                                "(" + a[i] + ", " + b[(i / SPECIES.length()) * SPECIES.length()] + ") at index #" + i);
+        }
+    }
+
     static void assertArraysEquals(long[] a, long[] b, long[] r, boolean[] mask, FBinOp f) {
         assertArraysEquals(a, b, r, mask, FBinMaskOp.lift(f));
     }
@@ -253,6 +332,42 @@ public class Long64VectorTests extends AbstractVectorTest {
             }
         } catch (AssertionError err) {
             Assert.assertEquals(r[i], f.apply(a[i], b[i], mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", mask = " + mask[i % SPECIES.length()]);
+        }
+    }
+
+    static void assertBroadcastArraysEquals(long[] a, long[] b, long[] r, boolean[] mask, FBinOp f) {
+        assertBroadcastArraysEquals(a, b, r, mask, FBinMaskOp.lift(f));
+    }
+
+    static void assertBroadcastArraysEquals(long[] a, long[] b, long[] r, boolean[] mask, FBinMaskOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()], mask[i % SPECIES.length()]));
+            }
+        } catch (AssertionError err) {
+            Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()],
+                                mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] +
+                                ", input2 = " + b[(i / SPECIES.length()) * SPECIES.length()] + ", mask = " +
+                                mask[i % SPECIES.length()]);
+        }
+    }
+
+    static void assertBroadcastLongArraysEquals(long[] a, long[] b, long[] r, boolean[] mask, FBinOp f) {
+        assertBroadcastLongArraysEquals(a, b, r, mask, FBinMaskOp.lift(f));
+    }
+
+    static void assertBroadcastLongArraysEquals(long[] a, long[] b, long[] r, boolean[] mask, FBinMaskOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], (long)((long)b[(i / SPECIES.length()) * SPECIES.length()]), mask[i % SPECIES.length()]));
+            }
+        } catch (AssertionError err) {
+            Assert.assertEquals(r[i], f.apply(a[i], (long)((long)b[(i / SPECIES.length()) * SPECIES.length()]),
+                                mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] +
+                                ", input2 = " + b[(i / SPECIES.length()) * SPECIES.length()] + ", mask = " +
+                                mask[i % SPECIES.length()]);
         }
     }
 
@@ -326,6 +441,112 @@ public class Long64VectorTests extends AbstractVectorTest {
               + b[i] + ", input3 = " + c[i] + ", mask = " + mask[i % SPECIES.length()]);
         }
     }
+
+    static void assertBroadcastArraysEquals(long[] a, long[] b, long[] c, long[] r, FTernOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], b[i], c[(i / SPECIES.length()) * SPECIES.length()]));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], f.apply(a[i], b[i], c[(i / SPECIES.length()) * SPECIES.length()]), "at index #" +
+                                i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", input3 = " +
+                                c[(i / SPECIES.length()) * SPECIES.length()]);
+        }
+    }
+
+    static void assertAltBroadcastArraysEquals(long[] a, long[] b, long[] c, long[] r, FTernOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()], c[i]));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()], c[i]), "at index #" +
+                                i + ", input1 = " + a[i] + ", input2 = " +
+                                b[(i / SPECIES.length()) * SPECIES.length()] + ",  input3 = " + c[i]);
+        }
+    }
+
+    static void assertBroadcastArraysEquals(long[] a, long[] b, long[] c, long[] r, boolean[] mask,
+                                            FTernOp f) {
+        assertBroadcastArraysEquals(a, b, c, r, mask, FTernMaskOp.lift(f));
+    }
+
+    static void assertBroadcastArraysEquals(long[] a, long[] b, long[] c, long[] r, boolean[] mask,
+                                            FTernMaskOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], b[i], c[(i / SPECIES.length()) * SPECIES.length()],
+                                    mask[i % SPECIES.length()]));
+            }
+        } catch (AssertionError err) {
+            Assert.assertEquals(r[i], f.apply(a[i], b[i], c[(i / SPECIES.length()) * SPECIES.length()],
+                                mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] + ", input2 = " +
+                                b[i] + ", input3 = " + c[(i / SPECIES.length()) * SPECIES.length()] + ", mask = " +
+                                mask[i % SPECIES.length()]);
+        }
+    }
+
+    static void assertAltBroadcastArraysEquals(long[] a, long[] b, long[] c, long[] r, boolean[] mask,
+                                            FTernOp f) {
+        assertAltBroadcastArraysEquals(a, b, c, r, mask, FTernMaskOp.lift(f));
+    }
+
+    static void assertAltBroadcastArraysEquals(long[] a, long[] b, long[] c, long[] r, boolean[] mask,
+                                            FTernMaskOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()], c[i],
+                                    mask[i % SPECIES.length()]));
+            }
+        } catch (AssertionError err) {
+            Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()], c[i],
+                                mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] +
+                                ", input2 = " + b[(i / SPECIES.length()) * SPECIES.length()] +
+                                ", input3 = " + c[i] + ", mask = " + mask[i % SPECIES.length()]);
+        }
+    }
+
+    static void assertDoubleBroadcastArraysEquals(long[] a, long[] b, long[] c, long[] r, FTernOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()],
+                                    c[(i / SPECIES.length()) * SPECIES.length()]));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()],
+                                c[(i / SPECIES.length()) * SPECIES.length()]), "at index #" + i + ", input1 = " + a[i]
+                                + ", input2 = " + b[(i / SPECIES.length()) * SPECIES.length()] + ", input3 = " +
+                                c[(i / SPECIES.length()) * SPECIES.length()]);
+        }
+    }
+
+    static void assertDoubleBroadcastArraysEquals(long[] a, long[] b, long[] c, long[] r, boolean[] mask,
+                                                  FTernOp f) {
+        assertDoubleBroadcastArraysEquals(a, b, c, r, mask, FTernMaskOp.lift(f));
+    }
+
+    static void assertDoubleBroadcastArraysEquals(long[] a, long[] b, long[] c, long[] r, boolean[] mask,
+                                                  FTernMaskOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()],
+                                    c[(i / SPECIES.length()) * SPECIES.length()], mask[i % SPECIES.length()]));
+            }
+        } catch (AssertionError err) {
+            Assert.assertEquals(r[i], f.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()],
+                                c[(i / SPECIES.length()) * SPECIES.length()], mask[i % SPECIES.length()]), "at index #"
+                                + i + ", input1 = " + a[i] + ", input2 = " + b[(i / SPECIES.length()) * SPECIES.length()] +
+                                ", input3 = " + c[(i / SPECIES.length()) * SPECIES.length()] + ", mask = " +
+                                mask[i % SPECIES.length()]);
+        }
+    }
+
 
 
     interface FBinArrayOp {
@@ -628,6 +849,46 @@ public class Long64VectorTests extends AbstractVectorTest {
     }
 
     @DataProvider
+    public Object[][] longUnaryOpShuffleMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> INT_SHUFFLE_GENERATORS.stream().
+                    flatMap(fs -> LONG_GENERATORS.stream().map(fa -> {
+                        return new Object[] {fa, fs, fm};
+                }))).
+                toArray(Object[][]::new);
+    }
+
+    static final List<BiFunction<Integer,Integer,long[]>> LONG_SHUFFLE_GENERATORS = List.of(
+            withToStringBi("shuffle[random]", (Integer l, Integer m) -> {
+                long[] a = new long[l];
+                for (int i = 0; i < 1; i++) {
+                    a[i] = (long)RAND.nextInt(m);
+                }
+                return a;
+            })
+    );
+
+    @DataProvider
+    public Object[][] longUnaryOpSelectFromProvider() {
+        return LONG_SHUFFLE_GENERATORS.stream().
+                flatMap(fs -> LONG_GENERATORS.stream().map(fa -> {
+                    return new Object[] {fa, fs};
+                })).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] longUnaryOpSelectFromMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> LONG_SHUFFLE_GENERATORS.stream().
+                    flatMap(fs -> LONG_GENERATORS.stream().map(fa -> {
+                        return new Object[] {fa, fs, fm};
+                }))).
+                toArray(Object[][]::new);
+    }
+
+
+    @DataProvider
     public Object[][] longUnaryOpIndexProvider() {
         return INT_INDEX_GENERATORS.stream().
                 flatMap(fs -> LONG_GENERATORS.stream().map(fa -> {
@@ -702,6 +963,15 @@ public class Long64VectorTests extends AbstractVectorTest {
                 toArray(Object[][]::new);
     }
 
+    @DataProvider
+    public Object[][] longCompareOpMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> LONG_COMPARE_GENERATOR_PAIRS.stream().map(lfa -> {
+                    return Stream.concat(lfa.stream(), Stream.of(fm)).toArray();
+                })).
+                toArray(Object[][]::new);
+    }
+
     interface ToLongF {
         long apply(int i);
     }
@@ -731,11 +1001,11 @@ public class Long64VectorTests extends AbstractVectorTest {
                 return (long)0;
         }
     }
-   static long get(long[] a, int i) {
-       return (long) a[i];
-   }
+    static long get(long[] a, int i) {
+        return (long) a[i];
+    }
 
-   static final IntFunction<long[]> fr = (vl) -> {
+    static final IntFunction<long[]> fr = (vl) -> {
         int length = BUFFER_REPS * vl;
         return new long[length];
     };
@@ -744,6 +1014,7 @@ public class Long64VectorTests extends AbstractVectorTest {
         int length = BUFFER_REPS * vl;
         return new boolean[length];
     };
+
 
     static void replaceZero(long[] a, long v) {
         for (int i = 0; i < a.length; i++) {
@@ -901,12 +1172,10 @@ public class Long64VectorTests extends AbstractVectorTest {
         long[] b = fb.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                LongVector av = LongVector.fromArray(SPECIES, a, i);
-                LongVector bv = LongVector.fromArray(SPECIES, b, i);
-                av.add(bv).intoArray(r, i);
-            }
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, b, i);
+            av.add(bv).intoArray(r, i);
         }
 
         assertArraysEquals(a, b, r, Long64VectorTests::add);
@@ -941,12 +1210,10 @@ public class Long64VectorTests extends AbstractVectorTest {
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                LongVector av = LongVector.fromArray(SPECIES, a, i);
-                LongVector bv = LongVector.fromArray(SPECIES, b, i);
-                av.add(bv, vmask).intoArray(r, i);
-            }
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, b, i);
+            av.add(bv, vmask).intoArray(r, i);
         }
 
         assertArraysEquals(a, b, r, mask, Long64VectorTests::add);
@@ -981,12 +1248,10 @@ public class Long64VectorTests extends AbstractVectorTest {
         long[] b = fb.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                LongVector av = LongVector.fromArray(SPECIES, a, i);
-                LongVector bv = LongVector.fromArray(SPECIES, b, i);
-                av.sub(bv).intoArray(r, i);
-            }
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, b, i);
+            av.sub(bv).intoArray(r, i);
         }
 
         assertArraysEquals(a, b, r, Long64VectorTests::sub);
@@ -1021,12 +1286,10 @@ public class Long64VectorTests extends AbstractVectorTest {
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                LongVector av = LongVector.fromArray(SPECIES, a, i);
-                LongVector bv = LongVector.fromArray(SPECIES, b, i);
-                av.sub(bv, vmask).intoArray(r, i);
-            }
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, b, i);
+            av.sub(bv, vmask).intoArray(r, i);
         }
 
         assertArraysEquals(a, b, r, mask, Long64VectorTests::sub);
@@ -1061,12 +1324,10 @@ public class Long64VectorTests extends AbstractVectorTest {
         long[] b = fb.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                LongVector av = LongVector.fromArray(SPECIES, a, i);
-                LongVector bv = LongVector.fromArray(SPECIES, b, i);
-                av.mul(bv).intoArray(r, i);
-            }
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, b, i);
+            av.mul(bv).intoArray(r, i);
         }
 
         assertArraysEquals(a, b, r, Long64VectorTests::mul);
@@ -1101,12 +1362,10 @@ public class Long64VectorTests extends AbstractVectorTest {
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                LongVector av = LongVector.fromArray(SPECIES, a, i);
-                LongVector bv = LongVector.fromArray(SPECIES, b, i);
-                av.mul(bv, vmask).intoArray(r, i);
-            }
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, b, i);
+            av.mul(bv, vmask).intoArray(r, i);
         }
 
         assertArraysEquals(a, b, r, mask, Long64VectorTests::mul);
@@ -1276,12 +1535,10 @@ public class Long64VectorTests extends AbstractVectorTest {
         long[] b = fb.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                LongVector av = LongVector.fromArray(SPECIES, a, i);
-                LongVector bv = LongVector.fromArray(SPECIES, b, i);
-                av.and(bv).intoArray(r, i);
-            }
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, b, i);
+            av.and(bv).intoArray(r, i);
         }
 
         assertArraysEquals(a, b, r, Long64VectorTests::and);
@@ -1374,6 +1631,24 @@ public class Long64VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(a, b, r, Long64VectorTests::OR);
     }
+    static long or(long a, long b) {
+        return (long)(a | b);
+    }
+
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void orLong64VectorTests(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, b, i);
+            av.or(bv).intoArray(r, i);
+        }
+
+        assertArraysEquals(a, b, r, Long64VectorTests::or);
+    }
 
 
 
@@ -1439,6 +1714,224 @@ public class Long64VectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(a, b, r, mask, Long64VectorTests::XOR);
+    }
+
+
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void addLong64VectorTestsBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.add(b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, Long64VectorTests::add);
+    }
+
+    @Test(dataProvider = "longBinaryOpMaskProvider")
+    static void addLong64VectorTestsBroadcastMaskedSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.add(b[i], vmask).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, mask, Long64VectorTests::add);
+    }
+
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void subLong64VectorTestsBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.sub(b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, Long64VectorTests::sub);
+    }
+
+    @Test(dataProvider = "longBinaryOpMaskProvider")
+    static void subLong64VectorTestsBroadcastMaskedSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.sub(b[i], vmask).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, mask, Long64VectorTests::sub);
+    }
+
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void mulLong64VectorTestsBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.mul(b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, Long64VectorTests::mul);
+    }
+
+    @Test(dataProvider = "longBinaryOpMaskProvider")
+    static void mulLong64VectorTestsBroadcastMaskedSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.mul(b[i], vmask).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, mask, Long64VectorTests::mul);
+    }
+
+
+
+
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void divLong64VectorTestsBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        replaceZero(b, (long) 1);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.div(b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, Long64VectorTests::div);
+    }
+
+
+
+    @Test(dataProvider = "longBinaryOpMaskProvider")
+    static void divLong64VectorTestsBroadcastMaskedSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        replaceZero(b, (long) 1);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.div(b[i], vmask).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, mask, Long64VectorTests::div);
+    }
+
+
+
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void ORLong64VectorTestsBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.OR, b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, Long64VectorTests::OR);
+    }
+
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void orLong64VectorTestsBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.or(b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, Long64VectorTests::or);
+    }
+
+
+
+    @Test(dataProvider = "longBinaryOpMaskProvider")
+    static void ORLong64VectorTestsBroadcastMaskedSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.OR, b[i], vmask).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, mask, Long64VectorTests::OR);
+    }
+
+
+
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void ORLong64VectorTestsBroadcastLongSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.OR, (long)b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastLongArraysEquals(a, b, r, Long64VectorTests::OR);
+    }
+
+
+
+    @Test(dataProvider = "longBinaryOpMaskProvider")
+    static void ORLong64VectorTestsBroadcastMaskedLongSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.OR, (long)b[i], vmask).intoArray(r, i);
+        }
+
+        assertBroadcastLongArraysEquals(a, b, r, mask, Long64VectorTests::OR);
     }
 
 
@@ -1753,12 +2246,10 @@ public class Long64VectorTests extends AbstractVectorTest {
         long[] b = fb.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                LongVector av = LongVector.fromArray(SPECIES, a, i);
-                LongVector bv = LongVector.fromArray(SPECIES, b, i);
-                av.min(bv).intoArray(r, i);
-            }
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, b, i);
+            av.min(bv).intoArray(r, i);
         }
 
         assertArraysEquals(a, b, r, Long64VectorTests::min);
@@ -1793,18 +2284,72 @@ public class Long64VectorTests extends AbstractVectorTest {
         long[] b = fb.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                LongVector av = LongVector.fromArray(SPECIES, a, i);
-                LongVector bv = LongVector.fromArray(SPECIES, b, i);
-                av.max(bv).intoArray(r, i);
-            }
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, b, i);
+            av.max(bv).intoArray(r, i);
         }
 
         assertArraysEquals(a, b, r, Long64VectorTests::max);
     }
 
-    static long AND(long[] a, int idx) {
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void MINLong64VectorTestsBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.MIN, b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, Long64VectorTests::MIN);
+    }
+
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void minLong64VectorTestsBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.min(b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, Long64VectorTests::min);
+    }
+
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void MAXLong64VectorTestsBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.MAX, b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, Long64VectorTests::MAX);
+    }
+
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void maxLong64VectorTestsBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.max(b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, Long64VectorTests::max);
+    }
+
+    static long ANDReduce(long[] a, int idx) {
         long res = -1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res &= a[i];
@@ -1813,14 +2358,10 @@ public class Long64VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long AND(long[] a) {
+    static long ANDReduceAll(long[] a) {
         long res = -1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = -1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp &= a[i + j];
-            }
-            res &= tmp;
+            res &= ANDReduce(a, i);
         }
 
         return res;
@@ -1828,7 +2369,7 @@ public class Long64VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "longUnaryOpProvider")
-    static void ANDLong64VectorTests(IntFunction<long[]> fa) {
+    static void ANDReduceLong64VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         long ra = -1;
@@ -1848,29 +2389,25 @@ public class Long64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Long64VectorTests::AND, Long64VectorTests::AND);
+        assertReductionArraysEquals(a, r, ra,
+                Long64VectorTests::ANDReduce, Long64VectorTests::ANDReduceAll);
     }
 
 
-    static long ANDMasked(long[] a, int idx, boolean[] mask) {
+    static long ANDReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = -1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res &= a[i];
         }
 
         return res;
     }
 
-    static long ANDMasked(long[] a, boolean[] mask) {
+    static long ANDReduceAllMasked(long[] a, boolean[] mask) {
         long res = -1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = -1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp &= a[i + j];
-            }
-            res &= tmp;
+            res &= ANDReduceMasked(a, i, mask);
         }
 
         return res;
@@ -1878,7 +2415,7 @@ public class Long64VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void ANDLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
+    static void ANDReduceLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -1900,11 +2437,12 @@ public class Long64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Long64VectorTests::ANDMasked, Long64VectorTests::ANDMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Long64VectorTests::ANDReduceMasked, Long64VectorTests::ANDReduceAllMasked);
     }
 
 
-    static long OR(long[] a, int idx) {
+    static long ORReduce(long[] a, int idx) {
         long res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res |= a[i];
@@ -1913,14 +2451,10 @@ public class Long64VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long OR(long[] a) {
+    static long ORReduceAll(long[] a) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp |= a[i + j];
-            }
-            res |= tmp;
+            res |= ORReduce(a, i);
         }
 
         return res;
@@ -1928,7 +2462,7 @@ public class Long64VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "longUnaryOpProvider")
-    static void ORLong64VectorTests(IntFunction<long[]> fa) {
+    static void ORReduceLong64VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         long ra = 0;
@@ -1948,29 +2482,25 @@ public class Long64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Long64VectorTests::OR, Long64VectorTests::OR);
+        assertReductionArraysEquals(a, r, ra,
+                Long64VectorTests::ORReduce, Long64VectorTests::ORReduceAll);
     }
 
 
-    static long ORMasked(long[] a, int idx, boolean[] mask) {
+    static long ORReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res |= a[i];
         }
 
         return res;
     }
 
-    static long ORMasked(long[] a, boolean[] mask) {
+    static long ORReduceAllMasked(long[] a, boolean[] mask) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp |= a[i + j];
-            }
-            res |= tmp;
+            res |= ORReduceMasked(a, i, mask);
         }
 
         return res;
@@ -1978,7 +2508,7 @@ public class Long64VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void ORLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
+    static void ORReduceLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2000,11 +2530,12 @@ public class Long64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Long64VectorTests::ORMasked, Long64VectorTests::ORMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Long64VectorTests::ORReduceMasked, Long64VectorTests::ORReduceAllMasked);
     }
 
 
-    static long XOR(long[] a, int idx) {
+    static long XORReduce(long[] a, int idx) {
         long res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res ^= a[i];
@@ -2013,14 +2544,10 @@ public class Long64VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long XOR(long[] a) {
+    static long XORReduceAll(long[] a) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp ^= a[i + j];
-            }
-            res ^= tmp;
+            res ^= XORReduce(a, i);
         }
 
         return res;
@@ -2028,7 +2555,7 @@ public class Long64VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "longUnaryOpProvider")
-    static void XORLong64VectorTests(IntFunction<long[]> fa) {
+    static void XORReduceLong64VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         long ra = 0;
@@ -2048,29 +2575,25 @@ public class Long64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Long64VectorTests::XOR, Long64VectorTests::XOR);
+        assertReductionArraysEquals(a, r, ra,
+                Long64VectorTests::XORReduce, Long64VectorTests::XORReduceAll);
     }
 
 
-    static long XORMasked(long[] a, int idx, boolean[] mask) {
+    static long XORReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res ^= a[i];
         }
 
         return res;
     }
 
-    static long XORMasked(long[] a, boolean[] mask) {
+    static long XORReduceAllMasked(long[] a, boolean[] mask) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp ^= a[i + j];
-            }
-            res ^= tmp;
+            res ^= XORReduceMasked(a, i, mask);
         }
 
         return res;
@@ -2078,7 +2601,7 @@ public class Long64VectorTests extends AbstractVectorTest {
 
 
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void XORLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
+    static void XORReduceLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2100,10 +2623,11 @@ public class Long64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Long64VectorTests::XORMasked, Long64VectorTests::XORMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Long64VectorTests::XORReduceMasked, Long64VectorTests::XORReduceAllMasked);
     }
 
-    static long ADD(long[] a, int idx) {
+    static long ADDReduce(long[] a, int idx) {
         long res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res += a[i];
@@ -2112,20 +2636,16 @@ public class Long64VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long ADD(long[] a) {
+    static long ADDReduceAll(long[] a) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp += a[i + j];
-            }
-            res += tmp;
+            res += ADDReduce(a, i);
         }
 
         return res;
     }
     @Test(dataProvider = "longUnaryOpProvider")
-    static void ADDLong64VectorTests(IntFunction<long[]> fa) {
+    static void ADDReduceLong64VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         long ra = 0;
@@ -2145,33 +2665,29 @@ public class Long64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Long64VectorTests::ADD, Long64VectorTests::ADD);
+        assertReductionArraysEquals(a, r, ra,
+                Long64VectorTests::ADDReduce, Long64VectorTests::ADDReduceAll);
     }
-    static long ADDMasked(long[] a, int idx, boolean[] mask) {
+    static long ADDReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res += a[i];
         }
 
         return res;
     }
 
-    static long ADDMasked(long[] a, boolean[] mask) {
+    static long ADDReduceAllMasked(long[] a, boolean[] mask) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 0;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp += a[i + j];
-            }
-            res += tmp;
+            res += ADDReduceMasked(a, i, mask);
         }
 
         return res;
     }
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void ADDLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
+    static void ADDReduceLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2193,9 +2709,10 @@ public class Long64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Long64VectorTests::ADDMasked, Long64VectorTests::ADDMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Long64VectorTests::ADDReduceMasked, Long64VectorTests::ADDReduceAllMasked);
     }
-    static long MUL(long[] a, int idx) {
+    static long MULReduce(long[] a, int idx) {
         long res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res *= a[i];
@@ -2204,20 +2721,16 @@ public class Long64VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long MUL(long[] a) {
+    static long MULReduceAll(long[] a) {
         long res = 1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                tmp *= a[i + j];
-            }
-            res *= tmp;
+            res *= MULReduce(a, i);
         }
 
         return res;
     }
     @Test(dataProvider = "longUnaryOpProvider")
-    static void MULLong64VectorTests(IntFunction<long[]> fa) {
+    static void MULReduceLong64VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         long ra = 1;
@@ -2237,33 +2750,29 @@ public class Long64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Long64VectorTests::MUL, Long64VectorTests::MUL);
+        assertReductionArraysEquals(a, r, ra,
+                Long64VectorTests::MULReduce, Long64VectorTests::MULReduceAll);
     }
-    static long MULMasked(long[] a, int idx, boolean[] mask) {
+    static long MULReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
+            if (mask[i % SPECIES.length()])
                 res *= a[i];
         }
 
         return res;
     }
 
-    static long MULMasked(long[] a, boolean[] mask) {
+    static long MULReduceAllMasked(long[] a, boolean[] mask) {
         long res = 1;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            long tmp = 1;
-            for (int j = 0; j < SPECIES.length(); j++) {
-                if(mask[(i + j) % SPECIES.length()])
-                    tmp *= a[i + j];
-            }
-            res *= tmp;
+            res *= MULReduceMasked(a, i, mask);
         }
 
         return res;
     }
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void MULLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
+    static void MULReduceLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2285,9 +2794,10 @@ public class Long64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Long64VectorTests::MULMasked, Long64VectorTests::MULMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Long64VectorTests::MULReduceMasked, Long64VectorTests::MULReduceAllMasked);
     }
-    static long MIN(long[] a, int idx) {
+    static long MINReduce(long[] a, int idx) {
         long res = Long.MAX_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res = (long)Math.min(res, a[i]);
@@ -2296,7 +2806,7 @@ public class Long64VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long MIN(long[] a) {
+    static long MINReduceAll(long[] a) {
         long res = Long.MAX_VALUE;
         for (int i = 0; i < a.length; i++) {
             res = (long)Math.min(res, a[i]);
@@ -2305,7 +2815,7 @@ public class Long64VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "longUnaryOpProvider")
-    static void MINLong64VectorTests(IntFunction<long[]> fa) {
+    static void MINReduceLong64VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         long ra = Long.MAX_VALUE;
@@ -2325,9 +2835,10 @@ public class Long64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Long64VectorTests::MIN, Long64VectorTests::MIN);
+        assertReductionArraysEquals(a, r, ra,
+                Long64VectorTests::MINReduce, Long64VectorTests::MINReduceAll);
     }
-    static long MINMasked(long[] a, int idx, boolean[] mask) {
+    static long MINReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = Long.MAX_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -2337,7 +2848,7 @@ public class Long64VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long MINMasked(long[] a, boolean[] mask) {
+    static long MINReduceAllMasked(long[] a, boolean[] mask) {
         long res = Long.MAX_VALUE;
         for (int i = 0; i < a.length; i++) {
             if(mask[i % SPECIES.length()])
@@ -2347,7 +2858,7 @@ public class Long64VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void MINLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
+    static void MINReduceLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2369,9 +2880,10 @@ public class Long64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Long64VectorTests::MINMasked, Long64VectorTests::MINMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Long64VectorTests::MINReduceMasked, Long64VectorTests::MINReduceAllMasked);
     }
-    static long MAX(long[] a, int idx) {
+    static long MAXReduce(long[] a, int idx) {
         long res = Long.MIN_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             res = (long)Math.max(res, a[i]);
@@ -2380,7 +2892,7 @@ public class Long64VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long MAX(long[] a) {
+    static long MAXReduceAll(long[] a) {
         long res = Long.MIN_VALUE;
         for (int i = 0; i < a.length; i++) {
             res = (long)Math.max(res, a[i]);
@@ -2389,7 +2901,7 @@ public class Long64VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "longUnaryOpProvider")
-    static void MAXLong64VectorTests(IntFunction<long[]> fa) {
+    static void MAXReduceLong64VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         long ra = Long.MIN_VALUE;
@@ -2409,9 +2921,10 @@ public class Long64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra, Long64VectorTests::MAX, Long64VectorTests::MAX);
+        assertReductionArraysEquals(a, r, ra,
+                Long64VectorTests::MAXReduce, Long64VectorTests::MAXReduceAll);
     }
-    static long MAXMasked(long[] a, int idx, boolean[] mask) {
+    static long MAXReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = Long.MIN_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
             if(mask[i % SPECIES.length()])
@@ -2421,7 +2934,7 @@ public class Long64VectorTests extends AbstractVectorTest {
         return res;
     }
 
-    static long MAXMasked(long[] a, boolean[] mask) {
+    static long MAXReduceAllMasked(long[] a, boolean[] mask) {
         long res = Long.MIN_VALUE;
         for (int i = 0; i < a.length; i++) {
             if(mask[i % SPECIES.length()])
@@ -2431,7 +2944,7 @@ public class Long64VectorTests extends AbstractVectorTest {
         return res;
     }
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void MAXLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
+    static void MAXReduceLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2453,7 +2966,8 @@ public class Long64VectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask, Long64VectorTests::MAXMasked, Long64VectorTests::MAXMasked);
+        assertReductionArraysEqualsMasked(a, r, ra, mask,
+                Long64VectorTests::MAXReduceMasked, Long64VectorTests::MAXReduceAllMasked);
     }
 
     static boolean anyTrue(boolean[] a, int idx) {
@@ -2537,8 +3051,7 @@ public class Long64VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-   
-                 Assert.assertEquals(mv.laneIsSet(j), testIS_DEFAULT(a[i + j]));
+                    Assert.assertEquals(mv.laneIsSet(j), testIS_DEFAULT(a[i + j]));
                 }
             }
         }
@@ -2559,8 +3072,7 @@ public class Long64VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-   
-                 Assert.assertEquals(mv.laneIsSet(j), testIS_NEGATIVE(a[i + j]));
+                    Assert.assertEquals(mv.laneIsSet(j), testIS_NEGATIVE(a[i + j]));
                 }
             }
         }
@@ -2609,6 +3121,29 @@ public class Long64VectorTests extends AbstractVectorTest {
         }
     }
 
+    @Test(dataProvider = "longCompareOpMaskProvider")
+    static void LTLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                                IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                VectorMask<Long> mv = av.compare(VectorOperators.LT, bv, vmask);
+
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] < b[i + j]));
+                }
+            }
+        }
+    }
+
 
     @Test(dataProvider = "longCompareOpProvider")
     static void GTLong64VectorTests(IntFunction<long[]> fa, IntFunction<long[]> fb) {
@@ -2624,6 +3159,29 @@ public class Long64VectorTests extends AbstractVectorTest {
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
                     Assert.assertEquals(mv.laneIsSet(j), a[i + j] > b[i + j]);
+                }
+            }
+        }
+    }
+
+    @Test(dataProvider = "longCompareOpMaskProvider")
+    static void GTLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                                IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                VectorMask<Long> mv = av.compare(VectorOperators.GT, bv, vmask);
+
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] > b[i + j]));
                 }
             }
         }
@@ -2669,6 +3227,29 @@ public class Long64VectorTests extends AbstractVectorTest {
         }
     }
 
+    @Test(dataProvider = "longCompareOpMaskProvider")
+    static void EQLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                                IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                VectorMask<Long> mv = av.compare(VectorOperators.EQ, bv, vmask);
+
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] == b[i + j]));
+                }
+            }
+        }
+    }
+
 
     @Test(dataProvider = "longCompareOpProvider")
     static void NELong64VectorTests(IntFunction<long[]> fa, IntFunction<long[]> fb) {
@@ -2684,6 +3265,29 @@ public class Long64VectorTests extends AbstractVectorTest {
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
                     Assert.assertEquals(mv.laneIsSet(j), a[i + j] != b[i + j]);
+                }
+            }
+        }
+    }
+
+    @Test(dataProvider = "longCompareOpMaskProvider")
+    static void NELong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                                IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                VectorMask<Long> mv = av.compare(VectorOperators.NE, bv, vmask);
+
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] != b[i + j]));
                 }
             }
         }
@@ -2709,6 +3313,29 @@ public class Long64VectorTests extends AbstractVectorTest {
         }
     }
 
+    @Test(dataProvider = "longCompareOpMaskProvider")
+    static void LELong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                                IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                VectorMask<Long> mv = av.compare(VectorOperators.LE, bv, vmask);
+
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] <= b[i + j]));
+                }
+            }
+        }
+    }
+
 
     @Test(dataProvider = "longCompareOpProvider")
     static void GELong64VectorTests(IntFunction<long[]> fa, IntFunction<long[]> fb) {
@@ -2725,6 +3352,105 @@ public class Long64VectorTests extends AbstractVectorTest {
                 for (int j = 0; j < SPECIES.length(); j++) {
                     Assert.assertEquals(mv.laneIsSet(j), a[i + j] >= b[i + j]);
                 }
+            }
+        }
+    }
+
+    @Test(dataProvider = "longCompareOpMaskProvider")
+    static void GELong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                                IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                VectorMask<Long> mv = av.compare(VectorOperators.GE, bv, vmask);
+
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] >= b[i + j]));
+                }
+            }
+        }
+    }
+
+
+    @Test(dataProvider = "longCompareOpProvider")
+    static void LTLong64VectorTestsBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            VectorMask<Long> mv = av.compare(VectorOperators.LT, b[i]);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j), a[i + j] < b[i]);
+            }
+        }
+    }
+
+
+    @Test(dataProvider = "longCompareOpMaskProvider")
+    static void LTLong64VectorTestsBroadcastMaskedSmokeTest(IntFunction<long[]> fa,
+                                IntFunction<long[]> fb, IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            VectorMask<Long> mv = av.compare(VectorOperators.LT, b[i], vmask);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] < b[i]));
+            }
+        }
+    }
+
+
+    @Test(dataProvider = "longCompareOpProvider")
+    static void EQLong64VectorTestsBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            VectorMask<Long> mv = av.compare(VectorOperators.EQ, b[i]);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j), a[i + j] == b[i]);
+            }
+        }
+    }
+
+
+    @Test(dataProvider = "longCompareOpMaskProvider")
+    static void EQLong64VectorTestsBroadcastMaskedSmokeTest(IntFunction<long[]> fa,
+                                IntFunction<long[]> fb, IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            VectorMask<Long> mv = av.compare(VectorOperators.EQ, b[i], vmask);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] == b[i]));
             }
         }
     }
@@ -2771,9 +3497,23 @@ public class Long64VectorTests extends AbstractVectorTest {
         assertRearrangeArraysEquals(a, r, order, SPECIES.length());
     }
 
+    @Test(dataProvider = "longUnaryOpShuffleMaskProvider")
+    static void RearrangeLong64VectorTestsMaskedSmokeTest(IntFunction<long[]> fa,
+                                                          BiFunction<Integer,Integer,int[]> fs,
+                                                          IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        int[] order = fs.apply(a.length, SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.rearrange(VectorShuffle.fromArray(SPECIES, order, i), vmask).intoArray(r, i);
+        }
 
-
+        assertRearrangeArraysEquals(a, r, order, mask, SPECIES.length());
+    }
     @Test(dataProvider = "longUnaryOpProvider")
     static void getLong64VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
@@ -3196,7 +3936,11 @@ public class Long64VectorTests extends AbstractVectorTest {
 
 
 
+
     static long BITWISE_BLEND(long a, long b, long c) {
+        return (long)((a&~(c))|(b&c));
+    }
+    static long bitwiseBlend(long a, long b, long c) {
         return (long)((a&~(c))|(b&c));
     }
 
@@ -3219,10 +3963,26 @@ public class Long64VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(a, b, c, r, Long64VectorTests::BITWISE_BLEND);
     }
+    @Test(dataProvider = "longTernaryOpProvider")
+    static void bitwiseBlendLong64VectorTests(IntFunction<long[]> fa, IntFunction<long[]> fb, IntFunction<long[]> fc) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] c = fc.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, b, i);
+            LongVector cv = LongVector.fromArray(SPECIES, c, i);
+            av.bitwiseBlend(bv, cv).intoArray(r, i);
+        }
+
+        assertArraysEquals(a, b, c, r, Long64VectorTests::bitwiseBlend);
+    }
 
 
     @Test(dataProvider = "longTernaryOpMaskProvider")
-    static void BITWISE_BLENDLong64VectorTests(IntFunction<long[]> fa, IntFunction<long[]> fb,
+    static void BITWISE_BLENDLong64VectorTestsMasked(IntFunction<long[]> fa, IntFunction<long[]> fb,
                                           IntFunction<long[]> fc, IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] b = fb.apply(SPECIES.length());
@@ -3244,7 +4004,163 @@ public class Long64VectorTests extends AbstractVectorTest {
     }
 
 
+
+
+    @Test(dataProvider = "longTernaryOpProvider")
+    static void BITWISE_BLENDLong64VectorTestsBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb, IntFunction<long[]> fc) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] c = fc.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, b, i);
+            av.lanewise(VectorOperators.BITWISE_BLEND, bv, c[i]).intoArray(r, i);
+        }
+        assertBroadcastArraysEquals(a, b, c, r, Long64VectorTests::BITWISE_BLEND);
+    }
+
+    @Test(dataProvider = "longTernaryOpProvider")
+    static void BITWISE_BLENDLong64VectorTestsAltBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb, IntFunction<long[]> fc) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] c = fc.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector cv = LongVector.fromArray(SPECIES, c, i);
+            av.lanewise(VectorOperators.BITWISE_BLEND, b[i], cv).intoArray(r, i);
+        }
+        assertAltBroadcastArraysEquals(a, b, c, r, Long64VectorTests::BITWISE_BLEND);
+    }
+    @Test(dataProvider = "longTernaryOpProvider")
+    static void bitwiseBlendLong64VectorTestsBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb, IntFunction<long[]> fc) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] c = fc.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, b, i);
+            av.bitwiseBlend(bv, c[i]).intoArray(r, i);
+        }
+        assertBroadcastArraysEquals(a, b, c, r, Long64VectorTests::bitwiseBlend);
+    }
+
+    @Test(dataProvider = "longTernaryOpProvider")
+    static void bitwiseBlendLong64VectorTestsAltBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb, IntFunction<long[]> fc) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] c = fc.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector cv = LongVector.fromArray(SPECIES, c, i);
+            av.bitwiseBlend(b[i], cv).intoArray(r, i);
+        }
+        assertAltBroadcastArraysEquals(a, b, c, r, Long64VectorTests::bitwiseBlend);
+    }
+
+
+    @Test(dataProvider = "longTernaryOpMaskProvider")
+    static void BITWISE_BLENDLong64VectorTestsBroadcastMaskedSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                          IntFunction<long[]> fc, IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] c = fc.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, b, i);
+            av.lanewise(VectorOperators.BITWISE_BLEND, bv, c[i], vmask).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, c, r, mask, Long64VectorTests::BITWISE_BLEND);
+    }
+
+    @Test(dataProvider = "longTernaryOpMaskProvider")
+    static void BITWISE_BLENDLong64VectorTestsAltBroadcastMaskedSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                          IntFunction<long[]> fc, IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] c = fc.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector cv = LongVector.fromArray(SPECIES, c, i);
+            av.lanewise(VectorOperators.BITWISE_BLEND, b[i], cv, vmask).intoArray(r, i);
+        }
+
+        assertAltBroadcastArraysEquals(a, b, c, r, mask, Long64VectorTests::BITWISE_BLEND);
+    }
+
+
+
+
+    @Test(dataProvider = "longTernaryOpProvider")
+    static void BITWISE_BLENDLong64VectorTestsDoubleBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb, IntFunction<long[]> fc) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] c = fc.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.BITWISE_BLEND, b[i], c[i]).intoArray(r, i);
+        }
+
+        assertDoubleBroadcastArraysEquals(a, b, c, r, Long64VectorTests::BITWISE_BLEND);
+    }
+    @Test(dataProvider = "longTernaryOpProvider")
+    static void bitwiseBlendLong64VectorTestsDoubleBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb, IntFunction<long[]> fc) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] c = fc.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.bitwiseBlend(b[i], c[i]).intoArray(r, i);
+        }
+
+        assertDoubleBroadcastArraysEquals(a, b, c, r, Long64VectorTests::bitwiseBlend);
+    }
+
+
+    @Test(dataProvider = "longTernaryOpMaskProvider")
+    static void BITWISE_BLENDLong64VectorTestsDoubleBroadcastMaskedSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                          IntFunction<long[]> fc, IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] c = fc.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.BITWISE_BLEND, b[i], c[i], vmask).intoArray(r, i);
+        }
+
+        assertDoubleBroadcastArraysEquals(a, b, c, r, mask, Long64VectorTests::BITWISE_BLEND);
+    }
+
+
     static long NEG(long a) {
+        return (long)(-((long)a));
+    }
+
+    static long neg(long a) {
         return (long)(-((long)a));
     }
 
@@ -3261,6 +4177,21 @@ public class Long64VectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(a, r, Long64VectorTests::NEG);
+    }
+
+    @Test(dataProvider = "longUnaryOpProvider")
+    static void negLong64VectorTests(IntFunction<long[]> fa) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                av.neg().intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(a, r, Long64VectorTests::neg);
     }
 
     @Test(dataProvider = "longUnaryOpMaskProvider")
@@ -3342,6 +4273,10 @@ public class Long64VectorTests extends AbstractVectorTest {
         return (long)(~((long)a));
     }
 
+    static long not(long a) {
+        return (long)(~((long)a));
+    }
+
 
 
     @Test(dataProvider = "longUnaryOpProvider")
@@ -3357,6 +4292,21 @@ public class Long64VectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(a, r, Long64VectorTests::NOT);
+    }
+
+    @Test(dataProvider = "longUnaryOpProvider")
+    static void notLong64VectorTests(IntFunction<long[]> fa) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                av.not().intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(a, r, Long64VectorTests::not);
     }
 
 
@@ -3541,5 +4491,54 @@ public class Long64VectorTests extends AbstractVectorTest {
         assertArraysEquals(a, b, r, mask, Long64VectorTests::scatterMasked);
     }
 
+
+    @Test(dataProvider = "longUnaryOpSelectFromProvider")
+    static void SelectFromLong64VectorTests(IntFunction<long[]> fa,
+                                           BiFunction<Integer,Integer,long[]> fs) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] order = fs.apply(a.length, SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, order, i);
+            bv.selectFrom(av).intoArray(r, i);
+        }
+
+        assertSelectFromArraysEquals(a, r, order, SPECIES.length());
+    }
+
+    @Test(dataProvider = "longUnaryOpSelectFromMaskProvider")
+    static void SelectFromLong64VectorTestsMaskedSmokeTest(IntFunction<long[]> fa,
+                                                           BiFunction<Integer,Integer,long[]> fs,
+                                                           IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] order = fs.apply(a.length, SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            LongVector av = LongVector.fromArray(SPECIES, a, i);
+            LongVector bv = LongVector.fromArray(SPECIES, order, i);
+            bv.selectFrom(av, vmask).intoArray(r, i);
+        }
+
+        assertSelectFromArraysEquals(a, r, order, mask, SPECIES.length());
+    }
+
+    @Test
+    static void ElementSizeLong64VectorTests() {
+        LongVector av = LongVector.zero(SPECIES);
+        int elsize = av.elementSize();
+        Assert.assertEquals(elsize, Long.SIZE);
+    }
+
+    @Test
+    static void VectorShapeLong64VectorTests() {
+        LongVector av = LongVector.zero(SPECIES);
+        VectorShape vsh = av.shape();
+        assert(vsh.equals(VectorShape.S_64_BIT));
+    }
 }
 

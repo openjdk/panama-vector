@@ -19,7 +19,7 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
- * or visit www.oracle.com if you need additional information or have
+ * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
 package jdk.incubator.vector;
@@ -2119,7 +2119,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
             shuffle.checkIndexes();
             throw new AssertionError();
         }
-        return broadcast((int)0).blend(unmasked, valid);
+        return broadcast((int)0).blend(unmasked, m);
     }
 
     /**

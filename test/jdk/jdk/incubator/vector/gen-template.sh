@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -20,7 +20,7 @@
 # Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 # Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
-# or visit www.oracle.com if you need additional information or have
+# or visit www.oracle.com if you need additional information or have any
 # questions.
 #
 
@@ -37,13 +37,23 @@ unary_masked="Unary-Masked-op"
 unary_scalar="Unary-Scalar-op"
 ternary="Ternary-op"
 ternary_masked="Ternary-Masked-op"
+ternary_broadcast="Ternary-Broadcast-op"
+ternary_broadcast_masked="Ternary-Broadcast-Masked-op"
+ternary_double_broadcast="Ternary-Double-Broadcast-op"
+ternary_double_broadcast_masked="Ternary-Double-Broadcast-Masked-op"
 ternary_scalar="Ternary-Scalar-op"
 binary="Binary-op"
 binary_masked="Binary-Masked-op"
+binary_broadcast="Binary-Broadcast-op"
+binary_broadcast_masked="Binary-Broadcast-Masked-op"
+binary_broadcast_long="Binary-Broadcast-Long-op"
+binary_broadcast_masked_long="Binary-Broadcast-Masked-Long-op"
 binary_scalar="Binary-Scalar-op"
 blend="Blend-op"
 test_template="Test"
 compare_template="Compare"
+compare_masked_template="Compare-Masked"
+compare_broadcast_template="Compare-Broadcast"
 reduction_scalar="Reduction-Scalar-op"
 reduction_scalar_min="Reduction-Scalar-Min-op"
 reduction_scalar_max="Reduction-Scalar-Max-op"
@@ -58,6 +68,7 @@ reduction_op_min_masked="Reduction-Masked-Min-op"
 reduction_op_max_masked="Reduction-Masked-Max-op"
 unary_math_template="Unary-op-math"
 binary_math_template="Binary-op-math"
+binary_math_broadcast_template="Binary-Broadcast-op-math"
 bool_reduction_scalar="BoolReduction-Scalar-op"
 bool_reduction_template="BoolReduction-op"
 with_op_template="With-Op"
@@ -77,6 +88,7 @@ slice1_masked_template="Slice-Masked-bop"
 unslice_template="Unslice-op"
 unslice1_template="Unslice-bop"
 unslice1_masked_template="Unslice-Masked-bop"
+miscellaneous_template="Miscellaneous"
 
 function replace_variables {
   local filename=$1
@@ -88,6 +100,7 @@ function replace_variables {
   local guard=$7
   local masked=$8
   local op_name=$9
+  local kernel_smoke=${10}
 
   if [ "x${kernel}" != "x" ]; then
     local kernel_escaped=$(echo -e "$kernel" | tr '\n' '|')
@@ -105,10 +118,17 @@ function replace_variables {
   local test_func=""
   local withMask=""
   local tests=($(awk -F+ '{$1=$1} 1' <<< $test))
-  if [ "${tests[1]}" != "" ]; then
+  if [ "${tests[2]}" == "withMask" ]; then
     test=${tests[0]}
     test_func=${tests[1]}
     withMask=${tests[2]}
+  elif [ "${tests[1]}" == "withMask" ]; then
+    test=""
+    test_func=${tests[0]}
+    withMask=${tests[1]}
+  elif [ "${tests[1]}" != "" ]; then
+    test=${tests[0]}
+    test_func=${tests[1]}
   fi
 
   sed_prog="
@@ -133,11 +153,22 @@ function replace_variables {
   if [ "$guard" != "" ]; then
     echo -e "#if[${guard}]\n" >> $output
   fi
-  sed -e "$sed_prog" < ${filename}.current >> $output
+  if [ "$test" != "" ]; then
+    sed -e "$sed_prog" < ${filename}.current >> $output
+  fi
   # If we also have a dedicated function for the operation then use 2nd sed expression
   if [[ "$filename" == *"Unit"* ]] && [ "$test_func" != "" ]; then
     if [ "$masked" == "" ] || [ "$withMask" != "" ]; then 
-      sed -e "$sed_prog_2" < ${filename}.current >> $output
+      if [ ! -z "$kernel_smoke" ]; then
+        local kernel_smoke_escaped=$(echo -e "$kernel_smoke" | tr '\n' '|')
+        sed "s/\[\[KERNEL\]\]/${kernel_smoke_escaped}/g" $filename > ${filename}.scurrent1
+        cat ${filename}.scurrent1 | tr '|' "\n" > ${filename}.scurrent
+        rm -f "${filename}.scurrent1"
+      else
+        cp $filename.current ${filename}.scurrent
+      fi
+      sed -e "$sed_prog_2" < ${filename}.scurrent >> $output
+      rm -f ${filename}.scurrent
     fi
   fi
   if [ "$guard" != "" ]; then
@@ -173,6 +204,7 @@ function gen_op_tmpl {
   fi
 
   local kernel_filename="${TEMPLATE_FOLDER}/Kernel-${template}.template"
+  local kernel_smoke_filename="${TEMPLATE_FOLDER}/Kernel-${template}-smoke.template"
   local unit_filename="${TEMPLATE_FOLDER}/Unit-${template}.template"
   if [ ! -f $unit_filename ]; then
     # Leverage general unit code snippet if no specialization exists
@@ -185,25 +217,37 @@ function gen_op_tmpl {
     kernel="$(cat $kernel_filename)"
   fi
 
-  # Replace template variables in unit test files (if any)
-  replace_variables $unit_filename $unit_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name"
+  local kernel_smoke=""
+  if [ -f $kernel_smoke_filename ]; then
+    kernel_smoke="$(cat $kernel_smoke_filename)"
+  else 
+    kernel_smoke="$kernel"
+  fi
 
-  if [ $generate_perf_tests == true ]; then
+  # Replace template variables in unit test files (if any)
+  replace_variables $unit_filename $unit_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" "$kernel_smoke"
+
+  local gen_perf_tests=$generate_perf_tests
+  if [[ $template == *"-Broadcast-"* ]] || [[ $template == "Miscellaneous" ]] ||
+     [[ $template == *"Compare-Masked"* ]] || [[ $template == *"Compare-Broadcast"* ]]; then
+    gen_perf_tests=false
+  fi
+  if [ $gen_perf_tests == true ]; then
     # Replace template variables in performance test files (if any)
     local perf_wrapper_filename="${TEMPLATE_FOLDER}/Perf-wrapper.template"
     local perf_vector_filename="${TEMPLATE_FOLDER}/Perf-${template}.template"
     local perf_scalar_filename="${TEMPLATE_FOLDER}/Perf-Scalar-${template}.template"
 
     if [ -f $perf_vector_filename ]; then
-      replace_variables $perf_vector_filename  $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name"
+      replace_variables $perf_vector_filename  $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
     elif [ -f $kernel_filename ]; then
-      replace_variables $perf_wrapper_filename $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name"
+      replace_variables $perf_wrapper_filename $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
     elif [[ $template != *"-Scalar-"* ]] && [[ $template != "Get-op" ]] && [[ $template != "With-Op" ]]; then
       echo "Warning: missing perf: $@"
     fi
 
     if [ -f $perf_scalar_filename ]; then
-      replace_variables $perf_scalar_filename $perf_scalar_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name"
+      replace_variables $perf_scalar_filename $perf_scalar_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
     elif [[ $template != *"-Scalar-"* ]] && [[ $template != "Get-op" ]] && [[ $template != "With-Op" ]]; then
       echo "Warning: Missing PERF SCALAR: $perf_scalar_filename"
     fi
@@ -214,6 +258,18 @@ function gen_binary_alu_op {
   echo "Generating binary op $1 ($2)..."
   gen_op_tmpl $binary "$@"
   gen_op_tmpl $binary_masked "$@"
+}
+
+function gen_binary_alu_bcst_op {
+  echo "Generating binary broadcast op $1 ($2)..."
+  gen_op_tmpl $binary_broadcast "$@"
+  gen_op_tmpl $binary_broadcast_masked "$@"
+}
+
+function gen_binary_alu_bcst_long_op {
+  echo "Generating binary broadcast long op $1 ($2)..."
+  gen_op_tmpl $binary_broadcast_long "$@"
+  gen_op_tmpl $binary_broadcast_masked_long "$@"
 }
 
 function gen_shift_cst_op {
@@ -236,6 +292,18 @@ function gen_ternary_alu_op {
   gen_op_tmpl $ternary_masked "$@"
 }
 
+function gen_ternary_alu_bcst_op {
+  echo "Generating ternary broadcast op $1 ($2)..."
+  gen_op_tmpl $ternary_broadcast "$@"
+  gen_op_tmpl $ternary_broadcast_masked "$@"
+}
+
+function gen_ternary_alu_double_bcst_op {
+  echo "Generating ternary double broadcast op $1 ($2)..."
+  gen_op_tmpl $ternary_double_broadcast "$@"
+  gen_op_tmpl $ternary_double_broadcast_masked "$@"
+}
+
 function gen_binary_op {
   echo "Generating binary op $1 ($2)..."
 #  gen_op_tmpl $binary_scalar "$@"
@@ -247,6 +315,22 @@ function gen_binary_op_no_masked {
   echo "Generating binary op $1 ($2)..."
 #  gen_op_tmpl $binary_scalar "$@"
   gen_op_tmpl $binary "$@"
+}
+
+function gen_binary_bcst_op_no_masked {
+  echo "Generating binary broadcast op $1 ($2)..."
+  gen_op_tmpl $binary_broadcast "$@"
+}
+
+function gen_compare_op {
+  echo "Generating compare op $1 ($2)..."
+  gen_op_tmpl $compare_template "$@"
+  gen_op_tmpl $compare_masked_template "$@"
+}
+
+function gen_compare_bcst_op {
+  echo "Generating compare broadcast op $1 ($2)..."
+  gen_op_tmpl $compare_broadcast_template "$@"
 }
 
 function gen_reduction_op {
@@ -331,9 +415,18 @@ gen_op_tmpl "Binary-Masked-op_bitwise-div" "DIV+div+withMask" "a \/ b" "BITWISE"
 gen_binary_alu_op "FIRST_NONZERO" "{#if[FP]?Double.doubleToLongBits}(a)!=0?a:b"
 gen_binary_alu_op "AND+and"   "a \& b"  "BITWISE"
 gen_binary_alu_op "AND_NOT" "a \& ~b" "BITWISE"
-gen_binary_alu_op "OR"    "a | b"   "BITWISE"
+gen_binary_alu_op "OR+or"    "a | b"   "BITWISE"
 # Missing:        "OR_UNCHECKED"
 gen_binary_alu_op "XOR"   "a ^ b"   "BITWISE"
+# Generate the broadcast versions
+gen_binary_alu_bcst_op "add+withMask" "a + b" 
+gen_binary_alu_bcst_op "sub+withMask" "a - b" 
+gen_binary_alu_bcst_op "mul+withMask" "a \* b"
+gen_binary_alu_bcst_op "div+withMask" "a \/ b" "FP"
+gen_op_tmpl "Binary-Broadcast-op_bitwise-div" "div+withMask" "a \/ b" "BITWISE"
+gen_op_tmpl "Binary-Broadcast-Masked-op_bitwise-div" "div+withMask" "a \/ b" "BITWISE"
+gen_binary_alu_bcst_op "OR+or"    "a | b"   "BITWISE"
+gen_binary_alu_bcst_long_op "OR"    "a | b"   "BITWISE"
 
 # Shifts
 gen_binary_alu_op "LSHL" "(a << b)" "intOrLong"
@@ -358,6 +451,8 @@ gen_shift_cst_op  "ASHR" "(a >> (b \& 15))" "short"
 # Masked reductions.
 gen_binary_op_no_masked "MIN+min" "Math.min(a, b)"
 gen_binary_op_no_masked "MAX+max" "Math.max(a, b)"
+gen_binary_bcst_op_no_masked "MIN+min" "Math.min(a, b)"
+gen_binary_bcst_op_no_masked "MAX+max" "Math.max(a, b)"
 
 # Reductions.
 gen_reduction_op "AND" "\&" "BITWISE" "-1"
@@ -384,12 +479,14 @@ gen_op_tmpl $test_template "IS_NAN" "\$Boxtype\$.isNaN(a)" "FP"
 gen_op_tmpl $test_template "IS_INFINITE" "\$Boxtype\$.isInfinite(a)" "FP"
 
 # Compares
-gen_op_tmpl $compare_template "LT+lt" "<"
-gen_op_tmpl $compare_template "GT" ">"
-gen_op_tmpl $compare_template "EQ+eq" "=="
-gen_op_tmpl $compare_template "NE" "!="
-gen_op_tmpl $compare_template "LE" "<="
-gen_op_tmpl $compare_template "GE" ">="
+gen_compare_op "LT+lt" "<"
+gen_compare_op "GT" ">"
+gen_compare_op "EQ+eq" "=="
+gen_compare_op "NE" "!="
+gen_compare_op "LE" "<="
+gen_compare_op "GE" ">="
+gen_compare_bcst_op "LT" "<"
+gen_compare_bcst_op "EQ" "=="
 
 # Blend.
 gen_op_tmpl $blend "blend" ""
@@ -398,7 +495,7 @@ gen_op_tmpl $blend "blend" ""
 gen_op_tmpl $rearrange_template "rearrange" ""
 
 # Get
-gen_get_op "" ""
+gen_get_op "lane" ""
 
 # Broadcast
 gen_op_tmpl $broadcast_template "broadcast" ""
@@ -433,25 +530,33 @@ gen_op_tmpl $unary_math_template "ACOS" "Math.acos((double)a)" "FP"
 gen_op_tmpl $unary_math_template "ATAN" "Math.atan((double)a)" "FP"
 gen_op_tmpl $unary_math_template "CBRT" "Math.cbrt((double)a)" "FP"
 gen_op_tmpl $binary_math_template "HYPOT" "Math.hypot((double)a, (double)b)" "FP"
-gen_op_tmpl $binary_math_template "POW" "Math.pow((double)a, (double)b)" "FP"
+gen_op_tmpl $binary_math_template "POW+pow" "Math.pow((double)a, (double)b)" "FP"
 gen_op_tmpl $binary_math_template "ATAN2" "Math.atan2((double)a, (double)b)" "FP"
+gen_op_tmpl $binary_math_broadcast_template "POW+pow" "Math.pow((double)a, (double)b)" "FP"
 
 # Ternary operations.
-gen_ternary_alu_op "FMA" "Math.fma(a, b, c)" "FP"
-gen_ternary_alu_op "BITWISE_BLEND" "(a\&~(c))|(b\&c)" "BITWISE"
+gen_ternary_alu_op "FMA+fma" "Math.fma(a, b, c)" "FP"
+gen_ternary_alu_op "BITWISE_BLEND+bitwiseBlend" "(a\&~(c))|(b\&c)" "BITWISE"
+gen_ternary_alu_bcst_op "FMA" "Math.fma(a, b, c)" "FP"
+gen_ternary_alu_bcst_op "BITWISE_BLEND+bitwiseBlend" "(a\&~(c))|(b\&c)" "BITWISE"
+gen_ternary_alu_double_bcst_op "FMA+fma" "Math.fma(a, b, c)" "FP"
+gen_ternary_alu_double_bcst_op "BITWISE_BLEND+bitwiseBlend" "(a\&~(c))|(b\&c)" "BITWISE"
 
 # Unary operations.
-gen_unary_alu_op "NEG" "-((\$type\$)a)"
+gen_unary_alu_op "NEG+neg" "-((\$type\$)a)"
 gen_unary_alu_op "ABS+abs" "Math.abs((\$type\$)a)"
-gen_unary_alu_op "NOT" "~((\$type\$)a)" "BITWISE"
+gen_unary_alu_op "NOT+not" "~((\$type\$)a)" "BITWISE"
 gen_unary_alu_op "ZOMO" "(a==0?0:-1)" "BITWISE"
-gen_unary_alu_op "SQRT" "Math.sqrt((double)a)" "FP"
+gen_unary_alu_op "SQRT+sqrt" "Math.sqrt((double)a)" "FP"
 
 # Gather Scatter operations.
 gen_op_tmpl $gather_template "gather" ""
 gen_op_tmpl $gather_masked_template "gather" ""
 gen_op_tmpl $scatter_template "scatter" ""
 gen_op_tmpl $scatter_masked_template "scatter" ""
+
+# Miscellaneous Smoke Tests
+gen_op_tmpl $miscellaneous_template "MISC" "" ""
 
 gen_unit_footer $unit_output
 
