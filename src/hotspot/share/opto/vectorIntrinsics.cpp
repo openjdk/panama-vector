@@ -506,7 +506,7 @@ bool LibraryCallKit::inline_vector_broadcast_coerced() {
 
   // TODO When mask usage is supported, VecMaskNotUsed needs to be VecMaskUseLoad.
   if (!arch_supports_vector(VectorNode::replicate_opcode(elem_bt), num_elem, elem_bt,
-                            is_vector_mask(vbox_klass) ? VecMaskUseStore : VecMaskNotUsed), true /*has_scalar_args*/) {
+                            (is_vector_mask(vbox_klass) ? VecMaskUseStore : VecMaskNotUsed), true /*has_scalar_args*/)) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** not supported: arity=0 op=broadcast vlen=%d etype=%s ismask=%d",
                     num_elem, type2name(elem_bt),
