@@ -103,6 +103,12 @@ static bool is_vector_shuffle(ciKlass* klass) {
   return klass->is_subclass_of(ciEnv::current()->vector_VectorShuffle_klass());
 }
 
+static bool is_klass_initialized(const TypeInstPtr* vec_klass) {
+  assert(vec_klass->const_oop()->as_instance()->java_lang_Class_klass(), "klass instance expected");
+  ciInstanceKlass* klass =  vec_klass->const_oop()->as_instance()->java_lang_Class_klass()->as_instance_klass();
+  return klass->is_initialized();
+}
+
 #ifdef ASSERT
 static bool is_vector(ciKlass* klass) {
   return klass->is_subclass_of(ciEnv::current()->vector_VectorPayload_klass());
@@ -204,6 +210,12 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
     }
     return false; // should be primitive type
   }
+  if (!is_klass_initialized(vector_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
+  }
   BasicType elem_bt = elem_type->basic_type();
   int num_elem = vlen->get_con();
   int opc = VectorSupport::vop2ideal(opr->get_con(), elem_bt);
@@ -296,6 +308,12 @@ bool LibraryCallKit::inline_vector_shuffle_iota() {
       shuffle_klass->const_oop() == NULL || !wrap->is_con()) {
     return false; // not enough info for intrinsification
   }
+  if (!is_klass_initialized(shuffle_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
+  }
 
   int do_wrap = wrap->get_con();
   int num_elem = vlen->get_con();
@@ -375,8 +393,14 @@ bool LibraryCallKit::inline_vector_shuffle_to_vector() {
   Node* shuffle                    = argument(3);
   const TypeInt* vlen              = gvn().type(argument(4))->is_int();
 
-  if (!vlen->is_con() || shuffle_klass->const_oop() == NULL) {
+  if (!vlen->is_con() || vector_klass->const_oop() == NULL || shuffle_klass->const_oop() == NULL) {
     return false; // not enough info for intrinsification
+  }
+  if (!is_klass_initialized(shuffle_klass) || !is_klass_initialized(vector_klass) ) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
   }
 
   int num_elem = vlen->get_con();
@@ -432,6 +456,12 @@ bool LibraryCallKit::inline_vector_broadcast_coerced() {
     return false; // not enough info for intrinsification
   }
 
+  if (!is_klass_initialized(vector_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
+  }
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
   if (!elem_type->is_primitive_type()) {
     if (C->print_intrinsics()) {
@@ -519,6 +549,12 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
                     NodeClassNames[argument(2)->Opcode()]);
     }
     return false; // not enough info for intrinsification
+  }
+  if (!is_klass_initialized(vector_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
   }
 
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
@@ -678,6 +714,12 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
     return false; // not enough info for intrinsification
   }
 
+  if (!is_klass_initialized(vector_klass) || !is_klass_initialized(vector_idx_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
+  }
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
   if (!elem_type->is_primitive_type()) {
     if (C->print_intrinsics()) {
@@ -775,6 +817,12 @@ bool LibraryCallKit::inline_vector_reduction() {
     }
     return false; // not enough info for intrinsification
   }
+  if (!is_klass_initialized(vector_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
+  }
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
   if (!elem_type->is_primitive_type()) {
     if (C->print_intrinsics()) {
@@ -841,6 +889,7 @@ bool LibraryCallKit::inline_vector_reduction() {
 //                                BiFunction<V, V, Boolean> defaultImpl) {
 //
 bool LibraryCallKit::inline_vector_test() {
+
   const TypeInt* cond             = gvn().type(argument(0))->is_int();
   const TypeInstPtr* vector_klass = gvn().type(argument(1))->is_instptr();
   const TypeInstPtr* elem_klass   = gvn().type(argument(2))->is_instptr();
@@ -855,6 +904,12 @@ bool LibraryCallKit::inline_vector_test() {
                     NodeClassNames[argument(3)->Opcode()]);
     }
     return false; // not enough info for intrinsification
+  }
+  if (!is_klass_initialized(vector_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
   }
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
   if (!elem_type->is_primitive_type()) {
@@ -913,6 +968,12 @@ bool LibraryCallKit::inline_vector_blend() {
                     NodeClassNames[argument(3)->Opcode()]);
     }
     return false; // not enough info for intrinsification
+  }
+  if (!is_klass_initialized(vector_klass) || !is_klass_initialized(mask_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
   }
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
   if (!elem_type->is_primitive_type()) {
@@ -980,6 +1041,12 @@ bool LibraryCallKit::inline_vector_compare() {
     }
     return false; // not enough info for intrinsification
   }
+  if (!is_klass_initialized(vector_klass) || !is_klass_initialized(mask_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
+  }
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
   if (!elem_type->is_primitive_type()) {
     if (C->print_intrinsics()) {
@@ -1046,6 +1113,12 @@ bool LibraryCallKit::inline_vector_rearrange() {
                     NodeClassNames[argument(2)->Opcode()],
                     NodeClassNames[argument(3)->Opcode()]);
     }
+  }
+  if (!is_klass_initialized(vector_klass) || !is_klass_initialized(shuffle_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
   }
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
   if (!elem_type->is_primitive_type()) {
@@ -1123,6 +1196,12 @@ bool LibraryCallKit::inline_vector_broadcast_int() {
     }
     return false; // not enough info for intrinsification
   }
+  if (!is_klass_initialized(vector_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
+  }
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
   if (!elem_type->is_primitive_type()) {
     if (C->print_intrinsics()) {
@@ -1191,6 +1270,12 @@ bool LibraryCallKit::inline_vector_convert() {
                     NodeClassNames[argument(6)->Opcode()]);
     }
     return false; // not enough info for intrinsification
+  }
+  if (!is_klass_initialized(vector_klass_from) || !is_klass_initialized(vector_klass_to)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
   }
 
   assert(opr->get_con() == VectorSupport::VECTOR_OP_CAST ||
@@ -1360,6 +1445,12 @@ bool LibraryCallKit::inline_vector_insert() {
     }
     return false; // not enough info for intrinsification
   }
+  if (!is_klass_initialized(vector_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
+  }
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
   if (!elem_type->is_primitive_type()) {
     if (C->print_intrinsics()) {
@@ -1443,6 +1534,12 @@ bool LibraryCallKit::inline_vector_extract() {
                     NodeClassNames[argument(4)->Opcode()]);
     }
     return false; // not enough info for intrinsification
+  }
+  if (!is_klass_initialized(vector_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
   }
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
   if (!elem_type->is_primitive_type()) {
