@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,18 +25,26 @@
 
 package jdk.incubator.jpackage.internal;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.io.File;
+import java.io.PrintStream;
+import java.io.Writer;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.nio.channels.FileChannel;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
@@ -136,12 +144,14 @@ public class IOUtils {
         exec(pb, false, null, false);
     }
 
-    // Reading output from some processes (currently known "hdiutil attach" might hang even if process already
-    // exited. Only possible workaround found in "hdiutil attach" case is to wait for process to exit before
-    // reading output.
-    public static void exec(ProcessBuilder pb, boolean waitBeforeOutput)
+    // See JDK-8236282
+    // Reading output from some processes (currently known "hdiutil attach")
+    // might hang even if process already exited. Only possible workaround found
+    // in "hdiutil attach" case is to redirect the output to a temp file and then
+    // read this file back.
+    public static void exec(ProcessBuilder pb, boolean writeOutputToFile)
             throws IOException {
-        exec(pb, false, null, waitBeforeOutput);
+        exec(pb, false, null, writeOutputToFile);
     }
 
     static void exec(ProcessBuilder pb, boolean testForPresenceOnly,
@@ -150,9 +160,10 @@ public class IOUtils {
     }
 
     static void exec(ProcessBuilder pb, boolean testForPresenceOnly,
-            PrintStream consumer, boolean waitBeforeOutput) throws IOException {
+            PrintStream consumer, boolean writeOutputToFile) throws IOException {
         List<String> output = new ArrayList<>();
-        Executor exec = Executor.of(pb).setWaitBeforeOutput(waitBeforeOutput).setOutputConsumer(lines -> {
+        Executor exec = Executor.of(pb).setWriteOutputToFile(writeOutputToFile)
+                .setOutputConsumer(lines -> {
             lines.forEach(output::add);
             if (consumer != null) {
                 output.forEach(consumer::println);
@@ -249,6 +260,7 @@ public class IOUtils {
     public static void createXml(Path dstFile, XmlConsumer xmlConsumer) throws
             IOException {
         XMLOutputFactory xmlFactory = XMLOutputFactory.newInstance();
+        Files.createDirectories(dstFile.getParent());
         try (Writer w = Files.newBufferedWriter(dstFile)) {
             // Wrap with pretty print proxy
             XMLStreamWriter xml = (XMLStreamWriter) Proxy.newProxyInstance(

@@ -490,8 +490,9 @@ void SafepointSynchronize::end() {
 }
 
 bool SafepointSynchronize::is_cleanup_needed() {
-  // Need a safepoint if there are many monitors to deflate.
-  if (ObjectSynchronizer::is_cleanup_needed()) return true;
+  // Need a cleanup safepoint if there are too many monitors in use
+  // and the monitor deflation needs to be done at a safepoint.
+  if (ObjectSynchronizer::is_safepoint_deflation_needed()) return true;
   // Need a safepoint if some inline cache buffers is non-empty
   if (!InlineCacheBuffer::is_empty()) return true;
   if (StringTable::needs_rehashing()) return true;
@@ -501,21 +502,18 @@ bool SafepointSynchronize::is_cleanup_needed() {
 
 class ParallelSPCleanupThreadClosure : public ThreadClosure {
 private:
-  CodeBlobClosure* _nmethod_cl;
   DeflateMonitorCounters* _counters;
 
 public:
   ParallelSPCleanupThreadClosure(DeflateMonitorCounters* counters) :
-    _nmethod_cl(UseCodeAging ? NMethodSweeper::prepare_reset_hotness_counters() : NULL),
     _counters(counters) {}
 
   void do_thread(Thread* thread) {
+    // deflate_thread_local_monitors() handles or requests deflation of
+    // this thread's idle monitors. If !AsyncDeflateIdleMonitors or if
+    // there is a special cleanup request, deflation is handled now.
+    // Otherwise, async deflation is requested via a flag.
     ObjectSynchronizer::deflate_thread_local_monitors(thread, _counters);
-    if (_nmethod_cl != NULL && thread->is_Java_thread() &&
-        ! thread->is_Code_cache_sweeper_thread()) {
-      JavaThread* jt = (JavaThread*) thread;
-      jt->nmethods_do(_nmethod_cl);
-    }
   }
 };
 
@@ -542,7 +540,11 @@ public:
       const char* name = "deflating global idle monitors";
       EventSafepointCleanupTask event;
       TraceTime timer(name, TRACETIME_LOG(Info, safepoint, cleanup));
-      ObjectSynchronizer::deflate_idle_monitors(_counters);
+      // AsyncDeflateIdleMonitors only uses DeflateMonitorCounters
+      // when a special cleanup has been requested.
+      // Note: This logging output will include global idle monitor
+      // elapsed times, but not global idle monitor deflation count.
+      ObjectSynchronizer::do_safepoint_work(_counters);
 
       post_safepoint_cleanup_task_event(event, safepoint_id, name);
     }
@@ -1172,8 +1174,6 @@ void SafepointTracing::statistics_exit_log() {
     }
   }
 
-  log_info(safepoint, stats)("VM operations coalesced during safepoint " INT64_FORMAT,
-                              VMThread::get_coalesced_count());
   log_info(safepoint, stats)("Maximum sync time  " INT64_FORMAT" ns",
                               (int64_t)(_max_sync_time));
   log_info(safepoint, stats)("Maximum vm operation time (except for Exit VM operation)  "

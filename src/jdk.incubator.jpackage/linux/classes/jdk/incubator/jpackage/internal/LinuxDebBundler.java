@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,8 @@
 
 package jdk.incubator.jpackage.internal;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,16 +36,23 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import static jdk.incubator.jpackage.internal.LinuxAppBundler.LINUX_INSTALL_DIR;
 import static jdk.incubator.jpackage.internal.OverridableResource.createResource;
-
-import static jdk.incubator.jpackage.internal.StandardBundlerParam.*;
-
+import static jdk.incubator.jpackage.internal.StandardBundlerParam.APP_NAME;
+import static jdk.incubator.jpackage.internal.StandardBundlerParam.VERSION;
+import static jdk.incubator.jpackage.internal.StandardBundlerParam.RELEASE;
+import static jdk.incubator.jpackage.internal.StandardBundlerParam.VENDOR;
+import static jdk.incubator.jpackage.internal.StandardBundlerParam.LICENSE_FILE;
+import static jdk.incubator.jpackage.internal.StandardBundlerParam.COPYRIGHT;
 
 public class LinuxDebBundler extends LinuxPackageBundler {
 
@@ -118,7 +126,7 @@ public class LinuxDebBundler extends LinuxPackageBundler {
 
     private static final BundlerParamInfo<String> MAINTAINER =
             new StandardBundlerParam<> (
-            BundleParams.PARAM_MAINTAINER,
+            Arguments.CLIOptions.LINUX_DEB_MAINTAINER.getId() + ".internal",
             String.class,
             params -> VENDOR.fetchFrom(params) + " <"
                     + EMAIL.fetchFrom(params) + ">",
@@ -433,10 +441,18 @@ public class LinuxDebBundler extends LinuxPackageBundler {
     }
 
     private File getConfig_CopyrightFile(Map<String, ? super Object> params) {
-        PlatformPackage thePackage = createMetaPackage(params);
-        return thePackage.sourceRoot().resolve(Path.of(".",
-                LINUX_INSTALL_DIR.fetchFrom(params), PACKAGE_NAME.fetchFrom(
-                params), "share/doc/copyright")).toFile();
+        final String installDir = LINUX_INSTALL_DIR.fetchFrom(params);
+        final String packageName = PACKAGE_NAME.fetchFrom(params);
+
+        final Path installPath;
+        if (isInstallDirInUsrTree(installDir) || installDir.startsWith("/usr/")) {
+            installPath = Path.of("/usr/share/doc/", packageName, "copyright");
+        } else {
+            installPath = Path.of(installDir, packageName, "share/doc/copyright");
+        }
+
+        return createMetaPackage(params).sourceRoot().resolve(
+                Path.of("/").relativize(installPath)).toFile();
     }
 
     private File buildDeb(Map<String, ? super Object> params,

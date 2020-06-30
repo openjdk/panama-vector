@@ -25,7 +25,6 @@
 /*
  * @test TestThreadCountsOverride
  * @summary Test that Shenandoah GC thread counts are overridable
- * @key gc
  * @requires vm.gc.Shenandoah & !vm.graal.enabled
  * @library /test/lib
  * @modules java.base/jdk.internal.misc
@@ -40,6 +39,7 @@ public class TestThreadCountsOverride {
     public static void main(String[] args) throws Exception {
         {
             ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(
+                "-Xmx128m",
                 "-XX:+UnlockDiagnosticVMOptions",
                 "-XX:+UnlockExperimentalVMOptions",
                 "-XX:+UseShenandoahGC",
@@ -54,6 +54,7 @@ public class TestThreadCountsOverride {
 
         {
             ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(
+                "-Xmx128m",
                 "-XX:+UnlockDiagnosticVMOptions",
                 "-XX:+UnlockExperimentalVMOptions",
                 "-XX:+UseShenandoahGC",

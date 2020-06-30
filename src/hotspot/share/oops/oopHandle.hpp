@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,9 @@
 #ifndef SHARE_OOPS_OOPHANDLE_HPP
 #define SHARE_OOPS_OOPHANDLE_HPP
 
-#include "oops/oop.hpp"
+#include "oops/oopsHierarchy.hpp"
+
+class OopStorage;
 
 // Simple class for encapsulating oop pointers stored in metadata.
 // These are different from Handle.  The Handle class stores pointers
@@ -42,10 +44,13 @@ private:
 
 public:
   OopHandle() : _obj(NULL) {}
-  OopHandle(oop* w) : _obj(w) {}
+  explicit OopHandle(oop* w) : _obj(w) {}
+  OopHandle(OopStorage* storage, oop obj);
 
   inline oop resolve() const;
   inline oop peek() const;
+
+  inline void release(OopStorage* storage);
 
   // Used only for removing handle.
   oop* ptr_raw() const { return _obj; }

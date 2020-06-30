@@ -46,7 +46,6 @@
 #include "code/codeCache.hpp"
 #include "compiler/compileBroker.hpp"
 #include "gc/shared/gcTraceTime.inline.hpp"
-#include "gc/shared/oopStorage.inline.hpp"
 #include "gc/shared/oopStorageSet.hpp"
 #include "interpreter/bytecodeStream.hpp"
 #include "interpreter/interpreter.hpp"
@@ -68,6 +67,7 @@
 #include "oops/objArrayKlass.hpp"
 #include "oops/objArrayOop.inline.hpp"
 #include "oops/oop.inline.hpp"
+#include "oops/oopHandle.inline.hpp"
 #include "oops/symbol.hpp"
 #include "oops/typeArrayKlass.hpp"
 #include "prims/jvmtiExport.hpp"
@@ -84,6 +84,7 @@
 #include "services/diagnosticCommand.hpp"
 #include "services/threadService.hpp"
 #include "utilities/macros.hpp"
+#include "utilities/utf8.hpp"
 #if INCLUDE_CDS
 #include "classfile/systemDictionaryShared.hpp"
 #endif
@@ -97,15 +98,15 @@ ResolutionErrorTable*  SystemDictionary::_resolution_errors   = NULL;
 SymbolPropertyTable*   SystemDictionary::_invoke_method_table = NULL;
 ProtectionDomainCacheTable*   SystemDictionary::_pd_cache_table = NULL;
 
-oop         SystemDictionary::_system_loader_lock_obj     =  NULL;
-
 InstanceKlass*      SystemDictionary::_well_known_klasses[SystemDictionary::WKID_LIMIT]
                                                           =  { NULL /*, NULL...*/ };
 
 InstanceKlass*      SystemDictionary::_box_klasses[T_VOID+1]      =  { NULL /*, NULL...*/ };
 
-oop         SystemDictionary::_java_system_loader         =  NULL;
-oop         SystemDictionary::_java_platform_loader       =  NULL;
+
+OopHandle   SystemDictionary::_system_loader_lock_obj;
+OopHandle   SystemDictionary::_java_system_loader;
+OopHandle   SystemDictionary::_java_platform_loader;
 
 // Default ProtectionDomainCacheSize value
 
@@ -154,12 +155,16 @@ ClassLoadInfo::ClassLoadInfo(Handle protection_domain,
 // ----------------------------------------------------------------------------
 // Java-level SystemLoader and PlatformLoader
 
+oop SystemDictionary::system_loader_lock() {
+  return _system_loader_lock_obj.resolve();
+}
+
 oop SystemDictionary::java_system_loader() {
-  return _java_system_loader;
+  return _java_system_loader.resolve();
 }
 
 oop SystemDictionary::java_platform_loader() {
-  return _java_platform_loader;
+  return _java_platform_loader.resolve();
 }
 
 void SystemDictionary::compute_java_loaders(TRAPS) {
@@ -171,7 +176,7 @@ void SystemDictionary::compute_java_loaders(TRAPS) {
                          vmSymbols::void_classloader_signature(),
                          CHECK);
 
-  _java_system_loader = (oop)result.get_jobject();
+  _java_system_loader = OopHandle(OopStorageSet::vm_global(), (oop)result.get_jobject());
 
   JavaCalls::call_static(&result,
                          class_loader_klass,
@@ -179,7 +184,7 @@ void SystemDictionary::compute_java_loaders(TRAPS) {
                          vmSymbols::void_classloader_signature(),
                          CHECK);
 
-  _java_platform_loader = (oop)result.get_jobject();
+  _java_platform_loader = OopHandle(OopStorageSet::vm_global(), (oop)result.get_jobject());
 }
 
 ClassLoaderData* SystemDictionary::register_loader(Handle class_loader, bool create_mirror_cld) {
@@ -218,7 +223,7 @@ bool SystemDictionary::is_system_class_loader(oop class_loader) {
     return false;
   }
   return (class_loader->klass() == SystemDictionary::jdk_internal_loader_ClassLoaders_AppClassLoader_klass() ||
-         class_loader == _java_system_loader);
+         class_loader == _java_system_loader.peek());
 }
 
 // Returns true if the passed class loader is the platform class loader.
@@ -231,6 +236,27 @@ bool SystemDictionary::is_platform_class_loader(oop class_loader) {
 
 // ----------------------------------------------------------------------------
 // Resolving of classes
+
+Symbol* SystemDictionary::class_name_symbol(const char* name, Symbol* exception, TRAPS) {
+  if (name == NULL) {
+    THROW_MSG_0(exception, "No class name given");
+  }
+  if ((int)strlen(name) > Symbol::max_length()) {
+    // It's impossible to create this class;  the name cannot fit
+    // into the constant pool.
+    Exceptions::fthrow(THREAD_AND_LOCATION, exception,
+                       "Class name exceeds maximum length of %d: %s",
+                       Symbol::max_length(),
+                       name);
+    return NULL;
+  }
+  // Callers should ensure that the name is never an illegal UTF8 string.
+  assert(UTF8::is_legal_utf8((const unsigned char*)name, (int)strlen(name), false),
+         "Class name is not a valid utf8 string.");
+
+  // Make a new symbol for the class name.
+  return SymbolTable::new_symbol(name);
+}
 
 // Forwards to resolve_or_null
 
@@ -581,7 +607,8 @@ void SystemDictionary::double_lock_wait(Handle lockObject, TRAPS) {
   bool calledholdinglock
       = ObjectSynchronizer::current_thread_holds_lock((JavaThread*)THREAD, lockObject);
   assert(calledholdinglock,"must hold lock for notify");
-  assert((lockObject() != _system_loader_lock_obj && !is_parallelCapable(lockObject)), "unexpected double_lock_wait");
+  assert((lockObject() != _system_loader_lock_obj.resolve() &&
+         !is_parallelCapable(lockObject)), "unexpected double_lock_wait");
   ObjectSynchronizer::notifyall(lockObject, THREAD);
   intx recursions =  ObjectSynchronizer::complete_exit(lockObject, THREAD);
   SystemDictionary_lock->wait();
@@ -677,7 +704,7 @@ InstanceKlass* SystemDictionary::handle_parallel_super_load(
   return NULL;
 }
 
-static void post_class_load_event(EventClassLoad* event, const InstanceKlass* k, const ClassLoaderData* init_cld) {
+void SystemDictionary::post_class_load_event(EventClassLoad* event, const InstanceKlass* k, const ClassLoaderData* init_cld) {
   assert(event != NULL, "invariant");
   assert(k != NULL, "invariant");
   assert(event->should_commit(), "invariant");
@@ -1206,6 +1233,7 @@ InstanceKlass* SystemDictionary::resolve_from_stream(Symbol* class_name,
 InstanceKlass* SystemDictionary::load_shared_boot_class(Symbol* class_name,
                                                         PackageEntry* pkg_entry,
                                                         TRAPS) {
+  assert(UseSharedSpaces, "Sanity check");
   InstanceKlass* ik = SystemDictionaryShared::find_builtin_class(class_name);
   if (ik != NULL && ik->is_shared_boot_class()) {
     return load_shared_class(ik, Handle(), Handle(), NULL, pkg_entry, THREAD);
@@ -1213,92 +1241,92 @@ InstanceKlass* SystemDictionary::load_shared_boot_class(Symbol* class_name,
   return NULL;
 }
 
-// Check if a shared class can be loaded by the specific classloader:
-//
-// NULL classloader:
-//   - Module class from "modules" jimage. ModuleEntry must be defined in the classloader.
-//   - Class from -Xbootclasspath/a. The class has no defined PackageEntry, or must
-//     be defined in an unnamed module.
+// Check if a shared class can be loaded by the specific classloader.
 bool SystemDictionary::is_shared_class_visible(Symbol* class_name,
                                                InstanceKlass* ik,
                                                PackageEntry* pkg_entry,
                                                Handle class_loader, TRAPS) {
   assert(!ModuleEntryTable::javabase_moduleEntry()->is_patched(),
          "Cannot use sharing if java.base is patched");
-  ResourceMark rm(THREAD);
-  int path_index = ik->shared_classpath_index();
-  ClassLoaderData* loader_data = class_loader_data(class_loader);
-  if (path_index < 0) {
-    // path_index < 0 indicates that the class is intended for a custom loader
-    // and should not be loaded by boot/platform/app loaders
-    if (loader_data->is_builtin_class_loader_data()) {
+
+  // (1) Check if we are loading into the same loader as in dump time.
+
+  if (ik->is_shared_boot_class()) {
+    if (class_loader() != NULL) {
+      return false;
+    }
+  } else if (ik->is_shared_platform_class()) {
+    if (class_loader() != java_platform_loader()) {
+      return false;
+    }
+  } else if (ik->is_shared_app_class()) {
+    if (class_loader() != java_system_loader()) {
+      return false;
+    }
+  } else {
+    // ik was loaded by a custom loader during dump time
+    if (class_loader_data(class_loader)->is_builtin_class_loader_data()) {
       return false;
     } else {
       return true;
     }
   }
-  SharedClassPathEntry* ent =
-            (SharedClassPathEntry*)FileMapInfo::shared_path(path_index);
+
+  // (2) Check if we are loading into the same module from the same location as in dump time.
+
+  if (MetaspaceShared::use_optimized_module_handling()) {
+    // Class visibility has not changed between dump time and run time, so a class
+    // that was visible (and thus archived) during dump time is always visible during runtime.
+    assert(SystemDictionary::is_shared_class_visible_impl(class_name, ik, pkg_entry, class_loader, THREAD),
+           "visibility cannot change between dump time and runtime");
+    return true;
+  }
+  return is_shared_class_visible_impl(class_name, ik, pkg_entry, class_loader, THREAD);
+}
+
+bool SystemDictionary::is_shared_class_visible_impl(Symbol* class_name,
+                                                    InstanceKlass* ik,
+                                                    PackageEntry* pkg_entry,
+                                                    Handle class_loader, TRAPS) {
+  int scp_index = ik->shared_classpath_index();
+  assert(!ik->is_shared_unregistered_class(), "this function should be called for built-in classes only");
+  assert(scp_index >= 0, "must be");
+  SharedClassPathEntry* scp_entry = FileMapInfo::shared_path(scp_index);
   if (!Universe::is_module_initialized()) {
-    assert(ent != NULL && ent->is_modules_image(),
+    assert(scp_entry != NULL && scp_entry->is_modules_image(),
            "Loading non-bootstrap classes before the module system is initialized");
     assert(class_loader.is_null(), "sanity");
     return true;
   }
-  // Get the pkg_entry from the classloader
-  ModuleEntry* mod_entry = NULL;
-  TempNewSymbol pkg_name = pkg_entry != NULL ? pkg_entry->name() :
-                                               ClassLoader::package_from_class_name(class_name);
-  if (pkg_name != NULL) {
-    if (loader_data != NULL) {
-      if (pkg_entry != NULL) {
-        mod_entry = pkg_entry->module();
-        // If the archived class is from a module that has been patched at runtime,
-        // the class cannot be loaded from the archive.
-        if (mod_entry != NULL && mod_entry->is_patched()) {
-          return false;
-        }
-      }
-    }
-  }
 
-  if (class_loader.is_null()) {
-    assert(ent != NULL, "Shared class for NULL classloader must have valid SharedClassPathEntry");
-    // The NULL classloader can load archived class originated from the
-    // "modules" jimage and the -Xbootclasspath/a. For class from the
-    // "modules" jimage, the PackageEntry/ModuleEntry must be defined
-    // by the NULL classloader.
-    if (mod_entry != NULL) {
-      // PackageEntry/ModuleEntry is found in the classloader. Check if the
-      // ModuleEntry's location agrees with the archived class' origination.
-      if (ent->is_modules_image() && mod_entry->location()->starts_with("jrt:")) {
-        return true; // Module class from the "module" jimage
-      }
-    }
+  ModuleEntry* mod_entry = (pkg_entry == NULL) ? NULL : pkg_entry->module();
+  bool should_be_in_named_module = (mod_entry != NULL && mod_entry->is_named());
+  bool was_archived_from_named_module = scp_entry->in_named_module();
+  bool visible;
 
-    // If the archived class is not from the "module" jimage, the class can be
-    // loaded by the NULL classloader if
-    //
-    // 1. the class is from the unamed package
-    // 2. or, the class is not from a module defined in the NULL classloader
-    // 3. or, the class is from an unamed module
-    if (!ent->is_modules_image() && ik->is_shared_boot_class()) {
-      // the class is from the -Xbootclasspath/a
-      if (pkg_name == NULL ||
-          pkg_entry == NULL ||
-          pkg_entry->in_unnamed_module()) {
-        assert(mod_entry == NULL ||
-               mod_entry == loader_data->unnamed_module(),
-               "the unnamed module is not defined in the classloader");
-        return true;
+  if (was_archived_from_named_module) {
+    if (should_be_in_named_module) {
+      // Is the module loaded from the same location as during dump time?
+      visible = mod_entry->shared_path_index() == scp_index;
+      if (visible) {
+        assert(!mod_entry->is_patched(), "cannot load archived classes for patched module");
       }
+    } else {
+      // During dump time, this class was in a named module, but at run time, this class should be
+      // in an unnamed module.
+      visible = false;
     }
-    return false;
   } else {
-    bool res = SystemDictionaryShared::is_shared_class_visible_for_classloader(
-              ik, class_loader, pkg_name, pkg_entry, mod_entry, CHECK_(false));
-    return res;
+    if (should_be_in_named_module) {
+      // During dump time, this class was in an unnamed, but at run time, this class should be
+      // in a named module.
+      visible = false;
+    } else {
+      visible = true;
+    }
   }
+
+  return visible;
 }
 
 bool SystemDictionary::check_shared_class_super_type(InstanceKlass* child, InstanceKlass* super_type,
@@ -1343,6 +1371,37 @@ bool SystemDictionary::check_shared_class_super_types(InstanceKlass* ik, Handle 
   return true;
 }
 
+InstanceKlass* SystemDictionary::load_shared_lambda_proxy_class(InstanceKlass* ik,
+                                                                Handle class_loader,
+                                                                Handle protection_domain,
+                                                                PackageEntry* pkg_entry,
+                                                                TRAPS) {
+  InstanceKlass* shared_nest_host = SystemDictionaryShared::get_shared_nest_host(ik);
+  assert(shared_nest_host->is_shared(), "nest host must be in CDS archive");
+  Symbol* cn = shared_nest_host->name();
+  Klass *s = resolve_or_fail(cn, class_loader, protection_domain, true, CHECK_NULL);
+  if (s != shared_nest_host) {
+    // The dynamically resolved nest_host is not the same as the one we used during dump time,
+    // so we cannot use ik.
+    return NULL;
+  } else {
+    assert(s->is_shared(), "must be");
+  }
+
+  // The lambda proxy class and its nest host have the same class loader and class loader data,
+  // as verified in SystemDictionaryShared::add_lambda_proxy_class()
+  assert(shared_nest_host->class_loader() == class_loader(), "mismatched class loader");
+  assert(shared_nest_host->class_loader_data() == ClassLoaderData::class_loader_data(class_loader()), "mismatched class loader data");
+  ik->set_nest_host(shared_nest_host, THREAD);
+
+  InstanceKlass* loaded_ik = load_shared_class(ik, class_loader, protection_domain, NULL, pkg_entry, CHECK_NULL);
+
+  assert(shared_nest_host->is_same_class_package(ik),
+         "lambda proxy class and its nest host must be in the same package");
+
+  return loaded_ik;
+}
+
 InstanceKlass* SystemDictionary::load_shared_class(InstanceKlass* ik,
                                                    Handle class_loader,
                                                    Handle protection_domain,
@@ -1363,8 +1422,13 @@ InstanceKlass* SystemDictionary::load_shared_class(InstanceKlass* ik,
     return NULL;
   }
 
-  InstanceKlass* new_ik = KlassFactory::check_shared_class_file_load_hook(
+  InstanceKlass* new_ik = NULL;
+  // CFLH check is skipped for VM hidden or anonymous classes (see KlassFactory::create_from_stream).
+  // It will be skipped for shared VM hidden lambda proxy classes.
+  if (!SystemDictionaryShared::is_hidden_lambda_proxy(ik)) {
+    new_ik = KlassFactory::check_shared_class_file_load_hook(
       ik, class_name, class_loader, protection_domain, cfs, CHECK_NULL);
+  }
   if (new_ik != NULL) {
     // The class is changed by CFLH. Return the new class. The shared class is
     // not used.
@@ -1534,12 +1598,14 @@ InstanceKlass* SystemDictionary::load_instance_class(Symbol* class_name, Handle 
 
     // Search for classes in the CDS archive.
     InstanceKlass* k = NULL;
-    {
+
 #if INCLUDE_CDS
+    if (UseSharedSpaces)
+    {
       PerfTraceTime vmtimer(ClassLoader::perf_shared_classload_time());
       k = load_shared_boot_class(class_name, pkg_entry, THREAD);
-#endif
     }
+#endif
 
     if (k == NULL) {
       // Use VM class loader
@@ -1798,7 +1864,7 @@ InstanceKlass* SystemDictionary::find_or_define_instance_class(Symbol* class_nam
 Handle SystemDictionary::compute_loader_lock_object(Handle class_loader, TRAPS) {
   // If class_loader is NULL we synchronize on _system_loader_lock_obj
   if (class_loader.is_null()) {
-    return Handle(THREAD, _system_loader_lock_obj);
+    return Handle(THREAD, _system_loader_lock_obj.resolve());
   } else {
     return class_loader;
   }
@@ -1819,7 +1885,7 @@ void SystemDictionary::check_loader_lock_contention(Handle loader_lock, TRAPS) {
       == ObjectSynchronizer::owner_other) {
     // contention will likely happen, so increment the corresponding
     // contention counter.
-    if (loader_lock() == _system_loader_lock_obj) {
+    if (loader_lock() == _system_loader_lock_obj.resolve()) {
       ClassLoader::sync_systemLoaderLockContentionRate()->inc();
     } else {
       ClassLoader::sync_nonSystemLoaderLockContentionRate()->inc();
@@ -1936,20 +2002,6 @@ bool SystemDictionary::do_unloading(GCTimer* gc_timer) {
   return unloading_occurred;
 }
 
-void SystemDictionary::oops_do(OopClosure* f, bool include_handles) {
-  f->do_oop(&_java_system_loader);
-  f->do_oop(&_java_platform_loader);
-  f->do_oop(&_system_loader_lock_obj);
-  CDS_ONLY(SystemDictionaryShared::oops_do(f);)
-
-  // Visit extra methods
-  invoke_method_table()->oops_do(f);
-
-  if (include_handles) {
-    OopStorageSet::vm_global()->oops_do(f);
-  }
-}
-
 // CDS: scan and relocate all classes referenced by _well_known_klasses[].
 void SystemDictionary::well_known_klasses_do(MetaspaceClosure* it) {
   for (int id = FIRST_WKID; id < WKID_LIMIT; id++) {
@@ -1977,7 +2029,9 @@ void SystemDictionary::initialize(TRAPS) {
   _pd_cache_table = new ProtectionDomainCacheTable(defaultProtectionDomainCacheSize);
 
   // Allocate private object used as system class loader lock
-  _system_loader_lock_obj = oopFactory::new_intArray(0, CHECK);
+  oop lock_obj = oopFactory::new_intArray(0, CHECK);
+  _system_loader_lock_obj = OopHandle(OopStorageSet::vm_global(), lock_obj);
+
   // Initialize basic classes
   resolve_well_known_classes(CHECK);
 }
@@ -2094,6 +2148,13 @@ void SystemDictionary::resolve_well_known_classes(TRAPS) {
 
   // do a bunch more:
   resolve_wk_klasses_through(WK_KLASS_ENUM_NAME(Reference_klass), scan, CHECK);
+
+  // The offsets for jlr.Reference must be computed before
+  // InstanceRefKlass::update_nonstatic_oop_maps is called. That function uses
+  // the offsets to remove the referent and discovered fields from the oop maps,
+  // as they are treated in a special way by the GC. Removing these oops from the
+  // oop maps must be done before the usual subclasses of jlr.Reference are loaded.
+  java_lang_ref_Reference::compute_offsets();
 
   // Preload ref klasses and set reference types
   WK_KLASS(Reference_klass)->set_reference_type(REF_OTHER);

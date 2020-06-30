@@ -269,6 +269,7 @@ public:
 
 // Call function for all symbols in the symbol table.
 void SymbolTable::symbols_do(SymbolClosure *cl) {
+  assert(SafepointSynchronize::is_at_safepoint(), "Must be at safepoint");
   // all symbols from shared table
   SharedSymbolIterator iter(cl);
   _shared_table.iterate(&iter);
@@ -276,9 +277,7 @@ void SymbolTable::symbols_do(SymbolClosure *cl) {
 
   // all symbols from the dynamic table
   SymbolsDo sd(cl);
-  if (!_local_table->try_scan(Thread::current(), sd)) {
-    log_info(symboltable)("symbols_do unavailable at this moment");
-  }
+  _local_table->do_safepoint_scan(sd);
 }
 
 class MetaspacePointersDo : StackObj {
@@ -514,6 +513,13 @@ Symbol* SymbolTable::do_add_if_needed(const char* name, int len, uintx hash, boo
   }
 
   assert((sym == NULL) || sym->refcount() != 0, "found dead symbol");
+#if INCLUDE_CDS
+  if (DumpSharedSpaces) {
+    if (sym != NULL) {
+      MetaspaceShared::add_symbol(sym);
+    }
+  }
+#endif
   return sym;
 }
 

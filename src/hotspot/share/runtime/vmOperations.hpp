@@ -90,7 +90,6 @@
   template(ChangeBreakpoints)                     \
   template(GetOrSetLocal)                         \
   template(GetCurrentLocation)                    \
-  template(EnterInterpOnlyMode)                   \
   template(ChangeSingleStep)                      \
   template(HeapWalkOperation)                     \
   template(HeapIterateOperation)                  \
@@ -111,7 +110,6 @@
   template(ClassLoaderHierarchyOperation)         \
   template(DumpHashtable)                         \
   template(DumpTouchedMethods)                    \
-  template(MarkActiveNMethods)                    \
   template(PrintCompileQueue)                     \
   template(PrintClassHierarchy)                   \
   template(ThreadSuspend)                         \
@@ -131,7 +129,6 @@ class VM_Operation : public StackObj {
 
  private:
   Thread*         _calling_thread;
-  uint64_t        _timestamp;
   VM_Operation*   _next;
   VM_Operation*   _prev;
 
@@ -139,14 +136,11 @@ class VM_Operation : public StackObj {
   static const char* _names[];
 
  public:
-  VM_Operation() : _calling_thread(NULL), _timestamp(0),  _next(NULL), _prev(NULL) {}
+  VM_Operation() : _calling_thread(NULL), _next(NULL), _prev(NULL) {}
 
   // VM operation support (used by VM thread)
   Thread* calling_thread() const                 { return _calling_thread; }
   void set_calling_thread(Thread* thread);
-
-  uint64_t timestamp() const              { return _timestamp; }
-  void set_timestamp(uint64_t timestamp)  { _timestamp = timestamp; }
 
   // Called by VM thread - does in turn invoke doit(). Do not override this
   void evaluate();
@@ -246,14 +240,6 @@ class VM_GTestExecuteAtSafepoint: public VM_Operation {
 
  protected:
   VM_GTestExecuteAtSafepoint() {}
-};
-
-class VM_MarkActiveNMethods: public VM_Operation {
- public:
-  VM_MarkActiveNMethods() {}
-  VMOp_Type type() const                         { return VMOp_MarkActiveNMethods; }
-  void doit();
-  bool allow_nested_vm_operations() const        { return true; }
 };
 
 // Deopt helper that can deoptimize frames in threads other than the
@@ -420,6 +406,7 @@ class VM_Exit: public VM_Operation {
     }
   }
   VMOp_Type type() const { return VMOp_Exit; }
+  bool doit_prologue();
   void doit();
 };
 

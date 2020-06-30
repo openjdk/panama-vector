@@ -452,7 +452,7 @@ Node *PhaseMacroExpand::value_from_mem_phi(Node *mem, BasicType ft, const Type *
   Node *alloc_mem = alloc->in(TypeFunc::Memory);
 
   uint length = mem->req();
-  GrowableArray <Node *> values(length, length, NULL, false);
+  GrowableArray <Node *> values(length, length, NULL);
 
   // create a new Phi for the value
   PhiNode *phi = new PhiNode(mem->in(0), phi_type, NULL, mem->_idx, instance_id, alias_idx, offset);
@@ -978,8 +978,8 @@ void PhaseMacroExpand::process_users_of_allocation(CallNode *alloc) {
         if (ac->is_clonebasic()) {
           Node* membar_after = ac->proj_out(TypeFunc::Control)->unique_ctrl_out();
           disconnect_projections(ac, _igvn);
-          assert(alloc->in(0)->is_Proj() && alloc->in(0)->in(0)->Opcode() == Op_MemBarCPUOrder, "mem barrier expected before allocation");
-          Node* membar_before = alloc->in(0)->in(0);
+          assert(alloc->in(TypeFunc::Memory)->is_Proj() && alloc->in(TypeFunc::Memory)->in(0)->Opcode() == Op_MemBarCPUOrder, "mem barrier expected before allocation");
+          Node* membar_before = alloc->in(TypeFunc::Memory)->in(0);
           disconnect_projections(membar_before->as_MemBar(), _igvn);
           if (membar_after->is_MemBar()) {
             disconnect_projections(membar_after->as_MemBar(), _igvn);

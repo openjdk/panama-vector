@@ -2387,6 +2387,7 @@ private:
   // Ternary logic instruction.
   void vpternlogd(XMMRegister dst, int imm8, XMMRegister src2, XMMRegister src3, int vector_len);
   void vpternlogd(XMMRegister dst, int imm8, XMMRegister src2, Address     src3, int vector_len);
+  void vpternlogq(XMMRegister dst, int imm8, XMMRegister src2, XMMRegister src3, int vector_len);
 
   // vinserti forms
   void vinserti128(XMMRegister dst, XMMRegister nds, XMMRegister src, uint8_t imm8);
@@ -2431,6 +2432,7 @@ private:
   void vpbroadcastq(XMMRegister dst, XMMRegister src, int vector_len);
   void vpbroadcastq(XMMRegister dst, Address src, int vector_len);
 
+  void evbroadcasti32x4(XMMRegister dst, Address src, int vector_len);
   void evbroadcasti64x2(XMMRegister dst, XMMRegister src, int vector_len);
   void evbroadcasti64x2(XMMRegister dst, Address src, int vector_len);
 
@@ -2512,6 +2514,7 @@ private:
   void blendvps(XMMRegister dst, XMMRegister src);
   void blendvpd(XMMRegister dst, XMMRegister src);
   void pblendvb(XMMRegister dst, XMMRegister src);
+  void blendvpb(XMMRegister dst, XMMRegister nds, XMMRegister src1, XMMRegister src2, int vector_len);
   void vblendvps(XMMRegister dst, XMMRegister nds, XMMRegister src, XMMRegister mask, int vector_len);
   void vblendvpd(XMMRegister dst, XMMRegister nds, XMMRegister src1, XMMRegister src2, int vector_len);
   void vpblendvb(XMMRegister dst, XMMRegister nds, XMMRegister src, XMMRegister mask, int vector_len);

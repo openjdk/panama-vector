@@ -30,6 +30,7 @@
 #include "code/debugInfoRec.hpp"
 #include "compiler/compileBroker.hpp"
 #include "compiler/compilerDirectives.hpp"
+#include "compiler/disassembler.hpp"
 #include "compiler/oopMap.hpp"
 #include "gc/shared/barrierSet.hpp"
 #include "gc/shared/c2/barrierSetC2.hpp"
@@ -804,14 +805,6 @@ void PhaseOutput::FillLocArray( int idx, MachSafePointNode* sfpt, Node *local,
       array->append(new_loc_value( C->regalloc(), regnum, Location::lng ));
     }
 #else //_LP64
-#ifdef SPARC
-    if (t->base() == Type::Long && OptoReg::is_reg(regnum)) {
-      // For SPARC we have to swap high and low words for
-      // long values stored in a single-register (g0-g7).
-      array->append(new_loc_value( C->regalloc(),              regnum   , Location::normal ));
-      array->append(new_loc_value( C->regalloc(), OptoReg::add(regnum,1), Location::normal ));
-    } else
-#endif //SPARC
     if( t->base() == Type::DoubleBot || t->base() == Type::DoubleCon || t->base() == Type::Long ) {
       // Repack the double/long as two jints.
       // The convention the interpreter uses is that the second local
@@ -1626,8 +1619,17 @@ void PhaseOutput::fill_buffer(CodeBuffer* cb, uint* blk_starts) {
       }
 
 #ifdef ASSERT
-      if (n->size(C->regalloc()) < (current_offset-instr_offset)) {
+      uint n_size = n->size(C->regalloc());
+      if (n_size < (current_offset-instr_offset)) {
+        MachNode* mach = n->as_Mach();
         n->dump();
+        mach->dump_format(C->regalloc(), tty);
+        tty->print_cr(" n_size (%d), current_offset (%d), instr_offset (%d)", n_size, current_offset, instr_offset);
+        Disassembler::decode(cb->insts_begin() + instr_offset, cb->insts_begin() + current_offset + 1, tty);
+        tty->print_cr(" ------------------- ");
+        BufferBlob* blob = this->scratch_buffer_blob();
+        address blob_begin = blob->content_begin();
+        Disassembler::decode(blob_begin, blob_begin + n_size + 1, tty);
         assert(false, "wrong size of mach node");
       }
 #endif

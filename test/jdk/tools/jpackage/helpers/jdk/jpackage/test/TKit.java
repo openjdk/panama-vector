@@ -29,10 +29,25 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.StandardCopyOption;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
-import java.util.*;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
@@ -207,6 +222,17 @@ final public class TKit {
         if (extraLogStream != null) {
             extraLogStream.println(v);
         }
+    }
+
+    static Path removeRootFromAbsolutePath(Path v) {
+        if (!v.isAbsolute()) {
+            throw new IllegalArgumentException();
+        }
+
+        if (v.getNameCount() == 0) {
+            return Path.of("");
+        }
+        return v.subpath(0, v.getNameCount());
     }
 
     public static void createTextFile(Path propsFilename, Collection<String> lines) {

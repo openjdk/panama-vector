@@ -29,12 +29,8 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.InvalidPathException;
-import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -49,8 +45,6 @@ import java.util.TreeSet;
  * intermediate step in generating the BundleParams and ultimately the Bundles
  */
 public class DeployParams {
-
-    final List<RelativeFileSet> resources = new ArrayList<>();
 
     String targetFormat = null; // means default type for this platform
 
@@ -96,44 +90,6 @@ public class DeployParams {
             }
         }
         return files;
-    }
-
-    public void addResource(File baseDir, String path) {
-        addResource(baseDir, new File(baseDir, path));
-    }
-
-    public void addResource(File baseDir, File file) {
-        // normalize initial file
-        // to strip things like "." in the path
-        // or it can confuse symlink detection logic
-        file = file.getAbsoluteFile();
-
-        if (baseDir == null) {
-            baseDir = file.getParentFile();
-        }
-        resources.add(new RelativeFileSet(
-                baseDir, new LinkedHashSet<>(expandFileset(file))));
-    }
-
-    void setClasspath(String mainJarPath) {
-        String classpath;
-        // we want main jar first on the classpath
-        if (mainJarPath != null) {
-            classpath = mainJarPath + File.pathSeparator;
-        } else {
-            classpath = "";
-        }
-        for (RelativeFileSet resource : resources) {
-             for (String file : resource.getIncludedFiles()) {
-                 if (file.endsWith(".jar")) {
-                     if (!file.equals(mainJarPath)) {
-                         classpath += file + File.pathSeparator;
-                     }
-                 }
-             }
-        }
-        addBundleArgument(
-                StandardBundlerParam.CLASSPATH.getID(), classpath);
     }
 
     static void validateName(String s, boolean forApp)
@@ -230,14 +186,8 @@ public class DeployParams {
 
         // if bundling non-modular image, or installer without app-image
         // then we need some resources and a main class
-        if (!hasModule && !hasAppImage && !runtimeInstaller) {
-            if (resources.isEmpty()) {
-                throw new PackagerException("ERR_MissingAppResources");
-            }
-            if (!hasMain) {
-                throw new PackagerException("ERR_MissingArgument",
-                        "--main-jar");
-            }
+        if (!hasModule && !hasAppImage && !runtimeInstaller && !hasMain) {
+            throw new PackagerException("ERR_MissingArgument", "--main-jar");
         }
 
         String name = (String)bundlerArguments.get(
@@ -364,9 +314,6 @@ public class DeployParams {
     BundleParams getBundleParams() {
         BundleParams bundleParams = new BundleParams();
 
-        // construct app resources relative to destination folder!
-        bundleParams.setAppResourcesList(resources);
-
         Map<String, String> unescapedHtmlParams = new TreeMap<>();
         Map<String, String> escapedHtmlParams = new TreeMap<>();
 
@@ -386,8 +333,7 @@ public class DeployParams {
 
     @Override
     public String toString() {
-        return "DeployParams {" + "output: " + outdir
-                + " resources: {" + resources + "}}";
+        return "DeployParams {" + "output: " + "}";
     }
 
 }

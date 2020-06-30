@@ -51,6 +51,7 @@ import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.ServiceLoader;
 
+import sun.security.util.FilePaths;
 import sun.security.util.PropertyExpander;
 
 /**
@@ -110,10 +111,7 @@ public class KeyStoreUtil {
      * Returns the file name of the keystore with the configured CA certificates.
      */
     public static String getCacerts() {
-        String sep = File.separator;
-        return System.getProperty("java.home") + sep
-                + "lib" + sep + "security" + sep
-                + "cacerts";
+        return FilePaths.cacerts();
     }
 
     /**
@@ -300,13 +298,10 @@ public class KeyStoreUtil {
     public static void loadProviderByClass(
             String provClass, String arg, ClassLoader cl) {
 
-        // For compatibility, SunPKCS11, OracleUcrypto, and SunMSCAPI
+        // For compatibility, SunPKCS11, and SunMSCAPI
         // can still be loadable with -providerClass.
         if (provClass.equals("sun.security.pkcs11.SunPKCS11")) {
             loadProviderByName("SunPKCS11", arg);
-            return;
-        } else if (provClass.equals("com.oracle.security.crypto.UcryptoProvider")) {
-            loadProviderByName("OracleUcrypto", arg);
             return;
         } else if (provClass.equals("sun.security.mscapi.SunMSCAPI")) {
             loadProviderByName("SunMSCAPI", arg);

@@ -531,9 +531,7 @@ Compile::Compile( ciEnv* ci_env, ciMethod* target, int osr_bci,
                   _log(ci_env->log()),
                   _failure_reason(NULL),
                   _congraph(NULL),
-#ifndef PRODUCT
-                  _printer(IdealGraphPrinter::printer()),
-#endif
+                  NOT_PRODUCT(_printer(NULL) COMMA)
                   _dead_node_list(comp_arena()),
                   _dead_node_count(0),
                   _node_arena(mtCompiler),
@@ -562,11 +560,6 @@ Compile::Compile( ciEnv* ci_env, ciMethod* target, int osr_bci,
 #endif
 {
   C = this;
-#ifndef PRODUCT
-  if (_printer != NULL) {
-    _printer->set_compile(this);
-  }
-#endif
   CompileWrapper cw(this);
 
   if (CITimeVerbose) {
@@ -728,7 +721,7 @@ Compile::Compile( ciEnv* ci_env, ciMethod* target, int osr_bci,
   // Drain the list.
   Finish_Warm();
 #ifndef PRODUCT
-  if (_printer && _printer->should_print(1)) {
+  if (should_print(1)) {
     _printer->print_inlining();
   }
 #endif
@@ -824,9 +817,7 @@ Compile::Compile( ciEnv* ci_env,
     _log(ci_env->log()),
     _failure_reason(NULL),
     _congraph(NULL),
-#ifndef PRODUCT
-    _printer(NULL),
-#endif
+    NOT_PRODUCT(_printer(NULL) COMMA)
     _dead_node_list(comp_arena()),
     _dead_node_count(0),
     _node_arena(mtCompiler),
@@ -1588,7 +1579,7 @@ Compile::AliasType* Compile::find_alias_type(const TypePtr* adr_type, bool no_cr
     if (flat == TypeInstPtr::KLASS)  alias_type(idx)->set_rewritable(false);
     if (flat == TypeAryPtr::RANGE)   alias_type(idx)->set_rewritable(false);
     if (flat->isa_instptr()) {
-      if (flat->offset() == java_lang_Class::klass_offset_in_bytes()
+      if (flat->offset() == java_lang_Class::klass_offset()
           && flat->is_instptr()->klass() == env()->Class_klass())
         alias_type(idx)->set_rewritable(false);
     }
@@ -4660,7 +4651,7 @@ void Compile::end_method(int level) {
   }
 
 #ifndef PRODUCT
-  if (_printer && _printer->should_print(level)) {
+  if (_method != NULL && should_print(level)) {
     _printer->end_method();
   }
 #endif

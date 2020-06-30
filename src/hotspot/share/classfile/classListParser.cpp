@@ -62,7 +62,7 @@ ClassListParser::ClassListParser(const char* file) {
     vm_exit_during_initialization("Loading classlist failed", errmsg);
   }
   _line_no = 0;
-  _interfaces = new (ResourceObj::C_HEAP, mtClass) GrowableArray<int>(10, true);
+  _interfaces = new (ResourceObj::C_HEAP, mtClass) GrowableArray<int>(10, mtClass);
 }
 
 ClassListParser::~ClassListParser() {
@@ -281,7 +281,7 @@ void ClassListParser::error(const char* msg, ...) {
 // This function is used for loading classes for customized class loaders
 // during archive dumping.
 InstanceKlass* ClassListParser::load_class_from_source(Symbol* class_name, TRAPS) {
-#if !(defined(_LP64) && (defined(LINUX)|| defined(SOLARIS) || defined(__APPLE__)))
+#if !(defined(_LP64) && (defined(LINUX) || defined(__APPLE__)))
   // The only supported platforms are: (1) Linux/64-bit and (2) Solaris/64-bit and
   // (3) MacOSX/64-bit
   // This #if condition should be in sync with the areCustomLoadersSupportedForCDS
