@@ -222,7 +222,7 @@ public class ClassReader {
         this.b = classFileBuffer;
         // Check the class' major_version. This field is after the magic and minor_version fields, which
         // use 4 and 2 bytes respectively.
-        if (checkClassVersion && readShort(classFileOffset + 6) > Opcodes.V15) {
+        if (checkClassVersion && readShort(classFileOffset + 6) > Opcodes.V16) {
             throw new IllegalArgumentException(
                     "Unsupported class file major version " + readShort(classFileOffset + 6));
         }
@@ -499,8 +499,8 @@ public class ClassReader {
         String nestHostClass = null;
         // - The offset of the NestMembers attribute, or 0.
         int nestMembersOffset = 0;
-        // - The offset of the PermittedSubtypes attribute, or 0
-        int permittedSubtypesOffset = 0;
+        // - The offset of the PermittedSubclasses attribute, or 0
+        int permittedSubclassesOffset = 0;
         // - The offset of the Record attribute, or 0.
         int recordOffset = 0;
         // - The non standard attributes (linked with their {@link Attribute#nextAttribute} field).
@@ -525,8 +525,8 @@ public class ClassReader {
                 nestHostClass = readClass(currentAttributeOffset, charBuffer);
             } else if (Constants.NEST_MEMBERS.equals(attributeName)) {
                 nestMembersOffset = currentAttributeOffset;
-            } else if (Constants.PERMITTED_SUBTYPES.equals(attributeName)) {
-                permittedSubtypesOffset = currentAttributeOffset;
+            } else if (Constants.PERMITTED_SUBCLASSES.equals(attributeName)) {
+                permittedSubclassesOffset = currentAttributeOffset;
             } else if (Constants.SIGNATURE.equals(attributeName)) {
                 signature = readUTF8(currentAttributeOffset, charBuffer);
             } else if (Constants.RUNTIME_VISIBLE_ANNOTATIONS.equals(attributeName)) {
@@ -704,14 +704,14 @@ public class ClassReader {
             }
         }
 
-        // Visit the PermittedSubtypes attribute.
-        if (permittedSubtypesOffset != 0) {
-            int numberOfPermittedSubtypes = readUnsignedShort(permittedSubtypesOffset);
-            int currentPermittedSubtypeOffset = permittedSubtypesOffset + 2;
-            while (numberOfPermittedSubtypes-- > 0) {
-                classVisitor.visitPermittedSubtypeExperimental(
-                        readClass(currentPermittedSubtypeOffset, charBuffer));
-                currentPermittedSubtypeOffset += 2;
+        // Visit the PermittedSubclasses attribute.
+        if (permittedSubclassesOffset != 0) {
+            int numberOfPermittedSubclasses = readUnsignedShort(permittedSubclassesOffset);
+            int currentPermittedSubclassOffset = permittedSubclassesOffset + 2;
+            while (numberOfPermittedSubclasses-- > 0) {
+                classVisitor.visitPermittedSubclassExperimental(
+                        readClass(currentPermittedSubclassOffset, charBuffer));
+                currentPermittedSubclassOffset += 2;
             }
         }
 

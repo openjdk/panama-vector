@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -208,19 +208,27 @@ Handle ThreadService::get_current_contended_monitor(JavaThread* thread) {
   assert(thread != NULL, "should be non-NULL");
   debug_only(Thread::check_for_dangling_thread_pointer(thread);)
 
+  // This function can be called on a target JavaThread that is not
+  // the caller and we are not at a safepoint. So it is possible for
+  // the waiting or pending condition to be over/stale and for the
+  // first stage of async deflation to clear the object field in
+  // the ObjectMonitor. It is also possible for the object to be
+  // inflated again and to be associated with a completely different
+  // ObjectMonitor by the time this object reference is processed
+  // by the caller.
   ObjectMonitor *wait_obj = thread->current_waiting_monitor();
 
   oop obj = NULL;
   if (wait_obj != NULL) {
     // thread is doing an Object.wait() call
     obj = (oop) wait_obj->object();
-    assert(obj != NULL, "Object.wait() should have an object");
+    assert(AsyncDeflateIdleMonitors || obj != NULL, "Object.wait() should have an object");
   } else {
     ObjectMonitor *enter_obj = thread->current_pending_monitor();
     if (enter_obj != NULL) {
       // thread is trying to enter() an ObjectMonitor.
       obj = (oop) enter_obj->object();
-      assert(obj != NULL, "ObjectMonitor should have an associated object!");
+      assert(AsyncDeflateIdleMonitors || obj != NULL, "ObjectMonitor should have an associated object!");
     }
   }
 
@@ -391,6 +399,7 @@ DeadlockCycle* ThreadService::find_deadlocks_at_safepoint(ThreadsList * t_list, 
 
     cycle->reset();
 
+    // The ObjectMonitor* can't be async deflated since we are at a safepoint.
     // When there is a deadlock, all the monitors involved in the dependency
     // cycle must be contended and heavyweight. So we only care about the
     // heavyweight monitor a thread is waiting to lock.
@@ -580,7 +589,7 @@ StackFrameInfo::StackFrameInfo(javaVFrame* jvf, bool with_lock_info) {
     GrowableArray<MonitorInfo*>* list = jvf->locked_monitors();
     int length = list->length();
     if (length > 0) {
-      _locked_monitors = new (ResourceObj::C_HEAP, mtInternal) GrowableArray<oop>(length, true);
+      _locked_monitors = new (ResourceObj::C_HEAP, mtServiceability) GrowableArray<oop>(length, mtServiceability);
       for (int i = 0; i < length; i++) {
         MonitorInfo* monitor = list->at(i);
         assert(monitor->owner() != NULL, "This monitor must have an owning object");
@@ -637,11 +646,11 @@ public:
 
 ThreadStackTrace::ThreadStackTrace(JavaThread* t, bool with_locked_monitors) {
   _thread = t;
-  _frames = new (ResourceObj::C_HEAP, mtInternal) GrowableArray<StackFrameInfo*>(INITIAL_ARRAY_SIZE, true);
+  _frames = new (ResourceObj::C_HEAP, mtServiceability) GrowableArray<StackFrameInfo*>(INITIAL_ARRAY_SIZE, mtServiceability);
   _depth = 0;
   _with_locked_monitors = with_locked_monitors;
   if (_with_locked_monitors) {
-    _jni_locked_monitors = new (ResourceObj::C_HEAP, mtInternal) GrowableArray<oop>(INITIAL_ARRAY_SIZE, true);
+    _jni_locked_monitors = new (ResourceObj::C_HEAP, mtServiceability) GrowableArray<oop>(INITIAL_ARRAY_SIZE, mtServiceability);
   } else {
     _jni_locked_monitors = NULL;
   }
@@ -767,7 +776,7 @@ void ConcurrentLocksDump::dump_at_safepoint() {
   // dump all locked concurrent locks
   assert(SafepointSynchronize::is_at_safepoint(), "all threads are stopped");
 
-  GrowableArray<oop>* aos_objects = new (ResourceObj::C_HEAP, mtInternal) GrowableArray<oop>(INITIAL_ARRAY_SIZE, true /* C_heap */);
+  GrowableArray<oop>* aos_objects = new (ResourceObj::C_HEAP, mtServiceability) GrowableArray<oop>(INITIAL_ARRAY_SIZE, mtServiceability);
 
   // Find all instances of AbstractOwnableSynchronizer
   HeapInspection::find_instances_at_safepoint(SystemDictionary::java_util_concurrent_locks_AbstractOwnableSynchronizer_klass(),
@@ -841,7 +850,7 @@ void ConcurrentLocksDump::print_locks_on(JavaThread* t, outputStream* st) {
 
 ThreadConcurrentLocks::ThreadConcurrentLocks(JavaThread* thread) {
   _thread = thread;
-  _owned_locks = new (ResourceObj::C_HEAP, mtInternal) GrowableArray<instanceOop>(INITIAL_ARRAY_SIZE, true);
+  _owned_locks = new (ResourceObj::C_HEAP, mtServiceability) GrowableArray<instanceOop>(INITIAL_ARRAY_SIZE, mtServiceability);
   _next = NULL;
 }
 
@@ -953,7 +962,7 @@ void ThreadSnapshot::metadata_do(void f(Metadata*)) {
 
 DeadlockCycle::DeadlockCycle() {
   _is_deadlock = false;
-  _threads = new (ResourceObj::C_HEAP, mtInternal) GrowableArray<JavaThread*>(INITIAL_ARRAY_SIZE, true);
+  _threads = new (ResourceObj::C_HEAP, mtServiceability) GrowableArray<JavaThread*>(INITIAL_ARRAY_SIZE, mtServiceability);
   _next = NULL;
 }
 
@@ -967,13 +976,13 @@ void DeadlockCycle::print_on_with(ThreadsList * t_list, outputStream* st) const 
   st->print("=============================");
 
   JavaThread* currentThread;
-  ObjectMonitor* waitingToLockMonitor;
   JvmtiRawMonitor* waitingToLockRawMonitor;
   oop waitingToLockBlocker;
   int len = _threads->length();
   for (int i = 0; i < len; i++) {
     currentThread = _threads->at(i);
-    waitingToLockMonitor = currentThread->current_pending_monitor();
+    // The ObjectMonitor* can't be async deflated since we are at a safepoint.
+    ObjectMonitor* waitingToLockMonitor = currentThread->current_pending_monitor();
     waitingToLockRawMonitor = currentThread->current_pending_raw_monitor();
     waitingToLockBlocker = currentThread->current_park_blocker();
     st->cr();

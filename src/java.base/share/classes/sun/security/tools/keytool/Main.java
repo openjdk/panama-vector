@@ -82,6 +82,7 @@ import sun.security.pkcs10.PKCS10;
 import sun.security.pkcs10.PKCS10Attribute;
 import sun.security.provider.X509Factory;
 import sun.security.provider.certpath.ssl.SSLServerCertStore;
+import sun.security.util.KnownOIDs;
 import sun.security.util.Password;
 import sun.security.util.SecurityProperties;
 import sun.security.util.SecurityProviderConstants;
@@ -259,12 +260,15 @@ public final class Main {
             PROVIDERPATH, V, PROTECTED),
         PRINTCERT("Prints.the.content.of.a.certificate",
             RFC, FILEIN, SSLSERVER, JARFILE,
+            KEYSTORE, STOREPASS, STORETYPE, TRUSTCACERTS,
             PROVIDERNAME, ADDPROVIDER, PROVIDERCLASS,
-            PROVIDERPATH, V),
+            PROVIDERPATH, V, PROTECTED),
         PRINTCERTREQ("Prints.the.content.of.a.certificate.request",
             FILEIN, V),
         PRINTCRL("Prints.the.content.of.a.CRL.file",
-            FILEIN, V),
+            FILEIN, KEYSTORE, STOREPASS, STORETYPE, TRUSTCACERTS,
+            PROVIDERNAME, ADDPROVIDER, PROVIDERCLASS, PROVIDERPATH,
+            V, PROTECTED),
         STOREPASSWD("Changes.the.store.password.of.a.keystore",
             NEW, KEYSTORE, CACERTS, STOREPASS, STORETYPE, PROVIDERNAME,
             ADDPROVIDER, PROVIDERCLASS, PROVIDERPATH, V),
@@ -718,7 +722,7 @@ public final class Main {
     }
 
     boolean isKeyStoreRelated(Command cmd) {
-        return cmd != PRINTCERT && cmd != PRINTCERTREQ && cmd != SHOWINFO;
+        return cmd != PRINTCERTREQ && cmd != SHOWINFO;
     }
 
     /**
@@ -903,14 +907,15 @@ public final class Main {
             } catch (FileNotFoundException e) {
                 // These commands do not need the keystore to be existing.
                 // Either it will create a new one or the keystore is
-                // optional (i.e. PRINTCRL).
+                // optional (i.e. PRINTCRL and PRINTCERT).
                 if (command != GENKEYPAIR &&
                         command != GENSECKEY &&
                         command != IDENTITYDB &&
                         command != IMPORTCERT &&
                         command != IMPORTPASS &&
                         command != IMPORTKEYSTORE &&
-                        command != PRINTCRL) {
+                        command != PRINTCRL &&
+                        command != PRINTCERT) {
                     throw new Exception(rb.getString
                             ("Keystore.file.does.not.exist.") + ksfname);
                 }
@@ -1072,7 +1077,7 @@ public final class Main {
                     }
                 } else {
                     // here we have EXPORTCERT and LIST (info valid until STOREPASSWD)
-                    if (command != PRINTCRL) {
+                    if (command != PRINTCRL && command != PRINTCERT) {
                         System.err.print(rb.getString("Enter.keystore.password."));
                         System.err.flush();
                         storePass = Password.readPassword(System.in);
@@ -1107,10 +1112,10 @@ public final class Main {
             }
         }
 
-        // -trustcacerts can only be specified on -importcert.
-        // Reset it so that warnings on CA cert will remain for
-        // -printcert, etc.
-        if (command != IMPORTCERT) {
+        // -trustcacerts can be specified on -importcert, -printcert or -printcrl.
+        // Reset it so that warnings on CA cert will remain for other command.
+        if (command != IMPORTCERT && command != PRINTCERT
+                && command != PRINTCRL) {
             trustcacerts = false;
         }
 
@@ -1870,6 +1875,12 @@ public final class Main {
                     keysize = SecurityProviderConstants.DEF_RSA_KEY_SIZE;
                 } else if ("DSA".equalsIgnoreCase(keyAlgName)) {
                     keysize = SecurityProviderConstants.DEF_DSA_KEY_SIZE;
+                } else if ("EdDSA".equalsIgnoreCase(keyAlgName)) {
+                    keysize = SecurityProviderConstants.DEF_ED_KEY_SIZE;
+                } else if ("Ed25519".equalsIgnoreCase(keyAlgName)) {
+                    keysize = 255;
+                } else if ("Ed448".equalsIgnoreCase(keyAlgName)) {
+                    keysize = 448;
                 }
             } else {
                 if ("EC".equalsIgnoreCase(keyAlgName)) {
@@ -2435,27 +2446,6 @@ public final class Main {
         }
     }
 
-    private static <T> Iterable<T> e2i(final Enumeration<T> e) {
-        return new Iterable<T>() {
-            @Override
-            public Iterator<T> iterator() {
-                return new Iterator<T>() {
-                    @Override
-                    public boolean hasNext() {
-                        return e.hasMoreElements();
-                    }
-                    @Override
-                    public T next() {
-                        return e.nextElement();
-                    }
-                    public void remove() {
-                        throw new UnsupportedOperationException("Not supported yet.");
-                    }
-                };
-            }
-        };
-    }
-
     /**
      * Loads CRLs from a source. This method is also called in JarSigner.
      * @param src the source, which means System.in if null, or a URI,
@@ -2549,7 +2539,7 @@ public final class Main {
             throws Exception {
         X509CRLImpl xcrl = (X509CRLImpl)crl;
         X500Principal issuer = xcrl.getIssuerX500Principal();
-        for (String s: e2i(ks.aliases())) {
+        for (String s: Collections.list(ks.aliases())) {
             Certificate cert = ks.getCertificate(s);
             if (cert instanceof X509Certificate) {
                 X509Certificate xcert = (X509Certificate)cert;
@@ -2598,8 +2588,13 @@ public final class Main {
             if (issuer == null) {
                 out.println(rb.getString
                         ("STAR"));
-                out.println(rb.getString
-                        ("warning.not.verified.make.sure.keystore.is.correct"));
+                if (trustcacerts) {
+                    out.println(rb.getString
+                            ("warning.not.verified.make.sure.keystore.is.correct"));
+                } else {
+                    out.println(rb.getString
+                            ("warning.not.verified.make.sure.keystore.is.correct.or.specify.trustcacerts"));
+                }
                 out.println(rb.getString
                         ("STARNN"));
             }
@@ -4124,6 +4119,23 @@ public final class Main {
      * partial, or case-insensitive.
      *
      * @param s the command provided by user
+     * @param list the legal command set represented by KnownOIDs enums.
+     * @return the position of a single match, or -1 if none matched
+     * @throws Exception if s is ambiguous
+     */
+    private static int oneOf(String s, KnownOIDs... list) throws Exception {
+        String[] convertedList = new String[list.length];
+        for (int i = 0; i < list.length; i++) {
+            convertedList[i] = list[i].stdName();
+        }
+        return oneOf(s, convertedList);
+    }
+
+    /**
+     * Match a command with a command set. The match can be exact, or
+     * partial, or case-insensitive.
+     *
+     * @param s the command provided by user
      * @param list the legal command set. If there is a null, commands after it
      *      are regarded experimental, which means they are supported but their
      *      existence should not be revealed to user.
@@ -4256,7 +4268,7 @@ public final class Main {
             case 5: return PKIXExtensions.SubjectInfoAccess_Id;
             case 6: return PKIXExtensions.AuthInfoAccess_Id;
             case 8: return PKIXExtensions.CRLDistributionPoints_Id;
-            default: return new ObjectIdentifier(type);
+            default: return ObjectIdentifier.of(type);
         }
     }
 
@@ -4468,30 +4480,26 @@ public final class Main {
                     case 2:     // EKU
                         if(value != null) {
                             Vector<ObjectIdentifier> v = new Vector<>();
+                            KnownOIDs[] choices = {
+                                    KnownOIDs.anyExtendedKeyUsage,
+                                    KnownOIDs.serverAuth,
+                                    KnownOIDs.clientAuth,
+                                    KnownOIDs.codeSigning,
+                                    KnownOIDs.emailProtection,
+                                    KnownOIDs.KP_TimeStamping,
+                                    KnownOIDs.OCSPSigning
+                            };
                             for (String s: value.split(",")) {
-                                int p = oneOf(s,
-                                        "anyExtendedKeyUsage",
-                                        "serverAuth",       //1
-                                        "clientAuth",       //2
-                                        "codeSigning",      //3
-                                        "emailProtection",  //4
-                                        "",                 //5
-                                        "",                 //6
-                                        "",                 //7
-                                        "timeStamping",     //8
-                                        "OCSPSigning"       //9
-                                       );
-                                if (p < 0) {
-                                    try {
-                                        v.add(new ObjectIdentifier(s));
-                                    } catch (Exception e) {
-                                        throw new Exception(rb.getString(
-                                                "Unknown.extendedkeyUsage.type.") + s);
-                                    }
-                                } else if (p == 0) {
-                                    v.add(new ObjectIdentifier("2.5.29.37.0"));
-                                } else {
-                                    v.add(new ObjectIdentifier("1.3.6.1.5.5.7.3." + p));
+                                int p = oneOf(s, choices);
+                                String o = s;
+                                if (p >= 0) {
+                                    o = choices[p].value();
+                                }
+                                try {
+                                    v.add(ObjectIdentifier.of(o));
+                                } catch (Exception e) {
+                                    throw new Exception(rb.getString(
+                                            "Unknown.extendedkeyUsage.type.") + s);
                                 }
                             }
                             setExt(result, new ExtendedKeyUsageExtension(isCritical, v));
@@ -4546,24 +4554,23 @@ public final class Main {
                                 String m = item.substring(0, colonpos);
                                 String t = item.substring(colonpos+1, colonpos2);
                                 String v = item.substring(colonpos2+1);
-                                int p = oneOf(m,
-                                        "",
-                                        "ocsp",         //1
-                                        "caIssuers",    //2
-                                        "timeStamping", //3
-                                        "",
-                                        "caRepository"  //5
-                                        );
+                                KnownOIDs[] choices = {
+                                    KnownOIDs.OCSP,
+                                    KnownOIDs.caIssuers,
+                                    KnownOIDs.AD_TimeStamping,
+                                    KnownOIDs.caRepository
+                                };
+                                int p = oneOf(m, choices);
                                 ObjectIdentifier oid;
-                                if (p < 0) {
+                                if (p >= 0) {
+                                    oid = ObjectIdentifier.of(choices[p]);
+                                } else {
                                     try {
-                                        oid = new ObjectIdentifier(m);
+                                        oid = ObjectIdentifier.of(m);
                                     } catch (Exception e) {
                                         throw new Exception(rb.getString(
                                                 "Unknown.AccessDescription.type.") + m);
                                     }
-                                } else {
-                                    oid = new ObjectIdentifier("1.3.6.1.5.5.7.48." + p);
                                 }
                                 accessDescriptions.add(new AccessDescription(
                                         oid, createGeneralName(t, v, exttype)));
@@ -4600,7 +4607,7 @@ public final class Main {
                         }
                         break;
                     case -1:
-                        ObjectIdentifier oid = new ObjectIdentifier(name);
+                        ObjectIdentifier oid = ObjectIdentifier.of(name);
                         byte[] data = null;
                         if (value != null) {
                             data = new byte[value.length() / 2 + 1];

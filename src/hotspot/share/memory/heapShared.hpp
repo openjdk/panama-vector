@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -141,7 +141,8 @@ class HeapShared: AllStatic {
   }
 
   static unsigned klass_hash(Klass* const& klass) {
-    return primitive_hash<address>((address)klass);
+    // Generate deterministic hashcode even if SharedBaseAddress is changed due to ASLR.
+    return primitive_hash<address>(address(klass) - SharedBaseAddress);
   }
 
   class DumpTimeKlassSubGraphInfoTable
@@ -276,6 +277,8 @@ private:
 #endif // INCLUDE_CDS_JAVA_HEAP
 
  public:
+  static void run_full_gc_in_vm_thread() NOT_CDS_JAVA_HEAP_RETURN;
+
   static bool is_heap_object_archiving_allowed() {
     CDS_JAVA_HEAP_ONLY(return (UseG1GC && UseCompressedOops && UseCompressedClassPointers);)
     NOT_CDS_JAVA_HEAP(return false;)

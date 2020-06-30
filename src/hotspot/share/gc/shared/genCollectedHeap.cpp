@@ -27,7 +27,6 @@
 #include "classfile/classLoaderDataGraph.hpp"
 #include "classfile/symbolTable.hpp"
 #include "classfile/stringTable.hpp"
-#include "classfile/systemDictionary.hpp"
 #include "classfile/vmSymbols.hpp"
 #include "code/codeCache.hpp"
 #include "code/icBuffer.hpp"
@@ -47,7 +46,10 @@
 #include "gc/shared/genCollectedHeap.hpp"
 #include "gc/shared/genOopClosures.inline.hpp"
 #include "gc/shared/generationSpec.hpp"
+#include "gc/shared/gcInitLogger.hpp"
 #include "gc/shared/locationPrinter.inline.hpp"
+#include "gc/shared/oopStorage.inline.hpp"
+#include "gc/shared/oopStorageSet.inline.hpp"
 #include "gc/shared/oopStorageParState.inline.hpp"
 #include "gc/shared/scavengableNMethods.hpp"
 #include "gc/shared/space.hpp"
@@ -81,6 +83,8 @@ GenCollectedHeap::GenCollectedHeap(Generation::Name young,
                                    Generation::Name old,
                                    const char* policy_counters_name) :
   CollectedHeap(),
+  _young_gen(NULL),
+  _old_gen(NULL),
   _young_gen_spec(new GenerationSpec(young,
                                      NewSize,
                                      MaxNewSize,
@@ -91,9 +95,13 @@ GenCollectedHeap::GenCollectedHeap(Generation::Name young,
                                    GenAlignment)),
   _rem_set(NULL),
   _soft_ref_gen_policy(),
+  _size_policy(NULL),
   _gc_policy_counters(new GCPolicyCounters(policy_counters_name, 2, 2)),
+  _incremental_collection_failed(false),
   _full_collections_completed(0),
-  _process_strong_tasks(new SubTasksDone(GCH_PS_NumElements)) {
+  _process_strong_tasks(new SubTasksDone(GCH_PS_NumElements)),
+  _young_manager(NULL),
+  _old_manager(NULL) {
 }
 
 jint GenCollectedHeap::initialize() {
@@ -122,13 +130,14 @@ jint GenCollectedHeap::initialize() {
   bs->initialize();
   BarrierSet::set_barrier_set(bs);
 
-  ReservedSpace young_rs = heap_rs.first_part(_young_gen_spec->max_size(), false, false);
+  ReservedSpace young_rs = heap_rs.first_part(_young_gen_spec->max_size());
   _young_gen = _young_gen_spec->init(young_rs, rem_set());
   ReservedSpace old_rs = heap_rs.last_part(_young_gen_spec->max_size());
 
-  old_rs = old_rs.first_part(_old_gen_spec->max_size(), false, false);
+  old_rs = old_rs.first_part(_old_gen_spec->max_size());
   _old_gen = _old_gen_spec->init(old_rs, rem_set());
-  clear_incremental_collection_failed();
+
+  GCInitLogger::print();
 
   return JNI_OK;
 }
@@ -816,10 +825,6 @@ void GenCollectedHeap::process_roots(StrongRootsScope* scope,
   if (_process_strong_tasks->try_claim_task(GCH_PS_Universe_oops_do)) {
     Universe::oops_do(strong_roots);
   }
-  // Global (strong) JNI handles
-  if (_process_strong_tasks->try_claim_task(GCH_PS_JNIHandles_oops_do)) {
-    JNIHandles::oops_do(strong_roots);
-  }
 
   if (_process_strong_tasks->try_claim_task(GCH_PS_ObjectSynchronizer_oops_do)) {
     ObjectSynchronizer::oops_do(strong_roots);
@@ -835,8 +840,8 @@ void GenCollectedHeap::process_roots(StrongRootsScope* scope,
     AOTLoader::oops_do(strong_roots);
   }
 #endif
-  if (_process_strong_tasks->try_claim_task(GCH_PS_SystemDictionary_oops_do)) {
-    SystemDictionary::oops_do(strong_roots);
+  if (_process_strong_tasks->try_claim_task(GCH_PS_OopStorageSet_oops_do)) {
+    OopStorageSet::strong_oops_do(strong_roots);
   }
 
   if (_process_strong_tasks->try_claim_task(GCH_PS_CodeCache_oops_do)) {
@@ -1190,10 +1195,8 @@ void GenCollectedHeap::save_marks() {
 }
 
 GenCollectedHeap* GenCollectedHeap::heap() {
-  CollectedHeap* heap = Universe::heap();
-  assert(heap != NULL, "Uninitialized access to GenCollectedHeap::heap()");
-  assert(heap->kind() == CollectedHeap::Serial, "Invalid name");
-  return (GenCollectedHeap*) heap;
+  // SerialHeap is the only subtype of GenCollectedHeap.
+  return named_heap<GenCollectedHeap>(CollectedHeap::Serial);
 }
 
 #if INCLUDE_SERIALGC
@@ -1217,15 +1220,16 @@ void GenCollectedHeap::verify(VerifyOption option /* ignored */) {
 }
 
 void GenCollectedHeap::print_on(outputStream* st) const {
-  _young_gen->print_on(st);
-  _old_gen->print_on(st);
+  if (_young_gen != NULL) {
+    _young_gen->print_on(st);
+  }
+  if (_old_gen != NULL) {
+    _old_gen->print_on(st);
+  }
   MetaspaceUtils::print_on(st);
 }
 
 void GenCollectedHeap::gc_threads_do(ThreadClosure* tc) const {
-}
-
-void GenCollectedHeap::print_gc_threads_on(outputStream* st) const {
 }
 
 bool GenCollectedHeap::print_location(outputStream* st, void* addr) const {

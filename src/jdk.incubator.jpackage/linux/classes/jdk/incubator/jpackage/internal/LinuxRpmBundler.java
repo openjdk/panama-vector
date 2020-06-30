@@ -25,17 +25,24 @@
 
 package jdk.incubator.jpackage.internal;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static jdk.incubator.jpackage.internal.StandardBundlerParam.*;
-import static jdk.incubator.jpackage.internal.LinuxAppBundler.LINUX_INSTALL_DIR;
+import static jdk.incubator.jpackage.internal.StandardBundlerParam.APP_NAME;
+import static jdk.incubator.jpackage.internal.StandardBundlerParam.LICENSE_FILE;
+import static jdk.incubator.jpackage.internal.StandardBundlerParam.VERSION;
+import static jdk.incubator.jpackage.internal.StandardBundlerParam.RELEASE;
+import static jdk.incubator.jpackage.internal.StandardBundlerParam.TEMP_ROOT;
 import static jdk.incubator.jpackage.internal.OverridableResource.createResource;
 
 /**
@@ -161,8 +168,15 @@ public class LinuxRpmBundler extends LinuxPackageBundler {
             Map<String, ? super Object> params) throws IOException {
         Map<String, String> data = new HashMap<>();
 
-        data.put("APPLICATION_DIRECTORY", Path.of(LINUX_INSTALL_DIR.fetchFrom(
-                params), PACKAGE_NAME.fetchFrom(params)).toString());
+        final Path prefix = Path.of(LINUX_INSTALL_DIR.fetchFrom(params));
+
+        Path appDirectory = prefix;
+        if (!isInstallDirInUsrTree(prefix.toString())) {
+            appDirectory = appDirectory.resolve(PACKAGE_NAME.fetchFrom(params));
+        }
+
+        data.put("APPLICATION_PREFIX", prefix.toString());
+        data.put("APPLICATION_DIRECTORY", appDirectory.toString());
         data.put("APPLICATION_SUMMARY", APP_NAME.fetchFrom(params));
         data.put("APPLICATION_LICENSE_TYPE", LICENSE_TYPE.fetchFrom(params));
 

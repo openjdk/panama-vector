@@ -28,33 +28,22 @@ package jdk.incubator.jpackage.internal;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
 import java.util.ResourceBundle;
-import static jdk.incubator.jpackage.internal.OverridableResource.createResource;
 
-import static jdk.incubator.jpackage.internal.StandardBundlerParam.*;
+import static jdk.incubator.jpackage.internal.StandardBundlerParam.APP_NAME;
+import static jdk.incubator.jpackage.internal.StandardBundlerParam.ICON;
+import static jdk.incubator.jpackage.internal.StandardBundlerParam.ADD_LAUNCHERS;
 
 public class WindowsAppImageBuilder extends AbstractAppImageBuilder {
     private static final ResourceBundle I18N = ResourceBundle.getBundle(
             "jdk.incubator.jpackage.internal.resources.WinResources");
 
     private static final String TEMPLATE_APP_ICON ="java48.ico";
-
-    private final Path root;
-    private final Path appDir;
-    private final Path appModsDir;
-    private final Path runtimeDir;
-    private final Path mdir;
-    private final Path binDir;
 
     public static final BundlerParamInfo<File> ICON_ICO =
             new StandardBundlerParam<>(
@@ -72,7 +61,7 @@ public class WindowsAppImageBuilder extends AbstractAppImageBuilder {
             (s, p) -> new File(s));
 
     public static final StandardBundlerParam<Boolean> CONSOLE_HINT =
-            new WindowsBundlerParam<>(
+            new StandardBundlerParam<>(
             Arguments.CLIOptions.WIN_CONSOLE_HINT.getId(),
             Boolean.class,
             params -> false,
@@ -81,21 +70,8 @@ public class WindowsAppImageBuilder extends AbstractAppImageBuilder {
             (s, p) -> (s == null
             || "null".equalsIgnoreCase(s)) ? true : Boolean.valueOf(s));
 
-    public WindowsAppImageBuilder(Map<String, Object> params, Path imageOutDir)
-            throws IOException {
-        super(params,
-                imageOutDir.resolve(APP_NAME.fetchFrom(params) + "/runtime"));
-
-        Objects.requireNonNull(imageOutDir);
-
-        this.root = imageOutDir.resolve(APP_NAME.fetchFrom(params));
-        this.appDir = root.resolve("app");
-        this.appModsDir = appDir.resolve("mods");
-        this.runtimeDir = root.resolve("runtime");
-        this.mdir = runtimeDir.resolve("lib");
-        this.binDir = root;
-        Files.createDirectories(appDir);
-        Files.createDirectories(runtimeDir);
+    WindowsAppImageBuilder(Path imageOutDir) {
+        super(imageOutDir);
     }
 
     private void writeEntry(InputStream in, Path dstFile) throws IOException {
@@ -117,32 +93,9 @@ public class WindowsAppImageBuilder extends AbstractAppImageBuilder {
         }
     }
 
-    public static String getLauncherCfgName(
-            Map<String, ? super Object> params) {
-        return "app/" + APP_NAME.fetchFrom(params) +".cfg";
-    }
-
-    @Override
-    public Path getAppDir() {
-        return appDir;
-    }
-
-    @Override
-    public Path getAppModsDir() {
-        return appModsDir;
-    }
-
     @Override
     public void prepareApplicationFiles(Map<String, ? super Object> params)
             throws IOException {
-        try {
-            IOUtils.writableOutputDir(root);
-            IOUtils.writableOutputDir(binDir);
-        } catch (PackagerException pe) {
-            throw new RuntimeException(pe);
-        }
-        AppImageFile.save(root, params);
-
         // create the .exe launchers
         createLauncherForEntryPoint(params, null);
 
@@ -150,17 +103,12 @@ public class WindowsAppImageBuilder extends AbstractAppImageBuilder {
         copyApplication(params);
 
         // create the additional launcher(s), if any
-        List<Map<String, ? super Object>> entryPoints =
-                StandardBundlerParam.ADD_LAUNCHERS.fetchFrom(params);
+        List<Map<String, ? super Object>> entryPoints = ADD_LAUNCHERS.fetchFrom(params);
         for (Map<String, ? super Object> entryPoint : entryPoints) {
             createLauncherForEntryPoint(AddLauncherArguments.merge(params,
                     entryPoint, ICON.getID(), ICON_ICO.getID()), params);
         }
     }
-
-    @Override
-    public void prepareJreFiles(Map<String, ? super Object> params)
-        throws IOException {}
 
     private void createLauncherForEntryPoint(Map<String, ? super Object> params,
             Map<String, ? super Object> mainParams) throws IOException {
@@ -169,17 +117,18 @@ public class WindowsAppImageBuilder extends AbstractAppImageBuilder {
                 mainParams);
         Path iconTarget = null;
         if (iconResource != null) {
-            iconTarget = binDir.resolve(APP_NAME.fetchFrom(params) + ".ico");
+            iconTarget = appLayout.destktopIntegrationDirectory().resolve(
+                    APP_NAME.fetchFrom(params) + ".ico");
             if (null == iconResource.saveToFile(iconTarget)) {
                 iconTarget = null;
             }
         }
 
-        writeCfgFile(params, root.resolve(
-                getLauncherCfgName(params)).toFile());
+        writeCfgFile(params);
 
         // Copy executable to bin folder
-        Path executableFile = binDir.resolve(getLauncherName(params));
+        Path executableFile = appLayout.launchersDirectory().resolve(
+                getLauncherName(params));
 
         try (InputStream is_launcher =
                 getResourceAsStream(getLauncherResourceName(params))) {
@@ -191,23 +140,5 @@ public class WindowsAppImageBuilder extends AbstractAppImageBuilder {
 
         executableFile.toFile().setExecutable(true);
         executableFile.toFile().setReadOnly();
-    }
-
-    private void copyApplication(Map<String, ? super Object> params)
-            throws IOException {
-        List<RelativeFileSet> appResourcesList =
-                APP_RESOURCES_LIST.fetchFrom(params);
-        if (appResourcesList == null) {
-            throw new RuntimeException("Null app resources?");
-        }
-        for (RelativeFileSet appResources : appResourcesList) {
-            if (appResources == null) {
-                throw new RuntimeException("Null app resources?");
-            }
-            File srcdir = appResources.getBaseDirectory();
-            for (String fname : appResources.getIncludedFiles()) {
-                copyEntry(appDir, srcdir, fname);
-            }
-        }
     }
 }

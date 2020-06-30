@@ -143,7 +143,10 @@ void CollectedHeap::print_on_error(outputStream* st) const {
   print_extended_on(st);
   st->cr();
 
-  BarrierSet::barrier_set()->print_on(st);
+  BarrierSet* bs = BarrierSet::barrier_set();
+  if (bs != NULL) {
+    bs->print_on(st);
+  }
 }
 
 void CollectedHeap::trace_heap(GCWhen::Type when, const GCTracer* gc_tracer) {
@@ -237,6 +240,7 @@ void CollectedHeap::collect_as_vm_thread(GCCause::Cause cause) {
       do_full_collection(false);        // don't clear all soft refs
       break;
     }
+    case GCCause::_archive_time_gc:
     case GCCause::_metadata_GC_clear_soft_refs: {
       HandleMark hm;
       do_full_collection(true);         // do clear all soft refs

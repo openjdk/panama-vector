@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,7 @@
 #define SHARE_GC_Z_ZROOTSITERATOR_HPP
 
 #include "gc/shared/oopStorageParState.hpp"
+#include "gc/shared/oopStorageSetParState.hpp"
 #include "gc/shared/suspendibleThreadSet.hpp"
 #include "memory/allocation.hpp"
 #include "memory/iterator.hpp"
@@ -35,6 +36,7 @@
 class ZRootsIteratorClosure;
 
 typedef OopStorage::ParState<true /* concurrent */, false /* is_const */> ZOopStorageIterator;
+typedef OopStorageSetStrongParState<true /* concurrent */, false /* is_const */> ZOopStorageSetIterator;
 
 template <typename T, void (T::*F)(ZRootsIteratorClosure*)>
 class ZSerialOopsDo {
@@ -112,7 +114,6 @@ private:
   void do_management(ZRootsIteratorClosure* cl);
   void do_jvmti_export(ZRootsIteratorClosure* cl);
   void do_jvmti_weak_export(ZRootsIteratorClosure* cl);
-  void do_system_dictionary(ZRootsIteratorClosure* cl);
   void do_vm_thread(ZRootsIteratorClosure* cl);
   void do_java_threads(ZRootsIteratorClosure* cl);
   void do_code_cache(ZRootsIteratorClosure* cl);
@@ -122,7 +123,6 @@ private:
   ZSerialOopsDo<ZRootsIterator, &ZRootsIterator::do_management>          _management;
   ZSerialOopsDo<ZRootsIterator, &ZRootsIterator::do_jvmti_export>        _jvmti_export;
   ZSerialOopsDo<ZRootsIterator, &ZRootsIterator::do_jvmti_weak_export>   _jvmti_weak_export;
-  ZSerialOopsDo<ZRootsIterator, &ZRootsIterator::do_system_dictionary>   _system_dictionary;
   ZSerialOopsDo<ZRootsIterator, &ZRootsIterator::do_vm_thread>           _vm_thread;
   ZParallelOopsDo<ZRootsIterator, &ZRootsIterator::do_java_threads>      _java_threads;
   ZParallelOopsDo<ZRootsIterator, &ZRootsIterator::do_code_cache>        _code_cache;
@@ -136,16 +136,13 @@ public:
 
 class ZConcurrentRootsIterator {
 private:
-  ZOopStorageIterator _jni_handles_iter;
-  ZOopStorageIterator _vm_handles_iter;
-  const int           _cld_claim;
+  ZOopStorageSetIterator _oop_storage_set_iter;
+  const int              _cld_claim;
 
-  void do_jni_handles(ZRootsIteratorClosure* cl);
-  void do_vm_handles(ZRootsIteratorClosure* cl);
+  void do_oop_storage_set(ZRootsIteratorClosure* cl);
   void do_class_loader_data_graph(ZRootsIteratorClosure* cl);
 
-  ZParallelOopsDo<ZConcurrentRootsIterator, &ZConcurrentRootsIterator::do_jni_handles>             _jni_handles;
-  ZParallelOopsDo<ZConcurrentRootsIterator, &ZConcurrentRootsIterator::do_vm_handles>              _vm_handles;
+  ZParallelOopsDo<ZConcurrentRootsIterator, &ZConcurrentRootsIterator::do_oop_storage_set>         _oop_storage_set;
   ZParallelOopsDo<ZConcurrentRootsIterator, &ZConcurrentRootsIterator::do_class_loader_data_graph> _class_loader_data_graph;
 
 public:

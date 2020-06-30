@@ -43,6 +43,9 @@
 #include "gc/shared/gcTrace.hpp"
 #include "gc/shared/gcTraceTime.inline.hpp"
 #include "gc/shared/isGCActiveMark.hpp"
+#include "gc/shared/oopStorage.inline.hpp"
+#include "gc/shared/oopStorageSetParState.inline.hpp"
+#include "gc/shared/oopStorageParState.inline.hpp"
 #include "gc/shared/referencePolicy.hpp"
 #include "gc/shared/referenceProcessor.hpp"
 #include "gc/shared/referenceProcessorPhaseTimes.hpp"
@@ -94,16 +97,8 @@ static void scavenge_roots_work(ParallelRootType::Value root_type, uint worker_i
       Universe::oops_do(&roots_closure);
       break;
 
-    case ParallelRootType::jni_handles:
-      JNIHandles::oops_do(&roots_closure);
-      break;
-
     case ParallelRootType::object_synchronizer:
       ObjectSynchronizer::oops_do(&roots_closure);
-      break;
-
-    case ParallelRootType::system_dictionary:
-      SystemDictionary::oops_do(&roots_closure);
       break;
 
     case ParallelRootType::class_loader_data:
@@ -149,10 +144,10 @@ static void steal_work(TaskTerminator& terminator, uint worker_id) {
             "stacks should be empty at this point");
 
   while (true) {
-    StarTask p;
-    if (PSPromotionManager::steal_depth(worker_id, p)) {
-      TASKQUEUE_STATS_ONLY(pm->record_steal(p));
-      pm->process_popped_location_depth(p);
+    ScannerTask task;
+    if (PSPromotionManager::steal_depth(worker_id, task)) {
+      TASKQUEUE_STATS_ONLY(pm->record_steal(task));
+      pm->process_popped_location_depth(task);
       pm->drain_stacks_depth(true);
     } else {
       if (terminator.offer_termination()) {
@@ -192,7 +187,7 @@ public:
 
     // Weak refs may be visited more than once.
     if (PSScavenge::should_scavenge(p, _to_space)) {
-      _promotion_manager->copy_and_push_safe_barrier<T, /*promote_immediately=*/false>(p);
+      _promotion_manager->copy_and_push_safe_barrier</*promote_immediately=*/false>(p);
     }
   }
   virtual void do_oop(oop* p)       { PSKeepAliveClosure::do_oop_work(p); }
@@ -310,6 +305,7 @@ public:
 
 class ScavengeRootsTask : public AbstractGangTask {
   StrongRootsScope _strong_roots_scope; // needed for Threads::possibly_parallel_threads_do
+  OopStorageSetStrongParState<false /* concurrent */, false /* is_const */> _oop_storage_strong_par_state;
   SequentialSubTasksDone _subtasks;
   PSOldGen* _old_gen;
   HeapWord* _gen_top;
@@ -371,6 +367,14 @@ public:
     PSThreadRootsTaskClosure closure(worker_id);
     Threads::possibly_parallel_threads_do(true /*parallel */, &closure);
 
+    // Scavenge OopStorages
+    {
+      PSPromotionManager* pm = PSPromotionManager::gc_thread_promotion_manager(worker_id);
+      PSScavengeRootsClosure closure(pm);
+      _oop_storage_strong_par_state.oops_do(&closure);
+      // Do the real work
+      pm->drain_stacks(false);
+    }
 
     // If active_workers can exceed 1, add a steal_work().
     // PSPromotionManager::drain_stacks_depth() does not fully drain its

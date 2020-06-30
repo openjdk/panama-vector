@@ -51,7 +51,7 @@ public:
 
   inline nmethod* nm() const;
   inline ShenandoahReentrantLock* lock();
-  void oops_do(OopClosure* oops, bool fix_relocations = false);
+  inline void oops_do(OopClosure* oops, bool fix_relocations = false);
   // Update oops when the nmethod is re-registered
   void update();
 
@@ -67,12 +67,13 @@ public:
   static inline ShenandoahReentrantLock* lock_for_nmethod(nmethod* nm);
 
   static void heal_nmethod(nmethod* nm);
+  static inline void heal_nmethod_metadata(ShenandoahNMethod* nmethod_data);
   static inline void disarm_nmethod(nmethod* nm);
 
   static inline ShenandoahNMethod* gc_data(nmethod* nm);
   static inline void attach_gc_data(nmethod* nm, ShenandoahNMethod* gc_data);
 
-  void assert_alive_and_correct() NOT_DEBUG_RETURN;
+  void assert_correct() NOT_DEBUG_RETURN;
   void assert_same_oops(bool allow_dead = false) NOT_DEBUG_RETURN;
   static void assert_no_oops(nmethod* nm, bool allow_dea = false) NOT_DEBUG_RETURN;
 
@@ -126,9 +127,7 @@ public:
   ShenandoahNMethodTableSnapshot(ShenandoahNMethodTable* table);
   ~ShenandoahNMethodTableSnapshot();
 
-  template<bool CSET_FILTER>
   void parallel_blobs_do(CodeBlobClosure *f);
-
   void concurrent_nmethods_do(NMethodClosure* cl);
 };
 
@@ -161,7 +160,7 @@ public:
   ShenandoahNMethodTableSnapshot* snapshot_for_iteration();
   void finish_iteration(ShenandoahNMethodTableSnapshot* snapshot);
 
-  void assert_nmethods_alive_and_correct() NOT_DEBUG_RETURN;
+  void assert_nmethods_correct() NOT_DEBUG_RETURN;
 private:
   // Rebuild table and replace current one
   void rebuild(int size);

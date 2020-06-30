@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -64,8 +64,8 @@ class oopDesc {
   inline markWord  mark_raw()      const;
   inline markWord* mark_addr_raw() const;
 
-  inline void set_mark(volatile markWord m);
-  inline void set_mark_raw(volatile markWord m);
+  inline void set_mark(markWord m);
+  inline void set_mark_raw(markWord m);
   static inline void set_mark_raw(HeapWord* mem, markWord m);
 
   inline void release_set_mark(markWord m);
@@ -78,8 +78,8 @@ class oopDesc {
   inline void init_mark_raw();
 
   inline Klass* klass() const;
-  inline Klass* klass_or_null() const volatile;
-  inline Klass* klass_or_null_acquire() const volatile;
+  inline Klass* klass_or_null() const;
+  inline Klass* klass_or_null_acquire() const;
   static inline Klass** klass_addr(HeapWord* mem);
   static inline narrowKlass* compressed_klass_addr(HeapWord* mem);
   inline Klass** klass_addr();

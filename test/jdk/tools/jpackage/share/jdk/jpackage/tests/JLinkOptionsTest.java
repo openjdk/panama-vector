@@ -28,7 +28,6 @@ import java.util.List;
 import jdk.jpackage.test.Annotations.Parameters;
 import jdk.jpackage.test.Annotations.Test;
 import jdk.jpackage.test.JPackageCommand;
-import jdk.jpackage.test.CfgFile;
 import jdk.jpackage.test.TKit;
 
 /*
@@ -115,10 +114,10 @@ public final class JLinkOptionsTest {
     public JLinkOptionsTest(String javaAppDesc, String[] jpackageArgs, String[] required, String[] prohibited) {
         this.required = required;
         this.prohibited = prohibited;
-        cmd = JPackageCommand.helloAppImage(javaAppDesc);
-        if (jpackageArgs != null) {
-            cmd.addArguments(jpackageArgs);
-        }
+        cmd = JPackageCommand
+                .helloAppImage(javaAppDesc)
+                .ignoreDefaultRuntime(true)
+                .addArguments(jpackageArgs);
     }
 
     @Test

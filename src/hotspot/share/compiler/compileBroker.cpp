@@ -687,7 +687,7 @@ void CompileBroker::compilation_init_phase1(Thread* THREAD) {
   // Start the compiler thread(s) and the sweeper thread
   init_compiler_sweeper_threads();
   // totalTime performance counter is always created as it is required
-  // by the implementation of java.lang.management.CompilationMBean.
+  // by the implementation of java.lang.management.CompilationMXBean.
   {
     // Ensure OOM leads to vm_exit_during_initialization.
     EXCEPTION_MARK;
@@ -885,6 +885,9 @@ JavaThread* CompileBroker::make_thread(jobject thread_handle, CompileQueue* queu
 
 
 void CompileBroker::init_compiler_sweeper_threads() {
+  NMethodSweeper::set_sweep_threshold_bytes(static_cast<size_t>(SweeperThreshold * ReservedCodeCacheSize / 100.0));
+  log_info(codecache, sweep)("Sweeper threshold: " SIZE_FORMAT " bytes", NMethodSweeper::sweep_threshold_bytes());
+
   // Ensure any exceptions lead to vm_exit_during_initialization.
   EXCEPTION_MARK;
 #if !defined(ZERO)
@@ -1652,7 +1655,8 @@ void CompileBroker::wait_for_completion(CompileTask* task) {
   bool free_task;
 #if INCLUDE_JVMCI
   AbstractCompiler* comp = compiler(task->comp_level());
-  if (comp->is_jvmci()) {
+  if (comp->is_jvmci() && !task->should_wait_for_compilation()) {
+    // It may return before compilation is completed.
     free_task = wait_for_jvmci_completion((JVMCICompiler*) comp, task, thread);
   } else
 #endif
@@ -2145,14 +2149,14 @@ void CompileBroker::invoke_compiler_on_method(CompileTask* task) {
 
     TraceTime t1("compilation", &time);
     EventCompilation event;
+    JVMCICompileState compile_state(task);
 
     // Skip redefined methods
-    if (target_handle->is_old()) {
+    if (compile_state.target_method_is_old()) {
       failure_reason = "redefined method";
       retry_message = "not retryable";
       compilable = ciEnv::MethodCompilable_never;
     } else {
-      JVMCICompileState compile_state(task);
       JVMCIEnv env(thread, &compile_state, __FILE__, __LINE__);
       methodHandle method(thread, target_handle);
       env.runtime()->compile_method(&env, jvmci, method, osr_bci);
@@ -2189,7 +2193,12 @@ void CompileBroker::invoke_compiler_on_method(CompileTask* task) {
     // The thread-env() field is cleared in ~CompileTaskWrapper.
 
     // Cache Jvmti state
-    ci_env.cache_jvmti_state();
+    bool method_is_old = ci_env.cache_jvmti_state();
+
+    // Skip redefined methods
+    if (method_is_old) {
+      ci_env.record_method_not_compilable("redefined method", true);
+    }
 
     // Cache DTrace flags
     ci_env.cache_dtrace_flags();
@@ -2201,7 +2210,7 @@ void CompileBroker::invoke_compiler_on_method(CompileTask* task) {
 
     if (comp == NULL) {
       ci_env.record_method_not_compilable("no compiler", !TieredCompilation);
-    } else {
+    } else if (!ci_env.failing()) {
       if (WhiteBoxAPI && WhiteBox::compilation_locked) {
         MonitorLocker locker(Compilation_lock, Mutex::_no_safepoint_check_flag);
         while (WhiteBox::compilation_locked) {
@@ -2469,7 +2478,7 @@ void CompileBroker::collect_statistics(CompilerThread* thread, elapsedTimer time
     // Compilation succeeded
 
     // update compilation ticks - used by the implementation of
-    // java.lang.management.CompilationMBean
+    // java.lang.management.CompilationMXBean
     _perf_total_compilation->inc(time.ticks());
     _peak_compilation_time = time.milliseconds() > _peak_compilation_time ? time.milliseconds() : _peak_compilation_time;
 
