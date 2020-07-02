@@ -1099,6 +1099,46 @@ bool CallDynamicJavaNode::cmp( const Node &n ) const {
   CallDynamicJavaNode &call = (CallDynamicJavaNode&)n;
   return CallJavaNode::cmp(call);
 }
+
+Node* CallDynamicJavaNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+  CallGenerator* cg = generator();
+  if (can_reshape && cg != NULL && cg->is_virtual_late_inline()) {
+    assert(IncrementalInlineVirtual, "required");
+
+    // Recover symbolic info for method resolution
+    ciMethod* caller = jvms()->method();
+    ciBytecodeStream iter(caller);
+    iter.force_bci(jvms()->bci());
+
+    bool             not_used1;
+    ciSignature*     not_used2;
+    ciMethod*        orig_callee  = iter.get_method(not_used1, &not_used2);  // callee in the bytecode
+    ciKlass*         holder       = iter.get_declared_method_holder();
+    if (orig_callee->is_method_handle_intrinsic()) {
+      assert(_override_symbolic_info, "");
+      orig_callee = method();
+      holder = method()->holder();
+    }
+
+    ciInstanceKlass* klass = ciEnv::get_instance_klass_for_declared_method_holder(holder);
+
+    Node* receiver_node = in(TypeFunc::Parms);
+    const TypeOopPtr* receiver_type = phase->type(receiver_node)->isa_oopptr();
+
+    int  not_used3;
+    bool call_does_dispatch = true;
+    ciMethod* callee = phase->C->optimize_virtual_call(caller, klass, holder, orig_callee, receiver_type, true /*is_virtual*/,
+                                                       call_does_dispatch, not_used3);  // out-parameters
+    if (!call_does_dispatch) {
+      // Register for late inlining
+      cg->set_callee_method(callee);
+      phase->C->prepend_virtual_late_inline(cg);
+      set_generator(NULL);
+    }
+  }
+  return CallNode::Ideal(phase, can_reshape);
+}
+
 #ifndef PRODUCT
 void CallDynamicJavaNode::dump_spec(outputStream *st) const {
   st->print("# Dynamic ");

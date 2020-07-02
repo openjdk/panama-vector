@@ -69,11 +69,14 @@ class CallGenerator : public ResourceObj {
   // does_virtual_dispatch: Should try inlining as normal method first.
   virtual bool      does_virtual_dispatch() const     { return false; }
 
+  virtual bool      is_direct() const           { return false; }
+
   // is_late_inline: supports conversion of call into an inline
   virtual bool      is_late_inline() const      { return false; }
   // same but for method handle calls
   virtual bool      is_mh_late_inline() const   { return false; }
   virtual bool      is_string_late_inline() const{ return false; }
+  virtual bool      is_virtual_late_inline() const { return false; }
 
   // for method handle calls: have we tried inlinining the call already?
   virtual bool      already_attempted() const   { ShouldNotReachHere(); return false; }
@@ -81,10 +84,12 @@ class CallGenerator : public ResourceObj {
   // Replace the call with an inline version of the code
   virtual void do_late_inline() { ShouldNotReachHere(); }
 
-  virtual CallStaticJavaNode* call_node() const { ShouldNotReachHere(); return NULL; }
+  virtual CallJavaNode* call_node() const { ShouldNotReachHere(); return NULL; }
 
   virtual void set_unique_id(jlong id)          { fatal("unique id only for late inlines"); };
   virtual jlong unique_id() const               { fatal("unique id only for late inlines"); return 0; };
+
+  virtual void set_callee_method(ciMethod* callee) { ShouldNotReachHere(); }
 
   // Note:  It is possible for a CG to be both inline and virtual.
   // (The hashCode intrinsic does a vtable check and an inlined fast path.)
@@ -138,6 +143,8 @@ class CallGenerator : public ResourceObj {
   static CallGenerator* for_warm_call(WarmCallInfo* ci,
                                       CallGenerator* if_cold,
                                       CallGenerator* if_hot);
+
+  static CallGenerator* for_late_inline_virtual(ciMethod* m, int vtable_index, float expected_uses);
 
   // How to make a call that optimistically assumes a receiver type:
   static CallGenerator* for_predicted_call(ciKlass* predicted_receiver,

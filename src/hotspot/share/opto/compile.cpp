@@ -412,6 +412,7 @@ void Compile::remove_useless_nodes(Unique_Node_List &useful) {
   remove_useless_late_inlines(&_string_late_inlines, useful);
   remove_useless_late_inlines(&_boxing_late_inlines, useful);
   remove_useless_late_inlines(&_late_inlines, useful);
+  remove_useless_late_inlines(&_virtual_late_inlines, useful);
   remove_useless_late_inlines(&_vector_reboxing_late_inlines, useful);
   debug_only(verify_graph_edges(true/*check for no_dead_code*/);)
 }
@@ -545,6 +546,7 @@ Compile::Compile( ciEnv* ci_env, ciMethod* target, int osr_bci,
                   _string_late_inlines(comp_arena(), 2, 0, NULL),
                   _boxing_late_inlines(comp_arena(), 2, 0, NULL),
                   _vector_reboxing_late_inlines(comp_arena(), 2, 0, NULL),
+                  _virtual_late_inlines(comp_arena(), 2, 0, NULL),
                   _late_inlines_pos(0),
                   _number_of_mh_late_inlines(0),
                   _print_inlining_stream(NULL),
@@ -1880,6 +1882,8 @@ bool Compile::inline_incrementally_one() {
   _late_inlines.trunc_to(j);
   assert(inlining_progress() || _late_inlines.length() == 0, "");
 
+  print_method(PHASE_INCREMENTAL_INLINE_STEP, 3);
+
   bool needs_cleanup = true;
 
   set_inlining_progress(false);
@@ -1898,7 +1902,53 @@ void Compile::inline_incrementally_cleanup(PhaseIterGVN& igvn) {
     igvn = PhaseIterGVN(initial_gvn());
     igvn.optimize();
   }
+  print_method(PHASE_INCREMENTAL_INLINE_CLEANUP, 3);
 }
+
+void Compile::inline_incrementally_virtual(PhaseIterGVN& igvn) {
+  assert(inlining_incrementally(), "required");
+  while (_virtual_late_inlines.length() > 0) {
+    if (live_nodes() > (uint)LiveNodeCountInliningCutoff) {
+      break; // finish
+    }
+
+    for_igvn()->clear();
+    initial_gvn()->replace_with(&igvn);
+
+    while (inline_incrementally_virtual_one()) {
+      assert(!failing(), "inconsistent");
+    }
+    if (failing())  return;
+
+    inline_incrementally_cleanup(igvn);
+  }
+}
+
+bool Compile::inline_incrementally_virtual_one() {
+  assert(inlining_incrementally(), "required");
+  set_inlining_progress(false);
+  set_do_cleanup(false);
+  for (int i = 0; i < _virtual_late_inlines.length(); i++) {
+    CallGenerator* cg = _virtual_late_inlines.at(i);
+    cg->do_late_inline();
+    if (failing()) {
+      return false;
+    } else if (inlining_progress()) {
+      _virtual_late_inlines.remove_at(i);
+      break; // process one call site at a time
+    }
+  }
+  assert(inlining_progress() || _virtual_late_inlines.length() == 0, "");
+
+  print_method(PHASE_INCREMENTAL_INLINE_STEP_VIRTUAL, 3);
+
+  bool needs_cleanup = do_cleanup() || over_inlining_cutoff();
+
+  set_inlining_progress(false);
+  set_do_cleanup(false);
+  return (_virtual_late_inlines.length() > 0) && !needs_cleanup;
+}
+
 
 // Perform incremental inlining until bound on number of live nodes is reached
 void Compile::inline_incrementally(PhaseIterGVN& igvn) {
@@ -1907,7 +1957,7 @@ void Compile::inline_incrementally(PhaseIterGVN& igvn) {
   set_inlining_incrementally(true);
   uint low_live_nodes = 0;
 
-  while (_late_inlines.length() > 0) {
+  while (_late_inlines.length() > 0 || _virtual_late_inlines.length() > 0) {
     if (live_nodes() > (uint)LiveNodeCountInliningCutoff) {
       if (low_live_nodes < (uint)LiveNodeCountInliningCutoff * 8 / 10) {
         TracePhase tp("incrementalInline_ideal", &timers[_t_incrInline_ideal]);
@@ -1940,6 +1990,14 @@ void Compile::inline_incrementally(PhaseIterGVN& igvn) {
 
 
     if (failing())  return;
+
+    inline_incrementally_virtual(igvn);
+
+    if (failing())  return;
+
+    if (_late_inlines.length() == 0) {
+      break; // no more progress
+    }
   }
   assert( igvn._worklist.size() == 0, "should be done with igvn" );
 
@@ -2300,10 +2358,10 @@ static bool is_vector_binary_bitwise_op(Node* n) {
         case Op_AndV:
         case Op_OrV:
             return true;
-            
+
         case Op_XorV:
             return !is_vector_unary_bitwise_op(n);
-            
+
         default:
             return false;
     }
@@ -2370,7 +2428,7 @@ static uint collect_unique_inputs(Node* n, Unique_Node_List& partition, Unique_N
 void Compile::collect_logic_cone_roots(Unique_Node_List& list) {
     Unique_Node_List useful_nodes;
     C->identify_useful_nodes(useful_nodes);
-    
+
     for (uint i = 0; i < useful_nodes.size(); i++) {
         Node* n = useful_nodes.at(i);
         if (is_vector_bitwise_cone_root(n)) {
@@ -2386,11 +2444,11 @@ Node* Compile::xform_to_MacroLogicV(PhaseIterGVN& igvn,
     assert(partition.size() == 2 || partition.size() == 3, "not supported");
     assert(inputs.size()    == 2 || inputs.size()    == 3, "not supported");
     assert(Matcher::match_rule_supported_vector(Op_MacroLogicV, vt->length(), vt->element_basic_type()), "not supported");
-    
+
     Node* in1 = inputs.at(0);
     Node* in2 = inputs.at(1);
     Node* in3 = (inputs.size() == 3 ? inputs.at(2) : in2);
-    
+
     uint func = compute_truth_table(partition, inputs);
     return igvn.transform(MacroLogicVNode::make(igvn, in3, in2, in1, func, vt));
 }
@@ -2427,10 +2485,10 @@ uint Compile::eval_macro_logic_op(uint func, uint in1 , uint in2, uint in3) {
         int bit1 = extract_bit(in1, i);
         int bit2 = extract_bit(in2, i);
         int bit3 = extract_bit(in3, i);
-        
+
         int func_bit_pos = (bit1 << 2 | bit2 << 1 | bit3);
         int func_bit = extract_bit(func, func_bit_pos);
-        
+
         res |= func_bit << i;
     }
     return res;
@@ -2447,7 +2505,7 @@ static void eval_operands(Node* n,
                           ResourceHashtable<Node*,uint>& eval_map) {
     assert(is_vector_bitwise_op(n), "");
     func1 = eval_operand(n->in(1), eval_map);
-    
+
     if (is_vector_binary_bitwise_op(n)) {
         func2 = eval_operand(n->in(2), eval_map);
     } else if (is_vector_ternary_bitwise_op(n)) {
@@ -2463,7 +2521,7 @@ uint Compile::compute_truth_table(Unique_Node_List& partition, Unique_Node_List&
     ResourceMark rm;
     uint res = 0;
     ResourceHashtable<Node*,uint> eval_map;
-    
+
     // Populate precomputed functions for inputs.
     // Each input corresponds to one column of 3 input truth-table.
     uint input_funcs[] = { 0xAA,   // (_, _, a) -> a
@@ -2472,13 +2530,13 @@ uint Compile::compute_truth_table(Unique_Node_List& partition, Unique_Node_List&
     for (uint i = 0; i < inputs.size(); i++) {
         eval_map.put(inputs.at(i), input_funcs[i]);
     }
-    
+
     for (uint i = 0; i < partition.size(); i++) {
         Node* n = partition.at(i);
-        
+
         uint func1 = 0, func2 = 0, func3 = 0;
         eval_operands(n, func1, func2, func3, eval_map);
-        
+
         switch (n->Opcode()) {
             case Op_OrV:
                 assert(func3 == 0, "not binary");
@@ -2504,7 +2562,7 @@ uint Compile::compute_truth_table(Unique_Node_List& partition, Unique_Node_List&
                 // inputs.
                 res = eval_macro_logic_op(n->in(4)->get_int(), func1, func2, func3);
                 break;
-                
+
             default: assert(false, "not supported: %s", n->Name());
         }
         assert(res <= 0xFF, "invalid");
@@ -2519,21 +2577,21 @@ bool Compile::compute_logic_cone(Node* n, Unique_Node_List& partition, Unique_No
     if (is_vector_ternary_bitwise_op(n)) {
       return false;
     }
-    
+
     bool is_unary_op = is_vector_unary_bitwise_op(n);
     if (is_unary_op) {
         assert(collect_unique_inputs(n, partition, inputs) == 1, "not unary");
         return false; // too few inputs
     }
-    
+
     assert(is_vector_binary_bitwise_op(n), "not binary");
     Node* in1 = n->in(1);
     Node* in2 = n->in(2);
-    
+
     int in1_unique_inputs_cnt = collect_unique_inputs(in1, partition, inputs);
     int in2_unique_inputs_cnt = collect_unique_inputs(in2, partition, inputs);
     partition.push(n);
-    
+
     // Too many inputs?
     if (inputs.size() > 3) {
         partition.clear();
@@ -2549,13 +2607,13 @@ bool Compile::compute_logic_cone(Node* n, Unique_Node_List& partition, Unique_No
         // Recompute partition & inputs.
         Node* child       = (in1_unique_inputs_cnt < in2_unique_inputs_cnt ? in1 : in2);
         collect_unique_inputs(child, partition, inputs);
-        
+
         Node* other_input = (in1_unique_inputs_cnt < in2_unique_inputs_cnt ? in2 : in1);
         inputs.push(other_input);
-        
+
         partition.push(n);
     }
-    
+
     return (partition.size() == 2 || partition.size() == 3) &&
     (inputs.size()    == 2 || inputs.size()    == 3);
 }
@@ -2563,9 +2621,9 @@ bool Compile::compute_logic_cone(Node* n, Unique_Node_List& partition, Unique_No
 
 void Compile::process_logic_cone_root(PhaseIterGVN &igvn, Node *n, VectorSet &visited) {
     assert(is_vector_bitwise_op(n), "not a root");
-    
+
     visited.set(n->_idx);
-    
+
     // 1) Do a DFS walk over the logic cone.
     for (uint i = 1; i < n->req(); i++) {
         Node* in = n->in(i);
@@ -2573,7 +2631,7 @@ void Compile::process_logic_cone_root(PhaseIterGVN &igvn, Node *n, VectorSet &vi
             process_logic_cone_root(igvn, in, visited);
         }
     }
-    
+
     // 2) Bottom up traversal: Merge node[s] with
     // the parent to form macro logic node.
     Unique_Node_List partition;
@@ -2590,7 +2648,7 @@ void Compile::optimize_logic_cones(PhaseIterGVN &igvn) {
     if (Matcher::match_rule_supported(Op_MacroLogicV)) {
         Unique_Node_List list;
         collect_logic_cone_roots(list);
-        
+
         while (list.size() > 0) {
             Node* n = list.pop();
             const TypeVect* vt = n->bottom_type()->is_vect();
@@ -3287,25 +3345,17 @@ void Compile::final_graph_reshaping_main_switch(Node* n, Final_Reshape_Counts& f
   }
 
   case Op_Proj: {
-    if (OptimizeStringConcat) {
-      ProjNode* p = n->as_Proj();
-      if (p->_is_io_use) {
+    if (OptimizeStringConcat || IncrementalInline || IncrementalInlineVirtual) {
+      ProjNode* proj = n->as_Proj();
+      if (proj->_is_io_use) {
+        assert(proj->_con == TypeFunc::I_O || proj->_con == TypeFunc::Memory, "");
         // Separate projections were used for the exception path which
         // are normally removed by a late inline.  If it wasn't inlined
         // then they will hang around and should just be replaced with
-        // the original one.
-        Node* proj = NULL;
-        // Replace with just one
-        for (SimpleDUIterator i(p->in(0)); i.has_next(); i.next()) {
-          Node *use = i.get();
-          if (use->is_Proj() && p != use && use->as_Proj()->_con == p->_con) {
-            proj = use;
-            break;
-          }
-        }
-        assert(proj != NULL || p->_con == TypeFunc::I_O, "io may be dropped at an infinite loop");
-        if (proj != NULL) {
-          p->subsume_by(proj, this);
+        // the original one. Merge them.
+        Node* non_io_proj = proj->in(0)->as_Multi()->proj_out_or_null(proj->_con, false /*is_io_use*/);
+        if (non_io_proj  != NULL) {
+          proj->subsume_by(non_io_proj , this);
         }
       }
     }
@@ -4164,7 +4214,7 @@ Compile::PrintInliningBuffer& Compile::print_inlining_current() {
 
 void Compile::print_inlining_update(CallGenerator* cg) {
   if (print_inlining() || print_intrinsics()) {
-    if (!cg->is_late_inline()) {
+    if (!cg->is_late_inline() && !cg->is_virtual_late_inline()) {
       if (print_inlining_current().cg() != NULL) {
         print_inlining_push();
       }
@@ -4224,6 +4274,14 @@ void Compile::process_print_inlining() {
         }
         log_late_inline_failure(cg, msg);
       }
+    }
+    for (int i = 0; i < _virtual_late_inlines.length(); i++) {
+      CallGenerator* cg = _virtual_late_inlines.at(i);
+        const char* msg = "virtual call";
+        if (do_print_inlining) {
+          cg->print_inlining_late(msg);
+        }
+        log_late_inline_failure(cg, msg);
     }
   }
   if (do_print_inlining) {

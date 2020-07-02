@@ -761,6 +761,7 @@ public:
 
   int _vtable_index;
   virtual int   Opcode() const;
+  virtual Node *Ideal(PhaseGVN *phase, bool can_reshape);
 #ifndef PRODUCT
   virtual void  dump_spec(outputStream *st) const;
 #endif
