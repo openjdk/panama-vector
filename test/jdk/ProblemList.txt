@@ -148,8 +148,6 @@ java/awt/Frame/ExceptionOnSetExtendedStateTest/ExceptionOnSetExtendedStateTest.j
 java/awt/Frame/ShapeNotSetSometimes/ShapeNotSetSometimes.java 8144030 macosx-all,linux-all
 java/awt/grab/EmbeddedFrameTest1/EmbeddedFrameTest1.java 7080150 macosx-all
 java/awt/event/InputEvent/EventWhenTest/EventWhenTest.java 8168646 generic-all
-java/awt/KeyboardFocusmanager/TypeAhead/EnqueueWithDialogButtonTest/EnqueueWithDialogButtonTest.java 8198623 macosx-all
-java/awt/KeyboardFocusmanager/TypeAhead/FreezeTest/FreezeTest.java 8198623 macosx-all
 java/awt/KeyboardFocusmanager/TypeAhead/TestDialogTypeAhead.java 8198626 macosx-all
 java/awt/Mixing/AWT_Mixing/HierarchyBoundsListenerMixingTest.java 8049405 macosx-all
 java/awt/Mixing/AWT_Mixing/OpaqueOverlappingChoice.java 8048171 generic-all
@@ -578,7 +576,6 @@ java/lang/management/MemoryMXBean/Pending.java                  8158837 generic-
 java/lang/management/MemoryMXBean/PendingAllGC.sh               8158837 generic-all
 
 javax/management/monitor/DerivedGaugeMonitorTest.java         8042211 generic-all
-javax/management/remote/mandatory/connection/MultiThreadDeadLockTest.java 8227337 generic-all
 
 ############################################################################
 
@@ -592,6 +589,8 @@ java/io/pathNames/GeneralWin32.java                             8180264 windows-
 
 com/sun/management/OperatingSystemMXBean/GetProcessCpuLoad.java 8030957 aix-all
 com/sun/management/OperatingSystemMXBean/GetSystemCpuLoad.java  8030957 aix-all
+
+java/lang/management/ThreadMXBean/ThreadMXBeanStateTest.java    8247426 generic-all
 
 sun/management/jdp/JdpDefaultsTest.java                         8241865 macosx-all
 sun/management/jdp/JdpJmxRemoteDynamicPortTest.java             8241865 macosx-all
@@ -627,6 +626,8 @@ java/nio/channels/DatagramChannel/Unref.java                    8233519 generic-
 java/nio/channels/AsynchronousSocketChannel/StressLoopback.java 8211851 aix-ppc64
 
 java/nio/channels/Selector/Wakeup.java                          6963118 windows-all
+
+sun/nio/ch/TestMaxCachedBufferSize.java                         8212812 macosx-all
 
 ############################################################################
 
@@ -699,10 +700,6 @@ javax/security/auth/kerberos/KerberosTixDateTest.java           8039280 generic-
 sun/security/provider/PolicyFile/GrantAllPermToExtWhenNoPolicy.java 8039280 generic-all
 sun/security/provider/PolicyParser/ExtDirsChange.java           8039280 generic-all
 sun/security/provider/PolicyParser/PrincipalExpansionError.java 8039280 generic-all
-sun/security/provider/SecureRandom/AbstractDrbg/SpecTest.java   8247359 linux-aarch64
-sun/security/provider/SecureRandom/SHA1PRNGReseed.java          8247359 linux-aarch64
-sun/security/provider/SecureRandom/StrongSecureRandom.java      8247359 linux-aarch64
-sun/security/provider/SeedGenerator/SeedGeneratorChoice.java    8247359 linux-aarch64
 
 ############################################################################
 
@@ -822,7 +819,6 @@ javax/swing/Popup/TaskbarPositionTest.java 8065097 macosx-all,linux-all
 javax/swing/JEditorPane/6917744/bug6917744.java 8213124 macosx-all
 javax/swing/JTable/6263446/bug6263446.java 8169959 macosx-all
 javax/swing/JTree/6263446/bug6263446.java 8213125 macosx-all
-javax/swing/JTree/8003400/Test8003400.java 8197560 macosx-all,linux-all
 javax/swing/ToolTipManager/Test6256140.java 8233560 macosx-all
 javax/swing/text/View/8014863/bug8014863.java 8233561 macosx-all
 javax/swing/text/StyledEditorKit/4506788/bug4506788.java 8233562 macosx-all
@@ -914,9 +910,17 @@ javax/script/Test7.java                                         8239361 generic-
 
 jdk/jfr/event/runtime/TestNetworkUtilizationEvent.java          8228990,8229370    generic-all
 jdk/jfr/event/compiler/TestCodeSweeper.java                     8225209    generic-all
+jdk/jfr/event/os/TestThreadContextSwitches.java                 8247776 windows-all
 
 ############################################################################
 
 # jdk_internal
+
+############################################################################
+
+# jdk_jpackage
+
+tools/jpackage/share/jdk/jpackage/tests/ModulePathTest3.java#id0    8248418 generic-all
+tools/jpackage/share/EmptyFolderPackageTest.java                    8249201 macosx-all
 
 ############################################################################

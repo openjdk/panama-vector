@@ -23,6 +23,7 @@
  */
 
 #include "precompiled.hpp"
+#include "classfile/javaClasses.hpp"
 #include "gc/g1/c2/g1BarrierSetC2.hpp"
 #include "gc/g1/g1BarrierSet.hpp"
 #include "gc/g1/g1BarrierSetRuntime.hpp"
@@ -785,9 +786,8 @@ void G1BarrierSetC2::verify_gc_barriers(Compile* compile, CompilePhase phase) co
   // Verify G1 pre-barriers
   const int marking_offset = in_bytes(G1ThreadLocalData::satb_mark_queue_active_offset());
 
-  ResourceArea *area = Thread::current()->resource_area();
-  Unique_Node_List visited(area);
-  Node_List worklist(area);
+  Unique_Node_List visited;
+  Node_List worklist;
   // We're going to walk control flow backwards starting from the Root
   worklist.push(compile->root());
   while (worklist.size() > 0) {

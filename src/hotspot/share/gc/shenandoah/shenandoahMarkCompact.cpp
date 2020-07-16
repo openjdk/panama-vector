@@ -145,7 +145,10 @@ void ShenandoahMarkCompact::do_it(GCCause::Cause gc_cause) {
     _preserved_marks->init(heap->workers()->active_workers());
   }
 
-  heap->make_parsable(true);
+  if (UseTLAB) {
+    heap->gclabs_retire(ResizeTLAB);
+    heap->tlabs_retire(ResizeTLAB);
+  }
 
   OrderAccess::fence();
 

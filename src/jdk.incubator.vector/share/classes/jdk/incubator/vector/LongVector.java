@@ -1395,7 +1395,7 @@ public abstract class LongVector extends AbstractVector<Long> {
      * <p>
      * This is not a full-service named operation like
      * {@link #add(Vector) add}.  A masked version of
-     * version of this operation is not directly available
+     * this operation is not directly available
      * but may be obtained via the masked version of
      * {@code lanewise}.
      *
@@ -1452,7 +1452,7 @@ public abstract class LongVector extends AbstractVector<Long> {
      * <p>
      * This is not a full-service named operation like
      * {@link #add(Vector) add}.  A masked version of
-     * version of this operation is not directly available
+     * this operation is not directly available
      * but may be obtained via the masked version of
      * {@code lanewise}.
      *
@@ -1534,7 +1534,7 @@ public abstract class LongVector extends AbstractVector<Long> {
      * <p>
      * This is not a full-service named operation like
      * {@link #add(Vector) add}.  A masked version of
-     * version of this operation is not directly available
+     * this operation is not directly available
      * but may be obtained via the masked version of
      * {@code lanewise}.
      *

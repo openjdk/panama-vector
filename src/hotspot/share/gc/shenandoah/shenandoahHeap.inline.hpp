@@ -49,8 +49,7 @@
 #include "utilities/globalDefinitions.hpp"
 
 inline ShenandoahHeap* ShenandoahHeap::heap() {
-  assert(_heap != NULL, "Heap is not initialized yet");
-  return _heap;
+  return named_heap<ShenandoahHeap>(CollectedHeap::Shenandoah);
 }
 
 inline ShenandoahHeapRegion* ShenandoahRegionIterator::next() {
@@ -327,12 +326,8 @@ inline oop ShenandoahHeap::evacuate_object(oop p, Thread* thread) {
   }
 }
 
-template<bool RESOLVE>
 inline bool ShenandoahHeap::requires_marking(const void* entry) const {
   oop obj = oop(entry);
-  if (RESOLVE) {
-    obj = ShenandoahBarrierSet::resolve_forwarded_not_null(obj);
-  }
   return !_marking_context->is_marked(obj);
 }
 
