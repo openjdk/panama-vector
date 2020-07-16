@@ -538,6 +538,10 @@ const size_t minimumSymbolTableSize = 1024;
   product(bool, PrintCompilation, false,                                    \
           "Print compilations")                                             \
                                                                             \
+  diagnostic(intx, RepeatCompilation, 0,                                    \
+          "Repeat compilation without installing code (number of times)")   \
+          range(0, max_jint)                                                 \
+                                                                            \
   product(bool, PrintExtendedThreadInfo, false,                             \
           "Print more information in thread dump")                          \
                                                                             \
@@ -683,9 +687,6 @@ const size_t minimumSymbolTableSize = 1024;
   experimental(bool, DisablePrimordialThreadGuardPages, false,              \
                "Disable the use of stack guard pages if the JVM is loaded " \
                "on the primordial process thread")                          \
-                                                                            \
-  diagnostic(bool, AsyncDeflateIdleMonitors, true,                          \
-          "Deflate idle monitors using the ServiceThread.")                 \
                                                                             \
   /* notice: the max range value here is max_jint, not max_intx  */         \
   /* because of overflow issue                                   */         \
@@ -2450,9 +2451,6 @@ const size_t minimumSymbolTableSize = 1024;
                                                                             \
   experimental(bool, UseFastUnorderedTimeStamps, false,                     \
           "Use platform unstable time where supported for timestamps only") \
-                                                                            \
-  product(bool, UseNewFieldLayout, true,                                    \
-               "(Deprecated) Use new algorithm to compute field layouts")   \
                                                                             \
   product(bool, UseEmptySlotsInSupers, true,                                \
                 "Allow allocating fields in empty slots of super-classes")  \

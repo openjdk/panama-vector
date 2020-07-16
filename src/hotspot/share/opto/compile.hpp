@@ -247,6 +247,7 @@ class Compile : public Phase {
   const bool            _save_argument_registers; // save/restore arg regs for trampolines
   const bool            _subsume_loads;         // Load can be matched as part of a larger op.
   const bool            _do_escape_analysis;    // Do escape analysis.
+  const bool            _install_code;          // Install the code that was compiled
   const bool            _eliminate_boxing;      // Do boxing elimination.
   ciMethod*             _method;                // The method being compiled.
   int                   _entry_bci;             // entry bci for osr methods.
@@ -328,7 +329,8 @@ class Compile : public Phase {
   VectorSet             _dead_node_list;        // Set of dead nodes
   uint                  _dead_node_count;       // Number of dead nodes; VectorSet::Size() is O(N).
                                                 // So use this to keep count and make the call O(1).
-  DEBUG_ONLY( Unique_Node_List* _modified_nodes; )  // List of nodes which inputs were modified
+  DEBUG_ONLY(Unique_Node_List* _modified_nodes;)   // List of nodes which inputs were modified
+  DEBUG_ONLY(bool       _phase_optimize_finished;) // Used for live node verification while creating new nodes
 
   debug_only(static int _debug_idx;)            // Monotonic counter (not reset), use -XX:BreakAtNode=<idx>
   Arena                 _node_arena;            // Arena for new-space Nodes
@@ -510,7 +512,7 @@ class Compile : public Phase {
   /** Do aggressive boxing elimination. */
   bool              aggressive_unboxing() const { return _eliminate_boxing && AggressiveUnboxing; }
   bool              save_argument_registers() const { return _save_argument_registers; }
-
+  bool              should_install_code() const { return _install_code; }
 
   // Other fixed compilation parameters.
   ciMethod*         method() const              { return _method; }
@@ -671,23 +673,20 @@ class Compile : public Phase {
     assert(!_macro_nodes->contains(n), "duplicate entry in expand list");
     _macro_nodes->append(n);
   }
-  void remove_macro_node(Node * n) {
-    // this function may be called twice for a node so check
-    // that the node is in the array before attempting to remove it
-    if (_macro_nodes->contains(n))
-      _macro_nodes->remove(n);
+  void remove_macro_node(Node* n) {
+    // this function may be called twice for a node so we can only remove it
+    // if it's still existing.
+    _macro_nodes->remove_if_existing(n);
     // remove from _predicate_opaqs list also if it is there
-    if (predicate_count() > 0 && _predicate_opaqs->contains(n)){
-      _predicate_opaqs->remove(n);
+    if (predicate_count() > 0) {
+      _predicate_opaqs->remove_if_existing(n);
     }
   }
-  void add_expensive_node(Node * n);
-  void remove_expensive_node(Node * n) {
-    if (_expensive_nodes->contains(n)) {
-      _expensive_nodes->remove(n);
-    }
+  void add_expensive_node(Node* n);
+  void remove_expensive_node(Node* n) {
+    _expensive_nodes->remove_if_existing(n);
   }
-  void add_predicate_opaq(Node * n) {
+  void add_predicate_opaq(Node* n) {
     assert(!_predicate_opaqs->contains(n), "duplicate entry in predicate opaque1");
     assert(_macro_nodes->contains(n), "should have already been in macro list");
     _predicate_opaqs->append(n);
@@ -696,9 +695,7 @@ class Compile : public Phase {
   // Range check dependent CastII nodes that can be removed after loop optimizations
   void add_range_check_cast(Node* n);
   void remove_range_check_cast(Node* n) {
-    if (_range_check_casts->contains(n)) {
-      _range_check_casts->remove(n);
-    }
+    _range_check_casts->remove_if_existing(n);
   }
   Node* range_check_cast_node(int idx) const { return _range_check_casts->at(idx);  }
   int   range_check_cast_count()       const { return _range_check_casts->length(); }
@@ -707,9 +704,7 @@ class Compile : public Phase {
 
   void add_opaque4_node(Node* n);
   void remove_opaque4_node(Node* n) {
-    if (_opaque4_nodes->contains(n)) {
-      _opaque4_nodes->remove(n);
-    }
+    _opaque4_nodes->remove_if_existing(n);
   }
   Node* opaque4_node(int idx) const { return _opaque4_nodes->at(idx);  }
   int   opaque4_count()       const { return _opaque4_nodes->length(); }
@@ -790,6 +785,8 @@ class Compile : public Phase {
             return (uint) val;
                                            }
 #ifdef ASSERT
+  void         set_phase_optimize_finished() { _phase_optimize_finished = true; }
+  bool         phase_optimize_finished() const { return _phase_optimize_finished; }
   uint         count_live_nodes_by_graph_walk();
   void         print_missing_nodes();
 #endif
@@ -1027,7 +1024,7 @@ class Compile : public Phase {
   // continuation.
   Compile(ciEnv* ci_env, ciMethod* target,
           int entry_bci, bool subsume_loads, bool do_escape_analysis,
-          bool eliminate_boxing, DirectiveSet* directive);
+          bool eliminate_boxing, bool install_code, DirectiveSet* directive);
 
   // Second major entry point.  From the TypeFunc signature, generate code
   // to pass arguments from the Java calling convention to the C calling

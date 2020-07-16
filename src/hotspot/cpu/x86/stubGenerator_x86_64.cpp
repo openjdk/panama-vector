@@ -6920,7 +6920,6 @@ address generate_avx_ghash_processBlocks() {
       StubRoutines::_bigIntegerRightShiftWorker = generate_bigIntegerRightShift();
       StubRoutines::_bigIntegerLeftShiftWorker = generate_bigIntegerLeftShift();
     }
-#ifndef _WINDOWS
     if (UseMontgomeryMultiplyIntrinsic) {
       StubRoutines::_montgomeryMultiply
         = CAST_FROM_FN_PTR(address, SharedRuntime::montgomery_multiply);
@@ -6929,7 +6928,6 @@ address generate_avx_ghash_processBlocks() {
       StubRoutines::_montgomerySquare
         = CAST_FROM_FN_PTR(address, SharedRuntime::montgomery_square);
     }
-#endif // WINDOWS
 #ifdef __VECTOR_API_MATH_INTRINSICS_COMMON
 #ifdef __VECTOR_API_MATH_INTRINSICS_LINUX
     if (UseAVX > 2) {
