@@ -23,6 +23,7 @@
  */
 
 #include "ci/ciMethod.hpp"
+#include "classfile/javaClasses.hpp"
 #include "opto/callGenerator.hpp"
 #include "opto/graphKit.hpp"
 #include "opto/castnode.hpp"
