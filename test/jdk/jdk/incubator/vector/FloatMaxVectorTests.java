@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Arrays;
 import java.util.function.BiFunction;
 import java.util.function.IntFunction;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -356,6 +357,17 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
         }
     }
 
+    static void assertBroadcastLongArraysEquals(float[] a, float[] b, float[] r, FBinOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], (float)((long)b[(i / SPECIES.length()) * SPECIES.length()])));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], f.apply(a[i], (float)((long)b[(i / SPECIES.length()) * SPECIES.length()])),
+                                "(" + a[i] + ", " + b[(i / SPECIES.length()) * SPECIES.length()] + ") at index #" + i);
+        }
+    }
 
     static void assertArraysEquals(float[] a, float[] b, float[] r, boolean[] mask, FBinOp f) {
         assertArraysEquals(a, b, r, mask, FBinMaskOp.lift(f));
@@ -390,6 +402,23 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
         }
     }
 
+    static void assertBroadcastLongArraysEquals(float[] a, float[] b, float[] r, boolean[] mask, FBinOp f) {
+        assertBroadcastLongArraysEquals(a, b, r, mask, FBinMaskOp.lift(f));
+    }
+
+    static void assertBroadcastLongArraysEquals(float[] a, float[] b, float[] r, boolean[] mask, FBinMaskOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], (float)((long)b[(i / SPECIES.length()) * SPECIES.length()]), mask[i % SPECIES.length()]));
+            }
+        } catch (AssertionError err) {
+            Assert.assertEquals(r[i], f.apply(a[i], (float)((long)b[(i / SPECIES.length()) * SPECIES.length()]),
+                                mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] +
+                                ", input2 = " + b[(i / SPECIES.length()) * SPECIES.length()] + ", mask = " +
+                                mask[i % SPECIES.length()]);
+        }
+    }
 
     static void assertShiftArraysEquals(float[] a, float[] b, float[] r, FBinOp f) {
         int i = 0;
@@ -839,6 +868,96 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
         }
     }
 
+    static int intCornerCaseValue(int i) {
+        switch(i % 5) {
+            case 0:
+                return Integer.MAX_VALUE;
+            case 1:
+                return Integer.MIN_VALUE;
+            case 2:
+                return Integer.MIN_VALUE;
+            case 3:
+                return Integer.MAX_VALUE;
+            default:
+                return (int)0;
+        }
+    }
+
+    static final List<IntFunction<float[]>> INT_FLOAT_GENERATORS = List.of(
+            withToString("float[-i * 5]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> (float)(-i * 5));
+            }),
+            withToString("float[i * 5]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> (float)(i * 5));
+            }),
+            withToString("float[i + 1]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> (((float)(i + 1) == 0) ? 1 : (float)(i + 1)));
+            }),
+            withToString("float[intCornerCaseValue(i)]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> (float)intCornerCaseValue(i));
+            })
+    );
+
+    static void assertArraysEquals(float[] a, int[] r, int offs) {
+        int i = 0;
+        try {
+            for (; i < r.length; i++) {
+                Assert.assertEquals(r[i], (int)(a[i+offs]));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], (int)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+        }
+    }
+
+    static long longCornerCaseValue(int i) {
+        switch(i % 5) {
+            case 0:
+                return Long.MAX_VALUE;
+            case 1:
+                return Long.MIN_VALUE;
+            case 2:
+                return Long.MIN_VALUE;
+            case 3:
+                return Long.MAX_VALUE;
+            default:
+                return (long)0;
+        }
+    }
+
+    static final List<IntFunction<float[]>> LONG_FLOAT_GENERATORS = List.of(
+            withToString("float[-i * 5]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> (float)(-i * 5));
+            }),
+            withToString("float[i * 5]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> (float)(i * 5));
+            }),
+            withToString("float[i + 1]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> (((float)(i + 1) == 0) ? 1 : (float)(i + 1)));
+            }),
+            withToString("float[cornerCaseValue(i)]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> (float)longCornerCaseValue(i));
+            })
+    );
+
+    static void assertArraysEquals(float[] a, long[] r, int offs) {
+        int i = 0;
+        try {
+            for (; i < r.length; i++) {
+                Assert.assertEquals(r[i], (long)(a[i+offs]));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], (long)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+        }
+    }
+
     static int bits(float e) {
         return  Float.floatToIntBits(e);
     }
@@ -930,6 +1049,20 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
                 flatMap(fm -> FLOAT_GENERATORS.stream().map(fa -> {
                     return new Object[] {fa, fm};
                 })).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] floattoIntUnaryOpProvider() {
+        return INT_FLOAT_GENERATORS.stream().
+                map(f -> new Object[]{f}).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] floattoLongUnaryOpProvider() {
+        return LONG_FLOAT_GENERATORS.stream().
+                map(f -> new Object[]{f}).
                 toArray(Object[][]::new);
     }
 
@@ -1046,6 +1179,15 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
                 toArray(Object[][]::new);
     }
 
+    @DataProvider
+    public Object[][] floatTestOpMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> FLOAT_TEST_GENERATOR_ARGS.stream().map(lfa -> {
+                    return Stream.concat(lfa.stream(), Stream.of(fm)).toArray();
+                })).
+                toArray(Object[][]::new);
+    }
+
     static final List<List<IntFunction<float[]>>> FLOAT_COMPARE_GENERATOR_PAIRS =
         FLOAT_COMPARE_GENERATORS.stream().
                 flatMap(fa -> FLOAT_COMPARE_GENERATORS.stream().map(fb -> List.of(fa, fb))).
@@ -1099,6 +1241,7 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
                 return (float)-0.0;
         }
     }
+
     static float get(float[] a, int i) {
         return (float) a[i];
     }
@@ -1704,6 +1847,37 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
 
 
 
+    @Test(dataProvider = "floatBinaryOpProvider")
+    static void ADDFloatMaxVectorTestsBroadcastLongSmokeTest(IntFunction<float[]> fa, IntFunction<float[]> fb) {
+        float[] a = fa.apply(SPECIES.length());
+        float[] b = fb.apply(SPECIES.length());
+        float[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.ADD, (long)b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastLongArraysEquals(a, b, r, FloatMaxVectorTests::ADD);
+    }
+
+    @Test(dataProvider = "floatBinaryOpMaskProvider")
+    static void ADDFloatMaxVectorTestsBroadcastMaskedLongSmokeTest(IntFunction<float[]> fa, IntFunction<float[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        float[] a = fa.apply(SPECIES.length());
+        float[] b = fb.apply(SPECIES.length());
+        float[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Float> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.ADD, (long)b[i], vmask).intoArray(r, i);
+        }
+
+        assertBroadcastLongArraysEquals(a, b, r, mask, FloatMaxVectorTests::ADD);
+    }
+
 
 
 
@@ -2265,6 +2439,24 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
         }
     }
 
+    @Test(dataProvider = "floatTestOpMaskProvider")
+    static void IS_DEFAULTMaskedFloatMaxVectorTestsSmokeTest(IntFunction<float[]> fa,
+                                          IntFunction<boolean[]> fm) {
+        float[] a = fa.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Float> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+            VectorMask<Float> mv = av.test(VectorOperators.IS_DEFAULT, vmask);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_DEFAULT(a[i + j]));
+            }
+        }
+    }
+
     static boolean testIS_NEGATIVE(float a) {
         return bits(a)<0;
     }
@@ -2282,6 +2474,24 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
                 for (int j = 0; j < SPECIES.length(); j++) {
                     Assert.assertEquals(mv.laneIsSet(j), testIS_NEGATIVE(a[i + j]));
                 }
+            }
+        }
+    }
+
+    @Test(dataProvider = "floatTestOpMaskProvider")
+    static void IS_NEGATIVEMaskedFloatMaxVectorTestsSmokeTest(IntFunction<float[]> fa,
+                                          IntFunction<boolean[]> fm) {
+        float[] a = fa.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Float> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+            VectorMask<Float> mv = av.test(VectorOperators.IS_NEGATIVE, vmask);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_NEGATIVE(a[i + j]));
             }
         }
     }
@@ -2304,6 +2514,24 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
                 for (int j = 0; j < SPECIES.length(); j++) {
                     Assert.assertEquals(mv.laneIsSet(j), testIS_FINITE(a[i + j]));
                 }
+            }
+        }
+    }
+
+    @Test(dataProvider = "floatTestOpMaskProvider")
+    static void IS_FINITEMaskedFloatMaxVectorTestsSmokeTest(IntFunction<float[]> fa,
+                                          IntFunction<boolean[]> fm) {
+        float[] a = fa.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Float> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+            VectorMask<Float> mv = av.test(VectorOperators.IS_FINITE, vmask);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_FINITE(a[i + j]));
             }
         }
     }
@@ -2331,6 +2559,24 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
         }
     }
 
+    @Test(dataProvider = "floatTestOpMaskProvider")
+    static void IS_NANMaskedFloatMaxVectorTestsSmokeTest(IntFunction<float[]> fa,
+                                          IntFunction<boolean[]> fm) {
+        float[] a = fa.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Float> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+            VectorMask<Float> mv = av.test(VectorOperators.IS_NAN, vmask);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_NAN(a[i + j]));
+            }
+        }
+    }
+
 
 
     static boolean testIS_INFINITE(float a) {
@@ -2350,6 +2596,24 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
                 for (int j = 0; j < SPECIES.length(); j++) {
                     Assert.assertEquals(mv.laneIsSet(j), testIS_INFINITE(a[i + j]));
                 }
+            }
+        }
+    }
+
+    @Test(dataProvider = "floatTestOpMaskProvider")
+    static void IS_INFINITEMaskedFloatMaxVectorTestsSmokeTest(IntFunction<float[]> fa,
+                                          IntFunction<boolean[]> fm) {
+        float[] a = fa.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Float> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+            VectorMask<Float> mv = av.test(VectorOperators.IS_INFINITE, vmask);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_INFINITE(a[i + j]));
             }
         }
     }
@@ -4246,6 +4510,87 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
     }
 
 
+    @Test(dataProvider = "floatCompareOpProvider")
+    static void ltFloatMaxVectorTestsBroadcastSmokeTest(IntFunction<float[]> fa, IntFunction<float[]> fb) {
+        float[] a = fa.apply(SPECIES.length());
+        float[] b = fb.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+            VectorMask<Float> mv = av.lt(b[i]);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j), a[i + j] < b[i]);
+            }
+        }
+    }
+
+    @Test(dataProvider = "floatCompareOpProvider")
+    static void eqFloatMaxVectorTestsBroadcastMaskedSmokeTest(IntFunction<float[]> fa, IntFunction<float[]> fb) {
+        float[] a = fa.apply(SPECIES.length());
+        float[] b = fb.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+            VectorMask<Float> mv = av.eq(b[i]);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j), a[i + j] == b[i]);
+            }
+        }
+    }
+
+    @Test(dataProvider = "floattoIntUnaryOpProvider")
+    static void toIntArrayFloatMaxVectorTestsSmokeTest(IntFunction<float[]> fa) {
+        float[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+            int [] r = av.toIntArray();
+            assertArraysEquals(a, r, i);
+        }
+    }
+
+    @Test(dataProvider = "floattoLongUnaryOpProvider")
+    static void toLongArrayFloatMaxVectorTestsSmokeTest(IntFunction<float[]> fa) {
+        float[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+            long [] r = av.toLongArray();
+            assertArraysEquals(a, r, i);
+        }
+    }
+
+    @Test(dataProvider = "floatUnaryOpProvider")
+    static void toStringFloatMaxVectorTestsSmokeTest(IntFunction<float[]> fa) {
+        float[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+            String str = av.toString();
+
+            float subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            Assert.assertTrue(str.equals(Arrays.toString(subarr)), "at index " + i + ", string should be = " + Arrays.toString(subarr) + ", but is = " + str);
+        }
+    }
+
+    @Test(dataProvider = "floatUnaryOpProvider")
+    static void hashCodeFloatMaxVectorTestsSmokeTest(IntFunction<float[]> fa) {
+        float[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+            int hash = av.hashCode();
+
+            float subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            int expectedHash = Objects.hash(SPECIES, Arrays.hashCode(subarr));
+            Assert.assertTrue(hash == expectedHash, "at index " + i + ", hash should be = " + expectedHash + ", but is = " + hash);
+        }
+    }
+
     static long ADDReduceLong(float[] a, int idx) {
         float res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -4323,6 +4668,24 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
 
         assertReductionLongArraysEqualsMasked(a, r, ra, mask,
                 FloatMaxVectorTests::ADDReduceLongMasked, FloatMaxVectorTests::ADDReduceAllLongMasked);
+    }
+
+    @Test(dataProvider = "floatBinaryOpMaskProvider")
+    static void blendFloatMaxVectorTestsBroadcastLongSmokeTest(IntFunction<float[]> fa, IntFunction<float[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        float[] a = fa.apply(SPECIES.length());
+        float[] b = fb.apply(SPECIES.length());
+        float[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Float> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+                av.blend((long)b[i], vmask).intoArray(r, i);
+            }
+        }
+        assertBroadcastLongArraysEquals(a, b, r, mask, FloatMaxVectorTests::blend);
     }
 
     @Test(dataProvider = "floatUnaryOpSelectFromProvider")

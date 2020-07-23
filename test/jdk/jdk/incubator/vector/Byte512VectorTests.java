@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Arrays;
 import java.util.function.BiFunction;
 import java.util.function.IntFunction;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -788,6 +789,30 @@ public class Byte512VectorTests extends AbstractVectorTest {
         }
     }
 
+
+    static void assertArraysEquals(byte[] a, int[] r, int offs) {
+        int i = 0;
+        try {
+            for (; i < r.length; i++) {
+                Assert.assertEquals(r[i], (int)(a[i+offs]));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], (int)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+        }
+    }
+
+
+    static void assertArraysEquals(byte[] a, long[] r, int offs) {
+        int i = 0;
+        try {
+            for (; i < r.length; i++) {
+                Assert.assertEquals(r[i], (long)(a[i+offs]));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], (long)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+        }
+    }
+
     static byte bits(byte e) {
         return  e;
     }
@@ -881,6 +906,8 @@ public class Byte512VectorTests extends AbstractVectorTest {
                 })).
                 toArray(Object[][]::new);
     }
+
+
 
     @DataProvider
     public Object[][] byteUnaryOpShuffleProvider() {
@@ -995,6 +1022,15 @@ public class Byte512VectorTests extends AbstractVectorTest {
                 toArray(Object[][]::new);
     }
 
+    @DataProvider
+    public Object[][] byteTestOpMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> BYTE_TEST_GENERATOR_ARGS.stream().map(lfa -> {
+                    return Stream.concat(lfa.stream(), Stream.of(fm)).toArray();
+                })).
+                toArray(Object[][]::new);
+    }
+
     static final List<List<IntFunction<byte[]>>> BYTE_COMPARE_GENERATOR_PAIRS =
         BYTE_COMPARE_GENERATORS.stream().
                 flatMap(fa -> BYTE_COMPARE_GENERATORS.stream().map(fb -> List.of(fa, fb))).
@@ -1044,6 +1080,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
                 return (byte)0;
         }
     }
+
     static byte get(byte[] a, int i) {
         return (byte) a[i];
     }
@@ -1976,6 +2013,37 @@ public class Byte512VectorTests extends AbstractVectorTest {
         assertBroadcastLongArraysEquals(a, b, r, mask, Byte512VectorTests::OR);
     }
 
+
+    @Test(dataProvider = "byteBinaryOpProvider")
+    static void ADDByte512VectorTestsBroadcastLongSmokeTest(IntFunction<byte[]> fa, IntFunction<byte[]> fb) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.ADD, (long)b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastLongArraysEquals(a, b, r, Byte512VectorTests::ADD);
+    }
+
+    @Test(dataProvider = "byteBinaryOpMaskProvider")
+    static void ADDByte512VectorTestsBroadcastMaskedLongSmokeTest(IntFunction<byte[]> fa, IntFunction<byte[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.ADD, (long)b[i], vmask).intoArray(r, i);
+        }
+
+        assertBroadcastLongArraysEquals(a, b, r, mask, Byte512VectorTests::ADD);
+    }
 
 
 
@@ -3099,6 +3167,24 @@ public class Byte512VectorTests extends AbstractVectorTest {
         }
     }
 
+    @Test(dataProvider = "byteTestOpMaskProvider")
+    static void IS_DEFAULTMaskedByte512VectorTestsSmokeTest(IntFunction<byte[]> fa,
+                                          IntFunction<boolean[]> fm) {
+        byte[] a = fa.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+            VectorMask<Byte> mv = av.test(VectorOperators.IS_DEFAULT, vmask);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_DEFAULT(a[i + j]));
+            }
+        }
+    }
+
     static boolean testIS_NEGATIVE(byte a) {
         return bits(a)<0;
     }
@@ -3116,6 +3202,24 @@ public class Byte512VectorTests extends AbstractVectorTest {
                 for (int j = 0; j < SPECIES.length(); j++) {
                     Assert.assertEquals(mv.laneIsSet(j), testIS_NEGATIVE(a[i + j]));
                 }
+            }
+        }
+    }
+
+    @Test(dataProvider = "byteTestOpMaskProvider")
+    static void IS_NEGATIVEMaskedByte512VectorTestsSmokeTest(IntFunction<byte[]> fa,
+                                          IntFunction<boolean[]> fm) {
+        byte[] a = fa.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+            VectorMask<Byte> mv = av.test(VectorOperators.IS_NEGATIVE, vmask);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_NEGATIVE(a[i + j]));
             }
         }
     }
@@ -4606,6 +4710,87 @@ public class Byte512VectorTests extends AbstractVectorTest {
     }
 
 
+    @Test(dataProvider = "byteCompareOpProvider")
+    static void ltByte512VectorTestsBroadcastSmokeTest(IntFunction<byte[]> fa, IntFunction<byte[]> fb) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+            VectorMask<Byte> mv = av.lt(b[i]);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j), a[i + j] < b[i]);
+            }
+        }
+    }
+
+    @Test(dataProvider = "byteCompareOpProvider")
+    static void eqByte512VectorTestsBroadcastMaskedSmokeTest(IntFunction<byte[]> fa, IntFunction<byte[]> fb) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+            VectorMask<Byte> mv = av.eq(b[i]);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j), a[i + j] == b[i]);
+            }
+        }
+    }
+
+    @Test(dataProvider = "byteUnaryOpProvider")
+    static void toIntArrayByte512VectorTestsSmokeTest(IntFunction<byte[]> fa) {
+        byte[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+            int [] r = av.toIntArray();
+            assertArraysEquals(a, r, i);
+        }
+    }
+
+    @Test(dataProvider = "byteUnaryOpProvider")
+    static void toLongArrayByte512VectorTestsSmokeTest(IntFunction<byte[]> fa) {
+        byte[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+            long [] r = av.toLongArray();
+            assertArraysEquals(a, r, i);
+        }
+    }
+
+    @Test(dataProvider = "byteUnaryOpProvider")
+    static void toStringByte512VectorTestsSmokeTest(IntFunction<byte[]> fa) {
+        byte[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+            String str = av.toString();
+
+            byte subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            Assert.assertTrue(str.equals(Arrays.toString(subarr)), "at index " + i + ", string should be = " + Arrays.toString(subarr) + ", but is = " + str);
+        }
+    }
+
+    @Test(dataProvider = "byteUnaryOpProvider")
+    static void hashCodeByte512VectorTestsSmokeTest(IntFunction<byte[]> fa) {
+        byte[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+            int hash = av.hashCode();
+
+            byte subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            int expectedHash = Objects.hash(SPECIES, Arrays.hashCode(subarr));
+            Assert.assertTrue(hash == expectedHash, "at index " + i + ", hash should be = " + expectedHash + ", but is = " + hash);
+        }
+    }
+
     static long ADDReduceLong(byte[] a, int idx) {
         byte res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -4683,6 +4868,24 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
         assertReductionLongArraysEqualsMasked(a, r, ra, mask,
                 Byte512VectorTests::ADDReduceLongMasked, Byte512VectorTests::ADDReduceAllLongMasked);
+    }
+
+    @Test(dataProvider = "byteBinaryOpMaskProvider")
+    static void blendByte512VectorTestsBroadcastLongSmokeTest(IntFunction<byte[]> fa, IntFunction<byte[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.blend((long)b[i], vmask).intoArray(r, i);
+            }
+        }
+        assertBroadcastLongArraysEquals(a, b, r, mask, Byte512VectorTests::blend);
     }
 
     @Test(dataProvider = "byteUnaryOpSelectFromProvider")
