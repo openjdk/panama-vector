@@ -489,7 +489,6 @@ void JVMState::format(PhaseRegAlloc *regalloc, const Node *n, outputStream* st) 
         ciField* cifield;
         if (iklass != NULL) {
           st->print(" [");
-          iklass->nof_nonstatic_fields(); // FIXME iklass->_nonstatic_fields == NULL
           cifield = iklass->nonstatic_field_at(0);
           cifield->print_name_on(st);
           format_helper(regalloc, st, fld_node, ":", 0, &scobjs);
@@ -548,17 +547,6 @@ void JVMState::dump_spec(outputStream *st) const {
   if (caller() != NULL)  caller()->dump_spec(st);
 }
 
-static void print_cat(outputStream* st, Node* map, const char* name, int start, int end) {
-  st->print("%10s(%d):", name, end - start);
-  for (int i = start; i < end; i++) {
-    if (map->in(i) != NULL) {
-      st->print(" %d", map->in(i)->_idx);
-    } else {
-      st->print_raw(" _");
-    }
-  }
-  st->cr();
-}
 
 void JVMState::dump_on(outputStream* st) const {
   bool print_map = _map && !((uintptr_t)_map & 1) &&
@@ -588,23 +576,9 @@ void JVMState::dump_on(outputStream* st) const {
       st->print("    bc: ");
       _method->print_codes_on(bci(), bci()+1, st);
     }
-    print_cat(st, this->_map,   "locals", locoff(), stkoff());
-    print_cat(st, this->_map,    "stack", stkoff(), argoff());
-    print_cat(st, this->_map,     "args", argoff(), monoff());
-    print_cat(st, this->_map, "monitors", monoff(), scloff());
-    print_cat(st, this->_map,  "scalars", scloff(), endoff());
   }
 }
 
-void JVMState::print_on(outputStream* st) const {
-  const JVMState* cur_jvms = this;
-  while (cur_jvms != NULL) {
-    st->print(" @ %d ", cur_jvms->bci());
-    cur_jvms->method()->print_name(st);
-    st->cr();
-    cur_jvms = cur_jvms->caller();
-  }
-}
 // Extra way to dump a jvms from the debugger,
 // to avoid a bug with C++ member function calls.
 void dump_jvms(JVMState* jvms) {
@@ -745,9 +719,9 @@ Node *CallNode::match( const ProjNode *proj, const Matcher *match ) {
 
   case TypeFunc::Parms: {       // Normal returns
     uint ideal_reg = tf()->range()->field_at(TypeFunc::Parms)->ideal_reg();
-    OptoRegPair regs = (is_CallRuntime()
-         ? match->c_return_value(ideal_reg,true)   // Calls into C runtime
-         : match->return_value(ideal_reg, true));  // Calls into compiled Java code
+    OptoRegPair regs = is_CallRuntime()
+      ? match->c_return_value(ideal_reg,true)  // Calls into C runtime
+      : match->  return_value(ideal_reg,true); // Calls into compiled Java code
     RegMask rm = RegMask(regs.first());
     if( OptoReg::is_valid(regs.second()) )
       rm.Insert( regs.second() );

@@ -436,22 +436,22 @@ void Type::Initialize_shared(Compile* current) {
   BOTTOM  = make(Bottom);       // Everything
   HALF    = make(Half);         // Placeholder half of doublewide type
 
-  TypeF::MAX = TypeF::make(max_jfloat);  // Float MAX
-  TypeF::MIN = TypeF::make(min_jfloat);  // Float MIN
+  TypeF::MAX = TypeF::make(max_jfloat); // Float MAX
+  TypeF::MIN = TypeF::make(min_jfloat); // Float MIN
   TypeF::ZERO = TypeF::make(0.0); // Float 0 (positive zero)
   TypeF::ONE  = TypeF::make(1.0); // Float 1
   TypeF::POS_INF = TypeF::make(jfloat_cast(POSITIVE_INFINITE_F));
   TypeF::NEG_INF = TypeF::make(-jfloat_cast(POSITIVE_INFINITE_F));
 
-  TypeD::MAX = TypeD::make(max_jdouble);  // Double MAX
-  TypeD::MIN = TypeD::make(min_jdouble);  // Double MIN
+  TypeD::MAX = TypeD::make(max_jdouble); // Double MAX
+  TypeD::MIN = TypeD::make(min_jdouble); // Double MIN
   TypeD::ZERO = TypeD::make(0.0); // Double 0 (positive zero)
   TypeD::ONE  = TypeD::make(1.0); // Double 1
   TypeD::POS_INF = TypeD::make(jdouble_cast(POSITIVE_INFINITE_D));
   TypeD::NEG_INF = TypeD::make(-jdouble_cast(POSITIVE_INFINITE_D));
 
-  TypeInt::MAX = TypeInt::make(max_jint);   // Int MAX
-  TypeInt::MIN = TypeInt::make(min_jint);  // Int MIN
+  TypeInt::MAX = TypeInt::make(max_jint); // Int MAX
+  TypeInt::MIN = TypeInt::make(min_jint); // Int MIN
   TypeInt::MINUS_1 = TypeInt::make(-1);  // -1
   TypeInt::ZERO    = TypeInt::make( 0);  //  0
   TypeInt::ONE     = TypeInt::make( 1);  //  1
@@ -861,7 +861,6 @@ const Type *Type::meet_helper(const Type *t, bool include_speculative) const {
 #ifdef ASSERT
   if (isa_narrowoop() || t->isa_narrowoop()) return mt;
   if (isa_narrowklass() || t->isa_narrowklass()) return mt;
-  if (isa_vect() || t->isa_vect()) return mt;
   Compile* C = Compile::current();
   if (!C->_type_verify_symmetry) {
     return mt;

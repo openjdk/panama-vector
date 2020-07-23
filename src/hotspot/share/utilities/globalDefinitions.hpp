@@ -233,8 +233,8 @@ inline size_t heap_word_size(size_t byte_size) {
   return (byte_size + (HeapWordSize-1)) >> LogHeapWordSize;
 }
 
-inline jfloat  jfloat_cast(jint    x);
-inline jdouble  jdouble_cast(jlong    x);
+inline jfloat jfloat_cast(jint x);
+inline jdouble jdouble_cast(jlong x);
 
 //-------------------------------------------
 // Constant for jlong (standardized by C++11)

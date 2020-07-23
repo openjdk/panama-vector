@@ -123,8 +123,6 @@ private:
 
   bool is_vshift_con_pattern(Node *n, Node *m);
 
-  bool is_vnot_pattern(Node *n, Node *m);
-
   // Debug and profile information for nodes in old space:
   GrowableArray<Node_Notes*>* _old_node_note_array;
 
@@ -342,7 +340,7 @@ public:
   // Does the CPU supports vector variable shift instructions?
   static bool supports_vector_variable_shifts(void);
 
-// CPU supports misaligned vectors store/load.
+  // CPU supports misaligned vectors store/load.
   static const bool misaligned_vectors_ok();
 
   // Should original key array reference be passed to AES stubs

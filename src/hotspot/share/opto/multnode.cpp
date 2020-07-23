@@ -63,16 +63,6 @@ ProjNode* MultiNode::proj_out_or_null(uint which_proj) const {
   return NULL;
 }
 
-ProjNode* MultiNode::proj_out_or_null(uint which_proj, bool is_io_use) const {
-  for (DUIterator_Fast imax, i = fast_outs(imax); i < imax; i++) {
-    ProjNode* proj = fast_out(i)->isa_Proj();
-    if (proj != NULL && (proj->_con == which_proj) && (proj->_is_io_use == is_io_use)) {
-      return proj;
-    }
-  }
-  return NULL;
-}
-
 // Get a named projection
 ProjNode* MultiNode::proj_out(uint which_proj) const {
   ProjNode* p = proj_out_or_null(which_proj);

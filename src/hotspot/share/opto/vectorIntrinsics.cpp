@@ -91,10 +91,6 @@ bool LibraryCallKit::arch_supports_vector(int sopc, int num_elem, BasicType type
   return true;
 }
 
-static int get_sopc(int opc, BasicType elem_bt) {
-  return VectorNode::opcode(opc, elem_bt);
-}
-
 static bool is_vector_mask(ciKlass* klass) {
   return klass->is_subclass_of(ciEnv::current()->vector_VectorMask_klass());
 }
@@ -219,7 +215,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
   BasicType elem_bt = elem_type->basic_type();
   int num_elem = vlen->get_con();
   int opc = VectorSupport::vop2ideal(opr->get_con(), elem_bt);
-  int sopc = get_sopc(opc, elem_bt);
+  int sopc = VectorNode::opcode(opc, elem_bt);
   ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
 
@@ -889,7 +885,6 @@ bool LibraryCallKit::inline_vector_reduction() {
 //                                BiFunction<V, V, Boolean> defaultImpl) {
 //
 bool LibraryCallKit::inline_vector_test() {
-
   const TypeInt* cond             = gvn().type(argument(0))->is_int();
   const TypeInstPtr* vector_klass = gvn().type(argument(1))->is_instptr();
   const TypeInstPtr* elem_klass   = gvn().type(argument(2))->is_instptr();
@@ -1212,7 +1207,7 @@ bool LibraryCallKit::inline_vector_broadcast_int() {
   BasicType elem_bt = elem_type->basic_type();
   int num_elem = vlen->get_con();
   int opc = VectorSupport::vop2ideal(opr->get_con(), elem_bt);
-  int sopc = get_sopc(opc, elem_bt); // get_node_id(opr->get_con(), elem_bt);
+  int sopc = VectorNode::opcode(opc, elem_bt);
   ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
 
@@ -1423,11 +1418,11 @@ bool LibraryCallKit::inline_vector_convert() {
   return true;
 }
 
-//    public static
-//    <V extends Vector<?>>
-//    V insert(Class<? extends V> vectorClass, Class<?> elementType, int vlen,
-//             V vec, int ix, long val,
-//             VecInsertOp<V> defaultImpl) {
+//  public static
+//  <V extends Vector<?>>
+//  V insert(Class<? extends V> vectorClass, Class<?> elementType, int vlen,
+//           V vec, int ix, long val,
+//           VecInsertOp<V> defaultImpl) {
 //
 bool LibraryCallKit::inline_vector_insert() {
   const TypeInstPtr* vector_klass = gvn().type(argument(0))->is_instptr();

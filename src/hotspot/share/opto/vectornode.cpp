@@ -283,10 +283,9 @@ int VectorNode::replicate_opcode(BasicType bt) {
     case T_DOUBLE:
       return Op_ReplicateD;
     default:
-      break;
+      assert(false, "wrong type: %s", type2name(bt));
+      return 0;
   }
-
-  return 0;
 }
 
 // Also used to check if the code generator
@@ -335,28 +334,6 @@ bool VectorNode::is_shift(Node* n) {
   case Op_RShiftL:
   case Op_URShiftI:
   case Op_URShiftL:
-    return true;
-  default:
-    return false;
-  }
-}
-
-bool VectorNode::is_vshift(Node* n) {
-  switch (n->Opcode()) {
-  case Op_LShiftVB:
-  case Op_LShiftVS:
-  case Op_LShiftVI:
-  case Op_LShiftVL:
-
-  case Op_RShiftVB:
-  case Op_RShiftVS:
-  case Op_RShiftVI:
-  case Op_RShiftVL:
-
-  case Op_URShiftVB:
-  case Op_URShiftVS:
-  case Op_URShiftVI:
-  case Op_URShiftVL:
     return true;
   default:
     return false;
@@ -736,24 +713,16 @@ StoreVectorNode* StoreVectorNode::make(int opc, Node* ctl, Node* mem,
 
 int ExtractNode::opcode(BasicType bt) {
   switch (bt) {
-    case T_BOOLEAN:
-      return Op_ExtractUB;
-    case T_BYTE:
-      return Op_ExtractB;
-    case T_CHAR:
-      return Op_ExtractC;
-    case T_SHORT:
-      return Op_ExtractS;
-    case T_INT:
-      return Op_ExtractI;
-    case T_LONG:
-      return Op_ExtractL;
-    case T_FLOAT:
-      return Op_ExtractF;
-    case T_DOUBLE:
-      return Op_ExtractD;
+    case T_BOOLEAN: return Op_ExtractUB;
+    case T_BYTE:    return Op_ExtractB;
+    case T_CHAR:    return Op_ExtractC;
+    case T_SHORT:   return Op_ExtractS;
+    case T_INT:     return Op_ExtractI;
+    case T_LONG:    return Op_ExtractL;
+    case T_FLOAT:   return Op_ExtractF;
+    case T_DOUBLE:  return Op_ExtractD;
     default:
-      fatal("Type '%s' is not supported for vectors", type2name(bt));
+      assert(false, "wrong type: %s", type2name(bt));
       return 0;
   }
 }
@@ -763,24 +732,16 @@ Node* ExtractNode::make(Node* v, uint position, BasicType bt) {
   assert((int)position < Matcher::max_vector_size(bt), "pos in range");
   ConINode* pos = ConINode::make((int)position);
   switch (bt) {
-  case T_BOOLEAN:
-    return new ExtractUBNode(v, pos);
-  case T_BYTE:
-    return new ExtractBNode(v, pos);
-  case T_CHAR:
-    return new ExtractCNode(v, pos);
-  case T_SHORT:
-    return new ExtractSNode(v, pos);
-  case T_INT:
-    return new ExtractINode(v, pos);
-  case T_LONG:
-    return new ExtractLNode(v, pos);
-  case T_FLOAT:
-    return new ExtractFNode(v, pos);
-  case T_DOUBLE:
-    return new ExtractDNode(v, pos);
+  case T_BOOLEAN: return new ExtractUBNode(v, pos);
+  case T_BYTE:    return new ExtractBNode(v, pos);
+  case T_CHAR:    return new ExtractCNode(v, pos);
+  case T_SHORT:   return new ExtractSNode(v, pos);
+  case T_INT:     return new ExtractINode(v, pos);
+  case T_LONG:    return new ExtractLNode(v, pos);
+  case T_FLOAT:   return new ExtractFNode(v, pos);
+  case T_DOUBLE:  return new ExtractDNode(v, pos);
   default:
-    fatal("Type '%s' is not supported for vectors", type2name(bt));
+    assert(false, "wrong type: %s", type2name(bt));
     return NULL;
   }
 }
@@ -797,7 +758,7 @@ int ReductionNode::opcode(int opc, BasicType bt) {
         case T_INT:
           vopc = Op_AddReductionVI;
           break;
-        default:          ShouldNotReachHere(); return 0;
+        default: ShouldNotReachHere(); return 0;
       }
       break;
     case Op_AddL:
@@ -821,7 +782,7 @@ int ReductionNode::opcode(int opc, BasicType bt) {
         case T_INT:
           vopc = Op_MulReductionVI;
           break;
-        default:          ShouldNotReachHere(); return 0;
+        default: ShouldNotReachHere(); return 0;
       }
       break;
     case Op_MulL:
@@ -961,7 +922,7 @@ ReductionNode* ReductionNode::make(int opc, Node *ctrl, Node* n1, Node* n2, Basi
   case Op_OrReductionV:   return new OrReductionVNode(ctrl, n1, n2);
   case Op_XorReductionV:  return new XorReductionVNode(ctrl, n1, n2);
   default:
-    fatal("Missed vector creation for '%s'", NodeClassNames[vopc]);
+    assert(false, "unknown node: %s", NodeClassNames[vopc]);
     return NULL;
   }
 }
@@ -982,9 +943,10 @@ VectorCastNode* VectorCastNode::make(int vopc, Node* n1, BasicType bt, uint vlen
     case Op_VectorCastL2X: return new VectorCastL2XNode(n1, vt);
     case Op_VectorCastF2X: return new VectorCastF2XNode(n1, vt);
     case Op_VectorCastD2X: return new VectorCastD2XNode(n1, vt);
-    default: fatal("unknown node: %s", NodeClassNames[vopc]);
+    default:
+      assert(false, "unknown node: %s", NodeClassNames[vopc]);
+      return NULL;
   }
-  return NULL;
 }
 
 int VectorCastNode::opcode(BasicType bt) {
@@ -995,9 +957,10 @@ int VectorCastNode::opcode(BasicType bt) {
     case T_LONG:   return Op_VectorCastL2X;
     case T_FLOAT:  return Op_VectorCastF2X;
     case T_DOUBLE: return Op_VectorCastD2X;
-    default: Unimplemented();
+    default:
+      assert(false, "unknown type: %s", type2name(bt));
+      return 0;
   }
-  return 0;
 }
 
 Node* ReductionNode::make_reduction_input(PhaseGVN& gvn, int opc, BasicType bt) {

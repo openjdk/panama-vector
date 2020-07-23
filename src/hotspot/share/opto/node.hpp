@@ -654,7 +654,6 @@ public:
               DEFINE_CLASS_ID(MachCallDynamicJava,  MachCallJava, 1)
             DEFINE_CLASS_ID(MachCallRuntime,      MachCall, 1)
               DEFINE_CLASS_ID(MachCallLeaf,         MachCallRuntime, 0)
-
       DEFINE_CLASS_ID(MachBranch, Mach, 1)
         DEFINE_CLASS_ID(MachIf,         MachBranch, 0)
         DEFINE_CLASS_ID(MachGoto,       MachBranch, 1)
@@ -1569,10 +1568,6 @@ public:
 
   // Used after parsing to remove useless nodes before Iterative GVN
   void remove_useless_nodes(VectorSet& useful);
-  
-  void remove_useless_nodes(Unique_Node_List& useful) {
-    remove_useless_nodes(useful.member_set());
-  }
 
   bool contains(const Node* n) const {
     fatal("use faster member() instead");

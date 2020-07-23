@@ -313,7 +313,6 @@ public:
   void      dump() const {
     dump_on(tty);
   }
-  void      print_on(outputStream* st) const;
 #endif
 };
 
@@ -768,7 +767,6 @@ public:
 //------------------------------CallRuntimeNode--------------------------------
 // Make a direct subroutine call node into compiled C++ code.
 class CallRuntimeNode : public CallNode {
-protected:
   virtual bool cmp( const Node &n ) const;
   virtual uint size_of() const; // Size is bigger
 public:
@@ -818,6 +816,7 @@ public:
   }
   virtual int   Opcode() const;
 };
+
 
 //------------------------------Allocate---------------------------------------
 // High-level memory allocation

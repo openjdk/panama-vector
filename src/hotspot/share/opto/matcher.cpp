@@ -1980,14 +1980,6 @@ bool Matcher::is_vshift_con_pattern(Node *n, Node *m) {
   return false;
 }
 
-bool Matcher::is_vnot_pattern(Node *n, Node *m) {
-  if (n != NULL && m != NULL) {
-    return VectorNode::is_vector_bitwise_not_pattern(n) &&
-           VectorNode::is_all_ones_vector(m);
-  }
-  return false;
-}
-
 bool Matcher::clone_node(Node* n, Node* m, Matcher::MStack& mstack) {
   // Must clone all producers of flags, or we will not match correctly.
   // Suppose a compare setting int-flags is shared (e.g., a switch-tree)
@@ -2322,14 +2314,14 @@ void Matcher::find_shared_post_visit(Node* n, uint opcode) {
       Node* pair = new BinaryNode(n->in(1), n->in(2));
       n->set_req(2, pair);
       n->set_req(1, n->in(3));
-        n->del_req(3);
-        break;
-      }
-      case Op_VectorBlend:
-      case Op_VectorInsert: {
-        Node* pair = new BinaryNode(n->in(1), n->in(2));
-        n->set_req(1, pair);
-        n->set_req(2, n->in(3));
+      n->del_req(3);
+      break;
+    }
+    case Op_VectorBlend:
+    case Op_VectorInsert: {
+      Node* pair = new BinaryNode(n->in(1), n->in(2));
+      n->set_req(1, pair);
+      n->set_req(2, n->in(3));
       n->del_req(3);
       break;
     }
