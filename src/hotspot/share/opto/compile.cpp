@@ -1887,7 +1887,7 @@ bool Compile::inline_incrementally_one() {
 
   print_method(PHASE_INCREMENTAL_INLINE_STEP, 3);
 
-  bool needs_cleanup = true;
+  bool needs_cleanup = do_cleanup() || over_inlining_cutoff();
 
   set_inlining_progress(false);
   set_do_cleanup(false);
@@ -1917,6 +1917,8 @@ void Compile::inline_incrementally_virtual(PhaseIterGVN& igvn) {
 
     for_igvn()->clear();
     initial_gvn()->replace_with(&igvn);
+
+    _late_inlines_pos = _late_inlines.length();
 
     while (inline_incrementally_virtual_one()) {
       assert(!failing(), "inconsistent");
