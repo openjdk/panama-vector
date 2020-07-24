@@ -1066,7 +1066,7 @@ class VectorMaskCmpNode : public VectorNode {
   BoolTest::mask get_predicate() { return _predicate; }
 #ifndef PRODUCT
   virtual void dump_spec(outputStream *st) const;
-#endif // PRODUCT
+#endif // !PRODUCT
 };
 
 // Used to wrap other vector nodes in order to add masking functionality.
@@ -1279,7 +1279,7 @@ class VectorBoxNode : public Node {
   const  TypeVect*    vec_type() const { assert(_vec_type != NULL, ""); return _vec_type; };
 
   virtual int Opcode() const;
-  virtual const Type *bottom_type() const { return _box_type; /* TypeInstPtr::BOTTOM? */ }
+  virtual const Type* bottom_type() const { return _box_type; }
   virtual       uint  ideal_reg() const { return box_type()->ideal_reg(); }
   virtual       uint  size_of() const { return sizeof(*this); }
 
@@ -1297,7 +1297,7 @@ class VectorBoxAllocateNode : public CallStaticJavaNode {
   virtual int Opcode() const;
 #ifndef PRODUCT
   virtual void dump_spec(outputStream *st) const;
-#endif // PRODUCT
+#endif // !PRODUCT
 };
 
 class VectorUnboxNode : public VectorNode {

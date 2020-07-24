@@ -80,7 +80,6 @@ class JVMState;
 class Type;
 class TypeData;
 class TypeInt;
-class TypeInstPtr;
 class TypePtr;
 class TypeOopPtr;
 class TypeFunc;

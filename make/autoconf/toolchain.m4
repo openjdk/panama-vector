@@ -746,21 +746,8 @@ AC_DEFUN_ONCE([TOOLCHAIN_DETECT_TOOLCHAIN_CORE],
   #
   # Setup the assembler (AS)
   #
-  if test "x$TOOLCHAIN_TYPE" = xmicrosoft; then
-    if test "x$OPENJDK_TARGET_CPU_BITS" = x32; then
-      UTIL_PATH_PROGS(AS, ml)
-    else
-      UTIL_PATH_PROGS(AS, ml64)
-    fi
-    UTIL_FIXUP_EXECUTABLE(AS)
-    if test "x$AS" = x; then
-      AC_MSG_ERROR([Microsoft MASM assembler is required.])
-    fi
-    # Tell assembler to assemble without linking and without printing version info
-    AS="$AS /c /nologo"
-  else
-    AS="$CC -c"
-  fi
+  # FIXME: is this correct for microsoft?
+  AS="$CC -c"
   AC_SUBST(AS)
 
   #

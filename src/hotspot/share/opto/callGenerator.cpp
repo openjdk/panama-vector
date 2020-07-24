@@ -561,7 +561,7 @@ class LateInlineBoxingCallGenerator : public LateInlineCallGenerator {
 
     C->add_boxing_late_inline(this);
 
-    JVMState* new_jvms =  DirectCallGenerator::generate(jvms);
+    JVMState* new_jvms = DirectCallGenerator::generate(jvms);
     return new_jvms;
   }
 };

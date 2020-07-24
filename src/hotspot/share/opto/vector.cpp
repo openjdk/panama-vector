@@ -33,9 +33,9 @@
 void PhaseVector::optimize_vector_boxes() {
   Compile::TracePhase tp("vector_elimination", &timers[_t_vector_elimination]);
 
+  // Signal GraphKit it's post-parse phase.
   assert(C->inlining_incrementally() == false, "sanity");
-
-  C->set_inlining_incrementally(true); // FIXME another way to signal GraphKit it's post-parsing phase?
+  C->set_inlining_incrementally(true);
 
   C->for_igvn()->clear();
   C->initial_gvn()->replace_with(&_igvn);
@@ -48,7 +48,7 @@ void PhaseVector::optimize_vector_boxes() {
   expand_vbox_nodes();
   eliminate_vbox_alloc_nodes();
 
-  C->set_inlining_incrementally(false); // FIXME another way to signal GraphKit it's post-parsing phase?
+  C->set_inlining_incrementally(false);
 
   do_cleanup();
 }

@@ -137,4 +137,3 @@ int SharedRuntime::c_calling_convention(const BasicType *sig_bt,
   ShouldNotCallThis();
   return 0;
 }
-

@@ -2379,11 +2379,11 @@ Node *PhiNode::Ideal(PhaseGVN *phase, bool can_reshape) {
 
   // Phi (VB ... VB) => VB (Phi ...) (Phi ...)
   if (EnableVectorReboxing && can_reshape && progress == NULL) {
-    PhaseIterGVN *igvn = phase->is_IterGVN();
+    PhaseIterGVN* igvn = phase->is_IterGVN();
 
     bool all_inputs_are_equiv_vboxes = true;
     for (uint i = 1; i < req(); ++i) {
-      Node *n = in(i);
+      Node* n = in(i);
       if (in(i)->Opcode() != Op_VectorBox) {
         all_inputs_are_equiv_vboxes = false;
         break;
