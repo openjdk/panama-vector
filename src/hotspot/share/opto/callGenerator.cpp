@@ -537,7 +537,7 @@ class LateInlineStringCallGenerator : public LateInlineCallGenerator {
 
     C->add_string_late_inline(this);
 
-    JVMState* new_jvms =  DirectCallGenerator::generate(jvms);
+    JVMState* new_jvms = DirectCallGenerator::generate(jvms);
     return new_jvms;
   }
 
@@ -583,7 +583,7 @@ class LateInlineVectorReboxingCallGenerator : public LateInlineCallGenerator {
 
     C->add_vector_reboxing_late_inline(this);
 
-    JVMState* new_jvms =  DirectCallGenerator::generate(jvms);
+    JVMState* new_jvms = DirectCallGenerator::generate(jvms);
     return new_jvms;
   }
 };

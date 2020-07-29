@@ -4618,15 +4618,15 @@ void Compile::print_method(CompilerPhaseType cpt, const char *name, int level, i
 }
 
 void Compile::print_method(CompilerPhaseType cpt, int level, int idx) {
-    char output[1024];
+  char output[1024];
 #ifndef PRODUCT
-    if (idx != 0) {
-      jio_snprintf(output, sizeof(output), "%s:%d", CompilerPhaseTypeHelper::to_string(cpt), idx);
-    } else {
-      jio_snprintf(output, sizeof(output), "%s", CompilerPhaseTypeHelper::to_string(cpt));
-    }
+  if (idx != 0) {
+    jio_snprintf(output, sizeof(output), "%s:%d", CompilerPhaseTypeHelper::to_string(cpt), idx);
+  } else {
+    jio_snprintf(output, sizeof(output), "%s", CompilerPhaseTypeHelper::to_string(cpt));
+  }
 #endif
-    print_method(cpt, output, level, idx);
+  print_method(cpt, output, level, idx);
 }
 
 void Compile::print_method(CompilerPhaseType cpt, Node* n, int level) {

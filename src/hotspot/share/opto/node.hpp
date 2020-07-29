@@ -154,7 +154,6 @@ class LoadVectorNode;
 class LoadVectorGatherNode;
 class StoreVectorNode;
 class StoreVectorScatterNode;
-class VectorBoxNode;
 class VectorMaskCmpNode;
 class VectorSet;
 typedef void (*NFunc)(Node&,void*);
@@ -723,7 +722,6 @@ public:
       DEFINE_CLASS_ID(VectorMaskCmp, Vector, 0)
     DEFINE_CLASS_ID(ClearArray, Node, 14)
     DEFINE_CLASS_ID(Halt, Node, 15)
-
 
     _max_classes  = ClassMask_Halt
   };

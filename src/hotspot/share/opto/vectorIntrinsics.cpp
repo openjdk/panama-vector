@@ -1100,7 +1100,6 @@ bool LibraryCallKit::inline_vector_rearrange() {
 
   if (shuffle_klass->const_oop() == NULL || vector_klass->const_oop() == NULL ||
     elem_klass->const_oop() == NULL || !vlen->is_con()) {
-    return false; // not enough info for intrinsification
     if (C->print_intrinsics()) {
       tty->print_cr("  ** missing constant: vclass=%s sclass=%s etype=%s vlen=%s",
                     NodeClassNames[argument(0)->Opcode()],
@@ -1108,6 +1107,7 @@ bool LibraryCallKit::inline_vector_rearrange() {
                     NodeClassNames[argument(2)->Opcode()],
                     NodeClassNames[argument(3)->Opcode()]);
     }
+    return false; // not enough info for intrinsification
   }
   if (!is_klass_initialized(vector_klass) || !is_klass_initialized(shuffle_klass)) {
     if (C->print_intrinsics()) {

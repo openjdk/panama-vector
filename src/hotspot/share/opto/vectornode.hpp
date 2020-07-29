@@ -1166,7 +1166,7 @@ class VectorStoreMaskNode : public VectorNode {
  public:
   virtual int Opcode() const;
 
-  static Node* make(PhaseGVN& gvn, Node* in, BasicType in_type, uint num_elem);
+  static VectorStoreMaskNode* make(PhaseGVN& gvn, Node* in, BasicType in_type, uint num_elem);
 };
 
 // This is intended for use as a simple reinterpret node that has no cast.
