@@ -77,6 +77,11 @@ import jdk.internal.vm.vector.VectorSupport;
  * <li>Lane-wise vector operations that apply to floating point vectors
  * follow the accuracy and monotonicity specifications of the equivalent
  * Java operation or method mentioned in its documentation.
+ * If the vector element type is {@code float} and the Java operation or
+ * method only accepts and returns {@code double} values, then the scalar operation
+ * on each lane is adapted to cast operands and the result, specifically widening
+ * {@code float} operands to {@code double} operands and narrowing the {@code double}
+ * result to a {@code float}.
  *
  * <li id="fp_assoc">Certain associative operations that apply to floating point
  * vectors are not truly associative on the floating point lane values.

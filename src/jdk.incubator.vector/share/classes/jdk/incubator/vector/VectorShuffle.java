@@ -128,8 +128,8 @@ import java.util.function.IntUnaryOperator;
  * possible, but instead should be stored in loop-invariant locals or
  * as {@code static final} constants.
  *
- * @param <E> the boxed element type for the vector element
- *        type ({@code ETYPE})
+ * @param <E> the boxed version of {@code ETYPE},
+ *           the element type of a vector
  */
 @SuppressWarnings("exports")
 public abstract class VectorShuffle<E> extends jdk.internal.vm.vector.VectorSupport.VectorShuffle<E> {

@@ -108,8 +108,8 @@ import java.util.Objects;
  * }</pre>
  *
  * </ul>
- * @param <E> the boxed element type for the vector element
- *        type ({@code ETYPE})
+ * @param <E> the boxed version of {@code ETYPE},
+ *           the element type of a vector
  *
  * <h2>Value-based classes and identity operations</h2>
  *
