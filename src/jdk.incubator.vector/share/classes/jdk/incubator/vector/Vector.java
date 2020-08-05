@@ -116,17 +116,15 @@ import java.util.Arrays;
  *   -- between Vector.java and package-info.java -->
  *
  * <p><a id="ETYPE"></a> The {@linkplain #elementType element type} of a vector,
- * sometimes called {@code ETYPE}, is one of the primitive types
+ * referred to as {@code ETYPE}, is one of the primitive types
  * {@code byte}, {@code short}, {@code int}, {@code long}, {@code
  * float}, or {@code double}.
  *
- * <p> The type {@code E} in {@code Vector<E>} is a generic type
- * argument that corresponds to the element type.  In fact, it is the
- * <em>boxed</em> version of the primitive element type.  For example,
- * in the type {@code Vector<Integer>}, the {@code E} parameter is
- * {@code Integer} but the {@code ETYPE} is {@code int}.  In such a
- * vector, each lane carries a primitive {@code int} value.  This
- * pattern continues for the other primitive types as well.
+ * <p> The type {@code E} in {@code Vector<E>} is the <em>boxed</em> version
+ * of {@code ETYPE}. For example, in the type {@code Vector<Integer>}, the {@code E}
+ * parameter is {@code Integer} and the {@code ETYPE} is {@code int}.  In such a
+ * vector, each lane carries a primitive {@code int} value.  This pattern continues
+ * for the other primitive types as well.
  *
  * <p><a id="VLENGTH"></a> The {@linkplain #length() length} of a vector
  * is the lane count, the number of lanes it contains.
@@ -187,10 +185,10 @@ import java.util.Arrays;
  * must always match the bit-size of the vector's shape.
  *
  * Thus, {@linkplain #reinterpretShape(VectorSpecies,int) reinterpreting} a
- * vector via a cast may double its length if and only if it either
- * halves the lane size, or else changes the shape.  Likewise,
- * reinterpreting a vector may double the lane size if and only if it
- * either halves the length, or else changes the shape of the vector.
+ * vector may double its length if and only if it either halves the lane size,
+ * or else changes the shape.  Likewise, reinterpreting a vector may double the
+ * lane size if and only if it either halves the length, or else changes the
+ * shape of the vector.
  *
  * <h2><a id="subtypes"></a>Vector subtypes</h2>
  *
@@ -753,17 +751,18 @@ import java.util.Arrays;
  * As was already mentioned, vectors can be loaded from memory and
  * stored back.  An optional mask can control which individual memory
  * locations are read from or written to.  The shape of a vector
- * determines how much memory it will occupy.  In the absence of
- * masking, the lanes are stored as a dense sequence of back-to-back
+ * determines how much memory it will occupy.
+ *
+ * An implementation typically has the property, in the absence of
+ * masking, that lanes are stored as a dense sequence of back-to-back
  * values in memory, the same as a dense (gap-free) series of single
  * scalar values in an array of the scalar type.
  *
- * Memory order corresponds exactly to lane order.  The first vector
- * lane value occupies the first position in memory, and so on, up to
- * the length of the vector.  Although memory order is not directly
- * defined by Java as a separate concept, the memory order of stored
- * vector lanes always corresponds to increasing index values in a
- * Java array or in a {@link java.nio.ByteBuffer}.
+ * In such cases memory order corresponds exactly to lane order.  The
+ * first vector lane value occupies the first position in memory, and so on,
+ * up to the length of the vector. Further, the memory order of stored
+ * vector lanes corresponds to increasing index values in a Java array or
+ * in a {@link java.nio.ByteBuffer}.
  *
  * <p> Byte order for lane storage is chosen such that the stored
  * vector values can be read or written as single primitive values,
@@ -1150,8 +1149,7 @@ import java.util.Arrays;
  * unpredictable results, or reduced performance.  Oddly enough,
  * {@link Vector#equals(Object) v.equals(w)} is likely to be faster
  * than {@code v==w}, since {@code equals} is <em>not</em> an identity
- * sensitive method.  It is also reasonable to use, on vectors, the
- * {@code toString} and {@code hashCode} methods of {@code Object}.
+ * sensitive method.
  *
  * Also, these objects can be stored in locals and parameters and as
  * {@code static final} constants, but storing them in other Java
@@ -1160,8 +1158,8 @@ import java.util.Arrays;
  * <!-- The preceding paragraph is shared verbatim
  *   -- between Vector.java and package-info.java -->
  *
- * @param <E> the boxed element type for the vector element
- *        type ({@code ETYPE})
+ * @param <E> the boxed version of {@code ETYPE},
+ *           the element type of a vector
  *
  */
 @SuppressWarnings("exports")

@@ -1433,14 +1433,15 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     /**
      * Raises this vector to the power of a second input vector.
      *
-     * This is a lane-wise binary operation which applies the
-     * method {@code Math.pow()}
+     * This is a lane-wise binary operation which applies an operation
+     * conforming to the specification of
+     * {@link Math#pow Math.pow(a,b)}
      * to each pair of corresponding lane values.
      *
      * This method is also equivalent to the expression
      * {@link #lanewise(VectorOperators.Binary,Vector)
      *    lanewise}{@code (}{@link VectorOperators#POW
-     *    POW}{@code , n)}.
+     *    POW}{@code , b)}.
      *
      * <p>
      * This is not a full-service named operation like
@@ -1449,38 +1450,39 @@ public abstract class DoubleVector extends AbstractVector<Double> {
      * but may be obtained via the masked version of
      * {@code lanewise}.
      *
-     * @param n a vector exponent by which to raise this vector
-     * @return the {@code n}-th power of this vector
+     * @param b a vector exponent by which to raise this vector
+     * @return the {@code b}-th power of this vector
      * @see #pow(double)
      * @see VectorOperators#POW
      * @see #lanewise(VectorOperators.Binary,Vector,VectorMask)
      */
     @ForceInline
-    public final DoubleVector pow(Vector<Double> n) {
-        return lanewise(POW, n);
+    public final DoubleVector pow(Vector<Double> b) {
+        return lanewise(POW, b);
     }
 
     /**
      * Raises this vector to a scalar power.
      *
-     * This is a lane-wise binary operation which applies the
-     * method {@code Math.pow()}
+     * This is a lane-wise binary operation which applies an operation
+     * conforming to the specification of
+     * {@link Math#pow Math.pow(a,b)}
      * to each pair of corresponding lane values.
      *
      * This method is also equivalent to the expression
      * {@link #lanewise(VectorOperators.Binary,Vector)
      *    lanewise}{@code (}{@link VectorOperators#POW
-     *    POW}{@code , n)}.
+     *    POW}{@code , b)}.
      *
-     * @param n a scalar exponent by which to raise this vector
-     * @return the {@code n}-th power of this vector
+     * @param b a scalar exponent by which to raise this vector
+     * @return the {@code b}-th power of this vector
      * @see #pow(Vector)
      * @see VectorOperators#POW
      * @see #lanewise(VectorOperators.Binary,double,VectorMask)
      */
     @ForceInline
-    public final DoubleVector pow(double n) {
-        return lanewise(POW, n);
+    public final DoubleVector pow(double b) {
+        return lanewise(POW, b);
     }
 
     /// UNARY METHODS
@@ -1510,8 +1512,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     /**
      * Computes the square root of this vector.
      *
-     * This is a lane-wise unary operation which applies the
-     * the method {@code Math.sqrt()}
+     * This is a lane-wise unary operation which applies an operation
+     * conforming to the specification of
+     * {@link Math#sqrt Math.sqrt(a)}
      * to each lane value.
      *
      * This method is also equivalent to the expression
@@ -2111,9 +2114,10 @@ public abstract class DoubleVector extends AbstractVector<Double> {
      * The result is numerically close to {@code this.mul(b).add(c)},
      * and is typically closer to the true mathematical result.
      *
-     * This is a lane-wise ternary operation which applies the
-     * {@link Math#fma(double,double,double) Math#fma(a,b,c)}
-     * operation to each lane.
+     * This is a lane-wise ternary operation which applies an operation
+     * conforming to the specification of
+     * {@link Math#fma(double,double,double) Math.fma(a,b,c)}
+     * to each lane.
      *
      * This method is also equivalent to the expression
      * {@link #lanewise(VectorOperators.Ternary,Vector,Vector)
@@ -2145,9 +2149,10 @@ public abstract class DoubleVector extends AbstractVector<Double> {
      * The result is numerically close to {@code this.mul(b).add(c)},
      * and is typically closer to the true mathematical result.
      *
-     * This is a lane-wise ternary operation which applies the
-     * {@link Math#fma(double,double,double) Math#fma(a,b,c)}
-     * operation to each lane.
+     * This is a lane-wise ternary operation which applies an operation
+     * conforming to the specification of
+     * {@link Math#fma(double,double,double) Math.fma(a,b,c)}
+     * to each lane.
      *
      * This method is also equivalent to the expression
      * {@link #lanewise(VectorOperators.Ternary,Vector,Vector)

@@ -50,8 +50,8 @@ import java.util.function.IntUnaryOperator;
  * fields or in array elements, while semantically valid, may incur
  * performance penalties.
  *
- * @param <E> the boxed element type for the vector element
- *        type ({@code ETYPE})
+ * @param <E> the boxed version of {@code ETYPE},
+ *           the element type of a vector
  */
 public interface VectorSpecies<E> {
     /**

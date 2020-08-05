@@ -1433,14 +1433,19 @@ public abstract class FloatVector extends AbstractVector<Float> {
     /**
      * Raises this vector to the power of a second input vector.
      *
-     * This is a lane-wise binary operation which applies the
-     * method {@code Math.pow()}
+     * This is a lane-wise binary operation which applies an operation
+     * conforming to the specification of
+     * {@link Math#pow Math.pow(a,b)}
      * to each pair of corresponding lane values.
+     * The operation is adapted to cast the operands and the result,
+     * specifically widening {@code float} operands to {@code double}
+     * operands and narrowing the {@code double} result to a {@code float}
+     * result.
      *
      * This method is also equivalent to the expression
      * {@link #lanewise(VectorOperators.Binary,Vector)
      *    lanewise}{@code (}{@link VectorOperators#POW
-     *    POW}{@code , n)}.
+     *    POW}{@code , b)}.
      *
      * <p>
      * This is not a full-service named operation like
@@ -1449,38 +1454,43 @@ public abstract class FloatVector extends AbstractVector<Float> {
      * but may be obtained via the masked version of
      * {@code lanewise}.
      *
-     * @param n a vector exponent by which to raise this vector
-     * @return the {@code n}-th power of this vector
+     * @param b a vector exponent by which to raise this vector
+     * @return the {@code b}-th power of this vector
      * @see #pow(float)
      * @see VectorOperators#POW
      * @see #lanewise(VectorOperators.Binary,Vector,VectorMask)
      */
     @ForceInline
-    public final FloatVector pow(Vector<Float> n) {
-        return lanewise(POW, n);
+    public final FloatVector pow(Vector<Float> b) {
+        return lanewise(POW, b);
     }
 
     /**
      * Raises this vector to a scalar power.
      *
-     * This is a lane-wise binary operation which applies the
-     * method {@code Math.pow()}
+     * This is a lane-wise binary operation which applies an operation
+     * conforming to the specification of
+     * {@link Math#pow Math.pow(a,b)}
      * to each pair of corresponding lane values.
+     * The operation is adapted to cast the operands and the result,
+     * specifically widening {@code float} operands to {@code double}
+     * operands and narrowing the {@code double} result to a {@code float}
+     * result.
      *
      * This method is also equivalent to the expression
      * {@link #lanewise(VectorOperators.Binary,Vector)
      *    lanewise}{@code (}{@link VectorOperators#POW
-     *    POW}{@code , n)}.
+     *    POW}{@code , b)}.
      *
-     * @param n a scalar exponent by which to raise this vector
-     * @return the {@code n}-th power of this vector
+     * @param b a scalar exponent by which to raise this vector
+     * @return the {@code b}-th power of this vector
      * @see #pow(Vector)
      * @see VectorOperators#POW
      * @see #lanewise(VectorOperators.Binary,float,VectorMask)
      */
     @ForceInline
-    public final FloatVector pow(float n) {
-        return lanewise(POW, n);
+    public final FloatVector pow(float b) {
+        return lanewise(POW, b);
     }
 
     /// UNARY METHODS
@@ -1510,9 +1520,14 @@ public abstract class FloatVector extends AbstractVector<Float> {
     /**
      * Computes the square root of this vector.
      *
-     * This is a lane-wise unary operation which applies the
-     * the method {@code Math.sqrt()}
+     * This is a lane-wise unary operation which applies an operation
+     * conforming to the specification of
+     * {@link Math#sqrt Math.sqrt(a)}
      * to each lane value.
+     * The operation is adapted to cast the operand and the result,
+     * specifically widening the {@code float} operand to a {@code double}
+     * operand and narrowing the {@code double} result to a {@code float}
+     * result.
      *
      * This method is also equivalent to the expression
      * {@link #lanewise(VectorOperators.Unary)
@@ -2111,9 +2126,14 @@ public abstract class FloatVector extends AbstractVector<Float> {
      * The result is numerically close to {@code this.mul(b).add(c)},
      * and is typically closer to the true mathematical result.
      *
-     * This is a lane-wise ternary operation which applies the
-     * {@link Math#fma(float,float,float) Math#fma(a,b,c)}
-     * operation to each lane.
+     * This is a lane-wise ternary operation which applies an operation
+     * conforming to the specification of
+     * {@link Math#fma(float,float,float) Math.fma(a,b,c)}
+     * to each lane.
+     * The operation is adapted to cast the operands and the result,
+     * specifically widening {@code float} operands to {@code double}
+     * operands and narrowing the {@code double} result to a {@code float}
+     * result.
      *
      * This method is also equivalent to the expression
      * {@link #lanewise(VectorOperators.Ternary,Vector,Vector)
@@ -2145,9 +2165,14 @@ public abstract class FloatVector extends AbstractVector<Float> {
      * The result is numerically close to {@code this.mul(b).add(c)},
      * and is typically closer to the true mathematical result.
      *
-     * This is a lane-wise ternary operation which applies the
-     * {@link Math#fma(float,float,float) Math#fma(a,b,c)}
-     * operation to each lane.
+     * This is a lane-wise ternary operation which applies an operation
+     * conforming to the specification of
+     * {@link Math#fma(float,float,float) Math.fma(a,b,c)}
+     * to each lane.
+     * The operation is adapted to cast the operands and the result,
+     * specifically widening {@code float} operands to {@code double}
+     * operands and narrowing the {@code double} result to a {@code float}
+     * result.
      *
      * This method is also equivalent to the expression
      * {@link #lanewise(VectorOperators.Ternary,Vector,Vector)

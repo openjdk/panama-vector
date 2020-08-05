@@ -122,7 +122,7 @@
  * and storing result in array {@code c}.
  *
  * <pre>{@code
- * static final VectorSpecies<Float> SPECIES = FloatVector.SPECIES_512;
+ * static final VectorSpecies<Float> SPECIES = FloatVector.SPECIES_PREFERRED;
  *
  * void vectorMultiply(float[] a, float[] b, float[] c) {
  *   // It is assumed array arguments are of the same size
@@ -149,7 +149,7 @@
  * same computation can be implemented without masks as follows:
  *
  * <pre>{@code
- * static final VectorSpecies<Float> SPECIES = FloatVector.SPECIES_512;
+ * static final VectorSpecies<Float> SPECIES = FloatVector.SPECIES_PREFERRED;
  *
  * void vectorMultiply(float[] a, float[] b, float[] c) {
  *   int i = 0;
@@ -171,14 +171,9 @@
  * process a <em>tail</em> of {@code TLENGTH} array elements, where
  * {@code TLENGTH < SPECIES.length()} for the vector species.
  *
- * The example above uses vectors hardcoded to a concrete shape
- * (512-bit). Instead, we could use preferred species as shown below,
- * to make the code dynamically adapt to optimal shape for the
- * platform on which it runs.
- *
- * <pre>{@code
- * static final VectorSpecies<Float> SPECIES = FloatVector.SPECIES_PREFERRED;
- * }</pre>
+ * The examples above use the preferred species ({@code FloatVector.SPECIES_PREFERRED}),
+ * ensuring code dynamically adapts to optimal shape for the platform
+ * on which it runs.
  *
  * <p> The helper method {@link VectorSpecies#loopBound(int) loopBound()}
  * is used in the above code to find the end of the vector loop.
@@ -229,8 +224,7 @@
  * unpredictable results, or reduced performance.  Oddly enough,
  * {@link Vector#equals(Object) v.equals(w)} is likely to be faster
  * than {@code v==w}, since {@code equals} is <em>not</em> an identity
- * sensitive method.  It is also reasonable to use, on vectors, the
- * {@code toString} and {@code hashCode} methods of {@code Object}.
+ * sensitive method.
  *
  * Also, these objects can be stored in locals and parameters and as
  * {@code static final} constants, but storing them in other Java
@@ -238,11 +232,6 @@
  * incur performance risks.
  * <!-- The preceding paragraph is shared verbatim
  *   -- between Vector.java and package-info.java -->
- *
- * <li> Unless specified otherwise, any method arguments of reference
- * type must not be {@code null}, and any {@code null} argument will
- * elicit a {@code NullPointerException}.  This fact is not
- * individually documented for methods in this package.
  *
  * </ul>
  *
