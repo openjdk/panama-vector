@@ -1102,8 +1102,9 @@ bool CallDynamicJavaNode::cmp( const Node &n ) const {
 
 Node* CallDynamicJavaNode::Ideal(PhaseGVN* phase, bool can_reshape) {
   CallGenerator* cg = generator();
-  if (can_reshape && cg != NULL && cg->is_virtual_late_inline()) {
+  if (can_reshape && cg != NULL) {
     assert(IncrementalInlineVirtual, "required");
+    assert(cg->is_virtual_late_inline(), "not virtual");
 
     // Recover symbolic info for method resolution
     ciMethod* caller = jvms()->method();
@@ -1126,13 +1127,13 @@ Node* CallDynamicJavaNode::Ideal(PhaseGVN* phase, bool can_reshape) {
     const TypeOopPtr* receiver_type = phase->type(receiver_node)->isa_oopptr();
 
     int  not_used3;
-    bool call_does_dispatch = true;
+    bool call_does_dispatch;
     ciMethod* callee = phase->C->optimize_virtual_call(caller, klass, holder, orig_callee, receiver_type, true /*is_virtual*/,
                                                        call_does_dispatch, not_used3);  // out-parameters
     if (!call_does_dispatch) {
       // Register for late inlining
       cg->set_callee_method(callee);
-      phase->C->prepend_virtual_late_inline(cg);
+      phase->C->prepend_late_inline(cg); // TODO prepend or append for virtual calls? MH late inlining prepends to the list.
       set_generator(NULL);
     }
   }

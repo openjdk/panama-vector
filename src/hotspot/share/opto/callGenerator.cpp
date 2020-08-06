@@ -554,6 +554,7 @@ class LateInlineVirtualCallGenerator : public VirtualCallGenerator {
   virtual void do_late_inline();
 
   virtual void set_callee_method(ciMethod* m) {
+    assert(_callee == NULL, "repeated inlining attempt");
     _callee = m;
   }
 

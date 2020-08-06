@@ -60,7 +60,6 @@ enum CompilerPhaseType {
   PHASE_MATCHING,
   PHASE_INCREMENTAL_INLINE,
   PHASE_INCREMENTAL_INLINE_STEP,
-  PHASE_INCREMENTAL_INLINE_STEP_VIRTUAL,
   PHASE_INCREMENTAL_INLINE_CLEANUP,
   PHASE_INCREMENTAL_BOXING_INLINE,
   PHASE_CALL_CATCH_CLEANUP,
@@ -113,7 +112,6 @@ class CompilerPhaseTypeHelper {
       case PHASE_MATCHING:                   return "After matching";
       case PHASE_INCREMENTAL_INLINE:         return "Incremental Inline";
       case PHASE_INCREMENTAL_INLINE_STEP:    return "Incremental Inline Step";
-      case PHASE_INCREMENTAL_INLINE_STEP_VIRTUAL: return "Incremental Inline One Virtual";
       case PHASE_INCREMENTAL_INLINE_CLEANUP: return "Incremental Inline Cleanup";
       case PHASE_INCREMENTAL_BOXING_INLINE:  return "Incremental Boxing Inline";
       case PHASE_CALL_CATCH_CLEANUP:         return "Call catch cleanup";

@@ -412,7 +412,6 @@ void Compile::remove_useless_nodes(Unique_Node_List &useful) {
   remove_useless_late_inlines(&_string_late_inlines, useful);
   remove_useless_late_inlines(&_boxing_late_inlines, useful);
   remove_useless_late_inlines(&_late_inlines, useful);
-  remove_useless_late_inlines(&_virtual_late_inlines, useful);
   remove_useless_late_inlines(&_vector_reboxing_late_inlines, useful);
   debug_only(verify_graph_edges(true/*check for no_dead_code*/);)
 }
@@ -547,7 +546,6 @@ Compile::Compile( ciEnv* ci_env, ciMethod* target, int osr_bci,
                   _string_late_inlines(comp_arena(), 2, 0, NULL),
                   _boxing_late_inlines(comp_arena(), 2, 0, NULL),
                   _vector_reboxing_late_inlines(comp_arena(), 2, 0, NULL),
-                  _virtual_late_inlines(comp_arena(), 2, 0, NULL),
                   _late_inlines_pos(0),
                   _number_of_mh_late_inlines(0),
                   _print_inlining_stream(NULL),
@@ -1872,11 +1870,15 @@ bool Compile::inline_incrementally_one() {
   set_inlining_progress(false);
   set_do_cleanup(false);
   int i = 0;
-  for (; i <_late_inlines.length() && !inlining_progress(); i++) {
+  for (; i <_late_inlines.length(); i++) {
     CallGenerator* cg = _late_inlines.at(i);
     _late_inlines_pos = i+1;
     cg->do_late_inline();
-    if (failing())  return false;
+    if (failing()) {
+      return false;
+    } else if (inlining_progress()) {
+      break; // process one call site at a time
+    }
   }
   int j = 0;
   for (; i < _late_inlines.length(); i++, j++) {
@@ -1908,53 +1910,6 @@ void Compile::inline_incrementally_cleanup(PhaseIterGVN& igvn) {
   print_method(PHASE_INCREMENTAL_INLINE_CLEANUP, 3);
 }
 
-void Compile::inline_incrementally_virtual(PhaseIterGVN& igvn) {
-  assert(inlining_incrementally(), "required");
-  while (_virtual_late_inlines.length() > 0) {
-    if (live_nodes() > (uint)LiveNodeCountInliningCutoff) {
-      break; // finish
-    }
-
-    for_igvn()->clear();
-    initial_gvn()->replace_with(&igvn);
-
-    _late_inlines_pos = _late_inlines.length();
-
-    while (inline_incrementally_virtual_one()) {
-      assert(!failing(), "inconsistent");
-    }
-    if (failing())  return;
-
-    inline_incrementally_cleanup(igvn);
-  }
-}
-
-bool Compile::inline_incrementally_virtual_one() {
-  assert(inlining_incrementally(), "required");
-  set_inlining_progress(false);
-  set_do_cleanup(false);
-  for (int i = 0; i < _virtual_late_inlines.length(); i++) {
-    CallGenerator* cg = _virtual_late_inlines.at(i);
-    cg->do_late_inline();
-    if (failing()) {
-      return false;
-    } else if (inlining_progress()) {
-      _virtual_late_inlines.remove_at(i);
-      break; // process one call site at a time
-    }
-  }
-  assert(inlining_progress() || _virtual_late_inlines.length() == 0, "");
-
-  print_method(PHASE_INCREMENTAL_INLINE_STEP_VIRTUAL, 3);
-
-  bool needs_cleanup = do_cleanup() || over_inlining_cutoff();
-
-  set_inlining_progress(false);
-  set_do_cleanup(false);
-  return (_virtual_late_inlines.length() > 0) && !needs_cleanup;
-}
-
-
 // Perform incremental inlining until bound on number of live nodes is reached
 void Compile::inline_incrementally(PhaseIterGVN& igvn) {
   TracePhase tp("incrementalInline", &timers[_t_incrInline]);
@@ -1962,7 +1917,7 @@ void Compile::inline_incrementally(PhaseIterGVN& igvn) {
   set_inlining_incrementally(true);
   uint low_live_nodes = 0;
 
-  while (_late_inlines.length() > 0 || _virtual_late_inlines.length() > 0) {
+  while (_late_inlines.length() > 0) {
     if (live_nodes() > (uint)LiveNodeCountInliningCutoff) {
       if (low_live_nodes < (uint)LiveNodeCountInliningCutoff * 8 / 10) {
         TracePhase tp("incrementalInline_ideal", &timers[_t_incrInline_ideal]);
@@ -1993,10 +1948,6 @@ void Compile::inline_incrementally(PhaseIterGVN& igvn) {
 
     print_method(PHASE_INCREMENTAL_INLINE_STEP, 3);
 
-
-    if (failing())  return;
-
-    inline_incrementally_virtual(igvn);
 
     if (failing())  return;
 
@@ -4271,20 +4222,14 @@ void Compile::process_print_inlining() {
     for (int i = 0; i < _late_inlines.length(); i++) {
       CallGenerator* cg = _late_inlines.at(i);
       if (!cg->is_mh_late_inline()) {
-        const char* msg = "live nodes > LiveNodeCountInliningCutoff";
+        bool is_virtual = cg->is_virtual_late_inline();
+        const char* msg = (is_virtual ? "virtual call"
+                                      : "live nodes > LiveNodeCountInliningCutoff");
         if (do_print_inlining) {
           cg->print_inlining_late(msg);
         }
         log_late_inline_failure(cg, msg);
       }
-    }
-    for (int i = 0; i < _virtual_late_inlines.length(); i++) {
-      CallGenerator* cg = _virtual_late_inlines.at(i);
-        const char* msg = "virtual call";
-        if (do_print_inlining) {
-          cg->print_inlining_late(msg);
-        }
-        log_late_inline_failure(cg, msg);
     }
   }
   if (do_print_inlining) {
