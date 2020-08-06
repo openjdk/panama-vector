@@ -2099,8 +2099,6 @@ void Compile::Optimize() {
     igvn.optimize();
   }
 
-  // FIXME for_igvn() is corrupted from here: new_worklist which is set_for_ignv() was allocated on stack.
-
   // Perform escape analysis
   if (_do_escape_analysis && ConnectionGraph::has_candidates(this)) {
     if (has_loops()) {
@@ -4634,11 +4632,7 @@ void Compile::print_method(CompilerPhaseType cpt, Node* n, int level) {
   stringStream ss;
   ss.print_raw(CompilerPhaseTypeHelper::to_string(cpt));
   if (n != NULL) {
-#ifndef PRODUCT
-    ss.print(": %s %d", n->Name(), n->_idx);
-#else
-    ss.print(": %d %d", n->Opcode(), n->_idx);
-#endif // !PRODUCT
+    ss.print(": %d %s ", n->_idx, NodeClassNames[n->Opcode()]);
   } else {
     ss.print_raw(": NULL");
   }
