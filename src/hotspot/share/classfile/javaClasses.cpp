@@ -436,11 +436,11 @@ char* java_lang_String::as_platform_dependent_str(Handle java_string, TRAPS) {
   char *native_platform_string;
   { JavaThread* thread = (JavaThread*)THREAD;
     assert(thread->is_Java_thread(), "must be java thread");
-    JNIEnv *env = thread->jni_environment();
-    jstring js = (jstring) JNIHandles::make_local(env, java_string());
+    jstring js = (jstring) JNIHandles::make_local(thread, java_string());
     bool is_copy;
     HandleMark hm(thread);
     ThreadToNativeFromVM ttn(thread);
+    JNIEnv *env = thread->jni_environment();
     native_platform_string = (_to_platform_string_fn)(env, js, &is_copy);
     assert(is_copy == JNI_TRUE, "is_copy value changed");
     JNIHandles::destroy_local(js);
@@ -895,7 +895,7 @@ void java_lang_Class::fixup_mirror(Klass* k, TRAPS) {
       assert(present, "Missing archived mirror for %s", k->external_name());
       return;
     } else {
-      k->set_java_mirror_handle(OopHandle());
+      k->clear_java_mirror_handle();
       k->clear_has_raw_archived_mirror();
     }
   }
@@ -1121,8 +1121,9 @@ void java_lang_Class::archive_basic_type_mirrors(TRAPS) {
   assert(HeapShared::is_heap_object_archiving_allowed(),
          "HeapShared::is_heap_object_archiving_allowed() must be true");
 
-  for (int t = 0; t <= T_VOID; t++) {
-    oop m = Universe::_mirrors[t];
+  for (int t = T_BOOLEAN; t < T_VOID+1; t++) {
+    BasicType bt = (BasicType)t;
+    oop m = Universe::_mirrors[t].resolve();
     if (m != NULL) {
       // Update the field at _array_klass_offset to point to the relocated array klass.
       oop archived_m = HeapShared::archive_heap_object(m, THREAD);
@@ -1142,33 +1143,12 @@ void java_lang_Class::archive_basic_type_mirrors(TRAPS) {
 
       log_trace(cds, heap, mirror)(
         "Archived %s mirror object from " PTR_FORMAT " ==> " PTR_FORMAT,
-        type2name((BasicType)t), p2i(Universe::_mirrors[t]), p2i(archived_m));
+        type2name(bt), p2i(m), p2i(archived_m));
 
-      Universe::_mirrors[t] = archived_m;
+      Universe::replace_mirror(bt, archived_m);
     }
   }
-
-  assert(Universe::_mirrors[T_INT] != NULL &&
-         Universe::_mirrors[T_FLOAT] != NULL &&
-         Universe::_mirrors[T_DOUBLE] != NULL &&
-         Universe::_mirrors[T_BYTE] != NULL &&
-         Universe::_mirrors[T_BOOLEAN] != NULL &&
-         Universe::_mirrors[T_CHAR] != NULL &&
-         Universe::_mirrors[T_LONG] != NULL &&
-         Universe::_mirrors[T_SHORT] != NULL &&
-         Universe::_mirrors[T_VOID] != NULL, "sanity");
-
-  Universe::set_int_mirror(Universe::_mirrors[T_INT]);
-  Universe::set_float_mirror(Universe::_mirrors[T_FLOAT]);
-  Universe::set_double_mirror(Universe::_mirrors[T_DOUBLE]);
-  Universe::set_byte_mirror(Universe::_mirrors[T_BYTE]);
-  Universe::set_bool_mirror(Universe::_mirrors[T_BOOLEAN]);
-  Universe::set_char_mirror(Universe::_mirrors[T_CHAR]);
-  Universe::set_long_mirror(Universe::_mirrors[T_LONG]);
-  Universe::set_short_mirror(Universe::_mirrors[T_SHORT]);
-  Universe::set_void_mirror(Universe::_mirrors[T_VOID]);
 }
-
 //
 // After the mirror object is successfully archived, the archived
 // klass is set with _has_archived_raw_mirror flag.
@@ -1201,7 +1181,7 @@ oop java_lang_Class::archive_mirror(Klass* k, TRAPS) {
           ik->is_shared_app_class())) {
       // Archiving mirror for classes from non-builtin loaders is not
       // supported. Clear the _java_mirror within the archived class.
-      k->set_java_mirror_handle(OopHandle());
+      k->clear_java_mirror_handle();
       return NULL;
     }
   }
@@ -2844,10 +2824,10 @@ Method* java_lang_StackFrameInfo::get_method(Handle stackFrame, InstanceKlass* h
 void java_lang_StackFrameInfo::set_method_and_bci(Handle stackFrame, const methodHandle& method, int bci, TRAPS) {
   // set Method* or mid/cpref
   HandleMark hm(THREAD);
-  Handle mname(Thread::current(), stackFrame->obj_field(_memberName_offset));
+  Handle mname(THREAD, stackFrame->obj_field(_memberName_offset));
   InstanceKlass* ik = method->method_holder();
   CallInfo info(method(), ik, CHECK);
-  MethodHandles::init_method_MemberName(mname, info);
+  MethodHandles::init_method_MemberName(mname, info, THREAD);
   // set bci
   java_lang_StackFrameInfo::set_bci(stackFrame(), bci);
   // method may be redefined; store the version
@@ -3257,7 +3237,7 @@ oop java_lang_reflect_RecordComponent::create(InstanceKlass* holder, RecordCompo
     char* sig = NEW_RESOURCE_ARRAY(char, sig_len);
     jio_snprintf(sig, sig_len, "%c%c%s", JVM_SIGNATURE_FUNC, JVM_SIGNATURE_ENDFUNC, type->as_C_string());
     TempNewSymbol full_sig = SymbolTable::new_symbol(sig);
-    accessor_method = holder->find_instance_method(name, full_sig, Klass::find_private);
+    accessor_method = holder->find_instance_method(name, full_sig, Klass::PrivateLookupMode::find);
   }
 
   if (accessor_method != NULL) {

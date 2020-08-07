@@ -161,7 +161,7 @@ void VM_Version::get_processor_features() {
     SoftwarePrefetchHintDistance &= ~7;
   }
 
-  unsigned long auxv = getauxval(AT_HWCAP);
+  uint64_t auxv = getauxval(AT_HWCAP);
 
   char buf[512];
 
@@ -356,6 +356,11 @@ void VM_Version::get_processor_features() {
 
   if (FLAG_IS_DEFAULT(UseFMA)) {
     FLAG_SET_DEFAULT(UseFMA, true);
+  }
+
+  if (UseMD5Intrinsics) {
+    warning("MD5 intrinsics are not available on this CPU");
+    FLAG_SET_DEFAULT(UseMD5Intrinsics, false);
   }
 
   if (auxv & (HWCAP_SHA1 | HWCAP_SHA2)) {

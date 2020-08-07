@@ -1183,8 +1183,10 @@ class JavaThread: public Thread {
  public:
   static jlong* _jvmci_old_thread_counters;
   static void collect_counters(jlong* array, int length);
-  void resize_counters(int current_size, int new_size);
-  static void resize_all_jvmci_counters(int new_size);
+
+  bool resize_counters(int current_size, int new_size);
+
+  static bool resize_all_jvmci_counters(int new_size);
 
  private:
 #endif // INCLUDE_JVMCI
@@ -2339,5 +2341,19 @@ class SignalHandlerMark: public StackObj {
   }
 };
 
+class UnlockFlagSaver {
+  private:
+    JavaThread* _thread;
+    bool _do_not_unlock;
+  public:
+    UnlockFlagSaver(JavaThread* t) {
+      _thread = t;
+      _do_not_unlock = t->do_not_unlock_if_synchronized();
+      t->set_do_not_unlock_if_synchronized(false);
+    }
+    ~UnlockFlagSaver() {
+      _thread->set_do_not_unlock_if_synchronized(_do_not_unlock);
+    }
+};
 
 #endif // SHARE_RUNTIME_THREAD_HPP

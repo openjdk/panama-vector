@@ -1962,6 +1962,8 @@ private:
 
   void ret(int imm16);
 
+  void roll(Register dst, int imm8);
+
 #ifdef _LP64
   void rorq(Register dst, int imm8);
   void rorxq(Register dst, Register src, int imm8);

@@ -3,9 +3,9 @@ import random
 import subprocess
 import sys
 
-AARCH64_AS = "<PATH-TO-AS>"
-AARCH64_OBJDUMP = "<PATH-TO-OBJDUMP>"
-AARCH64_OBJCOPY = "<PATH-TO-OBJCOPY>"
+AARCH64_AS = "as"
+AARCH64_OBJDUMP = "objdump"
+AARCH64_OBJCOPY = "objcopy"
 
 # To minimize the changes of assembler test code
 random.seed(0)
@@ -355,7 +355,7 @@ class LogicalImmOp(AddSubImmOp):
                   + ', #0x%x' % self.immed)
 
      def cstr(self):
-          return super(AddSubImmOp, self).cstr() + "l);"
+          return super(AddSubImmOp, self).cstr() + "ll);"
 
 class MultiOp():
 

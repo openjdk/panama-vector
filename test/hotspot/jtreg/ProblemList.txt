@@ -43,14 +43,9 @@
 compiler/ciReplay/TestSAServer.java 8029528 generic-all
 compiler/codecache/jmx/PoolsIndependenceTest.java 8167015 generic-all
 compiler/codecache/stress/OverloadCompileQueueTest.java 8166554 generic-all
-compiler/codegen/Test6896617.java 8193479 generic-all
 compiler/compilercontrol/jcmd/ClearDirectivesFileStackTest.java 8225370 generic-all
 compiler/jvmci/compilerToVM/GetFlagValueTest.java 8204459 generic-all
-compiler/jvmci/compilerToVM/GetResolvedJavaTypeTest.java 8158860 generic-all
-compiler/jvmci/compilerToVM/InvalidateInstalledCodeTest.java 8163894 generic-all
 compiler/tiered/LevelTransitionTest.java 8067651 generic-all
-
-compiler/c2/Test6852078.java 8194310 generic-all
 
 compiler/cpuflags/TestAESIntrinsicsOnSupportedConfig.java 8190680 generic-all
 
@@ -90,6 +85,7 @@ gc/metaspace/CompressedClassSpaceSizeInJmapHeap.java 8241293 macosx-x64
 
 runtime/jni/terminatedThread/TestTerminatedThread.java 8219652 aix-ppc64
 runtime/ReservedStack/ReservedStackTest.java 8231031 generic-all
+containers/docker/TestMemoryAwareness.java 8250984 linux-5.4.0-1019-oracle
 
 #############################################################################
 

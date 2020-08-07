@@ -36,7 +36,6 @@
 #include "classfile/systemDictionaryShared.hpp"
 #include "classfile/verificationType.hpp"
 #include "classfile/vmSymbols.hpp"
-#include "gc/shared/oopStorageSet.hpp"
 #include "jfr/jfrEvents.hpp"
 #include "logging/log.hpp"
 #include "memory/allocation.hpp"
@@ -1023,7 +1022,7 @@ void SystemDictionaryShared::allocate_shared_protection_domain_array(int size, T
   if (_shared_protection_domains.resolve() == NULL) {
     oop spd = oopFactory::new_objArray(
         SystemDictionary::ProtectionDomain_klass(), size, CHECK);
-    _shared_protection_domains = OopHandle(OopStorageSet::vm_global(), spd);
+    _shared_protection_domains = OopHandle(Universe::vm_global(), spd);
   }
 }
 
@@ -1031,7 +1030,7 @@ void SystemDictionaryShared::allocate_shared_jar_url_array(int size, TRAPS) {
   if (_shared_jar_urls.resolve() == NULL) {
     oop sju = oopFactory::new_objArray(
         SystemDictionary::URL_klass(), size, CHECK);
-    _shared_jar_urls = OopHandle(OopStorageSet::vm_global(), sju);
+    _shared_jar_urls = OopHandle(Universe::vm_global(), sju);
   }
 }
 
@@ -1039,7 +1038,7 @@ void SystemDictionaryShared::allocate_shared_jar_manifest_array(int size, TRAPS)
   if (_shared_jar_manifests.resolve() == NULL) {
     oop sjm = oopFactory::new_objArray(
         SystemDictionary::Jar_Manifest_klass(), size, CHECK);
-    _shared_jar_manifests = OopHandle(OopStorageSet::vm_global(), sjm);
+    _shared_jar_manifests = OopHandle(Universe::vm_global(), sjm);
   }
 }
 
@@ -1774,7 +1773,7 @@ bool SystemDictionaryShared::check_linking_constraints(InstanceKlass* klass, TRA
     RunTimeSharedClassInfo* info = RunTimeSharedClassInfo::get_for(klass);
     assert(info != NULL, "Sanity");
     if (info->_num_loader_constraints > 0) {
-      HandleMark hm;
+      HandleMark hm(THREAD);
       for (int i = 0; i < info->_num_loader_constraints; i++) {
         RunTimeSharedClassInfo::RTLoaderConstraint* lc = info->loader_constraint_at(i);
         Symbol* name = lc->constraint_name();
@@ -1904,8 +1903,7 @@ class CopySharedClassInfoToArchive : StackObj {
   bool _is_builtin;
 public:
   CopySharedClassInfoToArchive(CompactHashtableWriter* writer,
-                               bool is_builtin,
-                               bool is_static_archive)
+                               bool is_builtin)
     : _writer(writer), _is_builtin(is_builtin) {}
 
   bool do_entry(InstanceKlass* k, DumpTimeSharedClassInfo& info) {
@@ -1954,12 +1952,11 @@ void SystemDictionaryShared::write_lambda_proxy_class_dictionary(LambdaProxyClas
 }
 
 void SystemDictionaryShared::write_dictionary(RunTimeSharedDictionary* dictionary,
-                                              bool is_builtin,
-                                              bool is_static_archive) {
+                                              bool is_builtin) {
   CompactHashtableStats stats;
   dictionary->reset();
   CompactHashtableWriter writer(_dumptime_table->count_of(is_builtin), &stats);
-  CopySharedClassInfoToArchive copy(&writer, is_builtin, is_static_archive);
+  CopySharedClassInfoToArchive copy(&writer, is_builtin);
   _dumptime_table->iterate(&copy);
   writer.dump(dictionary, is_builtin ? "builtin dictionary" : "unregistered dictionary");
 }

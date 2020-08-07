@@ -26,11 +26,12 @@
 # set platform-dependent variable
 OS=`uname -s`
 case "$OS" in
-  Linux ) TMP=/tmp  ;;
+  Linux | Darwin ) TMP=/tmp ;;
   Windows_98 )    return    ;;
+  CYGWIN_* )      TMP="c:/temp" ;;
   Windows* )      SID=`sid`; TMP="c:/temp"  ;;
   * )
-    echo "Unrecognized system!"
+    echo "Unrecognized system! ${OS}"
     exit 1
     ;;
 esac
@@ -49,11 +50,11 @@ allow() {
   case "$OS" in
   Windows* ) chacl -g ${SID}:f $* ;;
   * )        chmod 777 $*         ;;
-  esac 
+  esac
 }
 
 runTest() {
-  ${TESTJAVA}/bin/java ${TESTVMOPTS} -cp ${TESTCLASSES} GetXSpace $* 
+  ${TESTJAVA}/bin/java ${TESTVMOPTS} -cp ${TESTCLASSES} GetXSpace $*
   if [ $? -eq 0 ]
   then echo "Passed"
   else
@@ -64,9 +65,9 @@ runTest() {
 
 # df output
 runTest
- 
+
 # readable file in an unreadable directory
-mkdir ${TMP1}
+mkdir -p ${TMP1}
 touch ${TMP1}/foo
 deny ${TMP1}
 runTest ${TMP1}/foo
@@ -74,7 +75,7 @@ allow ${TMP1}
 rm -rf ${TMP1}
 
 if [ ${FAIL} -ne 0 ]
-then 
+then
   echo ""
   echo "${FAIL} test(s) failed"
   exit 1

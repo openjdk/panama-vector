@@ -165,6 +165,7 @@ void javaVFrame::print_locked_object_class_name(outputStream* st, Handle obj, co
 void javaVFrame::print_lock_info_on(outputStream* st, int frame_count) {
   Thread* THREAD = Thread::current();
   ResourceMark rm(THREAD);
+  HandleMark hm(THREAD);
 
   // If this is the first frame and it is java.lang.Object.wait(...)
   // then print out the receiver. Locals are not always available,
@@ -447,6 +448,21 @@ void interpretedVFrame::set_locals(StackValueCollection* values) const {
 entryVFrame::entryVFrame(const frame* fr, const RegisterMap* reg_map, JavaThread* thread)
 : externalVFrame(fr, reg_map, thread) {}
 
+MonitorInfo::MonitorInfo(oop owner, BasicLock* lock, bool eliminated, bool owner_is_scalar_replaced) {
+  Thread* thread = Thread::current();
+  if (!owner_is_scalar_replaced) {
+    _owner = Handle(thread, owner);
+    _owner_klass = Handle();
+  } else {
+    assert(eliminated, "monitor should be eliminated for scalar replaced object");
+    _owner = Handle();
+    _owner_klass = Handle(thread, owner);
+  }
+  _lock = lock;
+  _eliminated = eliminated;
+  _owner_is_scalar_replaced = owner_is_scalar_replaced;
+}
+
 #ifdef ASSERT
 void vframeStreamCommon::found_bad_method_frame() const {
   // 6379830 Cut point for an assertion that occasionally fires when
@@ -502,7 +518,6 @@ void vframeStreamCommon::security_next() {
 
 void vframeStreamCommon::skip_prefixed_method_and_wrappers() {
   ResourceMark rm;
-  HandleMark hm;
 
   int    method_prefix_count = 0;
   char** method_prefixes = JvmtiExport::get_all_native_method_prefixes(&method_prefix_count);
@@ -611,7 +626,10 @@ static void print_stack_values(const char* title, StackValueCollection* values) 
 
 
 void javaVFrame::print() {
-  ResourceMark rm;
+  Thread* current_thread = Thread::current();
+  ResourceMark rm(current_thread);
+  HandleMark hm(current_thread);
+
   vframe::print();
   tty->print("\t");
   method()->print_value();

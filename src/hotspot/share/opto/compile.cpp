@@ -1803,7 +1803,17 @@ void Compile::remove_opaque4_nodes(PhaseIterGVN &igvn) {
   for (int i = opaque4_count(); i > 0; i--) {
     Node* opaq = opaque4_node(i-1);
     assert(opaq->Opcode() == Op_Opaque4, "Opaque4 only");
+    // With Opaque4 nodes, the expectation is that the test of input 1
+    // is always equal to the constant value of input 2. So we can
+    // remove the Opaque4 and replace it by input 2. In debug builds,
+    // leave the non constant test in instead to sanity check that it
+    // never fails (if it does, that subgraph was constructed so, at
+    // runtime, a Halt node is executed).
+#ifdef ASSERT
+    igvn.replace_node(opaq, opaq->in(1));
+#else
     igvn.replace_node(opaq, opaq->in(2));
+#endif
   }
   assert(opaque4_count() == 0, "should be empty");
 }
@@ -2448,15 +2458,21 @@ static void eval_operands(Node* n,
                           uint& func1, uint& func2, uint& func3,
                           ResourceHashtable<Node*,uint>& eval_map) {
   assert(is_vector_bitwise_op(n), "");
-  func1 = eval_operand(n->in(1), eval_map);
 
-  if (is_vector_binary_bitwise_op(n)) {
+  if (is_vector_unary_bitwise_op(n)) {
+    Node* opnd = n->in(1);
+    if (VectorNode::is_vector_bitwise_not_pattern(n) && VectorNode::is_all_ones_vector(opnd)) {
+      opnd = n->in(2);
+    }
+    func1 = eval_operand(opnd, eval_map);
+  } else if (is_vector_binary_bitwise_op(n)) {
+    func1 = eval_operand(n->in(1), eval_map);
     func2 = eval_operand(n->in(2), eval_map);
-  } else if (is_vector_ternary_bitwise_op(n)) {
+  } else {
+    assert(is_vector_ternary_bitwise_op(n), "unknown operation");
+    func1 = eval_operand(n->in(1), eval_map);
     func2 = eval_operand(n->in(2), eval_map);
     func3 = eval_operand(n->in(3), eval_map);
-  } else {
-    assert(is_vector_unary_bitwise_op(n), "not unary");
   }
 }
 

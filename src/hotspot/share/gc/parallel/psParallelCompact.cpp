@@ -75,7 +75,6 @@
 #include "runtime/handles.inline.hpp"
 #include "runtime/safepoint.hpp"
 #include "runtime/vmThread.hpp"
-#include "services/management.hpp"
 #include "services/memTracker.hpp"
 #include "services/memoryService.hpp"
 #include "utilities/align.hpp"
@@ -1008,7 +1007,6 @@ void PSParallelCompact::pre_compact()
   heap->ensure_parsability(true);  // retire TLABs
 
   if (VerifyBeforeGC && heap->total_collections() >= VerifyGCStartAt) {
-    HandleMark hm;  // Discard invalid handles created during verification
     Universe::verify("Before GC");
   }
 
@@ -1789,7 +1787,6 @@ bool PSParallelCompact::invoke_no_policy(bool maximum_heap_compaction) {
 
   {
     ResourceMark rm;
-    HandleMark hm;
 
     const uint active_workers =
       WorkerPolicy::calc_active_workers(ParallelScavengeHeap::heap()->workers().total_workers(),
@@ -1946,7 +1943,6 @@ bool PSParallelCompact::invoke_no_policy(bool maximum_heap_compaction) {
 #endif // ASSERT
 
   if (VerifyAfterGC && heap->total_collections() >= VerifyGCStartAt) {
-    HandleMark hm;  // Discard invalid handles created during verification
     Universe::verify("After GC");
   }
 
@@ -2018,14 +2014,6 @@ static void mark_from_roots_work(ParallelRootType::Value root_type, uint worker_
 
     case ParallelRootType::object_synchronizer:
       ObjectSynchronizer::oops_do(&mark_and_push_closure);
-      break;
-
-    case ParallelRootType::management:
-      Management::oops_do(&mark_and_push_closure);
-      break;
-
-    case ParallelRootType::jvmti:
-      JvmtiExport::oops_do(&mark_and_push_closure);
       break;
 
     case ParallelRootType::class_loader_data:
@@ -2240,8 +2228,6 @@ void PSParallelCompact::adjust_roots(ParCompactionManager* cm) {
   Universe::oops_do(&oop_closure);
   Threads::oops_do(&oop_closure, NULL);
   ObjectSynchronizer::oops_do(&oop_closure);
-  Management::oops_do(&oop_closure);
-  JvmtiExport::oops_do(&oop_closure);
   OopStorageSet::strong_oops_do(&oop_closure);
   CLDToOopClosure cld_closure(&oop_closure, ClassLoaderData::_claim_strong);
   ClassLoaderDataGraph::cld_do(&cld_closure);

@@ -26,7 +26,7 @@
 /**
  * RecordCompilationTests
  *
- * @test
+ * @test 8250629
  * @summary Negative compilation tests, and positive compilation (smoke) tests for records
  * @library /lib/combo /tools/lib /tools/javac/lib
  * @modules
@@ -488,7 +488,7 @@ public class RecordCompilationTests extends CompilationTestCase {
                 "    }\n" +
                 "}");
 
-        // Cant capture locals
+        // Can't capture locals
         assertFail("compiler.err.non-static.cant.be.ref",
                 "class R { \n" +
                         "    void m(int y) { \n" +
@@ -503,6 +503,150 @@ public class RecordCompilationTests extends CompilationTestCase {
                         "        record RR(int x) { public int x() { return y; }};\n" +
                         "    }\n" +
                         "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class C {\n" +
+                "    public static void m() {\n" +
+                "        String hello = \"hello\";\n" +
+                "        interface I {\n" +
+                "            public default void test1() {\n" +
+                "                class X {\n" +
+                "                    public void test2() {\n" +
+                "                        System.err.println(hello);\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class C {\n" +
+                "    public static void m() {\n" +
+                "        String hello = \"hello\";\n" +
+                "        record R(int i) {\n" +
+                "            public void test1() {\n" +
+                "                class X {\n" +
+                "                    public void test2() {\n" +
+                "                        System.err.println(hello);\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class C {\n" +
+                "    public static void m() {\n" +
+                "        String hello = \"hello\";\n" +
+                "        enum E {\n" +
+                "            A;\n" +
+                "            public void test1() {\n" +
+                "                class X {\n" +
+                "                    public void test2() {\n" +
+                "                        System.err.println(hello);\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class C {\n" +
+                "    public static void m(String param) {\n" +
+                "        interface I {\n" +
+                "            public default void test1() {\n" +
+                "                class X {\n" +
+                "                    public void test2() {\n" +
+                "                        System.err.println(param);\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class C {\n" +
+                "    public static void m(String param) {\n" +
+                "        record R(int i) {\n" +
+                "            public void test1() {\n" +
+                "                class X {\n" +
+                "                    public void test2() {\n" +
+                "                        System.err.println(param);\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class C {\n" +
+                "    public static void m(String param) {\n" +
+                "        enum E {\n" +
+                "            A;\n" +
+                "            public void test1() {\n" +
+                "                class X {\n" +
+                "                    public void test2() {\n" +
+                "                        System.err.println(param);\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class C {\n" +
+                "    String instanceField = \"instance\";\n" +
+                "    public static void m() {\n" +
+                "        interface I {\n" +
+                "            public default void test1() {\n" +
+                "                class X {\n" +
+                "                    public void test2() {\n" +
+                "                        System.err.println(instanceField);\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class C {\n" +
+                "    String instanceField = \"instance\";\n" +
+                "    public static void m(String param) {\n" +
+                "        record R(int i) {\n" +
+                "            public void test1() {\n" +
+                "                class X {\n" +
+                "                    public void test2() {\n" +
+                "                        System.err.println(instanceField);\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class C {\n" +
+                "    String instanceField = \"instance\";\n" +
+                "    public static void m(String param) {\n" +
+                "        enum E {\n" +
+                "            A;\n" +
+                "            public void test1() {\n" +
+                "                class X {\n" +
+                "                    public void test2() {\n" +
+                "                        System.err.println(instanceField);\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}");
 
         // instance fields
         assertFail("compiler.err.non-static.cant.be.ref",
@@ -520,6 +664,114 @@ public class RecordCompilationTests extends CompilationTestCase {
                         "        record RR(T t) {};\n" +
                         "    }\n" +
                         "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class R {\n" +
+                "    static <U> U make(U u) { //method is static\n" +
+                "        interface Checker {\n" +
+                "            void check(U u);\n" +
+                "        }\n" +
+                "        return null;\n" +
+                "    }\n" +
+                "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class LocalEnum {\n" +
+                "    static <U> U getAndSet(U u) { //method is static\n" +
+                "        enum X {\n" +
+                "            A;\n" +
+                "            U u;\n" +
+                "        }\n" +
+                "        return null;\n" +
+                "    }\n" +
+                "}\n");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class R {\n" +
+                "    static <U> U make(U u) { //method is static\n" +
+                "        record Checker() {\n" +
+                "            void check(U u);\n" +
+                "        }\n" +
+                "        return null;\n" +
+                "    }\n" +
+                "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class R {\n" +
+                "    <U> U make(U u) { // enclosing method is not static\n" +
+                "        interface Checker {\n" +
+                "            void check(U u);\n" +
+                "        }\n" +
+                "        return null;\n" +
+                "    }\n" +
+                "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class LocalEnum {\n" +
+                "    <U> U getAndSet(U u) { // enclosing method is not static\n" +
+                "        enum X {\n" +
+                "            A;\n" +
+                "            U u;\n" +
+                "        }\n" +
+                "        return null;\n" +
+                "    }\n" +
+                "}\n");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class R {\n" +
+                "    <U> U make(U u) { // enclosing method is not static\n" +
+                "        record Checker() {\n" +
+                "            void check(U u);\n" +
+                "        }\n" +
+                "        return null;\n" +
+                "    }\n" +
+                "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class C {\n" +
+                "    public static <T> void main(String[] args) {\n" +
+                "        interface I {\n" +
+                "            public default void test1() {\n" +
+                "                class X {\n" +
+                "                    public void test2() {\n" +
+                "                        T t = null;\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class C {\n" +
+                "    public static <T> void main(String[] args) {\n" +
+                "        record R(int i) {\n" +
+                "            public void test1() {\n" +
+                "                class X {\n" +
+                "                    public void test2() {\n" +
+                "                        T t = null;\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}");
+
+        assertFail("compiler.err.non-static.cant.be.ref",
+                "class C {\n" +
+                "    public static <T> void main(String[] args) {\n" +
+                "        enum E {\n" +
+                "            A;\n" +
+                "            public void test1() {\n" +
+                "                class X {\n" +
+                "                    public void test2() {\n" +
+                "                        T t = null;\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            }\n" +
+                "        }\n" +
+                "    }\n" +
+                "}");
 
         // but static fields are OK
         assertOK("class R { \n" +
@@ -544,6 +796,48 @@ public class RecordCompilationTests extends CompilationTestCase {
                 class R {
                     void m() {
                         static record RR(int x) { };
+                    }
+                }
+                """
+        );
+
+        // positive cases
+        assertOK(
+                """
+                import java.security.*;
+                class Test {
+                    static Test newInstance(Object provider) {
+                        return new Test() {
+                            private final PrivilegedExceptionAction<KeyStore> action = new PrivilegedExceptionAction<KeyStore>() {
+                                public KeyStore run() throws Exception {
+                                    if (provider == null) {}
+                                    return null;
+                                }
+                            };
+                        };
+                    }
+                }
+                """
+        );
+
+        assertOK(
+                """
+                import java.security.*;
+                class Test {
+                    static Test newInstance(Object provider) {
+                        return new Test() {
+                            int m(PrivilegedExceptionAction<KeyStore> a) { return 0; }
+                            {
+                                m(
+                                    new PrivilegedExceptionAction<KeyStore>() {
+                                        public KeyStore run() throws Exception {
+                                            if (provider == null) {}
+                                            return null;
+                                        }
+                                    }
+                                );
+                            }
+                        };
                     }
                 }
                 """
@@ -708,6 +1002,7 @@ public class RecordCompilationTests extends CompilationTestCase {
     }
 
     public void testAcceptRecordId() {
+        String[] previousOptions = getCompileOptions();
         String[] testOptions = {/* no options */};
         setCompileOptions(testOptions);
         assertOKWithWarning("compiler.warn.restricted.type.not.allowed.preview",
@@ -717,10 +1012,11 @@ public class RecordCompilationTests extends CompilationTestCase {
                 "    }\n" +
                 "    class record {}\n" +
                 "}");
-        setCompileOptions(PREVIEW_OPTIONS);
+        setCompileOptions(previousOptions);
     }
 
     public void testAnnos() throws Exception {
+        String[] previousOptions = getCompileOptions();
         String srcTemplate =
                 """
                     import java.lang.annotation.*;
@@ -875,7 +1171,7 @@ public class RecordCompilationTests extends CompilationTestCase {
         }
 
         // let's reset the default compiler options for other tests
-        setCompileOptions(PREVIEW_OPTIONS);
+        setCompileOptions(previousOptions);
     }
 
     private void checkTypeAnno(ClassFile classFile,
@@ -1306,6 +1602,57 @@ public class RecordCompilationTests extends CompilationTestCase {
                         (this).i = i;
                     }
                 }
+                """
+        );
+    }
+
+    public void testNoNPEStaticAnnotatedFields() {
+        assertOK(
+                """
+                import java.lang.annotation.Native;
+                record R() {
+                    @Native public static final int i = 0;
+                }
+                """
+        );
+        assertOK(
+                """
+                import java.lang.annotation.Native;
+                class Outer {
+                    record R() {
+                        @Native public static final int i = 0;
+                    }
+                }
+                """
+        );
+        assertOK(
+                """
+                import java.lang.annotation.Native;
+                class Outer {
+                    void m() {
+                        record R () {
+                            @Native public static final int i = 0;
+                        }
+                    }
+                }
+                """
+        );
+    }
+
+    public void testDoNotAllowCStyleArraySyntaxForRecComponents() {
+        assertFail("compiler.err.record.component.and.old.array.syntax",
+                """
+                record R(int i[]) {}
+                """
+        );
+        assertFail("compiler.err.record.component.and.old.array.syntax",
+                """
+                record R(String s[]) {}
+                """
+        );
+        assertFail("compiler.err.record.component.and.old.array.syntax",
+                """
+                record R<T>(T t[]) {}
                 """
         );
     }

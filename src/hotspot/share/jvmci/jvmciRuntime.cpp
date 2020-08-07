@@ -26,7 +26,6 @@
 #include "classfile/symbolTable.hpp"
 #include "compiler/compileBroker.hpp"
 #include "gc/shared/oopStorage.inline.hpp"
-#include "gc/shared/oopStorageSet.hpp"
 #include "jvmci/jniAccessMark.inline.hpp"
 #include "jvmci/jvmciCompilerToVM.hpp"
 #include "jvmci/jvmciRuntime.hpp"
@@ -673,6 +672,7 @@ void JVMCINMethodData::set_nmethod_mirror(nmethod* nm, oop new_mirror) {
 
   // Since we've patched some oops in the nmethod,
   // (re)register it with the heap.
+  MutexLocker ml(CodeCache_lock, Mutex::_no_safepoint_check_flag);
   Universe::heap()->register_nmethod(nm);
 }
 
@@ -720,7 +720,7 @@ JVMCIRuntime::JVMCIRuntime(int id) {
 
 // Handles to objects in the Hotspot heap.
 static OopStorage* object_handles() {
-  return OopStorageSet::vm_global();
+  return Universe::vm_global();
 }
 
 jobject JVMCIRuntime::make_global(const Handle& obj) {
@@ -801,7 +801,7 @@ JNIEnv* JVMCIRuntime::init_shared_library_javavm() {
 
     JNI_CreateJavaVM = CAST_TO_FN_PTR(JNI_CreateJavaVM_t, os::dll_lookup(sl_handle, "JNI_CreateJavaVM"));
     if (JNI_CreateJavaVM == NULL) {
-      vm_exit_during_initialization("Unable to find JNI_CreateJavaVM", sl_path);
+      fatal("Unable to find JNI_CreateJavaVM in %s", sl_path);
     }
 
     ResourceMark rm;
@@ -836,7 +836,7 @@ JNIEnv* JVMCIRuntime::init_shared_library_javavm() {
       JVMCI_event_1("created JavaVM[%ld]@" PTR_FORMAT " for JVMCI runtime %d", javaVM_id, p2i(javaVM), _id);
       return env;
     } else {
-      vm_exit_during_initialization(err_msg("JNI_CreateJavaVM failed with return value %d", result), sl_path);
+      fatal("JNI_CreateJavaVM failed with return value %d", result);
     }
   }
   return NULL;
@@ -925,9 +925,9 @@ void JVMCIRuntime::initialize(JVMCIEnv* JVMCIENV) {
   {
     MutexUnlocker unlock(JVMCI_lock);
 
-    HandleMark hm;
-    ResourceMark rm;
     JavaThread* THREAD = JavaThread::current();
+    HandleMark hm(THREAD);
+    ResourceMark rm(THREAD);
     if (JVMCIENV->is_hotspot()) {
       HotSpotJVMCI::compute_offsets(CHECK_EXIT);
     } else {
@@ -1013,7 +1013,7 @@ JVM_ENTRY_NO_ENV(void, JVM_RegisterJVMCINatives(JNIEnv *env, jclass c2vmClass))
   JVMCIENV->runtime()->initialize(JVMCIENV);
 
   {
-    ResourceMark rm;
+    ResourceMark rm(thread);
     HandleMark hm(thread);
     ThreadToNativeFromVM trans(thread);
 
@@ -1322,7 +1322,7 @@ Method* JVMCIRuntime::lookup_method(InstanceKlass* accessor,
   assert(check_klass_accessibility(accessor, holder), "holder not accessible");
 
   Method* dest_method;
-  LinkInfo link_info(holder, name, sig, accessor, LinkInfo::needs_access_check, tag);
+  LinkInfo link_info(holder, name, sig, accessor, LinkInfo::AccessCheck::required, tag);
   switch (bc) {
   case Bytecodes::_invokestatic:
     dest_method =
@@ -1483,7 +1483,7 @@ void JVMCIRuntime::compile_method(JVMCIEnv* JVMCIENV, JVMCICompiler* compiler, c
     return;
   }
 
-  HandleMark hm;
+  HandleMark hm(thread);
   JVMCIObject receiver = get_HotSpotJVMCIRuntime(JVMCIENV);
   if (JVMCIENV->has_pending_exception()) {
     fatal_exception_in_compile(JVMCIENV, thread, "Exception during HotSpotJVMCIRuntime initialization");

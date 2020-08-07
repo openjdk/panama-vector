@@ -350,7 +350,7 @@ void Method::metaspace_pointers_do(MetaspaceClosure* it) {
   it->push_method_entry(&this_ptr, (intptr_t*)&_from_interpreted_entry);
 }
 
-// Attempt to return method oop to original state.  Clear any pointers
+// Attempt to return method to original state.  Clear any pointers
 // (to objects outside the shared spaces).  We won't be able to predict
 // where they should point in a new JVM.  Further initialize some
 // entries now in order allow them to be write protected later.
@@ -805,7 +805,7 @@ bool Method::needs_clinit_barrier() const {
 objArrayHandle Method::resolved_checked_exceptions_impl(Method* method, TRAPS) {
   int length = method->checked_exceptions_length();
   if (length == 0) {  // common case
-    return objArrayHandle(THREAD, Universe::the_empty_class_klass_array());
+    return objArrayHandle(THREAD, Universe::the_empty_class_array());
   } else {
     methodHandle h_this(THREAD, method);
     objArrayOop m_oop = oopFactory::new_objArray(SystemDictionary::Class_klass(), length, CHECK_(objArrayHandle()));

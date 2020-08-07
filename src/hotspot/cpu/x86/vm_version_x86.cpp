@@ -733,11 +733,11 @@ void VM_Version::get_processor_features() {
 
   char buf[512];
   int res = jio_snprintf(buf, sizeof(buf),
-              "(%u cores per cpu, %u threads per core) family %d model %d stepping %d"
+              "(%u cores per cpu, %u threads per core) family %d model %d stepping %d microcode 0x%x"
               "%s%s%s%s%s%s%s%s%s%s" "%s%s%s%s%s%s%s%s%s%s" "%s%s%s%s%s%s%s%s%s%s" "%s%s%s%s%s%s%s%s%s%s" "%s%s%s%s%s%s",
 
                cores_per_cpu(), threads_per_core(),
-               cpu_family(), _model, _stepping,
+               cpu_family(), _model, _stepping, os::cpu_microcode_revision(),
 
                (supports_cmov() ? ", cmov" : ""),
                (supports_cmpxchg8() ? ", cx8" : ""),
@@ -943,6 +943,10 @@ void VM_Version::get_processor_features() {
   } else if (UseFMA) {
     warning("FMA instructions are not available on this CPU");
     FLAG_SET_DEFAULT(UseFMA, false);
+  }
+
+  if (FLAG_IS_DEFAULT(UseMD5Intrinsics)) {
+    UseMD5Intrinsics = true;
   }
 
   if (supports_sha() LP64_ONLY(|| supports_avx2() && supports_bmi2())) {
