@@ -547,9 +547,11 @@ Node *Node::clone() const {
       to[i] = from[i]->clone();
     }
   }
-  // cloning CallNode may need to clone JVMState
   if (n->is_Call()) {
+    // cloning CallNode may need to clone JVMState
     n->as_Call()->clone_jvms(C);
+    // CallGenerator is linked to the original node.
+    n->as_Call()->set_generator(NULL);
   }
   if (n->is_SafePoint()) {
     n->as_SafePoint()->clone_replaced_nodes();

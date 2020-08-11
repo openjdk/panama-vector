@@ -821,7 +821,7 @@ bool CallNode::may_modify(const TypeOopPtr *t_oop, PhaseTransform *phase) {
       }
     }
     if (is_CallJava() && as_CallJava()->method() != NULL) {
-      ciMethod* meth = as_CallJava()->method();
+      ciMethod* meth = as_CallJava()->method(); // FIXME: is it valid for virtual calls?
       if (meth->is_getter()) {
         return false;
       }
@@ -1102,9 +1102,12 @@ bool CallDynamicJavaNode::cmp( const Node &n ) const {
 
 Node* CallDynamicJavaNode::Ideal(PhaseGVN* phase, bool can_reshape) {
   CallGenerator* cg = generator();
+  // FIXME: require CallDynamicJava nodes to have a generator associated
+  // assert(cg != NULL && cg->call_node() == this, "no generator attached");
   if (can_reshape && cg != NULL) {
     assert(IncrementalInlineVirtual, "required");
     assert(cg->is_virtual_late_inline(), "not virtual");
+    assert(cg->call_node() == this, "mismatch");
 
     // Recover symbolic info for method resolution
     ciMethod* caller = jvms()->method();

@@ -2257,6 +2257,10 @@ void Compile::Optimize() {
     igvn.optimize();
   }
 
+  // TODO: more opportunities to optimize virtual calls.
+  //       Though it's maybe too late for inlining, strength-reducing them to direct calls is still an option.
+//  assert(_late_inlines.length() == 0, "not empty");
+
   DEBUG_ONLY( _modified_nodes = NULL; )
  } // (End scope of igvn; run destructor if necessary for asserts.)
 
