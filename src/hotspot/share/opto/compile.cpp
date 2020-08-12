@@ -1867,32 +1867,34 @@ bool Compile::inline_incrementally_one() {
   assert(IncrementalInline, "incremental inlining should be on");
 
   TracePhase tp("incrementalInline_inline", &timers[_t_incrInline_inline]);
+
   set_inlining_progress(false);
   set_do_cleanup(false);
-  int i = 0;
-  for (; i <_late_inlines.length(); i++) {
+
+  for (int i = 0; i < _late_inlines.length(); i++) {
     CallGenerator* cg = _late_inlines.at(i);
     _late_inlines_pos = i+1;
     cg->do_late_inline();
+    assert(_late_inlines.at(i) == cg, "no insertions before current position allowed");
     if (failing()) {
       return false;
     } else if (inlining_progress()) {
+      _late_inlines_pos = i+1; // restore the position in case new elements were inserted
+      print_method(PHASE_INCREMENTAL_INLINE_STEP, cg->call_node(), 3);
       break; // process one call site at a time
     }
   }
-  int j = 0;
-  for (; i < _late_inlines.length(); i++, j++) {
-    _late_inlines.at_put(j, _late_inlines.at(i));
-  }
-  _late_inlines.trunc_to(j);
-  assert(inlining_progress() || _late_inlines.length() == 0, "");
+  // Remove processed elements.
+  _late_inlines.truncate_to(_late_inlines_pos);
+  _late_inlines_pos = 0;
 
-  print_method(PHASE_INCREMENTAL_INLINE_STEP, 3);
+  assert(inlining_progress() || _late_inlines.length() == 0, "no progress");
 
   bool needs_cleanup = do_cleanup() || over_inlining_cutoff();
 
   set_inlining_progress(false);
   set_do_cleanup(false);
+
   return (_late_inlines.length() > 0) && !needs_cleanup;
 }
 
@@ -4644,13 +4646,7 @@ void Compile::print_method(CompilerPhaseType cpt, Node* n, int level) {
   stringStream ss;
   ss.print_raw(CompilerPhaseTypeHelper::to_string(cpt));
   if (n != NULL) {
-#ifndef PRODUCT
-    ss.print(": %s %d", n->Name(), n->_idx);
-#else
-    ss.print(": %d %d", n->Opcode(), n->_idx);
-#endif // !PRODUCT
-  } else {
-    ss.print_raw(": NULL");
+    ss.print(": %d %s", n->_idx, NodeClassNames[n->Opcode()]);
   }
   C->print_method(cpt, ss.as_string(), level);
 }
