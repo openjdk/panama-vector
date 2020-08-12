@@ -924,6 +924,8 @@ class Compile : public Phase {
   void              update_dead_node_list(Unique_Node_List &useful);
   void              remove_useless_nodes (Unique_Node_List &useful);
 
+  void              remove_useless_node(Node* dead);
+
   WarmCallInfo*     warm_calls() const          { return _warm_calls; }
   void          set_warm_calls(WarmCallInfo* l) { _warm_calls = l; }
   WarmCallInfo* pop_warm_call();
@@ -951,6 +953,7 @@ class Compile : public Phase {
   }
 
   void remove_useless_late_inlines(GrowableArray<CallGenerator*>* inlines, Unique_Node_List &useful);
+  void remove_useless_late_inlines(GrowableArray<CallGenerator*>* inlines, Node* dead);
 
   void process_print_inlining();
   void dump_print_inlining();

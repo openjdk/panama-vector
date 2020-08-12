@@ -119,6 +119,9 @@ class DirectCallGenerator : public CallGenerator {
   // paths to facilitate late inlinig.
   bool                _separate_io_proj;
 
+protected:
+  void set_call_node(CallStaticJavaNode* call) { _call_node = call; }
+
  public:
   DirectCallGenerator(ciMethod* method, bool separate_io_proj)
     : CallGenerator(method),
@@ -129,7 +132,12 @@ class DirectCallGenerator : public CallGenerator {
 
   virtual bool is_direct() const { return true; }
 
-  CallStaticJavaNode* call_node() const { return _call_node; }
+  virtual CallNode* call_node() const { return _call_node; }
+  virtual CallGenerator* with_call_node(CallNode* call) {
+    DirectCallGenerator* dcg = new DirectCallGenerator(method(), _separate_io_proj);
+    dcg->set_call_node(call->as_CallStaticJava());
+    return dcg;
+  }
 };
 
 JVMState* DirectCallGenerator::generate(JVMState* jvms) {
@@ -181,6 +189,10 @@ private:
   int _vtable_index;
   bool _separate_io_proj;
   CallDynamicJavaNode* _call_node;
+
+protected:
+  void set_call_node(CallDynamicJavaNode* call) { _call_node = call; }
+
 public:
   VirtualCallGenerator(ciMethod* method, int vtable_index, bool separate_io_proj)
     : CallGenerator(method), _vtable_index(vtable_index), _separate_io_proj(separate_io_proj), _call_node(NULL)
@@ -191,8 +203,14 @@ public:
   virtual bool      is_virtual() const          { return true; }
   virtual JVMState* generate(JVMState* jvms);
 
-  CallDynamicJavaNode* call_node() const { return _call_node; }
+  virtual CallNode* call_node() const { return _call_node; }
   int vtable_index() const { return _vtable_index; }
+
+  virtual CallGenerator* with_call_node(CallNode* call) {
+    VirtualCallGenerator* cg = new VirtualCallGenerator(method(), _vtable_index, _separate_io_proj);
+    cg->set_call_node(call->as_CallDynamicJava());
+    return cg;
+  }
 };
 
 JVMState* VirtualCallGenerator::generate(JVMState* jvms) {
@@ -348,11 +366,17 @@ class LateInlineCallGenerator : public DirectCallGenerator {
   virtual jlong unique_id() const {
     return _unique_id;
   }
+
+  virtual CallGenerator* with_call_node(CallNode* call) {
+    LateInlineCallGenerator* cg = new LateInlineCallGenerator(method(), _inline_cg, _is_pure_call);
+    cg->set_call_node(call->as_CallStaticJava());
+    return cg;
+  }
 };
 
 void LateInlineCallGenerator::do_late_inline() {
   // Can't inline it
-  CallStaticJavaNode* call = call_node();
+  CallStaticJavaNode* call = call_node()->as_CallStaticJava();
   if (call == NULL || call->outcnt() == 0 ||
       call->in(0) == NULL || call->in(0)->is_top()) {
     return;
@@ -504,6 +528,12 @@ class LateInlineMHCallGenerator : public LateInlineCallGenerator {
     }
     return new_jvms;
   }
+
+  virtual CallGenerator* with_call_node(CallNode* call) {
+    LateInlineMHCallGenerator* cg = new LateInlineMHCallGenerator(_caller, method(), _input_not_const);
+    cg->set_call_node(call->as_CallStaticJava());
+    return cg;
+  }
 };
 
 bool LateInlineMHCallGenerator::do_late_inline_check(JVMState* jvms) {
@@ -573,7 +603,7 @@ class LateInlineVirtualCallGenerator : public VirtualCallGenerator {
   }
 
   virtual void print_inlining_late(const char* msg) {
-    CallJavaNode* call = call_node();
+    CallNode* call = call_node();
     Compile* C = Compile::current();
     C->print_inlining_assert_ready();
     C->print_inlining(method(), call->jvms()->depth()-1, call->jvms()->bci(), msg);
@@ -588,17 +618,24 @@ class LateInlineVirtualCallGenerator : public VirtualCallGenerator {
   virtual jlong unique_id() const {
     return _unique_id;
   }
+
+  virtual CallGenerator* with_call_node(CallNode* call) {
+    LateInlineVirtualCallGenerator* cg = new LateInlineVirtualCallGenerator(method(), vtable_index(), _prof_factor);
+    cg->set_call_node(call->as_CallDynamicJava());
+    return cg;
+  }
 };
 
 bool LateInlineVirtualCallGenerator::do_late_inline_check(Compile* C, JVMState* jvms) {
   // Method handle linker case is handled in CallDynamicJavaNode::Ideal().
   // Unless inlining is performed, _override_symbolic_info bit will be set in DirectCallGenerator::generate().
 
+  bool allow_inline = C->inlining_incrementally();
   CallGenerator* cg = C->call_generator(_callee,
                                         vtable_index(),
                                         false /*call_does_dispatch*/,
                                         jvms,
-                                        true /*allow_inline*/,
+                                        allow_inline,
                                         _prof_factor,
                                         NULL /*speculative_receiver_type*/,
                                         true /*allow_intrinsics*/);
@@ -606,7 +643,7 @@ bool LateInlineVirtualCallGenerator::do_late_inline_check(Compile* C, JVMState* 
   Compile::current()->print_inlining_update_delayed(this);
 
   if (cg != NULL) {
-    assert(!cg->is_late_inline() || cg->is_mh_late_inline(), "we're doing late inlining");
+    assert(!cg->is_late_inline() || cg->is_mh_late_inline() || AlwaysIncrementalInline, "we're doing late inlining");
     _inline_cg = cg;
     return true;
   }
@@ -618,7 +655,7 @@ void LateInlineVirtualCallGenerator::do_late_inline() {
   assert(_callee != NULL, "required");
 
   // Can't inline it
-  CallDynamicJavaNode* call = call_node();
+  CallDynamicJavaNode* call = call_node()->as_CallDynamicJava();
   if (call == NULL || call->outcnt() == 0 ||
       call->in(0) == NULL || call->in(0)->is_top()) {
     return;
@@ -774,6 +811,12 @@ class LateInlineStringCallGenerator : public LateInlineCallGenerator {
   }
 
   virtual bool is_string_late_inline() const { return true; }
+
+  virtual CallGenerator* with_call_node(CallNode* call) {
+    LateInlineStringCallGenerator* cg = new LateInlineStringCallGenerator(method(), _inline_cg);
+    cg->set_call_node(call->as_CallStaticJava());
+    return cg;
+  }
 };
 
 CallGenerator* CallGenerator::for_string_late_inline(ciMethod* method, CallGenerator* inline_cg) {
@@ -796,6 +839,12 @@ class LateInlineBoxingCallGenerator : public LateInlineCallGenerator {
     JVMState* new_jvms =  DirectCallGenerator::generate(jvms);
     return new_jvms;
   }
+
+  virtual CallGenerator* with_call_node(CallNode* call) {
+    LateInlineBoxingCallGenerator* cg = new LateInlineBoxingCallGenerator(method(), _inline_cg);
+    cg->set_call_node(call->as_CallStaticJava());
+    return cg;
+  }
 };
 
 CallGenerator* CallGenerator::for_boxing_late_inline(ciMethod* method, CallGenerator* inline_cg) {
@@ -817,6 +866,12 @@ class LateInlineVectorReboxingCallGenerator : public LateInlineCallGenerator {
 
     JVMState* new_jvms =  DirectCallGenerator::generate(jvms);
     return new_jvms;
+  }
+
+  virtual CallGenerator* with_call_node(CallNode* call) {
+    LateInlineVectorReboxingCallGenerator* cg = new LateInlineVectorReboxingCallGenerator(method(), _inline_cg);
+    cg->set_call_node(call->as_CallStaticJava());
+    return cg;
   }
 };
 

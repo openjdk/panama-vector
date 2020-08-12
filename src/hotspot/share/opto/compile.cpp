@@ -351,6 +351,57 @@ void Compile::remove_useless_late_inlines(GrowableArray<CallGenerator*>* inlines
   inlines->trunc_to(inlines->length()-shift);
 }
 
+void Compile::remove_useless_late_inlines(GrowableArray<CallGenerator*>* inlines, Node* dead) {
+  assert(dead != NULL && dead->is_Call(), "sanity");
+  int shift = 0;
+  for (int i = 0; i < inlines->length(); i++) {
+    CallGenerator* cg = inlines->at(i);
+    CallNode* call = cg->call_node();
+    if (shift > 0) {
+      inlines->at_put(i - shift, cg);
+    }
+    if (call == dead) {
+      shift++;
+    }
+  }
+  inlines->trunc_to(inlines->length() - shift);
+  assert(shift <= 1, "sanity");
+}
+
+void Compile::remove_useless_node(Node* dead) {
+  remove_modified_node(dead);
+
+  // Constant node that has no out-edges and has only one in-edge from
+  // root is usually dead. However, sometimes reshaping walk makes
+  // it reachable by adding use edges. So, we will NOT count Con nodes
+  // as dead to be conservative about the dead node count at any
+  // given time.
+  if (!dead->is_Con()) {
+    record_dead_node(dead->_idx);
+  }
+  if (dead->is_macro()) {
+    remove_macro_node(dead);
+  }
+  if (dead->is_expensive()) {
+    remove_expensive_node(dead);
+  }
+  CastIINode* cast = dead->isa_CastII();
+  if (cast != NULL && cast->has_range_check()) {
+    remove_range_check_cast(cast);
+  }
+  if (dead->Opcode() == Op_Opaque4) {
+    remove_opaque4_node(dead);
+  }
+  if (dead->is_Call()) {
+    remove_useless_late_inlines(&_string_late_inlines, dead);
+    remove_useless_late_inlines(&_boxing_late_inlines, dead);
+    remove_useless_late_inlines(&_late_inlines, dead);
+    remove_useless_late_inlines(&_vector_reboxing_late_inlines, dead);
+  }
+  BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
+  bs->unregister_potential_barrier_node(dead);
+}
+
 // Disconnect all useless nodes by disconnecting those at the boundary.
 void Compile::remove_useless_nodes(Unique_Node_List &useful) {
   uint next = 0;
@@ -1874,6 +1925,7 @@ bool Compile::inline_incrementally_one() {
   for (int i = 0; i < _late_inlines.length(); i++) {
     CallGenerator* cg = _late_inlines.at(i);
     _late_inlines_pos = i+1;
+    assert(inlining_incrementally() || cg->is_virtual_late_inline(), "no inlining allowed");
     cg->do_late_inline();
     assert(_late_inlines.at(i) == cg, "no insertions before current position allowed");
     if (failing()) {
@@ -2101,7 +2153,8 @@ void Compile::Optimize() {
   if (!failing() && RenumberLiveNodes && live_nodes() + NodeLimitFudgeFactor < unique()) {
     Compile::TracePhase tp("", &timers[_t_renumberLive]);
     initial_gvn()->replace_with(&igvn);
-    for_igvn()->clear();
+    Unique_Node_List* old_worklist = for_igvn();
+    old_worklist->clear();
     Unique_Node_List new_worklist(C->comp_arena());
     {
       ResourceMark rm;
@@ -2110,9 +2163,8 @@ void Compile::Optimize() {
     set_for_igvn(&new_worklist);
     igvn = PhaseIterGVN(initial_gvn());
     igvn.optimize();
+    set_for_igvn(old_worklist); // new_worklist is dead beyond this point
   }
-
-  // FIXME for_igvn() is corrupted from here: new_worklist which is set_for_ignv() was allocated on stack.
 
   // Perform escape analysis
   if (_do_escape_analysis && ConnectionGraph::has_candidates(this)) {
@@ -2259,11 +2311,32 @@ void Compile::Optimize() {
     igvn.optimize();
   }
 
-  // TODO: more opportunities to optimize virtual calls.
-  //       Though it's maybe too late for inlining, strength-reducing them to direct calls is still an option.
-//  assert(_late_inlines.length() == 0, "not empty");
-
   DEBUG_ONLY( _modified_nodes = NULL; )
+
+  assert(_late_inlines.length() == 0 || IncrementalInlineVirtual, "not empty");
+
+  while (_late_inlines.length() > 0) {
+    // More opportunities to optimize virtual calls.
+    // Though it's maybe too late for inlining, strength-reducing them to direct calls is still an option.
+
+    // "inlining_incrementally() == false" is used to signal that no inlining is allowed.
+    // Tracking and verification of modified nodes is disabled by _modified_nodes == NULL as if inlining_incrementally() were set.
+    assert(inlining_incrementally() == false, "not allowed");
+
+    for_igvn()->clear();
+    initial_gvn()->replace_with(&igvn);
+
+    DEBUG_ONLY( int late_inlines_before = _late_inlines.length(); )
+
+    while (inline_incrementally_one()) {
+      assert(!failing(), "inconsistent");
+    }
+    if (failing())  return;
+
+    inline_incrementally_cleanup(igvn);
+
+    assert(_late_inlines.length() < late_inlines_before, "no progress");
+  }
  } // (End scope of igvn; run destructor if necessary for asserts.)
 
  process_print_inlining();

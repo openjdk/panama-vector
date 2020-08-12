@@ -1102,12 +1102,10 @@ bool CallDynamicJavaNode::cmp( const Node &n ) const {
 
 Node* CallDynamicJavaNode::Ideal(PhaseGVN* phase, bool can_reshape) {
   CallGenerator* cg = generator();
-  // FIXME: require CallDynamicJava nodes to have a generator associated
-  // assert(cg != NULL && cg->call_node() == this, "no generator attached");
   if (can_reshape && cg != NULL) {
     assert(IncrementalInlineVirtual, "required");
-    assert(cg->is_virtual_late_inline(), "not virtual");
     assert(cg->call_node() == this, "mismatch");
+    assert(cg->is_virtual_late_inline(), "not virtual");
 
     // Recover symbolic info for method resolution
     ciMethod* caller = jvms()->method();

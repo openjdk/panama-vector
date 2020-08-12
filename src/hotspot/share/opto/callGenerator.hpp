@@ -84,7 +84,8 @@ class CallGenerator : public ResourceObj {
   // Replace the call with an inline version of the code
   virtual void do_late_inline() { ShouldNotReachHere(); }
 
-  virtual CallJavaNode* call_node() const { ShouldNotReachHere(); return NULL; }
+  virtual CallNode* call_node() const { return NULL; }
+  virtual CallGenerator* with_call_node(CallNode* call)  { return this; }
 
   virtual void set_unique_id(jlong id)          { fatal("unique id only for late inlines"); };
   virtual jlong unique_id() const               { fatal("unique id only for late inlines"); return 0; };
@@ -93,6 +94,12 @@ class CallGenerator : public ResourceObj {
 
   // Note:  It is possible for a CG to be both inline and virtual.
   // (The hashCode intrinsic does a vtable check and an inlined fast path.)
+
+  // Allocate CallGenerators only in Compile arena since some of them are referenced from CallNodes.
+  void* operator new(size_t size) throw() {
+    Compile* C = Compile::current();
+    return ResourceObj::operator new(size, C->comp_arena());
+  }
 
   // Utilities:
   const TypeFunc*   tf() const;

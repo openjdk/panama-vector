@@ -29,6 +29,7 @@
 #include "memory/allocation.inline.hpp"
 #include "memory/resourceArea.hpp"
 #include "opto/ad.hpp"
+#include "opto/callGenerator.hpp"
 #include "opto/castnode.hpp"
 #include "opto/cfgnode.hpp"
 #include "opto/connode.hpp"
@@ -551,7 +552,11 @@ Node *Node::clone() const {
     // cloning CallNode may need to clone JVMState
     n->as_Call()->clone_jvms(C);
     // CallGenerator is linked to the original node.
-    n->as_Call()->set_generator(NULL);
+    CallGenerator* cg = n->as_Call()->generator();
+    if (cg != NULL) {
+      CallGenerator* cloned_cg = cg->with_call_node(n->as_Call());
+      n->as_Call()->set_generator(cloned_cg);
+    }
   }
   if (n->is_SafePoint()) {
     n->as_SafePoint()->clone_replaced_nodes();
