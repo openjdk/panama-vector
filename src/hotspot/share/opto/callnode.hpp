@@ -612,7 +612,7 @@ public:
   // use MachConstantBase, it gets modified during matching. So when cloning
   // the node the JVMState must be cloned. Default is not to clone.
   virtual void clone_jvms(Compile* C) {
-    if (C->needs_clone_jvms() && jvms() != NULL) {
+    if (jvms() != NULL) {
       set_jvms(jvms()->clone_deep(C));
       jvms()->set_map_deep(this);
     }

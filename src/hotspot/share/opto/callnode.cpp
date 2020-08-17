@@ -642,7 +642,7 @@ JVMState* JVMState::clone_deep(Compile* C) const {
  * Reset map for all callers
  */
 void JVMState::set_map_deep(SafePointNode* map) {
-  for (JVMState* p = this; p->_caller != NULL; p = p->_caller) {
+  for (JVMState* p = this; p != NULL; p = p->_caller) {
     p->set_map(map);
   }
 }
