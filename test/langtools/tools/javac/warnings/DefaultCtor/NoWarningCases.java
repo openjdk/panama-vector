@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -19,23 +19,21 @@
  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
  * or visit www.oracle.com if you need additional information or have any
  * questions.
- *
  */
 
 /*
- * @test TestCriticalControlThreadPriority
- * @summary Check that ShenandoahCriticalControlThreadPriority works
- * @bug 8217343
- * @requires vm.gc.Shenandoah
- *
- * @run main/othervm -XX:+UnlockExperimentalVMOptions -XX:+UseShenandoahGC -XX:-ShenandoahCriticalControlThreadPriority -Xmx1g TestCriticalControlThreadPriority
- * @run main/othervm -XX:+UnlockExperimentalVMOptions -XX:+UseShenandoahGC -XX:+ShenandoahCriticalControlThreadPriority -Xmx1g TestCriticalControlThreadPriority
+ * @test
+ * @bug 8071961
+ * @compile -Xlint:missing-explicit-ctor -Werror --release 8 NoWarningCases.java
+ * @compile -Xlint:missing-explicit-ctor -Werror             NoWarningCases.java
  */
 
-public class TestCriticalControlThreadPriority {
+public class NoWarningCases {
+    // No explicit constructor; use a default.
 
-    public static void main(String[] args) throws Exception {
-        // checking the initialization before entering main()
+    public enum NestedEnum {
+        FOO,
+        BAR;
+        // No explicit constructor; use implicit one.
     }
-
 }

@@ -95,11 +95,19 @@ public:
   void vextendwd(bool sign, XMMRegister dst, XMMRegister src, int vector_len);
 
   void vshiftd(int opcode, XMMRegister dst, XMMRegister shift);
+  void vshiftd_imm(int opcode, XMMRegister dst, int shift);
   void vshiftd(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc);
+  void vshiftd_imm(int opcode, XMMRegister dst, XMMRegister nds, int shift, int vector_len);
   void vshiftw(int opcode, XMMRegister dst, XMMRegister shift);
   void vshiftw(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc);
   void vshiftq(int opcode, XMMRegister dst, XMMRegister shift);
+  void vshiftq_imm(int opcode, XMMRegister dst, int shift);
   void vshiftq(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc);
+  void vshiftq_imm(int opcode, XMMRegister dst, XMMRegister nds, int shift, int vector_len);
+
+  void vprotate_imm(int opcode, BasicType etype, XMMRegister dst, XMMRegister src, int shift, int vector_len);
+  void vprotate_var(int opcode, BasicType etype, XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len);
+
   void varshiftd(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc);
   void varshiftw(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc);
   void varshiftq(int opcode, XMMRegister dst, XMMRegister src, XMMRegister shift, int vlen_enc, XMMRegister vtmp = xnoreg);

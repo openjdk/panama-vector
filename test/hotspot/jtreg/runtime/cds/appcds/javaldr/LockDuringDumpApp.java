@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,6 +22,12 @@
  *
  */
 
-#include "precompiled.hpp"
-#include "utilities/sizes.hpp"
+public class LockDuringDumpApp {
+    static String LITERAL = "@@LockDuringDump@@LITERAL"; // must be the same as in LockDuringDumpAgent
 
+    public static void main(String args[]) {
+        synchronized (LITERAL) { // See comments in LockDuringDumpAgent.java
+            System.out.println("I am able to lock the literal string \"" + LITERAL + "\"");
+        }
+    }
+}

@@ -590,7 +590,6 @@ javax/management/monitor/DerivedGaugeMonitorTest.java         8042211 generic-al
 # jdk_io
 
 java/io/pathNames/GeneralWin32.java                             8180264 windows-all
-java/io/File/GetXSpace.java                                     8249703 macosx-all
 
 ############################################################################
 
@@ -897,8 +896,6 @@ sun/tools/jhsdb/BasicLauncherTest.java                          8211767 linux-pp
 # jdk_other
 
 com/sun/jndi/ldap/DeadSSLLdapTimeoutTest.java                   8169942 linux-i586,macosx-all,windows-x64
-
-com/sun/jndi/dns/ConfigTests/PortUnreachable.java               7164518 macosx-all
 
 javax/rmi/ssl/SSLSocketParametersTest.sh                        8162906 generic-all
 
