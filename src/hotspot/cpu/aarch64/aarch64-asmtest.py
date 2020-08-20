@@ -7,9 +7,6 @@ AARCH64_AS = "as"
 AARCH64_OBJDUMP = "objdump"
 AARCH64_OBJCOPY = "objcopy"
 
-# To minimize the changes of assembler test code
-random.seed(0)
-
 class Operand(object):
 
      def generate(self):
@@ -497,6 +494,8 @@ class Op(Instruction):
 
     def cstr(self):
         return Instruction.cstr(self) + ");"
+    def astr(self):
+        return self.aname();
 
 class SystemOp(Instruction):
 
@@ -1046,8 +1045,8 @@ def generate(kind, names):
                   outfile.write("\t" + op.astr() + "\n")
 
 outfile = open("aarch64ops.s", "w")
-sys.stdout = open("aarch64ops.asm", "w")
 
+# To minimize the changes of assembler test code
 random.seed(0)
 
 print "// BEGIN  Generated code -- do not edit"
@@ -1110,7 +1109,7 @@ for mode in 'xw':
                                      ["stxp", mode, 4], ["stlxp", mode, 4]])
 
 for kind in range(6):
-    print "\n// " + Address.kindToStr(kind),
+    sys.stdout.write("\n// " + Address.kindToStr(kind))
     if kind != Address.pcrel:
         generate (LoadStoreOp,
                   [["str", "str", kind, "x"], ["str", "str", kind, "w"],
@@ -1370,15 +1369,6 @@ print "\n  };"
 print "// END  Generated code -- do not edit"
 
 infile.close()
-sys.stdout.close()
 
-# Remove trailing spaces and replace tab with 4 spaces
-sys.stdout = sys.__stdout__
-with open("aarch64ops.asm", "r") as infile:
-    for line in infile:
-        line = line.rstrip()
-        line = line.replace("\t", "    ")
-        print line
-
-for f in ["aarch64ops.s", "aarch64ops.o", "aarch64ops.bin", "aarch64ops.asm"]:
+for f in ["aarch64ops.s", "aarch64ops.o", "aarch64ops.bin"]:
     os.remove(f)
