@@ -983,6 +983,19 @@ public class $vectorteststype$ extends AbstractVectorTest {
 #end[FP]
 #end[!Long]
 
+#if[byte]
+    static void assertArraysEquals($type$[] a, $type$[] r, int offs) {
+        int i = 0;
+        try {
+            for (; i < r.length; i++) {
+                Assert.assertEquals(r[i], (long)(a[i+offs]));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], (long)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+        }
+    }
+#end[byte]
+
     static void assertArraysEquals($type$[] a, long[] r, int offs) {
         int i = 0;
         try {
@@ -993,6 +1006,20 @@ public class $vectorteststype$ extends AbstractVectorTest {
             Assert.assertEquals(r[i], (long)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
         }
     }
+
+#if[!Double]
+    static void assertArraysEquals($type$[] a, double[] r, int offs) {
+        int i = 0;
+        try {
+            for (; i < r.length; i++) {
+                Assert.assertEquals(r[i], (double)(a[i+offs]));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], (double)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+        }
+    }
+#end[!Double]
+
 
     static $bitstype$ bits($type$ e) {
         return {#if[FP]? $Type$.$type$To$Bitstype$Bits(e): e};

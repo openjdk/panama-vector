@@ -947,6 +947,7 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
             })
     );
 
+
     static void assertArraysEquals(float[] a, long[] r, int offs) {
         int i = 0;
         try {
@@ -957,6 +958,18 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
             Assert.assertEquals(r[i], (long)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
         }
     }
+
+    static void assertArraysEquals(float[] a, double[] r, int offs) {
+        int i = 0;
+        try {
+            for (; i < r.length; i++) {
+                Assert.assertEquals(r[i], (double)(a[i+offs]));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], (double)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+        }
+    }
+
 
     static int bits(float e) {
         return  Float.floatToIntBits(e);
@@ -1839,6 +1852,8 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
 
         assertBroadcastArraysEquals(a, b, r, mask, FloatMaxVectorTests::div);
     }
+
+
 
 
 
@@ -4565,6 +4580,17 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "floatUnaryOpProvider")
+    static void toDoubleArrayFloatMaxVectorTestsSmokeTest(IntFunction<float[]> fa) {
+        float[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+            double [] r = av.toDoubleArray();
+            assertArraysEquals(a, r, i);
+        }
+    }
+
+    @Test(dataProvider = "floatUnaryOpProvider")
     static void toStringFloatMaxVectorTestsSmokeTest(IntFunction<float[]> fa) {
         float[] a = fa.apply(SPECIES.length());
 
@@ -4590,6 +4616,7 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
             Assert.assertTrue(hash == expectedHash, "at index " + i + ", hash should be = " + expectedHash + ", but is = " + hash);
         }
     }
+
 
     static long ADDReduceLong(float[] a, int idx) {
         float res = 0;
@@ -4670,6 +4697,17 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
                 FloatMaxVectorTests::ADDReduceLongMasked, FloatMaxVectorTests::ADDReduceAllLongMasked);
     }
 
+    @Test(dataProvider = "floattoLongUnaryOpProvider")
+    static void BroadcastLongFloatMaxVectorTestsSmokeTest(IntFunction<float[]> fa) {
+        float[] a = fa.apply(SPECIES.length());
+        float[] r = new float[a.length];
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            FloatVector.broadcast(SPECIES, (long)a[i]).intoArray(r, i);
+        }
+        assertBroadcastArraysEquals(a, r);
+    }
+
     @Test(dataProvider = "floatBinaryOpMaskProvider")
     static void blendFloatMaxVectorTestsBroadcastLongSmokeTest(IntFunction<float[]> fa, IntFunction<float[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -4687,6 +4725,7 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
         }
         assertBroadcastLongArraysEquals(a, b, r, mask, FloatMaxVectorTests::blend);
     }
+
 
     @Test(dataProvider = "floatUnaryOpSelectFromProvider")
     static void SelectFromFloatMaxVectorTests(IntFunction<float[]> fa,

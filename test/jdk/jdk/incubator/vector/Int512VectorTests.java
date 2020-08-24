@@ -802,6 +802,7 @@ public class Int512VectorTests extends AbstractVectorTest {
     }
 
 
+
     static void assertArraysEquals(int[] a, long[] r, int offs) {
         int i = 0;
         try {
@@ -812,6 +813,18 @@ public class Int512VectorTests extends AbstractVectorTest {
             Assert.assertEquals(r[i], (long)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
         }
     }
+
+    static void assertArraysEquals(int[] a, double[] r, int offs) {
+        int i = 0;
+        try {
+            for (; i < r.length; i++) {
+                Assert.assertEquals(r[i], (double)(a[i+offs]));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], (double)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+        }
+    }
+
 
     static int bits(int e) {
         return  e;
@@ -1952,6 +1965,55 @@ public class Int512VectorTests extends AbstractVectorTest {
         }
 
         assertBroadcastArraysEquals(a, b, r, mask, Int512VectorTests::OR);
+    }
+
+
+
+    @Test(dataProvider = "intBinaryOpProvider")
+    static void ANDInt512VectorTestsBroadcastSmokeTest(IntFunction<int[]> fa, IntFunction<int[]> fb) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] b = fb.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            IntVector av = IntVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.AND, b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, Int512VectorTests::AND);
+    }
+
+    @Test(dataProvider = "intBinaryOpProvider")
+    static void andInt512VectorTestsBroadcastSmokeTest(IntFunction<int[]> fa, IntFunction<int[]> fb) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] b = fb.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            IntVector av = IntVector.fromArray(SPECIES, a, i);
+            av.and(b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, Int512VectorTests::and);
+    }
+
+
+
+    @Test(dataProvider = "intBinaryOpMaskProvider")
+    static void ANDInt512VectorTestsBroadcastMaskedSmokeTest(IntFunction<int[]> fa, IntFunction<int[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] b = fb.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            IntVector av = IntVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.AND, b[i], vmask).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEquals(a, b, r, mask, Int512VectorTests::AND);
     }
 
 
@@ -4741,6 +4803,17 @@ public class Int512VectorTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "intUnaryOpProvider")
+    static void toDoubleArrayInt512VectorTestsSmokeTest(IntFunction<int[]> fa) {
+        int[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            IntVector av = IntVector.fromArray(SPECIES, a, i);
+            double [] r = av.toDoubleArray();
+            assertArraysEquals(a, r, i);
+        }
+    }
+
+    @Test(dataProvider = "intUnaryOpProvider")
     static void toStringInt512VectorTestsSmokeTest(IntFunction<int[]> fa) {
         int[] a = fa.apply(SPECIES.length());
 
@@ -4766,6 +4839,7 @@ public class Int512VectorTests extends AbstractVectorTest {
             Assert.assertTrue(hash == expectedHash, "at index " + i + ", hash should be = " + expectedHash + ", but is = " + hash);
         }
     }
+
 
     static long ADDReduceLong(int[] a, int idx) {
         int res = 0;
@@ -4846,6 +4920,17 @@ public class Int512VectorTests extends AbstractVectorTest {
                 Int512VectorTests::ADDReduceLongMasked, Int512VectorTests::ADDReduceAllLongMasked);
     }
 
+    @Test(dataProvider = "intUnaryOpProvider")
+    static void BroadcastLongInt512VectorTestsSmokeTest(IntFunction<int[]> fa) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = new int[a.length];
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            IntVector.broadcast(SPECIES, (long)a[i]).intoArray(r, i);
+        }
+        assertBroadcastArraysEquals(a, r);
+    }
+
     @Test(dataProvider = "intBinaryOpMaskProvider")
     static void blendInt512VectorTestsBroadcastLongSmokeTest(IntFunction<int[]> fa, IntFunction<int[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -4863,6 +4948,7 @@ public class Int512VectorTests extends AbstractVectorTest {
         }
         assertBroadcastLongArraysEquals(a, b, r, mask, Int512VectorTests::blend);
     }
+
 
     @Test(dataProvider = "intUnaryOpShuffleProvider")
     static void SelectFromInt512VectorTests(IntFunction<int[]> fa,

@@ -942,6 +942,7 @@ public class Double256VectorTests extends AbstractVectorTest {
             })
     );
 
+
     static void assertArraysEquals(double[] a, long[] r, int offs) {
         int i = 0;
         try {
@@ -952,6 +953,8 @@ public class Double256VectorTests extends AbstractVectorTest {
             Assert.assertEquals(r[i], (long)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
         }
     }
+
+
 
     static long bits(double e) {
         return  Double.doubleToLongBits(e);
@@ -1834,6 +1837,8 @@ public class Double256VectorTests extends AbstractVectorTest {
 
         assertBroadcastArraysEquals(a, b, r, mask, Double256VectorTests::div);
     }
+
+
 
 
 
@@ -4601,6 +4606,7 @@ public class Double256VectorTests extends AbstractVectorTest {
         }
     }
 
+
     @Test(dataProvider = "doubleUnaryOpProvider")
     static void toStringDouble256VectorTestsSmokeTest(IntFunction<double[]> fa) {
         double[] a = fa.apply(SPECIES.length());
@@ -4627,6 +4633,7 @@ public class Double256VectorTests extends AbstractVectorTest {
             Assert.assertTrue(hash == expectedHash, "at index " + i + ", hash should be = " + expectedHash + ", but is = " + hash);
         }
     }
+
 
     static long ADDReduceLong(double[] a, int idx) {
         double res = 0;
@@ -4707,6 +4714,17 @@ public class Double256VectorTests extends AbstractVectorTest {
                 Double256VectorTests::ADDReduceLongMasked, Double256VectorTests::ADDReduceAllLongMasked);
     }
 
+    @Test(dataProvider = "doubletoLongUnaryOpProvider")
+    static void BroadcastLongDouble256VectorTestsSmokeTest(IntFunction<double[]> fa) {
+        double[] a = fa.apply(SPECIES.length());
+        double[] r = new double[a.length];
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            DoubleVector.broadcast(SPECIES, (long)a[i]).intoArray(r, i);
+        }
+        assertBroadcastArraysEquals(a, r);
+    }
+
     @Test(dataProvider = "doubleBinaryOpMaskProvider")
     static void blendDouble256VectorTestsBroadcastLongSmokeTest(IntFunction<double[]> fa, IntFunction<double[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -4724,6 +4742,7 @@ public class Double256VectorTests extends AbstractVectorTest {
         }
         assertBroadcastLongArraysEquals(a, b, r, mask, Double256VectorTests::blend);
     }
+
 
     @Test(dataProvider = "doubleUnaryOpSelectFromProvider")
     static void SelectFromDouble256VectorTests(IntFunction<double[]> fa,
