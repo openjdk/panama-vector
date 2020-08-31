@@ -928,6 +928,19 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
 
 
     @DataProvider
+    public Object[][] shuffleProvider() {
+        return INT_SHUFFLE_GENERATORS.stream().
+                map(f -> new Object[]{f}).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] shuffleCompareOpProvider() {
+        return INT_SHUFFLE_COMPARE_GENERATOR_PAIRS.stream().map(List::toArray).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
     public Object[][] shortUnaryOpShuffleProvider() {
         return INT_SHUFFLE_GENERATORS.stream().
                 flatMap(fs -> SHORT_GENERATORS.stream().map(fa -> {
@@ -5014,18 +5027,103 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         assertSelectFromArraysEquals(a, r, order, mask, SPECIES.length());
     }
 
+    @Test(dataProvider = "shuffleProvider")
+    static void shuffleMiscellaneousShortMaxVectorTestsSmokeTest(BiFunction<Integer,Integer,int[]> fs) {
+        int[] a = fs.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var shuffle = VectorShuffle.fromArray(SPECIES, a, i);
+            int hash = shuffle.hashCode();
+            int length = shuffle.length();
+
+            int subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            int expectedHash = Objects.hash(SPECIES, Arrays.hashCode(subarr));
+            Assert.assertTrue(hash == expectedHash, "at index " + i + ", hash should be = " + expectedHash + ", but is = " + hash);
+            Assert.assertEquals(length, SPECIES.length());
+        }
+    }
+
+    @Test(dataProvider = "shuffleProvider")
+    static void shuffleToStringShortMaxVectorTestsSmokeTest(BiFunction<Integer,Integer,int[]> fs) {
+        int[] a = fs.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var shuffle = VectorShuffle.fromArray(SPECIES, a, i);
+            String str = shuffle.toString();
+
+            int subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            Assert.assertTrue(str.equals("Shuffle" + Arrays.toString(subarr)), "at index " +
+                i + ", string should be = " + Arrays.toString(subarr) + ", but is = " + str);
+        }
+    }
+
+    @Test(dataProvider = "shuffleCompareOpProvider")
+    static void shuffleEqualsShortMaxVectorTestsSmokeTest(BiFunction<Integer,Integer,int[]> fa, BiFunction<Integer,Integer,int[]> fb) {
+        int[] a = fa.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+        int[] b = fb.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var av = VectorShuffle.fromArray(SPECIES, a, i);
+            var bv = VectorShuffle.fromArray(SPECIES, b, i);
+            boolean eq = av.equals(bv);
+            int to = i + SPECIES.length();
+            Assert.assertEquals(eq, Arrays.equals(a, i, to, b, i, to));
+        }
+    }
+
     @Test
-    static void ElementSizeShortMaxVectorTests() {
+    static void ElementSizeShortMaxVectorTestsSmokeTest() {
         ShortVector av = ShortVector.zero(SPECIES);
         int elsize = av.elementSize();
         Assert.assertEquals(elsize, Short.SIZE);
     }
 
     @Test
-    static void VectorShapeShortMaxVectorTests() {
+    static void VectorShapeShortMaxVectorTestsSmokeTest() {
         ShortVector av = ShortVector.zero(SPECIES);
         VectorShape vsh = av.shape();
         assert(vsh.equals(VectorShape.S_Max_BIT));
+    }
+
+    @Test
+    static void ShapeWithLanesShortMaxVectorTestsSmokeTest() {
+        ShortVector av = ShortVector.zero(SPECIES);
+        VectorShape vsh = av.shape();
+        VectorSpecies species = vsh.withLanes(short.class);
+        assert(species.equals(SPECIES));
+    }
+
+    @Test
+    static void ElementTypeShortMaxVectorTestsSmokeTest() {
+        ShortVector av = ShortVector.zero(SPECIES);
+        assert(av.species().elementType() == short.class);
+    }
+
+    @Test
+    static void SpeciesElementSizeShortMaxVectorTestsSmokeTest() {
+        ShortVector av = ShortVector.zero(SPECIES);
+        assert(av.species().elementSize() == Short.SIZE);
+    }
+
+    @Test
+    static void VectorTypeShortMaxVectorTestsSmokeTest() {
+        ShortVector av = ShortVector.zero(SPECIES);
+        assert(av.species().vectorType() == av.getClass());
+    }
+
+    @Test
+    static void WithLanesShortMaxVectorTestsSmokeTest() {
+        ShortVector av = ShortVector.zero(SPECIES);
+        VectorSpecies species = av.species().withLanes(short.class);
+        assert(species.equals(SPECIES));
+    }
+
+    @Test
+    static void WithShapeShortMaxVectorTestsSmokeTest() {
+        ShortVector av = ShortVector.zero(SPECIES);
+        VectorShape vsh = av.shape();
+        VectorSpecies species = av.species().withShape(vsh);
+        assert(species.equals(SPECIES));
     }
 }
 

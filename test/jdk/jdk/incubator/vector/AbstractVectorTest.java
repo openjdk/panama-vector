@@ -31,6 +31,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.IntFunction;
+import java.util.function.IntUnaryOperator;
+import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 public class AbstractVectorTest {
 
@@ -155,6 +158,41 @@ public class AbstractVectorTest {
             })
     );
 
+    interface RangeIntOp {
+        int apply(int i, int min, int max);
+    }
+
+    static int[] fillRangeInts(int s, int min, int max, RangeIntOp f) {
+        return fillRangeInts(new int[s], min, max, f);
+    }
+
+    static int[] fillRangeInts(int[] a, int min, int max, RangeIntOp f) {
+        for (int i = 0; i < a.length; i++) {
+            a[i] = f.apply(i, min, max);
+        }
+        return a;
+    }
+
+    static final List<List<BiFunction<Integer, Integer, int[]>>>
+       INT_SHUFFLE_COMPARE_GENERATOR_PAIRS = List.of(
+           List.of(
+               withToStringBi("shuffle[i]", (Integer l, Integer m) -> {
+                   return fillRangeInts(l, 0, m,  (i, _min, _max) -> (i % _max));
+               }),
+               withToStringBi("shuffle[random]", (Integer l, Integer m) -> {
+                   return RAND.ints(l, 0, m).toArray();
+               })
+           ),
+           List.of(
+               withToStringBi("shuffle[i]", (Integer l, Integer m) -> {
+                   return fillRangeInts(l, 0, m,  (i, _min, _max) -> (i % _max));
+               }),
+               withToStringBi("shuffle[random]", (Integer l, Integer m) -> {
+                   return RAND.ints(l, 0, m).toArray();
+               })
+           )
+    );
+
     static final List<BiFunction<Integer,Integer,int[]>> INT_INDEX_GENERATORS = List.of(
             withToStringBi("index[random]", (Integer l, Integer m) -> {
                 return RAND.ints(l, 0, m).toArray();
@@ -186,5 +224,18 @@ public class AbstractVectorTest {
     static boolean isIndexOutOfBounds(int size, int offset, int length) {
         int upperBound = offset + size;
         return upperBound < size || upperBound > length;
+    }
+
+    public static int[] expectedShuffle(int length, IntUnaryOperator fn) {
+        int [] a = new int[length];
+        for (int i = 0; i < length; i++) {
+            int elem = fn.applyAsInt(i);
+            int wrapElem = Math.floorMod(elem, length);
+            if (elem != wrapElem) {
+                elem = wrapElem - length;
+            }
+            a[i] = elem;
+        }
+        return a;
     }
 }

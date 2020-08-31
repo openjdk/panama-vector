@@ -933,6 +933,19 @@ public class Byte256VectorTests extends AbstractVectorTest {
 
 
     @DataProvider
+    public Object[][] shuffleProvider() {
+        return INT_SHUFFLE_GENERATORS.stream().
+                map(f -> new Object[]{f}).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] shuffleCompareOpProvider() {
+        return INT_SHUFFLE_COMPARE_GENERATOR_PAIRS.stream().map(List::toArray).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
     public Object[][] byteUnaryOpShuffleProvider() {
         return INT_SHUFFLE_GENERATORS.stream().
                 flatMap(fs -> BYTE_GENERATORS.stream().map(fa -> {
@@ -5030,18 +5043,103 @@ public class Byte256VectorTests extends AbstractVectorTest {
         assertSelectFromArraysEquals(a, r, order, mask, SPECIES.length());
     }
 
+    @Test(dataProvider = "shuffleProvider")
+    static void shuffleMiscellaneousByte256VectorTestsSmokeTest(BiFunction<Integer,Integer,int[]> fs) {
+        int[] a = fs.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var shuffle = VectorShuffle.fromArray(SPECIES, a, i);
+            int hash = shuffle.hashCode();
+            int length = shuffle.length();
+
+            int subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            int expectedHash = Objects.hash(SPECIES, Arrays.hashCode(subarr));
+            Assert.assertTrue(hash == expectedHash, "at index " + i + ", hash should be = " + expectedHash + ", but is = " + hash);
+            Assert.assertEquals(length, SPECIES.length());
+        }
+    }
+
+    @Test(dataProvider = "shuffleProvider")
+    static void shuffleToStringByte256VectorTestsSmokeTest(BiFunction<Integer,Integer,int[]> fs) {
+        int[] a = fs.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var shuffle = VectorShuffle.fromArray(SPECIES, a, i);
+            String str = shuffle.toString();
+
+            int subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            Assert.assertTrue(str.equals("Shuffle" + Arrays.toString(subarr)), "at index " +
+                i + ", string should be = " + Arrays.toString(subarr) + ", but is = " + str);
+        }
+    }
+
+    @Test(dataProvider = "shuffleCompareOpProvider")
+    static void shuffleEqualsByte256VectorTestsSmokeTest(BiFunction<Integer,Integer,int[]> fa, BiFunction<Integer,Integer,int[]> fb) {
+        int[] a = fa.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+        int[] b = fb.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var av = VectorShuffle.fromArray(SPECIES, a, i);
+            var bv = VectorShuffle.fromArray(SPECIES, b, i);
+            boolean eq = av.equals(bv);
+            int to = i + SPECIES.length();
+            Assert.assertEquals(eq, Arrays.equals(a, i, to, b, i, to));
+        }
+    }
+
     @Test
-    static void ElementSizeByte256VectorTests() {
+    static void ElementSizeByte256VectorTestsSmokeTest() {
         ByteVector av = ByteVector.zero(SPECIES);
         int elsize = av.elementSize();
         Assert.assertEquals(elsize, Byte.SIZE);
     }
 
     @Test
-    static void VectorShapeByte256VectorTests() {
+    static void VectorShapeByte256VectorTestsSmokeTest() {
         ByteVector av = ByteVector.zero(SPECIES);
         VectorShape vsh = av.shape();
         assert(vsh.equals(VectorShape.S_256_BIT));
+    }
+
+    @Test
+    static void ShapeWithLanesByte256VectorTestsSmokeTest() {
+        ByteVector av = ByteVector.zero(SPECIES);
+        VectorShape vsh = av.shape();
+        VectorSpecies species = vsh.withLanes(byte.class);
+        assert(species.equals(SPECIES));
+    }
+
+    @Test
+    static void ElementTypeByte256VectorTestsSmokeTest() {
+        ByteVector av = ByteVector.zero(SPECIES);
+        assert(av.species().elementType() == byte.class);
+    }
+
+    @Test
+    static void SpeciesElementSizeByte256VectorTestsSmokeTest() {
+        ByteVector av = ByteVector.zero(SPECIES);
+        assert(av.species().elementSize() == Byte.SIZE);
+    }
+
+    @Test
+    static void VectorTypeByte256VectorTestsSmokeTest() {
+        ByteVector av = ByteVector.zero(SPECIES);
+        assert(av.species().vectorType() == av.getClass());
+    }
+
+    @Test
+    static void WithLanesByte256VectorTestsSmokeTest() {
+        ByteVector av = ByteVector.zero(SPECIES);
+        VectorSpecies species = av.species().withLanes(byte.class);
+        assert(species.equals(SPECIES));
+    }
+
+    @Test
+    static void WithShapeByte256VectorTestsSmokeTest() {
+        ByteVector av = ByteVector.zero(SPECIES);
+        VectorShape vsh = av.shape();
+        VectorSpecies species = av.species().withShape(vsh);
+        assert(species.equals(SPECIES));
     }
 }
 

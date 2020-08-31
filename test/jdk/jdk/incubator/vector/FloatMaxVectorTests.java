@@ -1080,6 +1080,19 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
     }
 
     @DataProvider
+    public Object[][] shuffleProvider() {
+        return INT_SHUFFLE_GENERATORS.stream().
+                map(f -> new Object[]{f}).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] shuffleCompareOpProvider() {
+        return INT_SHUFFLE_COMPARE_GENERATOR_PAIRS.stream().map(List::toArray).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
     public Object[][] floatUnaryOpShuffleProvider() {
         return INT_SHUFFLE_GENERATORS.stream().
                 flatMap(fs -> FLOAT_GENERATORS.stream().map(fa -> {
@@ -4762,18 +4775,103 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
         assertSelectFromArraysEquals(a, r, order, mask, SPECIES.length());
     }
 
+    @Test(dataProvider = "shuffleProvider")
+    static void shuffleMiscellaneousFloatMaxVectorTestsSmokeTest(BiFunction<Integer,Integer,int[]> fs) {
+        int[] a = fs.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var shuffle = VectorShuffle.fromArray(SPECIES, a, i);
+            int hash = shuffle.hashCode();
+            int length = shuffle.length();
+
+            int subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            int expectedHash = Objects.hash(SPECIES, Arrays.hashCode(subarr));
+            Assert.assertTrue(hash == expectedHash, "at index " + i + ", hash should be = " + expectedHash + ", but is = " + hash);
+            Assert.assertEquals(length, SPECIES.length());
+        }
+    }
+
+    @Test(dataProvider = "shuffleProvider")
+    static void shuffleToStringFloatMaxVectorTestsSmokeTest(BiFunction<Integer,Integer,int[]> fs) {
+        int[] a = fs.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var shuffle = VectorShuffle.fromArray(SPECIES, a, i);
+            String str = shuffle.toString();
+
+            int subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            Assert.assertTrue(str.equals("Shuffle" + Arrays.toString(subarr)), "at index " +
+                i + ", string should be = " + Arrays.toString(subarr) + ", but is = " + str);
+        }
+    }
+
+    @Test(dataProvider = "shuffleCompareOpProvider")
+    static void shuffleEqualsFloatMaxVectorTestsSmokeTest(BiFunction<Integer,Integer,int[]> fa, BiFunction<Integer,Integer,int[]> fb) {
+        int[] a = fa.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+        int[] b = fb.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var av = VectorShuffle.fromArray(SPECIES, a, i);
+            var bv = VectorShuffle.fromArray(SPECIES, b, i);
+            boolean eq = av.equals(bv);
+            int to = i + SPECIES.length();
+            Assert.assertEquals(eq, Arrays.equals(a, i, to, b, i, to));
+        }
+    }
+
     @Test
-    static void ElementSizeFloatMaxVectorTests() {
+    static void ElementSizeFloatMaxVectorTestsSmokeTest() {
         FloatVector av = FloatVector.zero(SPECIES);
         int elsize = av.elementSize();
         Assert.assertEquals(elsize, Float.SIZE);
     }
 
     @Test
-    static void VectorShapeFloatMaxVectorTests() {
+    static void VectorShapeFloatMaxVectorTestsSmokeTest() {
         FloatVector av = FloatVector.zero(SPECIES);
         VectorShape vsh = av.shape();
         assert(vsh.equals(VectorShape.S_Max_BIT));
+    }
+
+    @Test
+    static void ShapeWithLanesFloatMaxVectorTestsSmokeTest() {
+        FloatVector av = FloatVector.zero(SPECIES);
+        VectorShape vsh = av.shape();
+        VectorSpecies species = vsh.withLanes(float.class);
+        assert(species.equals(SPECIES));
+    }
+
+    @Test
+    static void ElementTypeFloatMaxVectorTestsSmokeTest() {
+        FloatVector av = FloatVector.zero(SPECIES);
+        assert(av.species().elementType() == float.class);
+    }
+
+    @Test
+    static void SpeciesElementSizeFloatMaxVectorTestsSmokeTest() {
+        FloatVector av = FloatVector.zero(SPECIES);
+        assert(av.species().elementSize() == Float.SIZE);
+    }
+
+    @Test
+    static void VectorTypeFloatMaxVectorTestsSmokeTest() {
+        FloatVector av = FloatVector.zero(SPECIES);
+        assert(av.species().vectorType() == av.getClass());
+    }
+
+    @Test
+    static void WithLanesFloatMaxVectorTestsSmokeTest() {
+        FloatVector av = FloatVector.zero(SPECIES);
+        VectorSpecies species = av.species().withLanes(float.class);
+        assert(species.equals(SPECIES));
+    }
+
+    @Test
+    static void WithShapeFloatMaxVectorTestsSmokeTest() {
+        FloatVector av = FloatVector.zero(SPECIES);
+        VectorShape vsh = av.shape();
+        VectorSpecies species = av.species().withShape(vsh);
+        assert(species.equals(SPECIES));
     }
 }
 

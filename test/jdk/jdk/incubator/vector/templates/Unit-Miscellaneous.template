@@ -320,16 +320,101 @@
         assertSelectFromArraysEquals(a, r, order, mask, SPECIES.length());
     }
 
+    @Test(dataProvider = "shuffleProvider")
+    static void shuffleMiscellaneous$vectorteststype$SmokeTest(BiFunction<Integer,Integer,int[]> fs) {
+        int[] a = fs.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var shuffle = VectorShuffle.fromArray(SPECIES, a, i);
+            int hash = shuffle.hashCode();
+            int length = shuffle.length();
+
+            int subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            int expectedHash = Objects.hash(SPECIES, Arrays.hashCode(subarr));
+            Assert.assertTrue(hash == expectedHash, "at index " + i + ", hash should be = " + expectedHash + ", but is = " + hash);
+            Assert.assertEquals(length, SPECIES.length());
+        }
+    }
+
+    @Test(dataProvider = "shuffleProvider")
+    static void shuffleToString$vectorteststype$SmokeTest(BiFunction<Integer,Integer,int[]> fs) {
+        int[] a = fs.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var shuffle = VectorShuffle.fromArray(SPECIES, a, i);
+            String str = shuffle.toString();
+
+            int subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            Assert.assertTrue(str.equals("Shuffle" + Arrays.toString(subarr)), "at index " +
+                i + ", string should be = " + Arrays.toString(subarr) + ", but is = " + str);
+        }
+    }
+
+    @Test(dataProvider = "shuffleCompareOpProvider")
+    static void shuffleEquals$vectorteststype$SmokeTest(BiFunction<Integer,Integer,int[]> fa, BiFunction<Integer,Integer,int[]> fb) {
+        int[] a = fa.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+        int[] b = fb.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var av = VectorShuffle.fromArray(SPECIES, a, i);
+            var bv = VectorShuffle.fromArray(SPECIES, b, i);
+            boolean eq = av.equals(bv);
+            int to = i + SPECIES.length();
+            Assert.assertEquals(eq, Arrays.equals(a, i, to, b, i, to));
+        }
+    }
+
     @Test
-    static void ElementSize$vectorteststype$() {
+    static void ElementSize$vectorteststype$SmokeTest() {
         $abstractvectortype$ av = $abstractvectortype$.zero(SPECIES);
         int elsize = av.elementSize();
         Assert.assertEquals(elsize, $Wideboxtype$.SIZE);
     }
 
     @Test
-    static void VectorShape$vectorteststype$() {
+    static void VectorShape$vectorteststype$SmokeTest() {
         $abstractvectortype$ av = $abstractvectortype$.zero(SPECIES);
         VectorShape vsh = av.shape();
         assert(vsh.equals(VectorShape.$Shape$));
+    }
+
+    @Test
+    static void ShapeWithLanes$vectorteststype$SmokeTest() {
+        $abstractvectortype$ av = $abstractvectortype$.zero(SPECIES);
+        VectorShape vsh = av.shape();
+        VectorSpecies species = vsh.withLanes($type$.class);
+        assert(species.equals(SPECIES));
+    }
+
+    @Test
+    static void ElementType$vectorteststype$SmokeTest() {
+        $abstractvectortype$ av = $abstractvectortype$.zero(SPECIES);
+        assert(av.species().elementType() == $type$.class);
+    }
+
+    @Test
+    static void SpeciesElementSize$vectorteststype$SmokeTest() {
+        $abstractvectortype$ av = $abstractvectortype$.zero(SPECIES);
+        assert(av.species().elementSize() == $Wideboxtype$.SIZE);
+    }
+
+    @Test
+    static void VectorType$vectorteststype$SmokeTest() {
+        $abstractvectortype$ av = $abstractvectortype$.zero(SPECIES);
+        assert(av.species().vectorType() == av.getClass());
+    }
+
+    @Test
+    static void WithLanes$vectorteststype$SmokeTest() {
+        $abstractvectortype$ av = $abstractvectortype$.zero(SPECIES);
+        VectorSpecies species = av.species().withLanes($type$.class);
+        assert(species.equals(SPECIES));
+    }
+
+    @Test
+    static void WithShape$vectorteststype$SmokeTest() {
+        $abstractvectortype$ av = $abstractvectortype$.zero(SPECIES);
+        VectorShape vsh = av.shape();
+        VectorSpecies species = av.species().withShape(vsh);
+        assert(species.equals(SPECIES));
     }

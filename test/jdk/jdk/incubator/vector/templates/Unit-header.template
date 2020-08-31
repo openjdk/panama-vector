@@ -1136,6 +1136,19 @@ public class $vectorteststype$ extends AbstractVectorTest {
 #end[FP]
 
     @DataProvider
+    public Object[][] shuffleProvider() {
+        return INT_SHUFFLE_GENERATORS.stream().
+                map(f -> new Object[]{f}).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] shuffleCompareOpProvider() {
+        return INT_SHUFFLE_COMPARE_GENERATOR_PAIRS.stream().map(List::toArray).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
     public Object[][] $type$UnaryOpShuffleProvider() {
         return INT_SHUFFLE_GENERATORS.stream().
                 flatMap(fs -> $TYPE$_GENERATORS.stream().map(fa -> {
