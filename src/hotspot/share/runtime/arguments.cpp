@@ -4208,6 +4208,12 @@ jint Arguments::apply_ergo() {
     FLAG_SET_DEFAULT(EnableVectorAggressiveReboxing, false);
   }
 #endif // COMPILER2
+
+  if (FLAG_IS_CMDLINE(DiagnoseSyncOnPrimitiveWrappers)) {
+    if (DiagnoseSyncOnPrimitiveWrappers == ObjectSynchronizer::LOG_WARNING && !log_is_enabled(Info, primitivewrappers)) {
+      LogConfiguration::configure_stdout(LogLevel::Info, true, LOG_TAGS(primitivewrappers));
+    }
+  }
   return JNI_OK;
 }
 

@@ -43,7 +43,9 @@
 #include "runtime/deoptimization.hpp"
 #include "runtime/fieldDescriptor.inline.hpp"
 #include "runtime/frame.inline.hpp"
+#include "runtime/java.hpp"
 #include "runtime/jniHandles.inline.hpp"
+#include "runtime/reflectionUtils.hpp"
 #include "runtime/sharedRuntime.hpp"
 #if INCLUDE_G1GC
 #include "gc/g1/g1ThreadLocalData.hpp"
@@ -893,8 +895,11 @@ void JVMCIRuntime::initialize_HotSpotJVMCIRuntime(JVMCI_TRAPS) {
 
   // This should only be called in the context of the JVMCI class being initialized
   JVMCIObject result = JVMCIENV->call_HotSpotJVMCIRuntime_runtime(JVMCI_CHECK);
+  result = JVMCIENV->make_global(result);
 
-  _HotSpotJVMCIRuntime_instance = JVMCIENV->make_global(result);
+  OrderAccess::storestore();  // Ensure handle is fully constructed before publishing
+  _HotSpotJVMCIRuntime_instance = result;
+
   JVMCI::_is_initialized = true;
 }
 
