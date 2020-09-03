@@ -476,7 +476,7 @@ final class ShortMaxVector extends ShortVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        return laneHelper(i); 
+        return laneHelper(i);
     }
 
     public short laneHelper(int i) {

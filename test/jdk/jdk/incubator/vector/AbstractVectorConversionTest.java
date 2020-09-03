@@ -179,7 +179,7 @@ abstract class AbstractVectorConversionTest {
        long time = tr.getEndMillis() - tr.getStartMillis();
        System.out.println(tr.getName() + " took " + time + " ms");
     }
-    
+
     @DataProvider
     public Object[][] byteUnaryOpProvider() {
         return BYTE_GENERATORS.stream().

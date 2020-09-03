@@ -466,7 +466,7 @@ final class LongMaxVector extends LongVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        return laneHelper(i); 
+        return laneHelper(i);
     }
 
     public long laneHelper(int i) {
