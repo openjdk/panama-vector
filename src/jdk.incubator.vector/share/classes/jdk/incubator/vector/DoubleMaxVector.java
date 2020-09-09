@@ -490,7 +490,7 @@ final class DoubleMaxVector extends DoubleVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        return withLaneHelper(i, e); 
+        return withLaneHelper(i, e);
     }
 
     public DoubleMaxVector withLaneHelper(int i, double e) {

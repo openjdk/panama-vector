@@ -158,7 +158,7 @@ function replace_variables {
   fi
   # If we also have a dedicated function for the operation then use 2nd sed expression
   if [[ "$filename" == *"Unit"* ]] && [ "$test_func" != "" ]; then
-    if [ "$masked" == "" ] || [ "$withMask" != "" ]; then 
+    if [ "$masked" == "" ] || [ "$withMask" != "" ]; then
       if [ ! -z "$kernel_smoke" ]; then
         local kernel_smoke_escaped=$(echo -e "$kernel_smoke" | tr '\n' '|')
         sed "s/\[\[KERNEL\]\]/${kernel_smoke_escaped}/g" $filename > ${filename}.scurrent1
@@ -220,7 +220,7 @@ function gen_op_tmpl {
   local kernel_smoke=""
   if [ -f $kernel_smoke_filename ]; then
     kernel_smoke="$(cat $kernel_smoke_filename)"
-  else 
+  else
     kernel_smoke="$kernel"
   fi
 
@@ -406,8 +406,8 @@ fi
 
 # ALU binary ops.
 # Here "ADD+add+withMask" says VectorOperator name is "ADD", and we have a dedicate method too named 'add', and add() is also available with mask variant.
-gen_binary_alu_op "ADD+add+withMask" "a + b" 
-gen_binary_alu_op "SUB+sub+withMask" "a - b" 
+gen_binary_alu_op "ADD+add+withMask" "a + b"
+gen_binary_alu_op "SUB+sub+withMask" "a - b"
 gen_binary_alu_op "MUL+mul+withMask" "a \* b"
 gen_binary_alu_op "DIV+div+withMask" "a \/ b" "FP"
 gen_op_tmpl "Binary-op_bitwise-div" "DIV+div+withMask" "a \/ b" "BITWISE"
@@ -419,8 +419,8 @@ gen_binary_alu_op "OR+or"    "a | b"   "BITWISE"
 # Missing:        "OR_UNCHECKED"
 gen_binary_alu_op "XOR"   "a ^ b"   "BITWISE"
 # Generate the broadcast versions
-gen_binary_alu_bcst_op "add+withMask" "a + b" 
-gen_binary_alu_bcst_op "sub+withMask" "a - b" 
+gen_binary_alu_bcst_op "add+withMask" "a + b"
+gen_binary_alu_bcst_op "sub+withMask" "a - b"
 gen_binary_alu_bcst_op "mul+withMask" "a \* b"
 gen_binary_alu_bcst_op "div+withMask" "a \/ b" "FP"
 gen_op_tmpl "Binary-Broadcast-op_bitwise-div" "div+withMask" "a \/ b" "BITWISE"

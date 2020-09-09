@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -636,11 +636,15 @@ public:
 
   // Reassociate invariant expressions.
   void reassociate_invariants(PhaseIdealLoop *phase);
+  // Reassociate invariant binary expressions.
+  Node* reassociate(Node* n1, PhaseIdealLoop *phase);
   // Reassociate invariant add and subtract expressions.
-  Node* reassociate_add_sub(Node* n1, PhaseIdealLoop *phase);
+  Node* reassociate_add_sub(Node* n1, int inv1_idx, int inv2_idx, PhaseIdealLoop *phase);
   // Return nonzero index of invariant operand if invariant and variant
-  // are combined with an Add or Sub. Helper for reassociate_invariants.
-  int is_invariant_addition(Node* n, PhaseIdealLoop *phase);
+  // are combined with an associative binary. Helper for reassociate_invariants.
+  int find_invariant(Node* n, PhaseIdealLoop *phase);
+  // Return TRUE if "n" is associative.
+  bool is_associative(Node* n, Node* base=NULL);
 
   // Return true if n is invariant
   bool is_invariant(Node* n) const;
@@ -788,13 +792,13 @@ private:
 #ifdef ASSERT
   void ensure_zero_trip_guard_proj(Node* node, bool is_main_loop);
 #endif
-  void copy_skeleton_predicates_to_main_loop_helper(Node* predicate, Node* start, Node* end, IdealLoopTree* outer_loop, LoopNode* outer_main_head,
+  void copy_skeleton_predicates_to_main_loop_helper(Node* predicate, Node* init, Node* stride, IdealLoopTree* outer_loop, LoopNode* outer_main_head,
                                                     uint dd_main_head, const uint idx_before_pre_post, const uint idx_after_post_before_pre,
                                                     Node* zero_trip_guard_proj_main, Node* zero_trip_guard_proj_post, const Node_List &old_new);
-  void copy_skeleton_predicates_to_main_loop(CountedLoopNode* pre_head, Node* start, Node* end, IdealLoopTree* outer_loop, LoopNode* outer_main_head,
+  void copy_skeleton_predicates_to_main_loop(CountedLoopNode* pre_head, Node* init, Node* stride, IdealLoopTree* outer_loop, LoopNode* outer_main_head,
                                              uint dd_main_head, const uint idx_before_pre_post, const uint idx_after_post_before_pre,
                                              Node* zero_trip_guard_proj_main, Node* zero_trip_guard_proj_post, const Node_List &old_new);
-  Node* clone_skeleton_predicate(Node* iff, Node* value, Node* predicate, Node* uncommon_proj,
+  Node* clone_skeleton_predicate(Node* iff, Node* new_init, Node* new_stride, Node* predicate, Node* uncommon_proj,
                                  Node* current_proj, IdealLoopTree* outer_loop, Node* prev_proj);
   bool skeleton_predicate_has_opaque(IfNode* iff);
   void update_main_loop_skeleton_predicates(Node* ctrl, CountedLoopNode* loop_head, Node* init, int stride_con);
@@ -1436,6 +1440,10 @@ private:
                                       uint idx_before_clone, Node_List &old_new);
 
   bool _created_loop_node;
+#ifdef ASSERT
+  void dump_real_LCA(Node* early, Node* wrong_lca);
+  bool check_idom_chains_intersection(const Node* n, uint& idom_idx_new, uint& idom_idx_other, const Node_List* nodes_seen) const;
+#endif
 
 public:
   void set_created_loop_node() { _created_loop_node = true; }
@@ -1448,6 +1456,7 @@ public:
 
 #ifndef PRODUCT
   void dump() const;
+  void dump_idom(Node* n) const;
   void dump(IdealLoopTree* loop, uint rpo_idx, Node_List &rpo_list) const;
   void verify() const;          // Major slow  :-)
   void verify_compare(Node* n, const PhaseIdealLoop* loop_verify, VectorSet &visited) const;

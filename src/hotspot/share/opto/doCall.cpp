@@ -560,7 +560,7 @@ void Parse::do_call() {
     // finalize() won't be compiled as vtable calls (IC call
     // resolution will catch the illegal call) and the few legal calls
     // on array types won't be either.
-    callee = C->optimize_virtual_call(method(), klass, holder, orig_callee,
+    callee = C->optimize_virtual_call(method(), bci(), klass, holder, orig_callee,
                                       receiver_type, is_virtual,
                                       call_does_dispatch, vtable_index);  // out-parameters
     speculative_receiver_type = receiver_type != NULL ? receiver_type->speculative_type() : NULL;
@@ -1074,7 +1074,7 @@ void Parse::count_compiled_calls(bool at_method_entry, bool is_inline) {
 #endif //PRODUCT
 
 
-ciMethod* Compile::optimize_virtual_call(ciMethod* caller, ciInstanceKlass* klass,
+ciMethod* Compile::optimize_virtual_call(ciMethod* caller, int bci, ciInstanceKlass* klass,
                                          ciKlass* holder, ciMethod* callee,
                                          const TypeOopPtr* receiver_type, bool is_virtual,
                                          bool& call_does_dispatch, int& vtable_index,
@@ -1084,7 +1084,7 @@ ciMethod* Compile::optimize_virtual_call(ciMethod* caller, ciInstanceKlass* klas
   vtable_index       = Method::invalid_vtable_index;
 
   // Choose call strategy.
-  ciMethod* optimized_virtual_method = optimize_inlining(caller, klass, callee,
+  ciMethod* optimized_virtual_method = optimize_inlining(caller, bci, klass, callee,
                                                          receiver_type, check_access);
 
   // Have the call been sufficiently improved such that it is no longer a virtual?
@@ -1099,7 +1099,7 @@ ciMethod* Compile::optimize_virtual_call(ciMethod* caller, ciInstanceKlass* klas
 }
 
 // Identify possible target method and inlining style
-ciMethod* Compile::optimize_inlining(ciMethod* caller, ciInstanceKlass* klass,
+ciMethod* Compile::optimize_inlining(ciMethod* caller, int bci, ciInstanceKlass* klass,
                                      ciMethod* callee, const TypeOopPtr* receiver_type,
                                      bool check_access) {
   // only use for virtual or interface calls
@@ -1190,6 +1190,11 @@ ciMethod* Compile::optimize_inlining(ciMethod* caller, ciInstanceKlass* klass,
     // such method can be changed when its class is redefined.
     ciMethod* exact_method = callee->resolve_invoke(calling_klass, actual_receiver);
     if (exact_method != NULL) {
+      if (PrintOpto) {
+        tty->print("  Calling method via exact type @%d --- ", bci);
+        exact_method->print_name();
+        tty->cr();
+      }
       return exact_method;
     }
   }

@@ -314,7 +314,6 @@ public:
   void      dump() const {
     dump_on(tty);
   }
-  void      print_on(outputStream* st) const;
 #endif
 };
 

@@ -27,6 +27,7 @@
 #include "jvmci/jvmciEnv.hpp"
 #include "jvmci/jvmciRuntime.hpp"
 #include "oops/objArrayOop.inline.hpp"
+#include "runtime/arguments.hpp"
 #include "runtime/handles.inline.hpp"
 
 JVMCICompiler* JVMCICompiler::_instance = NULL;
@@ -57,8 +58,8 @@ void JVMCICompiler::bootstrap(TRAPS) {
     return;
   }
   _bootstrapping = true;
-  ResourceMark rm;
-  HandleMark hm;
+  ResourceMark rm(THREAD);
+  HandleMark hm(THREAD);
   if (PrintBootstrap) {
     tty->print("Bootstrapping JVMCI");
   }
@@ -141,11 +142,15 @@ void JVMCICompiler::compile_method(ciEnv* env, ciMethod* target, int entry_bci, 
 
 // Print compilation timers and statistics
 void JVMCICompiler::print_timers() {
+  tty->print_cr("    JVMCI Compile Time:      %7.3f s", stats()->total_time());
   print_compilation_timers();
 }
 
 // Print compilation timers and statistics
 void JVMCICompiler::print_compilation_timers() {
-  JVMCI_event_1("JVMCICompiler::print_timers");
-  tty->print_cr("       JVMCI code install time:        %6.3f s",    _codeInstallTimer.seconds());
+  double code_install_time = _codeInstallTimer.seconds();
+  if (code_install_time != 0.0) {
+    tty->cr();
+    tty->print_cr("    JVMCI code install time:        %6.3f s", code_install_time);
+  }
 }

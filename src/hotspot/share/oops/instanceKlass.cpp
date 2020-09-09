@@ -69,6 +69,7 @@
 #include "prims/jvmtiRedefineClasses.hpp"
 #include "prims/jvmtiThreadState.hpp"
 #include "prims/methodComparator.hpp"
+#include "runtime/arguments.hpp"
 #include "runtime/atomic.hpp"
 #include "runtime/biasedLocking.hpp"
 #include "runtime/fieldDescriptor.inline.hpp"
@@ -76,6 +77,7 @@
 #include "runtime/javaCalls.hpp"
 #include "runtime/mutexLocker.hpp"
 #include "runtime/orderAccess.hpp"
+#include "runtime/reflectionUtils.hpp"
 #include "runtime/thread.inline.hpp"
 #include "services/classLoadingService.hpp"
 #include "services/threadService.hpp"
@@ -1769,7 +1771,10 @@ inline int InstanceKlass::quick_search(const Array<Method*>* methods, const Symb
 // find_method looks up the name/signature in the local methods array
 Method* InstanceKlass::find_method(const Symbol* name,
                                    const Symbol* signature) const {
-  return find_method_impl(name, signature, find_overpass, find_static, find_private);
+  return find_method_impl(name, signature,
+                          OverpassLookupMode::find,
+                          StaticLookupMode::find,
+                          PrivateLookupMode::find);
 }
 
 Method* InstanceKlass::find_method_impl(const Symbol* name,
@@ -1794,8 +1799,8 @@ Method* InstanceKlass::find_instance_method(const Array<Method*>* methods,
   Method* const meth = InstanceKlass::find_method_impl(methods,
                                                  name,
                                                  signature,
-                                                 find_overpass,
-                                                 skip_static,
+                                                 OverpassLookupMode::find,
+                                                 StaticLookupMode::skip,
                                                  private_mode);
   assert(((meth == NULL) || !meth->is_static()),
     "find_instance_method should have skipped statics");
@@ -1853,9 +1858,9 @@ Method* InstanceKlass::find_method(const Array<Method*>* methods,
   return InstanceKlass::find_method_impl(methods,
                                          name,
                                          signature,
-                                         find_overpass,
-                                         find_static,
-                                         find_private);
+                                         OverpassLookupMode::find,
+                                         StaticLookupMode::find,
+                                         PrivateLookupMode::find);
 }
 
 Method* InstanceKlass::find_method_impl(const Array<Method*>* methods,
@@ -1898,9 +1903,9 @@ int InstanceKlass::find_method_index(const Array<Method*>* methods,
                                      OverpassLookupMode overpass_mode,
                                      StaticLookupMode static_mode,
                                      PrivateLookupMode private_mode) {
-  const bool skipping_overpass = (overpass_mode == skip_overpass);
-  const bool skipping_static = (static_mode == skip_static);
-  const bool skipping_private = (private_mode == skip_private);
+  const bool skipping_overpass = (overpass_mode == OverpassLookupMode::skip);
+  const bool skipping_static = (static_mode == StaticLookupMode::skip);
+  const bool skipping_private = (private_mode == PrivateLookupMode::skip);
   const int hit = quick_search(methods, name);
   if (hit != -1) {
     const Method* const m = methods->at(hit);
@@ -1976,13 +1981,13 @@ Method* InstanceKlass::uncached_lookup_method(const Symbol* name,
     Method* const method = InstanceKlass::cast(klass)->find_method_impl(name,
                                                                         signature,
                                                                         overpass_local_mode,
-                                                                        find_static,
+                                                                        StaticLookupMode::find,
                                                                         private_mode);
     if (method != NULL) {
       return method;
     }
     klass = klass->super();
-    overpass_local_mode = skip_overpass;   // Always ignore overpass methods in superclasses
+    overpass_local_mode = OverpassLookupMode::skip;   // Always ignore overpass methods in superclasses
   }
   return NULL;
 }
@@ -2012,7 +2017,7 @@ Method* InstanceKlass::lookup_method_in_ordered_interfaces(Symbol* name,
   }
   // Look up interfaces
   if (m == NULL) {
-    m = lookup_method_in_all_interfaces(name, signature, find_defaults);
+    m = lookup_method_in_all_interfaces(name, signature, DefaultsLookupMode::find);
   }
   return m;
 }
@@ -2030,7 +2035,7 @@ Method* InstanceKlass::lookup_method_in_all_interfaces(Symbol* name,
     ik = all_ifs->at(i);
     Method* m = ik->lookup_method(name, signature);
     if (m != NULL && m->is_public() && !m->is_static() &&
-        ((defaults_mode != skip_defaults) || !m->is_default_method())) {
+        ((defaults_mode != DefaultsLookupMode::skip) || !m->is_default_method())) {
       return m;
     }
   }
@@ -3596,8 +3601,10 @@ const char* InstanceKlass::internal_name() const {
 }
 
 void InstanceKlass::print_class_load_logging(ClassLoaderData* loader_data,
-                                             const char* module_name,
+                                             const ModuleEntry* module_entry,
                                              const ClassFileStream* cfs) const {
+  log_to_classlist(cfs);
+
   if (!log_is_enabled(Info, class, load)) {
     return;
   }
@@ -3612,6 +3619,7 @@ void InstanceKlass::print_class_load_logging(ClassLoaderData* loader_data,
   // Source
   if (cfs != NULL) {
     if (cfs->source() != NULL) {
+      const char* module_name = (module_entry->name() == NULL) ? UNNAMED_MODULE : module_entry->name()->as_C_string();
       if (module_name != NULL) {
         // When the boot loader created the stream, it didn't know the module name
         // yet. Let's format it now.
@@ -3953,8 +3961,9 @@ void InstanceKlass::purge_previous_version_list() {
       InstanceKlass* next = pv_node->previous_versions();
       pv_node->link_previous_versions(NULL);   // point next to NULL
       last->link_previous_versions(next);
-      // Add to the deallocate list after unlinking
-      loader_data->add_to_deallocate_list(pv_node);
+      // Delete this node directly. Nothing is referring to it and we don't
+      // want it to increase the counter for metadata to delete in CLDG.
+      MetadataFactory::free_metadata(loader_data, pv_node);
       pv_node = next;
       deleted_count++;
       version++;
@@ -4186,3 +4195,52 @@ unsigned char * InstanceKlass::get_cached_class_file_bytes() {
   return VM_RedefineClasses::get_cached_class_file_bytes(_cached_class_file);
 }
 #endif
+
+void InstanceKlass::log_to_classlist(const ClassFileStream* stream) const {
+#if INCLUDE_CDS
+  if (DumpLoadedClassList && classlist_file->is_open()) {
+    if (!ClassLoader::has_jrt_entry()) {
+       warning("DumpLoadedClassList and CDS are not supported in exploded build");
+       DumpLoadedClassList = NULL;
+       return;
+    }
+    ClassLoaderData* loader_data = class_loader_data();
+    if (!SystemDictionaryShared::is_sharing_possible(loader_data)) {
+      return;
+    }
+    bool skip = false;
+    if (is_shared()) {
+      assert(stream == NULL, "shared class with stream");
+    } else {
+      assert(stream != NULL, "non-shared class without stream");
+      // skip hidden class and unsafe anonymous class.
+      if ( is_hidden() || unsafe_anonymous_host() != NULL) {
+        return;
+      }
+      oop class_loader = loader_data->class_loader();
+      if (class_loader == NULL || SystemDictionary::is_platform_class_loader(class_loader)) {
+        // For the boot and platform class loaders, skip classes that are not found in the
+        // java runtime image, such as those found in the --patch-module entries.
+        // These classes can't be loaded from the archive during runtime.
+        if (!stream->from_boot_loader_modules_image() && strncmp(stream->source(), "jrt:", 4) != 0) {
+          skip = true;
+        }
+
+        if (class_loader == NULL && ClassLoader::contains_append_entry(stream->source())) {
+          // .. but don't skip the boot classes that are loaded from -Xbootclasspath/a
+          // as they can be loaded from the archive during runtime.
+          skip = false;
+        }
+      }
+    }
+    ResourceMark rm;
+    if (skip) {
+      tty->print_cr("skip writing class %s from source %s to classlist file",
+                    name()->as_C_string(), stream->source());
+    } else {
+      classlist_file->print_cr("%s", name()->as_C_string());
+      classlist_file->flush();
+    }
+  }
+#endif // INCLUDE_CDS
+}

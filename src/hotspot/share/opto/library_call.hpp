@@ -276,13 +276,13 @@ class LibraryCallKit : public GraphKit {
   Node* get_original_key_start_from_aescrypt_object(Node* aescrypt_object);
   bool inline_ghash_processBlocks();
   bool inline_base64_encodeBlock();
-  bool inline_sha_implCompress(vmIntrinsics::ID id);
+  bool inline_digestBase_implCompress(vmIntrinsics::ID id);
   bool inline_digestBase_implCompressMB(int predicate);
-  bool inline_sha_implCompressMB(Node* digestBaseObj, ciInstanceKlass* instklass_SHA,
-                                 bool long_state, address stubAddr, const char *stubName,
-                                 Node* src_start, Node* ofs, Node* limit);
-  Node* get_state_from_sha_object(Node *sha_object);
-  Node* get_state_from_sha5_object(Node *sha_object);
+  bool inline_digestBase_implCompressMB(Node* digestBaseObj, ciInstanceKlass* instklass,
+                                        bool long_state, address stubAddr, const char *stubName,
+                                        Node* src_start, Node* ofs, Node* limit);
+  Node* get_state_from_digest_object(Node *digestBase_object);
+  Node* get_long_state_from_digest_object(Node *digestBase_object);
   Node* inline_digestBase_implCompressMB_predicate(int predicate);
   bool inline_encodeISOArray();
   bool inline_updateCRC32();

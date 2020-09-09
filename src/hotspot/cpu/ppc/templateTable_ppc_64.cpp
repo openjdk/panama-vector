@@ -317,9 +317,10 @@ void TemplateTable::fast_aldc(bool wide) {
   __ get_cache_index_at_bcp(Rscratch, 1, index_size);  // Load index.
   __ load_resolved_reference_at_index(R17_tos, Rscratch, &is_null);
 
-  // Convert null sentinel to NULL.
+  // Convert null sentinel to NULL
   int simm16_rest = __ load_const_optimized(Rscratch, Universe::the_null_sentinel_addr(), R0, true);
   __ ld(Rscratch, simm16_rest, Rscratch);
+  __ resolve_oop_handle(Rscratch);
   __ cmpld(CCR0, R17_tos, Rscratch);
   if (VM_Version::has_isel()) {
     __ isel_0(R17_tos, CCR0, Assembler::equal);
@@ -3032,7 +3033,7 @@ void TemplateTable::putstatic(int byte_no) {
   putfield_or_static(byte_no, true);
 }
 
-// See SPARC. On PPC64, we have a different jvmti_post_field_mod which does the job.
+// On PPC64, we have a different jvmti_post_field_mod which does the job.
 void TemplateTable::jvmti_post_fast_field_mod() {
   __ should_not_reach_here();
 }

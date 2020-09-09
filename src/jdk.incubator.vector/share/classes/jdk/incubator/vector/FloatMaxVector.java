@@ -490,7 +490,7 @@ final class FloatMaxVector extends FloatVector {
         if (i < 0 || i >= VLENGTH) {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        return withLaneHelper(i, e); 
+        return withLaneHelper(i, e);
     }
 
     public FloatMaxVector withLaneHelper(int i, float e) {

@@ -54,7 +54,7 @@ import jdk.internal.vm.annotation.ForceInline;
  * and a few other miscellaneous operations.
  *
  * <p>Semantics of arithmetic operations exactly mimic those of Java's integer
- * arithmetic operators, as defined in <i>The Java&trade; Language Specification</i>.
+ * arithmetic operators, as defined in <i>The Java Language Specification</i>.
  * For example, division by zero throws an {@code ArithmeticException}, and
  * division of a negative by a positive yields a negative (or zero) remainder.
  *
@@ -464,9 +464,10 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * specified radix into a BigInteger.  The String representation
      * consists of an optional minus or plus sign followed by a
      * sequence of one or more digits in the specified radix.  The
-     * character-to-digit mapping is provided by {@code
-     * Character.digit}.  The String may not contain any extraneous
-     * characters (whitespace, for example).
+     * character-to-digit mapping is provided by {@link
+     * Character#digit(char, char) Character.digit}.  The String may
+     * not contain any extraneous characters (whitespace, for
+     * example).
      *
      * @param val String representation of BigInteger.
      * @param radix radix to be used in interpreting {@code val}.
@@ -474,7 +475,6 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      *         of a BigInteger in the specified radix, or {@code radix} is
      *         outside the range from {@link Character#MIN_RADIX} to
      *         {@link Character#MAX_RADIX}, inclusive.
-     * @see    Character#digit
      */
     public BigInteger(String val, int radix) {
         int cursor = 0, numDigits;
@@ -658,17 +658,17 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
     }
 
     /**
-     * Translates the decimal String representation of a BigInteger into a
-     * BigInteger.  The String representation consists of an optional minus
-     * sign followed by a sequence of one or more decimal digits.  The
-     * character-to-digit mapping is provided by {@code Character.digit}.
-     * The String may not contain any extraneous characters (whitespace, for
-     * example).
+     * Translates the decimal String representation of a BigInteger
+     * into a BigInteger.  The String representation consists of an
+     * optional minus or plus sign followed by a sequence of one or
+     * more decimal digits.  The character-to-digit mapping is
+     * provided by {@link Character#digit(char, char)
+     * Character.digit}.  The String may not contain any extraneous
+     * characters (whitespace, for example).
      *
      * @param val decimal String representation of BigInteger.
      * @throws NumberFormatException {@code val} is not a valid representation
      *         of a BigInteger.
-     * @see    Character#digit
      */
     public BigInteger(String val) {
         this(val, 10);
@@ -4152,7 +4152,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * conversion is analogous to a
      * <i>narrowing primitive conversion</i> from {@code long} to
      * {@code int} as defined in
-     * <cite>The Java&trade; Language Specification</cite>:
+     * <cite>The Java Language Specification</cite>:
      * if this BigInteger is too big to fit in an
      * {@code int}, only the low-order 32 bits are returned.
      * Note that this conversion can lose information about the
@@ -4174,7 +4174,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * conversion is analogous to a
      * <i>narrowing primitive conversion</i> from {@code long} to
      * {@code int} as defined in
-     * <cite>The Java&trade; Language Specification</cite>:
+     * <cite>The Java Language Specification</cite>:
      * if this BigInteger is too big to fit in a
      * {@code long}, only the low-order 64 bits are returned.
      * Note that this conversion can lose information about the
@@ -4198,7 +4198,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * conversion is similar to the
      * <i>narrowing primitive conversion</i> from {@code double} to
      * {@code float} as defined in
-     * <cite>The Java&trade; Language Specification</cite>:
+     * <cite>The Java Language Specification</cite>:
      * if this BigInteger has too great a magnitude
      * to represent as a {@code float}, it will be converted to
      * {@link Float#NEGATIVE_INFINITY} or {@link
@@ -4283,7 +4283,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * conversion is similar to the
      * <i>narrowing primitive conversion</i> from {@code double} to
      * {@code float} as defined in
-     * <cite>The Java&trade; Language Specification</cite>:
+     * <cite>The Java Language Specification</cite>:
      * if this BigInteger has too great a magnitude
      * to represent as a {@code double}, it will be converted to
      * {@link Double#NEGATIVE_INFINITY} or {@link

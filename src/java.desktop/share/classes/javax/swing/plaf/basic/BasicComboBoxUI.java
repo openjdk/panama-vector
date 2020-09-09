@@ -905,17 +905,19 @@ public class BasicComboBoxUI extends ComboBoxUI {
      * Tells if the popup is visible or not.
      */
     public boolean isPopupVisible( JComboBox<?> c ) {
-        return popup.isVisible();
+        return popup != null && popup.isVisible();
     }
 
     /**
      * Hides the popup.
      */
     public void setPopupVisible( JComboBox<?> c, boolean v ) {
-        if ( v ) {
-            popup.show();
-        } else {
-            popup.hide();
+        if (popup != null) {
+            if (v) {
+                popup.show();
+            } else {
+                popup.hide();
+            }
         }
     }
 
@@ -942,6 +944,8 @@ public class BasicComboBoxUI extends ComboBoxUI {
             paintCurrentValueBackground(g,r,hasFocus);
             paintCurrentValue(g,r,hasFocus);
         }
+        // Empty out the renderer pane, allowing renderers to be gc'ed.
+        currentValuePane.removeAll();
     }
 
     @Override

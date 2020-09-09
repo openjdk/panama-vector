@@ -26,7 +26,6 @@
 #define SHARE_CLASSFILE_SYSTEMDICTIONARYSHARED_HPP
 
 #include "oops/klass.hpp"
-#include "classfile/dictionary.hpp"
 #include "classfile/packageEntry.hpp"
 #include "classfile/systemDictionary.hpp"
 #include "memory/filemap.hpp"
@@ -103,6 +102,7 @@
 #define UNREGISTERED_INDEX -9999
 
 class ClassFileStream;
+class Dictionary;
 class DumpTimeSharedClassInfo;
 class DumpTimeSharedClassTable;
 class LambdaProxyClassDictionary;
@@ -211,14 +211,14 @@ private:
                                  TRAPS);
   static DumpTimeSharedClassInfo* find_or_allocate_info_for(InstanceKlass* k);
   static void write_dictionary(RunTimeSharedDictionary* dictionary,
-                               bool is_builtin,
-                               bool is_static_archive = true);
+                               bool is_builtin);
   static void write_lambda_proxy_class_dictionary(LambdaProxyClassDictionary* dictionary);
   static bool is_jfr_event_class(InstanceKlass *k);
   static bool is_registered_lambda_proxy_class(InstanceKlass* ik);
   static void warn_excluded(InstanceKlass* k, const char* reason);
   static bool should_be_excluded(InstanceKlass* k);
 
+  static bool _dump_in_progress;
   DEBUG_ONLY(static bool _no_class_loading_should_happen;)
 
 public:
@@ -319,6 +319,7 @@ public:
   static void print_on(outputStream* st) NOT_CDS_RETURN;
   static void print_table_statistics(outputStream* st) NOT_CDS_RETURN;
   static bool empty_dumptime_table() NOT_CDS_RETURN_(true);
+  static void start_dumping() NOT_CDS_RETURN;
 
   DEBUG_ONLY(static bool no_class_loading_should_happen() {return _no_class_loading_should_happen;})
 

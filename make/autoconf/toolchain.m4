@@ -50,9 +50,9 @@ TOOLCHAIN_DESCRIPTION_microsoft="Microsoft Visual Studio"
 TOOLCHAIN_DESCRIPTION_xlc="IBM XL C/C++"
 
 # Minimum supported versions, empty means unspecified
-TOOLCHAIN_MINIMUM_VERSION_clang="3.2"
+TOOLCHAIN_MINIMUM_VERSION_clang="3.5"
 TOOLCHAIN_MINIMUM_VERSION_gcc="5.0"
-TOOLCHAIN_MINIMUM_VERSION_microsoft="16.00.30319.01" # VS2010
+TOOLCHAIN_MINIMUM_VERSION_microsoft="19.10.0.0" # VS2017
 TOOLCHAIN_MINIMUM_VERSION_xlc=""
 
 # Minimum supported linker versions, empty means unspecified
@@ -746,21 +746,8 @@ AC_DEFUN_ONCE([TOOLCHAIN_DETECT_TOOLCHAIN_CORE],
   #
   # Setup the assembler (AS)
   #
-  if test "x$TOOLCHAIN_TYPE" = xmicrosoft; then
-    if test "x$OPENJDK_TARGET_CPU_BITS" = x32; then
-      UTIL_PATH_PROGS(AS, ml)
-    else
-      UTIL_PATH_PROGS(AS, ml64)
-    fi
-    UTIL_FIXUP_EXECUTABLE(AS)
-    if test "x$AS" = x; then
-      AC_MSG_ERROR([Microsoft MASM assembler is required.])
-    fi
-    # Tell assembler to assemble without linking and without printing version info
-    AS="$AS /c /nologo"
-  else
-    AS="$CC -c"
-  fi
+  # FIXME: is this correct for microsoft?
+  AS="$CC -c"
   AC_SUBST(AS)
 
   #
@@ -915,9 +902,14 @@ AC_DEFUN_ONCE([TOOLCHAIN_SETUP_BUILD_COMPILERS],
     # FIXME: we should list the discovered compilers as an exclude pattern!
     # If we do that, we can do this detection before POST_DETECTION, and still
     # find the build compilers in the tools dir, if needed.
-    UTIL_REQUIRE_PROGS(BUILD_CC, [cl cc gcc])
+    if test "x$OPENJDK_BUILD_OS" = xmacosx; then
+      UTIL_REQUIRE_PROGS(BUILD_CC, [clang cl cc gcc])
+      UTIL_REQUIRE_PROGS(BUILD_CXX, [clang++ cl CC g++])
+    else
+      UTIL_REQUIRE_PROGS(BUILD_CC, [cl cc gcc])
+      UTIL_REQUIRE_PROGS(BUILD_CXX, [cl CC g++])
+    fi
     UTIL_FIXUP_EXECUTABLE(BUILD_CC)
-    UTIL_REQUIRE_PROGS(BUILD_CXX, [cl CC g++])
     UTIL_FIXUP_EXECUTABLE(BUILD_CXX)
     UTIL_PATH_PROGS(BUILD_NM, nm gcc-nm)
     UTIL_FIXUP_EXECUTABLE(BUILD_NM)

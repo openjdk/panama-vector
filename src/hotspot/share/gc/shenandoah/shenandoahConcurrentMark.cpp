@@ -87,7 +87,7 @@ private:
   ShenandoahRootScanner* _rp;
 public:
   ShenandoahInitMarkRootsTask(ShenandoahRootScanner* rp) :
-    AbstractGangTask("Shenandoah init mark roots task"),
+    AbstractGangTask("Shenandoah Init Mark Roots"),
     _rp(rp) {
   }
 
@@ -130,7 +130,7 @@ private:
   bool                    _check_alive;
 public:
   ShenandoahUpdateRootsTask(ShenandoahRootUpdater* root_updater, bool check_alive) :
-    AbstractGangTask("Shenandoah update roots task"),
+    AbstractGangTask("Shenandoah Update Roots"),
     _root_updater(root_updater),
     _check_alive(check_alive){
   }
@@ -158,7 +158,7 @@ private:
 
 public:
   ShenandoahConcurrentMarkingTask(ShenandoahConcurrentMark* cm, TaskTerminator* terminator) :
-    AbstractGangTask("Root Region Scan"), _cm(cm), _terminator(terminator) {
+    AbstractGangTask("Shenandoah Concurrent Mark"), _cm(cm), _terminator(terminator) {
   }
 
   void work(uint worker_id) {
@@ -233,7 +233,7 @@ template <typename T>
 ShenandoahProcessConcurrentRootsTask<T>::ShenandoahProcessConcurrentRootsTask(ShenandoahConcurrentMark* cm,
                                                                               ShenandoahPhaseTimings::Phase phase,
                                                                               uint nworkers) :
-  AbstractGangTask("Shenandoah STW Concurrent Mark Task"),
+  AbstractGangTask("Shenandoah Process Concurrent Roots"),
   _rs(nworkers, phase),
   _cm(cm),
   _rp(NULL) {
@@ -256,11 +256,12 @@ class ShenandoahFinalMarkingTask : public AbstractGangTask {
 private:
   ShenandoahConcurrentMark* _cm;
   TaskTerminator*           _terminator;
-  bool _dedup_string;
+  bool                      _dedup_string;
+  ShenandoahSharedFlag      _claimed_syncroots;
 
 public:
   ShenandoahFinalMarkingTask(ShenandoahConcurrentMark* cm, TaskTerminator* terminator, bool dedup_string) :
-    AbstractGangTask("Shenandoah Final Marking"), _cm(cm), _terminator(terminator), _dedup_string(dedup_string) {
+    AbstractGangTask("Shenandoah Final Mark"), _cm(cm), _terminator(terminator), _dedup_string(dedup_string) {
   }
 
   void work(uint worker_id) {
@@ -294,6 +295,9 @@ public:
                                                           ShenandoahStoreValEnqueueBarrier ? &resolve_mark_cl : NULL,
                                                           do_nmethods ? &blobsCl : NULL);
         Threads::threads_do(&tc);
+        if (ShenandoahStoreValEnqueueBarrier && _claimed_syncroots.try_set()) {
+          ObjectSynchronizer::oops_do(&resolve_mark_cl);
+        }
       } else {
         ShenandoahMarkRefsClosure mark_cl(q, rp);
         MarkingCodeBlobClosure blobsCl(&mark_cl, !CodeBlobToOopClosure::FixRelocations);
@@ -301,6 +305,9 @@ public:
                                                           ShenandoahStoreValEnqueueBarrier ? &mark_cl : NULL,
                                                           do_nmethods ? &blobsCl : NULL);
         Threads::threads_do(&tc);
+        if (ShenandoahStoreValEnqueueBarrier && _claimed_syncroots.try_set()) {
+          ObjectSynchronizer::oops_do(&mark_cl);
+        }
       }
     }
 
@@ -438,7 +445,7 @@ ShenandoahMarkConcurrentRootsTask::ShenandoahMarkConcurrentRootsTask(ShenandoahO
                                                                      ReferenceProcessor* rp,
                                                                      ShenandoahPhaseTimings::Phase phase,
                                                                      uint nworkers) :
-  AbstractGangTask("Shenandoah Concurrent Mark Task"),
+  AbstractGangTask("Shenandoah Concurrent Mark Roots"),
   _rs(nworkers, phase),
   _queue_set(qs),
   _rp(rp) {
@@ -648,14 +655,15 @@ private:
 public:
   ShenandoahRefProcTaskProxy(AbstractRefProcTaskExecutor::ProcessTask& proc_task,
                              TaskTerminator* t) :
-    AbstractGangTask("Process reference objects in parallel"),
+    AbstractGangTask("Shenandoah Process Weak References"),
     _proc_task(proc_task),
     _terminator(t) {
   }
 
   void work(uint worker_id) {
-    ResourceMark rm;
-    HandleMark hm;
+    Thread* current_thread = Thread::current();
+    ResourceMark rm(current_thread);
+    HandleMark hm(current_thread);
     assert(ShenandoahSafepoint::is_at_shenandoah_safepoint(), "Must be at a safepoint");
     ShenandoahHeap* heap = ShenandoahHeap::heap();
     ShenandoahParallelWorkerSession worker_session(worker_id);
@@ -812,7 +820,7 @@ private:
 
 public:
   ShenandoahPrecleanTask(ReferenceProcessor* rp) :
-          AbstractGangTask("Precleaning task"),
+          AbstractGangTask("Shenandoah Precleaning"),
           _rp(rp) {}
 
   void work(uint worker_id) {

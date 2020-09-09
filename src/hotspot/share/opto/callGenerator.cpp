@@ -806,7 +806,7 @@ class LateInlineStringCallGenerator : public LateInlineCallGenerator {
 
     C->add_string_late_inline(this);
 
-    JVMState* new_jvms =  DirectCallGenerator::generate(jvms);
+    JVMState* new_jvms = DirectCallGenerator::generate(jvms);
     return new_jvms;
   }
 
@@ -836,7 +836,7 @@ class LateInlineBoxingCallGenerator : public LateInlineCallGenerator {
 
     C->add_boxing_late_inline(this);
 
-    JVMState* new_jvms =  DirectCallGenerator::generate(jvms);
+    JVMState* new_jvms = DirectCallGenerator::generate(jvms);
     return new_jvms;
   }
 
@@ -864,7 +864,7 @@ class LateInlineVectorReboxingCallGenerator : public LateInlineCallGenerator {
 
     C->add_vector_reboxing_late_inline(this);
 
-    JVMState* new_jvms =  DirectCallGenerator::generate(jvms);
+    JVMState* new_jvms = DirectCallGenerator::generate(jvms);
     return new_jvms;
   }
 
@@ -1257,7 +1257,7 @@ CallGenerator* CallGenerator::for_method_handle_inline(JVMState* jvms, ciMethod*
           // optimize_virtual_call() takes 2 different holder
           // arguments for a corner case that doesn't apply here (see
           // Parse::do_call())
-          target = C->optimize_virtual_call(caller, klass, klass,
+          target = C->optimize_virtual_call(caller, jvms->bci(), klass, klass,
                                             target, receiver_type, is_virtual,
                                             call_does_dispatch, vtable_index, // out-parameters
                                             false /* check_access */);

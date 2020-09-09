@@ -24,9 +24,11 @@
 #include "precompiled.hpp"
 #include "memory/allocation.inline.hpp"
 #include "opto/connode.hpp"
+#include "opto/mulnode.hpp"
 #include "opto/subnode.hpp"
 #include "opto/vectornode.hpp"
 #include "utilities/powerOfTwo.hpp"
+#include "utilities/globalDefinitions.hpp"
 
 //------------------------------VectorNode--------------------------------------
 
@@ -172,6 +174,12 @@ int VectorNode::opcode(int sopc, BasicType bt) {
   case Op_RoundDoubleMode:
     assert(bt == T_DOUBLE, "must be");
     return Op_RoundDoubleModeV;
+  case Op_RotateLeft:
+    assert(bt == T_LONG || bt == T_INT, "must be");
+    return Op_RotateLeftV;
+  case Op_RotateRight:
+    assert(bt == T_LONG || bt == T_INT, "must be");
+    return Op_RotateRightV;
   case Op_SqrtF:
     assert(bt == T_FLOAT, "must be");
     return Op_SqrtVF;
@@ -283,10 +291,9 @@ int VectorNode::replicate_opcode(BasicType bt) {
     case T_DOUBLE:
       return Op_ReplicateD;
     default:
-      break;
+      assert(false, "wrong type: %s", type2name(bt));
+      return 0;
   }
-
-  return 0;
 }
 
 // Also used to check if the code generator
@@ -296,6 +303,12 @@ bool VectorNode::implemented(int opc, uint vlen, BasicType bt) {
       (vlen > 1) && is_power_of_2(vlen) &&
       Matcher::vector_size_supported(bt, vlen)) {
     int vopc = VectorNode::opcode(opc, bt);
+    // For rotate operation we will do a lazy de-generation into
+    // OrV/LShiftV/URShiftV pattern if the target does not support
+    // vector rotation instruction.
+    if (vopc == Op_RotateLeftV || vopc == Op_RotateRightV) {
+      return is_vector_rotate_supported(vopc, vlen, bt);
+    }
     return vopc > 0 && Matcher::match_rule_supported_vector(vopc, vlen, bt);
   }
   return false;
@@ -320,11 +333,43 @@ bool VectorNode::is_muladds2i(Node* n) {
   return false;
 }
 
-bool VectorNode::is_roundopD(Node *n) {
+bool VectorNode::is_roundopD(Node* n) {
   if (n->Opcode() == Op_RoundDoubleMode) {
     return true;
   }
   return false;
+}
+
+bool VectorNode::is_scalar_rotate(Node* n) {
+  if (n->Opcode() == Op_RotateLeft || n->Opcode() == Op_RotateRight) {
+    return true;
+  }
+  return false;
+}
+
+bool VectorNode::is_vector_rotate_supported(int vopc, uint vlen, BasicType bt) {
+  assert(vopc == Op_RotateLeftV || vopc == Op_RotateRightV, "wrong opcode");
+
+  // If target defines vector rotation patterns then no
+  // need for degeneration.
+  if (Matcher::match_rule_supported_vector(vopc, vlen, bt)) {
+    return true;
+  }
+
+  // Validate existence of nodes created in case of rotate degeneration.
+  switch (bt) {
+    case T_INT:
+      return Matcher::match_rule_supported_vector(Op_OrV,       vlen, bt) &&
+             Matcher::match_rule_supported_vector(Op_LShiftVI,  vlen, bt) &&
+             Matcher::match_rule_supported_vector(Op_URShiftVI, vlen, bt);
+    case T_LONG:
+      return Matcher::match_rule_supported_vector(Op_OrV,       vlen, bt) &&
+             Matcher::match_rule_supported_vector(Op_LShiftVL,  vlen, bt) &&
+             Matcher::match_rule_supported_vector(Op_URShiftVL, vlen, bt);
+    default:
+      assert(false, "not supported: %s", type2name(bt));
+      return false;
+  }
 }
 
 bool VectorNode::is_shift(Node* n) {
@@ -335,28 +380,6 @@ bool VectorNode::is_shift(Node* n) {
   case Op_RShiftL:
   case Op_URShiftI:
   case Op_URShiftL:
-    return true;
-  default:
-    return false;
-  }
-}
-
-bool VectorNode::is_vshift(Node* n) {
-  switch (n->Opcode()) {
-  case Op_LShiftVB:
-  case Op_LShiftVS:
-  case Op_LShiftVI:
-  case Op_LShiftVL:
-
-  case Op_RShiftVB:
-  case Op_RShiftVS:
-  case Op_RShiftVI:
-  case Op_RShiftVL:
-
-  case Op_URShiftVB:
-  case Op_URShiftVS:
-  case Op_URShiftVI:
-  case Op_URShiftVL:
     return true;
   default:
     return false;
@@ -486,6 +509,8 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt) {
   case Op_SqrtVD: return new SqrtVDNode(n1, vt);
 
   case Op_PopCountVI: return new PopCountVINode(n1, vt);
+  case Op_RotateLeftV: return new RotateLeftVNode(n1, n2, vt);
+  case Op_RotateRightV: return new RotateRightVNode(n1, n2, vt);
 
   case Op_LShiftVB: return new LShiftVBNode(n1, n2, vt);
   case Op_LShiftVS: return new LShiftVSNode(n1, n2, vt);
@@ -736,24 +761,16 @@ StoreVectorNode* StoreVectorNode::make(int opc, Node* ctl, Node* mem,
 
 int ExtractNode::opcode(BasicType bt) {
   switch (bt) {
-    case T_BOOLEAN:
-      return Op_ExtractUB;
-    case T_BYTE:
-      return Op_ExtractB;
-    case T_CHAR:
-      return Op_ExtractC;
-    case T_SHORT:
-      return Op_ExtractS;
-    case T_INT:
-      return Op_ExtractI;
-    case T_LONG:
-      return Op_ExtractL;
-    case T_FLOAT:
-      return Op_ExtractF;
-    case T_DOUBLE:
-      return Op_ExtractD;
+    case T_BOOLEAN: return Op_ExtractUB;
+    case T_BYTE:    return Op_ExtractB;
+    case T_CHAR:    return Op_ExtractC;
+    case T_SHORT:   return Op_ExtractS;
+    case T_INT:     return Op_ExtractI;
+    case T_LONG:    return Op_ExtractL;
+    case T_FLOAT:   return Op_ExtractF;
+    case T_DOUBLE:  return Op_ExtractD;
     default:
-      fatal("Type '%s' is not supported for vectors", type2name(bt));
+      assert(false, "wrong type: %s", type2name(bt));
       return 0;
   }
 }
@@ -763,24 +780,16 @@ Node* ExtractNode::make(Node* v, uint position, BasicType bt) {
   assert((int)position < Matcher::max_vector_size(bt), "pos in range");
   ConINode* pos = ConINode::make((int)position);
   switch (bt) {
-  case T_BOOLEAN:
-    return new ExtractUBNode(v, pos);
-  case T_BYTE:
-    return new ExtractBNode(v, pos);
-  case T_CHAR:
-    return new ExtractCNode(v, pos);
-  case T_SHORT:
-    return new ExtractSNode(v, pos);
-  case T_INT:
-    return new ExtractINode(v, pos);
-  case T_LONG:
-    return new ExtractLNode(v, pos);
-  case T_FLOAT:
-    return new ExtractFNode(v, pos);
-  case T_DOUBLE:
-    return new ExtractDNode(v, pos);
+  case T_BOOLEAN: return new ExtractUBNode(v, pos);
+  case T_BYTE:    return new ExtractBNode(v, pos);
+  case T_CHAR:    return new ExtractCNode(v, pos);
+  case T_SHORT:   return new ExtractSNode(v, pos);
+  case T_INT:     return new ExtractINode(v, pos);
+  case T_LONG:    return new ExtractLNode(v, pos);
+  case T_FLOAT:   return new ExtractFNode(v, pos);
+  case T_DOUBLE:  return new ExtractDNode(v, pos);
   default:
-    fatal("Type '%s' is not supported for vectors", type2name(bt));
+    assert(false, "wrong type: %s", type2name(bt));
     return NULL;
   }
 }
@@ -797,7 +806,7 @@ int ReductionNode::opcode(int opc, BasicType bt) {
         case T_INT:
           vopc = Op_AddReductionVI;
           break;
-        default:          ShouldNotReachHere(); return 0;
+        default: ShouldNotReachHere(); return 0;
       }
       break;
     case Op_AddL:
@@ -821,7 +830,7 @@ int ReductionNode::opcode(int opc, BasicType bt) {
         case T_INT:
           vopc = Op_MulReductionVI;
           break;
-        default:          ShouldNotReachHere(); return 0;
+        default: ShouldNotReachHere(); return 0;
       }
       break;
     case Op_MulL:
@@ -961,12 +970,12 @@ ReductionNode* ReductionNode::make(int opc, Node *ctrl, Node* n1, Node* n2, Basi
   case Op_OrReductionV:   return new OrReductionVNode(ctrl, n1, n2);
   case Op_XorReductionV:  return new XorReductionVNode(ctrl, n1, n2);
   default:
-    fatal("Missed vector creation for '%s'", NodeClassNames[vopc]);
+    assert(false, "unknown node: %s", NodeClassNames[vopc]);
     return NULL;
   }
 }
 
-Node* VectorStoreMaskNode::make(PhaseGVN& gvn, Node* in, BasicType in_type, uint num_elem) {
+VectorStoreMaskNode* VectorStoreMaskNode::make(PhaseGVN& gvn, Node* in, BasicType in_type, uint num_elem) {
   assert(in->bottom_type()->isa_vect(), "sanity");
   const TypeVect* vt = TypeVect::make(T_BOOLEAN, num_elem);
   int elem_size = type2aelembytes(in_type);
@@ -982,9 +991,10 @@ VectorCastNode* VectorCastNode::make(int vopc, Node* n1, BasicType bt, uint vlen
     case Op_VectorCastL2X: return new VectorCastL2XNode(n1, vt);
     case Op_VectorCastF2X: return new VectorCastF2XNode(n1, vt);
     case Op_VectorCastD2X: return new VectorCastD2XNode(n1, vt);
-    default: fatal("unknown node: %s", NodeClassNames[vopc]);
+    default:
+      assert(false, "unknown node: %s", NodeClassNames[vopc]);
+      return NULL;
   }
-  return NULL;
 }
 
 int VectorCastNode::opcode(BasicType bt) {
@@ -995,9 +1005,10 @@ int VectorCastNode::opcode(BasicType bt) {
     case T_LONG:   return Op_VectorCastL2X;
     case T_FLOAT:  return Op_VectorCastF2X;
     case T_DOUBLE: return Op_VectorCastD2X;
-    default: Unimplemented();
+    default:
+      assert(false, "unknown type: %s", type2name(bt));
+      return 0;
   }
-  return 0;
 }
 
 Node* ReductionNode::make_reduction_input(PhaseGVN& gvn, int opc, BasicType bt) {
@@ -1087,6 +1098,164 @@ MacroLogicVNode* MacroLogicVNode::make(PhaseGVN& gvn, Node* in1, Node* in2, Node
   assert(in3->bottom_type()->is_vect()->length_in_bytes() == vt->length_in_bytes(), "mismatch");
   Node* fn = gvn.intcon(truth_table);
   return new MacroLogicVNode(in1, in2, in3, fn, vt);
+}
+
+Node* VectorNode::degenerate_vector_rotate(Node* src, Node* cnt, bool is_rotate_left,
+                                           int vlen, BasicType bt, PhaseGVN* phase) {
+  int shiftLOpc;
+  int shiftROpc;
+  Node* shiftLCnt = NULL;
+  Node* shiftRCnt = NULL;
+  const TypeVect* vt = TypeVect::make(bt, vlen);
+
+  // Compute shift values for right rotation and
+  // later swap them in case of left rotation.
+  if (cnt->is_Con()) {
+    // Constant shift case.
+    if (bt == T_INT) {
+      int shift = cnt->get_int() & 31;
+      shiftRCnt = phase->intcon(shift);
+      shiftLCnt = phase->intcon(32 - shift);
+      shiftLOpc = Op_LShiftI;
+      shiftROpc = Op_URShiftI;
+    } else {
+      int shift = cnt->get_int() & 63;
+      shiftRCnt = phase->intcon(shift);
+      shiftLCnt = phase->intcon(64 - shift);
+      shiftLOpc = Op_LShiftL;
+      shiftROpc = Op_URShiftL;
+    }
+  } else {
+    // Variable shift case.
+    assert(VectorNode::is_invariant_vector(cnt), "Broadcast expected");
+    cnt = cnt->in(1);
+    if (bt == T_INT) {
+      shiftRCnt = phase->transform(new AndINode(cnt, phase->intcon(31)));
+      shiftLCnt = phase->transform(new SubINode(phase->intcon(32), shiftRCnt));
+      shiftLOpc = Op_LShiftI;
+      shiftROpc = Op_URShiftI;
+    } else {
+      assert(cnt->Opcode() == Op_ConvI2L, "ConvI2L expected");
+      cnt = cnt->in(1);
+      shiftRCnt = phase->transform(new AndINode(cnt, phase->intcon(63)));
+      shiftLCnt = phase->transform(new SubINode(phase->intcon(64), shiftRCnt));
+      shiftLOpc = Op_LShiftL;
+      shiftROpc = Op_URShiftL;
+    }
+  }
+
+  // Swap the computed left and right shift counts.
+  if (is_rotate_left) {
+    swap(shiftRCnt,shiftLCnt);
+  }
+
+  shiftLCnt = phase->transform(new LShiftCntVNode(shiftLCnt, vt));
+  shiftRCnt = phase->transform(new RShiftCntVNode(shiftRCnt, vt));
+
+  return new OrVNode(phase->transform(VectorNode::make(shiftLOpc, src, shiftLCnt, vlen, bt)),
+                     phase->transform(VectorNode::make(shiftROpc, src, shiftRCnt, vlen, bt)),
+                     vt);
+}
+
+Node* RotateLeftVNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+  int vlen = length();
+  BasicType bt = vect_type()->element_basic_type();
+  if (!Matcher::match_rule_supported_vector(Op_RotateLeftV, vlen, bt)) {
+    return VectorNode::degenerate_vector_rotate(in(1), in(2), true, vlen, bt, phase);
+  }
+  return NULL;
+}
+
+Node* RotateRightVNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+  int vlen = length();
+  BasicType bt = vect_type()->element_basic_type();
+  if (!Matcher::match_rule_supported_vector(Op_RotateRightV, vlen, bt)) {
+    return VectorNode::degenerate_vector_rotate(in(1), in(2), false, vlen, bt, phase);
+  }
+  return NULL;
+}
+
+Node* OrVNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+  int lopcode = in(1)->Opcode();
+  int ropcode = in(2)->Opcode();
+  const TypeVect* vt = bottom_type()->is_vect();
+  int vec_len = vt->length();
+  BasicType bt = vt->element_basic_type();
+
+  // Vector Rotate operations inferencing, this will be useful when vector
+  // operations are created via non-SLP route i.e. (VectorAPI).
+  if (Matcher::match_rule_supported_vector(Op_RotateLeftV, vec_len, bt) &&
+      ((ropcode == Op_LShiftVI && lopcode == Op_URShiftVI) ||
+       (ropcode == Op_LShiftVL && lopcode == Op_URShiftVL)) &&
+      in(1)->in(1) == in(2)->in(1)) {
+    assert(Op_RShiftCntV == in(1)->in(2)->Opcode(), "LShiftCntV operand expected");
+    assert(Op_LShiftCntV == in(2)->in(2)->Opcode(), "RShiftCntV operand expected");
+    Node* lshift = in(1)->in(2)->in(1);
+    Node* rshift = in(2)->in(2)->in(1);
+    int mod_val = bt == T_LONG ? 64 : 32;
+    int shift_mask = bt == T_LONG ? 0x3F : 0x1F;
+    // val >> norm_con_shift | val << (32 - norm_con_shift) => rotate_right val ,
+    // norm_con_shift
+    if (lshift->is_Con() && rshift->is_Con() &&
+        ((lshift->get_int() & shift_mask) ==
+         (mod_val - (rshift->get_int() & shift_mask)))) {
+      return new RotateRightVNode(
+          in(1)->in(1), phase->intcon(lshift->get_int() & shift_mask), vt);
+    }
+    if (lshift->Opcode() == Op_AndI && rshift->Opcode() == Op_AndI &&
+        lshift->in(2)->is_Con() && rshift->in(2)->is_Con() &&
+        lshift->in(2)->get_int() == (mod_val - 1) &&
+        rshift->in(2)->get_int() == (mod_val - 1)) {
+      lshift = lshift->in(1);
+      rshift = rshift->in(1);
+      // val << var_shift | val >> (0/32 - var_shift) => rotate_left val ,
+      // var_shift
+      if (lshift->Opcode() == Op_SubI && lshift->in(2) == rshift &&
+          lshift->in(1)->is_Con() &&
+          (lshift->in(1)->get_int() == 0 ||
+           lshift->in(1)->get_int() == mod_val)) {
+        Node* rotate_cnt = phase->transform(new ReplicateINode(rshift, vt));
+        return new RotateLeftVNode(in(1)->in(1), rotate_cnt, vt);
+      }
+    }
+  }
+
+  if (Matcher::match_rule_supported_vector(Op_RotateRightV, vec_len, bt) &&
+      ((ropcode == Op_URShiftVI && lopcode == Op_LShiftVI) ||
+       (ropcode == Op_URShiftVL && lopcode == Op_LShiftVL)) &&
+      in(1)->in(1) == in(2)->in(1)) {
+    assert(Op_LShiftCntV == in(1)->in(2)->Opcode(), "RShiftCntV operand expected");
+    assert(Op_RShiftCntV == in(2)->in(2)->Opcode(), "LShiftCntV operand expected");
+    Node* rshift = in(1)->in(2)->in(1);
+    Node* lshift = in(2)->in(2)->in(1);
+    int mod_val = bt == T_LONG ? 64 : 32;
+    int shift_mask = bt == T_LONG ? 0x3F : 0x1F;
+    // val << norm_con_shift | val >> (32 - norm_con_shift) => rotate_left val
+    // , norm_con_shift
+    if (rshift->is_Con() && lshift->is_Con() &&
+        ((rshift->get_int() & shift_mask) ==
+         (mod_val - (lshift->get_int() & shift_mask)))) {
+      return new RotateLeftVNode(
+          in(1)->in(1), phase->intcon(rshift->get_int() & shift_mask), vt);
+    }
+    if (lshift->Opcode() == Op_AndI && rshift->Opcode() == Op_AndI &&
+        lshift->in(2)->is_Con() && rshift->in(2)->is_Con() &&
+        rshift->in(2)->get_int() == (mod_val - 1) &&
+        lshift->in(2)->get_int() == (mod_val - 1)) {
+      rshift = rshift->in(1);
+      lshift = lshift->in(1);
+      // val >> var_shift | val << (0/32 - var_shift) => rotate_right val ,
+      // var_shift
+      if (rshift->Opcode() == Op_SubI && rshift->in(2) == lshift &&
+          rshift->in(1)->is_Con() &&
+          (rshift->in(1)->get_int() == 0 ||
+           rshift->in(1)->get_int() == mod_val)) {
+        Node* rotate_cnt = phase->transform(new ReplicateINode(lshift, vt));
+        return new RotateRightVNode(in(1)->in(1), rotate_cnt, vt);
+      }
+    }
+  }
+  return NULL;
 }
 
 #ifndef PRODUCT

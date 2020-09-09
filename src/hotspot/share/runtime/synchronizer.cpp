@@ -504,6 +504,10 @@ bool ObjectSynchronizer::quick_enter(oop obj, Thread* self,
   NoSafepointVerifier nsv;
   if (obj == NULL) return false;       // Need to throw NPE
 
+  if (DiagnoseSyncOnPrimitiveWrappers != 0 && obj->klass()->is_box()) {
+    return false;
+  }
+
   const markWord mark = obj->mark();
 
   if (mark.has_monitor()) {
@@ -554,6 +558,52 @@ bool ObjectSynchronizer::quick_enter(oop obj, Thread* self,
   return false;        // revert to slow-path
 }
 
+// Handle notifications when synchronizing on primitive wrappers
+void ObjectSynchronizer::handle_sync_on_primitive_wrapper(Handle obj, Thread* current) {
+  assert(current->is_Java_thread(), "must be for java object synchronization");
+  JavaThread* self = (JavaThread*) current;
+
+  frame last_frame = self->last_frame();
+  if (last_frame.is_interpreted_frame()) {
+    // adjust bcp to point back to monitorenter so that we print the correct line numbers
+    last_frame.interpreter_frame_set_bcp(last_frame.interpreter_frame_bcp() - 1);
+  }
+
+  if (DiagnoseSyncOnPrimitiveWrappers == FATAL_EXIT) {
+    ResourceMark rm(self);
+    stringStream ss;
+    self->print_stack_on(&ss);
+    char* base = (char*)strstr(ss.base(), "at");
+    char* newline = (char*)strchr(ss.base(), '\n');
+    if (newline != NULL) {
+      *newline = '\0';
+    }
+    fatal("Synchronizing on object " INTPTR_FORMAT " of klass %s %s", p2i(obj()), obj->klass()->external_name(), base);
+  } else {
+    assert(DiagnoseSyncOnPrimitiveWrappers == LOG_WARNING, "invalid value for DiagnoseSyncOnPrimitiveWrappers");
+    ResourceMark rm(self);
+    Log(primitivewrappers) pwlog;
+
+    pwlog.info("Synchronizing on object " INTPTR_FORMAT " of klass %s", p2i(obj()), obj->klass()->external_name());
+    if (self->has_last_Java_frame()) {
+      LogStream info_stream(pwlog.info());
+      self->print_stack_on(&info_stream);
+    } else {
+      pwlog.info("Cannot find the last Java frame");
+    }
+
+    EventSyncOnPrimitiveWrapper event;
+    if (event.should_commit()) {
+      event.set_boxClass(obj->klass());
+      event.commit();
+    }
+  }
+
+  if (last_frame.is_interpreted_frame()) {
+    last_frame.interpreter_frame_set_bcp(last_frame.interpreter_frame_bcp() + 1);
+  }
+}
+
 // -----------------------------------------------------------------------------
 // Monitor Enter/Exit
 // The interpreter and compiler assembly code tries to lock using the fast path
@@ -561,6 +611,10 @@ bool ObjectSynchronizer::quick_enter(oop obj, Thread* self,
 // changed. The implementation is extremely sensitive to race condition. Be careful.
 
 void ObjectSynchronizer::enter(Handle obj, BasicLock* lock, TRAPS) {
+  if (DiagnoseSyncOnPrimitiveWrappers != 0 && obj->klass()->is_box()) {
+    handle_sync_on_primitive_wrapper(obj, THREAD);
+  }
+
   if (UseBiasedLocking) {
     if (!SafepointSynchronize::is_at_safepoint()) {
       BiasedLocking::revoke(obj, THREAD);
@@ -704,6 +758,10 @@ void ObjectSynchronizer::reenter(Handle obj, intx recursions, TRAPS) {
 // JNI locks on java objects
 // NOTE: must use heavy weight monitor to handle jni monitor enter
 void ObjectSynchronizer::jni_enter(Handle obj, TRAPS) {
+  if (DiagnoseSyncOnPrimitiveWrappers != 0 && obj->klass()->is_box()) {
+    handle_sync_on_primitive_wrapper(obj, THREAD);
+  }
+
   // the current locking is from JNI instead of Java code
   if (UseBiasedLocking) {
     BiasedLocking::revoke(obj, THREAD);
@@ -1007,24 +1065,15 @@ intptr_t ObjectSynchronizer::FastHashCode(Thread* self, oop obj) {
     if (obj->mark().has_bias_pattern()) {
       // Handle for oop obj in case of STW safepoint
       Handle hobj(self, obj);
-      // Relaxing assertion for bug 6320749.
-      assert(Universe::verify_in_progress() ||
-             !SafepointSynchronize::is_at_safepoint(),
-             "biases should not be seen by VM thread here");
-      BiasedLocking::revoke(hobj, JavaThread::current());
+      if (SafepointSynchronize::is_at_safepoint()) {
+        BiasedLocking::revoke_at_safepoint(hobj);
+      } else {
+        BiasedLocking::revoke(hobj, self);
+      }
       obj = hobj();
       assert(!obj->mark().has_bias_pattern(), "biases should be revoked by now");
     }
   }
-
-  // hashCode() is a heap mutator ...
-  // Relaxing assertion for bug 6320749.
-  assert(Universe::verify_in_progress() || DumpSharedSpaces ||
-         !SafepointSynchronize::is_at_safepoint(), "invariant");
-  assert(Universe::verify_in_progress() || DumpSharedSpaces ||
-         self->is_Java_thread() , "invariant");
-  assert(Universe::verify_in_progress() || DumpSharedSpaces ||
-         ((JavaThread *)self)->thread_state() != _thread_blocked, "invariant");
 
   while (true) {
     ObjectMonitor* monitor = NULL;
@@ -1807,11 +1856,6 @@ void ObjectSynchronizer::inflate_helper(oop obj) {
 
 ObjectMonitor* ObjectSynchronizer::inflate(Thread* self, oop object,
                                            const InflateCause cause) {
-  // Inflate mutates the heap ...
-  // Relaxing assertion for bug 6320749.
-  assert(Universe::verify_in_progress() ||
-         !SafepointSynchronize::is_at_safepoint(), "invariant");
-
   EventJavaMonitorInflate event;
 
   for (;;) {
@@ -2335,6 +2379,8 @@ void ObjectSynchronizer::deflate_idle_monitors_using_JT() {
                              Atomic::load(&om_list_globals._in_use_count),
                              Atomic::load(&om_list_globals._free_count),
                              Atomic::load(&om_list_globals._wait_count));
+
+  GVars.stw_random = os::random();
 
   // The ServiceThread's async deflation request has been processed.
   _last_async_deflation_time_ns = os::javaTimeNanos();

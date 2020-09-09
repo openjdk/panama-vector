@@ -51,9 +51,6 @@ class PhaseVector : public Phase {
   void eliminate_vbox_alloc_nodes();
   void eliminate_vbox_alloc_node(VectorBoxAllocateNode* vbox_alloc);
   void do_cleanup();
-//  void inline_vector_reboxing_calls();
-//  bool has_vbox_nodes();
-
   void scalarize_vector_boxes();
   void expand_vector_boxes();
 

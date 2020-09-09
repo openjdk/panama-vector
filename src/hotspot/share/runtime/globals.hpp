@@ -191,9 +191,6 @@ const size_t minimumSymbolTableSize = 1024;
           "Granularity to use for NUMA interleaving on Windows OS")         \
           range(os::vm_allocation_granularity(), NOT_LP64(2*G) LP64_ONLY(8192*G)) \
                                                                             \
-  product(bool, ForceNUMA, false,                                           \
-          "(Deprecated) Force NUMA optimizations on single-node/UMA systems") \
-                                                                            \
   product(uintx, NUMAChunkResizeWeight, 20,                                 \
           "Percentage (0-100) used to weight the current sample when "      \
           "computing exponentially decaying average for "                   \
@@ -322,6 +319,9 @@ const size_t minimumSymbolTableSize = 1024;
                                                                             \
   diagnostic(bool, UseAESCTRIntrinsics, false,                              \
           "Use intrinsics for the paralleled version of AES/CTR crypto")    \
+                                                                            \
+  diagnostic(bool, UseMD5Intrinsics, false,                                 \
+          "Use intrinsics for MD5 crypto hash function")                    \
                                                                             \
   diagnostic(bool, UseSHA1Intrinsics, false,                                \
           "Use intrinsics for SHA-1 crypto hash function. "                 \
@@ -808,6 +808,16 @@ const size_t minimumSymbolTableSize = 1024;
           range(500, max_intx)                                              \
           constraint(BiasedLockingDecayTimeFunc,AfterErgo)                  \
                                                                             \
+  diagnostic(intx, DiagnoseSyncOnPrimitiveWrappers, 0,                      \
+             "Detect and take action upon identifying synchronization on "  \
+             "primitive wrappers. Modes: "                                  \
+             "0: off; "                                                     \
+             "1: exit with fatal error; "                                   \
+             "2: log message to stdout. Output file can be specified with " \
+             "   -Xlog:primitivewrappers. If JFR is running it will "       \
+             "   also generate JFR events.")                                \
+             range(0, 2)                                                    \
+                                                                            \
   product(bool, ExitOnOutOfMemoryError, false,                              \
           "JVM exits on the first occurrence of an out-of-memory error")    \
                                                                             \
@@ -868,7 +878,7 @@ const size_t minimumSymbolTableSize = 1024;
           "Time calls to GenerateOopMap::compute_map() individually")       \
                                                                             \
   develop(bool, TraceOopMapRewrites, false,                                 \
-          "Trace rewriting of method oops during oop map generation")       \
+          "Trace rewriting of methods during oop map generation")           \
                                                                             \
   develop(bool, TraceICBuffer, false,                                       \
           "Trace usage of IC buffer")                                       \

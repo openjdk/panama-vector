@@ -35,12 +35,9 @@
 #include "gc/shenandoah/shenandoahPhaseTimings.hpp"
 #include "gc/shenandoah/shenandoahStringDedup.hpp"
 #include "gc/shenandoah/shenandoahVMOperations.hpp"
-#include "jfr/jfr.hpp"
 #include "memory/iterator.hpp"
 #include "memory/resourceArea.hpp"
-#include "memory/universe.hpp"
 #include "runtime/thread.hpp"
-#include "services/management.hpp"
 
 ShenandoahSerialRoot::ShenandoahSerialRoot(ShenandoahSerialRoot::OopsDo oops_do,
   ShenandoahPhaseTimings::Phase phase, ShenandoahPhaseTimings::ParPhase par_phase) :
@@ -55,17 +52,11 @@ void ShenandoahSerialRoot::oops_do(OopClosure* cl, uint worker_id) {
 }
 
 ShenandoahSerialRoots::ShenandoahSerialRoots(ShenandoahPhaseTimings::Phase phase) :
-  _universe_root(&Universe::oops_do, phase, ShenandoahPhaseTimings::UniverseRoots),
-  _object_synchronizer_root(&ObjectSynchronizer::oops_do, phase, ShenandoahPhaseTimings::ObjectSynchronizerRoots),
-  _management_root(&Management::oops_do, phase, ShenandoahPhaseTimings::ManagementRoots),
-  _jvmti_root(&JvmtiExport::oops_do, phase, ShenandoahPhaseTimings::JVMTIRoots) {
+  _object_synchronizer_root(&ObjectSynchronizer::oops_do, phase, ShenandoahPhaseTimings::ObjectSynchronizerRoots) {
 }
 
 void ShenandoahSerialRoots::oops_do(OopClosure* cl, uint worker_id) {
-  _universe_root.oops_do(cl, worker_id);
   _object_synchronizer_root.oops_do(cl, worker_id);
-  _management_root.oops_do(cl, worker_id);
-  _jvmti_root.oops_do(cl, worker_id);
 }
 
 ShenandoahWeakSerialRoot::ShenandoahWeakSerialRoot(ShenandoahWeakSerialRoot::WeakOopsDo weak_oops_do,
@@ -86,15 +77,8 @@ ShenandoahJVMTIWeakRoot::ShenandoahJVMTIWeakRoot(ShenandoahPhaseTimings::Phase p
 }
 #endif // INCLUDE_JVMTI
 
-#if INCLUDE_JFR
-ShenandoahJFRWeakRoot::ShenandoahJFRWeakRoot(ShenandoahPhaseTimings::Phase phase) :
-  ShenandoahWeakSerialRoot(&Jfr::weak_oops_do, phase, ShenandoahPhaseTimings::JFRWeakRoots) {
-}
-#endif // INCLUDE_JFR
-
 void ShenandoahSerialWeakRoots::weak_oops_do(BoolObjectClosure* is_alive, OopClosure* keep_alive, uint worker_id) {
   JVMTI_ONLY(_jvmti_weak_roots.weak_oops_do(is_alive, keep_alive, worker_id);)
-  JFR_ONLY(_jfr_weak_roots.weak_oops_do(is_alive, keep_alive, worker_id);)
 }
 
 void ShenandoahSerialWeakRoots::weak_oops_do(OopClosure* cl, uint worker_id) {

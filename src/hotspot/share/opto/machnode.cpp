@@ -676,11 +676,6 @@ const Type* MachCallNode::Value(PhaseGVN* phase) const { return tf()->range(); }
 void MachCallNode::dump_spec(outputStream *st) const {
   st->print("# ");
   if (tf() != NULL)  tf()->dump_on(st);
-  st->print(" (");
-  for (uint i = TypeFunc::Parms; i < tf()->domain()->cnt(); i++) {
-    in_RegMask(i).dump(st); st->print(" ");
-  }
-  st->print(")");
   if (_cnt != COUNT_UNKNOWN)  st->print(" C=%f",_cnt);
   if (jvms() != NULL)  jvms()->dump_spec(st);
 }

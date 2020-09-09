@@ -47,6 +47,10 @@
 #define ATTRIBUTE_ALIGNED(x)
 #endif
 
+#ifndef ATTRIBUTE_FLATTEN
+#define ATTRIBUTE_FLATTEN
+#endif
+
 // These are #defines to selectively turn on/off the Print(Opto)Assembly
 // capabilities. Choices should be led by a tradeoff between
 // code size and improved supportability.
@@ -234,8 +238,8 @@ inline size_t heap_word_size(size_t byte_size) {
   return (byte_size + (HeapWordSize-1)) >> LogHeapWordSize;
 }
 
-inline jfloat  jfloat_cast(jint    x);
-inline jdouble  jdouble_cast(jlong    x);
+inline jfloat jfloat_cast(jint x);
+inline jdouble jdouble_cast(jlong x);
 
 //-------------------------------------------
 // Constant for jlong (standardized by C++11)
@@ -1119,7 +1123,11 @@ template<class T> static void swap(T& a, T& b) {
   b = tmp;
 }
 
-#define ARRAY_SIZE(array) (sizeof(array)/sizeof((array)[0]))
+// array_size_impl is a function that takes a reference to T[N] and
+// returns a reference to char[N].  It is not ODR-used, so not defined.
+template<typename T, size_t N> char (&array_size_impl(T (&)[N]))[N];
+
+#define ARRAY_SIZE(array) sizeof(array_size_impl(array))
 
 //----------------------------------------------------------------------------------------------------
 // Sum and product which can never overflow: they wrap, just like the

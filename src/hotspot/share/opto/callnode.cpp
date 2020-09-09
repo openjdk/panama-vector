@@ -489,7 +489,6 @@ void JVMState::format(PhaseRegAlloc *regalloc, const Node *n, outputStream* st) 
         ciField* cifield;
         if (iklass != NULL) {
           st->print(" [");
-          iklass->nof_nonstatic_fields(); // FIXME iklass->_nonstatic_fields == NULL
           cifield = iklass->nonstatic_field_at(0);
           cifield->print_name_on(st);
           format_helper(regalloc, st, fld_node, ":", 0, &scobjs);
@@ -548,17 +547,6 @@ void JVMState::dump_spec(outputStream *st) const {
   if (caller() != NULL)  caller()->dump_spec(st);
 }
 
-static void print_cat(outputStream* st, Node* map, const char* name, int start, int end) {
-  st->print("%10s(%d):", name, end - start);
-  for (int i = start; i < end; i++) {
-    if (map->in(i) != NULL) {
-      st->print(" %d", map->in(i)->_idx);
-    } else {
-      st->print_raw(" _");
-    }
-  }
-  st->cr();
-}
 
 void JVMState::dump_on(outputStream* st) const {
   bool print_map = _map && !((uintptr_t)_map & 1) &&
@@ -588,23 +576,9 @@ void JVMState::dump_on(outputStream* st) const {
       st->print("    bc: ");
       _method->print_codes_on(bci(), bci()+1, st);
     }
-    print_cat(st, this->_map,   "locals", locoff(), stkoff());
-    print_cat(st, this->_map,    "stack", stkoff(), argoff());
-    print_cat(st, this->_map,     "args", argoff(), monoff());
-    print_cat(st, this->_map, "monitors", monoff(), scloff());
-    print_cat(st, this->_map,  "scalars", scloff(), endoff());
   }
 }
 
-void JVMState::print_on(outputStream* st) const {
-  const JVMState* cur_jvms = this;
-  while (cur_jvms != NULL) {
-    st->print(" @ %d ", cur_jvms->bci());
-    cur_jvms->method()->print_name(st);
-    st->cr();
-    cur_jvms = cur_jvms->caller();
-  }
-}
 // Extra way to dump a jvms from the debugger,
 // to avoid a bug with C++ member function calls.
 void dump_jvms(JVMState* jvms) {
@@ -747,9 +721,9 @@ Node *CallNode::match( const ProjNode *proj, const Matcher *match ) {
     uint ideal_reg = tf()->range()->field_at(TypeFunc::Parms)->ideal_reg();
     OptoRegPair regs = Opcode() == Op_CallLeafVector
       ? match->vector_return_value(ideal_reg)      // Calls into assembly vector routine
-      : (is_CallRuntime()
-         ? match->c_return_value(ideal_reg,true)   // Calls into C runtime
-         : match->return_value(ideal_reg, true));  // Calls into compiled Java code
+      : is_CallRuntime()
+        ? match->c_return_value(ideal_reg,true)    // Calls into C runtime
+        : match->return_value(ideal_reg, true);    // Calls into compiled Java code
     RegMask rm = RegMask(regs.first());
 
     // If the return is in vector, compute appropriate regmask taking into account the whole range
@@ -821,7 +795,7 @@ bool CallNode::may_modify(const TypeOopPtr *t_oop, PhaseTransform *phase) {
       }
     }
     if (is_CallJava() && as_CallJava()->method() != NULL) {
-      ciMethod* meth = as_CallJava()->method(); // FIXME: is it valid for virtual calls?
+      ciMethod* meth = as_CallJava()->method();
       if (meth->is_getter()) {
         return false;
       }
@@ -911,9 +885,8 @@ void CallNode::extract_projections(CallProjections* projs, bool separate_io_proj
       {
         // For Control (fallthrough) and I_O (catch_all_index) we have CatchProj -> Catch -> Proj
         projs->fallthrough_proj = pn;
-        DUIterator_Fast jmax, j = pn->fast_outs(jmax);
-        const Node *cn = pn->fast_out(j);
-        if (cn->is_Catch()) {
+        const Node *cn = pn->unique_ctrl_out();
+        if (cn != NULL && cn->is_Catch()) {
           ProjNode *cpn = NULL;
           for (DUIterator_Fast kmax, k = cn->fast_outs(kmax); k < kmax; k++) {
             cpn = cn->fast_out(k)->as_Proj();
@@ -1129,7 +1102,7 @@ Node* CallDynamicJavaNode::Ideal(PhaseGVN* phase, bool can_reshape) {
 
     int  not_used3;
     bool call_does_dispatch;
-    ciMethod* callee = phase->C->optimize_virtual_call(caller, klass, holder, orig_callee, receiver_type, true /*is_virtual*/,
+    ciMethod* callee = phase->C->optimize_virtual_call(caller, jvms()->bci(), klass, holder, orig_callee, receiver_type, true /*is_virtual*/,
                                                        call_does_dispatch, not_used3);  // out-parameters
     if (!call_does_dispatch) {
       // Register for late inlining

@@ -33,9 +33,9 @@
 void PhaseVector::optimize_vector_boxes() {
   Compile::TracePhase tp("vector_elimination", &timers[_t_vector_elimination]);
 
+  // Signal GraphKit it's post-parse phase.
   assert(C->inlining_incrementally() == false, "sanity");
-
-  C->set_inlining_incrementally(true); // FIXME another way to signal GraphKit it's post-parsing phase?
+  C->set_inlining_incrementally(true);
 
   C->for_igvn()->clear();
   C->initial_gvn()->replace_with(&_igvn);
@@ -48,7 +48,7 @@ void PhaseVector::optimize_vector_boxes() {
   expand_vbox_nodes();
   eliminate_vbox_alloc_nodes();
 
-  C->set_inlining_incrementally(false); // FIXME another way to signal GraphKit it's post-parsing phase?
+  C->set_inlining_incrementally(false);
 
   do_cleanup();
 }
@@ -102,7 +102,6 @@ void PhaseVector::expand_vbox_nodes() {
     if (n->Opcode() == Op_VectorBox) {
       VectorBoxNode* vbox = static_cast<VectorBoxNode*>(n);
       expand_vbox_node(vbox);
-//      assert(C->inlining_incrementally() == false, "sanity");
       if (C->failing())  return;
     }
     if (C->failing())  return;
@@ -278,9 +277,9 @@ void PhaseVector::expand_vbox_node(VectorBoxNode* vec_box) {
 }
 
 Node* PhaseVector::expand_vbox_node_helper(Node* vbox,
-                                       Node* vect,
-                                       const TypeInstPtr* box_type,
-                                       const TypeVect* vect_type) {
+                                           Node* vect,
+                                           const TypeInstPtr* box_type,
+                                           const TypeVect* vect_type) {
   if (vbox->is_Phi() && vect->is_Phi()) {
     assert(vbox->as_Phi()->region() == vect->as_Phi()->region(), "");
     Node* new_phi = new PhiNode(vbox->as_Phi()->region(), box_type);
@@ -295,7 +294,7 @@ Node* PhaseVector::expand_vbox_node_helper(Node* vbox,
     return expand_vbox_alloc_node(vbox_alloc, vect, box_type, vect_type);
   } else {
     assert(!vbox->is_Phi(), "");
-    // TODO: ensure that expanded vbox is initialized with the same value (vect).
+    // TODO: assert that expanded vbox is initialized with the same value (vect).
     return vbox; // already expanded
   }
 }
@@ -312,9 +311,6 @@ Node* PhaseVector::expand_vbox_alloc_node(VectorBoxAllocateNode* vbox_alloc,
                                           Node* value,
                                           const TypeInstPtr* box_type,
                                           const TypeVect* vect_type) {
-//  assert(C->inlining_incrementally() == false, "sanity");
-//  C->set_inlining_incrementally(true);
-
   JVMState* jvms = clone_jvms(C, vbox_alloc);
   GraphKit kit(jvms);
   PhaseGVN& gvn = kit.gvn();
@@ -324,7 +320,6 @@ Node* PhaseVector::expand_vbox_alloc_node(VectorBoxAllocateNode* vbox_alloc,
   int num_elem = vect_type->length();
 
   bool is_mask = is_vector_mask(box_klass);
-  //assert(!is_mask || vect_type->element_basic_type() == getMaskBasicType(bt), "consistent vector element type expected");
   if (is_mask && bt != T_BOOLEAN) {
     value = gvn.transform(VectorStoreMaskNode::make(gvn, value, bt, num_elem));
     // Although type of mask depends on its definition, in terms of storage everything is stored in boolean array.
@@ -379,16 +374,11 @@ Node* PhaseVector::expand_vbox_alloc_node(VectorBoxAllocateNode* vbox_alloc,
   kit.replace_call(vbox_alloc, vec_obj, true);
   C->remove_macro_node(vbox_alloc);
 
-//  C->set_inlining_incrementally(false);
-
   return vec_obj;
 }
 
 void PhaseVector::expand_vunbox_node(VectorUnboxNode* vec_unbox) {
   if (vec_unbox->outcnt() > 0) {
-//    assert(C->inlining_incrementally() == false, "sanity");
-//    C->set_inlining_incrementally(true);
-
     GraphKit kit;
     PhaseGVN& gvn = kit.gvn();
 
@@ -462,8 +452,6 @@ void PhaseVector::expand_vunbox_node(VectorUnboxNode* vec_unbox) {
     gvn.hash_delete(vec_unbox);
     vec_unbox->disconnect_inputs(NULL, C);
     C->gvn_replace_by(vec_unbox, vec_val_load);
-
-//    C->set_inlining_incrementally(false);
   }
   C->remove_macro_node(vec_unbox);
 }

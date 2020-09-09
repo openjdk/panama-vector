@@ -775,6 +775,8 @@ bool InstructForm::captures_bottom_type(FormDict &globals) const {
        !strcmp(_matrule->_rChild->_opType,"CheckCastPP")  ||
        !strcmp(_matrule->_rChild->_opType,"GetAndSetP")   ||
        !strcmp(_matrule->_rChild->_opType,"GetAndSetN")   ||
+       !strcmp(_matrule->_rChild->_opType,"RotateLeft")   ||
+       !strcmp(_matrule->_rChild->_opType,"RotateRight")   ||
 #if INCLUDE_SHENANDOAHGC
        !strcmp(_matrule->_rChild->_opType,"ShenandoahCompareAndExchangeP") ||
        !strcmp(_matrule->_rChild->_opType,"ShenandoahCompareAndExchangeN") ||
@@ -4160,15 +4162,16 @@ bool MatchRule::is_vector() const {
     "AddReductionVF", "AddReductionVD",
     "MulReductionVI", "MulReductionVL",
     "MulReductionVF", "MulReductionVD",
-    "MulAddVS2VI", "MacroLogicV",
     "MaxReductionV", "MinReductionV",
     "AndReductionV", "OrReductionV", "XorReductionV",
+    "MulAddVS2VI", "MacroLogicV",
     "LShiftCntV","RShiftCntV",
     "LShiftVB","LShiftVS","LShiftVI","LShiftVL",
     "RShiftVB","RShiftVS","RShiftVI","RShiftVL",
     "URShiftVB","URShiftVS","URShiftVI","URShiftVL",
     "ReplicateB","ReplicateS","ReplicateI","ReplicateL","ReplicateF","ReplicateD",
-    "RoundDoubleModeV","LoadVector","StoreVector","LoadVectorGather", "StoreVectorScatter",
+    "RoundDoubleModeV","RotateLeftV" , "RotateRightV", "LoadVector","StoreVector",
+    "LoadVectorGather", "StoreVectorScatter",
     "VectorTest", "VectorLoadMask", "VectorStoreMask", "VectorBlend", "VectorInsert",
     "VectorRearrange","VectorLoadShuffle", "VectorLoadConst",
     "VectorCastB2X", "VectorCastS2X", "VectorCastI2X",

@@ -34,6 +34,7 @@
 #include "logging/log.hpp"
 #include "logging/logTag.hpp"
 #include "memory/universe.hpp"
+#include "prims/jvmtiExport.hpp"
 #include "prims/methodHandles.hpp"
 #include "runtime/atomic.hpp"
 #include "runtime/flags/jvmFlag.hpp"
@@ -50,7 +51,7 @@
 void check_ThreadShadow();
 void eventlog_init();
 void mutex_init();
-void oopstorage_init();
+void universe_oopstorage_init();
 void chunkpool_init();
 void perfMemory_init();
 void SuspendibleThreadSet_init();
@@ -97,7 +98,7 @@ void vm_init_globals() {
   basic_types_init();
   eventlog_init();
   mutex_init();
-  oopstorage_init();
+  universe_oopstorage_init();
   chunkpool_init();
   perfMemory_init();
   SuspendibleThreadSet_init();
@@ -105,8 +106,8 @@ void vm_init_globals() {
 
 
 jint init_globals() {
-  HandleMark hm;
   management_init();
+  JvmtiExport::initialize_oop_storage();
   bytecodes_init();
   classLoader_init1();
   compilationPolicy_init();

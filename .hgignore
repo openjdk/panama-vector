@@ -15,5 +15,5 @@ NashornProfile.txt
 (^|/)JTreport/
 (^|/)JTwork/
 (^|/)\.git/
-^src/utils/hsdis/build/
 test/jdk/jdk/incubator/vector/benchmark/target/
+^src/utils/hsdis/build/

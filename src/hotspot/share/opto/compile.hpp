@@ -80,7 +80,6 @@ class JVMState;
 class Type;
 class TypeData;
 class TypeInt;
-class TypeInstPtr;
 class TypePtr;
 class TypeOopPtr;
 class TypeFunc;
@@ -387,6 +386,7 @@ class Compile : public Phase {
 
   int                           _late_inlines_pos;    // Where in the queue should the next late inlining candidate go (emulate depth first inlining)
   uint                          _number_of_mh_late_inlines; // number of method handle late inlining still pending
+
 
   // Inlining may not happen in parse order which would make
   // PrintInlining output confusing. Keep track of PrintInlining
@@ -877,12 +877,12 @@ class Compile : public Phase {
   bool should_delay_vector_reboxing_inlining(ciMethod* call_method, JVMState* jvms);
 
   // Helper functions to identify inlining potential at call-site
-  ciMethod* optimize_virtual_call(ciMethod* caller, ciInstanceKlass* klass,
+  ciMethod* optimize_virtual_call(ciMethod* caller, int bci, ciInstanceKlass* klass,
                                   ciKlass* holder, ciMethod* callee,
                                   const TypeOopPtr* receiver_type, bool is_virtual,
                                   bool &call_does_dispatch, int &vtable_index,
                                   bool check_access = true);
-  ciMethod* optimize_inlining(ciMethod* caller, ciInstanceKlass* klass,
+  ciMethod* optimize_inlining(ciMethod* caller, int bci, ciInstanceKlass* klass,
                               ciMethod* callee, const TypeOopPtr* receiver_type,
                               bool check_access = true);
 
@@ -1028,14 +1028,6 @@ class Compile : public Phase {
           address stub_function, const char *stub_name,
           int is_fancy_jump, bool pass_tls,
           bool save_arg_registers, bool return_pc, DirectiveSet* directive);
-
-  // From the TypeFunc signature, generate code to pass arguments
-  // from Compiled calling convention to Interpreter's calling convention
-  void Generate_Compiled_To_Interpreter_Graph(const TypeFunc *tf, address interpreter_entry);
-
-  // From the TypeFunc signature, generate code to pass arguments
-  // from Interpreter's calling convention to Compiler's calling convention
-  void Generate_Interpreter_To_Compiled_Graph(const TypeFunc *tf);
 
   // Are we compiling a method?
   bool has_method() { return method() != NULL; }

@@ -50,6 +50,7 @@
 #include "runtime/frame.inline.hpp"
 #include "runtime/interfaceSupport.inline.hpp"
 #include "runtime/jniHandles.inline.hpp"
+#include "runtime/reflectionUtils.hpp"
 #include "runtime/timerTrace.hpp"
 #include "runtime/vframe_hp.hpp"
 
@@ -251,7 +252,7 @@ C2V_VMENTRY_NULL(jobject, getObjectAtAddress, (JNIEnv* env, jobject c2vm, jlong 
   if (obj != NULL) {
     oopDesc::verify(obj);
   }
-  return JNIHandles::make_local(obj);
+  return JNIHandles::make_local(THREAD, obj);
 C2V_END
 
 C2V_VMENTRY_NULL(jbyteArray, getBytecode, (JNIEnv* env, jobject, jobject jvmci_method))
@@ -819,7 +820,7 @@ C2V_END
 
 C2V_VMENTRY_0(jint, installCode, (JNIEnv *env, jobject, jobject target, jobject compiled_code,
             jobject installed_code, jlong failed_speculations_address, jbyteArray speculations_obj))
-  HandleMark hm;
+  HandleMark hm(THREAD);
   JNIHandleMark jni_hm(thread);
 
   JVMCIObject target_handle = JVMCIENV->wrap(target);
@@ -880,7 +881,7 @@ C2V_END
 
 C2V_VMENTRY_0(jint, getMetadata, (JNIEnv *env, jobject, jobject target, jobject compiled_code, jobject metadata))
 #if INCLUDE_AOT
-  HandleMark hm;
+  HandleMark hm(THREAD);
   assert(JVMCIENV->is_hotspot(), "AOT code is executed only in HotSpot mode");
 
   JVMCIObject target_handle = JVMCIENV->wrap(target);
@@ -968,7 +969,7 @@ C2V_VMENTRY(void, resetCompilationStatistics, (JNIEnv* env, jobject))
 C2V_END
 
 C2V_VMENTRY_NULL(jobject, disassembleCodeBlob, (JNIEnv* env, jobject, jobject installedCode))
-  HandleMark hm;
+  HandleMark hm(THREAD);
 
   if (installedCode == NULL) {
     JVMCI_THROW_MSG_NULL(NullPointerException, "installedCode is null");
@@ -1006,7 +1007,7 @@ C2V_VMENTRY_NULL(jobject, disassembleCodeBlob, (JNIEnv* env, jobject, jobject in
 C2V_END
 
 C2V_VMENTRY_NULL(jobject, getStackTraceElement, (JNIEnv* env, jobject, jobject jvmci_method, int bci))
-  HandleMark hm;
+  HandleMark hm(THREAD);
 
   methodHandle method(THREAD, JVMCIENV->asMethod(jvmci_method));
   JVMCIObject element = JVMCIENV->new_StackTraceElement(method, bci, JVMCI_CHECK_NULL);
@@ -1018,7 +1019,7 @@ C2V_VMENTRY_NULL(jobject, executeHotSpotNmethod, (JNIEnv* env, jobject, jobject 
   // and the return value would have to be wrapped as a JavaConstant.
   requireInHotSpot("executeHotSpotNmethod", JVMCI_CHECK_NULL);
 
-  HandleMark hm;
+  HandleMark hm(THREAD);
 
   JVMCIObject nmethod_mirror = JVMCIENV->wrap(hs_nmethod);
   nmethodLocker locker;
@@ -1038,7 +1039,7 @@ C2V_VMENTRY_NULL(jobject, executeHotSpotNmethod, (JNIEnv* env, jobject, jobject 
   if (jap.return_type() == T_VOID) {
     return NULL;
   } else if (is_reference_type(jap.return_type())) {
-    return JNIHandles::make_local((oop) result.get_jobject());
+    return JNIHandles::make_local(THREAD, (oop) result.get_jobject());
   } else {
     jvalue *value = (jvalue *) result.get_value_addr();
     // Narrow the value down if required (Important on big endian machines)
@@ -1152,12 +1153,12 @@ C2V_VMENTRY_0(jint, getCountersSize, (JNIEnv* env, jobject))
   return (jint) JVMCICounterSize;
 C2V_END
 
-C2V_VMENTRY(void, setCountersSize, (JNIEnv* env, jobject, jint new_size))
-  JavaThread::resize_all_jvmci_counters(new_size);
+C2V_VMENTRY_0(jboolean, setCountersSize, (JNIEnv* env, jobject, jint new_size))
+  return JavaThread::resize_all_jvmci_counters(new_size);
 C2V_END
 
 C2V_VMENTRY_0(jint, allocateCompileId, (JNIEnv* env, jobject, jobject jvmci_method, int entry_bci))
-  HandleMark hm;
+  HandleMark hm(THREAD);
   if (jvmci_method == NULL) {
     JVMCI_THROW_0(NullPointerException);
   }
@@ -1573,7 +1574,7 @@ C2V_END
 
 // Creates a scope where the current thread is attached and detached
 // from HotSpot if it wasn't already attached when entering the scope.
-extern "C" void jio_printf(const char *fmt, ...);
+extern "C" int jio_printf(const char *fmt, ...);
 class AttachDetach : public StackObj {
  public:
   bool _attached;
@@ -2246,7 +2247,7 @@ C2V_VMENTRY_NULL(jlongArray, registerNativeMethods, (JNIEnv* env, jobject, jclas
     // Ensure the JVMCI shared library runtime is initialized.
     JVMCIEnv __peer_jvmci_env__(thread, false, __FILE__, __LINE__);
     JVMCIEnv* peerEnv = &__peer_jvmci_env__;
-    HandleMark hm;
+    HandleMark hm(THREAD);
     JVMCIObject receiver = runtime->get_HotSpotJVMCIRuntime(peerEnv);
     if (peerEnv->has_pending_exception()) {
       peerEnv->describe_pending_exception(true);
@@ -2314,7 +2315,7 @@ C2V_VMENTRY_NULL(jlongArray, registerNativeMethods, (JNIEnv* env, jobject, jclas
   }
 
   typeArrayOop info_oop = oopFactory::new_longArray(4, CHECK_0);
-  jlongArray info = (jlongArray) JNIHandles::make_local(info_oop);
+  jlongArray info = (jlongArray) JNIHandles::make_local(THREAD, info_oop);
   runtime->init_JavaVM_info(info, JVMCI_CHECK_0);
   return info;
 }
@@ -2565,7 +2566,7 @@ C2V_VMENTRY_NULL(jobject, asReflectionField, (JNIEnv* env, jobject, jobject jvmc
   }
   fieldDescriptor fd(iklass, index);
   oop reflected = Reflection::new_field(&fd, CHECK_NULL);
-  return JNIHandles::make_local(env, reflected);
+  return JNIHandles::make_local(THREAD, reflected);
 }
 
 C2V_VMENTRY_NULL(jobjectArray, getFailedSpeculations, (JNIEnv* env, jobject, jlong failed_speculations_address, jobjectArray current))
@@ -2760,7 +2761,7 @@ JNINativeMethod CompilerToVM::methods[] = {
   {CC "readUncompressedOop",                          CC "(J)" OBJECTCONSTANT,                                                              FN_PTR(readUncompressedOop)},
   {CC "collectCounters",                              CC "()[J",                                                                            FN_PTR(collectCounters)},
   {CC "getCountersSize",                              CC "()I",                                                                             FN_PTR(getCountersSize)},
-  {CC "setCountersSize",                              CC "(I)V",                                                                            FN_PTR(setCountersSize)},
+  {CC "setCountersSize",                              CC "(I)Z",                                                                            FN_PTR(setCountersSize)},
   {CC "allocateCompileId",                            CC "(" HS_RESOLVED_METHOD "I)I",                                                      FN_PTR(allocateCompileId)},
   {CC "isMature",                                     CC "(" METASPACE_METHOD_DATA ")Z",                                                    FN_PTR(isMature)},
   {CC "hasCompiledCodeForOSR",                        CC "(" HS_RESOLVED_METHOD "II)Z",                                                     FN_PTR(hasCompiledCodeForOSR)},

@@ -292,12 +292,15 @@ Node* CheckCastPPNode::Identity(PhaseGVN* phase) {
   }
   const Type* t = phase->type(in(1));
   if (EnableVectorReboxing && in(1)->Opcode() == Op_VectorBox) {
-    return t->higher_equal_speculative(phase->type(this)) ? in(1) : this;
-  } else {
+    if (t->higher_equal_speculative(phase->type(this))) {
+      return in(1);
+    }
+  } else if (t == phase->type(this)) {
     // Toned down to rescue meeting at a Phi 3 different oops all implementing
     // the same interface.
-    return (t == phase->type(this)) ? in(1) : this;
+    return in(1);
   }
+  return this;
 }
 
 //------------------------------Value------------------------------------------

@@ -244,7 +244,7 @@ void Runtime1::generate_blob_for(BufferBlob* buffer_blob, StubID id) {
   case unwind_exception_id:
   case counter_overflow_id:
 #if defined(PPC32)
-  case handle_exception_nofpu_id:  // Unused on sparc
+  case handle_exception_nofpu_id:
 #endif
     expect_oop_map = false;
     break;
@@ -429,7 +429,7 @@ JRT_END
 
 // counter_overflow() is called from within C1-compiled methods. The enclosing method is the method
 // associated with the top activation record. The inlinee (that is possibly included in the enclosing
-// method) method oop is passed as an argument. In order to do that it is embedded in the code as
+// method) method is passed as an argument. In order to do that it is embedded in the code as
 // a constant.
 static nmethod* counter_overflow_helper(JavaThread* THREAD, int branch_bci, Method* m) {
   nmethod* osr_nm = NULL;

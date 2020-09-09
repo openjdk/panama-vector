@@ -26,7 +26,7 @@
 #ifndef CPU_AARCH64_MACROASSEMBLER_AARCH64_HPP
 #define CPU_AARCH64_MACROASSEMBLER_AARCH64_HPP
 
-#include "asm/assembler.hpp"
+#include "asm/assembler.inline.hpp"
 #include "oops/compressedOops.hpp"
 #include "utilities/powerOfTwo.hpp"
 
@@ -111,15 +111,11 @@ class MacroAssembler: public Assembler {
   // tmp_reg must be supplied and must not be rscratch1 or rscratch2
   // Optional slow case is for implementations (interpreter and C1) which branch to
   // slow case directly. Leaves condition codes set for C2's Fast_Lock node.
-  // Returns offset of first potentially-faulting instruction for null
-  // check info (currently consumed only by C1). If
-  // swap_reg_contains_mark is true then returns -1 as it is assumed
-  // the calling code has already passed any potential faults.
-  int biased_locking_enter(Register lock_reg, Register obj_reg,
-                           Register swap_reg, Register tmp_reg,
-                           bool swap_reg_contains_mark,
-                           Label& done, Label* slow_case = NULL,
-                           BiasedLockingCounters* counters = NULL);
+  void biased_locking_enter(Register lock_reg, Register obj_reg,
+                            Register swap_reg, Register tmp_reg,
+                            bool swap_reg_contains_mark,
+                            Label& done, Label* slow_case = NULL,
+                            BiasedLockingCounters* counters = NULL);
   void biased_locking_exit (Register obj_reg, Register temp_reg, Label& done);
 
 
@@ -477,36 +473,34 @@ public:
   // Push and pop everything that might be clobbered by a native
   // runtime call except rscratch1 and rscratch2.  (They are always
   // scratch, so we don't have to protect them.)  Only save the lower
-  // 64 bits of each vector register.
-  void push_call_clobbered_registers();
-  void pop_call_clobbered_registers();
+  // 64 bits of each vector register. Additonal registers can be excluded
+  // in a passed RegSet.
+  void push_call_clobbered_registers_except(RegSet exclude);
+  void pop_call_clobbered_registers_except(RegSet exclude);
+
+  void push_call_clobbered_registers() {
+    push_call_clobbered_registers_except(RegSet());
+  }
+  void pop_call_clobbered_registers() {
+    pop_call_clobbered_registers_except(RegSet());
+  }
+
 
   // now mov instructions for loading absolute addresses and 32 or
   // 64 bit integers
 
-  inline void mov(Register dst, address addr)
-  {
-    mov_immediate64(dst, (uint64_t)addr);
-  }
+  inline void mov(Register dst, address addr)             { mov_immediate64(dst, (uint64_t)addr); }
 
-  inline void mov(Register dst, uint64_t imm64)
-  {
-    mov_immediate64(dst, imm64);
-  }
+  inline void mov(Register dst, int imm64)                { mov_immediate64(dst, (uint64_t)imm64); }
+  inline void mov(Register dst, long imm64)               { mov_immediate64(dst, (uint64_t)imm64); }
+  inline void mov(Register dst, long long imm64)          { mov_immediate64(dst, (uint64_t)imm64); }
+  inline void mov(Register dst, unsigned int imm64)       { mov_immediate64(dst, (uint64_t)imm64); }
+  inline void mov(Register dst, unsigned long imm64)      { mov_immediate64(dst, (uint64_t)imm64); }
+  inline void mov(Register dst, unsigned long long imm64) { mov_immediate64(dst, (uint64_t)imm64); }
 
   inline void movw(Register dst, uint32_t imm32)
   {
     mov_immediate32(dst, imm32);
-  }
-
-  inline void mov(Register dst, long l)
-  {
-    mov(dst, (uint64_t)l);
-  }
-
-  inline void mov(Register dst, int i)
-  {
-    mov(dst, (long)i);
   }
 
   void mov(Register dst, RegisterOrConstant src) {
@@ -1170,7 +1164,7 @@ public:
   void sub(Register Rd, Register Rn, RegisterOrConstant decrement);
   void subw(Register Rd, Register Rn, RegisterOrConstant decrement);
 
-  void adrp(Register reg1, const Address &dest, unsigned long &byte_offset);
+  void adrp(Register reg1, const Address &dest, uint64_t &byte_offset);
 
   void tableswitch(Register index, jint lowbound, jint highbound,
                    Label &jumptable, Label &jumptable_end, int stride = 1) {
@@ -1187,7 +1181,7 @@ public:
   // actually be used: you must use the Address that is returned.  It
   // is up to you to ensure that the shift provided matches the size
   // of your data.
-  Address form_address(Register Rd, Register base, long byte_offset, int shift);
+  Address form_address(Register Rd, Register base, int64_t byte_offset, int shift);
 
   // Return true iff an address is within the 48-bit AArch64 address
   // space.
@@ -1212,7 +1206,7 @@ public:
     if (NearCpool) {
       ldr(dest, const_addr);
     } else {
-      unsigned long offset;
+      uint64_t offset;
       adrp(dest, InternalAddress(const_addr.target()), offset);
       ldr(dest, Address(dest, offset));
     }
@@ -1310,7 +1304,7 @@ private:
   // Uses rscratch2 if the address is not directly reachable
   Address spill_address(int size, int offset, Register tmp=rscratch2);
 
-  bool merge_alignment_check(Register base, size_t size, long cur_offset, long prev_offset) const;
+  bool merge_alignment_check(Register base, size_t size, int64_t cur_offset, int64_t prev_offset) const;
 
   // Check whether two loads/stores can be merged into ldp/stp.
   bool ldst_can_merge(Register rx, const Address &adr, size_t cur_size_in_bytes, bool is_store) const;

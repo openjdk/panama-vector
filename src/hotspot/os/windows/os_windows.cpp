@@ -1609,9 +1609,7 @@ void os::print_os_info(outputStream* st) {
 
   os::win32::print_uptime_info(st);
 
-#ifdef _LP64
   VM_Version::print_platform_virtualization_info(st);
-#endif
 }
 
 void os::win32::print_windows_version(outputStream* st) {
@@ -2380,7 +2378,8 @@ LONG WINAPI topLevelVectoredExceptionFilter(struct _EXCEPTION_POINTERS* exceptio
 //-----------------------------------------------------------------------------
 LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
   if (InterceptOSException) return EXCEPTION_CONTINUE_SEARCH;
-  DWORD exception_code = exceptionInfo->ExceptionRecord->ExceptionCode;
+  PEXCEPTION_RECORD exception_record = exceptionInfo->ExceptionRecord;
+  DWORD exception_code = exception_record->ExceptionCode;
 #ifdef _M_AMD64
   address pc = (address) exceptionInfo->ContextRecord->Rip;
 #else
@@ -2399,9 +2398,8 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
   // This is safe to do because we have a new/unique ExceptionInformation
   // code for this condition.
   if (exception_code == EXCEPTION_ACCESS_VIOLATION) {
-    PEXCEPTION_RECORD exceptionRecord = exceptionInfo->ExceptionRecord;
-    int exception_subcode = (int) exceptionRecord->ExceptionInformation[0];
-    address addr = (address) exceptionRecord->ExceptionInformation[1];
+    int exception_subcode = (int) exception_record->ExceptionInformation[0];
+    address addr = (address) exception_record->ExceptionInformation[1];
 
     if (exception_subcode == EXCEPTION_INFO_EXEC_VIOLATION) {
       int page_size = os::vm_page_size();
@@ -2465,7 +2463,7 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
 
       // Last unguard failed or not unguarding
       tty->print_raw_cr("Execution protection violation");
-      report_error(t, exception_code, addr, exceptionInfo->ExceptionRecord,
+      report_error(t, exception_code, addr, exception_record,
                    exceptionInfo->ContextRecord);
       return EXCEPTION_CONTINUE_SEARCH;
     }
@@ -2481,14 +2479,14 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
   if (t != NULL && t->is_Java_thread()) {
     JavaThread* thread = (JavaThread*) t;
     bool in_java = thread->thread_state() == _thread_in_Java;
+    bool in_native = thread->thread_state() == _thread_in_native;
+    bool in_vm = thread->thread_state() == _thread_in_vm;
 
     // Handle potential stack overflows up front.
     if (exception_code == EXCEPTION_STACK_OVERFLOW) {
       if (thread->stack_guards_enabled()) {
         if (in_java) {
           frame fr;
-          PEXCEPTION_RECORD exceptionRecord = exceptionInfo->ExceptionRecord;
-          address addr = (address) exceptionRecord->ExceptionInformation[1];
           if (os::win32::get_frame_at_stack_banging_point(thread, exceptionInfo, pc, &fr)) {
             assert(fr.is_java_frame(), "Must be a Java frame");
             SharedRuntime::look_for_reserved_stack_annotated_method(thread, fr);
@@ -2497,7 +2495,7 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
         // Yellow zone violation.  The o/s has unprotected the first yellow
         // zone page for us.  Note:  must call disable_stack_yellow_zone to
         // update the enabled status, even if the zone contains only one page.
-        assert(thread->thread_state() != _thread_in_vm, "Undersized StackShadowPages");
+        assert(!in_vm, "Undersized StackShadowPages");
         thread->disable_stack_yellow_reserved_zone();
         // If not in java code, return and hope for the best.
         return in_java
@@ -2507,15 +2505,14 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
         // Fatal red zone violation.
         thread->disable_stack_red_zone();
         tty->print_raw_cr("An unrecoverable stack overflow has occurred.");
-        report_error(t, exception_code, pc, exceptionInfo->ExceptionRecord,
+        report_error(t, exception_code, pc, exception_record,
                       exceptionInfo->ContextRecord);
         return EXCEPTION_CONTINUE_SEARCH;
       }
     } else if (exception_code == EXCEPTION_ACCESS_VIOLATION) {
-      // Either stack overflow or null pointer exception.
       if (in_java) {
-        PEXCEPTION_RECORD exceptionRecord = exceptionInfo->ExceptionRecord;
-        address addr = (address) exceptionRecord->ExceptionInformation[1];
+        // Either stack overflow or null pointer exception.
+        address addr = (address) exception_record->ExceptionInformation[1];
         address stack_end = thread->stack_end();
         if (addr < stack_end && addr >= stack_end - os::vm_page_size()) {
           // Stack overflow.
@@ -2534,47 +2531,38 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
             return Handle_Exception(exceptionInfo, stub);
           }
         }
-        {
 #ifdef _WIN64
-          // If it's a legal stack address map the entire region in
-          //
-          PEXCEPTION_RECORD exceptionRecord = exceptionInfo->ExceptionRecord;
-          address addr = (address) exceptionRecord->ExceptionInformation[1];
-          if (thread->is_in_usable_stack(addr)) {
-            addr = (address)((uintptr_t)addr &
-                             (~((uintptr_t)os::vm_page_size() - (uintptr_t)1)));
-            os::commit_memory((char *)addr, thread->stack_base() - addr,
-                              !ExecMem);
-            return EXCEPTION_CONTINUE_EXECUTION;
-          } else
-#endif
-          {
-            // Null pointer exception.
-            if (MacroAssembler::uses_implicit_null_check((void*)addr)) {
-              address stub = SharedRuntime::continuation_for_implicit_exception(thread, pc, SharedRuntime::IMPLICIT_NULL);
-              if (stub != NULL) return Handle_Exception(exceptionInfo, stub);
-            }
-            report_error(t, exception_code, pc, exceptionInfo->ExceptionRecord,
-                         exceptionInfo->ContextRecord);
-            return EXCEPTION_CONTINUE_SEARCH;
-          }
+        // If it's a legal stack address map the entire region in
+        if (thread->is_in_usable_stack(addr)) {
+          addr = (address)((uintptr_t)addr &
+                            (~((uintptr_t)os::vm_page_size() - (uintptr_t)1)));
+          os::commit_memory((char *)addr, thread->stack_base() - addr,
+                            !ExecMem);
+          return EXCEPTION_CONTINUE_EXECUTION;
         }
+#endif
+        // Null pointer exception.
+        if (MacroAssembler::uses_implicit_null_check((void*)addr)) {
+          address stub = SharedRuntime::continuation_for_implicit_exception(thread, pc, SharedRuntime::IMPLICIT_NULL);
+          if (stub != NULL) return Handle_Exception(exceptionInfo, stub);
+        }
+        report_error(t, exception_code, pc, exception_record,
+                      exceptionInfo->ContextRecord);
+        return EXCEPTION_CONTINUE_SEARCH;
       }
 
 #ifdef _WIN64
       // Special care for fast JNI field accessors.
       // jni_fast_Get<Primitive>Field can trap at certain pc's if a GC kicks
       // in and the heap gets shrunk before the field access.
-      if (exception_code == EXCEPTION_ACCESS_VIOLATION) {
-        address addr = JNI_FastGetField::find_slowcase_pc(pc);
-        if (addr != (address)-1) {
-          return Handle_Exception(exceptionInfo, addr);
-        }
+      address slowcase_pc = JNI_FastGetField::find_slowcase_pc(pc);
+      if (slowcase_pc != (address)-1) {
+        return Handle_Exception(exceptionInfo, slowcase_pc);
       }
 #endif
 
       // Stack overflow or null pointer exception in native code.
-      report_error(t, exception_code, pc, exceptionInfo->ExceptionRecord,
+      report_error(t, exception_code, pc, exception_record,
                    exceptionInfo->ContextRecord);
       return EXCEPTION_CONTINUE_SEARCH;
     } // /EXCEPTION_ACCESS_VIOLATION
@@ -2588,11 +2576,8 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
         nm = (cb != NULL) ? cb->as_compiled_method_or_null() : NULL;
       }
 
-      bool is_unsafe_arraycopy = (thread->thread_state() == _thread_in_native || in_java) && UnsafeCopyMemory::contains_pc(pc);
-      if (((thread->thread_state() == _thread_in_vm ||
-           thread->thread_state() == _thread_in_native ||
-           is_unsafe_arraycopy) &&
-          thread->doing_unsafe_access()) ||
+      bool is_unsafe_arraycopy = (in_native || in_java) && UnsafeCopyMemory::contains_pc(pc);
+      if (((in_vm || in_native || is_unsafe_arraycopy) && thread->doing_unsafe_access()) ||
           (nm != NULL && nm->has_unsafe_access())) {
         address next_pc =  Assembler::locate_next_instruction(pc);
         if (is_unsafe_arraycopy) {
@@ -2612,16 +2597,14 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
 
       } // switch
     }
-    if (((thread->thread_state() == _thread_in_Java) ||
-         (thread->thread_state() == _thread_in_native)) &&
-         exception_code != EXCEPTION_UNCAUGHT_CXX_EXCEPTION) {
+    if ((in_java || in_native) && exception_code != EXCEPTION_UNCAUGHT_CXX_EXCEPTION) {
       LONG result=Handle_FLT_Exception(exceptionInfo);
       if (result==EXCEPTION_CONTINUE_EXECUTION) return result;
     }
   }
 
   if (exception_code != EXCEPTION_BREAKPOINT) {
-    report_error(t, exception_code, pc, exceptionInfo->ExceptionRecord,
+    report_error(t, exception_code, pc, exception_record,
                  exceptionInfo->ContextRecord);
   }
   return EXCEPTION_CONTINUE_SEARCH;
@@ -2712,122 +2695,6 @@ int os::vm_allocation_granularity() {
 #ifndef MEM_LARGE_PAGES
   #define MEM_LARGE_PAGES 0x20000000
 #endif
-
-#define VirtualFreeChecked(mem, size, type)                       \
-  do {                                                            \
-    bool ret = VirtualFree(mem, size, type);                      \
-    assert(ret, "Failed to free memory: " PTR_FORMAT, p2i(mem));  \
-  } while (false)
-
-// The number of bytes is setup to match 1 pixel and 32 bits per pixel.
-static const int gdi_tiny_bitmap_width_bytes = 4;
-
-static HBITMAP gdi_create_tiny_bitmap(void* mem) {
-  // The documentation for CreateBitmap states a word-alignment requirement.
-  STATIC_ASSERT(is_aligned_(gdi_tiny_bitmap_width_bytes, sizeof(WORD)));
-
-  // Some callers use this function to test if memory crossing separate memory
-  // reservations can be used. Create a height of 2 to make sure that one pixel
-  // ends up in the first reservation and the other in the second.
-  int nHeight = 2;
-
-  assert(is_aligned(mem, gdi_tiny_bitmap_width_bytes), "Incorrect alignment");
-
-  // Width is one pixel and correlates with gdi_tiny_bitmap_width_bytes.
-  int nWidth = 1;
-
-  // Calculate bit count - will be 32.
-  UINT nBitCount = gdi_tiny_bitmap_width_bytes / nWidth * BitsPerByte;
-
-  return CreateBitmap(
-      nWidth,
-      nHeight,
-      1,         // nPlanes
-      nBitCount,
-      mem);      // lpBits
-}
-
-// It has been found that some of the GDI functions fail under these two situations:
-//  1) When used with large pages
-//  2) When mem crosses the boundary between two separate memory reservations.
-//
-// This is a small test used to see if the current GDI implementation is
-// susceptible to any of these problems.
-static bool gdi_can_use_memory(void* mem) {
-  HBITMAP bitmap = gdi_create_tiny_bitmap(mem);
-  if (bitmap != NULL) {
-    DeleteObject(bitmap);
-    return true;
-  }
-
-  // Verify that the bitmap could be created with a normal page.
-  // If this fails, the testing method above isn't reliable.
-#ifdef ASSERT
-  void* verify_mem = ::malloc(4 * 1024);
-  HBITMAP verify_bitmap = gdi_create_tiny_bitmap(verify_mem);
-  if (verify_bitmap == NULL) {
-    fatal("Couldn't create test bitmap with malloced memory");
-  } else {
-    DeleteObject(verify_bitmap);
-  }
-  ::free(verify_mem);
-#endif
-
-  return false;
-}
-
-// Test if GDI functions work when memory spans
-// two adjacent memory reservations.
-static bool gdi_can_use_split_reservation_memory(bool use_large_pages, size_t granule) {
-  DWORD mem_large_pages = use_large_pages ? MEM_LARGE_PAGES : 0;
-
-  // Find virtual memory range. Two granules for regions and one for alignment.
-  void* reserved = VirtualAlloc(NULL,
-                                granule * 3,
-                                MEM_RESERVE,
-                                PAGE_NOACCESS);
-  if (reserved == NULL) {
-    // Can't proceed with test - pessimistically report false
-    return false;
-  }
-  VirtualFreeChecked(reserved, 0, MEM_RELEASE);
-
-  // Ensure proper alignment
-  void* res0 = align_up(reserved, granule);
-  void* res1 = (char*)res0 + granule;
-
-  // Reserve and commit the first part
-  void* mem0 = VirtualAlloc(res0,
-                            granule,
-                            MEM_RESERVE|MEM_COMMIT|mem_large_pages,
-                            PAGE_READWRITE);
-  if (mem0 != res0) {
-    // Can't proceed with test - pessimistically report false
-    return false;
-  }
-
-  // Reserve and commit the second part
-  void* mem1 = VirtualAlloc(res1,
-                            granule,
-                            MEM_RESERVE|MEM_COMMIT|mem_large_pages,
-                            PAGE_READWRITE);
-  if (mem1 != res1) {
-    VirtualFreeChecked(mem0, 0, MEM_RELEASE);
-    // Can't proceed with test - pessimistically report false
-    return false;
-  }
-
-  // Set the bitmap's bits to point one "width" bytes before, so that
-  // the bitmap extends across the reservation boundary.
-  void* bitmapBits = (char*)mem1 - gdi_tiny_bitmap_width_bytes;
-
-  bool success = gdi_can_use_memory(bitmapBits);
-
-  VirtualFreeChecked(mem1, 0, MEM_RELEASE);
-  VirtualFreeChecked(mem0, 0, MEM_RELEASE);
-
-  return success;
-}
 
 // Container for NUMA node list info
 class NUMANodeListHolder {
@@ -2927,12 +2794,6 @@ static bool numa_interleaving_init() {
 
   if (!numa_node_list_holder.build()) {
     WARN("Process does not cover multiple NUMA nodes.");
-    WARN("...Ignoring UseNUMAInterleaving flag.");
-    return false;
-  }
-
-  if (!gdi_can_use_split_reservation_memory(UseLargePages, min_interleave_granularity)) {
-    WARN("Windows GDI cannot handle split reservations.");
     WARN("...Ignoring UseNUMAInterleaving flag.");
     return false;
   }
@@ -3097,25 +2958,6 @@ static size_t large_page_init_decide_size() {
     size = LargePageSizeInBytes;
   }
 
-  // Now test allocating a page
-  void* large_page = VirtualAlloc(NULL,
-                                  size,
-                                  MEM_RESERVE|MEM_COMMIT|MEM_LARGE_PAGES,
-                                  PAGE_READWRITE);
-  if (large_page == NULL) {
-    WARN("JVM cannot allocate one single large page.");
-    return 0;
-  }
-
-  // Detect if GDI can use memory backed by large pages
-  if (!gdi_can_use_memory(large_page)) {
-    WARN("JVM cannot use large pages because of bug in Windows GDI.");
-    return 0;
-  }
-
-  // Release test page
-  VirtualFreeChecked(large_page, 0, MEM_RELEASE);
-
 #undef WARN
 
   return size;
@@ -3136,16 +2978,6 @@ void os::large_page_init() {
   }
 
   UseLargePages = _large_page_size != 0;
-
-  if (UseLargePages && UseLargePagesIndividualAllocation) {
-    if (!gdi_can_use_split_reservation_memory(true /* use_large_pages */, _large_page_size)) {
-      if (FLAG_IS_CMDLINE(UseLargePagesIndividualAllocation)) {
-        warning("Windows GDI cannot handle split reservations.");
-        warning("...Ignoring UseLargePagesIndividualAllocation flag.");
-      }
-      UseLargePagesIndividualAllocation = false;
-    }
-  }
 }
 
 int os::create_file_for_heap(const char* dir) {
@@ -4248,9 +4080,7 @@ jint os::init_2(void) {
   // initialize thread priority policy
   prio_init();
 
-  if (UseNUMA && !ForceNUMA) {
-    UseNUMA = false; // We don't fully support this yet
-  }
+  UseNUMA = false; // We don't fully support this yet
 
   if (UseNUMAInterleaving || (UseNUMA && FLAG_IS_DEFAULT(UseNUMAInterleaving))) {
     if (!numa_interleaving_init()) {
@@ -5002,7 +4832,7 @@ char* os::pd_map_memory(int fd, const char* file_name, size_t file_offset,
 
   hFile = CreateFile(file_name, GENERIC_READ, FILE_SHARE_READ, NULL,
                      OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-  if (hFile == NULL) {
+  if (hFile == INVALID_HANDLE_VALUE) {
     log_info(os)("CreateFile() failed: GetLastError->%ld.", GetLastError());
     return NULL;
   }
