@@ -88,6 +88,7 @@ Matcher::Matcher()
   idealreg2spillmask  [Op_RegF] = NULL;
   idealreg2spillmask  [Op_RegD] = NULL;
   idealreg2spillmask  [Op_RegP] = NULL;
+  idealreg2spillmask  [Op_VecA] = NULL;
   idealreg2spillmask  [Op_VecS] = NULL;
   idealreg2spillmask  [Op_VecD] = NULL;
   idealreg2spillmask  [Op_VecX] = NULL;
@@ -101,6 +102,7 @@ Matcher::Matcher()
   idealreg2debugmask  [Op_RegF] = NULL;
   idealreg2debugmask  [Op_RegD] = NULL;
   idealreg2debugmask  [Op_RegP] = NULL;
+  idealreg2debugmask  [Op_VecA] = NULL;
   idealreg2debugmask  [Op_VecS] = NULL;
   idealreg2debugmask  [Op_VecD] = NULL;
   idealreg2debugmask  [Op_VecX] = NULL;
@@ -114,6 +116,7 @@ Matcher::Matcher()
   idealreg2mhdebugmask[Op_RegF] = NULL;
   idealreg2mhdebugmask[Op_RegD] = NULL;
   idealreg2mhdebugmask[Op_RegP] = NULL;
+  idealreg2mhdebugmask[Op_VecA] = NULL;
   idealreg2mhdebugmask[Op_VecS] = NULL;
   idealreg2mhdebugmask[Op_VecD] = NULL;
   idealreg2mhdebugmask[Op_VecX] = NULL;
@@ -427,7 +430,7 @@ static RegMask *init_input_masks( uint size, RegMask &ret_adr, RegMask &fp ) {
   return rms;
 }
 
-#define NOF_STACK_MASKS (3*11)
+#define NOF_STACK_MASKS (3*12)
 
 // Create the initial stack mask used by values spilling to the stack.
 // Disallow any debug info in outgoing argument areas by setting the
@@ -463,23 +466,26 @@ void Matcher::init_first_stack_mask() {
   idealreg2mhdebugmask[Op_RegD] = &rms[16];
   idealreg2mhdebugmask[Op_RegP] = &rms[17];
 
-  idealreg2spillmask  [Op_VecS] = &rms[18];
-  idealreg2spillmask  [Op_VecD] = &rms[19];
-  idealreg2spillmask  [Op_VecX] = &rms[20];
-  idealreg2spillmask  [Op_VecY] = &rms[21];
-  idealreg2spillmask  [Op_VecZ] = &rms[22];
+  idealreg2spillmask  [Op_VecA] = &rms[18];
+  idealreg2spillmask  [Op_VecS] = &rms[19];
+  idealreg2spillmask  [Op_VecD] = &rms[20];
+  idealreg2spillmask  [Op_VecX] = &rms[21];
+  idealreg2spillmask  [Op_VecY] = &rms[22];
+  idealreg2spillmask  [Op_VecZ] = &rms[23];
 
-  idealreg2debugmask  [Op_VecS] = &rms[23];
-  idealreg2debugmask  [Op_VecD] = &rms[24];
-  idealreg2debugmask  [Op_VecX] = &rms[25];
-  idealreg2debugmask  [Op_VecY] = &rms[26];
-  idealreg2debugmask  [Op_VecZ] = &rms[27];
+  idealreg2debugmask  [Op_VecA] = &rms[24];
+  idealreg2debugmask  [Op_VecS] = &rms[25];
+  idealreg2debugmask  [Op_VecD] = &rms[26];
+  idealreg2debugmask  [Op_VecX] = &rms[27];
+  idealreg2debugmask  [Op_VecY] = &rms[28];
+  idealreg2debugmask  [Op_VecZ] = &rms[29];
 
-  idealreg2mhdebugmask[Op_VecS] = &rms[28];
-  idealreg2mhdebugmask[Op_VecD] = &rms[29];
-  idealreg2mhdebugmask[Op_VecX] = &rms[30];
-  idealreg2mhdebugmask[Op_VecY] = &rms[31];
-  idealreg2mhdebugmask[Op_VecZ] = &rms[32];
+  idealreg2mhdebugmask[Op_VecA] = &rms[30];
+  idealreg2mhdebugmask[Op_VecS] = &rms[31];
+  idealreg2mhdebugmask[Op_VecD] = &rms[32];
+  idealreg2mhdebugmask[Op_VecX] = &rms[33];
+  idealreg2mhdebugmask[Op_VecY] = &rms[34];
+  idealreg2mhdebugmask[Op_VecZ] = &rms[35];
 
   OptoReg::Name i;
 
@@ -506,6 +512,7 @@ void Matcher::init_first_stack_mask() {
   // Keep spill masks aligned.
   aligned_stack_mask.clear_to_pairs();
   assert(aligned_stack_mask.is_AllStack(), "should be infinite stack");
+  RegMask scalable_stack_mask = aligned_stack_mask;
 
   *idealreg2spillmask[Op_RegP] = *idealreg2regmask[Op_RegP];
 #ifdef _LP64
@@ -591,28 +598,47 @@ void Matcher::init_first_stack_mask() {
     *idealreg2spillmask[Op_VecZ] = RegMask::Empty;
   }
 
-   if (UseFPUForSpilling) {
-     // This mask logic assumes that the spill operations are
-     // symmetric and that the registers involved are the same size.
-     // On sparc for instance we may have to use 64 bit moves will
-     // kill 2 registers when used with F0-F31.
-     idealreg2spillmask[Op_RegI]->OR(*idealreg2regmask[Op_RegF]);
-     idealreg2spillmask[Op_RegF]->OR(*idealreg2regmask[Op_RegI]);
+  if (Matcher::supports_scalable_vector()) {
+    int k = 1;
+    OptoReg::Name in = OptoReg::add(_in_arg_limit, -1);
+    // Exclude last input arg stack slots to avoid spilling vector register there,
+    // otherwise vector spills could stomp over stack slots in caller frame.
+    for (; (in >= init_in) && (k < scalable_vector_reg_size(T_FLOAT)); k++) {
+      scalable_stack_mask.Remove(in);
+      in = OptoReg::add(in, -1);
+    }
+
+    // For VecA
+     scalable_stack_mask.clear_to_sets(RegMask::SlotsPerVecA);
+     assert(scalable_stack_mask.is_AllStack(), "should be infinite stack");
+    *idealreg2spillmask[Op_VecA] = *idealreg2regmask[Op_VecA];
+     idealreg2spillmask[Op_VecA]->OR(scalable_stack_mask);
+  } else {
+    *idealreg2spillmask[Op_VecA] = RegMask::Empty;
+  }
+
+  if (UseFPUForSpilling) {
+    // This mask logic assumes that the spill operations are
+    // symmetric and that the registers involved are the same size.
+    // On sparc for instance we may have to use 64 bit moves will
+    // kill 2 registers when used with F0-F31.
+    idealreg2spillmask[Op_RegI]->OR(*idealreg2regmask[Op_RegF]);
+    idealreg2spillmask[Op_RegF]->OR(*idealreg2regmask[Op_RegI]);
 #ifdef _LP64
-     idealreg2spillmask[Op_RegN]->OR(*idealreg2regmask[Op_RegF]);
-     idealreg2spillmask[Op_RegL]->OR(*idealreg2regmask[Op_RegD]);
-     idealreg2spillmask[Op_RegD]->OR(*idealreg2regmask[Op_RegL]);
-     idealreg2spillmask[Op_RegP]->OR(*idealreg2regmask[Op_RegD]);
+    idealreg2spillmask[Op_RegN]->OR(*idealreg2regmask[Op_RegF]);
+    idealreg2spillmask[Op_RegL]->OR(*idealreg2regmask[Op_RegD]);
+    idealreg2spillmask[Op_RegD]->OR(*idealreg2regmask[Op_RegL]);
+    idealreg2spillmask[Op_RegP]->OR(*idealreg2regmask[Op_RegD]);
 #else
-     idealreg2spillmask[Op_RegP]->OR(*idealreg2regmask[Op_RegF]);
+    idealreg2spillmask[Op_RegP]->OR(*idealreg2regmask[Op_RegF]);
 #ifdef ARM
-     // ARM has support for moving 64bit values between a pair of
-     // integer registers and a double register
-     idealreg2spillmask[Op_RegL]->OR(*idealreg2regmask[Op_RegD]);
-     idealreg2spillmask[Op_RegD]->OR(*idealreg2regmask[Op_RegL]);
+    // ARM has support for moving 64bit values between a pair of
+    // integer registers and a double register
+    idealreg2spillmask[Op_RegL]->OR(*idealreg2regmask[Op_RegD]);
+    idealreg2spillmask[Op_RegD]->OR(*idealreg2regmask[Op_RegL]);
 #endif
 #endif
-   }
+  }
 
   // Make up debug masks.  Any spill slot plus callee-save (SOE) registers.
   // Caller-save (SOC, AS) registers are assumed to be trashable by the various
@@ -624,6 +650,7 @@ void Matcher::init_first_stack_mask() {
   *idealreg2debugmask  [Op_RegD] = *idealreg2spillmask[Op_RegD];
   *idealreg2debugmask  [Op_RegP] = *idealreg2spillmask[Op_RegP];
 
+  *idealreg2debugmask  [Op_VecA] = *idealreg2spillmask[Op_VecA];
   *idealreg2debugmask  [Op_VecS] = *idealreg2spillmask[Op_VecS];
   *idealreg2debugmask  [Op_VecD] = *idealreg2spillmask[Op_VecD];
   *idealreg2debugmask  [Op_VecX] = *idealreg2spillmask[Op_VecX];
@@ -637,6 +664,7 @@ void Matcher::init_first_stack_mask() {
   *idealreg2mhdebugmask[Op_RegD] = *idealreg2spillmask[Op_RegD];
   *idealreg2mhdebugmask[Op_RegP] = *idealreg2spillmask[Op_RegP];
 
+  *idealreg2mhdebugmask[Op_VecA] = *idealreg2spillmask[Op_VecA];
   *idealreg2mhdebugmask[Op_VecS] = *idealreg2spillmask[Op_VecS];
   *idealreg2mhdebugmask[Op_VecD] = *idealreg2spillmask[Op_VecD];
   *idealreg2mhdebugmask[Op_VecX] = *idealreg2spillmask[Op_VecX];
@@ -656,6 +684,7 @@ void Matcher::init_first_stack_mask() {
   idealreg2debugmask[Op_RegD]->SUBTRACT(*caller_save_mask);
   idealreg2debugmask[Op_RegP]->SUBTRACT(*caller_save_mask);
 
+  idealreg2debugmask[Op_VecA]->SUBTRACT(*caller_save_mask);
   idealreg2debugmask[Op_VecS]->SUBTRACT(*caller_save_mask);
   idealreg2debugmask[Op_VecD]->SUBTRACT(*caller_save_mask);
   idealreg2debugmask[Op_VecX]->SUBTRACT(*caller_save_mask);
@@ -669,6 +698,7 @@ void Matcher::init_first_stack_mask() {
   idealreg2mhdebugmask[Op_RegD]->SUBTRACT(*mh_caller_save_mask);
   idealreg2mhdebugmask[Op_RegP]->SUBTRACT(*mh_caller_save_mask);
 
+  idealreg2mhdebugmask[Op_VecA]->SUBTRACT(*mh_caller_save_mask);
   idealreg2mhdebugmask[Op_VecS]->SUBTRACT(*mh_caller_save_mask);
   idealreg2mhdebugmask[Op_VecD]->SUBTRACT(*mh_caller_save_mask);
   idealreg2mhdebugmask[Op_VecX]->SUBTRACT(*mh_caller_save_mask);
@@ -929,6 +959,7 @@ void Matcher::init_spill_mask( Node *ret ) {
   idealreg2regmask[Op_RegF] = regmask_for_ideal_register(Op_RegF, ret);
   idealreg2regmask[Op_RegD] = regmask_for_ideal_register(Op_RegD, ret);
   idealreg2regmask[Op_RegL] = regmask_for_ideal_register(Op_RegL, ret);
+  idealreg2regmask[Op_VecA] = regmask_for_ideal_register(Op_VecA, ret);
   idealreg2regmask[Op_VecS] = regmask_for_ideal_register(Op_VecS, ret);
   idealreg2regmask[Op_VecD] = regmask_for_ideal_register(Op_VecD, ret);
   idealreg2regmask[Op_VecX] = regmask_for_ideal_register(Op_VecX, ret);
@@ -1624,7 +1655,6 @@ Node* Matcher::Label_Root(const Node* n, State* svec, Node* control, Node*& mem)
       if (C->failing()) return NULL;
     }
   }
-
 
   // Call DFA to match this node, and return
   svec->DFA( n->Opcode(), n );
@@ -2334,6 +2364,23 @@ void Matcher::find_shared_post_visit(Node* n, uint opcode) {
       n->del_req(3);
       break;
     }
+    case Op_MulAddS2I: {
+      Node* pair1 = new BinaryNode(n->in(1), n->in(2));
+      Node* pair2 = new BinaryNode(n->in(3), n->in(4));
+      n->set_req(1, pair1);
+      n->set_req(2, pair2);
+      n->del_req(4);
+      n->del_req(3);
+      break;
+    }
+    case Op_CopySignD:
+    case Op_SignumF:
+    case Op_SignumD: {
+      Node* pair = new BinaryNode(n->in(2), n->in(3));
+      n->set_req(2, pair);
+      n->del_req(3);
+      break;
+    }
     case Op_VectorBlend:
     case Op_VectorInsert: {
       Node* pair = new BinaryNode(n->in(1), n->in(2));
@@ -2348,23 +2395,14 @@ void Matcher::find_shared_post_visit(Node* n, uint opcode) {
       n->del_req(MemNode::ValueIn+1);
       break;
     }
-    case Op_MulAddS2I: {
-      Node* pair1 = new BinaryNode(n->in(1), n->in(2));
-      Node* pair2 = new BinaryNode(n->in(3), n->in(4));
-      n->set_req(1, pair1);
-      n->set_req(2, pair2);
-      n->del_req(4);
-      n->del_req(3);
-      break;
-    }
     case Op_VectorMaskCmp: {
       n->set_req(1, new BinaryNode(n->in(1), n->in(2)));
       n->set_req(2, n->in(3));
       n->del_req(3);
       break;
-    }
     default:
       break;
+    }
   }
 }
 
@@ -2494,7 +2532,7 @@ bool Matcher::gen_narrow_oop_implicit_null_checks() {
 const RegMask* Matcher::regmask_for_ideal_register(uint ideal_reg, Node* ret) {
   const Type* t = Type::mreg2type[ideal_reg];
   if (t == NULL) {
-    assert(ideal_reg >= Op_VecS && ideal_reg <= Op_VecZ, "not a vector: %d", ideal_reg);
+    assert(ideal_reg >= Op_VecA && ideal_reg <= Op_VecZ, "not a vector: %d", ideal_reg);
     return NULL; // not supported
   }
   Node* fp  = ret->in(TypeFunc::FramePtr);
@@ -2511,6 +2549,7 @@ const RegMask* Matcher::regmask_for_ideal_register(uint ideal_reg, Node* ret) {
     case Op_RegD: spill = new LoadDNode(NULL, mem, fp, atp, t,                 mo); break;
     case Op_RegL: spill = new LoadLNode(NULL, mem, fp, atp, t->is_long(),      mo); break;
 
+    case Op_VecA: // fall-through
     case Op_VecS: // fall-through
     case Op_VecD: // fall-through
     case Op_VecX: // fall-through
