@@ -35,6 +35,8 @@ import java.util.function.IntUnaryOperator;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
 
+import org.testng.Assert;
+
 public class AbstractVectorTest {
 
     static final Random RAND = new Random(Integer.getInteger("jdk.incubator.vector.test.random-seed", 1337));
@@ -152,6 +154,12 @@ public class AbstractVectorTest {
             withToString("mask[false]", boolean[]::new)
     );
 
+    static final List<List<IntFunction<boolean[]>>>
+        BOOLEAN_MASK_COMPARE_GENERATOR_PAIRS =
+            Stream.of(BOOLEAN_MASK_GENERATORS.get(0)).
+                flatMap(fa -> BOOLEAN_MASK_GENERATORS.stream().skip(1).map(
+                                      fb -> List.of(fa, fb))).collect(Collectors.toList());
+
     static final List<BiFunction<Integer,Integer,int[]>> INT_SHUFFLE_GENERATORS = List.of(
             withToStringBi("shuffle[random]", (Integer l, Integer m) -> {
                 return RAND.ints(l, 0, m).toArray();
@@ -237,5 +245,20 @@ public class AbstractVectorTest {
             a[i] = elem;
         }
         return a;
+    }
+
+    interface FBooleanBinOp {
+        boolean apply(boolean a, boolean b);
+    }
+
+    static void assertArraysEquals(boolean[] a, boolean[] b, boolean[] r, FBooleanBinOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], b[i]));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], f.apply(a[i], b[i]), "(" + a[i] + ", " + b[i] + ") at index #" + i);
+        }
     }
 }
