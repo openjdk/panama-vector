@@ -5203,7 +5203,7 @@ public class ByteMaxVectorTests extends AbstractVectorTest {
         int limit = SPECIES.length() * BUFFER_REPS;
         for (int i = 0; i < limit; i += SPECIES.length()) {
             var actualMask = SPECIES.indexInRange(i+offset, limit);
-            var expectedMask = SPECIES.maskAll(true).indexInRange(i+offset, limit); 
+            var expectedMask = SPECIES.maskAll(true).indexInRange(i+offset, limit);
             assert(actualMask.equals(expectedMask));
             for (int j = 0; j < SPECIES.length(); j++)  {
                 int index = i+j+offset;
