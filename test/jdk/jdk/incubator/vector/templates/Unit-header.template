@@ -1136,6 +1136,19 @@ public class $vectorteststype$ extends AbstractVectorTest {
 #end[FP]
 
     @DataProvider
+    public Object[][] maskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                map(f -> new Object[]{f}).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] maskCompareOpProvider() {
+        return BOOLEAN_MASK_COMPARE_GENERATOR_PAIRS.stream().map(List::toArray).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
     public Object[][] shuffleProvider() {
         return INT_SHUFFLE_GENERATORS.stream().
                 map(f -> new Object[]{f}).
