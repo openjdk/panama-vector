@@ -4992,8 +4992,10 @@ public class Long64VectorTests extends AbstractVectorTest {
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             var vmask = SPECIES.loadMask(a, i);
             int tcount = vmask.trueCount();
-            int expectedTcount = Long.bitCount(vmask.toLong());
-
+            int expectedTcount = 0;
+            for (int j = i; j < i + SPECIES.length(); j++) {
+                expectedTcount += a[j] ? 1 : 0;
+            }
             Assert.assertTrue(tcount == expectedTcount, "at index " + i + ", trueCount should be = " + expectedTcount + ", but is = " + tcount);
         }
     }
@@ -5019,10 +5021,10 @@ public class Long64VectorTests extends AbstractVectorTest {
     @DataProvider
     public static Object[][] longMaskProvider() {
         return new Object[][]{
-                {0xFFFFFFFFFFFFFFFFl},
-                {0x0000000000000000l},
-                {0x5555555555555555l},
-                {0x0123456789abcdefl},
+                {0xFFFFFFFFFFFFFFFFL},
+                {0x0000000000000000L},
+                {0x5555555555555555L},
+                {0x0123456789abcdefL},
         };
     }
 
@@ -5030,7 +5032,7 @@ public class Long64VectorTests extends AbstractVectorTest {
     static void maskFromToLongLong64VectorTestsSmokeTest(long inputLong) {
         var vmask = VectorMask.fromLong(SPECIES, inputLong);
         long outputLong = vmask.toLong();
-        Assert.assertEquals(outputLong, inputLong & (((1l << (SPECIES.length()-1)) << 1)-1));
+        Assert.assertEquals(outputLong, inputLong & (((1L << (SPECIES.length() - 1)) << 1) - 1));
     }
 
     @DataProvider
@@ -5048,11 +5050,11 @@ public class Long64VectorTests extends AbstractVectorTest {
     static void indexInRangeLong64VectorTestsSmokeTest(int offset) {
         int limit = SPECIES.length() * BUFFER_REPS;
         for (int i = 0; i < limit; i += SPECIES.length()) {
-            var actualMask = SPECIES.indexInRange(i+offset, limit);
-            var expectedMask = SPECIES.maskAll(true).indexInRange(i+offset, limit);
+            var actualMask = SPECIES.indexInRange(i + offset, limit);
+            var expectedMask = SPECIES.maskAll(true).indexInRange(i + offset, limit);
             assert(actualMask.equals(expectedMask));
             for (int j = 0; j < SPECIES.length(); j++)  {
-                int index = i+j+offset;
+                int index = i + j + offset;
                 Assert.assertEquals(actualMask.laneIsSet(j), index >= 0 && index < limit);
             }
         }

@@ -4912,7 +4912,6 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
             for (int j = i; j < i + SPECIES.length(); j++) {
                 expectedTcount += a[j] ? 1 : 0;
             }
-
             Assert.assertTrue(tcount == expectedTcount, "at index " + i + ", trueCount should be = " + expectedTcount + ", but is = " + tcount);
         }
     }
@@ -4951,11 +4950,11 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
     static void indexInRangeDoubleMaxVectorTestsSmokeTest(int offset) {
         int limit = SPECIES.length() * BUFFER_REPS;
         for (int i = 0; i < limit; i += SPECIES.length()) {
-            var actualMask = SPECIES.indexInRange(i+offset, limit);
-            var expectedMask = SPECIES.maskAll(true).indexInRange(i+offset, limit);
+            var actualMask = SPECIES.indexInRange(i + offset, limit);
+            var expectedMask = SPECIES.maskAll(true).indexInRange(i + offset, limit);
             assert(actualMask.equals(expectedMask));
             for (int j = 0; j < SPECIES.length(); j++)  {
-                int index = i+j+offset;
+                int index = i + j + offset;
                 Assert.assertEquals(actualMask.laneIsSet(j), index >= 0 && index < limit);
             }
         }
