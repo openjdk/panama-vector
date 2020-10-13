@@ -772,6 +772,12 @@ void entry(CodeBuffer *cb) {
     __ mov(v1, __ T8B, 3, zr);                         //       mov     v1.b[3], wzr
     __ ld1(v31, v0, __ T2D, Address(__ post(r1, r0))); //       ld1     {v31.2d, v0.2d}, [x1], x0
     __ sve_cpy(z0, __ S, p0, v1);                      //       mov     z0.s, p0/m, s1
+    __ sve_cpy(z0, __ B, p0, 127, true);               //       mov     z0.b, p0/m, 127
+    __ sve_cpy(z1, __ H, p0, -128, true);              //       mov     z1.h, p0/m, -128
+    __ sve_cpy(z2, __ S, p0, 32512, true);             //       mov     z2.s, p0/m, 32512
+    __ sve_cpy(z5, __ D, p0, -32768, false);           //       mov     z5.d, p0/z, -32768
+    __ sve_cpy(z10, __ B, p0, -1, false);              //       mov     z10.b, p0/z, -1
+    __ sve_cpy(z11, __ S, p0, -1, false);              //       mov     z11.s, p0/z, -1
     __ sve_inc(r0, __ S);                              //       incw    x0
     __ sve_dec(r1, __ H);                              //       dech    x1
     __ sve_lsl(z0, __ B, z1, 7);                       //       lsl     z0.b, z1.b, #7
@@ -789,7 +795,12 @@ void entry(CodeBuffer *cb) {
     __ sve_dup(z1, __ H, -128);                        //       dup     z1.h, -128
     __ sve_dup(z2, __ S, 32512);                       //       dup     z2.s, 32512
     __ sve_dup(z7, __ D, -32768);                      //       dup     z7.d, -32768
+    __ sve_dup(z10, __ B, -1);                         //       dup     z10.b, -1
+    __ sve_dup(z11, __ S, -1);                         //       dup     z11.s, -1
     __ sve_ld1b(z0, __ B, p0, Address(sp));            //       ld1b    {z0.b}, p0/z, [sp]
+    __ sve_ld1b(z0, __ H, p1, Address(sp));            //       ld1b    {z0.h}, p1/z, [sp]
+    __ sve_ld1b(z0, __ S, p2, Address(sp, r8));        //       ld1b    {z0.s}, p2/z, [sp, x8]
+    __ sve_ld1b(z0, __ D, p3, Address(sp, 7));         //       ld1b    {z0.d}, p3/z, [sp, #7, MUL VL]
     __ sve_ld1h(z10, __ H, p1, Address(sp, -8));       //       ld1h    {z10.h}, p1/z, [sp, #-8, MUL VL]
     __ sve_ld1w(z20, __ S, p2, Address(r0, 7));        //       ld1w    {z20.s}, p2/z, [x0, #7, MUL VL]
     __ sve_ld1b(z30, __ B, p3, Address(sp, r8));       //       ld1b    {z30.b}, p3/z, [sp, x8]
@@ -797,6 +808,9 @@ void entry(CodeBuffer *cb) {
     __ sve_ld1d(z11, __ D, p5, Address(r0, r1));       //       ld1d    {z11.d}, p5/z, [x0, x1, LSL #3]
     __ sve_st1b(z22, __ B, p6, Address(sp));           //       st1b    {z22.b}, p6, [sp]
     __ sve_st1b(z31, __ B, p7, Address(sp, -8));       //       st1b    {z31.b}, p7, [sp, #-8, MUL VL]
+    __ sve_st1b(z0, __ H, p1, Address(sp));            //       st1b    {z0.h}, p1, [sp]
+    __ sve_st1b(z0, __ S, p2, Address(sp, r8));        //       st1b    {z0.s}, p2, [sp, x8]
+    __ sve_st1b(z0, __ D, p3, Address(sp));            //       st1b    {z0.d}, p3, [sp]
     __ sve_st1w(z0, __ S, p1, Address(r0, 7));         //       st1w    {z0.s}, p1, [x0, #7, MUL VL]
     __ sve_st1b(z0, __ B, p2, Address(sp, r1));        //       st1b    {z0.b}, p2, [sp, x1]
     __ sve_st1h(z0, __ H, p3, Address(sp, r8));        //       st1h    {z0.h}, p3, [sp, x8, LSL #1]
@@ -804,6 +818,38 @@ void entry(CodeBuffer *cb) {
     __ sve_ldr(z0, Address(sp));                       //       ldr     z0, [sp]
     __ sve_ldr(z31, Address(sp, -256));                //       ldr     z31, [sp, #-256, MUL VL]
     __ sve_str(z8, Address(r8, 255));                  //       str     z8, [x8, #255, MUL VL]
+    __ sve_sel(z0, __ B, p0, z1, z2);                  //       sel     z0.b, p0, z1.b, z2.b
+    __ sve_sel(z4, __ D, p0, z5, z6);                  //       sel     z4.d, p0, z5.d, z6.d
+    __ sve_cmpeq(p1, __ B, p0, z0, z1);                //       cmpeq   p1.b, p0/z, z0.b, z1.b
+    __ sve_cmpne(p1, __ H, p0, z2, z3);                //       cmpne   p1.h, p0/z, z2.h, z3.h
+    __ sve_cmpge(p1, __ S, p2, z4, z5);                //       cmpge   p1.s, p2/z, z4.s, z5.s
+    __ sve_cmpgt(p1, __ D, p3, z6, z7);                //       cmpgt   p1.d, p3/z, z6.d, z7.d
+    __ sve_cmpge(p2, __ B, p0, z10, z11);              //       cmple   p2.b, p0/z, z11.b, z10.b
+    __ sve_cmpgt(p3, __ S, p0, z16, z17);              //       cmplt   p3.s, p0/z, z17.s, z16.s
+    __ sve_cmpeq(p1, __ B, p4, z0, 15);                //       cmpeq   p1.b, p4/z, z0.b, #15
+    __ sve_cmpne(p1, __ H, p0, z2, -16);               //       cmpne   p1.h, p0/z, z2.h, #-16
+    __ sve_cmple(p1, __ S, p1, z4, 0);                 //       cmple   p1.s, p1/z, z4.s, #0
+    __ sve_cmplt(p1, __ D, p2, z6, -1);                //       cmplt   p1.d, p2/z, z6.d, #-1
+    __ sve_cmpge(p1, __ S, p3, z4, 5);                 //       cmpge   p1.s, p3/z, z4.s, #5
+    __ sve_cmpgt(p1, __ B, p4, z6, -2);                //       cmpgt   p1.b, p4/z, z6.b, #-2
+    __ sve_fcmeq(p1, __ S, p0, z0, z1);                //       fcmeq   p1.s, p0/z, z0.s, z1.s
+    __ sve_fcmne(p1, __ D, p0, z2, z3);                //       fcmne   p1.d, p0/z, z2.d, z3.d
+    __ sve_fcmgt(p1, __ S, p2, z4, z5);                //       fcmgt   p1.s, p2/z, z4.s, z5.s
+    __ sve_fcmge(p1, __ D, p3, z6, z7);                //       fcmge   p1.d, p3/z, z6.d, z7.d
+    __ sve_fcmgt(p2, __ S, p0, z10, z11);              //       fcmlt   p2.s, p0/z, z11.s, z10.s
+    __ sve_fcmge(p3, __ D, p0, z16, z17);              //       fcmle   p3.d, p0/z, z17.d, z16.d
+    __ sve_uunpkhi(z0, __ H, z1);                      //       uunpkhi z0.h, z1.b
+    __ sve_uunpklo(z4, __ S, z5);                      //       uunpklo z4.s, z5.h
+    __ sve_sunpkhi(z6, __ D, z7);                      //       sunpkhi z6.d, z7.s
+    __ sve_sunpklo(z10, __ H, z11);                    //       sunpklo z10.h, z11.b
+    __ sve_whilelt(p0, __ B, r1, r2);                  //       whilelt p0.b, x1, x2
+    __ sve_whileltw(p1, __ H, r3, r4);                 //       whilelt p1.h, w3, w4
+    __ sve_whilele(p2, __ S, r5, r6);                  //       whilele p2.s, x5, x6
+    __ sve_whilelew(p3, __ D, r10, r11);               //       whilele p3.d, w10, w11
+    __ sve_whilelo(p4, __ B, r1, r2);                  //       whilelo p4.b, x1, x2
+    __ sve_whilelow(p0, __ H, r3, r4);                 //       whilelo p0.h, w3, w4
+    __ sve_whilels(p1, __ S, r5, r6);                  //       whilels p1.s, x5, x6
+    __ sve_whilelsw(p2, __ D, r10, r11);               //       whilels p2.d, w10, w11
 
 // FloatImmediateOp
     __ fmovd(v0, 2.0);                                 //       fmov d0, #2.0
@@ -978,17 +1024,19 @@ void entry(CodeBuffer *cb) {
     __ sve_and(z20, z7, z4);                           //       and     z20.d, z7.d, z4.d
     __ sve_eor(z7, z0, z8);                            //       eor     z7.d, z0.d, z8.d
     __ sve_orr(z19, z22, z4);                          //       orr     z19.d, z22.d, z4.d
+    __ sve_uzp1(z9, __ D, z22, z11);                   //       uzp1    z9.d, z22.d, z11.d
+    __ sve_uzp2(z5, __ H, z30, z16);                   //       uzp2    z5.h, z30.h, z16.h
 
 // SVEReductionOp
-    __ sve_andv(v9, __ D, p5, z11);                    //       andv d9, p5, z11.d
-    __ sve_orv(v5, __ H, p7, z16);                     //       orv h5, p7, z16.h
-    __ sve_eorv(v22, __ H, p3, z1);                    //       eorv h22, p3, z1.h
-    __ sve_smaxv(v8, __ D, p5, z16);                   //       smaxv d8, p5, z16.d
-    __ sve_sminv(v15, __ S, p1, z4);                   //       sminv s15, p1, z4.s
-    __ sve_fminv(v8, __ S, p1, z29);                   //       fminv s8, p1, z29.s
-    __ sve_fmaxv(v28, __ D, p4, z29);                  //       fmaxv d28, p4, z29.d
-    __ sve_fadda(v9, __ S, p3, z2);                    //       fadda s9, p3, s9, z2.s
-    __ sve_uaddv(v28, __ B, p0, z7);                   //       uaddv d28, p0, z7.b
+    __ sve_andv(v22, __ H, p3, z1);                    //       andv h22, p3, z1.h
+    __ sve_orv(v8, __ D, p5, z16);                     //       orv d8, p5, z16.d
+    __ sve_eorv(v15, __ S, p1, z4);                    //       eorv s15, p1, z4.s
+    __ sve_smaxv(v8, __ B, p1, z29);                   //       smaxv b8, p1, z29.b
+    __ sve_sminv(v28, __ D, p4, z29);                  //       sminv d28, p4, z29.d
+    __ sve_fminv(v9, __ S, p3, z2);                    //       fminv s9, p3, z2.s
+    __ sve_fmaxv(v28, __ S, p0, z7);                   //       fmaxv s28, p0, z7.s
+    __ sve_fadda(v26, __ S, p5, z17);                  //       fadda s26, p5, s26, z17.s
+    __ sve_uaddv(v8, __ D, p4, z21);                   //       uaddv d8, p4, z21.d
 
     __ bind(forth);
 
@@ -1007,30 +1055,30 @@ void entry(CodeBuffer *cb) {
     0x9101a1a0,     0xb10a5cc8,     0xd10810aa,     0xf10fd061,
     0x120cb166,     0x321764bc,     0x52174681,     0x720c0227,
     0x9241018e,     0xb25a2969,     0xd278b411,     0xf26aad01,
-    0x14000000,     0x17ffffd7,     0x140002cd,     0x94000000,
-    0x97ffffd4,     0x940002ca,     0x3400000a,     0x34fffa2a,
-    0x340058ea,     0x35000008,     0x35fff9c8,     0x35005888,
-    0xb400000b,     0xb4fff96b,     0xb400582b,     0xb500001d,
-    0xb5fff91d,     0xb50057dd,     0x10000013,     0x10fff8b3,
-    0x10005773,     0x90000013,     0x36300016,     0x3637f836,
-    0x363056f6,     0x3758000c,     0x375ff7cc,     0x3758568c,
+    0x14000000,     0x17ffffd7,     0x140002fd,     0x94000000,
+    0x97ffffd4,     0x940002fa,     0x3400000a,     0x34fffa2a,
+    0x34005eea,     0x35000008,     0x35fff9c8,     0x35005e88,
+    0xb400000b,     0xb4fff96b,     0xb4005e2b,     0xb500001d,
+    0xb5fff91d,     0xb5005ddd,     0x10000013,     0x10fff8b3,
+    0x10005d73,     0x90000013,     0x36300016,     0x3637f836,
+    0x36305cf6,     0x3758000c,     0x375ff7cc,     0x37585c8c,
     0x128313a0,     0x528a32c7,     0x7289173b,     0x92ab3acc,
     0xd2a0bf94,     0xf2c285e8,     0x9358722f,     0x330e652f,
     0x53067f3b,     0x93577c53,     0xb34a1aac,     0xd35a4016,
     0x13946c63,     0x93c3dbc8,     0x54000000,     0x54fff5a0,
-    0x54005460,     0x54000001,     0x54fff541,     0x54005401,
-    0x54000002,     0x54fff4e2,     0x540053a2,     0x54000002,
-    0x54fff482,     0x54005342,     0x54000003,     0x54fff423,
-    0x540052e3,     0x54000003,     0x54fff3c3,     0x54005283,
-    0x54000004,     0x54fff364,     0x54005224,     0x54000005,
-    0x54fff305,     0x540051c5,     0x54000006,     0x54fff2a6,
-    0x54005166,     0x54000007,     0x54fff247,     0x54005107,
-    0x54000008,     0x54fff1e8,     0x540050a8,     0x54000009,
-    0x54fff189,     0x54005049,     0x5400000a,     0x54fff12a,
-    0x54004fea,     0x5400000b,     0x54fff0cb,     0x54004f8b,
-    0x5400000c,     0x54fff06c,     0x54004f2c,     0x5400000d,
-    0x54fff00d,     0x54004ecd,     0x5400000e,     0x54ffefae,
-    0x54004e6e,     0x5400000f,     0x54ffef4f,     0x54004e0f,
+    0x54005a60,     0x54000001,     0x54fff541,     0x54005a01,
+    0x54000002,     0x54fff4e2,     0x540059a2,     0x54000002,
+    0x54fff482,     0x54005942,     0x54000003,     0x54fff423,
+    0x540058e3,     0x54000003,     0x54fff3c3,     0x54005883,
+    0x54000004,     0x54fff364,     0x54005824,     0x54000005,
+    0x54fff305,     0x540057c5,     0x54000006,     0x54fff2a6,
+    0x54005766,     0x54000007,     0x54fff247,     0x54005707,
+    0x54000008,     0x54fff1e8,     0x540056a8,     0x54000009,
+    0x54fff189,     0x54005649,     0x5400000a,     0x54fff12a,
+    0x540055ea,     0x5400000b,     0x54fff0cb,     0x5400558b,
+    0x5400000c,     0x54fff06c,     0x5400552c,     0x5400000d,
+    0x54fff00d,     0x540054cd,     0x5400000e,     0x54ffefae,
+    0x5400546e,     0x5400000f,     0x54ffef4f,     0x5400540f,
     0xd40658e1,     0xd4014d22,     0xd4046543,     0xd4273f60,
     0xd44cad80,     0xd503201f,     0xd69f03e0,     0xd6bf03e0,
     0xd5033fdf,     0xd5033e9f,     0xd50332bf,     0xd61f0200,
@@ -1062,7 +1110,7 @@ void entry(CodeBuffer *cb) {
     0x791f226d,     0xf95aa2f3,     0xb9587bb7,     0x395f7176,
     0x795d9143,     0x399e7e08,     0x799a2697,     0x79df3422,
     0xb99c2624,     0xfd5c2374,     0xbd5fa1d9,     0xfd1d595a,
-    0xbd1b1869,     0x58003e5b,     0x1800000b,     0xf8945060,
+    0xbd1b1869,     0x5800445b,     0x1800000b,     0xf8945060,
     0xd8000000,     0xf8ae6ba0,     0xf99a0080,     0x1a070035,
     0x3a0700a8,     0x5a0e0367,     0x7a11009b,     0x9a000380,
     0xba1e030c,     0xda0f0320,     0xfa030301,     0x0b340b11,
@@ -1139,54 +1187,66 @@ void entry(CodeBuffer *cb) {
     0x93df03ff,     0xc820ffff,     0x8822fc7f,     0xc8247cbf,
     0x88267fff,     0x4e010fe0,     0x4e081fe1,     0x4e0c1fe1,
     0x4e0a1fe1,     0x4e071fe1,     0x4cc0ac3f,     0x05a08020,
-    0x04b0e3e0,     0x0470e7e1,     0x042f9c20,     0x043f9c35,
-    0x047f9c20,     0x04ff9c20,     0x04299420,     0x04319160,
-    0x0461943e,     0x04a19020,     0x042053ff,     0x047f5401,
-    0x25208028,     0x2538cfe0,     0x2578d001,     0x25b8efe2,
-    0x25f8f007,     0xa400a3e0,     0xa4a8a7ea,     0xa547a814,
-    0xa4084ffe,     0xa55c53e0,     0xa5e1540b,     0xe400fbf6,
-    0xe408ffff,     0xe547e400,     0xe4014be0,     0xe4a84fe0,
-    0xe5f15000,     0x858043e0,     0x85a043ff,     0xe59f5d08,
-    0x1e601000,     0x1e603000,     0x1e621000,     0x1e623000,
-    0x1e641000,     0x1e643000,     0x1e661000,     0x1e663000,
-    0x1e681000,     0x1e683000,     0x1e6a1000,     0x1e6a3000,
-    0x1e6c1000,     0x1e6c3000,     0x1e6e1000,     0x1e6e3000,
-    0x1e701000,     0x1e703000,     0x1e721000,     0x1e723000,
-    0x1e741000,     0x1e743000,     0x1e761000,     0x1e763000,
-    0x1e781000,     0x1e783000,     0x1e7a1000,     0x1e7a3000,
-    0x1e7c1000,     0x1e7c3000,     0x1e7e1000,     0x1e7e3000,
-    0xf82d83a5,     0xf8380355,     0xf8381303,     0xf83a21f7,
-    0xf8353303,     0xf8285299,     0xf8304051,     0xf8217300,
-    0xf8246183,     0xf8bf815c,     0xf8ba0182,     0xf8b0103f,
-    0xf8ad201d,     0xf8b3322c,     0xf8b6538d,     0xf8be403f,
-    0xf8ba709c,     0xf8be60c4,     0xf8fe81fa,     0xf8e90188,
-    0xf8e01034,     0xf8f82002,     0xf8e93358,     0xf8f0507e,
-    0xf8ea4157,     0xf8e47050,     0xf8eb6148,     0xf86f8051,
-    0xf86a018c,     0xf86f104d,     0xf8672354,     0xf8703044,
-    0xf86451ec,     0xf87541f0,     0xf86b72f5,     0xf86c62fa,
-    0xb83c816e,     0xb8380181,     0xb83f120a,     0xb8272062,
-    0xb82d3233,     0xb8305023,     0xb82b40be,     0xb82873af,
-    0xb83e6280,     0xb8a782f4,     0xb8bc0375,     0xb8b91025,
-    0xb8b723f0,     0xb8a5312c,     0xb8bc53af,     0xb8b6427f,
-    0xb8bf71c5,     0xb8b061ff,     0xb8fb8214,     0xb8ec012b,
-    0xb8e6123e,     0xb8fb23dc,     0xb8e7328a,     0xb8ea5304,
-    0xb8f142d1,     0xb8e371fd,     0xb8f66273,     0xb87681e2,
-    0xb866020c,     0xb86b12ed,     0xb861227e,     0xb8653051,
-    0xb87051b6,     0xb86a43b5,     0xb87b736c,     0xb86363e1,
-    0xce312677,     0xce0e1b5b,     0xce7e8ed4,     0xce9ed858,
-    0xce768151,     0xce718451,     0xcec08300,     0xce628ad9,
-    0x04e30191,     0x04f0079d,     0x65dc0126,     0x65870887,
-    0x658806c9,     0x0416b7db,     0x0440021a,     0x04d09903,
-    0x04dabb55,     0x04138096,     0x04518071,     0x041008c1,
-    0x0497bce9,     0x045eb4b6,     0x040813c8,     0x04ca0171,
-    0x0481035c,     0x04dcadbc,     0x658098b0,     0x658d89ed,
-    0x6586957a,     0x65879096,     0x65829233,     0x04ddac4e,
-    0x6582b6e3,     0x6580a626,     0x6581b21b,     0x658dbc62,
-    0x65819266,     0x65f8150c,     0x65b72151,     0x65b05db3,
-    0x65f165c0,     0x04944ac8,     0x048f607b,     0x042430f4,
-    0x04a83007,     0x046432d3,     0x04da3569,     0x04583e05,
-    0x04592c36,     0x04c83608,     0x048a248f,     0x658727a8,
-    0x65c633bc,     0x65982c49,     0x040120fc,
+    0x05104fe0,     0x05505001,     0x05906fe2,     0x05d03005,
+    0x05101fea,     0x05901feb,     0x04b0e3e0,     0x0470e7e1,
+    0x042f9c20,     0x043f9c35,     0x047f9c20,     0x04ff9c20,
+    0x04299420,     0x04319160,     0x0461943e,     0x04a19020,
+    0x042053ff,     0x047f5401,     0x25208028,     0x2538cfe0,
+    0x2578d001,     0x25b8efe2,     0x25f8f007,     0x2538dfea,
+    0x25b8dfeb,     0xa400a3e0,     0xa420a7e0,     0xa4484be0,
+    0xa467afe0,     0xa4a8a7ea,     0xa547a814,     0xa4084ffe,
+    0xa55c53e0,     0xa5e1540b,     0xe400fbf6,     0xe408ffff,
+    0xe420e7e0,     0xe4484be0,     0xe460efe0,     0xe547e400,
+    0xe4014be0,     0xe4a84fe0,     0xe5f15000,     0x858043e0,
+    0x85a043ff,     0xe59f5d08,     0x0522c020,     0x05e6c0a4,
+    0x2401a001,     0x2443a051,     0x24858881,     0x24c78cd1,
+    0x240b8142,     0x24918213,     0x250f9001,     0x25508051,
+    0x25802491,     0x25df28c1,     0x25850c81,     0x251e10d1,
+    0x65816001,     0x65c36051,     0x65854891,     0x65c74cc1,
+    0x658b4152,     0x65d14203,     0x05733820,     0x05b238a4,
+    0x05f138e6,     0x0570396a,     0x25221420,     0x25640461,
+    0x25a614b2,     0x25eb0553,     0x25221c24,     0x25640c60,
+    0x25a61cb1,     0x25eb0d52,     0x1e601000,     0x1e603000,
+    0x1e621000,     0x1e623000,     0x1e641000,     0x1e643000,
+    0x1e661000,     0x1e663000,     0x1e681000,     0x1e683000,
+    0x1e6a1000,     0x1e6a3000,     0x1e6c1000,     0x1e6c3000,
+    0x1e6e1000,     0x1e6e3000,     0x1e701000,     0x1e703000,
+    0x1e721000,     0x1e723000,     0x1e741000,     0x1e743000,
+    0x1e761000,     0x1e763000,     0x1e781000,     0x1e783000,
+    0x1e7a1000,     0x1e7a3000,     0x1e7c1000,     0x1e7c3000,
+    0x1e7e1000,     0x1e7e3000,     0xf82d83a5,     0xf8380355,
+    0xf8381303,     0xf83a21f7,     0xf8353303,     0xf8285299,
+    0xf8304051,     0xf8217300,     0xf8246183,     0xf8bf815c,
+    0xf8ba0182,     0xf8b0103f,     0xf8ad201d,     0xf8b3322c,
+    0xf8b6538d,     0xf8be403f,     0xf8ba709c,     0xf8be60c4,
+    0xf8fe81fa,     0xf8e90188,     0xf8e01034,     0xf8f82002,
+    0xf8e93358,     0xf8f0507e,     0xf8ea4157,     0xf8e47050,
+    0xf8eb6148,     0xf86f8051,     0xf86a018c,     0xf86f104d,
+    0xf8672354,     0xf8703044,     0xf86451ec,     0xf87541f0,
+    0xf86b72f5,     0xf86c62fa,     0xb83c816e,     0xb8380181,
+    0xb83f120a,     0xb8272062,     0xb82d3233,     0xb8305023,
+    0xb82b40be,     0xb82873af,     0xb83e6280,     0xb8a782f4,
+    0xb8bc0375,     0xb8b91025,     0xb8b723f0,     0xb8a5312c,
+    0xb8bc53af,     0xb8b6427f,     0xb8bf71c5,     0xb8b061ff,
+    0xb8fb8214,     0xb8ec012b,     0xb8e6123e,     0xb8fb23dc,
+    0xb8e7328a,     0xb8ea5304,     0xb8f142d1,     0xb8e371fd,
+    0xb8f66273,     0xb87681e2,     0xb866020c,     0xb86b12ed,
+    0xb861227e,     0xb8653051,     0xb87051b6,     0xb86a43b5,
+    0xb87b736c,     0xb86363e1,     0xce312677,     0xce0e1b5b,
+    0xce7e8ed4,     0xce9ed858,     0xce768151,     0xce718451,
+    0xcec08300,     0xce628ad9,     0x04e30191,     0x04f0079d,
+    0x65dc0126,     0x65870887,     0x658806c9,     0x0416b7db,
+    0x0440021a,     0x04d09903,     0x04dabb55,     0x04138096,
+    0x04518071,     0x041008c1,     0x0497bce9,     0x045eb4b6,
+    0x040813c8,     0x04ca0171,     0x0481035c,     0x04dcadbc,
+    0x658098b0,     0x658d89ed,     0x6586957a,     0x65879096,
+    0x65829233,     0x04ddac4e,     0x6582b6e3,     0x6580a626,
+    0x6581b21b,     0x658dbc62,     0x65819266,     0x65f8150c,
+    0x65b72151,     0x65b05db3,     0x65f165c0,     0x04944ac8,
+    0x048f607b,     0x042430f4,     0x04a83007,     0x046432d3,
+    0x05eb6ac9,     0x05706fc5,     0x045a2c36,     0x04d83608,
+    0x0499248f,     0x040827a8,     0x04ca33bc,     0x65872c49,
+    0x658620fc,     0x6598363a,     0x04c132a8,
   };
 // END  Generated code -- do not edit
 
