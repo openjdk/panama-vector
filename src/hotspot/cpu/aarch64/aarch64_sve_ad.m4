@@ -147,11 +147,6 @@ source %{
       case Op_ExtractS:
       case Op_ExtractUB:
       // Vector API specific
-      case Op_AndReductionV:
-      case Op_OrReductionV:
-      case Op_XorReductionV:
-      case Op_MaxReductionV:
-      case Op_MinReductionV:
       case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
       case Op_VectorBlend:
@@ -602,6 +597,202 @@ REDUCE_ADD(reduce_addI, AddReductionVI, iRegINoSp, iRegIorL2I, S, T_INT, addw)
 REDUCE_ADD(reduce_addL, AddReductionVL, iRegLNoSp, iRegL, D, T_LONG, add)
 REDUCE_ADDF(reduce_addF, AddReductionVF, vRegF, S)
 REDUCE_ADDF(reduce_addD, AddReductionVD, vRegD, D)
+dnl
+dnl REDUCE_AND_EXT($1,        $2,      $3,      $4,      $5,   $6,        $7   )
+dnl REDUCE_AND_EXT(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
+define(`REDUCE_AND_EXT', `
+instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
+  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            ELEMENT_SHORT_CHAR($6, n->in(2)));
+  match(Set dst ($2 src1 src2));
+  effect(TEMP_DEF dst, TEMP tmp);
+  ins_cost(SVE_COST);
+  format %{ "sve_andv $tmp, $src2\t# vector (sve) ($5)\n\t"
+            "smov  $dst, $tmp, $5, 0\n\t"
+            "andw  $dst, $dst, $src1\n\t"
+            "$7  $dst, $dst\t # and reduction $5" %}
+  ins_encode %{
+    __ sve_andv(as_FloatRegister($tmp$$reg), __ $5,
+         ptrue, as_FloatRegister($src2$$reg));
+    __ smov($dst$$Register, as_FloatRegister($tmp$$reg), __ $5, 0);
+    __ andw($dst$$Register, $dst$$Register, $src1$$Register);
+    __ $7($dst$$Register, $dst$$Register);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+dnl REDUCE_AND($1,        $2,      $3,      $4,      $5,   $6,        $7   )
+dnl REDUCE_AND(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
+define(`REDUCE_AND', `
+instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
+  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            ELEMENT_SHORT_CHAR($6, n->in(2)));
+  match(Set dst ($2 src1 src2));
+  effect(TEMP_DEF dst, TEMP tmp);
+  ins_cost(SVE_COST);
+  format %{ "sve_andv $tmp, $src2\t# vector (sve) ($5)\n\t"
+            "umov  $dst, $tmp, $5, 0\n\t"
+            "$7  $dst, $dst, $src1\t # and reduction $5" %}
+  ins_encode %{
+    __ sve_andv(as_FloatRegister($tmp$$reg), __ $5,
+         ptrue, as_FloatRegister($src2$$reg));
+    __ umov($dst$$Register, as_FloatRegister($tmp$$reg), __ $5, 0);
+    __ $7($dst$$Register, $dst$$Register, $src1$$Register);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+
+// vector and reduction
+REDUCE_AND_EXT(reduce_andB, AndReductionV, iRegINoSp, iRegIorL2I, B, T_BYTE,  sxtb)
+REDUCE_AND_EXT(reduce_andS, AndReductionV, iRegINoSp, iRegIorL2I, H, T_SHORT,  sxth)
+REDUCE_AND(reduce_andI, AndReductionV, iRegINoSp, iRegIorL2I, S, T_INT, andw)
+REDUCE_AND(reduce_andL, AndReductionV, iRegLNoSp, iRegL, D, T_LONG, andr)
+dnl
+dnl REDUCE_OR_EXT($1,        $2,      $3,      $4,      $5,   $6,        $7   )
+dnl REDUCE_OR_EXT(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
+define(`REDUCE_OR_EXT', `
+instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
+  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            ELEMENT_SHORT_CHAR($6, n->in(2)));
+  match(Set dst ($2 src1 src2));
+  effect(TEMP_DEF dst, TEMP tmp);
+  ins_cost(SVE_COST);
+  format %{ "sve_orv $tmp, $src2\t# vector (sve) ($5)\n\t"
+            "smov  $dst, $tmp, $5, 0\n\t"
+            "orrw  $dst, $dst, $src1\n\t"
+            "$7  $dst, $dst\t # or reduction $5" %}
+  ins_encode %{
+    __ sve_orv(as_FloatRegister($tmp$$reg), __ $5,
+         ptrue, as_FloatRegister($src2$$reg));
+    __ smov($dst$$Register, as_FloatRegister($tmp$$reg), __ $5, 0);
+    __ orrw($dst$$Register, $dst$$Register, $src1$$Register);
+    __ $7($dst$$Register, $dst$$Register);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+dnl REDUCE_OR($1,        $2,      $3,      $4,      $5,   $6,        $7   )
+dnl REDUCE_OR(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
+define(`REDUCE_OR', `
+instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
+  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            ELEMENT_SHORT_CHAR($6, n->in(2)));
+  match(Set dst ($2 src1 src2));
+  effect(TEMP_DEF dst, TEMP tmp);
+  ins_cost(SVE_COST);
+  format %{ "sve_orv $tmp, $src2\t# vector (sve) ($5)\n\t"
+            "umov  $dst, $tmp, $5, 0\n\t"
+            "$7  $dst, $dst, $src1\t # or reduction $5" %}
+  ins_encode %{
+    __ sve_orv(as_FloatRegister($tmp$$reg), __ $5,
+         ptrue, as_FloatRegister($src2$$reg));
+    __ umov($dst$$Register, as_FloatRegister($tmp$$reg), __ $5, 0);
+    __ $7($dst$$Register, $dst$$Register, $src1$$Register);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+
+// vector or reduction
+REDUCE_OR_EXT(reduce_orB, OrReductionV, iRegINoSp, iRegIorL2I, B, T_BYTE,  sxtb)
+REDUCE_OR_EXT(reduce_orS, OrReductionV, iRegINoSp, iRegIorL2I, H, T_SHORT,  sxth)
+REDUCE_OR(reduce_orI, OrReductionV, iRegINoSp, iRegIorL2I, S, T_INT, orrw)
+REDUCE_OR(reduce_orL, OrReductionV, iRegLNoSp, iRegL, D, T_LONG, orr)
+dnl
+dnl REDUCE_XOR_EXT($1,        $2,      $3,      $4,      $5,   $6,        $7   )
+dnl REDUCE_XOR_EXT(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
+define(`REDUCE_XOR_EXT', `
+instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
+  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            ELEMENT_SHORT_CHAR($6, n->in(2)));
+  match(Set dst ($2 src1 src2));
+  effect(TEMP_DEF dst, TEMP tmp);
+  ins_cost(SVE_COST);
+  format %{ "sve_eorv $tmp, $src2\t# vector (sve) ($5)\n\t"
+            "smov  $dst, $tmp, $5, 0\n\t"
+            "eorw  $dst, $dst, $src1\n\t"
+            "$7  $dst, $dst\t # eor reduction $5" %}
+  ins_encode %{
+    __ sve_eorv(as_FloatRegister($tmp$$reg), __ $5,
+         ptrue, as_FloatRegister($src2$$reg));
+    __ smov($dst$$Register, as_FloatRegister($tmp$$reg), __ $5, 0);
+    __ eorw($dst$$Register, $dst$$Register, $src1$$Register);
+    __ $7($dst$$Register, $dst$$Register);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+dnl REDUCE_XOR($1,        $2,      $3,      $4,      $5,   $6,        $7   )
+dnl REDUCE_XOR(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
+define(`REDUCE_XOR', `
+instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
+  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            ELEMENT_SHORT_CHAR($6, n->in(2)));
+  match(Set dst ($2 src1 src2));
+  effect(TEMP_DEF dst, TEMP tmp);
+  ins_cost(SVE_COST);
+  format %{ "sve_eorv $tmp, $src2\t# vector (sve) ($5)\n\t"
+            "umov  $dst, $tmp, $5, 0\n\t"
+            "$7  $dst, $dst, $src1\t # eor reduction $5" %}
+  ins_encode %{
+    __ sve_eorv(as_FloatRegister($tmp$$reg), __ $5,
+         ptrue, as_FloatRegister($src2$$reg));
+    __ umov($dst$$Register, as_FloatRegister($tmp$$reg), __ $5, 0);
+    __ $7($dst$$Register, $dst$$Register, $src1$$Register);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+
+// vector xor reduction
+REDUCE_XOR_EXT(reduce_eorB, XorReductionV, iRegINoSp, iRegIorL2I, B, T_BYTE,  sxtb)
+REDUCE_XOR_EXT(reduce_eorS, XorReductionV, iRegINoSp, iRegIorL2I, H, T_SHORT,  sxth)
+REDUCE_XOR(reduce_eorI, XorReductionV, iRegINoSp, iRegIorL2I, S, T_INT, eorw)
+REDUCE_XOR(reduce_eorL, XorReductionV, iRegLNoSp, iRegL, D, T_LONG, eor)
+dnl
+dnl REDUCE_MAXMIN_EXT($1,        $2,      $3,      $4,      $5,   $6,        $7,  $8     )
+dnl REDUCE_MAXMIN_EXT(insn_name, op_name, reg_dst, reg_src, size, elem_type, cmp, min_max)
+define(`REDUCE_MAXMIN_EXT', `
+instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
+  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            ELEMENT_SHORT_CHAR($6, n->in(2)));
+  match(Set dst ($2 src1 src2));
+  effect(TEMP_DEF dst, TEMP tmp);
+  ins_cost(SVE_COST);
+  format %{ "sve_s$8v $tmp, $src2\t# vector (sve) ($5)\n\t"
+            "smov  $dst, $tmp, $5, 0\n\t"
+            "cmpw  $dst, $src1\n\t"
+            "cselw $dst, $dst, $src1 $7\t# $8 reduction $5" %}
+  ins_encode %{
+    __ sve_s$8v(as_FloatRegister($tmp$$reg), __ $5,
+         ptrue, as_FloatRegister($src2$$reg));
+    __ smov($dst$$Register, as_FloatRegister($tmp$$reg), __ $5, 0);
+    __ cmpw($dst$$Register, $src1$$Register);
+    __ cselw(as_Register($dst$$reg), as_Register($dst$$reg), as_Register($src1$$reg), Assembler::$7);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+dnl REDUCE_MAXMIN($1,        $2,      $3,      $4,      $5,   $6,        $7,    $8,    $9 , $10    )
+dnl REDUCE_MAXMIN(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1, insn2, cmp, min_max)
+define(`REDUCE_MAXMIN', `
+instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
+  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            ELEMENT_SHORT_CHAR($6, n->in(2)));
+  match(Set dst ($2 src1 src2));
+  effect(TEMP_DEF dst, TEMP tmp);
+  ins_cost(SVE_COST);
+  format %{ "sve_s$10v $tmp, $src2\t# vector (sve) ($5)\n\t"
+            "umov  $dst, $tmp, $5, 0\n\t"
+            "$7  $dst, $src1\n\t"
+            "$8 $dst, $dst, $src1 $9\t# $10 reduction $5" %}
+  ins_encode %{
+    __ sve_s$10v(as_FloatRegister($tmp$$reg), __ $5,
+         ptrue, as_FloatRegister($src2$$reg));
+    __ umov($dst$$Register, as_FloatRegister($tmp$$reg), __ $5, 0);
+    __ $7($dst$$Register, $src1$$Register);
+    __ $8(as_Register($dst$$reg), as_Register($dst$$reg), as_Register($src1$$reg), Assembler::$9);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
 
 dnl
 dnl REDUCE_FMINMAX($1,      $2,          $3,           $4,   $5         )
@@ -613,7 +804,7 @@ instruct reduce_$1$2($5 dst, $5 src1, vReg src2) %{
   match(Set dst (translit($1, `m', `M')ReductionV src1 src2));
   ins_cost(INSN_COST);
   effect(TEMP_DEF dst);
-  format %{ "sve_f$1v $dst, $src2 # vector (sve) (S)\n\t"
+  format %{ "sve_f$1v $dst, $src2 # vector (sve) ($4)\n\t"
             "f$1s $dst, $dst, $src1\t # $1 reduction $2" %}
   ins_encode %{
     __ sve_f$1v(as_FloatRegister($dst$$reg), __ $4,
@@ -623,10 +814,18 @@ instruct reduce_$1$2($5 dst, $5 src1, vReg src2) %{
   ins_pipe(pipe_slow);
 %}')dnl
 // vector max reduction
+REDUCE_MAXMIN_EXT(reduce_maxB, MaxReductionV, iRegINoSp, iRegIorL2I, B, T_BYTE, GT, max)
+REDUCE_MAXMIN_EXT(reduce_maxS, MaxReductionV, iRegINoSp, iRegIorL2I, H, T_SHORT, GT, max)
+REDUCE_MAXMIN(reduce_maxI, MaxReductionV, iRegINoSp, iRegIorL2I, S, T_INT, cmpw, cselw, GT, max)
+REDUCE_MAXMIN(reduce_maxL, MaxReductionV, iRegLNoSp, iRegL, D, T_LONG, cmp, csel, GT, max)
 REDUCE_FMINMAX(max, F, T_FLOAT,  S, vRegF)
 REDUCE_FMINMAX(max, D, T_DOUBLE, D, vRegD)
 
 // vector min reduction
+REDUCE_MAXMIN_EXT(reduce_minB, MinReductionV, iRegINoSp, iRegIorL2I, B, T_BYTE, LT, min)
+REDUCE_MAXMIN_EXT(reduce_minS, MinReductionV, iRegINoSp, iRegIorL2I, H, T_SHORT, LT, min)
+REDUCE_MAXMIN(reduce_minI, MinReductionV, iRegINoSp, iRegIorL2I, S, T_INT, cmpw, cselw, LT, min)
+REDUCE_MAXMIN(reduce_minL, MinReductionV, iRegLNoSp, iRegL, D, T_LONG, cmp, csel, LT, min)
 REDUCE_FMINMAX(min, F, T_FLOAT,  S, vRegF)
 REDUCE_FMINMAX(min, D, T_DOUBLE, D, vRegD)
 
