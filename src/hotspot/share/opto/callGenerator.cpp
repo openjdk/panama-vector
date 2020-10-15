@@ -740,7 +740,7 @@ void LateInlineVirtualCallGenerator::do_late_inline() {
     // This check is done here because for_method_handle_inline() method
     // needs jvms for inlined state.
     if (!do_late_inline_check(C, jvms)) {
-      map->disconnect_inputs(NULL, C);
+      map->disconnect_inputs(C);
       return;
     }
 
