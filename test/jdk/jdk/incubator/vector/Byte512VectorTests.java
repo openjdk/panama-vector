@@ -835,6 +835,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
         }
     }
 
+
     static byte bits(byte e) {
         return  e;
     }
@@ -3281,6 +3282,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
             }
         }
     }
+
     static boolean testIS_NEGATIVE(byte a) {
         return bits(a)<0;
     }
@@ -3319,6 +3321,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
             }
         }
     }
+
 
 
 

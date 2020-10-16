@@ -965,6 +965,7 @@ public class Float256VectorTests extends AbstractVectorTest {
         }
     }
 
+
     static int bits(float e) {
         return  Float.floatToIntBits(e);
     }
@@ -2491,6 +2492,7 @@ public class Float256VectorTests extends AbstractVectorTest {
             }
         }
     }
+
     static boolean testIS_NEGATIVE(float a) {
         return bits(a)<0;
     }
@@ -2530,6 +2532,7 @@ public class Float256VectorTests extends AbstractVectorTest {
         }
     }
 
+
     static boolean testIS_FINITE(float a) {
         return Float.isFinite(a);
     }
@@ -2568,6 +2571,7 @@ public class Float256VectorTests extends AbstractVectorTest {
             }
         }
     }
+
 
 
     static boolean testIS_NAN(float a) {
@@ -2610,6 +2614,7 @@ public class Float256VectorTests extends AbstractVectorTest {
     }
 
 
+
     static boolean testIS_INFINITE(float a) {
         return Float.isInfinite(a);
     }
@@ -2648,6 +2653,7 @@ public class Float256VectorTests extends AbstractVectorTest {
             }
         }
     }
+
 
 
     @Test(dataProvider = "floatCompareOpProvider")

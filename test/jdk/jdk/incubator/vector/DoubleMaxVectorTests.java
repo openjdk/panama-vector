@@ -960,6 +960,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
     }
 
 
+
     static long bits(double e) {
         return  Double.doubleToLongBits(e);
     }
@@ -2486,6 +2487,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
             }
         }
     }
+
     static boolean testIS_NEGATIVE(double a) {
         return bits(a)<0;
     }
@@ -2525,6 +2527,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         }
     }
 
+
     static boolean testIS_FINITE(double a) {
         return Double.isFinite(a);
     }
@@ -2563,6 +2566,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
             }
         }
     }
+
 
 
     static boolean testIS_NAN(double a) {
@@ -2605,6 +2609,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
     }
 
 
+
     static boolean testIS_INFINITE(double a) {
         return Double.isInfinite(a);
     }
@@ -2643,6 +2648,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
             }
         }
     }
+
 
 
     @Test(dataProvider = "doubleCompareOpProvider")

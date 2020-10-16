@@ -830,6 +830,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         }
     }
 
+
     static int bits(int e) {
         return  e;
     }
@@ -3252,6 +3253,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
             }
         }
     }
+
     static boolean testIS_NEGATIVE(int a) {
         return bits(a)<0;
     }
@@ -3290,6 +3292,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
             }
         }
     }
+
 
 
 
