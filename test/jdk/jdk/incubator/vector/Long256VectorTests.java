@@ -815,7 +815,6 @@ public class Long256VectorTests extends AbstractVectorTest {
         }
     }
 
-
     static long bits(long e) {
         return  e;
     }
@@ -3269,7 +3268,6 @@ public class Long256VectorTests extends AbstractVectorTest {
             }
         }
     }
-
     static boolean testIS_NEGATIVE(long a) {
         return bits(a)<0;
     }
@@ -3308,7 +3306,6 @@ public class Long256VectorTests extends AbstractVectorTest {
             }
         }
     }
-
 
 
 

@@ -820,7 +820,6 @@ public class LongMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-
     static long bits(long e) {
         return  e;
     }
@@ -3274,7 +3273,6 @@ public class LongMaxVectorTests extends AbstractVectorTest {
             }
         }
     }
-
     static boolean testIS_NEGATIVE(long a) {
         return bits(a)<0;
     }
@@ -3313,7 +3311,6 @@ public class LongMaxVectorTests extends AbstractVectorTest {
             }
         }
     }
-
 
 
 

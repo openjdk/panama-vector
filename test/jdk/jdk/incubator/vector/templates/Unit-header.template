@@ -1020,7 +1020,6 @@ public class $vectorteststype$ extends AbstractVectorTest {
     }
 #end[!Double]
 
-
     static $bitstype$ bits($type$ e) {
         return {#if[FP]? $Type$.$type$To$Bitstype$Bits(e): e};
     }

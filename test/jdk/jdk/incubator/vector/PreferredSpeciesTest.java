@@ -70,29 +70,4 @@ public class PreferredSpeciesTest {
         Assert.assertEquals(species.vectorShape(), shape);
         Assert.assertEquals(species.length(), Math.min(species.length(), VectorSupport.getMaxLaneCount(c)));
     }
-
-    @Test(dataProvider = "classesProvider")
-    void testVectorShape(Class<?> c) {
-        VectorSpecies<?> species = null;
-        if (c == byte.class) {
-            species = ByteVector.SPECIES_PREFERRED;
-        } else if (c == short.class) {
-            species = ShortVector.SPECIES_PREFERRED;
-        } else if (c == int.class) {
-            species = IntVector.SPECIES_PREFERRED;
-        } else if (c == long.class) {
-            species = LongVector.SPECIES_PREFERRED;
-        } else if (c == float.class) {
-            species = FloatVector.SPECIES_PREFERRED;
-        } else if (c == double.class) {
-            species = DoubleVector.SPECIES_PREFERRED;
-        } else {
-            throw new IllegalArgumentException("Bad vector element type: " + c.getName());
-        }
-        VectorSpecies largestSpecies = VectorSpecies.ofLargestShape(c);
-
-        System.out.println("class = "+c+"; preferred species"+species+"; largest species = "+largestSpecies+"; maxSize="+VectorSupport.getMaxLaneCount(c));
-        Assert.assertEquals(species.vectorShape(), largestSpecies.vectorShape());
-        Assert.assertEquals(largestSpecies.length(), VectorSupport.getMaxLaneCount(c));
-    }
 }

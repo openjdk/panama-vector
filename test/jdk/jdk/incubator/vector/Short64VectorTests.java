@@ -825,7 +825,6 @@ public class Short64VectorTests extends AbstractVectorTest {
         }
     }
 
-
     static short bits(short e) {
         return  e;
     }
@@ -3272,7 +3271,6 @@ public class Short64VectorTests extends AbstractVectorTest {
             }
         }
     }
-
     static boolean testIS_NEGATIVE(short a) {
         return bits(a)<0;
     }
@@ -3311,7 +3309,6 @@ public class Short64VectorTests extends AbstractVectorTest {
             }
         }
     }
-
 
 
 

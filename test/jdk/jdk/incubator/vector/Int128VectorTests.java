@@ -825,7 +825,6 @@ public class Int128VectorTests extends AbstractVectorTest {
         }
     }
 
-
     static int bits(int e) {
         return  e;
     }
@@ -3248,7 +3247,6 @@ public class Int128VectorTests extends AbstractVectorTest {
             }
         }
     }
-
     static boolean testIS_NEGATIVE(int a) {
         return bits(a)<0;
     }
@@ -3287,7 +3285,6 @@ public class Int128VectorTests extends AbstractVectorTest {
             }
         }
     }
-
 
 
 
