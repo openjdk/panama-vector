@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -73,26 +73,11 @@ public class PreferredSpeciesTest {
 
     @Test(dataProvider = "classesProvider")
     void testVectorShape(Class<?> c) {
-        VectorSpecies<?> species = null;
-        if (c == byte.class) {
-            species = ByteVector.SPECIES_PREFERRED;
-        } else if (c == short.class) {
-            species = ShortVector.SPECIES_PREFERRED;
-        } else if (c == int.class) {
-            species = IntVector.SPECIES_PREFERRED;
-        } else if (c == long.class) {
-            species = LongVector.SPECIES_PREFERRED;
-        } else if (c == float.class) {
-            species = FloatVector.SPECIES_PREFERRED;
-        } else if (c == double.class) {
-            species = DoubleVector.SPECIES_PREFERRED;
-        } else {
-            throw new IllegalArgumentException("Bad vector element type: " + c.getName());
-        }
         VectorSpecies largestSpecies = VectorSpecies.ofLargestShape(c);
+        VectorShape largestShape = VectorShape.largestShapeFor(c);
 
-        System.out.println("class = "+c+"; preferred species"+species+"; largest species = "+largestSpecies+"; maxSize="+VectorSupport.getMaxLaneCount(c));
-        Assert.assertEquals(species.vectorShape(), largestSpecies.vectorShape());
+        System.out.println("class = "+c+"; largest species = "+largestSpecies+"; maxSize="+VectorSupport.getMaxLaneCount(c));
+        Assert.assertEquals(largestSpecies.vectorShape(), largestShape);
         Assert.assertEquals(largestSpecies.length(), VectorSupport.getMaxLaneCount(c));
     }
 }
