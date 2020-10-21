@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -74,25 +74,34 @@ public class PreferredSpeciesTest {
     @Test(dataProvider = "classesProvider")
     void testVectorShape(Class<?> c) {
         VectorSpecies<?> species = null;
+        int elemSize = 0;
         if (c == byte.class) {
             species = ByteVector.SPECIES_PREFERRED;
+            elemSize = Byte.SIZE;
         } else if (c == short.class) {
             species = ShortVector.SPECIES_PREFERRED;
+            elemSize = Short.SIZE;
         } else if (c == int.class) {
             species = IntVector.SPECIES_PREFERRED;
+            elemSize = Integer.SIZE;
         } else if (c == long.class) {
             species = LongVector.SPECIES_PREFERRED;
+            elemSize = Long.SIZE;
         } else if (c == float.class) {
             species = FloatVector.SPECIES_PREFERRED;
+            elemSize = Float.SIZE;
         } else if (c == double.class) {
             species = DoubleVector.SPECIES_PREFERRED;
+            elemSize = Double.SIZE;
         } else {
             throw new IllegalArgumentException("Bad vector element type: " + c.getName());
         }
         VectorSpecies largestSpecies = VectorSpecies.ofLargestShape(c);
+        VectorShape largestShape = VectorShape.forBitSize(VectorSupport.getMaxLaneCount(c) * elemSize);
 
-        System.out.println("class = "+c+"; preferred species"+species+"; largest species = "+largestSpecies+"; maxSize="+VectorSupport.getMaxLaneCount(c));
-        Assert.assertEquals(species.vectorShape(), largestSpecies.vectorShape());
+        System.out.println("class = "+c+"; largest species = "+largestSpecies+"; maxSize="+VectorSupport.getMaxLaneCount(c));
+        Assert.assertEquals(largestSpecies.vectorShape(), largestShape);
         Assert.assertEquals(largestSpecies.length(), VectorSupport.getMaxLaneCount(c));
+        Assert.assertEquals(largestSpecies.length(), Math.max(species.length(), VectorSupport.getMaxLaneCount(c)));
     }
 }
