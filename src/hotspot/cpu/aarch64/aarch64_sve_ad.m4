@@ -591,7 +591,7 @@ instruct $1($3 src1_dst, vReg src2) %{
 %}')dnl
 
 // vector add reduction
-REDUCE_ADD_EXT(reduce_addB, AddReductionVI, iRegINoSp, iRegIorL2I, B, T_BYTE,  sxtb)
+REDUCE_ADD_EXT(reduce_addB, AddReductionVI, iRegINoSp, iRegIorL2I, B, T_BYTE, sxtb)
 REDUCE_ADD_EXT(reduce_addS, AddReductionVI, iRegINoSp, iRegIorL2I, H, T_SHORT, sxth)
 REDUCE_ADD(reduce_addI, AddReductionVI, iRegINoSp, iRegIorL2I, S, T_INT, addw)
 REDUCE_ADD(reduce_addL, AddReductionVL, iRegLNoSp, iRegL, D, T_LONG, add)
@@ -643,8 +643,8 @@ instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
 %}')dnl
 
 // vector and reduction
-REDUCE_AND_EXT(reduce_andB, AndReductionV, iRegINoSp, iRegIorL2I, B, T_BYTE,  sxtb)
-REDUCE_AND_EXT(reduce_andS, AndReductionV, iRegINoSp, iRegIorL2I, H, T_SHORT,  sxth)
+REDUCE_AND_EXT(reduce_andB, AndReductionV, iRegINoSp, iRegIorL2I, B, T_BYTE, sxtb)
+REDUCE_AND_EXT(reduce_andS, AndReductionV, iRegINoSp, iRegIorL2I, H, T_SHORT, sxth)
 REDUCE_AND(reduce_andI, AndReductionV, iRegINoSp, iRegIorL2I, S, T_INT, andw)
 REDUCE_AND(reduce_andL, AndReductionV, iRegLNoSp, iRegL, D, T_LONG, andr)
 dnl
@@ -693,8 +693,8 @@ instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
 %}')dnl
 
 // vector or reduction
-REDUCE_OR_EXT(reduce_orB, OrReductionV, iRegINoSp, iRegIorL2I, B, T_BYTE,  sxtb)
-REDUCE_OR_EXT(reduce_orS, OrReductionV, iRegINoSp, iRegIorL2I, H, T_SHORT,  sxth)
+REDUCE_OR_EXT(reduce_orB, OrReductionV, iRegINoSp, iRegIorL2I, B, T_BYTE, sxtb)
+REDUCE_OR_EXT(reduce_orS, OrReductionV, iRegINoSp, iRegIorL2I, H, T_SHORT, sxth)
 REDUCE_OR(reduce_orI, OrReductionV, iRegINoSp, iRegIorL2I, S, T_INT, orrw)
 REDUCE_OR(reduce_orL, OrReductionV, iRegLNoSp, iRegL, D, T_LONG, orr)
 dnl
@@ -743,19 +743,19 @@ instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
 %}')dnl
 
 // vector xor reduction
-REDUCE_XOR_EXT(reduce_eorB, XorReductionV, iRegINoSp, iRegIorL2I, B, T_BYTE,  sxtb)
-REDUCE_XOR_EXT(reduce_eorS, XorReductionV, iRegINoSp, iRegIorL2I, H, T_SHORT,  sxth)
+REDUCE_XOR_EXT(reduce_eorB, XorReductionV, iRegINoSp, iRegIorL2I, B, T_BYTE, sxtb)
+REDUCE_XOR_EXT(reduce_eorS, XorReductionV, iRegINoSp, iRegIorL2I, H, T_SHORT, sxth)
 REDUCE_XOR(reduce_eorI, XorReductionV, iRegINoSp, iRegIorL2I, S, T_INT, eorw)
 REDUCE_XOR(reduce_eorL, XorReductionV, iRegLNoSp, iRegL, D, T_LONG, eor)
 dnl
 dnl REDUCE_MAXMIN_EXT($1,        $2,      $3,      $4,      $5,   $6,        $7,  $8     )
 dnl REDUCE_MAXMIN_EXT(insn_name, op_name, reg_dst, reg_src, size, elem_type, cmp, min_max)
 define(`REDUCE_MAXMIN_EXT', `
-instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
+instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
             ELEMENT_SHORT_CHAR($6, n->in(2)));
   match(Set dst ($2 src1 src2));
-  effect(TEMP_DEF dst, TEMP tmp);
+  effect(TEMP_DEF dst, TEMP tmp, KILL cr);
   ins_cost(SVE_COST);
   format %{ "sve_s$8v $tmp, $src2\t# vector (sve) ($5)\n\t"
             "smov  $dst, $tmp, $5, 0\n\t"
@@ -774,11 +774,11 @@ dnl
 dnl REDUCE_MAXMIN($1,        $2,      $3,      $4,      $5,   $6,        $7,    $8,    $9 , $10    )
 dnl REDUCE_MAXMIN(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1, insn2, cmp, min_max)
 define(`REDUCE_MAXMIN', `
-instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
+instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
             ELEMENT_SHORT_CHAR($6, n->in(2)));
   match(Set dst ($2 src1 src2));
-  effect(TEMP_DEF dst, TEMP tmp);
+  effect(TEMP_DEF dst, TEMP tmp, KILL cr);
   ins_cost(SVE_COST);
   format %{ "sve_s$10v $tmp, $src2\t# vector (sve) ($5)\n\t"
             "umov  $dst, $tmp, $5, 0\n\t"
