@@ -3269,7 +3269,6 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
     }
-
     static boolean testIS_NEGATIVE(long a) {
         return bits(a)<0;
     }
@@ -3308,7 +3307,6 @@ public class Long512VectorTests extends AbstractVectorTest {
             }
         }
     }
-
 
 
 
