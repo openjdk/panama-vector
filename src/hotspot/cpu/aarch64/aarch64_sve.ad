@@ -869,7 +869,7 @@ instruct vpopcountI(vReg dst, vReg src) %{
 
 instruct reduce_addB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (AddReductionVI src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -889,8 +889,7 @@ instruct reduce_addB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 
 instruct reduce_addS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT ||
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_CHAR)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (AddReductionVI src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -910,7 +909,7 @@ instruct reduce_addS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 
 instruct reduce_addI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT);
   match(Set dst (AddReductionVI src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -928,7 +927,7 @@ instruct reduce_addI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 
 instruct reduce_addL(iRegLNoSp dst, iRegL src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
   match(Set dst (AddReductionVL src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -972,7 +971,7 @@ instruct reduce_addD(vRegD src1_dst, vReg src2) %{
 
 instruct reduce_andB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (AndReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -992,8 +991,7 @@ instruct reduce_andB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 
 instruct reduce_andS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT ||
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_CHAR)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (AndReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1013,7 +1011,7 @@ instruct reduce_andS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 
 instruct reduce_andI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT);
   match(Set dst (AndReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1031,7 +1029,7 @@ instruct reduce_andI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 
 instruct reduce_andL(iRegLNoSp dst, iRegL src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
   match(Set dst (AndReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1051,7 +1049,7 @@ instruct reduce_andL(iRegLNoSp dst, iRegL src1, vReg src2, vRegD tmp) %{
 
 instruct reduce_orB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (OrReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1071,8 +1069,7 @@ instruct reduce_orB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 
 instruct reduce_orS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT ||
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_CHAR)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (OrReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1092,7 +1089,7 @@ instruct reduce_orS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 
 instruct reduce_orI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT);
   match(Set dst (OrReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1110,7 +1107,7 @@ instruct reduce_orI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 
 instruct reduce_orL(iRegLNoSp dst, iRegL src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
   match(Set dst (OrReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1130,7 +1127,7 @@ instruct reduce_orL(iRegLNoSp dst, iRegL src1, vReg src2, vRegD tmp) %{
 
 instruct reduce_eorB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (XorReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1150,8 +1147,7 @@ instruct reduce_eorB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 
 instruct reduce_eorS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT ||
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_CHAR)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (XorReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1171,7 +1167,7 @@ instruct reduce_eorS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 
 instruct reduce_eorI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT);
   match(Set dst (XorReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1189,7 +1185,7 @@ instruct reduce_eorI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 
 instruct reduce_eorL(iRegLNoSp dst, iRegL src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
   match(Set dst (XorReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1209,7 +1205,7 @@ instruct reduce_eorL(iRegLNoSp dst, iRegL src1, vReg src2, vRegD tmp) %{
 
 instruct reduce_maxB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (MaxReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp, KILL cr);
   ins_cost(SVE_COST);
@@ -1229,8 +1225,7 @@ instruct reduce_maxB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp, rFlag
 
 instruct reduce_maxS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT ||
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_CHAR)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (MaxReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp, KILL cr);
   ins_cost(SVE_COST);
@@ -1250,7 +1245,7 @@ instruct reduce_maxS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp, rFlag
 
 instruct reduce_maxI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT);
   match(Set dst (MaxReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp, KILL cr);
   ins_cost(SVE_COST);
@@ -1270,7 +1265,7 @@ instruct reduce_maxI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp, rFlag
 
 instruct reduce_maxL(iRegLNoSp dst, iRegL src1, vReg src2, vRegD tmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
   match(Set dst (MaxReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp, KILL cr);
   ins_cost(SVE_COST);
@@ -1324,7 +1319,7 @@ instruct reduce_maxD(vRegD dst, vRegD src1, vReg src2) %{
 
 instruct reduce_minB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (MinReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp, KILL cr);
   ins_cost(SVE_COST);
@@ -1344,8 +1339,7 @@ instruct reduce_minB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp, rFlag
 
 instruct reduce_minS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT ||
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_CHAR)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (MinReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp, KILL cr);
   ins_cost(SVE_COST);
@@ -1365,7 +1359,7 @@ instruct reduce_minS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp, rFlag
 
 instruct reduce_minI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT);
   match(Set dst (MinReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp, KILL cr);
   ins_cost(SVE_COST);
@@ -1385,7 +1379,7 @@ instruct reduce_minI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp, rFlag
 
 instruct reduce_minL(iRegLNoSp dst, iRegL src1, vReg src2, vRegD tmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            (n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
   match(Set dst (MinReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp, KILL cr);
   ins_cost(SVE_COST);

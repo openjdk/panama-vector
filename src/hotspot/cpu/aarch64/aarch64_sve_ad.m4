@@ -536,7 +536,7 @@ dnl REDUCE_ADD_EXT(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
 define(`REDUCE_ADD_EXT', `
 instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            ELEMENT_SHORT_CHAR($6, n->in(2)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6);
   match(Set dst ($2 src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -559,7 +559,7 @@ dnl REDUCE_ADD(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
 define(`REDUCE_ADD', `
 instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            ELEMENT_SHORT_CHAR($6, n->in(2)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6);
   match(Set dst ($2 src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -603,7 +603,7 @@ dnl REDUCE_AND_EXT(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
 define(`REDUCE_AND_EXT', `
 instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            ELEMENT_SHORT_CHAR($6, n->in(2)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6);
   match(Set dst ($2 src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -626,7 +626,7 @@ dnl REDUCE_AND(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
 define(`REDUCE_AND', `
 instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            ELEMENT_SHORT_CHAR($6, n->in(2)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6);
   match(Set dst ($2 src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -653,7 +653,7 @@ dnl REDUCE_OR_EXT(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
 define(`REDUCE_OR_EXT', `
 instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            ELEMENT_SHORT_CHAR($6, n->in(2)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6);
   match(Set dst ($2 src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -676,7 +676,7 @@ dnl REDUCE_OR(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
 define(`REDUCE_OR', `
 instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            ELEMENT_SHORT_CHAR($6, n->in(2)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6);
   match(Set dst ($2 src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -703,7 +703,7 @@ dnl REDUCE_XOR_EXT(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
 define(`REDUCE_XOR_EXT', `
 instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            ELEMENT_SHORT_CHAR($6, n->in(2)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6);
   match(Set dst ($2 src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -726,7 +726,7 @@ dnl REDUCE_XOR(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
 define(`REDUCE_XOR', `
 instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            ELEMENT_SHORT_CHAR($6, n->in(2)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6);
   match(Set dst ($2 src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -753,7 +753,7 @@ dnl REDUCE_MAXMIN_EXT(insn_name, op_name, reg_dst, reg_src, size, elem_type, cmp
 define(`REDUCE_MAXMIN_EXT', `
 instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            ELEMENT_SHORT_CHAR($6, n->in(2)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6);
   match(Set dst ($2 src1 src2));
   effect(TEMP_DEF dst, TEMP tmp, KILL cr);
   ins_cost(SVE_COST);
@@ -776,7 +776,7 @@ dnl REDUCE_MAXMIN(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1, 
 define(`REDUCE_MAXMIN', `
 instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            ELEMENT_SHORT_CHAR($6, n->in(2)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6);
   match(Set dst ($2 src1 src2));
   effect(TEMP_DEF dst, TEMP tmp, KILL cr);
   ins_cost(SVE_COST);
