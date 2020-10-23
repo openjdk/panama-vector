@@ -158,7 +158,6 @@ source %{
       case Op_VectorCastL2X:
       case Op_VectorCastS2X:
       case Op_VectorInsert:
-      case Op_VectorMaskWrapper:
       case Op_VectorLoadConst:
       case Op_VectorLoadMask:
       case Op_VectorLoadShuffle:
@@ -167,7 +166,6 @@ source %{
       case Op_VectorReinterpret:
       case Op_VectorStoreMask:
       case Op_VectorTest:
-      case Op_VectorUnbox:
         return false;
       default:
         return true;

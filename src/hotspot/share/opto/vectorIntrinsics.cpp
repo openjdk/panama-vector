@@ -671,11 +671,7 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
     if (using_byte_array) {
       store_num_elem = num_elem * type2aelembytes(elem_bt);
       const TypeVect* to_vect_type = TypeVect::make(T_BYTE, store_num_elem);
-      if (arch_supports_vector(Op_VectorReinterpret, num_elem, T_BYTE, VecMaskNotUsed)) {
-        val = gvn().transform(new VectorReinterpretNode(val, val->bottom_type()->is_vect(), to_vect_type));
-      } else {
-        return false;
-      }
+      val = gvn().transform(new VectorReinterpretNode(val, val->bottom_type()->is_vect(), to_vect_type));
     }
 
     Node* vstore = gvn().transform(StoreVectorNode::make(0, control(), memory(addr), addr, addr_type, val, store_num_elem));
@@ -687,11 +683,7 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
       int load_num_elem = num_elem * type2aelembytes(elem_bt);
       vload = gvn().transform(LoadVectorNode::make(0, control(), memory(addr), addr, addr_type, load_num_elem, T_BYTE));
       const TypeVect* to_vect_type = TypeVect::make(elem_bt, num_elem);
-      if (arch_supports_vector(Op_VectorReinterpret, num_elem, T_BYTE, VecMaskNotUsed)) {
-        vload = gvn().transform(new VectorReinterpretNode(vload, vload->bottom_type()->is_vect(), to_vect_type));
-      } else {
-        return false;
-      }
+      vload = gvn().transform(new VectorReinterpretNode(vload, vload->bottom_type()->is_vect(), to_vect_type));
     } else {
       // Special handle for masks
       if (is_mask) {
