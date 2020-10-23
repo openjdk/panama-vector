@@ -3248,7 +3248,6 @@ public class Int512VectorTests extends AbstractVectorTest {
             }
         }
     }
-
     static boolean testIS_NEGATIVE(int a) {
         return bits(a)<0;
     }
@@ -3287,7 +3286,6 @@ public class Int512VectorTests extends AbstractVectorTest {
             }
         }
     }
-
 
 
 

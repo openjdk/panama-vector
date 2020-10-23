@@ -163,10 +163,11 @@ source %{
       case Op_VectorCastL2X:
       case Op_VectorCastS2X:
       case Op_VectorInsert:
+      case Op_VectorMaskWrapper:
+      case Op_VectorLoadConst:
       case Op_VectorLoadMask:
       case Op_VectorLoadShuffle:
       case Op_VectorMaskCmp:
-      case Op_VectorMaskWrapper:
       case Op_VectorRearrange:
       case Op_VectorReinterpret:
       case Op_VectorStoreMask:
@@ -541,7 +542,7 @@ dnl REDUCE_ADD_EXT(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
 define(`REDUCE_ADD_EXT', `
 instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            ELEMENT_SHORT_CHAR($6, n->in(2)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6);
   match(Set dst ($2 src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -564,7 +565,7 @@ dnl REDUCE_ADD(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
 define(`REDUCE_ADD', `
 instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
   predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            ELEMENT_SHORT_CHAR($6, n->in(2)));
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6);
   match(Set dst ($2 src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);

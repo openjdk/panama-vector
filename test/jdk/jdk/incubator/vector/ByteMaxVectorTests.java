@@ -3287,7 +3287,6 @@ public class ByteMaxVectorTests extends AbstractVectorTest {
             }
         }
     }
-
     static boolean testIS_NEGATIVE(byte a) {
         return bits(a)<0;
     }
@@ -3326,7 +3325,6 @@ public class ByteMaxVectorTests extends AbstractVectorTest {
             }
         }
     }
-
 
 
 

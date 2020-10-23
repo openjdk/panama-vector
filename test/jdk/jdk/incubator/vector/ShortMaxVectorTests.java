@@ -3277,7 +3277,6 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
     }
-
     static boolean testIS_NEGATIVE(short a) {
         return bits(a)<0;
     }
@@ -3316,7 +3315,6 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
     }
-
 
 
 
