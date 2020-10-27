@@ -1122,8 +1122,9 @@ public class Float64VectorTests extends AbstractVectorTest {
     static final List<BiFunction<Integer,Integer,float[]>> FLOAT_SHUFFLE_GENERATORS = List.of(
             withToStringBi("shuffle[random]", (Integer l, Integer m) -> {
                 float[] a = new float[l];
+                int upper = m;
                 for (int i = 0; i < 1; i++) {
-                    a[i] = (float)RAND.nextInt(m);
+                    a[i] = (float)RAND.nextInt(upper);
                 }
                 return a;
             })

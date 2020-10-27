@@ -970,8 +970,9 @@ public class Short256VectorTests extends AbstractVectorTest {
     static final List<BiFunction<Integer,Integer,short[]>> SHORT_SHUFFLE_GENERATORS = List.of(
             withToStringBi("shuffle[random]", (Integer l, Integer m) -> {
                 short[] a = new short[l];
+                int upper = m;
                 for (int i = 0; i < 1; i++) {
-                    a[i] = (short)RAND.nextInt(m);
+                    a[i] = (short)RAND.nextInt(upper);
                 }
                 return a;
             })
