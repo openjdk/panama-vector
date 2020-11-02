@@ -1117,8 +1117,9 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
     static final List<BiFunction<Integer,Integer,double[]>> DOUBLE_SHUFFLE_GENERATORS = List.of(
             withToStringBi("shuffle[random]", (Integer l, Integer m) -> {
                 double[] a = new double[l];
+                int upper = m;
                 for (int i = 0; i < 1; i++) {
-                    a[i] = (double)RAND.nextInt(m);
+                    a[i] = (double)RAND.nextInt(upper);
                 }
                 return a;
             })

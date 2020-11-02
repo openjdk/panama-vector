@@ -1184,8 +1184,13 @@ public class $vectorteststype$ extends AbstractVectorTest {
     static final List<BiFunction<Integer,Integer,$type$[]>> $TYPE$_SHUFFLE_GENERATORS = List.of(
             withToStringBi("shuffle[random]", (Integer l, Integer m) -> {
                 $type$[] a = new $type$[l];
+#if[ByteMax]
+                int upper = Math.min(Byte.MAX_VALUE + 1, m);
+#else[ByteMax]
+                int upper = m;
+#end[ByteMax]
                 for (int i = 0; i < 1; i++) {
-                    a[i] = ($type$)RAND.nextInt(m);
+                    a[i] = ($type$)RAND.nextInt(upper);
                 }
                 return a;
             })
