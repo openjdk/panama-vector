@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1059,6 +1059,7 @@ class VectorMaskCmpNode : public VectorNode {
            "VectorMaskCmp inputs must have same type for elements");
     assert(in1->bottom_type()->is_vect()->length() == in2->bottom_type()->is_vect()->length(),
            "VectorMaskCmp inputs must have same number of elements");
+    assert((BoolTest::mask)predicate_node->get_int() == predicate, "Unmatched predicates");
     init_class_id(Class_VectorMaskCmp);
   }
 
