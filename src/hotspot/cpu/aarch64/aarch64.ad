@@ -2487,6 +2487,10 @@ const int Matcher::min_vector_size(const BasicType bt) {
   int max_size = max_vector_size(bt);
   if ((UseSVE > 0) && (MaxVectorSize >= 16)) {
     // Currently vector length less than SVE vector register size is not supported.
+    if (bt == T_BOOLEAN) {
+      // To support vector api load/store mask.
+      return MaxVectorSize / 8;
+    }
     return max_size;
   } else { // NEON
     // Limit the vector size to 8 bytes
@@ -2514,7 +2518,7 @@ const int Matcher::scalable_vector_reg_size(const BasicType bt) {
 
 // Vector ideal reg.
 const uint Matcher::vector_ideal_reg(int len) {
-  if (UseSVE > 0 && 16 <= len && len <= 256) {
+  if (UseSVE > 0 && 2 <= len && len <= 256) {
     return Op_VecA;
   }
   switch(len) {
@@ -16641,7 +16645,7 @@ instruct tlsLoadP(thread_RegP dst)
 // Load vector (32 bits)
 instruct loadV4(vecD dst, vmem4 mem)
 %{
-  predicate(n->as_LoadVector()->memory_size() == 4);
+  predicate(UseSVE == 0 && n->as_LoadVector()->memory_size() == 4);
   match(Set dst (LoadVector mem));
   ins_cost(4 * INSN_COST);
   format %{ "ldrs   $dst,$mem\t# vector (32 bits)" %}
@@ -16652,7 +16656,7 @@ instruct loadV4(vecD dst, vmem4 mem)
 // Load vector (64 bits)
 instruct loadV8(vecD dst, vmem8 mem)
 %{
-  predicate(n->as_LoadVector()->memory_size() == 8);
+  predicate(UseSVE == 0 && n->as_LoadVector()->memory_size() == 8);
   match(Set dst (LoadVector mem));
   ins_cost(4 * INSN_COST);
   format %{ "ldrd   $dst,$mem\t# vector (64 bits)" %}
