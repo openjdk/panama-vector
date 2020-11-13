@@ -20,17 +20,21 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-import jdk.incubator.vector.*;
-import jdk.internal.vm.annotation.ForceInline;
 
+import jdk.incubator.vector.Vector;
+import jdk.incubator.vector.VectorOperators;
+import jdk.incubator.vector.VectorShape;
+import jdk.incubator.vector.VectorSpecies;
 import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.AfterMethod;
 import org.testng.ITestResult;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.DataProvider;
 
-import java.util.Arrays;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
 import java.util.List;
-import java.nio.*;
 import java.util.function.IntFunction;
 
 abstract class AbstractVectorConversionTest {
@@ -293,8 +297,7 @@ abstract class AbstractVectorConversionTest {
        return null;
     }
 
-    static <E> void copyPrimArrayToBoxedArray(E [] boxed_arr, int index, List<?> arrL) {
-      var arr = (arrL.get(0));
+    static <E> void copyPrimArrayToBoxedArray(E [] boxed_arr, int index, Object arr) {
       if (boxed_arr instanceof Byte []) {
         byte [] barr = (byte[])arr;
         assert(boxed_arr.length >= index + barr.length);
@@ -390,6 +393,23 @@ abstract class AbstractVectorConversionTest {
       return null;
     }
 
+    static <E extends Number> Number convertValue2(E from, Class<?> to) {
+        if (to == byte.class)
+            return from.byteValue();
+        else if (to == short.class)
+            return from.shortValue();
+        else if (to == int.class)
+            return from.intValue();
+        else if (to == long.class)
+            return from.longValue();
+        else if (to == float.class)
+            return from.floatValue();
+        else if (to == double.class)
+            return from.doubleValue();
+        else
+            throw new IllegalStateException();
+    }
+
     static <E , F > Number convertValue(E from, F to) {
       if (to.getClass().equals(Byte.class))
         return Byte.valueOf(((Number)from).byteValue());
@@ -441,6 +461,31 @@ abstract class AbstractVectorConversionTest {
       else
         assert (false);
       return null;
+    }
+
+    static void zeroArray(Object a, int offset, int length) {
+        MethodHandle zeroHandle = MethodHandles.zero(a.getClass().getComponentType());
+        Object zero;
+        try {
+            zero = zeroHandle.invoke();
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+
+        for (int i = 0; i < length; i++) {
+            Array.set(a, offset + i, zero);
+        }
+    }
+
+    static void copyConversionArray(Object src,  int  srcPos,
+                                    Object dest, int destPos,
+                                    int length) {
+        Class<?> destClass = dest.getClass().getComponentType();
+        for (int i = 0; i < length; i++) {
+            Number v = (Number) Array.get(src, srcPos + i);
+            v = convertValue2(v, destClass);
+            Array.set(dest, destPos + i, v);
+        }
     }
 
     static <E , F > void
@@ -517,96 +562,102 @@ abstract class AbstractVectorConversionTest {
       Assert.assertEquals(res.length , ref.length);
       int TRIP_COUNT = res.length - (res.length & ~(species_len - 1));
       for (int i = 0; i < TRIP_COUNT; i++) {
+        // @@@ Is this needed?
         System.out.println("res[" + i + "] = " + res[i] + " ref[" + i +
                            "] = " + ref[i]);
         Assert.assertEquals(res[i], ref[i]);
       }
     }
 
-    static Vector<?> vectorFactory(List<?> arrL, int sindex, VectorSpecies<?> SPECIES) {
-       var arr = arrL.get(0);
-       if (SPECIES.elementType().equals(byte.class))
-         return ByteVector.fromArray((VectorSpecies<Byte>)(SPECIES), (byte[])(arr), sindex);
-       else if (SPECIES.elementType().equals(short.class))
-         return ShortVector.fromArray((VectorSpecies<Short>)(SPECIES), (short[])(arr), sindex);
-       else if (SPECIES.elementType().equals(int.class))
-         return IntVector.fromArray((VectorSpecies<Integer>)(SPECIES), (int[])(arr), sindex);
-       else if (SPECIES.elementType().equals(long.class))
-         return LongVector.fromArray((VectorSpecies<Long>)(SPECIES), (long[])(arr), sindex);
-       else if (SPECIES.elementType().equals(float.class))
-         return FloatVector.fromArray((VectorSpecies<Float>)(SPECIES), (float[])(arr), sindex);
-       else if (SPECIES.elementType().equals(double.class))
-         return DoubleVector.fromArray((VectorSpecies<Double>)(SPECIES), (double[])(arr), sindex);
-       else
-         assert(false);
-       return null;
-    }
+    static <I, O> void conversion_kernel(VectorSpecies<I> SPECIES, VectorSpecies<O> OSPECIES,
+                                         Object in,
+                                         VectorOperators.Conversion<I, O> OP, ConvAPI API,
+                                         int in_len) {
+        int out_len =  (in_len / SPECIES.length()) * OSPECIES.length();
+        int src_species_len = SPECIES.length();
+        int dst_species_len = OSPECIES.length();
+        boolean is_contracting_conv = src_species_len * OSPECIES.elementSize() < OSPECIES.vectorBitSize();
+        int m = Math.max(dst_species_len, src_species_len) / Math.min(src_species_len, dst_species_len);
 
-    static <E,F,I,O> void conversion_kernel(VectorSpecies<?> SPECIES, VectorSpecies<?> OSPECIES,
-                                            I[] boxed_a, O[] boxed_ref, O[] boxed_res, List<?> unboxed_a,
-                                            VectorOperators.Conversion OP, ConvAPI API, int in_len) {
-      int src_species_len = SPECIES.length();
-      int dst_species_len = OSPECIES.length();
-      boolean is_contracting_conv =  src_species_len * OSPECIES.elementSize() < OSPECIES.vectorBitSize();
-      int m = Math.max(dst_species_len,src_species_len) / Math.min(src_species_len,dst_species_len);
+        int[] parts = getPartsArray(m, is_contracting_conv);
 
-      int [] parts = getPartsArray(m, is_contracting_conv);
-      for (int ic = 0; ic < INVOC_COUNT; ic++) {
-         for (int i=0, j=0; i < in_len; i += src_species_len, j+= dst_species_len) {
+        Object expected = Array.newInstance(OSPECIES.elementType(), out_len);
+        Object actual = Array.newInstance(OSPECIES.elementType(), out_len);
+
+        // Calculated expected result
+        for (int i = 0, j = 0; i < in_len; i += src_species_len, j += dst_species_len) {
             int part = parts[i % parts.length];
-            var av = Vector64ConversionTests.<I>vectorFactory(unboxed_a, i, SPECIES);
-            F rv = null;
-            switch(API) {
-              default:
-                assert(false);
-                break;
-              case CONVERT:
-                rv = ((F)(av.convert(OP, part)));
-                break;
-              case CONVERTSHAPE:
-                rv = ((F)(av.convertShape(OP, OSPECIES, part)));
-                break;
-              case CASTSHAPE:
-                rv = ((F)(av.castShape(OSPECIES, part)));
-                break;
-            }
-            copyPrimArrayToBoxedArray(boxed_res, j, Arrays.asList(((Vector)(rv)).toArray()));
+
             if (is_contracting_conv) {
-              contracting_conversion_scalar(boxed_a, boxed_ref, src_species_len, dst_species_len, i, j, part);
+                int start_idx = -part * src_species_len;
+                zeroArray(expected, j, dst_species_len);
+                copyConversionArray(in, i, expected, start_idx + j, src_species_len);
             } else {
-              expanding_conversion_scalar(boxed_a, boxed_ref, src_species_len, dst_species_len, i, j , part);
+                int start_idx = part * dst_species_len;
+                copyConversionArray(in, start_idx + i, expected, j, dst_species_len);
             }
-         }
-      }
-      assertResultsEquals(boxed_res, boxed_ref, dst_species_len);
+        }
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0, j = 0; i < in_len; i += src_species_len, j += dst_species_len) {
+                int part = parts[i % parts.length];
+                var av = SPECIES.fromArray(in, i);
+                Vector<O> rv = null;
+                switch (API) {
+                    default:
+                        assert (false);
+                        break;
+                    case CONVERT:
+                        rv = av.convert(OP, part);
+                        break;
+                    case CONVERTSHAPE:
+                        rv = av.convertShape(OP, OSPECIES, part);
+                        break;
+                    case CASTSHAPE:
+                        rv = av.castShape(OSPECIES, part);
+                        break;
+                }
+                System.arraycopy(rv.toArray(), 0, actual, j, dst_species_len);
+            }
+        }
+
+        Assert.assertEquals(actual, expected);
     }
 
-    static <E,F,I,O> void reinterpret_kernel(VectorSpecies<?> SPECIES, VectorSpecies<?> OSPECIES,
-                                            I[] boxed_a, O[] boxed_ref, O[] boxed_res, List<?> unboxed_a,
-                                            int in_len) {
-      int src_vector_size = SPECIES.vectorBitSize();
-      int dst_vector_size = OSPECIES.vectorBitSize();
-      int src_vector_lane_cnt = SPECIES.length();
-      int dst_vector_lane_cnt = OSPECIES.length();
-      boolean is_contracting_conv =  src_vector_size < dst_vector_size;
-      int m = Math.max(dst_vector_size,src_vector_size) / Math.min(dst_vector_size, src_vector_size);
+    static <I, O> void reinterpret_kernel(VectorSpecies<I> SPECIES, VectorSpecies<O> OSPECIES,
+                                          I[] boxed_a, O[] boxed_ref, O[] boxed_res, Object unboxed_a,
+                                          int in_len) {
+        int out_len =  (in_len / SPECIES.length()) * OSPECIES.length();
+        int src_vector_size = SPECIES.vectorBitSize();
+        int dst_vector_size = OSPECIES.vectorBitSize();
+        int src_vector_lane_cnt = SPECIES.length();
+        int dst_vector_lane_cnt = OSPECIES.length();
+        boolean is_contracting_conv = src_vector_size < dst_vector_size;
+        int m = Math.max(dst_vector_size, src_vector_size) / Math.min(dst_vector_size, src_vector_size);
 
-      int [] parts = getPartsArray(m, is_contracting_conv);
-      for (int ic = 0; ic < INVOC_COUNT; ic++) {
-        for (int i = 0, j=0; i < in_len; i += src_vector_lane_cnt, j+= dst_vector_lane_cnt) {
-          int part = parts[i % parts.length];
-          var av = Vector64ConversionTests.<I>vectorFactory(unboxed_a, i, SPECIES);
-          F rv = (F)(av.reinterpretShape(OSPECIES, part));
-          copyPrimArrayToBoxedArray(boxed_res, j, Arrays.asList(((Vector)(rv)).toArray()));
-          if (is_contracting_conv) {
-             contracting_reinterpret_scalar(boxed_a, boxed_ref, src_vector_size, dst_vector_size,
-                                            src_vector_lane_cnt, dst_vector_lane_cnt, i, j, part);
-          } else {
-             expanding_reinterpret_scalar(boxed_a, boxed_ref, src_vector_size, dst_vector_size,
-                                          src_vector_lane_cnt, dst_vector_lane_cnt, i, j, part);
-          }
+        int[] parts = getPartsArray(m, is_contracting_conv);
+
+        for (int i = 0, j = 0; i < in_len; i += src_vector_lane_cnt, j += dst_vector_lane_cnt) {
+            int part = parts[i % parts.length];
+
+            if (is_contracting_conv) {
+                contracting_reinterpret_scalar(boxed_a, boxed_ref, src_vector_size, dst_vector_size,
+                        src_vector_lane_cnt, dst_vector_lane_cnt, i, j, part);
+            } else {
+                expanding_reinterpret_scalar(boxed_a, boxed_ref, src_vector_size, dst_vector_size,
+                        src_vector_lane_cnt, dst_vector_lane_cnt, i, j, part);
+            }
         }
-      }
-      assertResultsEquals(boxed_res, boxed_ref, dst_vector_lane_cnt);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0, j = 0; i < in_len; i += src_vector_lane_cnt, j += dst_vector_lane_cnt) {
+                int part = parts[i % parts.length];
+                var av = SPECIES.fromArray(unboxed_a, i);
+                var rv = av.reinterpretShape(OSPECIES, part);
+                copyPrimArrayToBoxedArray(boxed_res, j, rv.toArray());
+            }
+        }
+
+        assertResultsEquals(boxed_res, boxed_ref, dst_vector_lane_cnt);
     }
 }
