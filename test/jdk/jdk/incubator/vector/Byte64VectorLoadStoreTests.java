@@ -533,22 +533,6 @@ public class Byte64VectorLoadStoreTests extends AbstractVectorTest {
     }
 
 
-    @Test(dataProvider = "byteMaskProvider")
-    static void loadStoreMask(IntFunction<byte[]> fa,
-                              IntFunction<boolean[]> fm) {
-        boolean[] mask = fm.apply(SPECIES.length());
-        boolean[] r = new boolean[mask.length];
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < mask.length; i += SPECIES.length()) {
-                VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, i);
-                vmask.intoArray(r, i);
-            }
-        }
-        Assert.assertEquals(mask, r);
-    }
-
-
     @Test(dataProvider = "byteByteBufferProvider")
     static void loadStoreByteBuffer(IntFunction<byte[]> fa,
                                     IntFunction<ByteBuffer> fb,
@@ -970,4 +954,6 @@ public class Byte64VectorLoadStoreTests extends AbstractVectorTest {
             Assert.assertEquals(a, r);
        }
     }
+
+
 }

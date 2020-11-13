@@ -837,6 +837,7 @@ final class Byte256Vector extends ByteVector {
         return super.fromArray0Template(a, offset);  // specialize
     }
 
+
     @ForceInline
     @Override
     final
