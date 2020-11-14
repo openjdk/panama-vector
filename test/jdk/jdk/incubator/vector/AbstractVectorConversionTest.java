@@ -34,22 +34,21 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 
 abstract class AbstractVectorConversionTest {
     static final int INVOC_COUNT = Integer.getInteger("jdk.incubator.vector.test.loop-iterations", 1000);
 
-    static VectorOperators.Conversion<Byte,Byte> B2B = VectorOperators.Conversion.ofCast(byte.class, byte.class);
-    static VectorOperators.Conversion<Short,Short> S2S = VectorOperators.Conversion.ofCast(short.class, short.class);
-    static VectorOperators.Conversion<Integer,Integer> I2I = VectorOperators.Conversion.ofCast(int.class, int.class);
-    static VectorOperators.Conversion<Long,Long> L2L = VectorOperators.Conversion.ofCast(long.class, long.class);
-    static VectorOperators.Conversion<Float,Float> F2F = VectorOperators.Conversion.ofCast(float.class, float.class);
-    static VectorOperators.Conversion<Double,Double> D2D = VectorOperators.Conversion.ofCast(double.class, double.class);
-
-    static VectorShape getMaxBit() {
-        return VectorShape.S_Max_BIT;
-    }
+    static VectorOperators.Conversion<Byte, Byte> B2B = VectorOperators.Conversion.ofCast(byte.class, byte.class);
+    static VectorOperators.Conversion<Short, Short> S2S = VectorOperators.Conversion.ofCast(short.class, short.class);
+    static VectorOperators.Conversion<Integer, Integer> I2I = VectorOperators.Conversion.ofCast(int.class, int.class);
+    static VectorOperators.Conversion<Long, Long> L2L = VectorOperators.Conversion.ofCast(long.class, long.class);
+    static VectorOperators.Conversion<Float, Float> F2F = VectorOperators.Conversion.ofCast(float.class, float.class);
+    static VectorOperators.Conversion<Double, Double> D2D = VectorOperators.Conversion.ofCast(double.class, double.class);
 
     static <T> IntFunction<T> withToString(String s, IntFunction<T> f) {
         return new IntFunction<T>() {
@@ -69,7 +68,7 @@ abstract class AbstractVectorConversionTest {
         byte apply(int i);
     }
 
-    static byte[] fill_byte(int s , ToByteF f) {
+    static byte[] fill_byte(int s, ToByteF f) {
         return fill_byte(new byte[s], f);
     }
 
@@ -84,7 +83,7 @@ abstract class AbstractVectorConversionTest {
         boolean apply(int i);
     }
 
-    static boolean[] fill_bool(int s , ToBoolF f) {
+    static boolean[] fill_bool(int s, ToBoolF f) {
         return fill_bool(new boolean[s], f);
     }
 
@@ -100,7 +99,7 @@ abstract class AbstractVectorConversionTest {
     }
 
 
-    static short[] fill_short(int s , ToShortF f) {
+    static short[] fill_short(int s, ToShortF f) {
         return fill_short(new short[s], f);
     }
 
@@ -115,7 +114,7 @@ abstract class AbstractVectorConversionTest {
         int apply(int i);
     }
 
-    static int[] fill_int(int s , ToIntF f) {
+    static int[] fill_int(int s, ToIntF f) {
         return fill_int(new int[s], f);
     }
 
@@ -130,7 +129,7 @@ abstract class AbstractVectorConversionTest {
         long apply(int i);
     }
 
-    static long[] fill_long(int s , ToLongF f) {
+    static long[] fill_long(int s, ToLongF f) {
         return fill_long(new long[s], f);
     }
 
@@ -145,7 +144,7 @@ abstract class AbstractVectorConversionTest {
         float apply(int i);
     }
 
-    static float[] fill_float(int s , ToFloatF f) {
+    static float[] fill_float(int s, ToFloatF f) {
         return fill_float(new float[s], f);
     }
 
@@ -160,7 +159,7 @@ abstract class AbstractVectorConversionTest {
         double apply(int i);
     }
 
-    static double[] fill_double(int s , ToDoubleF f) {
+    static double[] fill_double(int s, ToDoubleF f) {
         return fill_double(new double[s], f);
     }
 
@@ -172,16 +171,14 @@ abstract class AbstractVectorConversionTest {
     }
 
     static final List<IntFunction<byte[]>> BYTE_GENERATORS = List.of(
-            withToString("byte(i)", (int s) -> {
-                return fill_byte(s, i -> (byte)(i+1));
-            })
+            withToString("byte(i)", (int s) -> fill_byte(s, i -> (byte) (i + 1)))
     );
 
 
     @AfterMethod
     public void getRunTime(ITestResult tr) {
-       long time = tr.getEndMillis() - tr.getStartMillis();
-       System.out.println(tr.getName() + " took " + time + " ms");
+        long time = tr.getEndMillis() - tr.getStartMillis();
+        System.out.println(tr.getName() + " took " + time + " ms");
     }
 
     @DataProvider
@@ -192,9 +189,7 @@ abstract class AbstractVectorConversionTest {
     }
 
     static final List<IntFunction<boolean[]>> BOOL_GENERATORS = List.of(
-        withToString("boolean(i%3)", (int s) -> {
-            return fill_bool(s, i -> i % 3 == 0);
-        })
+            withToString("boolean(i%3)", (int s) -> fill_bool(s, i -> i % 3 == 0))
     );
 
     @DataProvider
@@ -205,9 +200,7 @@ abstract class AbstractVectorConversionTest {
     }
 
     static final List<IntFunction<short[]>> SHORT_GENERATORS = List.of(
-            withToString("short(i)", (int s) -> {
-                return fill_short(s, i -> (short)(i*100+1));
-            })
+            withToString("short(i)", (int s) -> fill_short(s, i -> (short) (i * 100 + 1)))
     );
 
     @DataProvider
@@ -218,9 +211,7 @@ abstract class AbstractVectorConversionTest {
     }
 
     static final List<IntFunction<int[]>> INT_GENERATORS = List.of(
-            withToString("int(i)", (int s) -> {
-                return fill_int(s, i -> (int)(i^((i&1)-1)));
-            })
+            withToString("int(i)", (int s) -> fill_int(s, i -> (int) (i ^ ((i & 1) - 1))))
     );
 
     @DataProvider
@@ -231,9 +222,7 @@ abstract class AbstractVectorConversionTest {
     }
 
     static final List<IntFunction<long[]>> LONG_GENERATORS = List.of(
-            withToString("long(i)", (int s) -> {
-                return fill_long(s, i -> (long)(i^((i&1)-1)));
-            })
+            withToString("long(i)", (int s) -> fill_long(s, i -> (long) (i ^ ((i & 1) - 1))))
     );
 
     @DataProvider
@@ -244,9 +233,7 @@ abstract class AbstractVectorConversionTest {
     }
 
     static final List<IntFunction<float[]>> FLOAT_GENERATORS = List.of(
-            withToString("float(i)", (int s) -> {
-                return fill_float(s, i -> (float)(i * 10 + 0.1));
-            })
+            withToString("float(i)", (int s) -> fill_float(s, i -> (float) (i * 10 + 0.1)))
     );
 
 
@@ -258,9 +245,7 @@ abstract class AbstractVectorConversionTest {
     }
 
     static final List<IntFunction<double[]>> DOUBLE_GENERATORS = List.of(
-            withToString("double(i)", (int s) -> {
-                return fill_double(s, i -> (double)(i * 10 + 0.1));
-            })
+            withToString("double(i)", (int s) -> fill_double(s, i -> (double) (i * 10 + 0.1)))
     );
 
     @DataProvider
@@ -271,337 +256,200 @@ abstract class AbstractVectorConversionTest {
     }
 
 
-    public enum ConvAPI { CONVERT, CONVERTSHAPE, CASTSHAPE, REINTERPRETSHAPE };
+    public enum ConvAPI {CONVERT, CONVERTSHAPE, CASTSHAPE, REINTERPRETSHAPE}
 
-    static <E> E[] getBoxedArray(Class<E> toClass, int len) {
-       if(toClass.equals(Byte.class)) {
-         byte[] b = new byte[len];
-         return (E[])(getBoxedArray(b));
-       } else if(toClass.equals(Short.class)) {
-         short [] s = new short[len];
-         return (E[])(getBoxedArray(s));
-       } else if(toClass.equals(Integer.class)) {
-         int[] i = new int[len];
-         return (E[])(getBoxedArray(i));
-       } else if(toClass.equals(Long.class)) {
-         long[] l = new long[len];
-         return (E[])(getBoxedArray(l));
-       } else if(toClass.equals(Float.class)) {
-         float[] f = new float[len];
-         return (E[])(getBoxedArray(f));
-       } else if(toClass.equals(Double.class)) {
-         double[] d = new double[len];
-         return (E[])(getBoxedArray(d));
-       } else
-         assert(false);
-       return null;
-    }
 
-    static <E> void copyPrimArrayToBoxedArray(E [] boxed_arr, int index, Object arr) {
-      if (boxed_arr instanceof Byte []) {
-        byte [] barr = (byte[])arr;
-        assert(boxed_arr.length >= index + barr.length);
-        for(int i = 0 ; i < barr.length; i++)
-           boxed_arr[i+index] = (E)Byte.valueOf(barr[i]);
-      }
-      else if (boxed_arr instanceof Short []) {
-        short [] sarr = (short[])arr;
-        assert(boxed_arr.length >= index + sarr.length);
-        for(int i = 0 ; i < sarr.length; i++)
-           boxed_arr[i+index] = (E)Short.valueOf(sarr[i]);
-      }
-      else if (boxed_arr instanceof Integer []) {
-        int [] iarr = (int[])arr;
-        assert(boxed_arr.length >= index + iarr.length);
-        for(int i = 0 ; i < iarr.length; i++)
-           boxed_arr[i+index] = (E)Integer.valueOf(iarr[i]);
-      }
-      else if (boxed_arr instanceof Long []) {
-        long [] larr = (long[])arr;
-        assert(boxed_arr.length >= index + larr.length);
-        for(int i = 0 ; i < larr.length; i++)
-           boxed_arr[i+index] = (E)Long.valueOf(larr[i]);
-      }
-      else if (boxed_arr instanceof Float []) {
-        float [] farr = (float[])arr;
-        assert(boxed_arr.length >= index + farr.length);
-        for(int i = 0 ; i < farr.length; i++)
-           boxed_arr[i+index] = (E)Float.valueOf(farr[i]);
-      }
-      else if (boxed_arr instanceof Double []) {
-        double [] darr = (double[])arr;
-        assert(boxed_arr.length >= index + darr.length);
-        for(int i = 0 ; i < darr.length; i++)
-           boxed_arr[i+index] = (E)Double.valueOf(darr[i]);
-      }
-      else
-        assert(false);
-    }
-
-    static Byte[] getBoxedArray(byte[] arr) {
-      Byte[] boxed_arr = new Byte[arr.length];
-      for (int i = 0; i < arr.length; i++)
-        boxed_arr[i] = Byte.valueOf(arr[i]);
-      return boxed_arr;
-    }
-    static Short[] getBoxedArray(short[] arr) {
-      Short[] boxed_arr = new Short[arr.length];
-      for (int i = 0; i < arr.length; i++)
-        boxed_arr[i] = Short.valueOf(arr[i]);
-      return boxed_arr;
-    }
-    static Integer[] getBoxedArray(int[] arr) {
-      Integer[] boxed_arr = new Integer[arr.length];
-      for (int i = 0; i < arr.length; i++)
-        boxed_arr[i] = Integer.valueOf(arr[i]);
-      return boxed_arr;
-    }
-    static Long[] getBoxedArray(long[] arr) {
-      Long[] boxed_arr = new Long[arr.length];
-      for (int i = 0; i < arr.length; i++)
-        boxed_arr[i] = Long.valueOf(arr[i]);
-      return boxed_arr;
-    }
-    static Float[] getBoxedArray(float[] arr) {
-      Float[] boxed_arr = new Float[arr.length];
-      for (int i = 0; i < arr.length; i++)
-        boxed_arr[i] = Float.valueOf(arr[i]);
-      return boxed_arr;
-    }
-    static Double[] getBoxedArray(double[] arr) {
-      Double[] boxed_arr = new Double[arr.length];
-      for (int i = 0; i < arr.length; i++)
-        boxed_arr[i] = Double.valueOf(arr[i]);
-      return boxed_arr;
-    }
-
-    static <E> Number zeroValue(E to) {
-      if (to.getClass().equals(Byte.class))
-        return Byte.valueOf((byte)0);
-      else if (to.getClass().equals(Short.class))
-        return Short.valueOf((short)0);
-      else if (to.getClass().equals(Integer.class))
-        return Integer.valueOf(0);
-      else if (to.getClass().equals(Long.class))
-        return Long.valueOf((long)0);
-      else if (to.getClass().equals(Float.class))
-        return Float.valueOf((float)0);
-      else if (to.getClass().equals(Double.class))
-        return Double.valueOf((double)0);
-      else
-        assert (false);
-      return null;
-    }
-
-    static <E extends Number> Number convertValue2(E from, Class<?> to) {
+    static <E extends Number> Function<Number, Object> convertValueFunction(Class<?> to) {
         if (to == byte.class)
-            return from.byteValue();
+            return Number::byteValue;
         else if (to == short.class)
-            return from.shortValue();
+            return Number::shortValue;
         else if (to == int.class)
-            return from.intValue();
+            return Number::intValue;
         else if (to == long.class)
-            return from.longValue();
+            return Number::longValue;
         else if (to == float.class)
-            return from.floatValue();
+            return Number::floatValue;
         else if (to == double.class)
-            return from.doubleValue();
+            return Number::doubleValue;
         else
             throw new IllegalStateException();
     }
 
-    static <E , F > Number convertValue(E from, F to) {
-      if (to.getClass().equals(Byte.class))
-        return Byte.valueOf(((Number)from).byteValue());
-      else if (to.getClass().equals(Short.class))
-        return Short.valueOf(((Number)from).shortValue());
-      else if (to.getClass().equals(Integer.class))
-        return Integer.valueOf(((Number)from).intValue());
-      else if (to.getClass().equals(Long.class))
-        return Long.valueOf(((Number)from).longValue());
-      else if (to.getClass().equals(Float.class))
-        return Float.valueOf(((Number)from).floatValue());
-      else if (to.getClass().equals(Double.class))
-        return Double.valueOf(((Number)from).doubleValue());
-      else
-        assert (false);
-      return null;
+    static BiConsumer<ByteBuffer, Object> putBufferValueFunction(Class<?> from) {
+        if (from == byte.class)
+            return (bb, o) -> bb.put((byte) o);
+        else if (from == short.class)
+            return (bb, o) -> bb.putShort((short) o);
+        else if (from == int.class)
+            return (bb, o) -> bb.putInt((int) o);
+        else if (from == long.class)
+            return (bb, o) -> bb.putLong((long) o);
+        else if (from == float.class)
+            return (bb, o) -> bb.putFloat((float) o);
+        else if (from == double.class)
+            return (bb, o) -> bb.putDouble((double) o);
+        else
+            throw new IllegalStateException();
     }
 
-    static <E> void putValue(ByteBuffer bb, E [] arr, int index) {
-      if (arr[index].getClass().equals(Byte.class))
-        bb.put(((Byte)(arr[index])).byteValue());
-      else if (arr[index].getClass().equals(Short.class))
-        bb.putShort(((Short)arr[index]).shortValue());
-      else if (arr[index].getClass().equals(Integer.class))
-        bb.putInt(((Integer)arr[index]).intValue());
-      else if (arr[index].getClass().equals(Long.class))
-        bb.putLong(((Long)arr[index]).longValue());
-      else if (arr[index].getClass().equals(Float.class))
-        bb.putFloat(((Float)arr[index]).floatValue());
-      else if (arr[index].getClass().equals(Double.class))
-        bb.putDouble(((Double)arr[index]).doubleValue());
-      else
-        assert (false);
+    static Function<ByteBuffer, Number> getBufferValueFunction(Class<?> to) {
+        if (to == byte.class)
+            return ByteBuffer::get;
+        else if (to == short.class)
+            return ByteBuffer::getShort;
+        else if (to == int.class)
+            return ByteBuffer::getInt;
+        else if (to == long.class)
+            return ByteBuffer::getLong;
+        else if (to == float.class)
+            return ByteBuffer::getFloat;
+        else if (to == double.class)
+            return ByteBuffer::getDouble;
+        else
+            throw new IllegalStateException();
     }
 
-    static <F> Number getValue(ByteBuffer bb, Class<?> toClass) {
-      if (toClass.equals(Byte.class))
-        return (Number)(Byte.valueOf(bb.get()));
-      else if (toClass.equals(Short.class))
-        return (Number)(Short.valueOf(bb.getShort()));
-      else if (toClass.equals(Integer.class))
-        return (Number)(Integer.valueOf(bb.getInt()));
-      else if (toClass.equals(Long.class))
-        return (Number)(Long.valueOf(bb.getLong()));
-      else if (toClass.equals(Float.class))
-        return (Number)(Float.valueOf(bb.getFloat()));
-      else if (toClass.equals(Double.class))
-        return (Number)(Double.valueOf(bb.getDouble()));
-      else
-        assert (false);
-      return null;
-    }
+    static final ClassValue<Object> ZERO = new ClassValue<Object>() {
+        @Override
+        protected Object computeValue(Class<?> type) {
+            MethodHandle zeroHandle = MethodHandles.zero(type);
+            Object zero;
+            try {
+                return zeroHandle.invoke();
+            } catch (Throwable t) {
+                throw new RuntimeException(t);
+            }
+        }
+    };
 
     static void zeroArray(Object a, int offset, int length) {
-        MethodHandle zeroHandle = MethodHandles.zero(a.getClass().getComponentType());
-        Object zero;
-        try {
-            zero = zeroHandle.invoke();
-        } catch (Throwable t) {
-            throw new RuntimeException(t);
-        }
-
+        Object zero = ZERO.get(a.getClass().getComponentType());
         for (int i = 0; i < length; i++) {
             Array.set(a, offset + i, zero);
         }
     }
 
-    static void copyConversionArray(Object src,  int  srcPos,
+    static void copyConversionArray(Object src, int srcPos,
                                     Object dest, int destPos,
-                                    int length) {
-        Class<?> destClass = dest.getClass().getComponentType();
+                                    int length,
+                                    Function<Number, Object> c) {
         for (int i = 0; i < length; i++) {
             Number v = (Number) Array.get(src, srcPos + i);
-            v = convertValue2(v, destClass);
-            Array.set(dest, destPos + i, v);
+            Array.set(dest, destPos + i, c.apply(v));
         }
     }
 
-    static <E , F > void
-    expanding_reinterpret_scalar(E[] in, F[] out, int in_vec_size, int out_vec_size,
+    static void
+    expanding_reinterpret_scalar(Object in, Object out,
+                                 int in_vec_size, int out_vec_size,
                                  int in_vec_lane_cnt, int out_vec_lane_cnt,
-                                 int in_idx,  int out_idx, int part) {
-      int SLICE_FACTOR = Math.max(in_vec_size, out_vec_size) / Math.min(in_vec_size, out_vec_size);
-      int ELEMENTS_IN_SLICE = in_vec_lane_cnt / SLICE_FACTOR;
-      assert (part < SLICE_FACTOR && part >= 0);
-      int start_idx = in_idx + part * ELEMENTS_IN_SLICE;
-      int end_idx = start_idx + ELEMENTS_IN_SLICE;
-      var bb = ByteBuffer.allocate(out_vec_size);
-      for (int i = start_idx; i < end_idx ; i++)
-        putValue(bb, in, i);
-      bb.rewind();
-      Class<?> toClass = out[0].getClass();
-      for (int i = 0; i < out_vec_lane_cnt; i++)
-         out[i + out_idx] = (F)(Vector64ConversionTests.<F>getValue(bb, toClass));
+                                 int in_idx, int out_idx, int part,
+                                 BiConsumer<ByteBuffer, Object> putValue,
+                                 Function<ByteBuffer, Number> getValue) {
+        int SLICE_FACTOR = Math.max(in_vec_size, out_vec_size) / Math.min(in_vec_size, out_vec_size);
+        int ELEMENTS_IN_SLICE = in_vec_lane_cnt / SLICE_FACTOR;
+        assert (part < SLICE_FACTOR && part >= 0);
+
+        int start_idx = in_idx + part * ELEMENTS_IN_SLICE;
+        int end_idx = start_idx + ELEMENTS_IN_SLICE;
+
+        var bb = ByteBuffer.allocate(out_vec_size).order(ByteOrder.nativeOrder());
+        for (int i = start_idx; i < end_idx; i++) {
+            Object v = Array.get(in, i);
+            putValue.accept(bb, v);
+        }
+        bb.rewind();
+
+        for (int i = 0; i < out_vec_lane_cnt; i++) {
+            Number v = getValue.apply(bb);
+            Array.set(out, i + out_idx, v);
+        }
     }
 
-    static <E , F > void
-    contracting_reinterpret_scalar(E[] in, F[] out, int in_vec_size, int out_vec_size,
+    static void
+    contracting_reinterpret_scalar(Object in, Object out,
+                                   int in_vec_size, int out_vec_size,
                                    int in_vec_lane_cnt, int out_vec_lane_cnt,
-                                   int in_idx,  int out_idx, int part) {
-      int SLICE_FACTOR = Math.max(in_vec_size, out_vec_size) / Math.min(in_vec_size, out_vec_size);
-      int ELEMENTS_OUT_SLICE = out_vec_lane_cnt / SLICE_FACTOR;
-      assert (part > -SLICE_FACTOR && part <= 0);
-      int start_idx = out_idx + (-part) * ELEMENTS_OUT_SLICE;
-      int end_idx = start_idx + ELEMENTS_OUT_SLICE;
-      for (int i = 0; i < out_vec_lane_cnt; i++)
-        out[i+out_idx] = (F)(zeroValue(out[i]));
-      var bb = ByteBuffer.allocate(in_vec_size);
-      for (int i = 0; i < in_vec_lane_cnt; i++)
-        putValue(bb, in, i + in_idx);
-      bb.rewind();
-      Class<?> toClass = out[0].getClass();
-      for (int i = start_idx; i < end_idx; i++)
-        out[i] =
-            (F)(Vector64ConversionTests.<F>getValue(bb, toClass));
+                                   int in_idx, int out_idx, int part,
+                                   BiConsumer<ByteBuffer, Object> putValue,
+                                   Function<ByteBuffer, Number> getValue) {
+        int SLICE_FACTOR = Math.max(in_vec_size, out_vec_size) / Math.min(in_vec_size, out_vec_size);
+        int ELEMENTS_OUT_SLICE = out_vec_lane_cnt / SLICE_FACTOR;
+        assert (part > -SLICE_FACTOR && part <= 0);
+
+        int start_idx = out_idx + (-part) * ELEMENTS_OUT_SLICE;
+        int end_idx = start_idx + ELEMENTS_OUT_SLICE;
+
+        zeroArray(out, out_idx, out_vec_lane_cnt);
+
+        var bb = ByteBuffer.allocate(in_vec_size).order(ByteOrder.nativeOrder());
+        for (int i = 0; i < in_vec_lane_cnt; i++) {
+            Object v = Array.get(in, i + in_idx);
+            putValue.accept(bb, v);
+        }
+        bb.rewind();
+
+        for (int i = start_idx; i < end_idx; i++) {
+            Number v = getValue.apply(bb);
+            Array.set(out, i, v);
+        }
     }
 
-    static <E , F > void
-    expanding_conversion_scalar(E[] in, F[] out, int in_vec_len, int out_vec_len,
-                                int in_idx,  int out_idx, int part) {
-      int SLICE_FACTOR = Math.max(in_vec_len, out_vec_len) / Math.min(in_vec_len, out_vec_len);
-      assert (part < SLICE_FACTOR && part >= 0);
-      int start_idx = part * out_vec_len;
-      for (int i = 0; i < out_vec_len; i++)
-        out[i + out_idx] = (F)(Vector64ConversionTests.<E, F>convertValue(in[i + start_idx + in_idx], out[i + out_idx]));
-    }
-
-    static <E , F > void
-    contracting_conversion_scalar(E[] in, F[] out, int in_vec_len, int out_vec_len,
-                               int in_idx,  int out_idx, int part) {
-      int SLICE_FACTOR = Math.max(out_vec_len, in_vec_len) / Math.min(out_vec_len, in_vec_len);
-      assert (part > -SLICE_FACTOR && part <= 0);
-      int start_idx = -part * in_vec_len;
-      for (int i = 0; i < out_vec_len; i++)
-        out[i+out_idx] = (F)(zeroValue(out[i+out_idx]));
-      for (int i = 0; i < in_vec_len; i++)
-        out[i + start_idx + out_idx] =
-            (F)(Vector64ConversionTests.<E, F>convertValue(in[i+in_idx], out[i + start_idx+ out_idx]));
-    }
-
-    static int [] getPartsArray(int m , boolean is_contracting_conv) {
-      int [] parts = new int[m];
-      int part_init = is_contracting_conv ? -m+1 : 0;
-      for(int i = 0; i < parts.length ; i++)
-        parts[i] = part_init+i;
-      return parts;
+    static int[] getPartsArray(int m, boolean is_contracting_conv) {
+        int[] parts = new int[m];
+        int part_init = is_contracting_conv ? -m + 1 : 0;
+        for (int i = 0; i < parts.length; i++)
+            parts[i] = part_init + i;
+        return parts;
     }
 
     static <E> void assertResultsEquals(E[] ref, E[] res, int species_len) {
-      Assert.assertEquals(res.length , ref.length);
-      int TRIP_COUNT = res.length - (res.length & ~(species_len - 1));
-      for (int i = 0; i < TRIP_COUNT; i++) {
-        // @@@ Is this needed?
-        System.out.println("res[" + i + "] = " + res[i] + " ref[" + i +
-                           "] = " + ref[i]);
-        Assert.assertEquals(res[i], ref[i]);
-      }
+        Assert.assertEquals(res.length, ref.length);
+        int TRIP_COUNT = res.length - (res.length & ~(species_len - 1));
+        for (int i = 0; i < TRIP_COUNT; i++) {
+            // @@@ Is this needed?
+            System.out.println("res[" + i + "] = " + res[i] + " ref[" + i +
+                    "] = " + ref[i]);
+            Assert.assertEquals(res[i], ref[i]);
+        }
     }
 
-    static <I, O> void conversion_kernel(VectorSpecies<I> SPECIES, VectorSpecies<O> OSPECIES,
+    static <I, O> void conversion_kernel(VectorSpecies<I> srcSpecies, VectorSpecies<O> destSpecies,
                                          Object in,
                                          VectorOperators.Conversion<I, O> OP, ConvAPI API,
                                          int in_len) {
-        int out_len =  (in_len / SPECIES.length()) * OSPECIES.length();
-        int src_species_len = SPECIES.length();
-        int dst_species_len = OSPECIES.length();
-        boolean is_contracting_conv = src_species_len * OSPECIES.elementSize() < OSPECIES.vectorBitSize();
+        int out_len = (in_len / srcSpecies.length()) * destSpecies.length();
+        int src_species_len = srcSpecies.length();
+        int dst_species_len = destSpecies.length();
+        boolean is_contracting_conv = src_species_len * destSpecies.elementSize() < destSpecies.vectorBitSize();
         int m = Math.max(dst_species_len, src_species_len) / Math.min(src_species_len, dst_species_len);
 
         int[] parts = getPartsArray(m, is_contracting_conv);
 
-        Object expected = Array.newInstance(OSPECIES.elementType(), out_len);
-        Object actual = Array.newInstance(OSPECIES.elementType(), out_len);
+        Object expected = Array.newInstance(destSpecies.elementType(), out_len);
+        Object actual = Array.newInstance(destSpecies.elementType(), out_len);
 
-        // Calculated expected result
+        Function<Number, Object> convertValue = convertValueFunction(destSpecies.elementType());
+
+        // Calculate expected result
         for (int i = 0, j = 0; i < in_len; i += src_species_len, j += dst_species_len) {
             int part = parts[i % parts.length];
 
             if (is_contracting_conv) {
                 int start_idx = -part * src_species_len;
                 zeroArray(expected, j, dst_species_len);
-                copyConversionArray(in, i, expected, start_idx + j, src_species_len);
+                copyConversionArray(in, i, expected, start_idx + j, src_species_len, convertValue);
             } else {
                 int start_idx = part * dst_species_len;
-                copyConversionArray(in, start_idx + i, expected, j, dst_species_len);
+                copyConversionArray(in, start_idx + i, expected, j, dst_species_len, convertValue);
             }
         }
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0, j = 0; i < in_len; i += src_species_len, j += dst_species_len) {
                 int part = parts[i % parts.length];
-                var av = SPECIES.fromArray(in, i);
+                var av = srcSpecies.fromArray(in, i);
                 Vector<O> rv = null;
                 switch (API) {
                     default:
@@ -611,10 +459,10 @@ abstract class AbstractVectorConversionTest {
                         rv = av.convert(OP, part);
                         break;
                     case CONVERTSHAPE:
-                        rv = av.convertShape(OP, OSPECIES, part);
+                        rv = av.convertShape(OP, destSpecies, part);
                         break;
                     case CASTSHAPE:
-                        rv = av.castShape(OSPECIES, part);
+                        rv = av.castShape(destSpecies, part);
                         break;
                 }
                 System.arraycopy(rv.toArray(), 0, actual, j, dst_species_len);
@@ -624,40 +472,53 @@ abstract class AbstractVectorConversionTest {
         Assert.assertEquals(actual, expected);
     }
 
-    static <I, O> void reinterpret_kernel(VectorSpecies<I> SPECIES, VectorSpecies<O> OSPECIES,
-                                          I[] boxed_a, O[] boxed_ref, O[] boxed_res, Object unboxed_a,
+    static <I, O> void reinterpret_kernel(VectorSpecies<I> srcSpecies, VectorSpecies<O> dstSpecies,
+                                          Object in,
                                           int in_len) {
-        int out_len =  (in_len / SPECIES.length()) * OSPECIES.length();
-        int src_vector_size = SPECIES.vectorBitSize();
-        int dst_vector_size = OSPECIES.vectorBitSize();
-        int src_vector_lane_cnt = SPECIES.length();
-        int dst_vector_lane_cnt = OSPECIES.length();
+        int out_len = (in_len / srcSpecies.length()) * dstSpecies.length();
+        int src_vector_size = srcSpecies.vectorBitSize();
+        int dst_vector_size = dstSpecies.vectorBitSize();
+        int src_species_len = srcSpecies.length();
+        int dst_species_len = dstSpecies.length();
         boolean is_contracting_conv = src_vector_size < dst_vector_size;
         int m = Math.max(dst_vector_size, src_vector_size) / Math.min(dst_vector_size, src_vector_size);
 
         int[] parts = getPartsArray(m, is_contracting_conv);
 
-        for (int i = 0, j = 0; i < in_len; i += src_vector_lane_cnt, j += dst_vector_lane_cnt) {
+        Object expected = Array.newInstance(dstSpecies.elementType(), out_len);
+        Object actual = Array.newInstance(dstSpecies.elementType(), out_len);
+
+        BiConsumer<ByteBuffer, Object> putValue = putBufferValueFunction(srcSpecies.elementType());
+        Function<ByteBuffer, Number> getValue = getBufferValueFunction(dstSpecies.elementType());
+
+        // Calculate expected result
+        for (int i = 0, j = 0; i < in_len; i += src_species_len, j += dst_species_len) {
             int part = parts[i % parts.length];
 
             if (is_contracting_conv) {
-                contracting_reinterpret_scalar(boxed_a, boxed_ref, src_vector_size, dst_vector_size,
-                        src_vector_lane_cnt, dst_vector_lane_cnt, i, j, part);
+                contracting_reinterpret_scalar(in, expected,
+                        src_vector_size, dst_vector_size,
+                        src_species_len, dst_species_len,
+                        i, j, part,
+                        putValue, getValue);
             } else {
-                expanding_reinterpret_scalar(boxed_a, boxed_ref, src_vector_size, dst_vector_size,
-                        src_vector_lane_cnt, dst_vector_lane_cnt, i, j, part);
+                expanding_reinterpret_scalar(in, expected,
+                        src_vector_size, dst_vector_size,
+                        src_species_len, dst_species_len,
+                        i, j, part,
+                        putValue, getValue);
             }
         }
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0, j = 0; i < in_len; i += src_vector_lane_cnt, j += dst_vector_lane_cnt) {
+            for (int i = 0, j = 0; i < in_len; i += src_species_len, j += dst_species_len) {
                 int part = parts[i % parts.length];
-                var av = SPECIES.fromArray(unboxed_a, i);
-                var rv = av.reinterpretShape(OSPECIES, part);
-                copyPrimArrayToBoxedArray(boxed_res, j, rv.toArray());
+                var av = srcSpecies.fromArray(in, i);
+                var rv = av.reinterpretShape(dstSpecies, part);
+                System.arraycopy(rv.toArray(), 0, actual, j, dst_species_len);
             }
         }
 
-        assertResultsEquals(boxed_res, boxed_ref, dst_vector_lane_cnt);
+        Assert.assertEquals(actual, expected);
     }
 }
