@@ -2822,6 +2822,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         return vsp.vOp(m, n -> a[offset + indexMap[mapOffset + n]]);
     }
 
+
     /**
      * Loads a vector from a {@linkplain ByteBuffer byte buffer}
      * starting at an offset into the byte buffer.
@@ -2948,7 +2949,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     }
 
     /**
-     * Stores this vector into an array of {@code byte}
+     * Stores this vector into an array of type {@code byte[]}
      * starting at offset and using a mask.
      * <p>
      * For each vector lane, where {@code N} is the vector lane index,
@@ -3064,6 +3065,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
              });
     }
 
+
     /**
      * {@inheritDoc} <!--workaround-->
      */
@@ -3169,6 +3171,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             (arr, off, s) -> s.ldOp(arr, off,
                                     (arr_, off_, i) -> arr_[off_ + i]));
     }
+
 
     @Override
     abstract
@@ -3299,6 +3302,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     static long arrayAddress(byte[] a, int index) {
         return ARRAY_BASE + (((long)index) << ARRAY_SHIFT);
     }
+
 
     @ForceInline
     static long byteArrayAddress(byte[] a, int index) {

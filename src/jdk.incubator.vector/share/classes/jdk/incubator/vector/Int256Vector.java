@@ -789,6 +789,7 @@ final class Int256Vector extends IntVector {
         return super.fromArray0Template(a, offset);  // specialize
     }
 
+
     @ForceInline
     @Override
     final

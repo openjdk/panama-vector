@@ -2722,6 +2722,7 @@ public abstract class LongVector extends AbstractVector<Long> {
         }
     }
 
+
     /**
      * Loads a vector from a {@linkplain ByteBuffer byte buffer}
      * starting at an offset into the byte buffer.
@@ -2854,7 +2855,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     }
 
     /**
-     * Stores this vector into an array of {@code long}
+     * Stores this vector into an array of type {@code long[]}
      * starting at offset and using a mask.
      * <p>
      * For each vector lane, where {@code N} is the vector lane index,
@@ -3011,6 +3012,7 @@ public abstract class LongVector extends AbstractVector<Long> {
         }
     }
 
+
     /**
      * {@inheritDoc} <!--workaround-->
      */
@@ -3116,6 +3118,7 @@ public abstract class LongVector extends AbstractVector<Long> {
             (arr, off, s) -> s.ldOp(arr, off,
                                     (arr_, off_, i) -> arr_[off_ + i]));
     }
+
 
     @Override
     abstract
@@ -3251,6 +3254,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     static long arrayAddress(long[] a, int index) {
         return ARRAY_BASE + (((long)index) << ARRAY_SHIFT);
     }
+
 
     @ForceInline
     static long byteArrayAddress(byte[] a, int index) {

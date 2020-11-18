@@ -544,22 +544,6 @@ public class Float128VectorLoadStoreTests extends AbstractVectorTest {
     }
 
 
-    @Test(dataProvider = "floatMaskProvider")
-    static void loadStoreMask(IntFunction<float[]> fa,
-                              IntFunction<boolean[]> fm) {
-        boolean[] mask = fm.apply(SPECIES.length());
-        boolean[] r = new boolean[mask.length];
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < mask.length; i += SPECIES.length()) {
-                VectorMask<Float> vmask = VectorMask.fromArray(SPECIES, mask, i);
-                vmask.intoArray(r, i);
-            }
-        }
-        Assert.assertEquals(mask, r);
-    }
-
-
     @Test(dataProvider = "floatByteBufferProvider")
     static void loadStoreByteBuffer(IntFunction<float[]> fa,
                                     IntFunction<ByteBuffer> fb,
@@ -981,4 +965,6 @@ public class Float128VectorLoadStoreTests extends AbstractVectorTest {
             Assert.assertEquals(a, r);
        }
     }
+
+
 }

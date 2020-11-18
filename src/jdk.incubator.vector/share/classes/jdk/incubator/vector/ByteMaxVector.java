@@ -775,6 +775,7 @@ final class ByteMaxVector extends ByteVector {
         return super.fromArray0Template(a, offset);  // specialize
     }
 
+
     @ForceInline
     @Override
     final
