@@ -35,20 +35,21 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
 abstract class AbstractVectorConversionTest {
-    static final int INVOC_COUNT = Integer.getInteger("jdk.incubator.vector.test.loop-iterations", 1000);
 
-    static VectorOperators.Conversion<Byte, Byte> B2B = VectorOperators.Conversion.ofCast(byte.class, byte.class);
-    static VectorOperators.Conversion<Short, Short> S2S = VectorOperators.Conversion.ofCast(short.class, short.class);
-    static VectorOperators.Conversion<Integer, Integer> I2I = VectorOperators.Conversion.ofCast(int.class, int.class);
-    static VectorOperators.Conversion<Long, Long> L2L = VectorOperators.Conversion.ofCast(long.class, long.class);
-    static VectorOperators.Conversion<Float, Float> F2F = VectorOperators.Conversion.ofCast(float.class, float.class);
-    static VectorOperators.Conversion<Double, Double> D2D = VectorOperators.Conversion.ofCast(double.class, double.class);
+    @AfterMethod
+    public void getRunTime(ITestResult tr) {
+        long time = tr.getEndMillis() - tr.getStartMillis();
+        System.out.println(tr.getName() + " took " + time + " ms");
+    }
+
+    static final int INVOC_COUNT = Integer.getInteger("jdk.incubator.vector.test.loop-iterations", 1000);
 
     static <T> IntFunction<T> withToString(String s, IntFunction<T> f) {
         return new IntFunction<T>() {
@@ -79,25 +80,9 @@ abstract class AbstractVectorConversionTest {
         return a;
     }
 
-    interface ToBoolF {
-        boolean apply(int i);
-    }
-
-    static boolean[] fill_bool(int s, ToBoolF f) {
-        return fill_bool(new boolean[s], f);
-    }
-
-    static boolean[] fill_bool(boolean[] a, ToBoolF f) {
-        for (int i = 0; i < a.length; i++) {
-            a[i] = f.apply(i);
-        }
-        return a;
-    }
-
     interface ToShortF {
         short apply(int i);
     }
-
 
     static short[] fill_short(int s, ToShortF f) {
         return fill_short(new short[s], f);
@@ -174,85 +159,87 @@ abstract class AbstractVectorConversionTest {
             withToString("byte(i)", (int s) -> fill_byte(s, i -> (byte) (i + 1)))
     );
 
-
-    @AfterMethod
-    public void getRunTime(ITestResult tr) {
-        long time = tr.getEndMillis() - tr.getStartMillis();
-        System.out.println(tr.getName() + " took " + time + " ms");
-    }
-
-    @DataProvider
-    public Object[][] byteUnaryOpProvider() {
-        return BYTE_GENERATORS.stream().
-                map(f -> new Object[]{f}).
-                toArray(Object[][]::new);
-    }
-
-    static final List<IntFunction<boolean[]>> BOOL_GENERATORS = List.of(
-            withToString("boolean(i%3)", (int s) -> fill_bool(s, i -> i % 3 == 0))
-    );
-
-    @DataProvider
-    public Object[][] booleanUnaryOpProvider() {
-        return BOOL_GENERATORS.stream().
-                map(f -> new Object[]{f}).
-                toArray(Object[][]::new);
-    }
-
     static final List<IntFunction<short[]>> SHORT_GENERATORS = List.of(
             withToString("short(i)", (int s) -> fill_short(s, i -> (short) (i * 100 + 1)))
     );
-
-    @DataProvider
-    public Object[][] shortUnaryOpProvider() {
-        return SHORT_GENERATORS.stream().
-                map(f -> new Object[]{f}).
-                toArray(Object[][]::new);
-    }
 
     static final List<IntFunction<int[]>> INT_GENERATORS = List.of(
             withToString("int(i)", (int s) -> fill_int(s, i -> (int) (i ^ ((i & 1) - 1))))
     );
 
-    @DataProvider
-    public Object[][] intUnaryOpProvider() {
-        return INT_GENERATORS.stream().
-                map(f -> new Object[]{f}).
-                toArray(Object[][]::new);
-    }
-
     static final List<IntFunction<long[]>> LONG_GENERATORS = List.of(
             withToString("long(i)", (int s) -> fill_long(s, i -> (long) (i ^ ((i & 1) - 1))))
     );
-
-    @DataProvider
-    public Object[][] longUnaryOpProvider() {
-        return LONG_GENERATORS.stream().
-                map(f -> new Object[]{f}).
-                toArray(Object[][]::new);
-    }
 
     static final List<IntFunction<float[]>> FLOAT_GENERATORS = List.of(
             withToString("float(i)", (int s) -> fill_float(s, i -> (float) (i * 10 + 0.1)))
     );
 
-
-    @DataProvider
-    public Object[][] floatUnaryOpProvider() {
-        return FLOAT_GENERATORS.stream().
-                map(f -> new Object[]{f}).
-                toArray(Object[][]::new);
-    }
-
     static final List<IntFunction<double[]>> DOUBLE_GENERATORS = List.of(
             withToString("double(i)", (int s) -> fill_double(s, i -> (double) (i * 10 + 0.1)))
     );
 
-    @DataProvider
-    public Object[][] doubleUnaryOpProvider() {
-        return DOUBLE_GENERATORS.stream().
-                map(f -> new Object[]{f}).
-                toArray(Object[][]::new);
+    static List<?> sourceGenerators(Class<?> src) {
+        if (src == byte.class) {
+            return BYTE_GENERATORS;
+        }
+        else if (src == short.class) {
+            return SHORT_GENERATORS;
+        }
+        else if (src == int.class) {
+            return INT_GENERATORS;
+        }
+        else if (src == long.class) {
+            return LONG_GENERATORS;
+        }
+        else if (src == float.class) {
+            return FLOAT_GENERATORS;
+        }
+        else if (src == double.class) {
+            return DOUBLE_GENERATORS;
+        }
+        else
+            throw new IllegalStateException();
+    }
+
+    static Object[][] fixedShapeXFixedShapeSpeciesArgs(VectorShape shape) {
+        List<Object[]> args = new ArrayList<>();
+
+        for (Class<?> srcE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class)) {
+            VectorSpecies<?> src = VectorSpecies.of(srcE, shape);
+            List<?> srcGens = sourceGenerators(srcE);
+
+            for (Class<?> dstE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class)) {
+                VectorSpecies<?> dst = VectorSpecies.of(dstE, shape);
+
+                for (Object srcGen : srcGens) {
+                    args.add(new Object[]{src, dst, srcGen});
+                }
+            }
+        }
+
+        return args.toArray(Object[][]::new);
+    }
+
+    static Object[][] fixedShapeXShapeSpeciesArgs(VectorShape srcShape) {
+        List<Object[]> args = new ArrayList<>();
+
+        for (Class<?> srcE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class)) {
+            VectorSpecies<?> src = VectorSpecies.of(srcE, srcShape);
+            List<?> srcGens = sourceGenerators(srcE);
+
+            for (VectorShape dstShape : VectorShape.values()) {
+                for (Class<?> dstE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class)) {
+                    VectorSpecies<?> dst = VectorSpecies.of(dstE, dstShape);
+
+                    for (Object srcGen : srcGens) {
+                        args.add(new Object[]{src, dst, srcGen});
+                    }
+                }
+            }
+        }
+
+        return args.toArray(Object[][]::new);
     }
 
 
@@ -404,21 +391,12 @@ abstract class AbstractVectorConversionTest {
         return parts;
     }
 
-    static <E> void assertResultsEquals(E[] ref, E[] res, int species_len) {
-        Assert.assertEquals(res.length, ref.length);
-        int TRIP_COUNT = res.length - (res.length & ~(species_len - 1));
-        for (int i = 0; i < TRIP_COUNT; i++) {
-            // @@@ Is this needed?
-            System.out.println("res[" + i + "] = " + res[i] + " ref[" + i +
-                    "] = " + ref[i]);
-            Assert.assertEquals(res[i], ref[i]);
-        }
-    }
-
     static <I, O> void conversion_kernel(VectorSpecies<I> srcSpecies, VectorSpecies<O> destSpecies,
                                          Object in,
-                                         VectorOperators.Conversion<I, O> OP, ConvAPI API,
-                                         int in_len) {
+                                         ConvAPI conv) {
+        VectorOperators.Conversion<I, O> convOp = VectorOperators.Conversion.ofCast(
+                srcSpecies.elementType(), destSpecies.elementType());
+        int in_len = Array.getLength(in);
         int out_len = (in_len / srcSpecies.length()) * destSpecies.length();
         int src_species_len = srcSpecies.length();
         int dst_species_len = destSpecies.length();
@@ -450,21 +428,12 @@ abstract class AbstractVectorConversionTest {
             for (int i = 0, j = 0; i < in_len; i += src_species_len, j += dst_species_len) {
                 int part = parts[i % parts.length];
                 var av = srcSpecies.fromArray(in, i);
-                Vector<O> rv = null;
-                switch (API) {
-                    default:
-                        assert (false);
-                        break;
-                    case CONVERT:
-                        rv = av.convert(OP, part);
-                        break;
-                    case CONVERTSHAPE:
-                        rv = av.convertShape(OP, destSpecies, part);
-                        break;
-                    case CASTSHAPE:
-                        rv = av.castShape(destSpecies, part);
-                        break;
-                }
+                Vector<O> rv = switch(conv) {
+                    case CONVERT -> av.convert(convOp, part);
+                    case CONVERTSHAPE -> av.convertShape(convOp, destSpecies, part);
+                    case CASTSHAPE -> av.castShape(destSpecies, part);
+                    case REINTERPRETSHAPE -> throw new UnsupportedOperationException();
+                };
                 System.arraycopy(rv.toArray(), 0, actual, j, dst_species_len);
             }
         }
@@ -473,8 +442,8 @@ abstract class AbstractVectorConversionTest {
     }
 
     static <I, O> void reinterpret_kernel(VectorSpecies<I> srcSpecies, VectorSpecies<O> dstSpecies,
-                                          Object in,
-                                          int in_len) {
+                                          Object in) {
+        int in_len = Array.getLength(in);
         int out_len = (in_len / srcSpecies.length()) * dstSpecies.length();
         int src_vector_size = srcSpecies.vectorBitSize();
         int dst_vector_size = dstSpecies.vectorBitSize();
