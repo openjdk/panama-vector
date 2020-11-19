@@ -607,8 +607,6 @@ class StubRoutines: AllStatic {
 
   static address select_fill_function(BasicType t, bool aligned, const char* &name);
 
-  static address zero_aligned_words()  { return _zero_aligned_words; }
-
 #ifdef __VECTOR_API_MATH_INTRINSICS_COMMON
   static address vector_exp_float64()   { return _vector_exp_float64;   }
   static address vector_exp_float128()  { return _vector_exp_float128;  }
