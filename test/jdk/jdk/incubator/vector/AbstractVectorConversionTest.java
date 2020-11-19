@@ -28,7 +28,6 @@ import jdk.incubator.vector.VectorSpecies;
 import org.testng.Assert;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.DataProvider;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -52,7 +51,7 @@ abstract class AbstractVectorConversionTest {
     static final int INVOC_COUNT = Integer.getInteger("jdk.incubator.vector.test.loop-iterations", 1000);
 
     static <T> IntFunction<T> withToString(String s, IntFunction<T> f) {
-        return new IntFunction<T>() {
+        return new IntFunction<>() {
             @Override
             public T apply(int v) {
                 return f.apply(v);
@@ -246,7 +245,7 @@ abstract class AbstractVectorConversionTest {
     public enum ConvAPI {CONVERT, CONVERTSHAPE, CASTSHAPE, REINTERPRETSHAPE}
 
 
-    static <E extends Number> Function<Number, Object> convertValueFunction(Class<?> to) {
+    static Function<Number, Object> convertValueFunction(Class<?> to) {
         if (to == byte.class)
             return Number::byteValue;
         else if (to == short.class)
@@ -297,11 +296,10 @@ abstract class AbstractVectorConversionTest {
             throw new IllegalStateException();
     }
 
-    static final ClassValue<Object> ZERO = new ClassValue<Object>() {
+    static final ClassValue<Object> ZERO = new ClassValue<>() {
         @Override
         protected Object computeValue(Class<?> type) {
             MethodHandle zeroHandle = MethodHandles.zero(type);
-            Object zero;
             try {
                 return zeroHandle.invoke();
             } catch (Throwable t) {
