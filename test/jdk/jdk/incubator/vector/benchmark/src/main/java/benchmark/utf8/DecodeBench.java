@@ -20,7 +20,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-  
+
 package benchmark.utf8;
 
 import java.util.HashMap;
@@ -59,7 +59,7 @@ public class DecodeBench {
     private static final VectorSpecies<Byte>  B64  = ByteVector.SPECIES_64;
     private static final VectorSpecies<Byte>  B128 = ByteVector.SPECIES_128;
     private static final VectorSpecies<Short> S128 = ShortVector.SPECIES_128;
-    
+
     private static final HashMap<Long, DecoderLutEntry> lutTable = new HashMap<Long, DecoderLutEntry>();
 
     private static class DecoderLutEntry {
@@ -92,7 +92,7 @@ public class DecodeBench {
     public void setupLutTable() {
         int[] sizes = new int[32];
         computeLutRecursive(sizes, 0, 0); //10609 entries total
-            
+
         // for (var entry : lutTable.entrySet()) {
         //     System.out.println("" + entry.getKey() + " -> " + entry.getValue());
         // }
@@ -165,7 +165,7 @@ public class DecodeBench {
             }
         }
 
-        //generate min symbols values for validation 
+        //generate min symbols values for validation
         short[] zeroBits = new short[8];
         for (int i = 0; i < 8; i++) {
             int sz = i < cnt ? sizes[i] : 1;
