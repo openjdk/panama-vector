@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020 Microsoft Corporation. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -228,12 +228,15 @@ public class DecodeBench {
             }
             case 3: {
                 b1 = randomInt(0xE0, 0xEF);
-                if (b1 == 0xE0) {
+                switch (b1) {
+                case 0xE0:
                     b2 = randomInt(0xA0, 0xBF);
                     b3 = randomInt(0x80, 0xBF);
-                } else {
+                    break;
+                default:
                     b2 = randomInt(0x80, 0xBF);
                     b3 = randomInt(0x80, 0xBF);
+                    break;
                 }
                 buf.put(i + 0, (byte)((0b1110  << (8 - 4)) | b1));
                 buf.put(i + 1, (byte)((0b10    << (8 - 2)) | b2));
@@ -242,14 +245,22 @@ public class DecodeBench {
             }
             case 4: {
                 b1 = randomInt(0xF0, 0xF4);
-                if (b1 == 0xF0) {
+                switch (b1) {
+                case 0xF0:
                     b2 = randomInt(0x90, 0xBF);
                     b3 = randomInt(0x80, 0xBF);
                     b4 = randomInt(0x80, 0xBF);
-                } else {
+                    break;
+                case 0xF4:
+                    b2 = randomInt(0x80, 0x8F);
+                    b3 = randomInt(0x80, 0xBF);
+                    b4 = randomInt(0x80, 0xBF);
+                    break;
+                default:
                     b2 = randomInt(0x80, 0xBF);
                     b3 = randomInt(0x80, 0xBF);
                     b4 = randomInt(0x80, 0xBF);
+                    break;
                 }
                 buf.put(i + 0, (byte)((0b11110 << (8 - 5)) | b1));
                 buf.put(i + 1, (byte)((0b10    << (8 - 2)) | b2));
@@ -293,6 +304,8 @@ public class DecodeBench {
     }
 
     private static void decodeArrayVectorized(ByteBuffer src, CharBuffer dst) {
+        // Algorithm is largely inspired from https://dirtyhandscoding.github.io/posts/utf8lut-vectorized-utf-8-converter-introduction.html
+
         byte[] sa = src.array();
         int sp = src.arrayOffset() + src.position();
         int sl = src.arrayOffset() + src.limit();
@@ -303,36 +316,36 @@ public class DecodeBench {
 
         // Vectorized loop
         while (sp + B128.length() < sl && dp + S128.length() < dl) {
-            var bytes = ByteVector.fromArray(B128, sa, sp);                                                                                               // System.out.println("bytes = " + arrayToString((byte[])bytes.toArray()));
+            var bytes = ByteVector.fromArray(B128, sa, sp);
 
             /* Decode */
 
-            var continuationByteMask = bytes.lanewise(VectorOperators.AND, (byte)0xC0).compare(VectorOperators.EQ, (byte)0x80);                           // System.out.println("continuationByteMask = " + arrayToString(continuationByteMask.toArray()));
-            final DecoderLutEntry lookup = lutTable.get(continuationByteMask.toLong());                                                                   // System.out.println("" + continuationByteMask.toLong() + " -> " + lookup);
-            if (lookup == null) {                                                                                                                         // System.out.println("back off (1)");
+            var continuationByteMask = bytes.lanewise(VectorOperators.AND, (byte)0xC0).compare(VectorOperators.EQ, (byte)0x80);
+            final DecoderLutEntry lookup = lutTable.get(continuationByteMask.toLong());
+            if (lookup == null) {
                 break;
             }
             // Shuffle the 1st and 2nd bytes
-            var Rab = bytes.rearrange(lookup.shufAB, lookup.shufAB.toVector().compare(VectorOperators.NE, -1)).reinterpretAsShorts();                     // System.out.println("Rab = " + arrayToString((short[])Rab.toArray()));
+            var Rab = bytes.rearrange(lookup.shufAB, lookup.shufAB.toVector().compare(VectorOperators.NE, -1)).reinterpretAsShorts();
             // Shuffle the 3rd byte
-            var Rc  = bytes.rearrange(lookup.shufC, lookup.shufC.toVector().compare(VectorOperators.NE, -1)).reinterpretAsShorts();                       // System.out.println("Rc = " + arrayToString((short[])Rc.toArray()));
+            var Rc  = bytes.rearrange(lookup.shufC, lookup.shufC.toVector().compare(VectorOperators.NE, -1)).reinterpretAsShorts();
             // Extract the bits from each byte
             var sum = Rab.lanewise(VectorOperators.AND, (short)0x007F)
                  .add(Rab.lanewise(VectorOperators.AND, (short)0x3F00).lanewise(VectorOperators.LSHR, 2))
-                 .add(Rc.lanewise(VectorOperators.LSHL, 12));                                                                                             // System.out.println("sum = " + arrayToString((short[])sum.toArray()));
+                 .add(Rc.lanewise(VectorOperators.LSHL, 12));
 
             /* Validate */
 
             var zeroBits = lookup.zeroBits;
-            if (sum.lanewise(VectorOperators.AND, zeroBits).compare(VectorOperators.NE, 0).anyTrue()) {                                                   // System.out.println("back off (2)");
+            if (sum.lanewise(VectorOperators.AND, zeroBits).compare(VectorOperators.NE, 0).anyTrue()) {
                 break;
             }
             // Check for surrogate code point
-            if (sum.lanewise(VectorOperators.SUB, (short)0x6000).compare(VectorOperators.GT, 0x77FF).anyTrue()) {                                         // System.out.println("back off (3)");
+            if (sum.lanewise(VectorOperators.SUB, (short)0x6000).compare(VectorOperators.GT, 0x77FF).anyTrue()) {
                 break;
             }
             var headerMask = lookup.headerMask;
-            if (bytes.lanewise(VectorOperators.AND, headerMask).compare(VectorOperators.NE, headerMask.lanewise(VectorOperators.LSHL, 1)).anyTrue()) {    // System.out.println("back off (4)");
+            if (bytes.lanewise(VectorOperators.AND, headerMask).compare(VectorOperators.NE, headerMask.lanewise(VectorOperators.LSHL, 1)).anyTrue()) {
                 break;
             }
 
@@ -484,20 +497,18 @@ public class DecodeBench {
                                                   int dp,
                                                   int malformedNB)
     {
-        throw new RuntimeException("Incorrect result, sp = " + sp);
-        // updatePositions(src, sp, dst, dp);
-        // return CoderResult.malformedForLength(malformedNB);
+        updatePositions(src, sp, dst, dp);
+        return CoderResult.malformedForLength(malformedNB);
     }
 
     private static CoderResult malformed(ByteBuffer src, int sp,
                                          CharBuffer dst, int dp,
                                          int nb)
     {
-        throw new RuntimeException("Incorrect result, sp = " + sp + ", nb = " + nb);
-        // src.position(sp - src.arrayOffset());
-        // CoderResult cr = malformedN(src, sp, nb);
-        // updatePositions(src, sp, dst, dp);
-        // return cr;
+        src.position(sp - src.arrayOffset());
+        CoderResult cr = malformedN(src, sp, nb);
+        updatePositions(src, sp, dst, dp);
+        return cr;
     }
 
     private static CoderResult malformedN(ByteBuffer src, int sp,
