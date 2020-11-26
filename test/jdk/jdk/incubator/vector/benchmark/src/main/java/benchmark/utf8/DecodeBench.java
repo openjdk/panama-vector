@@ -56,9 +56,9 @@ public class DecodeBench {
     private String in;
     private String out;
 
-    private static final VectorSpecies<Byte>  B64  = ByteVector.SPECIES_64;
     private static final VectorSpecies<Byte>  B128 = ByteVector.SPECIES_128;
     private static final VectorSpecies<Short> S128 = ShortVector.SPECIES_128;
+    private static final VectorSpecies<Short> S256 = ShortVector.SPECIES_256;
 
     private static final HashMap<Long, DecoderLutEntry> lutTable = new HashMap<Long, DecoderLutEntry>();
 
@@ -287,7 +287,7 @@ public class DecodeBench {
     }
 
     @Benchmark
-    public void decode() {
+    public void decodeScalar() {
         decodeArrayLoop(src, dst);
     }
 
@@ -369,15 +369,13 @@ public class DecodeBench {
         int dl = dst.arrayOffset() + dst.limit();
 
         // Vectorized loop
-        while (sp + B64.length() - 1 < sl && dp + S128.length() - 1 < dl) {
-            var bytes = ByteVector.fromArray(B64, sa, sp);
+        for (; sp <= sl - B128.length() && dp <= dl - S256.length(); sp += B128.length(), dp += S256.length()) {
+            var bytes = ByteVector.fromArray(B128, sa, sp);
 
-            if (bytes.compare(VectorOperators.LT, (byte)0x00).anyTrue())
+            if (bytes.compare(VectorOperators.LT, (byte) 0x00).anyTrue())
                 break;
 
-            ((ShortVector)bytes.convertShape(VectorOperators.B2S, S128, 0)).intoCharArray(da, dp);
-            sp += B64.length();
-            dp += S128.length();
+            ((ShortVector) bytes.convertShape(VectorOperators.B2S, S256, 0)).intoCharArray(da, dp);
         }
 
         updatePositions(src, sp, dst, dp);
