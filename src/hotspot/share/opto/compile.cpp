@@ -553,6 +553,7 @@ Compile::Compile( ciEnv* ci_env, ciMethod* target, int osr_bci,
                   _vector_reboxing_late_inlines(comp_arena(), 2, 0, NULL),
                   _late_inlines_pos(0),
                   _number_of_mh_late_inlines(0),
+                  _native_invokers(comp_arena(), 1, 0, NULL),
                   _print_inlining_stream(NULL),
                   _print_inlining_list(NULL),
                   _print_inlining_idx(0),
@@ -849,6 +850,7 @@ Compile::Compile( ciEnv* ci_env,
     _for_igvn(NULL),
     _warm_calls(NULL),
     _number_of_mh_late_inlines(0),
+    _native_invokers(),
     _print_inlining_stream(NULL),
     _print_inlining_list(NULL),
     _print_inlining_idx(0),
@@ -968,10 +970,10 @@ void Compile::Init(int aliaslevel) {
 #if INCLUDE_RTM_OPT
   if (UseRTMLocking && has_method() && (method()->method_data_or_null() != NULL)) {
     int rtm_state = method()->method_data()->rtm_state();
-    if (method_has_option("NoRTMLockEliding") || ((rtm_state & NoRTM) != 0)) {
+    if (method_has_option(CompileCommand::NoRTMLockEliding) || ((rtm_state & NoRTM) != 0)) {
       // Don't generate RTM lock eliding code.
       set_rtm_state(NoRTM);
-    } else if (method_has_option("UseRTMLockEliding") || ((rtm_state & UseRTM) != 0) || !UseRTMDeopt) {
+    } else if (method_has_option(CompileCommand::UseRTMLockEliding) || ((rtm_state & UseRTM) != 0) || !UseRTMDeopt) {
       // Generate RTM lock eliding code without abort ratio calculation code.
       set_rtm_state(UseRTM);
     } else if (UseRTMDeopt) {
@@ -2959,6 +2961,7 @@ void Compile::final_graph_reshaping_main_switch(Node* n, Final_Reshape_Counts& f
   case Op_CallRuntime:
   case Op_CallLeaf:
   case Op_CallLeafVector:
+  case Op_CallNative:
   case Op_CallLeafNoFP: {
     assert (n->is_Call(), "");
     CallNode *call = n->as_Call();
@@ -3310,17 +3313,25 @@ void Compile::final_graph_reshaping_main_switch(Node* n, Final_Reshape_Counts& f
   }
 
   case Op_Proj: {
-    if (OptimizeStringConcat || IncrementalInline || IncrementalInlineVirtual) {
-      ProjNode* proj = n->as_Proj();
-      if (proj->_is_io_use) {
-        assert(proj->_con == TypeFunc::I_O || proj->_con == TypeFunc::Memory, "");
+    if (OptimizeStringConcat) {
+      ProjNode* p = n->as_Proj();
+      if (p->_is_io_use) {
         // Separate projections were used for the exception path which
         // are normally removed by a late inline.  If it wasn't inlined
         // then they will hang around and should just be replaced with
-        // the original one. Merge them.
-        Node* non_io_proj = proj->in(0)->as_Multi()->proj_out_or_null(proj->_con, false /*is_io_use*/);
-        if (non_io_proj  != NULL) {
-          proj->subsume_by(non_io_proj , this);
+        // the original one.
+        Node* proj = NULL;
+        // Replace with just one
+        for (SimpleDUIterator i(p->in(0)); i.has_next(); i.next()) {
+          Node *use = i.get();
+          if (use->is_Proj() && p != use && use->as_Proj()->_con == p->_con) {
+            proj = use;
+            break;
+          }
+        }
+        assert(proj != NULL || p->_con == TypeFunc::I_O, "io may be dropped at an infinite loop");
+        if (proj != NULL) {
+          p->subsume_by(proj, this);
         }
       }
     }
@@ -3402,6 +3413,9 @@ void Compile::final_graph_reshaping_main_switch(Node* n, Final_Reshape_Counts& f
   case Op_StoreVector:
   case Op_LoadVectorGather:
   case Op_StoreVectorScatter:
+  case Op_VectorMaskGen:
+  case Op_LoadVectorMasked:
+  case Op_StoreVectorMasked:
     break;
 
   case Op_AddReductionVI:
@@ -4176,7 +4190,7 @@ Compile::PrintInliningBuffer& Compile::print_inlining_current() {
 
 void Compile::print_inlining_update(CallGenerator* cg) {
   if (print_inlining() || print_intrinsics()) {
-    if (!cg->is_late_inline() && !cg->is_virtual_late_inline()) {
+    if (!cg->is_late_inline()) {
       if (print_inlining_current().cg() != NULL) {
         print_inlining_push();
       }
@@ -4230,9 +4244,7 @@ void Compile::process_print_inlining() {
     for (int i = 0; i < _late_inlines.length(); i++) {
       CallGenerator* cg = _late_inlines.at(i);
       if (!cg->is_mh_late_inline()) {
-        bool is_virtual = cg->is_virtual_late_inline();
-        const char* msg = (is_virtual ? "virtual call"
-                                      : "live nodes > LiveNodeCountInliningCutoff");
+        const char* msg = "live nodes > LiveNodeCountInliningCutoff";
         if (do_print_inlining) {
           cg->print_inlining_late(msg);
         }
@@ -4748,3 +4760,6 @@ void Compile::igv_print_method_to_network(const char* phase_name) {
 }
 #endif
 
+void Compile::add_native_invoker(BufferBlob* stub) {
+  _native_invokers.append(stub);
+}
