@@ -384,7 +384,7 @@ instruct reinterpretResize(vReg dst, vReg src, iRegINoSp tmp, pRegGov pTmp, rFla
     __ mov(as_Register($tmp$$reg), length_in_bytes_resize);
     __ sve_whilelo(as_PRegister($pTmp$$reg), __ B,
                    zr, as_Register($tmp$$reg));
-    __ sve_cpy(as_FloatRegister($dst$$reg), __ B, ptrue, 0, false);
+    __ sve_dup(as_FloatRegister($dst$$reg), __ B, 0);
     __ sve_sel(as_FloatRegister($dst$$reg), __ B, as_PRegister($pTmp$$reg),
                as_FloatRegister($src$$reg), as_FloatRegister($dst$$reg));
   %}

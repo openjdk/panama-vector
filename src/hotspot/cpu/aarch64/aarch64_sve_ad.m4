@@ -30,15 +30,6 @@ dnl
 // AArch64 SVE Architecture Description File
 
 dnl
-define(`TYPE2DATATYPE',
-`ifelse($1, `B', `BYTE',
-        $1, `S', `SHORT',
-        $1, `I', `INT',
-        $1, `L', `LONG',
-        $1, `F', `FLOAT',
-        $1, `D', `DOUBLE',
-        `error($1)')')dnl
-dnl
 dnl OPERAND_VMEMORYA_IMMEDIATE_OFFSET($1,            $2,       $3     )
 dnl OPERAND_VMEMORYA_IMMEDIATE_OFFSET(imm_type_abbr, imm_type, imm_len)
 define(`OPERAND_VMEMORYA_IMMEDIATE_OFFSET', `
@@ -357,10 +348,9 @@ instruct storeV_partial(vReg src, vmemA mem, pRegGov pTmp, iRegINoSp tmp1,
 
 
 // vector reinterpret
-dnl
-define(`REINTERPRET', `
-instruct reinterpret`'(vReg dst) %{
-  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= $1 &&
+
+instruct reinterpret(vReg dst) %{
+  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= 16 &&
             n->as_Vector()->length_in_bytes() ==
             n->in(1)->bottom_type()->is_vect()->length_in_bytes());  // src == dst
   match(Set dst (VectorReinterpret dst));
@@ -370,8 +360,7 @@ instruct reinterpret`'(vReg dst) %{
     // empty
   %}
   ins_pipe(pipe_class_empty);
-%}')dnl
-REINTERPRET(16)
+%}
 
 instruct reinterpretResize(vReg dst, vReg src, iRegINoSp tmp, pRegGov pTmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
@@ -390,7 +379,7 @@ instruct reinterpretResize(vReg dst, vReg src, iRegINoSp tmp, pRegGov pTmp, rFla
     __ mov(as_Register($tmp$$reg), length_in_bytes_resize);
     __ sve_whilelo(as_PRegister($pTmp$$reg), __ B,
                    zr, as_Register($tmp$$reg));
-    __ sve_cpy(as_FloatRegister($dst$$reg), __ B, ptrue, 0, false);
+    __ sve_dup(as_FloatRegister($dst$$reg), __ B, 0);
     __ sve_sel(as_FloatRegister($dst$$reg), __ B, as_PRegister($pTmp$$reg),
                as_FloatRegister($src$$reg), as_FloatRegister($dst$$reg));
   %}
