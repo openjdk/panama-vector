@@ -30,6 +30,15 @@ dnl
 // AArch64 SVE Architecture Description File
 
 dnl
+define(`TYPE2DATATYPE',
+`ifelse($1, `B', `BYTE',
+        $1, `S', `SHORT',
+        $1, `I', `INT',
+        $1, `L', `LONG',
+        $1, `F', `FLOAT',
+        $1, `D', `DOUBLE',
+        `error($1)')')dnl
+dnl
 dnl OPERAND_VMEMORYA_IMMEDIATE_OFFSET($1,            $2,       $3     )
 dnl OPERAND_VMEMORYA_IMMEDIATE_OFFSET(imm_type_abbr, imm_type, imm_len)
 define(`OPERAND_VMEMORYA_IMMEDIATE_OFFSET', `
@@ -98,6 +107,18 @@ source %{
     Node* def = use->in(def_idx);
     const TypeVect* vt = def->bottom_type()->is_vect();
     return vt->length();
+  }
+
+  static inline uint vector_length_in_bytes(const MachNode* n) {
+    const TypeVect* vt = n->bottom_type()->is_vect();
+    return vt->length_in_bytes();
+  }
+
+  static inline uint vector_length_in_bytes(const MachNode* use, MachOper* opnd) {
+    uint def_idx = use->operand_index(opnd);
+    Node* def = use->in(def_idx);
+    const TypeVect* vt = def->bottom_type()->is_vect();
+    return vt->length_in_bytes();
   }
 
   static Assembler::SIMD_RegVariant elemBytes_to_regVariant(int esize) {
@@ -219,7 +240,6 @@ source %{
       case Op_VectorLoadConst:
       case Op_VectorLoadShuffle:
       case Op_VectorRearrange:
-      case Op_VectorReinterpret:
       case Op_VectorTest:
         return false;
       default:
@@ -335,6 +355,47 @@ instruct storeV_partial(vReg src, vmemA mem, pRegGov pTmp, iRegINoSp tmp1,
   ins_pipe(pipe_slow);
 %}dnl
 
+
+// vector reinterpret
+dnl
+define(`REINTERPRET', `
+instruct reinterpret`'(vReg dst) %{
+  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= $1 &&
+            n->as_Vector()->length_in_bytes() ==
+            n->in(1)->bottom_type()->is_vect()->length_in_bytes());  // src == dst
+  match(Set dst (VectorReinterpret dst));
+  ins_cost(0);
+  format %{ " # reinterpret $dst" %}
+  ins_encode %{
+    // empty
+  %}
+  ins_pipe(pipe_class_empty);
+%}')dnl
+REINTERPRET(16)
+
+instruct reinterpretResize(vReg dst, vReg src, iRegINoSp tmp, pRegGov pTmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->as_Vector()->length_in_bytes() >= 16 &&
+            n->as_Vector()->length_in_bytes() !=
+            n->in(1)->bottom_type()->is_vect()->length_in_bytes());  // src != dst
+  match(Set dst (VectorReinterpret src));
+  effect(TEMP_DEF dst, TEMP pTmp, TEMP tmp, KILL cr);
+  ins_cost(3 * SVE_COST);
+  format %{ " # reinterpretResize $dst,$src\t" %}
+  ins_encode %{
+    uint length_in_bytes_src = vector_length_in_bytes(this, $src);
+    uint length_in_bytes_dst = vector_length_in_bytes(this);
+    uint length_in_bytes_resize = length_in_bytes_src < length_in_bytes_dst ?
+                            length_in_bytes_src : length_in_bytes_dst;
+    __ mov(as_Register($tmp$$reg), length_in_bytes_resize);
+    __ sve_whilelo(as_PRegister($pTmp$$reg), __ B,
+                   zr, as_Register($tmp$$reg));
+    __ sve_cpy(as_FloatRegister($dst$$reg), __ B, ptrue, 0, false);
+    __ sve_sel(as_FloatRegister($dst$$reg), __ B, as_PRegister($pTmp$$reg),
+               as_FloatRegister($src$$reg), as_FloatRegister($dst$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
 dnl
 dnl UNARY_OP_TRUE_PREDICATE_ETYPE($1,        $2,      $3,           $4,   $5,          %6  )
 dnl UNARY_OP_TRUE_PREDICATE_ETYPE(insn_name, op_name, element_type, size, min_vec_len, insn)
