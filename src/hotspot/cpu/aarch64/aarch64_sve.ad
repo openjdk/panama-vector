@@ -233,13 +233,8 @@ source %{
       // Vector API specific
       case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
-      case Op_VectorCast:
-      case Op_VectorCastB2X:
       case Op_VectorCastD2X:
       case Op_VectorCastF2X:
-      case Op_VectorCastI2X:
-      case Op_VectorCastL2X:
-      case Op_VectorCastS2X:
       case Op_VectorInsert:
       case Op_VectorLoadConst:
       case Op_VectorLoadShuffle:
@@ -2491,6 +2486,131 @@ instruct vsubD(vReg dst, vReg src1, vReg src2) %{
     __ sve_fsub(as_FloatRegister($dst$$reg), __ D,
          as_FloatRegister($src1$$reg),
          as_FloatRegister($src2$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ Vector cast -------------------------------
+
+instruct vcvtBtoS(vReg dst, vReg src)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorCastB2X src));
+  ins_cost(SVE_COST);
+  format %{ "sve_sunpklo  $dst, H, $src\t# convert B to S vector" %}
+  ins_encode %{
+    __ sve_sunpklo(as_FloatRegister($dst$$reg), __ H, as_FloatRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vcvtStoI(vReg dst, vReg src)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorCastS2X src));
+  ins_cost(SVE_COST);
+  format %{ "sve_sunpklo  $dst, S, $src\t# convert S to I vector" %}
+  ins_encode %{
+    __ sve_sunpklo(as_FloatRegister($dst$$reg), __ S, as_FloatRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vcvtItoL(vReg dst, vReg src)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  match(Set dst (VectorCastI2X src));
+  ins_cost(SVE_COST);
+  format %{ "sve_sunpklo  $dst, D, $src\t# convert I to L vector" %}
+  ins_encode %{
+    __ sve_sunpklo(as_FloatRegister($dst$$reg), __ D, as_FloatRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+
+instruct vcvtBtoI(vReg dst, vReg src)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+	    n->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorCastB2X src));
+  ins_cost(2 * SVE_COST);
+  format %{ "sve_sunpklo  $dst, H, $src\n\t"
+            "sve_sunpklo  $dst, S, $dst\t# convert B to I vector" %}
+  ins_encode %{
+    __ sve_sunpklo(as_FloatRegister($dst$$reg), __ H, as_FloatRegister($src$$reg));
+    __ sve_sunpklo(as_FloatRegister($dst$$reg), __ S, as_FloatRegister($dst$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+
+instruct vcvtStoB(vReg dst, vReg src, vReg tmp)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorCastS2X src));
+  effect(TEMP tmp);
+  ins_cost(2 * SVE_COST);
+  format %{ "sve_dup  $tmp, B, 0\n\t"
+            "sve_uzp1  $dst, B, $src, tmp\t# convert S to B vector" %}
+  ins_encode %{
+    __ sve_dup(as_FloatRegister($tmp$$reg), __ B, 0);
+    __ sve_uzp1(as_FloatRegister($dst$$reg), __ B, as_FloatRegister($src$$reg), as_FloatRegister($tmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vcvtItoS(vReg dst, vReg src, vReg tmp)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorCastI2X src));
+  effect(TEMP tmp);
+  ins_cost(2 * SVE_COST);
+  format %{ "sve_dup  $tmp, H, 0\n\t"
+            "sve_uzp1  $dst, H, $src, tmp\t# convert I to S vector" %}
+  ins_encode %{
+    __ sve_dup(as_FloatRegister($tmp$$reg), __ H, 0);
+    __ sve_uzp1(as_FloatRegister($dst$$reg), __ H, as_FloatRegister($src$$reg), as_FloatRegister($tmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vcvtLtoI(vReg dst, vReg src, vReg tmp)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorCastL2X src));
+  effect(TEMP tmp);
+  ins_cost(2 * SVE_COST);
+  format %{ "sve_dup  $tmp, S, 0\n\t"
+            "sve_uzp1  $dst, S, $src, tmp\t# convert L to I vector" %}
+  ins_encode %{
+    __ sve_dup(as_FloatRegister($tmp$$reg), __ S, 0);
+    __ sve_uzp1(as_FloatRegister($dst$$reg), __ S, as_FloatRegister($src$$reg), as_FloatRegister($tmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+
+instruct vcvtItoB(vReg dst, vReg src, vReg tmp)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorCastI2X src));
+  effect(TEMP_DEF dst, TEMP tmp);
+  ins_cost(3 * SVE_COST);
+  format %{ "sve_dup  $tmp, H, 0\n\t"
+            "sve_uzp1  $dst, H, $src, tmp\n\t"
+            "sve_uzp1  $dst, B, $dst, tmp\n\t# convert I to B vector" %}
+  ins_encode %{
+    __ sve_dup(as_FloatRegister($tmp$$reg), __ H, 0);
+    __ sve_uzp1(as_FloatRegister($dst$$reg), __ H, as_FloatRegister($src$$reg), as_FloatRegister($tmp$$reg));
+    __ sve_uzp1(as_FloatRegister($dst$$reg), __ B, as_FloatRegister($dst$$reg), as_FloatRegister($tmp$$reg));
   %}
   ins_pipe(pipe_slow);
 %}

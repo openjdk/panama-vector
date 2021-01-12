@@ -30,6 +30,15 @@ dnl
 // AArch64 SVE Architecture Description File
 
 dnl
+define(`TYPE2DATATYPE',
+`ifelse($1, `B', `BYTE',
+        $1, `S', `SHORT',
+        $1, `I', `INT',
+        $1, `L', `LONG',
+        $1, `F', `FLOAT',
+        $1, `D', `DOUBLE',
+        `error($1)')')dnl
+dnl
 dnl OPERAND_VMEMORYA_IMMEDIATE_OFFSET($1,            $2,       $3     )
 dnl OPERAND_VMEMORYA_IMMEDIATE_OFFSET(imm_type_abbr, imm_type, imm_len)
 define(`OPERAND_VMEMORYA_IMMEDIATE_OFFSET', `
@@ -220,13 +229,8 @@ source %{
       // Vector API specific
       case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
-      case Op_VectorCast:
-      case Op_VectorCastB2X:
       case Op_VectorCastD2X:
       case Op_VectorCastF2X:
-      case Op_VectorCastI2X:
-      case Op_VectorCastL2X:
-      case Op_VectorCastS2X:
       case Op_VectorInsert:
       case Op_VectorLoadConst:
       case Op_VectorLoadShuffle:
@@ -1456,4 +1460,87 @@ BINARY_OP_UNPREDICATED(vsubI, SubVI, S, 4, sve_sub)
 BINARY_OP_UNPREDICATED(vsubL, SubVL, D, 2, sve_sub)
 BINARY_OP_UNPREDICATED(vsubF, SubVF, S, 4, sve_fsub)
 BINARY_OP_UNPREDICATED(vsubD, SubVD, D, 2, sve_fsub)
+
+// ------------------------------ Vector cast -------------------------------
+dnl
+define(`VECTOR_CAST_I2I', `
+instruct vcvt$1to$2`'(vReg dst, vReg src)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
+  match(Set dst (VectorCast$1`'2X src));
+  ins_cost(SVE_COST);
+  format %{ "sve_$3  $dst, $4, $src\t# convert $1 to $2 vector" %}
+  ins_encode %{
+    __ sve_$3(as_FloatRegister($dst$$reg), __ $4, as_FloatRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl             $1 $2 $3       $4
+VECTOR_CAST_I2I(B, S, sunpklo, H)
+VECTOR_CAST_I2I(S, I, sunpklo, S)
+VECTOR_CAST_I2I(I, L, sunpklo, D)
+
+dnl
+define(`VECTOR_CAST_B2I', `
+instruct vcvt$1to$2`'(vReg dst, vReg src)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+	    n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
+  match(Set dst (VectorCast$1`'2X src));
+  ins_cost(2 * SVE_COST);
+  format %{ "sve_$3  $dst, $4, $src\n\t"
+            "sve_$5  $dst, $6, $dst\t# convert $1 to $2 vector" %}
+  ins_encode %{
+    __ sve_$3(as_FloatRegister($dst$$reg), __ $4, as_FloatRegister($src$$reg));
+    __ sve_$5(as_FloatRegister($dst$$reg), __ $6, as_FloatRegister($dst$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl             $1 $2 $3       $4 $5       $6
+VECTOR_CAST_B2I(B, I, sunpklo, H, sunpklo, S)
+
+dnl
+define(`VECTOR_CAST_S2B', `
+instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
+  match(Set dst (VectorCast$1`'2X src));
+  effect(TEMP tmp);
+  ins_cost(2 * SVE_COST);
+  format %{ "sve_$3  $tmp, $4, 0\n\t"
+            "sve_$5  $dst, $4, $src, tmp\t# convert $1 to $2 vector" %}
+  ins_encode %{
+    __ sve_$3(as_FloatRegister($tmp$$reg), __ $4, 0);
+    __ sve_$5(as_FloatRegister($dst$$reg), __ $4, as_FloatRegister($src$$reg), as_FloatRegister($tmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl             $1 $2 $3   $4 $5
+VECTOR_CAST_S2B(S, B, dup, B, uzp1)
+VECTOR_CAST_S2B(I, S, dup, H, uzp1)
+VECTOR_CAST_S2B(L, I, dup, S, uzp1)
+
+dnl
+define(`VECTOR_CAST_I2B', `
+instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
+  match(Set dst (VectorCast$1`'2X src));
+  effect(TEMP_DEF dst, TEMP tmp);
+  ins_cost(3 * SVE_COST);
+  format %{ "sve_$3  $tmp, $4, 0\n\t"
+            "sve_$5  $dst, $4, $src, tmp\n\t"
+            "sve_$5  $dst, $6, $dst, tmp\n\t# convert $1 to $2 vector" %}
+  ins_encode %{
+    __ sve_$3(as_FloatRegister($tmp$$reg), __ $4, 0);
+    __ sve_$5(as_FloatRegister($dst$$reg), __ $4, as_FloatRegister($src$$reg), as_FloatRegister($tmp$$reg));
+    __ sve_$5(as_FloatRegister($dst$$reg), __ $6, as_FloatRegister($dst$$reg), as_FloatRegister($tmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl             $1 $2 $3   $4 $5    $6
+VECTOR_CAST_I2B(I, B, dup, H, uzp1, B)
 
