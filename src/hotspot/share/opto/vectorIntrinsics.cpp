@@ -332,7 +332,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
 //                  int start, int step, int wrap, ShuffleIotaOperation<Sh, E> defaultImpl)
 bool LibraryCallKit::inline_vector_shuffle_iota() {
   // TODO shuffle is not supported on SVE
-  if (UseSVE > 0) {
+  if (Matcher::supports_scalable_vector()) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** shuffle iota not supported on SVE");
     }
@@ -434,7 +434,7 @@ bool LibraryCallKit::inline_vector_shuffle_iota() {
 //                    ShuffleToVectorOperation<VM,Sh,E> defaultImpl)
 bool LibraryCallKit::inline_vector_shuffle_to_vector() {
   // TODO shuffle is not supported on SVE
-  if (UseSVE > 0) {
+  if (Matcher::supports_scalable_vector()) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** shuffle to vector not supported on SVE");
     }
