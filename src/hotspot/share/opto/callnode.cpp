@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -632,6 +632,12 @@ void JVMState::set_map_deep(SafePointNode* map) {
   }
 }
 
+// unlike set_map(), this is two-way setting.
+void JVMState::bind_map(SafePointNode* map) {
+  set_map(map);
+  _map->set_jvms(this);
+}
+
 // Adapt offsets in in-array after adding or removing an edge.
 // Prerequisite is that the JVMState is used by only one node.
 void JVMState::adapt_position(int delta) {
@@ -954,25 +960,15 @@ void CallNode::extract_projections(CallProjections* projs, bool separate_io_proj
   }
 }
 
-Node *CallNode::Ideal(PhaseGVN *phase, bool can_reshape) {
+Node* CallNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+#ifdef ASSERT
+  // Validate attached generator
   CallGenerator* cg = generator();
-  if (can_reshape && cg != NULL && cg->is_mh_late_inline() && !cg->already_attempted()) {
-    // Check whether this MH handle call becomes a candidate for inlining
-    ciMethod* callee = cg->method();
-    vmIntrinsics::ID iid = callee->intrinsic_id();
-    if (iid == vmIntrinsics::_invokeBasic) {
-      if (in(TypeFunc::Parms)->Opcode() == Op_ConP) {
-        phase->C->prepend_late_inline(cg);
-        set_generator(NULL);
-      }
-    } else {
-      assert(callee->has_member_arg(), "wrong type of call?");
-      if (in(TypeFunc::Parms + callee->arg_size() - 1)->Opcode() == Op_ConP) {
-        phase->C->prepend_late_inline(cg);
-        set_generator(NULL);
-      }
-    }
+  if (cg != NULL) {
+    assert(is_CallStaticJava()  && cg->is_mh_late_inline() ||
+           is_CallDynamicJava() && cg->is_virtual_late_inline(), "mismatch");
   }
+#endif // ASSERT
   return SafePointNode::Ideal(phase, can_reshape);
 }
 
@@ -991,7 +987,7 @@ bool CallJavaNode::cmp( const Node &n ) const {
          _override_symbolic_info == call._override_symbolic_info;
 }
 
-void CallJavaNode::copy_call_debug_info(PhaseIterGVN* phase, SafePointNode *sfpt) {
+void CallJavaNode::copy_call_debug_info(PhaseIterGVN* phase, SafePointNode* sfpt) {
   // Copy debug information and adjust JVMState information
   uint old_dbg_start = sfpt->is_Call() ? sfpt->as_Call()->tf()->domain()->cnt() : (uint)TypeFunc::Parms+1;
   uint new_dbg_start = tf()->domain()->cnt();
@@ -1035,7 +1031,7 @@ bool CallJavaNode::validate_symbolic_info() const {
   if (method() == NULL) {
     return true; // call into runtime or uncommon trap
   }
-  ciMethod* symbolic_info = jvms()->method()->get_method_at_bci(_bci);
+  ciMethod* symbolic_info = jvms()->method()->get_method_at_bci(jvms()->bci());
   ciMethod* callee = method();
   if (symbolic_info->is_method_handle_intrinsic() && !callee->is_method_handle_intrinsic()) {
     assert(override_symbolic_info(), "should be set");
@@ -1046,7 +1042,7 @@ bool CallJavaNode::validate_symbolic_info() const {
 #endif
 
 #ifndef PRODUCT
-void CallJavaNode::dump_spec(outputStream *st) const {
+void CallJavaNode::dump_spec(outputStream* st) const {
   if( _method ) _method->print_short_name(st);
   CallNode::dump_spec(st);
 }
@@ -1065,6 +1061,32 @@ uint CallStaticJavaNode::size_of() const { return sizeof(*this); }
 bool CallStaticJavaNode::cmp( const Node &n ) const {
   CallStaticJavaNode &call = (CallStaticJavaNode&)n;
   return CallJavaNode::cmp(call);
+}
+
+Node* CallStaticJavaNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+  CallGenerator* cg = generator();
+  if (can_reshape && cg != NULL) {
+    assert(IncrementalInlineMH, "required");
+    assert(cg->call_node() == this, "mismatch");
+    assert(cg->is_mh_late_inline(), "not virtual");
+
+    // Check whether this MH handle call becomes a candidate for inlining.
+    ciMethod* callee = cg->method();
+    vmIntrinsics::ID iid = callee->intrinsic_id();
+    if (iid == vmIntrinsics::_invokeBasic) {
+      if (in(TypeFunc::Parms)->Opcode() == Op_ConP) {
+        phase->C->prepend_late_inline(cg);
+        set_generator(NULL);
+      }
+    } else {
+      assert(callee->has_member_arg(), "wrong type of call?");
+      if (in(TypeFunc::Parms + callee->arg_size() - 1)->Opcode() == Op_ConP) {
+        phase->C->prepend_late_inline(cg);
+        set_generator(NULL);
+      }
+    }
+  }
+  return CallNode::Ideal(phase, can_reshape);
 }
 
 //----------------------------uncommon_trap_request----------------------------
@@ -1131,7 +1153,7 @@ Node* CallDynamicJavaNode::Ideal(PhaseGVN* phase, bool can_reshape) {
     assert(cg->call_node() == this, "mismatch");
     assert(cg->is_virtual_late_inline(), "not virtual");
 
-    // Recover symbolic info for method resolution
+    // Recover symbolic info for method resolution.
     ciMethod* caller = jvms()->method();
     ciBytecodeStream iter(caller);
     iter.force_bci(jvms()->bci());
@@ -1141,7 +1163,7 @@ Node* CallDynamicJavaNode::Ideal(PhaseGVN* phase, bool can_reshape) {
     ciMethod*        orig_callee  = iter.get_method(not_used1, &not_used2);  // callee in the bytecode
     ciKlass*         holder       = iter.get_declared_method_holder();
     if (orig_callee->is_method_handle_intrinsic()) {
-      assert(_override_symbolic_info, "");
+      assert(_override_symbolic_info, "required");
       orig_callee = method();
       holder = method()->holder();
     }
@@ -1153,12 +1175,12 @@ Node* CallDynamicJavaNode::Ideal(PhaseGVN* phase, bool can_reshape) {
 
     int  not_used3;
     bool call_does_dispatch;
-    ciMethod* callee = phase->C->optimize_virtual_call(caller, jvms()->bci(), klass, holder, orig_callee, receiver_type, true /*is_virtual*/,
+    ciMethod* callee = phase->C->optimize_virtual_call(caller, klass, holder, orig_callee, receiver_type, true /*is_virtual*/,
                                                        call_does_dispatch, not_used3);  // out-parameters
     if (!call_does_dispatch) {
-      // Register for late inlining
+      // Register for late inlining.
       cg->set_callee_method(callee);
-      phase->C->prepend_late_inline(cg); // TODO prepend or append for virtual calls? MH late inlining prepends to the list.
+      phase->C->prepend_late_inline(cg); // MH late inlining prepends to the list, so do the same
       set_generator(NULL);
     }
   }
