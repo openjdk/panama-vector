@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,7 +24,7 @@
 /*
  * @test
  * @modules jdk.incubator.vector
- * @run testng/othervm -ea -esa -Xbatch ShortMaxVectorTests
+ * @run testng/othervm -ea -esa -Xbatch -XX:-TieredCompilation ShortMaxVectorTests
  */
 
 // -- This file was mechanically generated: Do not edit! -- //
@@ -73,7 +73,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         short apply(short a);
     }
 
-    static void assertArraysEquals(short[] a, short[] r, FUnOp f) {
+    static void assertArraysEquals(short[] r, short[] a, FUnOp f) {
         int i = 0;
         try {
             for (; i < a.length; i++) {
@@ -88,7 +88,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         short[] apply(short a);
     }
 
-    static void assertArraysEquals(short[] a, short[] r, FUnArrayOp f) {
+    static void assertArraysEquals(short[] r, short[] a, FUnArrayOp f) {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
@@ -98,13 +98,13 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         } catch (AssertionError e) {
             short[] ref = f.apply(a[i]);
             short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
-            Assert.assertEquals(ref, res, "(ref: " + Arrays.toString(ref)
+            Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i);
         }
     }
 
-    static void assertArraysEquals(short[] a, short[] r, boolean[] mask, FUnOp f) {
+    static void assertArraysEquals(short[] r, short[] a, boolean[] mask, FUnOp f) {
         int i = 0;
         try {
             for (; i < a.length; i++) {
@@ -123,17 +123,17 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         short apply(short[] a);
     }
 
-    static void assertReductionArraysEquals(short[] a, short[] b, short c,
+    static void assertReductionArraysEquals(short[] r, short rc, short[] a,
                                             FReductionOp f, FReductionAllOp fa) {
         int i = 0;
         try {
-            Assert.assertEquals(c, fa.apply(a));
+            Assert.assertEquals(rc, fa.apply(a));
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(b[i], f.apply(a, i));
+                Assert.assertEquals(r[i], f.apply(a, i));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(c, fa.apply(a), "Final result is incorrect!");
-            Assert.assertEquals(b[i], f.apply(a, i), "at index #" + i);
+            Assert.assertEquals(rc, fa.apply(a), "Final result is incorrect!");
+            Assert.assertEquals(r[i], f.apply(a, i), "at index #" + i);
         }
     }
 
@@ -145,17 +145,17 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         short apply(short[] a, boolean[] mask);
     }
 
-    static void assertReductionArraysEqualsMasked(short[] a, short[] b, short c, boolean[] mask,
+    static void assertReductionArraysEqualsMasked(short[] r, short rc, short[] a, boolean[] mask,
                                             FReductionMaskedOp f, FReductionAllMaskedOp fa) {
         int i = 0;
         try {
-            Assert.assertEquals(c, fa.apply(a, mask));
+            Assert.assertEquals(rc, fa.apply(a, mask));
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(b[i], f.apply(a, i, mask));
+                Assert.assertEquals(r[i], f.apply(a, i, mask));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(c, fa.apply(a, mask), "Final result is incorrect!");
-            Assert.assertEquals(b[i], f.apply(a, i, mask), "at index #" + i);
+            Assert.assertEquals(rc, fa.apply(a, mask), "Final result is incorrect!");
+            Assert.assertEquals(r[i], f.apply(a, i, mask), "at index #" + i);
         }
     }
 
@@ -167,17 +167,17 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         long apply(short[] a);
     }
 
-    static void assertReductionLongArraysEquals(short[] a, long[] b, long c,
+    static void assertReductionLongArraysEquals(long[] r, long rc, short[] a,
                                             FReductionOpLong f, FReductionAllOpLong fa) {
         int i = 0;
         try {
-            Assert.assertEquals(c, fa.apply(a));
+            Assert.assertEquals(rc, fa.apply(a));
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(b[i], f.apply(a, i));
+                Assert.assertEquals(r[i], f.apply(a, i));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(c, fa.apply(a), "Final result is incorrect!");
-            Assert.assertEquals(b[i], f.apply(a, i), "at index #" + i);
+            Assert.assertEquals(rc, fa.apply(a), "Final result is incorrect!");
+            Assert.assertEquals(r[i], f.apply(a, i), "at index #" + i);
         }
     }
 
@@ -189,17 +189,17 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         long apply(short[] a, boolean[] mask);
     }
 
-    static void assertReductionLongArraysEqualsMasked(short[] a, long[] b, long c, boolean[] mask,
+    static void assertReductionLongArraysEqualsMasked(long[] r, long rc, short[] a, boolean[] mask,
                                             FReductionMaskedOpLong f, FReductionAllMaskedOpLong fa) {
         int i = 0;
         try {
-            Assert.assertEquals(c, fa.apply(a, mask));
+            Assert.assertEquals(rc, fa.apply(a, mask));
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(b[i], f.apply(a, i, mask));
+                Assert.assertEquals(r[i], f.apply(a, i, mask));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(c, fa.apply(a, mask), "Final result is incorrect!");
-            Assert.assertEquals(b[i], f.apply(a, i, mask), "at index #" + i);
+            Assert.assertEquals(rc, fa.apply(a, mask), "Final result is incorrect!");
+            Assert.assertEquals(r[i], f.apply(a, i, mask), "at index #" + i);
         }
     }
 
@@ -207,37 +207,37 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         boolean apply(boolean[] a, int idx);
     }
 
-    static void assertReductionBoolArraysEquals(boolean[] a, boolean[] b, FBoolReductionOp f) {
+    static void assertReductionBoolArraysEquals(boolean[] r, boolean[] a, FBoolReductionOp f) {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(b[i], f.apply(a, i));
+                Assert.assertEquals(r[i], f.apply(a, i));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(b[i], f.apply(a, i), "at index #" + i);
+            Assert.assertEquals(r[i], f.apply(a, i), "at index #" + i);
         }
     }
 
-    static void assertInsertArraysEquals(short[] a, short[] b, short element, int index) {
+    static void assertInsertArraysEquals(short[] r, short[] a, short element, int index) {
         int i = 0;
         try {
             for (; i < a.length; i += 1) {
                 if(i%SPECIES.length() == index) {
-                    Assert.assertEquals(b[i], element);
+                    Assert.assertEquals(r[i], element);
                 } else {
-                    Assert.assertEquals(b[i], a[i]);
+                    Assert.assertEquals(r[i], a[i]);
                 }
             }
         } catch (AssertionError e) {
             if (i%SPECIES.length() == index) {
-                Assert.assertEquals(b[i], element, "at index #" + i);
+                Assert.assertEquals(r[i], element, "at index #" + i);
             } else {
-                Assert.assertEquals(b[i], a[i], "at index #" + i);
+                Assert.assertEquals(r[i], a[i], "at index #" + i);
             }
         }
     }
 
-    static void assertRearrangeArraysEquals(short[] a, short[] r, int[] order, int vector_len) {
+    static void assertRearrangeArraysEquals(short[] r, short[] a, int[] order, int vector_len) {
         int i = 0, j = 0;
         try {
             for (; i < a.length; i += vector_len) {
@@ -251,7 +251,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertSelectFromArraysEquals(short[] a, short[] r, short[] order, int vector_len) {
+    static void assertSelectFromArraysEquals(short[] r, short[] a, short[] order, int vector_len) {
         int i = 0, j = 0;
         try {
             for (; i < a.length; i += vector_len) {
@@ -265,7 +265,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertRearrangeArraysEquals(short[] a, short[] r, int[] order, boolean[] mask, int vector_len) {
+    static void assertRearrangeArraysEquals(short[] r, short[] a, int[] order, boolean[] mask, int vector_len) {
         int i = 0, j = 0;
         try {
             for (; i < a.length; i += vector_len) {
@@ -285,7 +285,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertSelectFromArraysEquals(short[] a, short[] r, short[] order, boolean[] mask, int vector_len) {
+    static void assertSelectFromArraysEquals(short[] r, short[] a, short[] order, boolean[] mask, int vector_len) {
         int i = 0, j = 0;
         try {
             for (; i < a.length; i += vector_len) {
@@ -305,7 +305,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertBroadcastArraysEquals(short[]a, short[]r) {
+    static void assertBroadcastArraysEquals(short[] r, short[] a) {
         int i = 0;
         for (; i < a.length; i += SPECIES.length()) {
             int idx = i;
@@ -334,7 +334,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertArraysEquals(short[] a, short[] b, short[] r, FBinOp f) {
+    static void assertArraysEquals(short[] r, short[] a, short[] b, FBinOp f) {
         int i = 0;
         try {
             for (; i < a.length; i++) {
@@ -345,7 +345,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertBroadcastArraysEquals(short[] a, short[] b, short[] r, FBinOp f) {
+    static void assertBroadcastArraysEquals(short[] r, short[] a, short[] b, FBinOp f) {
         int i = 0;
         try {
             for (; i < a.length; i++) {
@@ -357,7 +357,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertBroadcastLongArraysEquals(short[] a, short[] b, short[] r, FBinOp f) {
+    static void assertBroadcastLongArraysEquals(short[] r, short[] a, short[] b, FBinOp f) {
         int i = 0;
         try {
             for (; i < a.length; i++) {
@@ -369,11 +369,11 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertArraysEquals(short[] a, short[] b, short[] r, boolean[] mask, FBinOp f) {
-        assertArraysEquals(a, b, r, mask, FBinMaskOp.lift(f));
+    static void assertArraysEquals(short[] r, short[] a, short[] b, boolean[] mask, FBinOp f) {
+        assertArraysEquals(r, a, b, mask, FBinMaskOp.lift(f));
     }
 
-    static void assertArraysEquals(short[] a, short[] b, short[] r, boolean[] mask, FBinMaskOp f) {
+    static void assertArraysEquals(short[] r, short[] a, short[] b, boolean[] mask, FBinMaskOp f) {
         int i = 0;
         try {
             for (; i < a.length; i++) {
@@ -384,11 +384,11 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertBroadcastArraysEquals(short[] a, short[] b, short[] r, boolean[] mask, FBinOp f) {
-        assertBroadcastArraysEquals(a, b, r, mask, FBinMaskOp.lift(f));
+    static void assertBroadcastArraysEquals(short[] r, short[] a, short[] b, boolean[] mask, FBinOp f) {
+        assertBroadcastArraysEquals(r, a, b, mask, FBinMaskOp.lift(f));
     }
 
-    static void assertBroadcastArraysEquals(short[] a, short[] b, short[] r, boolean[] mask, FBinMaskOp f) {
+    static void assertBroadcastArraysEquals(short[] r, short[] a, short[] b, boolean[] mask, FBinMaskOp f) {
         int i = 0;
         try {
             for (; i < a.length; i++) {
@@ -402,11 +402,11 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertBroadcastLongArraysEquals(short[] a, short[] b, short[] r, boolean[] mask, FBinOp f) {
-        assertBroadcastLongArraysEquals(a, b, r, mask, FBinMaskOp.lift(f));
+    static void assertBroadcastLongArraysEquals(short[] r, short[] a, short[] b, boolean[] mask, FBinOp f) {
+        assertBroadcastLongArraysEquals(r, a, b, mask, FBinMaskOp.lift(f));
     }
 
-    static void assertBroadcastLongArraysEquals(short[] a, short[] b, short[] r, boolean[] mask, FBinMaskOp f) {
+    static void assertBroadcastLongArraysEquals(short[] r, short[] a, short[] b, boolean[] mask, FBinMaskOp f) {
         int i = 0;
         try {
             for (; i < a.length; i++) {
@@ -420,7 +420,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertShiftArraysEquals(short[] a, short[] b, short[] r, FBinOp f) {
+    static void assertShiftArraysEquals(short[] r, short[] a, short[] b, FBinOp f) {
         int i = 0;
         int j = 0;
         try {
@@ -434,11 +434,11 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertShiftArraysEquals(short[] a, short[] b, short[] r, boolean[] mask, FBinOp f) {
-        assertShiftArraysEquals(a, b, r, mask, FBinMaskOp.lift(f));
+    static void assertShiftArraysEquals(short[] r, short[] a, short[] b, boolean[] mask, FBinOp f) {
+        assertShiftArraysEquals(r, a, b, mask, FBinMaskOp.lift(f));
     }
 
-    static void assertShiftArraysEquals(short[] a, short[] b, short[] r, boolean[] mask, FBinMaskOp f) {
+    static void assertShiftArraysEquals(short[] r, short[] a, short[] b, boolean[] mask, FBinMaskOp f) {
         int i = 0;
         int j = 0;
         try {
@@ -464,7 +464,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertArraysEquals(short[] a, short[] b, short[] c, short[] r, FTernOp f) {
+    static void assertArraysEquals(short[] r, short[] a, short[] b, short[] c, FTernOp f) {
         int i = 0;
         try {
             for (; i < a.length; i++) {
@@ -475,11 +475,11 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertArraysEquals(short[] a, short[] b, short[] c, short[] r, boolean[] mask, FTernOp f) {
-        assertArraysEquals(a, b, c, r, mask, FTernMaskOp.lift(f));
+    static void assertArraysEquals(short[] r, short[] a, short[] b, short[] c, boolean[] mask, FTernOp f) {
+        assertArraysEquals(r, a, b, c, mask, FTernMaskOp.lift(f));
     }
 
-    static void assertArraysEquals(short[] a, short[] b, short[] c, short[] r, boolean[] mask, FTernMaskOp f) {
+    static void assertArraysEquals(short[] r, short[] a, short[] b, short[] c, boolean[] mask, FTernMaskOp f) {
         int i = 0;
         try {
             for (; i < a.length; i++) {
@@ -491,7 +491,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertBroadcastArraysEquals(short[] a, short[] b, short[] c, short[] r, FTernOp f) {
+    static void assertBroadcastArraysEquals(short[] r, short[] a, short[] b, short[] c, FTernOp f) {
         int i = 0;
         try {
             for (; i < a.length; i++) {
@@ -504,7 +504,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertAltBroadcastArraysEquals(short[] a, short[] b, short[] c, short[] r, FTernOp f) {
+    static void assertAltBroadcastArraysEquals(short[] r, short[] a, short[] b, short[] c, FTernOp f) {
         int i = 0;
         try {
             for (; i < a.length; i++) {
@@ -517,12 +517,12 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertBroadcastArraysEquals(short[] a, short[] b, short[] c, short[] r, boolean[] mask,
+    static void assertBroadcastArraysEquals(short[] r, short[] a, short[] b, short[] c, boolean[] mask,
                                             FTernOp f) {
-        assertBroadcastArraysEquals(a, b, c, r, mask, FTernMaskOp.lift(f));
+        assertBroadcastArraysEquals(r, a, b, c, mask, FTernMaskOp.lift(f));
     }
 
-    static void assertBroadcastArraysEquals(short[] a, short[] b, short[] c, short[] r, boolean[] mask,
+    static void assertBroadcastArraysEquals(short[] r, short[] a, short[] b, short[] c, boolean[] mask,
                                             FTernMaskOp f) {
         int i = 0;
         try {
@@ -538,12 +538,12 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertAltBroadcastArraysEquals(short[] a, short[] b, short[] c, short[] r, boolean[] mask,
+    static void assertAltBroadcastArraysEquals(short[] r, short[] a, short[] b, short[] c, boolean[] mask,
                                             FTernOp f) {
-        assertAltBroadcastArraysEquals(a, b, c, r, mask, FTernMaskOp.lift(f));
+        assertAltBroadcastArraysEquals(r, a, b, c, mask, FTernMaskOp.lift(f));
     }
 
-    static void assertAltBroadcastArraysEquals(short[] a, short[] b, short[] c, short[] r, boolean[] mask,
+    static void assertAltBroadcastArraysEquals(short[] r, short[] a, short[] b, short[] c, boolean[] mask,
                                             FTernMaskOp f) {
         int i = 0;
         try {
@@ -559,7 +559,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertDoubleBroadcastArraysEquals(short[] a, short[] b, short[] c, short[] r, FTernOp f) {
+    static void assertDoubleBroadcastArraysEquals(short[] r, short[] a, short[] b, short[] c, FTernOp f) {
         int i = 0;
         try {
             for (; i < a.length; i++) {
@@ -574,12 +574,12 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertDoubleBroadcastArraysEquals(short[] a, short[] b, short[] c, short[] r, boolean[] mask,
+    static void assertDoubleBroadcastArraysEquals(short[] r, short[] a, short[] b, short[] c, boolean[] mask,
                                                   FTernOp f) {
-        assertDoubleBroadcastArraysEquals(a, b, c, r, mask, FTernMaskOp.lift(f));
+        assertDoubleBroadcastArraysEquals(r, a, b, c, mask, FTernMaskOp.lift(f));
     }
 
-    static void assertDoubleBroadcastArraysEquals(short[] a, short[] b, short[] c, short[] r, boolean[] mask,
+    static void assertDoubleBroadcastArraysEquals(short[] r, short[] a, short[] b, short[] c, boolean[] mask,
                                                   FTernMaskOp f) {
         int i = 0;
         try {
@@ -602,7 +602,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         short apply(short[] a, int b);
     }
 
-    static void assertArraysEquals(short[] a, short[] r, FBinArrayOp f) {
+    static void assertArraysEquals(short[] r, short[] a, FBinArrayOp f) {
         int i = 0;
         try {
             for (; i < a.length; i++) {
@@ -617,7 +617,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         short[] apply(short[] a, int ix, int[] b, int iy);
     }
 
-    static void assertArraysEquals(short[] a, int[] b, short[] r, FGatherScatterOp f) {
+    static void assertArraysEquals(short[] r, short[] a, int[] b, FGatherScatterOp f) {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
@@ -644,7 +644,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         short[] apply(short[] r, short[] a, int ix, boolean[] mask, int[] b, int iy);
     }
 
-    static void assertArraysEquals(short[] a, int[] b, short[] r, boolean[] mask, FGatherMaskedOp f) {
+    static void assertArraysEquals(short[] r, short[] a, int[] b, boolean[] mask, FGatherMaskedOp f) {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
@@ -654,7 +654,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         } catch (AssertionError e) {
             short[] ref = f.apply(a, i, mask, b, i);
             short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
-            Assert.assertEquals(ref, res,
+            Assert.assertEquals(res, ref,
               "(ref: " + Arrays.toString(ref) + ", res: " + Arrays.toString(res) + ", a: "
               + Arrays.toString(Arrays.copyOfRange(a, i, i+SPECIES.length()))
               + ", b: "
@@ -665,7 +665,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertArraysEquals(short[] a, int[] b, short[] r, boolean[] mask, FScatterMaskedOp f) {
+    static void assertArraysEquals(short[] r, short[] a, int[] b, boolean[] mask, FScatterMaskedOp f) {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
@@ -675,7 +675,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         } catch (AssertionError e) {
             short[] ref = f.apply(r, a, i, mask, b, i);
             short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
-            Assert.assertEquals(ref, res,
+            Assert.assertEquals(res, ref,
               "(ref: " + Arrays.toString(ref) + ", res: " + Arrays.toString(res) + ", a: "
               + Arrays.toString(Arrays.copyOfRange(a, i, i+SPECIES.length()))
               + ", b: "
@@ -692,7 +692,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         short[] apply(short[] a, int origin, int idx);
     }
 
-    static void assertArraysEquals(short[] a, short[] r, int origin, FLaneOp f) {
+    static void assertArraysEquals(short[] r, short[] a, int origin, FLaneOp f) {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
@@ -702,7 +702,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         } catch (AssertionError e) {
             short[] ref = f.apply(a, origin, i);
             short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
-            Assert.assertEquals(ref, res, "(ref: " + Arrays.toString(ref)
+            Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i);
         }
@@ -712,7 +712,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         short[] apply(short[] a, short[] b, int origin, int idx);
     }
 
-    static void assertArraysEquals(short[] a, short[] b, short[] r, int origin, FLaneBop f) {
+    static void assertArraysEquals(short[] r, short[] a, short[] b, int origin, FLaneBop f) {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
@@ -722,7 +722,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         } catch (AssertionError e) {
             short[] ref = f.apply(a, b, origin, i);
             short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
-            Assert.assertEquals(ref, res, "(ref: " + Arrays.toString(ref)
+            Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
               + ", at origin #" + origin);
@@ -733,7 +733,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         short[] apply(short[] a, short[] b, int origin, boolean[] mask, int idx);
     }
 
-    static void assertArraysEquals(short[] a, short[] b, short[] r, int origin, boolean[] mask, FLaneMaskedBop f) {
+    static void assertArraysEquals(short[] r, short[] a, short[] b, int origin, boolean[] mask, FLaneMaskedBop f) {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
@@ -743,7 +743,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         } catch (AssertionError e) {
             short[] ref = f.apply(a, b, origin, mask, i);
             short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
-            Assert.assertEquals(ref, res, "(ref: " + Arrays.toString(ref)
+            Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
               + ", at origin #" + origin);
@@ -754,7 +754,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         short[] apply(short[] a, short[] b, int origin, int part, int idx);
     }
 
-    static void assertArraysEquals(short[] a, short[] b, short[] r, int origin, int part, FLanePartBop f) {
+    static void assertArraysEquals(short[] r, short[] a, short[] b, int origin, int part, FLanePartBop f) {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
@@ -764,7 +764,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         } catch (AssertionError e) {
             short[] ref = f.apply(a, b, origin, part, i);
             short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
-            Assert.assertEquals(ref, res, "(ref: " + Arrays.toString(ref)
+            Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
               + ", at origin #" + origin
@@ -776,7 +776,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         short[] apply(short[] a, short[] b, int origin, int part, boolean[] mask, int idx);
     }
 
-    static void assertArraysEquals(short[] a, short[] b, short[] r, int origin, int part, boolean[] mask, FLanePartMaskedBop f) {
+    static void assertArraysEquals(short[] r, short[] a, short[] b, int origin, int part, boolean[] mask, FLanePartMaskedBop f) {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
@@ -786,7 +786,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         } catch (AssertionError e) {
             short[] ref = f.apply(a, b, origin, part, mask, i);
             short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
-            Assert.assertEquals(ref, res, "(ref: " + Arrays.toString(ref)
+            Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
               + ", at origin #" + origin
@@ -795,7 +795,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
     }
 
 
-    static void assertArraysEquals(short[] a, int[] r, int offs) {
+    static void assertArraysEquals(int[] r, short[] a, int offs) {
         int i = 0;
         try {
             for (; i < r.length; i++) {
@@ -808,7 +808,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
 
 
 
-    static void assertArraysEquals(short[] a, long[] r, int offs) {
+    static void assertArraysEquals(long[] r, short[] a, int offs) {
         int i = 0;
         try {
             for (; i < r.length; i++) {
@@ -819,7 +819,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertArraysEquals(short[] a, double[] r, int offs) {
+    static void assertArraysEquals(double[] r, short[] a, int offs) {
         int i = 0;
         try {
             for (; i < r.length; i++) {
@@ -1284,7 +1284,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::ADD);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::ADD);
     }
     static short add(short a, short b) {
         return (short)(a + b);
@@ -1302,7 +1302,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.add(bv).intoArray(r, i);
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::add);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::add);
     }
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
@@ -1322,7 +1322,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::ADD);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::ADD);
     }
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
@@ -1340,7 +1340,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.add(bv, vmask).intoArray(r, i);
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::add);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::add);
     }
     static short SUB(short a, short b) {
         return (short)(a - b);
@@ -1360,7 +1360,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::SUB);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::SUB);
     }
     static short sub(short a, short b) {
         return (short)(a - b);
@@ -1378,7 +1378,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.sub(bv).intoArray(r, i);
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::sub);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::sub);
     }
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
@@ -1398,7 +1398,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::SUB);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::SUB);
     }
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
@@ -1416,7 +1416,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.sub(bv, vmask).intoArray(r, i);
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::sub);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::sub);
     }
     static short MUL(short a, short b) {
         return (short)(a * b);
@@ -1436,7 +1436,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::MUL);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::MUL);
     }
     static short mul(short a, short b) {
         return (short)(a * b);
@@ -1454,7 +1454,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.mul(bv).intoArray(r, i);
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::mul);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::mul);
     }
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
@@ -1474,7 +1474,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::MUL);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::MUL);
     }
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
@@ -1492,7 +1492,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.mul(bv, vmask).intoArray(r, i);
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::mul);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::mul);
     }
 
 
@@ -1517,7 +1517,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::DIV);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::DIV);
     }
     static short div(short a, short b) {
         return (short)(a / b);
@@ -1539,7 +1539,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::div);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::div);
     }
 
 
@@ -1563,7 +1563,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::DIV);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::DIV);
     }
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
@@ -1585,7 +1585,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::div);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::div);
     }
 
     static short FIRST_NONZERO(short a, short b) {
@@ -1606,7 +1606,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::FIRST_NONZERO);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::FIRST_NONZERO);
     }
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
@@ -1626,7 +1626,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::FIRST_NONZERO);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::FIRST_NONZERO);
     }
 
     static short AND(short a, short b) {
@@ -1647,7 +1647,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::AND);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::AND);
     }
     static short and(short a, short b) {
         return (short)(a & b);
@@ -1665,7 +1665,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.and(bv).intoArray(r, i);
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::and);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::and);
     }
 
 
@@ -1687,7 +1687,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::AND);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::AND);
     }
 
 
@@ -1709,7 +1709,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::AND_NOT);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::AND_NOT);
     }
 
 
@@ -1731,7 +1731,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::AND_NOT);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::AND_NOT);
     }
 
 
@@ -1753,7 +1753,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::OR);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::OR);
     }
     static short or(short a, short b) {
         return (short)(a | b);
@@ -1771,7 +1771,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.or(bv).intoArray(r, i);
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::or);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::or);
     }
 
 
@@ -1793,7 +1793,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::OR);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::OR);
     }
 
 
@@ -1815,7 +1815,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::XOR);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::XOR);
     }
 
 
@@ -1837,7 +1837,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::XOR);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::XOR);
     }
 
 
@@ -1852,7 +1852,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.add(b[i]).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, ShortMaxVectorTests::add);
+        assertBroadcastArraysEquals(r, a, b, ShortMaxVectorTests::add);
     }
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
@@ -1869,7 +1869,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.add(b[i], vmask).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, mask, ShortMaxVectorTests::add);
+        assertBroadcastArraysEquals(r, a, b, mask, ShortMaxVectorTests::add);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1883,7 +1883,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.sub(b[i]).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, ShortMaxVectorTests::sub);
+        assertBroadcastArraysEquals(r, a, b, ShortMaxVectorTests::sub);
     }
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
@@ -1900,7 +1900,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.sub(b[i], vmask).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, mask, ShortMaxVectorTests::sub);
+        assertBroadcastArraysEquals(r, a, b, mask, ShortMaxVectorTests::sub);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1914,7 +1914,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.mul(b[i]).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, ShortMaxVectorTests::mul);
+        assertBroadcastArraysEquals(r, a, b, ShortMaxVectorTests::mul);
     }
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
@@ -1931,7 +1931,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.mul(b[i], vmask).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, mask, ShortMaxVectorTests::mul);
+        assertBroadcastArraysEquals(r, a, b, mask, ShortMaxVectorTests::mul);
     }
 
 
@@ -1950,7 +1950,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.div(b[i]).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, ShortMaxVectorTests::div);
+        assertBroadcastArraysEquals(r, a, b, ShortMaxVectorTests::div);
     }
 
 
@@ -1971,7 +1971,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.div(b[i], vmask).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, mask, ShortMaxVectorTests::div);
+        assertBroadcastArraysEquals(r, a, b, mask, ShortMaxVectorTests::div);
     }
 
 
@@ -1987,7 +1987,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.lanewise(VectorOperators.OR, b[i]).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, ShortMaxVectorTests::OR);
+        assertBroadcastArraysEquals(r, a, b, ShortMaxVectorTests::OR);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2001,7 +2001,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.or(b[i]).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, ShortMaxVectorTests::or);
+        assertBroadcastArraysEquals(r, a, b, ShortMaxVectorTests::or);
     }
 
 
@@ -2020,7 +2020,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.lanewise(VectorOperators.OR, b[i], vmask).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, mask, ShortMaxVectorTests::OR);
+        assertBroadcastArraysEquals(r, a, b, mask, ShortMaxVectorTests::OR);
     }
 
 
@@ -2036,7 +2036,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.lanewise(VectorOperators.AND, b[i]).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, ShortMaxVectorTests::AND);
+        assertBroadcastArraysEquals(r, a, b, ShortMaxVectorTests::AND);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2050,7 +2050,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.and(b[i]).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, ShortMaxVectorTests::and);
+        assertBroadcastArraysEquals(r, a, b, ShortMaxVectorTests::and);
     }
 
 
@@ -2069,7 +2069,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.lanewise(VectorOperators.AND, b[i], vmask).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, mask, ShortMaxVectorTests::AND);
+        assertBroadcastArraysEquals(r, a, b, mask, ShortMaxVectorTests::AND);
     }
 
 
@@ -2085,7 +2085,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.lanewise(VectorOperators.OR, (long)b[i]).intoArray(r, i);
         }
 
-        assertBroadcastLongArraysEquals(a, b, r, ShortMaxVectorTests::OR);
+        assertBroadcastLongArraysEquals(r, a, b, ShortMaxVectorTests::OR);
     }
 
 
@@ -2104,7 +2104,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.lanewise(VectorOperators.OR, (long)b[i], vmask).intoArray(r, i);
         }
 
-        assertBroadcastLongArraysEquals(a, b, r, mask, ShortMaxVectorTests::OR);
+        assertBroadcastLongArraysEquals(r, a, b, mask, ShortMaxVectorTests::OR);
     }
 
 
@@ -2119,7 +2119,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.lanewise(VectorOperators.ADD, (long)b[i]).intoArray(r, i);
         }
 
-        assertBroadcastLongArraysEquals(a, b, r, ShortMaxVectorTests::ADD);
+        assertBroadcastLongArraysEquals(r, a, b, ShortMaxVectorTests::ADD);
     }
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
@@ -2136,7 +2136,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.lanewise(VectorOperators.ADD, (long)b[i], vmask).intoArray(r, i);
         }
 
-        assertBroadcastLongArraysEquals(a, b, r, mask, ShortMaxVectorTests::ADD);
+        assertBroadcastLongArraysEquals(r, a, b, mask, ShortMaxVectorTests::ADD);
     }
 
 
@@ -2161,7 +2161,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::LSHL);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::LSHL);
     }
 
 
@@ -2183,7 +2183,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::LSHL);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::LSHL);
     }
 
 
@@ -2209,7 +2209,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::ASHR);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::ASHR);
     }
 
 
@@ -2231,7 +2231,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::ASHR);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::ASHR);
     }
 
 
@@ -2257,7 +2257,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::LSHR);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::LSHR);
     }
 
 
@@ -2279,7 +2279,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::LSHR);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::LSHR);
     }
 
 
@@ -2304,7 +2304,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertShiftArraysEquals(a, b, r, ShortMaxVectorTests::LSHL_unary);
+        assertShiftArraysEquals(r, a, b, ShortMaxVectorTests::LSHL_unary);
     }
 
 
@@ -2325,7 +2325,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertShiftArraysEquals(a, b, r, mask, ShortMaxVectorTests::LSHL_unary);
+        assertShiftArraysEquals(r, a, b, mask, ShortMaxVectorTests::LSHL_unary);
     }
 
 
@@ -2350,7 +2350,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertShiftArraysEquals(a, b, r, ShortMaxVectorTests::LSHR_unary);
+        assertShiftArraysEquals(r, a, b, ShortMaxVectorTests::LSHR_unary);
     }
 
 
@@ -2371,7 +2371,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertShiftArraysEquals(a, b, r, mask, ShortMaxVectorTests::LSHR_unary);
+        assertShiftArraysEquals(r, a, b, mask, ShortMaxVectorTests::LSHR_unary);
     }
 
 
@@ -2396,7 +2396,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertShiftArraysEquals(a, b, r, ShortMaxVectorTests::ASHR_unary);
+        assertShiftArraysEquals(r, a, b, ShortMaxVectorTests::ASHR_unary);
     }
 
 
@@ -2417,7 +2417,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertShiftArraysEquals(a, b, r, mask, ShortMaxVectorTests::ASHR_unary);
+        assertShiftArraysEquals(r, a, b, mask, ShortMaxVectorTests::ASHR_unary);
     }
 
     static short MIN(short a, short b) {
@@ -2438,7 +2438,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::MIN);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::MIN);
     }
     static short min(short a, short b) {
         return (short)(Math.min(a, b));
@@ -2456,7 +2456,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.min(bv).intoArray(r, i);
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::min);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::min);
     }
     static short MAX(short a, short b) {
         return (short)(Math.max(a, b));
@@ -2476,7 +2476,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::MAX);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::MAX);
     }
     static short max(short a, short b) {
         return (short)(Math.max(a, b));
@@ -2494,7 +2494,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.max(bv).intoArray(r, i);
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::max);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::max);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2508,7 +2508,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.lanewise(VectorOperators.MIN, b[i]).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, ShortMaxVectorTests::MIN);
+        assertBroadcastArraysEquals(r, a, b, ShortMaxVectorTests::MIN);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2522,7 +2522,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.min(b[i]).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, ShortMaxVectorTests::min);
+        assertBroadcastArraysEquals(r, a, b, ShortMaxVectorTests::min);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2536,7 +2536,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.lanewise(VectorOperators.MAX, b[i]).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, ShortMaxVectorTests::MAX);
+        assertBroadcastArraysEquals(r, a, b, ShortMaxVectorTests::MAX);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2550,7 +2550,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.max(b[i]).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, r, ShortMaxVectorTests::max);
+        assertBroadcastArraysEquals(r, a, b, ShortMaxVectorTests::max);
     }
 
     static short ANDReduce(short[] a, int idx) {
@@ -2593,7 +2593,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra,
+        assertReductionArraysEquals(r, ra, a,
                 ShortMaxVectorTests::ANDReduce, ShortMaxVectorTests::ANDReduceAll);
     }
 
@@ -2641,7 +2641,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask,
+        assertReductionArraysEqualsMasked(r, ra, a, mask,
                 ShortMaxVectorTests::ANDReduceMasked, ShortMaxVectorTests::ANDReduceAllMasked);
     }
 
@@ -2686,7 +2686,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra,
+        assertReductionArraysEquals(r, ra, a,
                 ShortMaxVectorTests::ORReduce, ShortMaxVectorTests::ORReduceAll);
     }
 
@@ -2734,7 +2734,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask,
+        assertReductionArraysEqualsMasked(r, ra, a, mask,
                 ShortMaxVectorTests::ORReduceMasked, ShortMaxVectorTests::ORReduceAllMasked);
     }
 
@@ -2779,7 +2779,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra,
+        assertReductionArraysEquals(r, ra, a,
                 ShortMaxVectorTests::XORReduce, ShortMaxVectorTests::XORReduceAll);
     }
 
@@ -2827,7 +2827,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask,
+        assertReductionArraysEqualsMasked(r, ra, a, mask,
                 ShortMaxVectorTests::XORReduceMasked, ShortMaxVectorTests::XORReduceAllMasked);
     }
 
@@ -2869,7 +2869,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra,
+        assertReductionArraysEquals(r, ra, a,
                 ShortMaxVectorTests::ADDReduce, ShortMaxVectorTests::ADDReduceAll);
     }
     static short ADDReduceMasked(short[] a, int idx, boolean[] mask) {
@@ -2913,7 +2913,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask,
+        assertReductionArraysEqualsMasked(r, ra, a, mask,
                 ShortMaxVectorTests::ADDReduceMasked, ShortMaxVectorTests::ADDReduceAllMasked);
     }
     static short MULReduce(short[] a, int idx) {
@@ -2954,7 +2954,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra,
+        assertReductionArraysEquals(r, ra, a,
                 ShortMaxVectorTests::MULReduce, ShortMaxVectorTests::MULReduceAll);
     }
     static short MULReduceMasked(short[] a, int idx, boolean[] mask) {
@@ -2998,7 +2998,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask,
+        assertReductionArraysEqualsMasked(r, ra, a, mask,
                 ShortMaxVectorTests::MULReduceMasked, ShortMaxVectorTests::MULReduceAllMasked);
     }
     static short MINReduce(short[] a, int idx) {
@@ -3039,7 +3039,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra,
+        assertReductionArraysEquals(r, ra, a,
                 ShortMaxVectorTests::MINReduce, ShortMaxVectorTests::MINReduceAll);
     }
     static short MINReduceMasked(short[] a, int idx, boolean[] mask) {
@@ -3084,7 +3084,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask,
+        assertReductionArraysEqualsMasked(r, ra, a, mask,
                 ShortMaxVectorTests::MINReduceMasked, ShortMaxVectorTests::MINReduceAllMasked);
     }
     static short MAXReduce(short[] a, int idx) {
@@ -3125,7 +3125,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEquals(a, r, ra,
+        assertReductionArraysEquals(r, ra, a,
                 ShortMaxVectorTests::MAXReduce, ShortMaxVectorTests::MAXReduceAll);
     }
     static short MAXReduceMasked(short[] a, int idx, boolean[] mask) {
@@ -3170,7 +3170,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionArraysEqualsMasked(a, r, ra, mask,
+        assertReductionArraysEqualsMasked(r, ra, a, mask,
                 ShortMaxVectorTests::MAXReduceMasked, ShortMaxVectorTests::MAXReduceAllMasked);
     }
 
@@ -3196,7 +3196,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionBoolArraysEquals(mask, r, ShortMaxVectorTests::anyTrue);
+        assertReductionBoolArraysEquals(r, mask, ShortMaxVectorTests::anyTrue);
     }
 
 
@@ -3222,7 +3222,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertReductionBoolArraysEquals(mask, r, ShortMaxVectorTests::allTrue);
+        assertReductionBoolArraysEquals(r, mask, ShortMaxVectorTests::allTrue);
     }
 
 
@@ -3238,7 +3238,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertInsertArraysEquals(a, r, (short)4, 0);
+        assertInsertArraysEquals(r, a, (short)4, 0);
     }
     static boolean testIS_DEFAULT(short a) {
         return bits(a)==0;
@@ -3787,7 +3787,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::blend);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::blend);
     }
 
     @Test(dataProvider = "shortUnaryOpShuffleProvider")
@@ -3804,7 +3804,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertRearrangeArraysEquals(a, r, order, SPECIES.length());
+        assertRearrangeArraysEquals(r, a, order, SPECIES.length());
     }
 
     @Test(dataProvider = "shortUnaryOpShuffleMaskProvider")
@@ -3822,7 +3822,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.rearrange(VectorShuffle.fromArray(SPECIES, order, i), vmask).intoArray(r, i);
         }
 
-        assertRearrangeArraysEquals(a, r, order, mask, SPECIES.length());
+        assertRearrangeArraysEquals(r, a, order, mask, SPECIES.length());
     }
     @Test(dataProvider = "shortUnaryOpProvider")
     static void getShortMaxVectorTests(IntFunction<short[]> fa) {
@@ -3977,7 +3977,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, r, ShortMaxVectorTests::get);
+        assertArraysEquals(r, a, ShortMaxVectorTests::get);
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -3991,7 +3991,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertBroadcastArraysEquals(a, r);
+        assertBroadcastArraysEquals(r, a);
     }
 
 
@@ -4038,7 +4038,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, r, origin, ShortMaxVectorTests::sliceUnary);
+        assertArraysEquals(r, a, origin, ShortMaxVectorTests::sliceUnary);
     }
     static short[] sliceBinary(short[] a, short[] b, int origin, int idx) {
         short[] res = new short[SPECIES.length()];
@@ -4067,7 +4067,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, origin, ShortMaxVectorTests::sliceBinary);
+        assertArraysEquals(r, a, b, origin, ShortMaxVectorTests::sliceBinary);
     }
     static short[] slice(short[] a, short[] b, int origin, boolean[] mask, int idx) {
         short[] res = new short[SPECIES.length()];
@@ -4100,7 +4100,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, origin, mask, ShortMaxVectorTests::slice);
+        assertArraysEquals(r, a, b, origin, mask, ShortMaxVectorTests::slice);
     }
     static short[] unsliceUnary(short[] a, int origin, int idx) {
         short[] res = new short[SPECIES.length()];
@@ -4127,7 +4127,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, r, origin, ShortMaxVectorTests::unsliceUnary);
+        assertArraysEquals(r, a, origin, ShortMaxVectorTests::unsliceUnary);
     }
     static short[] unsliceBinary(short[] a, short[] b, int origin, int part, int idx) {
         short[] res = new short[SPECIES.length()];
@@ -4166,7 +4166,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, origin, part, ShortMaxVectorTests::unsliceBinary);
+        assertArraysEquals(r, a, b, origin, part, ShortMaxVectorTests::unsliceBinary);
     }
     static short[] unslice(short[] a, short[] b, int origin, int part, boolean[] mask, int idx) {
         short[] res = new short[SPECIES.length()];
@@ -4222,7 +4222,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, origin, part, mask, ShortMaxVectorTests::unslice);
+        assertArraysEquals(r, a, b, origin, part, mask, ShortMaxVectorTests::unslice);
     }
 
 
@@ -4271,7 +4271,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, c, r, ShortMaxVectorTests::BITWISE_BLEND);
+        assertArraysEquals(r, a, b, c, ShortMaxVectorTests::BITWISE_BLEND);
     }
     @Test(dataProvider = "shortTernaryOpProvider")
     static void bitwiseBlendShortMaxVectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
@@ -4287,7 +4287,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.bitwiseBlend(bv, cv).intoArray(r, i);
         }
 
-        assertArraysEquals(a, b, c, r, ShortMaxVectorTests::bitwiseBlend);
+        assertArraysEquals(r, a, b, c, ShortMaxVectorTests::bitwiseBlend);
     }
 
 
@@ -4310,7 +4310,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, c, r, mask, ShortMaxVectorTests::BITWISE_BLEND);
+        assertArraysEquals(r, a, b, c, mask, ShortMaxVectorTests::BITWISE_BLEND);
     }
 
 
@@ -4328,7 +4328,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             ShortVector bv = ShortVector.fromArray(SPECIES, b, i);
             av.lanewise(VectorOperators.BITWISE_BLEND, bv, c[i]).intoArray(r, i);
         }
-        assertBroadcastArraysEquals(a, b, c, r, ShortMaxVectorTests::BITWISE_BLEND);
+        assertBroadcastArraysEquals(r, a, b, c, ShortMaxVectorTests::BITWISE_BLEND);
     }
 
     @Test(dataProvider = "shortTernaryOpProvider")
@@ -4343,7 +4343,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             ShortVector cv = ShortVector.fromArray(SPECIES, c, i);
             av.lanewise(VectorOperators.BITWISE_BLEND, b[i], cv).intoArray(r, i);
         }
-        assertAltBroadcastArraysEquals(a, b, c, r, ShortMaxVectorTests::BITWISE_BLEND);
+        assertAltBroadcastArraysEquals(r, a, b, c, ShortMaxVectorTests::BITWISE_BLEND);
     }
     @Test(dataProvider = "shortTernaryOpProvider")
     static void bitwiseBlendShortMaxVectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
@@ -4357,7 +4357,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             ShortVector bv = ShortVector.fromArray(SPECIES, b, i);
             av.bitwiseBlend(bv, c[i]).intoArray(r, i);
         }
-        assertBroadcastArraysEquals(a, b, c, r, ShortMaxVectorTests::bitwiseBlend);
+        assertBroadcastArraysEquals(r, a, b, c, ShortMaxVectorTests::bitwiseBlend);
     }
 
     @Test(dataProvider = "shortTernaryOpProvider")
@@ -4372,7 +4372,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             ShortVector cv = ShortVector.fromArray(SPECIES, c, i);
             av.bitwiseBlend(b[i], cv).intoArray(r, i);
         }
-        assertAltBroadcastArraysEquals(a, b, c, r, ShortMaxVectorTests::bitwiseBlend);
+        assertAltBroadcastArraysEquals(r, a, b, c, ShortMaxVectorTests::bitwiseBlend);
     }
 
 
@@ -4392,7 +4392,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.lanewise(VectorOperators.BITWISE_BLEND, bv, c[i], vmask).intoArray(r, i);
         }
 
-        assertBroadcastArraysEquals(a, b, c, r, mask, ShortMaxVectorTests::BITWISE_BLEND);
+        assertBroadcastArraysEquals(r, a, b, c, mask, ShortMaxVectorTests::BITWISE_BLEND);
     }
 
     @Test(dataProvider = "shortTernaryOpMaskProvider")
@@ -4411,7 +4411,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.lanewise(VectorOperators.BITWISE_BLEND, b[i], cv, vmask).intoArray(r, i);
         }
 
-        assertAltBroadcastArraysEquals(a, b, c, r, mask, ShortMaxVectorTests::BITWISE_BLEND);
+        assertAltBroadcastArraysEquals(r, a, b, c, mask, ShortMaxVectorTests::BITWISE_BLEND);
     }
 
 
@@ -4429,7 +4429,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.lanewise(VectorOperators.BITWISE_BLEND, b[i], c[i]).intoArray(r, i);
         }
 
-        assertDoubleBroadcastArraysEquals(a, b, c, r, ShortMaxVectorTests::BITWISE_BLEND);
+        assertDoubleBroadcastArraysEquals(r, a, b, c, ShortMaxVectorTests::BITWISE_BLEND);
     }
     @Test(dataProvider = "shortTernaryOpProvider")
     static void bitwiseBlendShortMaxVectorTestsDoubleBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
@@ -4443,7 +4443,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.bitwiseBlend(b[i], c[i]).intoArray(r, i);
         }
 
-        assertDoubleBroadcastArraysEquals(a, b, c, r, ShortMaxVectorTests::bitwiseBlend);
+        assertDoubleBroadcastArraysEquals(r, a, b, c, ShortMaxVectorTests::bitwiseBlend);
     }
 
 
@@ -4462,7 +4462,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             av.lanewise(VectorOperators.BITWISE_BLEND, b[i], c[i], vmask).intoArray(r, i);
         }
 
-        assertDoubleBroadcastArraysEquals(a, b, c, r, mask, ShortMaxVectorTests::BITWISE_BLEND);
+        assertDoubleBroadcastArraysEquals(r, a, b, c, mask, ShortMaxVectorTests::BITWISE_BLEND);
     }
 
 
@@ -4486,7 +4486,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, r, ShortMaxVectorTests::NEG);
+        assertArraysEquals(r, a, ShortMaxVectorTests::NEG);
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -4501,7 +4501,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, r, ShortMaxVectorTests::neg);
+        assertArraysEquals(r, a, ShortMaxVectorTests::neg);
     }
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
@@ -4519,7 +4519,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, r, mask, ShortMaxVectorTests::NEG);
+        assertArraysEquals(r, a, mask, ShortMaxVectorTests::NEG);
     }
 
     static short ABS(short a) {
@@ -4542,7 +4542,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, r, ShortMaxVectorTests::ABS);
+        assertArraysEquals(r, a, ShortMaxVectorTests::ABS);
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -4557,7 +4557,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, r, ShortMaxVectorTests::abs);
+        assertArraysEquals(r, a, ShortMaxVectorTests::abs);
     }
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
@@ -4575,7 +4575,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, r, mask, ShortMaxVectorTests::ABS);
+        assertArraysEquals(r, a, mask, ShortMaxVectorTests::ABS);
     }
 
 
@@ -4601,7 +4601,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, r, ShortMaxVectorTests::NOT);
+        assertArraysEquals(r, a, ShortMaxVectorTests::NOT);
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -4616,7 +4616,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, r, ShortMaxVectorTests::not);
+        assertArraysEquals(r, a, ShortMaxVectorTests::not);
     }
 
 
@@ -4636,7 +4636,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, r, mask, ShortMaxVectorTests::NOT);
+        assertArraysEquals(r, a, mask, ShortMaxVectorTests::NOT);
     }
 
 
@@ -4659,7 +4659,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, r, ShortMaxVectorTests::ZOMO);
+        assertArraysEquals(r, a, ShortMaxVectorTests::ZOMO);
     }
 
 
@@ -4679,7 +4679,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, r, mask, ShortMaxVectorTests::ZOMO);
+        assertArraysEquals(r, a, mask, ShortMaxVectorTests::ZOMO);
     }
 
 
@@ -4707,7 +4707,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::gather);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::gather);
     }
     static short[] gatherMasked(short a[], int ix, boolean[] mask, int[] b, int iy) {
         short[] res = new short[SPECIES.length()];
@@ -4735,7 +4735,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::gatherMasked);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::gatherMasked);
     }
 
     static short[] scatter(short a[], int ix, int[] b, int iy) {
@@ -4760,7 +4760,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::scatter);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::scatter);
     }
 
     static short[] scatterMasked(short r[], short a[], int ix, boolean[] mask, int[] b, int iy) {
@@ -4798,7 +4798,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             }
         }
 
-        assertArraysEquals(a, b, r, mask, ShortMaxVectorTests::scatterMasked);
+        assertArraysEquals(r, a, b, mask, ShortMaxVectorTests::scatterMasked);
     }
 
 
@@ -4840,8 +4840,8 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-            int [] r = av.toIntArray();
-            assertArraysEquals(a, r, i);
+            int[] r = av.toIntArray();
+            assertArraysEquals(r, a, i);
         }
     }
 
@@ -4851,8 +4851,8 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-            long [] r = av.toLongArray();
-            assertArraysEquals(a, r, i);
+            long[] r = av.toLongArray();
+            assertArraysEquals(r, a, i);
         }
     }
 
@@ -4862,8 +4862,8 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-            double [] r = av.toDoubleArray();
-            assertArraysEquals(a, r, i);
+            double[] r = av.toDoubleArray();
+            assertArraysEquals(r, a, i);
         }
     }
 
@@ -4929,7 +4929,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             ra += r[i];
         }
 
-        assertReductionLongArraysEquals(a, r, ra,
+        assertReductionLongArraysEquals(r, ra, a,
                 ShortMaxVectorTests::ADDReduceLong, ShortMaxVectorTests::ADDReduceAllLong);
     }
 
@@ -4970,7 +4970,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             ra += r[i];
         }
 
-        assertReductionLongArraysEqualsMasked(a, r, ra, mask,
+        assertReductionLongArraysEqualsMasked(r, ra, a, mask,
                 ShortMaxVectorTests::ADDReduceLongMasked, ShortMaxVectorTests::ADDReduceAllLongMasked);
     }
 
@@ -4982,7 +4982,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             ShortVector.broadcast(SPECIES, (long)a[i]).intoArray(r, i);
         }
-        assertBroadcastArraysEquals(a, r);
+        assertBroadcastArraysEquals(r, a);
     }
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
@@ -5000,7 +5000,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
                 av.blend((long)b[i], vmask).intoArray(r, i);
             }
         }
-        assertBroadcastLongArraysEquals(a, b, r, mask, ShortMaxVectorTests::blend);
+        assertBroadcastLongArraysEquals(r, a, b, mask, ShortMaxVectorTests::blend);
     }
 
 
@@ -5017,7 +5017,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             bv.selectFrom(av).intoArray(r, i);
         }
 
-        assertSelectFromArraysEquals(a, r, order, SPECIES.length());
+        assertSelectFromArraysEquals(r, a, order, SPECIES.length());
     }
 
     @Test(dataProvider = "shortUnaryOpSelectFromMaskProvider")
@@ -5036,7 +5036,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             bv.selectFrom(av, vmask).intoArray(r, i);
         }
 
-        assertSelectFromArraysEquals(a, r, order, mask, SPECIES.length());
+        assertSelectFromArraysEquals(r, a, order, mask, SPECIES.length());
     }
 
     @Test(dataProvider = "shuffleProvider")
@@ -5113,7 +5113,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
             var cv = av.eq(bv);
             cv.intoArray(r, i);
         }
-        assertArraysEquals(a, b, r, ShortMaxVectorTests::beq);
+        assertArraysEquals(r, a, b, ShortMaxVectorTests::beq);
     }
 
     @Test(dataProvider = "maskProvider")
