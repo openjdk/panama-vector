@@ -300,24 +300,21 @@ instruct storeV(vReg src, vmemA mem) %{
 // Only load/store values in the range of the memory_size. This is needed
 // when the memory_size is lower than the hardware supported max vector size.
 // And this might happen for Vector API mask vector load/store.
-instruct loadV_partial(vReg dst, vmemA mem, pRegGov pTmp, iRegINoSp tmp1,
-                       iRegINoSp tmp2, rFlagsReg cr) %{
+instruct loadV_partial(vReg dst, vmemA mem, pRegGov pTmp, iRegINoSp tmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 && n->as_LoadVector()->length() >= MaxVectorSize / 8 &&
             n->as_LoadVector()->memory_size() != MaxVectorSize);
   match(Set dst (LoadVector mem));
-  effect(TEMP pTmp, TEMP tmp1, TEMP tmp2, KILL cr);
+  effect(TEMP pTmp, TEMP tmp, KILL cr);
   ins_cost(2 * SVE_COST);
-  format %{ "mov $tmp1, 0\n\t"
-            "mov $tmp2, vector_length\n\t"
-            "sve_whilelo $pTmp, $tmp1, $tmp2\n\t"
+  format %{ "mov $tmp, vector_length\n\t"
+            "sve_whilelo $pTmp, zr, $tmp\n\t"
             "sve_ldr $dst, $pTmp, $mem\t # load vector mask" %}
   ins_encode %{
     BasicType bt = vector_element_basic_type(this);
     Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
-    __ mov(as_Register($tmp1$$reg), 0);
-    __ mov(as_Register($tmp2$$reg), vector_length(this));
+    __ mov(as_Register($tmp$$reg), vector_length(this));
     __ sve_whilelo(as_PRegister($pTmp$$reg), size,
-                   as_Register($tmp1$$reg), as_Register($tmp2$$reg));
+                   zr, as_Register($tmp$$reg));
     FloatRegister dst_reg = as_FloatRegister($dst$$reg);
     loadStoreA_predicate(C2_MacroAssembler(&cbuf), false, dst_reg,
                          as_PRegister($pTmp$$reg), bt, size, $mem->opcode(),
@@ -326,24 +323,21 @@ instruct loadV_partial(vReg dst, vmemA mem, pRegGov pTmp, iRegINoSp tmp1,
   ins_pipe(pipe_slow);
 %}
 
-instruct storeV_partial(vReg src, vmemA mem, pRegGov pTmp, iRegINoSp tmp1,
-                          iRegINoSp tmp2, rFlagsReg cr) %{
+instruct storeV_partial(vReg src, vmemA mem, pRegGov pTmp, iRegINoSp tmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 && n->as_StoreVector()->length() >= MaxVectorSize / 8 &&
             n->as_StoreVector()->memory_size() != MaxVectorSize);
   match(Set mem (StoreVector mem src));
-  effect(TEMP pTmp, TEMP tmp1, TEMP tmp2, KILL cr);
+  effect(TEMP pTmp, TEMP tmp, KILL cr);
   ins_cost(2 * SVE_COST);
-  format %{ "mov $tmp1, 0\n\t"
-            "mov $tmp2, vector_length\n\t"
-            "sve_whilelo $pTmp, $tmp1, $tmp2\n\t"
+  format %{ "mov $tmp, vector_length\n\t"
+            "sve_whilelo $pTmp, zr, $tmp\n\t"
             "sve_str $src, $pTmp, $mem\t # store vector mask" %}
   ins_encode %{
     BasicType bt = vector_element_basic_type(this, $src);
     Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
-    __ mov(as_Register($tmp1$$reg), 0);
-    __ mov(as_Register($tmp2$$reg), vector_length(this, $src));
+    __ mov(as_Register($tmp$$reg), vector_length(this, $src));
     __ sve_whilelo(as_PRegister($pTmp$$reg), size,
-                   as_Register($tmp1$$reg), as_Register($tmp2$$reg));
+                   zr, as_Register($tmp$$reg));
     FloatRegister src_reg = as_FloatRegister($src$$reg);
     loadStoreA_predicate(C2_MacroAssembler(&cbuf), true, src_reg,
                          as_PRegister($pTmp$$reg), bt, size, $mem->opcode(),
