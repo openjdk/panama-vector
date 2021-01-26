@@ -2537,12 +2537,48 @@ instruct vcvtBtoI(vReg dst, vReg src)
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
 	    n->bottom_type()->is_vect()->element_basic_type() == T_INT);
   match(Set dst (VectorCastB2X src));
+  effect(TEMP_DEF dst);
   ins_cost(2 * SVE_COST);
   format %{ "sve_sunpklo  $dst, H, $src\n\t"
             "sve_sunpklo  $dst, S, $dst\t# convert B to I vector" %}
   ins_encode %{
     __ sve_sunpklo(as_FloatRegister($dst$$reg), __ H, as_FloatRegister($src$$reg));
     __ sve_sunpklo(as_FloatRegister($dst$$reg), __ S, as_FloatRegister($dst$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vcvtStoL(vReg dst, vReg src)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+	    n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  match(Set dst (VectorCastS2X src));
+  effect(TEMP_DEF dst);
+  ins_cost(2 * SVE_COST);
+  format %{ "sve_sunpklo  $dst, S, $src\n\t"
+            "sve_sunpklo  $dst, D, $dst\t# convert S to L vector" %}
+  ins_encode %{
+    __ sve_sunpklo(as_FloatRegister($dst$$reg), __ S, as_FloatRegister($src$$reg));
+    __ sve_sunpklo(as_FloatRegister($dst$$reg), __ D, as_FloatRegister($dst$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+
+instruct vcvtBtoL(vReg dst, vReg src)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+	    n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  match(Set dst (VectorCastB2X src));
+  effect(TEMP_DEF dst);
+  ins_cost(3 * SVE_COST);
+  format %{ "sve_sunpklo  $dst, H, $src\n\t"
+            "sve_sunpklo  $dst, S, $dst\n\t"
+            "sve_sunpklo  $dst, D, $dst\t# convert B to L vector" %}
+  ins_encode %{
+    __ sve_sunpklo(as_FloatRegister($dst$$reg), __ H, as_FloatRegister($src$$reg));
+    __ sve_sunpklo(as_FloatRegister($dst$$reg), __ S, as_FloatRegister($dst$$reg));
+    __ sve_sunpklo(as_FloatRegister($dst$$reg), __ D, as_FloatRegister($dst$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
@@ -2610,6 +2646,45 @@ instruct vcvtItoB(vReg dst, vReg src, vReg tmp)
   ins_encode %{
     __ sve_dup(as_FloatRegister($tmp$$reg), __ H, 0);
     __ sve_uzp1(as_FloatRegister($dst$$reg), __ H, as_FloatRegister($src$$reg), as_FloatRegister($tmp$$reg));
+    __ sve_uzp1(as_FloatRegister($dst$$reg), __ B, as_FloatRegister($dst$$reg), as_FloatRegister($tmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vcvtLtoS(vReg dst, vReg src, vReg tmp)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorCastL2X src));
+  effect(TEMP_DEF dst, TEMP tmp);
+  ins_cost(3 * SVE_COST);
+  format %{ "sve_dup  $tmp, S, 0\n\t"
+            "sve_uzp1  $dst, S, $src, tmp\n\t"
+            "sve_uzp1  $dst, H, $dst, tmp\n\t# convert L to S vector" %}
+  ins_encode %{
+    __ sve_dup(as_FloatRegister($tmp$$reg), __ S, 0);
+    __ sve_uzp1(as_FloatRegister($dst$$reg), __ S, as_FloatRegister($src$$reg), as_FloatRegister($tmp$$reg));
+    __ sve_uzp1(as_FloatRegister($dst$$reg), __ H, as_FloatRegister($dst$$reg), as_FloatRegister($tmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+
+instruct vcvtLtoB(vReg dst, vReg src, vReg tmp)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorCastL2X src));
+  effect(TEMP_DEF dst, TEMP tmp);
+  ins_cost(4 * SVE_COST);
+  format %{ "sve_dup  $tmp, S, 0\n\t"
+            "sve_uzp1  $dst, S, $src, tmp\n\t"
+            "sve_uzp1  $dst, H, $dst, tmp\n\t"
+            "sve_uzp1  $dst, B, $dst, tmp\n\t# convert L to B vector" %}
+  ins_encode %{
+    __ sve_dup(as_FloatRegister($tmp$$reg), __ S, 0);
+    __ sve_uzp1(as_FloatRegister($dst$$reg), __ S, as_FloatRegister($src$$reg), as_FloatRegister($tmp$$reg));
+    __ sve_uzp1(as_FloatRegister($dst$$reg), __ H, as_FloatRegister($dst$$reg), as_FloatRegister($tmp$$reg));
     __ sve_uzp1(as_FloatRegister($dst$$reg), __ B, as_FloatRegister($dst$$reg), as_FloatRegister($tmp$$reg));
   %}
   ins_pipe(pipe_slow);
