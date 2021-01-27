@@ -331,7 +331,6 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
 //  Sh ShuffleIota(Class<?> E, Class<?> ShuffleClass, Vector.Species<E> s, int length,
 //                  int start, int step, int wrap, ShuffleIotaOperation<Sh, E> defaultImpl)
 bool LibraryCallKit::inline_vector_shuffle_iota() {
-  // TODO shuffle is not supported on SVE
 
   const TypeInstPtr* shuffle_klass = gvn().type(argument(1))->is_instptr();
   const TypeInt* vlen             = gvn().type(argument(3))->is_int();
