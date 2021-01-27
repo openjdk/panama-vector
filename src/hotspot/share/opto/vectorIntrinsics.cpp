@@ -332,13 +332,6 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
 //                  int start, int step, int wrap, ShuffleIotaOperation<Sh, E> defaultImpl)
 bool LibraryCallKit::inline_vector_shuffle_iota() {
   // TODO shuffle is not supported on SVE
-  // we SHOULD move these codes after implementing shuffle
-  if (Matcher::supports_scalable_vector()) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** shuffle iota not supported on SVE");
-    }
-    return false;
-  }
 
   const TypeInstPtr* shuffle_klass = gvn().type(argument(1))->is_instptr();
   const TypeInt* vlen             = gvn().type(argument(3))->is_int();
@@ -435,13 +428,6 @@ bool LibraryCallKit::inline_vector_shuffle_iota() {
 //                    ShuffleToVectorOperation<VM,Sh,E> defaultImpl)
 bool LibraryCallKit::inline_vector_shuffle_to_vector() {
   // TODO shuffle is not supported on SVE
-  // we SHOULD move these codes after implementing shuffle
-  if (Matcher::supports_scalable_vector()) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** shuffle to vector not supported on SVE");
-    }
-    return false;
-  }
 
   const TypeInstPtr* vector_klass  = gvn().type(argument(0))->is_instptr();
   const TypeInstPtr* elem_klass    = gvn().type(argument(1))->is_instptr();
