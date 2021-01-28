@@ -42,6 +42,12 @@ class CallGenerator : public ResourceObj {
  protected:
   CallGenerator(ciMethod* method) : _method(method) {}
 
+  void do_late_inline_helper();
+
+  virtual bool           do_late_inline_check(Compile* C, JVMState* jvms) { ShouldNotReachHere(); return false; }
+  virtual CallGenerator* inline_cg()    const                             { ShouldNotReachHere(); return NULL;  }
+  virtual bool           is_pure_call() const                             { ShouldNotReachHere(); return false; }
+
  public:
   // Accessors
   ciMethod*          method() const             { return _method; }
@@ -64,17 +70,12 @@ class CallGenerator : public ResourceObj {
   // does_virtual_dispatch: Should try inlining as normal method first.
   virtual bool      does_virtual_dispatch() const     { return false; }
 
-  virtual bool      is_direct() const           { return false; }
-
   // is_late_inline: supports conversion of call into an inline
-  virtual bool      is_late_inline() const      { return false; }
+  virtual bool      is_late_inline() const         { return false; }
   // same but for method handle calls
-  virtual bool      is_mh_late_inline() const   { return false; }
-  virtual bool      is_string_late_inline() const{ return false; }
+  virtual bool      is_mh_late_inline() const      { return false; }
+  virtual bool      is_string_late_inline() const  { return false; }
   virtual bool      is_virtual_late_inline() const { return false; }
-
-  // for method handle calls: have we tried inlinining the call already?
-  virtual bool      already_attempted() const   { ShouldNotReachHere(); return false; }
 
   // Replace the call with an inline version of the code
   virtual void do_late_inline() { ShouldNotReachHere(); }
@@ -131,8 +132,8 @@ class CallGenerator : public ResourceObj {
   static CallGenerator* for_direct_call(ciMethod* m, bool separate_io_projs = false);   // static, special
   static CallGenerator* for_virtual_call(ciMethod* m, int vtable_index);  // virtual, interface
 
-  static CallGenerator* for_method_handle_call(  JVMState* jvms, ciMethod* caller, ciMethod* callee);
-  static CallGenerator* for_method_handle_inline(JVMState* jvms, ciMethod* caller, ciMethod* callee, bool& input_not_const);
+  static CallGenerator* for_method_handle_call(  JVMState* jvms, ciMethod* caller, ciMethod* callee, bool allow_inline);
+  static CallGenerator* for_method_handle_inline(JVMState* jvms, ciMethod* caller, ciMethod* callee, bool allow_inline, bool& input_not_const);
 
   // How to generate a replace a direct call with an inline version
   static CallGenerator* for_late_inline(ciMethod* m, CallGenerator* inline_cg);

@@ -1410,18 +1410,6 @@ static void kill_dead_code( Node *dead, PhaseIterGVN *igvn ) {
       igvn->hash_delete(dead);
       igvn->_worklist.remove(dead);
       igvn->set_type(dead, Type::TOP);
-      if (dead->is_macro()) {
-        igvn->C->remove_macro_node(dead);
-      }
-      if (dead->is_expensive()) {
-        igvn->C->remove_expensive_node(dead);
-      }
-      if (dead->for_post_loop_opts_igvn()) {
-        igvn->C->remove_from_post_loop_opts_igvn(dead);
-      }
-      BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
-      bs->unregister_potential_barrier_node(dead);
-      igvn->C->record_dead_node(dead->_idx);
       // Kill all inputs to the dead guy
       for (uint i=0; i < dead->req(); i++) {
         Node *n = dead->in(i);      // Get input to dead guy
@@ -1444,7 +1432,7 @@ static void kill_dead_code( Node *dead, PhaseIterGVN *igvn ) {
           }
         }
       }
-      igvn->C->remove_modified_node(dead);
+      igvn->C->remove_useless_node(dead);
     } // (dead->outcnt() == 0)
   }   // while (nstack.size() > 0) for outputs
   return;
@@ -1510,6 +1498,16 @@ const TypeInt* Node::find_int_type() const {
   } else if (this->is_Con()) {
     assert(is_Mach(), "should be ConNode(TypeNode) or else a MachNode");
     return this->bottom_type()->isa_int();
+  }
+  return NULL;
+}
+
+const TypeInteger* Node::find_integer_type(BasicType bt) const {
+  if (this->is_Type()) {
+    return this->as_Type()->type()->isa_integer(bt);
+  } else if (this->is_Con()) {
+    assert(is_Mach(), "should be ConNode(TypeNode) or else a MachNode");
+    return this->bottom_type()->isa_integer(bt);
   }
   return NULL;
 }
