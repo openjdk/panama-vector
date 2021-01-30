@@ -1470,7 +1470,7 @@ instruct vcvt$1to$2`'(vReg dst, vReg src)
   %}
   ins_pipe(pipe_slow);
 %}')dnl
-dnl             $1 $2 $3       $4
+dnl                 $1 $2 $3       $4
 VECTOR_CAST_EXTEND1(B, S, sunpklo, H)
 VECTOR_CAST_EXTEND1(S, I, sunpklo, S)
 VECTOR_CAST_EXTEND1(I, L, sunpklo, D)
@@ -1492,7 +1492,7 @@ instruct vcvt$1to$2`'(vReg dst, vReg src)
   %}
   ins_pipe(pipe_slow);
 %}')dnl
-dnl             $1 $2 $3       $4 $5
+dnl                 $1 $2 $3       $4 $5
 VECTOR_CAST_EXTEND2(B, I, sunpklo, H, S)
 VECTOR_CAST_EXTEND2(S, L, sunpklo, S, D)
 
@@ -1515,7 +1515,7 @@ instruct vcvt$1to$2`'(vReg dst, vReg src)
   %}
   ins_pipe(pipe_slow);
 %}')dnl
-dnl             $1 $2 $3       $4 $5 $6
+dnl                 $1 $2 $3       $4 $5 $6
 VECTOR_CAST_EXTEND3(B, L, sunpklo, H, S, D)
 
 dnl
@@ -1535,7 +1535,7 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
   %}
   ins_pipe(pipe_slow);
 %}')dnl
-dnl             $1 $2 $3   $4 $5
+dnl                 $1 $2 $3   $4 $5
 VECTOR_CAST_NARROW1(S, B, dup, B, uzp1)
 VECTOR_CAST_NARROW1(I, S, dup, H, uzp1)
 VECTOR_CAST_NARROW1(L, I, dup, S, uzp1)
@@ -1559,7 +1559,7 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
   %}
   ins_pipe(pipe_slow);
 %}')dnl
-dnl             $1 $2 $3   $4 $5    $6
+dnl                 $1 $2 $3   $4 $5    $6
 VECTOR_CAST_NARROW2(I, B, dup, H, uzp1, B)
 VECTOR_CAST_NARROW2(L, S, dup, S, uzp1, H)
 
@@ -1584,6 +1584,6 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
   %}
   ins_pipe(pipe_slow);
 %}')dnl
-dnl             $1 $2 $3   $4 $5    $6 $7
+dnl                 $1 $2 $3   $4 $5    $6 $7
 VECTOR_CAST_NARROW3(L, B, dup, S, uzp1, H, B)
 
