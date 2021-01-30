@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
-// Copyright (c) 2020, Arm Limited. All rights reserved.
+// Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2020, 2021, Arm Limited. All rights reserved.
 // DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 //
 // This code is free software; you can redistribute it and/or modify it
@@ -2529,7 +2529,7 @@ instruct vcvtItoL(vReg dst, vReg src)
 instruct vcvtBtoI(vReg dst, vReg src)
 %{
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-	    n->bottom_type()->is_vect()->element_basic_type() == T_INT);
+            n->bottom_type()->is_vect()->element_basic_type() == T_INT);
   match(Set dst (VectorCastB2X src));
   effect(TEMP_DEF dst);
   ins_cost(2 * SVE_COST);
@@ -2545,7 +2545,7 @@ instruct vcvtBtoI(vReg dst, vReg src)
 instruct vcvtStoL(vReg dst, vReg src)
 %{
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-	    n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+            n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
   match(Set dst (VectorCastS2X src));
   effect(TEMP_DEF dst);
   ins_cost(2 * SVE_COST);

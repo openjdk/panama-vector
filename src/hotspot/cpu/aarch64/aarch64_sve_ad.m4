@@ -1,6 +1,6 @@
 //
-// Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
-// Copyright (c) 2020, Arm Limited. All rights reserved.
+// Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2020, 2021, Arm Limited. All rights reserved.
 // DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 //
 // This code is free software; you can redistribute it and/or modify it
@@ -1457,7 +1457,7 @@ BINARY_OP_UNPREDICATED(vsubD, SubVD, D, 2, sve_fsub)
 
 // ------------------------------ Vector cast -------------------------------
 dnl
-define(`VECTOR_CAST_I2I', `
+define(`VECTOR_CAST_EXTEND1', `
 instruct vcvt$1to$2`'(vReg dst, vReg src)
 %{
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
@@ -1471,16 +1471,16 @@ instruct vcvt$1to$2`'(vReg dst, vReg src)
   ins_pipe(pipe_slow);
 %}')dnl
 dnl             $1 $2 $3       $4
-VECTOR_CAST_I2I(B, S, sunpklo, H)
-VECTOR_CAST_I2I(S, I, sunpklo, S)
-VECTOR_CAST_I2I(I, L, sunpklo, D)
+VECTOR_CAST_EXTEND1(B, S, sunpklo, H)
+VECTOR_CAST_EXTEND1(S, I, sunpklo, S)
+VECTOR_CAST_EXTEND1(I, L, sunpklo, D)
 
 dnl
-define(`VECTOR_CAST_B2I', `
+define(`VECTOR_CAST_EXTEND2', `
 instruct vcvt$1to$2`'(vReg dst, vReg src)
 %{
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-	    n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
+            n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
   match(Set dst (VectorCast$1`'2X src));
   effect(TEMP_DEF dst);
   ins_cost(2 * SVE_COST);
@@ -1493,11 +1493,11 @@ instruct vcvt$1to$2`'(vReg dst, vReg src)
   ins_pipe(pipe_slow);
 %}')dnl
 dnl             $1 $2 $3       $4 $5
-VECTOR_CAST_B2I(B, I, sunpklo, H, S)
-VECTOR_CAST_B2I(S, L, sunpklo, S, D)
+VECTOR_CAST_EXTEND2(B, I, sunpklo, H, S)
+VECTOR_CAST_EXTEND2(S, L, sunpklo, S, D)
 
 dnl
-define(`VECTOR_CAST_B2L', `
+define(`VECTOR_CAST_EXTEND3', `
 instruct vcvt$1to$2`'(vReg dst, vReg src)
 %{
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
@@ -1516,10 +1516,10 @@ instruct vcvt$1to$2`'(vReg dst, vReg src)
   ins_pipe(pipe_slow);
 %}')dnl
 dnl             $1 $2 $3       $4 $5 $6
-VECTOR_CAST_B2L(B, L, sunpklo, H, S, D)
+VECTOR_CAST_EXTEND3(B, L, sunpklo, H, S, D)
 
 dnl
-define(`VECTOR_CAST_S2B', `
+define(`VECTOR_CAST_NARROW1', `
 instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
 %{
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
@@ -1536,12 +1536,12 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
   ins_pipe(pipe_slow);
 %}')dnl
 dnl             $1 $2 $3   $4 $5
-VECTOR_CAST_S2B(S, B, dup, B, uzp1)
-VECTOR_CAST_S2B(I, S, dup, H, uzp1)
-VECTOR_CAST_S2B(L, I, dup, S, uzp1)
+VECTOR_CAST_NARROW1(S, B, dup, B, uzp1)
+VECTOR_CAST_NARROW1(I, S, dup, H, uzp1)
+VECTOR_CAST_NARROW1(L, I, dup, S, uzp1)
 
 dnl
-define(`VECTOR_CAST_I2B', `
+define(`VECTOR_CAST_NARROW2', `
 instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
 %{
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
@@ -1560,11 +1560,11 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
   ins_pipe(pipe_slow);
 %}')dnl
 dnl             $1 $2 $3   $4 $5    $6
-VECTOR_CAST_I2B(I, B, dup, H, uzp1, B)
-VECTOR_CAST_I2B(L, S, dup, S, uzp1, H)
+VECTOR_CAST_NARROW2(I, B, dup, H, uzp1, B)
+VECTOR_CAST_NARROW2(L, S, dup, S, uzp1, H)
 
 dnl
-define(`VECTOR_CAST_L2B', `
+define(`VECTOR_CAST_NARROW3', `
 instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
 %{
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
@@ -1585,5 +1585,5 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
   ins_pipe(pipe_slow);
 %}')dnl
 dnl             $1 $2 $3   $4 $5    $6 $7
-VECTOR_CAST_L2B(L, B, dup, S, uzp1, H, B)
+VECTOR_CAST_NARROW3(L, B, dup, S, uzp1, H, B)
 
