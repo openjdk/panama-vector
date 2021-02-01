@@ -438,7 +438,7 @@ define SetupCompileNativeFileBody
             # For assembler calls, no need to build dependency list.
 	    $$(call ExecuteWithLog, $$@, $$(call MakeCommandRelative, \
 	        $$($1_COMPILER) $$($1_FLAGS) \
-	          $(CC_OUT_OPTION)$$($1_OBJ) /nologo /c /Ta $$($1_SRC_FILE) 2>&1 \
+	          $(CC_OUT_OPTION)$$($1_OBJ) -nologo -c -Ta $$($1_SRC_FILE) 2>&1 \
 	            | $(TR) -d '\r' | $(GREP) -v -e "Assembling:" || test "$$$$?" = "1" ;))
           endif
         endif

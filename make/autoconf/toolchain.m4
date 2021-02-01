@@ -696,7 +696,7 @@ AC_DEFUN_ONCE([TOOLCHAIN_DETECT_TOOLCHAIN_CORE],
   if test "x$TOOLCHAIN_TYPE" != xmicrosoft; then
     AS="$CC -c"
   else
-    if test "x$OPENJDK_TARGET_CPU" = "xx86_64"; then
+    if test "x$OPENJDK_TARGET_CPU_BITS" = "x64"; then
       # On 64 bit windows, the assember is "ml64.exe"
       UTIL_LOOKUP_TOOLCHAIN_PROGS(AS, ml64)
     else
@@ -858,7 +858,7 @@ AC_DEFUN_ONCE([TOOLCHAIN_SETUP_BUILD_COMPILERS],
 
       # On windows, the assember is "ml.exe". We currently don't need this so
       # do not require.
-      if test "x$OPENJDK_TARGET_CPU" = "xx86_64"; then
+      if test "x$OPENJDK_TARGET_CPU_BITS" = "x64"; then
         # On 64 bit windows, the assember is "ml64.exe"
         UTIL_LOOKUP_PROGS(BUILD_AS, ml64, [$VS_PATH])
       else
