@@ -1,5 +1,5 @@
 ;
-; Copyright (c) 2018, Intel Corporation.
+; Copyright (c) 2018, 2021, Intel Corporation.
 ; Intel Short Vector Math Library (SVML) Source Code
 ;
 ; DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -23,7 +23,7 @@
 ; questions.
 ;
 
-INCLUDE globals_vectorApiSupport_windows.hpp
+INCLUDE globals_vectorApiSupport_windows.s.inc
 IFNB __VECTOR_API_MATH_INTRINSICS_WINDOWS
 	OPTION DOTNAME
 
