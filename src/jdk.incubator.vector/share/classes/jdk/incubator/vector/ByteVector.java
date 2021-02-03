@@ -2980,10 +2980,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         if (m.allTrue()) {
             intoArray(a, offset);
         } else {
-            // FIXME: optimize
             ByteSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
-            stOp(a, offset, m, (arr, off, i, v) -> arr[off+i] = v);
+            intoArray0(a, offset, m);
         }
     }
 
@@ -3226,6 +3225,22 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             (arr, off, v)
             -> v.stOp(arr, off,
                       (arr_, off_, i, e) -> arr_[off_+i] = e));
+    }
+
+    abstract
+    void intoArray0(byte[] a, int offset, VectorMask<Byte> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Byte>>
+    void intoArray0Template(Class<M> maskClass, byte[] a, int offset, M m) {
+        ByteSpecies vsp = vspecies();
+        VectorSupport.storeMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, arrayAddress(a, offset),
+            this, m, a, offset,
+            (arr, off, v, vm)
+            -> v.stOp(arr, off, vm,
+                      (arr_, off_, i, e) -> arr_[off_ + i] = e));
     }
 
     abstract

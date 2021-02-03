@@ -337,6 +337,23 @@ public class VectorSupport {
         defaultImpl.store(container, index, v);
     }
 
+    public interface StoreVectorMaskedOperation<C, V extends Vector<?>, M extends VectorMask<?>> {
+        void store(C container, int index, V v, M m);
+    }
+
+    @IntrinsicCandidate
+    public static
+    <C, V extends Vector<?>,
+     M extends VectorMask<?>>
+    void storeMasked(Class<?> vectorClass, Class<M> maskClass, Class<?> elementType,
+                     int length, Object base, long offset,   // Unsafe addressing
+                     V v, M m,
+                     C container, int index,      // Arguments for default implementation
+                     StoreVectorMaskedOperation<C, V, M> defaultImpl) {
+        assert isNonCapturingLambda(defaultImpl) : defaultImpl;
+        defaultImpl.store(container, index, v, m);
+    }
+
     /* ============================================================================ */
 
     public interface StoreVectorOperationWithMap<C, V extends Vector<?>> {

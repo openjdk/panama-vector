@@ -747,7 +747,7 @@ class StoreVectorNode : public StoreNode {
     set_mismatched_access();
   }
 
-  const TypeVect* vect_type() const { return in(MemNode::ValueIn)->bottom_type()->is_vect(); }
+  virtual const TypeVect* vect_type() const { return in(MemNode::ValueIn)->bottom_type()->is_vect(); }
   uint length() const { return vect_type()->length(); } // Vector length
 
   virtual int Opcode() const;
@@ -786,13 +786,14 @@ class StoreVectorMaskedNode : public StoreVectorNode {
  public:
   StoreVectorMaskedNode(Node* c, Node* mem, Node* dst, Node* src, const TypePtr* at, Node* mask)
    : StoreVectorNode(c, mem, dst, at, src) {
-    assert(mask->bottom_type()->is_long(), "sanity");
+    assert(mask->bottom_type()->isa_long() != NULL || mask->is_Vector() || mask->is_VectorMask(), "sanity");
     init_class_id(Class_StoreVector);
     set_mismatched_access();
     add_req(mask);
   }
 
   virtual int Opcode() const;
+  virtual const TypeVect* vect_type() const;
 
   virtual uint match_edge(uint idx) const {
     return idx > 1;

@@ -799,6 +799,139 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
   return true;
 }
 
+//    <C, V extends Vector<?>,
+//     M extends VectorMask<?>>
+//    void storeMasked(Class<?> vectorClass, Class<M> maskClass, Class<?> elementType,
+//                     int length, Object base, long offset,   // Unsafe addressing
+//                     V v, M m,
+//                     C container, int index,      // Arguments for default implementation
+//                     StoreVectorMaskedOperation<C, V, M> defaultImpl) {
+//
+//    TODO: Handle special case where load/store happens from/to byte array but element type
+//    is not byte. And also add the mask support for vector load. The intrinsic looks like:
+//
+//    <C, V extends Vector<?>,
+//     M extends VectorMask<?>>
+//    V loadMasked(Class<?> vectorClass, Class<M> maskClass, Class<?> elementType,
+//                 int vlen, Object base, long offset,
+//                 M m,   // mask arguemnt
+//                 Object container, int index,
+//                 LoadMaskedOperation<C, V, M> defaultImpl) {
+//
+bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
+  const TypeInstPtr* vector_klass = gvn().type(argument(0))->isa_instptr();
+  const TypeInstPtr* mask_klass   = gvn().type(argument(1))->isa_instptr();
+  const TypeInstPtr* elem_klass   = gvn().type(argument(2))->isa_instptr();
+  const TypeInt*     vlen         = gvn().type(argument(3))->isa_int();
+
+  if (vector_klass == NULL || mask_klass == NULL || elem_klass == NULL || vlen == NULL ||
+      vector_klass->const_oop() == NULL || mask_klass->const_oop() == NULL ||
+      elem_klass->const_oop() == NULL || !vlen->is_con()) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** missing constant: vclass=%s mclass=%s etype=%s vlen=%s",
+                    NodeClassNames[argument(0)->Opcode()],
+                    NodeClassNames[argument(1)->Opcode()],
+                    NodeClassNames[argument(2)->Opcode()],
+                    NodeClassNames[argument(3)->Opcode()]);
+    }
+    return false; // not enough info for intrinsification
+  }
+  if (!is_klass_initialized(vector_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
+  }
+
+  if (!is_klass_initialized(mask_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** mask klass argument not initialized");
+    }
+    return false;
+  }
+
+  ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
+  if (!elem_type->is_primitive_type()) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not a primitive bt=%d", elem_type->basic_type());
+    }
+    return false; // should be primitive type
+  }
+
+  BasicType elem_bt = elem_type->basic_type();
+  int num_elem = vlen->get_con();
+  int sopc = is_store ? Op_StoreVectorMasked : Op_LoadVectorMasked;
+  if (!arch_supports_vector(sopc, num_elem, elem_bt, VecMaskUseLoad) ||
+      !Matcher::match_rule_supported_masked_vector(sopc, num_elem, elem_bt)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not supported: arity=%d op=%s vlen=%d etype=%s ismask=yes",
+                    is_store, is_store ? "storeMask" : "loadMask",
+                    num_elem, type2name(elem_bt));
+    }
+    return false; // not supported
+  }
+
+  Node* base = argument(4);
+  Node* offset = ConvL2X(argument(5));
+  DecoratorSet decorators = C2_UNSAFE_ACCESS;
+  Node* addr = make_unsafe_address(base, offset, decorators, elem_bt, true);
+  const TypePtr *addr_type = gvn().type(addr)->isa_ptr();
+  const TypeAryPtr* arr_type = addr_type->isa_aryptr();
+  if (arr_type != NULL && elem_bt != arr_type->elem()->array_element_basic_type()) {
+    return false;
+  }
+
+  // Can base be NULL? Otherwise, always on-heap access.
+  bool can_access_non_heap = TypePtr::NULL_PTR->higher_equal(gvn().type(base));
+  if (can_access_non_heap) {
+    insert_mem_bar(Op_MemBarCPUOrder);
+  }
+
+  ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
+  ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
+  assert(!is_vector_mask(vbox_klass) && is_vector_mask(mbox_klass), "Invalid class type");
+  const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
+  const TypeInstPtr* mbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, mbox_klass);
+
+  if (is_store) {
+    Node* val = unbox_vector(argument(7), vbox_type, elem_bt, num_elem);
+    if (val == NULL) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** unbox failed vector=%s",
+                      NodeClassNames[argument(7)->Opcode()]);
+      }
+      return false; // operand unboxing failed
+    }
+    Node* mask = unbox_vector(argument(8), mbox_type, elem_bt, num_elem);
+    if (mask == NULL) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** unbox failed mask=%s",
+                      NodeClassNames[argument(8)->Opcode()]);
+      }
+      return false;
+    }
+
+    if (Matcher::match_rule_supported(Op_VectorToMask)) {
+      const TypeVMask* vmask_type = TypeVMask::make(elem_bt, num_elem);
+      mask = gvn().transform(new VectorToMaskNode(mask, vmask_type));
+    }
+
+    set_all_memory(reset_memory());
+    Node* vstore = gvn().transform(new StoreVectorMaskedNode(control(), memory(addr), addr, val, addr_type, mask));
+    set_memory(vstore, addr_type);
+  } else {
+    // TODO: mask support for load op.
+    assert(is_store, "unimplemented load mask");
+  }
+
+  if (can_access_non_heap) {
+    insert_mem_bar(Op_MemBarCPUOrder);
+  }
+
+  C->set_max_vector_size(MAX2(C->max_vector_size(), (uint)(num_elem * type2aelembytes(elem_bt))));
+  return true;
+}
+
 //   <C, V extends Vector<?>, W extends IntVector, E, S extends VectorSpecies<E>>
 //   void loadWithMap(Class<?> vectorClass, Class<E> E, int length, Class<?> vectorIndexClass,
 //                    Object base, long offset, // Unsafe addressing

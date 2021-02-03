@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -805,6 +805,13 @@ final class Double512Vector extends DoubleVector {
     final
     void intoArray0(double[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(double[] a, int offset, VectorMask<Double> m) {
+        super.intoArray0Template(Double512Mask.class, a, offset, (Double512Mask) m);
     }
 
     @ForceInline

@@ -85,6 +85,7 @@ opclass vmemA(indirect, vmemA_indOffI4, vmemA_indOffL4);
 
 source_hpp %{
   bool op_sve_supported(int opcode);
+  bool masked_op_sve_supported(int opcode);
 %}
 
 source %{
@@ -262,6 +263,11 @@ source %{
     }
   }
 
+  bool masked_op_sve_supported(int opcode) {
+    // TODO: list opcodes that are not supported with predicate feature
+    return true;
+  }
+
 %}
 
 definitions %{
@@ -352,6 +358,22 @@ instruct storeV_partial(vReg src, vmemA mem, pRegGov pTmp, iRegINoSp tmp, rFlags
     FloatRegister src_reg = as_FloatRegister($src$$reg);
     loadStoreA_predicate(C2_MacroAssembler(&cbuf), true, src_reg,
                          as_PRegister($pTmp$$reg), bt, size, $mem->opcode(),
+                         as_Register($mem$$base), $mem$$index, $mem$$scale, $mem$$disp);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct storeV_mask(vReg src, vmemA mem, pRegGov pg) %{
+  predicate(UseSVE > 0 && n->as_StoreVector()->memory_size() >= 16 &&
+            n->as_StoreVector()->memory_size() == MaxVectorSize);
+  match(Set mem (StoreVectorMasked mem (Binary src pg)));
+  ins_cost(SVE_COST);
+  format %{ "sve_str $mem, $pg, $src\t # vector (sve)" %}
+  ins_encode %{
+    FloatRegister src_reg = as_FloatRegister($src$$reg);
+    BasicType bt = vector_element_basic_type(this, $src);
+    loadStoreA_predicate(C2_MacroAssembler(&cbuf), true, src_reg, as_PRegister($pg$$reg),
+                         bt, elemType_to_regVariant(bt), $mem->opcode(),
                          as_Register($mem$$base), $mem$$index, $mem$$scale, $mem$$disp);
   %}
   ins_pipe(pipe_slow);

@@ -2899,10 +2899,9 @@ public abstract class FloatVector extends AbstractVector<Float> {
         if (m.allTrue()) {
             intoArray(a, offset);
         } else {
-            // FIXME: optimize
             FloatSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
-            stOp(a, offset, m, (arr, off, i, v) -> arr[off+i] = v);
+            intoArray0(a, offset, m);
         }
     }
 
@@ -3167,6 +3166,22 @@ public abstract class FloatVector extends AbstractVector<Float> {
             (arr, off, v)
             -> v.stOp(arr, off,
                       (arr_, off_, i, e) -> arr_[off_+i] = e));
+    }
+
+    abstract
+    void intoArray0(float[] a, int offset, VectorMask<Float> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Float>>
+    void intoArray0Template(Class<M> maskClass, float[] a, int offset, M m) {
+        FloatSpecies vsp = vspecies();
+        VectorSupport.storeMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, arrayAddress(a, offset),
+            this, m, a, offset,
+            (arr, off, v, vm)
+            -> v.stOp(arr, off, vm,
+                      (arr_, off_, i, e) -> arr_[off_ + i] = e));
     }
 
     abstract

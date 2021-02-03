@@ -2420,6 +2420,7 @@ const bool Matcher::match_rule_supported(int opcode) {
       break;
     case Op_LoadVectorMask:
     case Op_StoreVectorMask:
+    case Op_StoreVectorMasked:
     case Op_MaskToVector:
     case Op_VectorToMask:
     case Op_VectorCmpMaskGen:
@@ -2465,6 +2466,18 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
     }
   }
   return true; // Per default match rules are supported.
+}
+
+const bool Matcher::match_rule_supported_masked_vector(int opcode, int vlen, BasicType bt) {
+  if (!match_rule_supported(opcode) || !vector_size_supported(bt, vlen)) {
+    return false;
+  }
+
+  if (UseSVE > 0) {
+    return masked_op_sve_supported(opcode);
+  }
+  // Only SVE support masked operations.
+  return false;
 }
 
 const bool Matcher::has_predicated_vectors(void) {
