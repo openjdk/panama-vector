@@ -231,7 +231,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
   int num_elem = vlen->get_con();
   int opc = VectorSupport::vop2ideal(opr->get_con(), elem_bt);
   int sopc = VectorNode::opcode(opc, elem_bt);
-  if (sopc == 0) {
+  if ((opc != Op_CallLeafVector) && (sopc == 0)) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** operation not supported: opc=%s bt=%s", NodeClassNames[opc], type2name(elem_bt));
     }
@@ -256,7 +256,8 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
   }
 
   // TODO When mask usage is supported, VecMaskNotUsed needs to be VecMaskUseLoad.
-  if (!arch_supports_vector(sopc, num_elem, elem_bt, is_vector_mask(vbox_klass) ? VecMaskUseAll : VecMaskNotUsed)) {
+  if ((sopc != 0) &&
+      !arch_supports_vector(sopc, num_elem, elem_bt, is_vector_mask(vbox_klass) ? VecMaskUseAll : VecMaskNotUsed)) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** not supported: arity=%d opc=%d vlen=%d etype=%s ismask=%d",
                     n, sopc, num_elem, type2name(elem_bt),
@@ -304,7 +305,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
   }
 
   Node* operation = NULL;
-  if (sopc == Op_CallLeafVector) {
+  if (opc == Op_CallLeafVector) {
     assert(UseVectorStubs, "sanity");
     operation = gen_call_to_svml(opr->get_con(), elem_bt, num_elem, opd1, opd2);
     if (operation == NULL) {
@@ -1648,7 +1649,7 @@ Node* LibraryCallKit::gen_call_to_svml(int vector_api_op_id, BasicType bt, int n
                                       TypePtr::BOTTOM,
                                       opd1,
                                       opd2);
-  return _gvn.transform(new ProjNode(_gvn.transform(operation), TypeFunc::Parms));
+  return gvn().transform(new ProjNode(gvn().transform(operation), TypeFunc::Parms));
 }
 
 //  public static
