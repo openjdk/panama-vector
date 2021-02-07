@@ -1917,7 +1917,7 @@ void MachPrologNode::emit(CodeBuffer &cbuf, PhaseRegAlloc *ra_) const {
     __ bind(L_skip_barrier);
   }
 
-  if (C->max_vector_size() >= 16) {
+  if (C->max_vector_size() > 0) {
     __ reinitialize_ptrue();
   }
 
@@ -2403,7 +2403,7 @@ const bool Matcher::match_rule_supported(int opcode) {
 // Identify extra cases that we might want to provide match rules for vector nodes and
 // other intrinsics guarded with vector length (vlen) and element type (bt).
 const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType bt) {
-  if (!match_rule_supported(opcode) || !vector_size_supported(bt, vlen)) {
+  if (!match_rule_supported(opcode)) {
     return false;
   }
   int bit_size = vlen * type2aelembytes(bt) * 8;
@@ -2411,7 +2411,7 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
     return false;
   }
   if (UseSVE > 0) {
-    return op_sve_supported(opcode);
+    return op_sve_supported(opcode, vlen, bt);
   } else { // NEON
     // Special cases
     switch (opcode) {
@@ -2432,7 +2432,7 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       break;
     }
   }
-  return true; // Per default match rules are supported.
+  return vector_size_supported(bt, vlen);
 }
 
 const bool Matcher::has_predicated_vectors(void) {
@@ -2501,28 +2501,20 @@ const int Matcher::vector_width_in_bytes(BasicType bt) {
 const int Matcher::max_vector_size(const BasicType bt) {
   return vector_width_in_bytes(bt)/type2aelembytes(bt);
 }
+
 const int Matcher::min_vector_size(const BasicType bt) {
   int max_size = max_vector_size(bt);
-  if ((UseSVE > 0) && (MaxVectorSize >= 16)) {
-    // Currently vector length less than SVE vector register size is not supported.
-    if (bt == T_BOOLEAN) {
-      // To support vector api load/store mask.
-      return MaxVectorSize / 8;
-    }
-    return max_size;
-  } else { // NEON
-    // Limit the vector size to 8 bytes
-    int size = 8 / type2aelembytes(bt);
-    if (bt == T_BYTE) {
-      // To support vector api shuffle/rearrange.
-      size = 4;
-    } else if (bt == T_BOOLEAN) {
-      // To support vector api load/store mask.
-      size = 2;
-    }
-    if (size < 2) size = 2;
-    return MIN2(size,max_size);
+  // Limit the min vector size to 8 bytes for NEON, 16 bytes for SVE
+  int size = (UseSVE > 0 ? 16 : 8) / type2aelembytes(bt);
+  if (bt == T_BYTE) {
+    // To support vector api shuffle/rearrange.
+    size = 4;
+  } else if (bt == T_BOOLEAN) {
+    // To support vector api load/store mask.
+    size = 2;
   }
+  if (size < 2) size = 2;
+  return MIN2(size, max_size);
 }
 
 const bool Matcher::supports_scalable_vector() {
@@ -3818,7 +3810,7 @@ encode %{
     }
 
     // Only non uncommon_trap calls need to reinitialize ptrue.
-    if (Compile::current()->max_vector_size() >= 16 && uncommon_trap_request() == 0) {
+    if (Compile::current()->max_vector_size() > 0 && uncommon_trap_request() == 0) {
       __ reinitialize_ptrue();
     }
   %}
@@ -3830,7 +3822,7 @@ encode %{
     if (call == NULL) {
       ciEnv::current()->record_failure("CodeCache is full");
       return;
-    } else if (Compile::current()->max_vector_size() >= 16) {
+    } else if (Compile::current()->max_vector_size() > 0) {
       __ reinitialize_ptrue();
     }
   %}
@@ -3868,7 +3860,7 @@ encode %{
       __ bind(retaddr);
       __ add(sp, sp, 2 * wordSize);
     }
-    if (Compile::current()->max_vector_size() >= 16) {
+    if (Compile::current()->max_vector_size() > 0) {
       __ reinitialize_ptrue();
     }
   %}
@@ -3881,7 +3873,7 @@ encode %{
   enc_class aarch64_enc_ret() %{
     C2_MacroAssembler _masm(&cbuf);
 #ifdef ASSERT
-    if (Compile::current()->max_vector_size() >= 16) {
+    if (Compile::current()->max_vector_size() > 0) {
       __ verify_ptrue();
     }
 #endif
