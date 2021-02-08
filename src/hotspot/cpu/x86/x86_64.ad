@@ -453,7 +453,9 @@ int MachCallDynamicJavaNode::ret_addr_offset()
 
 int MachCallRuntimeNode::ret_addr_offset() {
   int offset = 13; // movq r10,#addr; callq (r10)
-  offset += clear_avx_size();
+  if (this->ideal_Opcode() != Op_CallLeafVector) {
+    offset += clear_avx_size();
+  }
   return offset;
 }
 
