@@ -29,6 +29,7 @@
 #include "metaprogramming/enableIf.hpp"
 #include "metaprogramming/logical.hpp"
 #include "runtime/globals.hpp"
+#include "runtime/nonJavaThread.hpp"
 #include "runtime/thread.hpp"
 #include "gc/shared/gcId.hpp"
 #include "logging/log.hpp"
@@ -302,7 +303,7 @@ public:
 // enumeration type.
 
 class SubTasksDone: public CHeapObj<mtInternal> {
-  volatile uint* _tasks;
+  volatile bool* _tasks;
   uint _n_tasks;
   volatile uint _threads_completed;
 
