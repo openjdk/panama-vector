@@ -3353,6 +3353,38 @@ public:
   INSN(sve_whilelsw, 0b111, 0);
 #undef INSN
 
+  void encode_cvtf_T (SIMD_RegVariant& T_dst, SIMD_RegVariant& T_src) {
+    assert(T_src != B && T_dst != B &&
+           T_src != Q && T_dst != Q, "invalid register variant");
+    if (T_dst != D) {
+      assert(T_dst <= T_src, "invalid register variant");
+    } else {
+      assert(T_src != H, "invalid register variant");
+    }
+    if (T_dst == S && T_src == D) {
+      T_dst = D;
+      T_src = S;
+    } else if (T_dst == D && T_src == S) {
+      T_dst = D;
+      T_src = B;
+    }
+  }
+// SVE convert integer to floating-point (predicated)
+#define INSN(NAME, sign)                                                \
+  void NAME(FloatRegister Zd, SIMD_RegVariant T_dst, PRegister Pg,      \
+            FloatRegister Zn, SIMD_RegVariant T_src) {                  \
+    starti;                                                             \
+    f(0b01100101, 31, 24), f(0b010, 21, 19), f(0b101, 15, 13);          \
+    f(sign, 16);                                                        \
+    pgrf(Pg, 10), rf(Zn, 5), rf(Zd, 0);                                 \
+    encode_cvtf_T(T_dst, T_src);                                        \
+    f(T_dst, 23, 22), f(T_src, 18, 17);                                 \
+  }
+
+  INSN(sve_scvtf, 0b0);
+  INSN(sve_ucvtf, 0b1);
+#undef INSN
+
   Assembler(CodeBuffer* code) : AbstractAssembler(code) {
   }
 
