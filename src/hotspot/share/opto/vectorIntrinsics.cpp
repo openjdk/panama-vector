@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -256,8 +256,8 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
   }
 
   // TODO When mask usage is supported, VecMaskNotUsed needs to be VecMaskUseLoad.
-  if ((sopc != 0) &&
-      !arch_supports_vector(sopc, num_elem, elem_bt, is_vector_mask(vbox_klass) ? VecMaskUseAll : VecMaskNotUsed)) {
+  int opcode = sopc != 0 ? sopc : Op_CallLeafVector;
+  if (!arch_supports_vector(opcode, num_elem, elem_bt, is_vector_mask(vbox_klass) ? VecMaskUseAll : VecMaskNotUsed)) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** not supported: arity=%d opc=%d vlen=%d etype=%s ismask=%d",
                     n, sopc, num_elem, type2name(elem_bt),
