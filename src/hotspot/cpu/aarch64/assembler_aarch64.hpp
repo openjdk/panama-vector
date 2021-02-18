@@ -3233,7 +3233,28 @@ public:
     f(pattern, 9, 5), f(0b0, 4), prf(pd, 0);
   }
 
-   // SVE cpy immediate
+// SVE load/store predicate register
+#define INSN(NAME, op1)                                                  \
+  void NAME(PRegister Pt, const Address &a)  {                           \
+    starti;                                                              \
+    assert(a.index() == noreg, "invalid address variant");               \
+    f(op1, 31, 29), f(0b0010110, 28, 22), sf(a.offset() >> 3, 21, 16),   \
+    f(0b000, 15, 13), f(a.offset() & 0x7, 12, 10), srf(a.base(), 5),     \
+    f(0, 4), prf(Pt, 0);                                                 \
+  }
+
+  INSN(sve_ldr, 0b100); // LDR (predicate)
+  INSN(sve_str, 0b111); // STR (predicate)
+#undef INSN
+
+  // SVE move predicate register
+  void sve_mov(PRegister Pd, PRegister Pn) {
+    starti;
+    f(0b001001011000, 31, 20), prf(Pn, 16), f(0b01, 15, 14), prf(Pn, 10);
+    f(0, 9), prf(Pn, 5), f(0, 4), prf(Pd, 0);
+  }
+
+  // SVE cpy immediate
   void sve_cpy(FloatRegister Zd, SIMD_RegVariant T, PRegister Pg, int imm16, bool isMerge) {
     starti;
     assert(T != Q, "invalid size");

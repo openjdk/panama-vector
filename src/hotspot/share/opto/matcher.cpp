@@ -433,6 +433,24 @@ static RegMask *init_input_masks( uint size, RegMask &ret_adr, RegMask &fp ) {
   return rms;
 }
 
+const int Matcher::scalable_predicate_reg_slots() {
+  assert(Matcher::has_predicated_vectors() && Matcher::supports_scalable_vector(),
+        "scalable predicate vector should be supported");
+  int vector_reg_bit_size = Matcher::scalable_vector_reg_size(T_BYTE) << LogBitsPerByte;
+  // We assume each predicate register is one-eighth of the size of
+  // scalable vector register, one mask bit per vector byte.
+  int predicate_reg_bit_size = vector_reg_bit_size >> 3;
+  // Compute number of slots which is required when scalable predicate
+  // register is spilled. E.g. if scalable vector register is 640 bits,
+  // predicate register is 80 bits, which is 2.5 * slots.
+  // We will round up the slot number to power of 2, which is required
+  // by find_first_set().
+  int slots = predicate_reg_bit_size & (BitsPerInt - 1)
+              ? (predicate_reg_bit_size >> LogBitsPerInt) + 1
+              : predicate_reg_bit_size >> LogBitsPerInt;
+  return round_up_power_of_2(slots);
+}
+
 #define NOF_STACK_MASKS (3*13)
 
 // Create the initial stack mask used by values spilling to the stack.
@@ -541,6 +559,8 @@ void Matcher::init_first_stack_mask() {
   if (Matcher::has_predicated_vectors()) {
     *idealreg2spillmask[Op_RegVectMask] = *idealreg2regmask[Op_RegVectMask];
      idealreg2spillmask[Op_RegVectMask]->OR(aligned_stack_mask);
+  } else {
+    *idealreg2spillmask[Op_RegVectMask] = RegMask::Empty;
   }
 
   if (Matcher::vector_size_supported(T_BYTE,4)) {
@@ -613,6 +633,18 @@ void Matcher::init_first_stack_mask() {
   if (Matcher::supports_scalable_vector()) {
     int k = 1;
     OptoReg::Name in = OptoReg::add(_in_arg_limit, -1);
+    // Exclude last input arg stack slots to avoid spilling vector register there,
+    // otherwise RegVectMask spills could stomp over stack slots in caller frame.
+    for (; (in >= init_in) && (k < scalable_predicate_reg_slots()); k++) {
+      scalable_stack_mask.Remove(in);
+      in = OptoReg::add(in, -1);
+    }
+
+    // For RegVectMask
+    scalable_stack_mask.clear_to_sets(scalable_predicate_reg_slots());
+    assert(scalable_stack_mask.is_AllStack(), "should be infinite stack");
+    idealreg2spillmask[Op_RegVectMask]->OR(scalable_stack_mask);
+
     // Exclude last input arg stack slots to avoid spilling vector register there,
     // otherwise vector spills could stomp over stack slots in caller frame.
     for (; (in >= init_in) && (k < scalable_vector_reg_size(T_FLOAT)); k++) {
