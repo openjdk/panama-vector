@@ -84,6 +84,7 @@ const Type::TypeInfo Type::_type_info[Type::lastype] = {
   { Bad,             T_ILLEGAL,    "vectory:",      false, Op_VecY,              relocInfo::none          },  // VectorY
   { Bad,             T_ILLEGAL,    "vectorz:",      false, Op_VecZ,              relocInfo::none          },  // VectorZ
 #endif
+  { Bad,             T_ILLEGAL,    "vmask:",        false, Op_RegVMask,          relocInfo::none          },  // VMask
   { Bad,             T_ADDRESS,    "anyptr:",       false, Op_RegP,              relocInfo::none          },  // AnyPtr
   { Bad,             T_ADDRESS,    "rawptr:",       false, Op_RegP,              relocInfo::none          },  // RawPtr
   { Bad,             T_OBJECT,     "oop:",          true,  Op_RegP,              relocInfo::oop_type      },  // OopPtr
@@ -679,12 +680,17 @@ void Type::Initialize_shared(Compile* current) {
     TypeVect::VECTZ = TypeVect::make(T_FLOAT,16);
   }
 
+  if (Matcher::has_predicated_vectors()) {
+    TypeVMask::VMASK = TypeVMask::make(T_BYTE, Matcher::max_vector_size(T_BYTE));
+  }
+
   mreg2type[Op_VecA] = TypeVect::VECTA;
   mreg2type[Op_VecS] = TypeVect::VECTS;
   mreg2type[Op_VecD] = TypeVect::VECTD;
   mreg2type[Op_VecX] = TypeVect::VECTX;
   mreg2type[Op_VecY] = TypeVect::VECTY;
   mreg2type[Op_VecZ] = TypeVect::VECTZ;
+  mreg2type[Op_RegVMask] = TypeVMask::VMASK;
 
   // Restore working type arena.
   current->set_type_arena(save);
@@ -1006,6 +1012,7 @@ const Type::TYPES Type::dual_type[Type::lastype] = {
   Bad,          // VectorX - handled in v-call
   Bad,          // VectorY - handled in v-call
   Bad,          // VectorZ - handled in v-call
+  Bad,          // VMask - handled in v-call
 
   Bad,          // AnyPtr - handled in v-call
   Bad,          // RawPtr - handled in v-call
@@ -1304,6 +1311,55 @@ bool TypeF::singleton(void) const {
 
 bool TypeF::empty(void) const {
   return false;                 // always exactly a singleton
+}
+
+//===============================TypeVMask=====================================
+bool TypeVMask::empty(void) const {
+  return false;
+}
+
+//------------------------------eq---------------------------------
+// Structural equality check for Type representations
+bool TypeVMask::eq(const Type *t) const {
+  const TypeVMask* vt = t->is_vmask();
+  return (_elem_size == vt->_elem_size) && (_length == vt->_length);
+}
+
+//------------------------------hash-------------------------------
+// Type-specific hashing function.
+int TypeVMask::hash(void) const {
+  return _elem_size + _length * _elem_size;
+}
+
+bool TypeVMask::singleton(void) const {
+  return false;
+}
+
+const TypeVMask* TypeVMask::VMASK = NULL;
+
+//------------------------------xdual-------------------------------
+// Dual: compute field-by-field dual
+const Type* TypeVMask::xdual() const {
+  return this;
+}
+
+// Compute the MEET of two types. It returns a new Type object.
+const Type* TypeVMask::xmeet(const Type* t) const {
+  if (this == t) return this;  // Meeting same type-rep?
+  switch (t->base()) {          // switch on original type
+  case Bottom:                  // Ye Olde Default
+    return t;
+  case VMask: {                 // Meeting 2 vmask?
+    const TypeVMask* vmask = t->is_vmask();
+    assert(base() == vmask->base(), "basic type");
+    return TypeVMask::make(_elem_size, _length);
+  }
+  case Top:
+    return this;
+  default:                      // All else is a mistake
+    typerr(t);
+  }
+  return this;
 }
 
 //=============================================================================

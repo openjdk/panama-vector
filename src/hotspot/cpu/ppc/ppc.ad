@@ -2160,6 +2160,10 @@ const bool Matcher::has_predicated_vectors(void) {
   return false;
 }
 
+const RegMask* Matcher::predicate_reg_mask(void) {
+  return NULL;
+}
+
 bool Matcher::supports_vector_variable_shifts(void) {
   return false; // not supported
 }

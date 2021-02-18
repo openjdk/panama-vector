@@ -1836,6 +1836,10 @@ const bool Matcher::has_predicated_vectors(void) {
   return ret_value;
 }
 
+const RegMask* Matcher::predicate_reg_mask(void) {
+  return NULL;
+}
+
 const int Matcher::float_pressure(int default_pressure_threshold) {
   int float_pressure_threshold = default_pressure_threshold;
 #ifdef _LP64
