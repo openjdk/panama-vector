@@ -1882,9 +1882,12 @@ typedef HashtableEntry<InstanceKlass*, mtClass>  KlassHashtableEntry;
   declare_c2_type(VectorInsertNode, VectorNode)                           \
   declare_c2_type(VectorUnboxNode, VectorNode)                            \
   declare_c2_type(VectorReinterpretNode, VectorNode)                      \
+  declare_c2_type(MaskToVectorNode, VectorNode)                           \
   declare_c2_type(VectorBoxNode, Node)                                    \
   declare_c2_type(VectorBoxAllocateNode, CallStaticJavaNode)              \
   declare_c2_type(VectorTestNode, Node)                                   \
+  declare_c2_type(VectorMaskNode, TypeNode)                               \
+  declare_c2_type(VectorToMaskNode, VectorMaskNode)                       \
                                                                           \
   /*********************/                                                 \
   /* Adapter Blob Entries */                                              \

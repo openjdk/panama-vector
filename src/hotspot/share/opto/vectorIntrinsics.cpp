@@ -461,7 +461,7 @@ bool LibraryCallKit::inline_vector_shuffle_iota() {
     // Make the indices greater than lane count as -ve values. This matches the java side implementation.
     res = gvn().transform(VectorNode::make(Op_AndI, res, bcast_mod, num_elem, elem_bt));
     Node * biased_val = gvn().transform(VectorNode::make(Op_SubI, res, bcast_lane_cnt, num_elem, elem_bt));
-    res = gvn().transform(new VectorBlendNode(biased_val, res, mask));
+    res = gvn().transform(VectorBlendNode::make(gvn(), biased_val, res, mask));
   }
 
   ciKlass* sbox_klass = shuffle_klass->const_oop()->as_instance()->java_lang_Class_klass();
@@ -1143,7 +1143,7 @@ bool LibraryCallKit::inline_vector_blend() {
     return false; // operand unboxing failed
   }
 
-  Node* blend = gvn().transform(new VectorBlendNode(v1, v2, mask));
+  Node* blend = gvn().transform(VectorBlendNode::make(gvn(), v1, v2, mask));
 
   Node* box = box_vector(blend, vbox_type, elem_bt, num_elem);
   set_result(box);

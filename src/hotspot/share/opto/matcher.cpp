@@ -1007,8 +1007,14 @@ void Matcher::init_spill_mask( Node *ret ) {
   idealreg2regmask[Op_VecX] = regmask_for_ideal_register(Op_VecX, ret);
   idealreg2regmask[Op_VecY] = regmask_for_ideal_register(Op_VecY, ret);
   idealreg2regmask[Op_VecZ] = regmask_for_ideal_register(Op_VecZ, ret);
-  // TODO: add RegVMask when we have vector mask support, use Op_RegL for now.
-  idealreg2regmask[Op_RegVMask] = regmask_for_ideal_register(Op_RegL, ret);
+  // Walkaround for vector api.
+  if (Matcher::has_predicated_vectors() && Matcher::match_rule_supported(Op_VectorToMask)) {
+    const int length = Matcher::max_vector_size(T_BYTE);
+    Node* con = new ConINode(TypeInt::ZERO);
+    Node* in = new ReplicateBNode(con, TypeVect::make(T_BYTE, length));
+    MachNode *spillRegVMask = match_tree(new VectorToMaskNode(in, TypeVMask::make(T_BYTE, length)));
+    idealreg2regmask[Op_RegVMask] = &spillRegVMask->out_RegMask();
+  }
 }
 
 #ifdef ASSERT

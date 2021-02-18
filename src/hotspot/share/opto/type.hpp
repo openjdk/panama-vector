@@ -60,6 +60,7 @@ class     TypeVectD;
 class     TypeVectX;
 class     TypeVectY;
 class     TypeVectZ;
+class   TypeVMask;
 class   TypePtr;
 class     TypeRawPtr;
 class     TypeOopPtr;
@@ -95,6 +96,7 @@ public:
     VectorX,                    // 128bit Vector types
     VectorY,                    // 256bit Vector types
     VectorZ,                    // 512bit Vector types
+    VMask,                      // Vector mask/predicate
 
     AnyPtr,                     // Any old raw, klass, inst, or array pointer
     RawPtr,                     // Raw (non-oop) pointers
@@ -299,6 +301,8 @@ public:
   const TypeAry    *isa_ary() const;             // Returns NULL of not ary
   const TypeVect   *is_vect() const;             // Vector
   const TypeVect   *isa_vect() const;            // Returns NULL if not a Vector
+  const TypeVMask  *is_vmask() const;            // VMask
+  const TypeVMask  *isa_vmask() const;           // Returns NULL if not a VMask
   const TypePtr    *is_ptr() const;              // Asserts it is a ptr type
   const TypePtr    *isa_ptr() const;             // Returns NULL if not ptr type
   const TypeRawPtr *isa_rawptr() const;          // NOT Java oop
@@ -843,6 +847,39 @@ class TypeVectY : public TypeVect {
 class TypeVectZ : public TypeVect {
   friend class TypeVect;
   TypeVectZ(const Type* elem, uint length) : TypeVect(VectorZ, elem, length) {}
+};
+
+class TypeVMask : public Type {
+  const uint _elem_size;  // Element size in bytes of the masked vector
+  const uint _length;     // Number of elements in the masked vector
+public:
+  TypeVMask(uint elem_size, uint length) :
+    Type(VMask), _elem_size(elem_size), _length(length) {}
+  TypeVMask(const BasicType elem_bt, uint length) : Type(VMask),
+    _elem_size(type2aelembytes(elem_bt)), _length(length) {}
+
+  static const TypeVMask* make(const BasicType elem_bt, uint length) {
+    return (TypeVMask*)(new TypeVMask(elem_bt, length))->hashcons();
+  }
+
+  static const TypeVMask* make(uint elem_size, uint length) {
+    return (TypeVMask*)(new TypeVMask(elem_size, length))->hashcons();
+  }
+
+  static const TypeVMask* VMASK;
+
+  uint element_size_in_bytes(void) const {
+    return _elem_size;
+  }
+  uint length(void) const {
+    return _length;
+  }
+  virtual bool empty(void) const;
+  virtual bool eq(const Type* t) const;
+  virtual int hash() const;  // Type specific hashing
+  virtual bool singleton(void) const;
+  virtual const Type* xdual() const;
+  virtual const Type* xmeet(const Type* t) const;
 };
 
 //------------------------------TypePtr----------------------------------------
@@ -1689,6 +1726,15 @@ inline const TypeVect *Type::is_vect() const {
 
 inline const TypeVect *Type::isa_vect() const {
   return (_base >= VectorA && _base <= VectorZ) ? (TypeVect*)this : NULL;
+}
+
+inline const TypeVMask* Type::is_vmask() const {
+  assert( _base == VMask, "Not a VectorMask" );
+  return (TypeVMask*)this;
+}
+
+inline const TypeVMask* Type::isa_vmask() const {
+  return (_base == VMask) ? (TypeVMask*)this : NULL;
 }
 
 inline const TypePtr *Type::is_ptr() const {

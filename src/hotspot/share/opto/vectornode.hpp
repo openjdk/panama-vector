@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -776,8 +776,8 @@ class StoreVectorNode : public StoreNode {
    }
    virtual int Opcode() const;
    virtual uint match_edge(uint idx) const { return idx == MemNode::Address ||
-                                                     idx == MemNode::ValueIn ||
-                                                     idx == MemNode::ValueIn + 1; }
+                                                    idx == MemNode::ValueIn ||
+                                                    idx == MemNode::ValueIn + 1; }
 };
 
 class StoreVectorMaskedNode : public StoreVectorNode {
@@ -828,6 +828,42 @@ class VectorMaskGenNode : public TypeNode {
 
   private:
    const Type* _elemType;
+};
+
+// ==========================Mask feature specific==============================
+
+class VectorMaskNode : public TypeNode {
+ public:
+  VectorMaskNode(Node* in1, const TypeVMask* vmask_type) :
+    TypeNode(vmask_type, 2) {
+    init_class_id(Class_VectorMask);
+    init_req(1, in1);
+  }
+
+  virtual int Opcode() const;
+};
+
+class VectorToMaskNode : public VectorMaskNode {
+ public:
+  VectorToMaskNode(Node* in, const TypeVMask* vmask_type) : VectorMaskNode(in, vmask_type) {
+    assert(in->bottom_type()->is_vect()->length_in_bytes() ==
+           vmask_type->length() * vmask_type->element_size_in_bytes(), "wrong type");
+  }
+
+  virtual int Opcode() const;
+  virtual Node* Identity(PhaseGVN* phase);
+};
+
+class MaskToVectorNode : public VectorNode {
+ public:
+  MaskToVectorNode(Node* mask, const TypeVect* vt) : VectorNode(mask, vt) {
+    assert(mask->is_VectorMask(), "input must be a VectorMask");
+    const TypeVMask* vmask_type = mask->as_VectorMask()->bottom_type()->is_vmask();
+    assert(vmask_type->length() * vmask_type->element_size_in_bytes() ==
+           vt->length_in_bytes(), "wrong type");
+  }
+
+  virtual int Opcode() const;
 };
 
 //=========================Promote_Scalar_to_Vector============================
@@ -1162,12 +1198,16 @@ class VectorTestNode : public Node {
 };
 
 class VectorBlendNode : public VectorNode {
- public:
+ protected:
   VectorBlendNode(Node* vec1, Node* vec2, Node* mask)
     : VectorNode(vec1, vec2, mask, vec1->bottom_type()->is_vect()) {
-    // assert(mask->is_VectorMask(), "VectorBlendNode requires that third argument be a mask");
+    if (Matcher::match_rule_supported(Op_VectorToMask)) {
+      assert(mask->is_VectorMask(), "VectorBlendNode requires that third argument be a mask");
+    }
   }
 
+ public:
+  static VectorBlendNode* make(PhaseGVN& gvn, Node* vec1, Node* vec2, Node* mask);
   virtual int Opcode() const;
   Node* vec1() const { return in(1); }
   Node* vec2() const { return in(2); }

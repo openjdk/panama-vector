@@ -339,6 +339,52 @@ instruct storeV_partial(vReg src, vmemA mem, pRegGov pTmp, iRegINoSp tmp, rFlags
   ins_pipe(pipe_slow);
 %}
 
+// vector to mask
+
+instruct vector2vmask(pRegGov pg, vReg src, rFlagsReg cr) %{
+  predicate(UseSVE > 0);
+  match(Set pg (VectorToMask src));
+  effect(KILL cr, DEF pg, USE src);
+  ins_cost(SVE_COST);
+  format %{ "sve_cmpeq  $pg, $src, -1\t# vector mask (sve)" %}
+  ins_encode %{
+    BasicType bt = vector_element_basic_type(this, $src);
+    __ sve_cmpeq(as_PRegister($pg$$reg), elemType_to_regVariant(bt),
+                 ptrue, as_FloatRegister($src$$reg), -1);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vcmp2vmask(pRegGov pg, vReg src1, vReg src2, immI cond, rFlagsReg cr)  %{
+  predicate(UseSVE > 0);
+  match(Set pg (VectorToMask (VectorMaskCmp (Binary src1 src2) cond)));
+  effect(KILL cr, DEF pg);
+  ins_cost(SVE_COST);
+  format %{ "sve_cmp $pg, $src1, $src2\t# vector cmp (sve)" %}
+  ins_encode %{
+    BasicType bt = this->in(1)->bottom_type()->is_vect()->element_basic_type();
+    sve_compare(C2_MacroAssembler(&cbuf), as_PRegister($pg$$reg), bt,
+                ptrue, as_FloatRegister($src1$$reg),
+                as_FloatRegister($src2$$reg), (int)$cond$$constant);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// mask to vector
+
+instruct vmask2vector(vReg dst, pRegGov pg) %{
+  predicate(UseSVE > 0);
+  match(Set dst (MaskToVector pg));
+  ins_cost(SVE_COST);
+  format %{ "sve_cpy $dst, $pg, -1\t# mask to vector (sve)" %}
+  ins_encode %{
+    BasicType bt = vector_element_basic_type(this);
+    __ sve_cpy(as_FloatRegister($dst$$reg), elemType_to_regVariant(bt),
+               as_PRegister($pg$$reg), -1, false);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
 // vector reinterpret
 
 instruct reinterpret(vReg dst) %{
@@ -1024,42 +1070,16 @@ instruct vmaskcmp(vReg dst, vReg src1, vReg src2, immI cond, pRegGov pTmp, rFlag
 
 // vector blend
 
-instruct vblend(vReg dst, vReg src1, vReg src2, vReg src3, pRegGov pTmp, rFlagsReg cr) %{
+instruct vblend(vReg dst, vReg src1, vReg src2, pRegGov pg) %{
   predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= 16);
-  match(Set dst (VectorBlend (Binary src1 src2) src3));
-  effect(TEMP pTmp, KILL cr);
-  ins_cost(2 * SVE_COST);
-  format %{ "sve_cmpeq $pTmp, $src3, -1\n\t"
-            "sve_sel $dst, $pTmp, $src2, $src1\t # vector blend (sve)" %}
+  match(Set dst (VectorBlend (Binary src1 src2) pg));
+  ins_cost(SVE_COST);
+  format %{ "sve_sel $dst, $pg, $src2, $src1\t # vector blend (sve)" %}
   ins_encode %{
     Assembler::SIMD_RegVariant size =
               elemType_to_regVariant(vector_element_basic_type(this));
-    __ sve_cmpeq(as_PRegister($pTmp$$reg), size, ptrue,
-                 as_FloatRegister($src3$$reg), -1);
-    __ sve_sel(as_FloatRegister($dst$$reg), size, as_PRegister($pTmp$$reg),
+    __ sve_sel(as_FloatRegister($dst$$reg), size, as_PRegister($pg$$reg),
                as_FloatRegister($src2$$reg), as_FloatRegister($src1$$reg));
-  %}
-  ins_pipe(pipe_slow);
-%}
-
-// vector blend with compare
-
-instruct vblend_maskcmp(vReg dst, vReg src1, vReg src2, vReg src3,
-                        vReg src4, pRegGov pTmp, immI cond, rFlagsReg cr) %{
-  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= 16);
-  match(Set dst (VectorBlend (Binary src1 src2) (VectorMaskCmp (Binary src3 src4) cond)));
-  effect(TEMP pTmp, KILL cr);
-  ins_cost(2 * SVE_COST);
-  format %{ "sve_cmp $pTmp, $src3, $src4\t # vector cmp (sve)\n\t"
-            "sve_sel $dst, $pTmp, $src2, $src1\t # vector blend (sve)" %}
-  ins_encode %{
-    BasicType bt = vector_element_basic_type(this);
-    sve_compare(C2_MacroAssembler(&cbuf), as_PRegister($pTmp$$reg), bt,
-                ptrue, as_FloatRegister($src3$$reg),
-                as_FloatRegister($src4$$reg), (int)$cond$$constant);
-    __ sve_sel(as_FloatRegister($dst$$reg), elemType_to_regVariant(bt),
-               as_PRegister($pTmp$$reg), as_FloatRegister($src2$$reg),
-               as_FloatRegister($src1$$reg));
   %}
   ins_pipe(pipe_slow);
 %}

@@ -755,6 +755,23 @@ Node* StoreVectorMaskedNode::Ideal(PhaseGVN* phase, bool can_reshape) {
   return NULL;
 }
 
+Node* VectorToMaskNode::Identity(PhaseGVN* phase) {
+  // VectorToMask (MaskToVector mask)  ==> mask
+  if (in(1)->Opcode() == Op_MaskToVector) {
+    return in(1)->in(1);
+  }
+  return this;
+}
+
+VectorBlendNode* VectorBlendNode::make(PhaseGVN& gvn, Node* vec1, Node* vec2, Node* mask) {
+  if (Matcher::match_rule_supported(Op_VectorToMask) && !mask->is_VectorMask()) {
+    const TypeVect* vtype = mask->bottom_type()->is_vect();
+    const TypeVMask* vmask_type = TypeVMask::make(vtype->element_basic_type(), vtype->length());
+    mask = gvn.transform(new VectorToMaskNode(mask, vmask_type));
+  }
+  return new VectorBlendNode(vec1, vec2, mask);
+}
+
 int ExtractNode::opcode(BasicType bt) {
   switch (bt) {
     case T_BOOLEAN: return Op_ExtractUB;
