@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -341,6 +341,8 @@ public:
   static const bool supports_scalable_vector();
   // Actual max scalable vector register length.
   static const int scalable_vector_reg_size(const BasicType bt);
+  // Actual max scalable predicate register length.
+  static const int scalable_predicate_reg_slots();
 
   // Vector ideal reg
   static const uint vector_ideal_reg(int len);

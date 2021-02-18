@@ -685,6 +685,7 @@ void Type::Initialize_shared(Compile* current) {
   mreg2type[Op_VecX] = TypeVect::VECTX;
   mreg2type[Op_VecY] = TypeVect::VECTY;
   mreg2type[Op_VecZ] = TypeVect::VECTZ;
+  mreg2type[Op_RegVMask] = NULL; // TODO: add TypeVMask
 
   // Restore working type arena.
   current->set_type_arena(save);

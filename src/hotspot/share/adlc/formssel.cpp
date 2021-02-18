@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -2274,6 +2274,7 @@ bool OperandForm::is_bound_register() const {
   if (strcmp(name, "RegD") == 0) size = 2;
   if (strcmp(name, "RegL") == 0) size = 2;
   if (strcmp(name, "RegN") == 0) size = 1;
+  if (strcmp(name, "RegVMask") == 0) size = 1;
   if (strcmp(name, "VecX") == 0) size = 4;
   if (strcmp(name, "VecY") == 0) size = 8;
   if (strcmp(name, "VecZ") == 0) size = 16;
