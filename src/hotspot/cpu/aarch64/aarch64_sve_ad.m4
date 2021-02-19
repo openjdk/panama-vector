@@ -121,6 +121,11 @@ source %{
     return vt->length_in_bytes();
   }
 
+  static inline int vector_mask_element_size(const MachNode* n) {
+    const TypeVMask* vmt = n->bottom_type()->is_vmask();
+    return vmt->element_size_in_bytes();
+  }
+
   static Assembler::SIMD_RegVariant elemBytes_to_regVariant(int esize) {
     switch(esize) {
       case 1:
@@ -178,33 +183,46 @@ source %{
     }
   }
 
+  static void sve_compare_integral(C2_MacroAssembler masm, PRegister pd,
+                                   Assembler::SIMD_RegVariant size, PRegister pg,
+                                   FloatRegister zn, FloatRegister zm, int cond) {
+    switch (cond) {
+      case BoolTest::eq: masm.sve_cmpeq(pd, size, pg, zn, zm); break;
+      case BoolTest::ne: masm.sve_cmpne(pd, size, pg, zn, zm); break;
+      case BoolTest::ge: masm.sve_cmpge(pd, size, pg, zn, zm); break;
+      case BoolTest::gt: masm.sve_cmpgt(pd, size, pg, zn, zm); break;
+      case BoolTest::le: masm.sve_cmpge(pd, size, pg, zm, zn); break;
+      case BoolTest::lt: masm.sve_cmpgt(pd, size, pg, zm, zn); break;
+      default:
+        assert(false, "unsupported");
+        ShouldNotReachHere();
+    }
+  }
+
+  static void sve_compare_fp(C2_MacroAssembler masm, PRegister pd,
+                             Assembler::SIMD_RegVariant size, PRegister pg,
+                             FloatRegister zn, FloatRegister zm, int cond) {
+    switch (cond) {
+      case BoolTest::eq: masm.sve_fcmeq(pd, size, pg, zn, zm); break;
+      case BoolTest::ne: masm.sve_fcmne(pd, size, pg, zn, zm); break;
+      case BoolTest::ge: masm.sve_fcmge(pd, size, pg, zn, zm); break;
+      case BoolTest::gt: masm.sve_fcmgt(pd, size, pg, zn, zm); break;
+      case BoolTest::le: masm.sve_fcmge(pd, size, pg, zm, zn); break;
+      case BoolTest::lt: masm.sve_fcmgt(pd, size, pg, zm, zn); break;
+      default:
+        assert(false, "unsupported");
+        ShouldNotReachHere();
+    }
+  }
+
   static void sve_compare(C2_MacroAssembler masm, PRegister pd, BasicType bt,
                           PRegister pg, FloatRegister zn, FloatRegister zm, int cond) {
     Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
     if (bt == T_FLOAT || bt == T_DOUBLE) {
-      switch (cond) {
-        case BoolTest::eq: masm.sve_fcmeq(pd, size, pg, zn, zm); break;
-        case BoolTest::ne: masm.sve_fcmne(pd, size, pg, zn, zm); break;
-        case BoolTest::ge: masm.sve_fcmge(pd, size, pg, zn, zm); break;
-        case BoolTest::gt: masm.sve_fcmgt(pd, size, pg, zn, zm); break;
-        case BoolTest::le: masm.sve_fcmge(pd, size, pg, zm, zn); break;
-        case BoolTest::lt: masm.sve_fcmgt(pd, size, pg, zm, zn); break;
-        default:
-          assert(false, "unsupported");
-          ShouldNotReachHere();
-      }
+      sve_compare_fp(masm, pd, size, pg, zn, zm, cond);
     } else {
-      switch (cond) {
-        case BoolTest::eq: masm.sve_cmpeq(pd, size, pg, zn, zm); break;
-        case BoolTest::ne: masm.sve_cmpne(pd, size, pg, zn, zm); break;
-        case BoolTest::ge: masm.sve_cmpge(pd, size, pg, zn, zm); break;
-        case BoolTest::gt: masm.sve_cmpgt(pd, size, pg, zn, zm); break;
-        case BoolTest::le: masm.sve_cmpge(pd, size, pg, zm, zn); break;
-        case BoolTest::lt: masm.sve_cmpgt(pd, size, pg, zm, zn); break;
-        default:
-          assert(false, "unsupported");
-          ShouldNotReachHere();
-      }
+      assert(is_integral_type(bt), "Unsupported type");
+      sve_compare_integral(masm, pd, size, pg, zn, zm, cond);
     }
   }
 
@@ -358,20 +376,30 @@ instruct vector2vmask(pRegGov pg, vReg src, rFlagsReg cr) %{
   ins_pipe(pipe_slow);
 %}
 
-instruct vcmp2vmask(pRegGov pg, vReg src1, vReg src2, immI cond, rFlagsReg cr)  %{
-  predicate(UseSVE > 0);
-  match(Set pg (VectorToMask (VectorMaskCmp (Binary src1 src2) cond)));
+dnl
+dnl VECTOR_CMP_PREDICATE($1,          $2,         $3)
+dnl VECTOR_CMP_PREDICATE(name_suffix, type_check, insn)
+define(`VECTOR_CMP_PREDICATE', `
+instruct vcmpmask_$1(pRegGov pg, vReg src1, vReg src2, immI cond, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            $2(n->in(1)->in(1)->bottom_type()->is_vect()->element_basic_type()));
+  match(Set pg (VectorCmpMaskGen (Binary src1 src2) cond));
   effect(KILL cr, DEF pg);
   ins_cost(SVE_COST);
   format %{ "sve_cmp $pg, $src1, $src2\t# vector cmp (sve)" %}
   ins_encode %{
-    BasicType bt = this->in(1)->bottom_type()->is_vect()->element_basic_type();
-    sve_compare(C2_MacroAssembler(&cbuf), as_PRegister($pg$$reg), bt,
-                ptrue, as_FloatRegister($src1$$reg),
-                as_FloatRegister($src2$$reg), (int)$cond$$constant);
+    int esize = vector_mask_element_size(this);
+    Assembler::SIMD_RegVariant variant = elemBytes_to_regVariant(esize);
+    $3(C2_MacroAssembler(&cbuf), as_PRegister($pg$$reg),
+                   variant, ptrue, as_FloatRegister($src1$$reg),
+                   as_FloatRegister($src2$$reg), (int)$cond$$constant);
   %}
   ins_pipe(pipe_slow);
-%}
+%}')dnl
+dnl
+// vector compare mask
+VECTOR_CMP_PREDICATE(integral, is_integral_type, sve_compare_integral)
+VECTOR_CMP_PREDICATE(fp, is_floating_point_type, sve_compare_fp)
 
 // mask to vector
 

@@ -1206,6 +1206,19 @@ Node* RotateRightVNode::Ideal(PhaseGVN* phase, bool can_reshape) {
   return NULL;
 }
 
+Node* VectorMaskCmpNode::Identity(PhaseGVN* phase) {
+  // Generate the mask specific compare node if backend supported.
+  // (VectorMaskCmp src1 src2 cond)  ==> MaskToVector (VectorCmpMaskGen src1 src2 cond)
+  if (Matcher::match_rule_supported(Op_VectorCmpMaskGen) &&
+      Matcher::match_rule_supported(Op_MaskToVector)) {
+    const TypeVect* vtype = vect_type();
+    const TypeVMask* vmask_type = TypeVMask::make(vtype->element_basic_type(), vtype->length());
+    Node* cmp = phase->transform(new VectorCmpMaskGenNode(in(1), in(2), (ConINode*) in(3), vmask_type));
+    return phase->transform(new MaskToVectorNode(cmp, vtype));
+  }
+  return this;
+}
+
 #ifndef PRODUCT
 void VectorMaskCmpNode::dump_spec(outputStream *st) const {
   st->print(" %d #", _predicate); _type->dump_on(st);

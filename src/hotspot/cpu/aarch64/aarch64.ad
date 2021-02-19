@@ -2420,6 +2420,7 @@ const bool Matcher::match_rule_supported(int opcode) {
       break;
     case Op_MaskToVector:
     case Op_VectorToMask:
+    case Op_VectorCmpMaskGen:
       if (UseSVE == 0) {
         ret_value = false;
       }

@@ -783,7 +783,8 @@ bool InstructForm::captures_bottom_type(FormDict &globals) const {
        !strcmp(_matrule->_rChild->_opType,"ShenandoahCompareAndExchangeP") ||
        !strcmp(_matrule->_rChild->_opType,"ShenandoahCompareAndExchangeN") ||
 #endif
-       !strcmp(_matrule->_rChild->_opType,"VectorMaskGen")||
+       !strcmp(_matrule->_rChild->_opType,"VectorMaskGen") ||
+       !strcmp(_matrule->_rChild->_opType,"VectorCmpMaskGen") ||
        !strcmp(_matrule->_rChild->_opType,"CompareAndExchangeP") ||
        !strcmp(_matrule->_rChild->_opType,"CompareAndExchangeN"))) return true;
   else if ( is_ideal_load() == Form::idealP )                return true;
@@ -4083,6 +4084,7 @@ int MatchRule::is_expensive() const {
         strcmp(opType,"AndReductionV")==0 ||
         strcmp(opType,"OrReductionV")==0 ||
         strcmp(opType,"XorReductionV")==0 ||
+        strcmp(opType,"MaskToVector")==0 ||
         0 /* 0 to line up columns nicely */ )
       return 1;
   }

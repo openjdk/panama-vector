@@ -840,6 +840,14 @@ class VectorMaskNode : public TypeNode {
     init_req(1, in1);
   }
 
+  VectorMaskNode(Node* in1, Node* in2, Node* in3, const TypeVMask* vmask_type) :
+    TypeNode(vmask_type, 4) {
+    init_class_id(Class_VectorMask);
+    init_req(1, in1);
+    init_req(2, in2);
+    init_req(3, in3);
+  }
+
   virtual int Opcode() const;
 };
 
@@ -852,6 +860,24 @@ class VectorToMaskNode : public VectorMaskNode {
 
   virtual int Opcode() const;
   virtual Node* Identity(PhaseGVN* phase);
+};
+
+// Vector compare node with a TypeVMask bottom_type. It is specially generated for platforms
+// that have mask hardware feature. The main difference with "VectorMaskCmpNode" is that this
+// is a kind of mask node, while "VectorMaskCmpNode" is a vector node.
+class VectorCmpMaskGenNode : public VectorMaskNode {
+ public:
+  VectorCmpMaskGenNode(Node* in1, Node* in2, ConINode* predicate_node, const TypeVMask* vmask_type) :
+    VectorMaskNode(in1, in2, predicate_node, vmask_type) {
+    assert(in1->bottom_type()->is_vect()->element_basic_type() == in2->bottom_type()->is_vect()->element_basic_type(),
+           "VectorCmpMaskGen inputs must have the same type for elements");
+    assert(in1->bottom_type()->is_vect()->length() == in2->bottom_type()->is_vect()->length(),
+           "VectorCmpMaskGen inputs must have the same number of elements");
+    assert(in1->bottom_type()->is_vect()->length_in_bytes() ==
+           vmask_type->length() * vmask_type->element_size_in_bytes(), "wrong type");
+  }
+
+  virtual int Opcode() const;
 };
 
 class MaskToVectorNode : public VectorNode {
@@ -1157,6 +1183,7 @@ class VectorMaskCmpNode : public VectorNode {
     return VectorNode::cmp(n) && _predicate == ((VectorMaskCmpNode&)n)._predicate;
   }
   BoolTest::mask get_predicate() { return _predicate; }
+  virtual Node* Identity(PhaseGVN* phase);
 #ifndef PRODUCT
   virtual void dump_spec(outputStream *st) const;
 #endif // !PRODUCT
