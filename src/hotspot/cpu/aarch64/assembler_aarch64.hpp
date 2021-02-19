@@ -2989,16 +2989,19 @@ public:
 
   INSN(sve_abs,  0b00000100, 0b010110101); // vector abs, unary
   INSN(sve_add,  0b00000100, 0b000000000); // vector add
+  INSN(sve_and,  0b00000100, 0b011010000); // vector and
   INSN(sve_andv, 0b00000100, 0b011010001); // bitwise and reduction to scalar
   INSN(sve_asr,  0b00000100, 0b010000100); // vector arithmetic shift right
-  INSN(sve_cnt,  0b00000100, 0b011010101)  // count non-zero bits
+  INSN(sve_cnt,  0b00000100, 0b011010101); // count non-zero bits
   INSN(sve_cpy,  0b00000101, 0b100000100); // copy scalar to each active vector element
+  INSN(sve_eor,  0b00000100, 0b011001000); // vector eor
   INSN(sve_eorv, 0b00000100, 0b011001001); // bitwise xor reduction to scalar
   INSN(sve_lsl,  0b00000100, 0b010011100); // vector logical shift left
   INSN(sve_lsr,  0b00000100, 0b010001100); // vector logical shift right
   INSN(sve_mul,  0b00000100, 0b010000000); // vector mul
   INSN(sve_neg,  0b00000100, 0b010111101); // vector neg, unary
   INSN(sve_not,  0b00000100, 0b011110101); // bitwise invert vector, unary
+  INSN(sve_or,   0b00000100, 0b011000000); // vector or
   INSN(sve_orv,  0b00000100, 0b011000001); // bitwise or reduction to scalar
   INSN(sve_smax, 0b00000100, 0b001000000); // signed maximum vectors
   INSN(sve_smaxv, 0b00000100, 0b001000001); // signed maximum reduction to scalar

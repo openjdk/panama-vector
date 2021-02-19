@@ -478,10 +478,35 @@ UNARY_OP_TRUE_PREDICATE_ETYPE(vabsI, AbsVI, T_INT,    S, 4,  sve_abs)
 UNARY_OP_TRUE_PREDICATE_ETYPE(vabsL, AbsVL, T_LONG,   D, 2,  sve_abs)
 UNARY_OP_TRUE_PREDICATE_ETYPE(vabsF, AbsVF, T_FLOAT,  S, 4,  sve_fabs)
 UNARY_OP_TRUE_PREDICATE_ETYPE(vabsD, AbsVD, T_DOUBLE, D, 2,  sve_fabs)
+
+dnl UNARY_OP_PREDICATE($1,        $2,      $3,   $4,    $5  )
+dnl UNARY_OP_PREDICATE(insn_name, op_name, size, etype, insn)
+define(`UNARY_OP_PREDICATE', `
+instruct $1(vReg dst, vReg src, pRegGov pg) %{
+  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == $4);
+  match(Set dst ($2 src pg));
+  ins_cost(SVE_COST);
+  format %{ "$5 $dst, $pg, $src\t # vector (sve) ($3)" %}
+  ins_encode %{
+    __ $5(as_FloatRegister($dst$$reg), __ $3,
+            as_PRegister($pg$$reg),
+            as_FloatRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+// vector abs - predicated
+UNARY_OP_PREDICATE(vabsB_mask, AbsVB, B, T_BYTE,   sve_abs)
+UNARY_OP_PREDICATE(vabsS_mask, AbsVS, H, T_SHORT,  sve_abs)
+UNARY_OP_PREDICATE(vabsI_mask, AbsVI, S, T_INT,    sve_abs)
+UNARY_OP_PREDICATE(vabsL_mask, AbsVL, D, T_LONG,   sve_abs)
+UNARY_OP_PREDICATE(vabsF_mask, AbsVF, S, T_FLOAT,  sve_fabs)
+UNARY_OP_PREDICATE(vabsD_mask, AbsVD, D, T_DOUBLE, sve_fabs)
+
 dnl
-dnl BINARY_OP_UNPREDICATED($1,        $2       $3,   $4           $5  )
-dnl BINARY_OP_UNPREDICATED(insn_name, op_name, size, min_vec_len, insn)
-define(`BINARY_OP_UNPREDICATED', `
+dnl BINARY_OP_UNPREDICATE($1,        $2       $3,   $4           $5  )
+dnl BINARY_OP_UNPREDICATE(insn_name, op_name, size, min_vec_len, insn)
+define(`BINARY_OP_UNPREDICATE', `
 instruct $1(vReg dst, vReg src1, vReg src2) %{
   predicate(UseSVE > 0 && n->as_Vector()->length() >= $4);
   match(Set dst ($2 src1 src2));
@@ -494,39 +519,93 @@ instruct $1(vReg dst, vReg src1, vReg src2) %{
   %}
   ins_pipe(pipe_slow);
 %}')dnl
-
-// vector add
-BINARY_OP_UNPREDICATED(vaddB, AddVB, B, 16, sve_add)
-BINARY_OP_UNPREDICATED(vaddS, AddVS, H, 8,  sve_add)
-BINARY_OP_UNPREDICATED(vaddI, AddVI, S, 4,  sve_add)
-BINARY_OP_UNPREDICATED(vaddL, AddVL, D, 2,  sve_add)
-BINARY_OP_UNPREDICATED(vaddF, AddVF, S, 4,  sve_fadd)
-BINARY_OP_UNPREDICATED(vaddD, AddVD, D, 2,  sve_fadd)
 dnl
-dnl BINARY_OP_UNSIZED($1,        $2,      $3,          $4  )
-dnl BINARY_OP_UNSIZED(insn_name, op_name, min_vec_len, insn)
+dnl
+dnl BINARY_OP_PREDICATE($1,        $2,      $3,   $4  )
+dnl BINARY_OP_PREDICATE(insn_name, op_name, size, insn)
+define(`BINARY_OP_PREDICATE', `
+instruct $1(vReg dst_src1, vReg src2, pRegGov pg) %{
+  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= 16);
+  match(Set dst_src1 ($2 (Binary dst_src1 src2) pg));
+  ins_cost(SVE_COST);
+  format %{ "$4 $dst_src1, $pg, $dst_src1, $src2\t # vector (sve) ($3)" %}
+  ins_encode %{
+    __ $4(as_FloatRegister($dst_src1$$reg), __ $3,
+            as_PRegister($pg$$reg),
+            as_FloatRegister($src2$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+// vector add
+BINARY_OP_UNPREDICATE(vaddB, AddVB, B, 16, sve_add)
+BINARY_OP_UNPREDICATE(vaddS, AddVS, H, 8,  sve_add)
+BINARY_OP_UNPREDICATE(vaddI, AddVI, S, 4,  sve_add)
+BINARY_OP_UNPREDICATE(vaddL, AddVL, D, 2,  sve_add)
+BINARY_OP_UNPREDICATE(vaddF, AddVF, S, 4,  sve_fadd)
+BINARY_OP_UNPREDICATE(vaddD, AddVD, D, 2,  sve_fadd)
+
+// vector add - predicated
+BINARY_OP_PREDICATE(vaddB_mask, AddVB, B, sve_add)
+BINARY_OP_PREDICATE(vaddS_mask, AddVS, H, sve_add)
+BINARY_OP_PREDICATE(vaddI_mask, AddVI, S, sve_add)
+BINARY_OP_PREDICATE(vaddL_mask, AddVL, D, sve_add)
+BINARY_OP_PREDICATE(vaddF_mask, AddVF, S, sve_fadd)
+BINARY_OP_PREDICATE(vaddD_mask, AddVD, D, sve_fadd)
+
+dnl
+dnl BINARY_OP_UNSIZED($1,        $2,      $3  )
+dnl BINARY_OP_UNSIZED(insn_name, op_name, insn)
 define(`BINARY_OP_UNSIZED', `
 instruct $1(vReg dst, vReg src1, vReg src2) %{
-  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= $3);
+  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= 16);
   match(Set dst ($2 src1 src2));
   ins_cost(SVE_COST);
-  format %{ "$4  $dst, $src1, $src2\t# vector (sve)" %}
+  format %{ "$3  $dst, $src1, $src2\t# vector (sve)" %}
   ins_encode %{
-    __ $4(as_FloatRegister($dst$$reg),
+    __ $3(as_FloatRegister($dst$$reg),
          as_FloatRegister($src1$$reg),
          as_FloatRegister($src2$$reg));
   %}
   ins_pipe(pipe_slow);
 %}')dnl
-
+dnl
 // vector and
-BINARY_OP_UNSIZED(vand, AndV, 16, sve_and)
+BINARY_OP_UNSIZED(vand, AndV, sve_and)
 
 // vector or
-BINARY_OP_UNSIZED(vor, OrV, 16, sve_orr)
+BINARY_OP_UNSIZED(vor, OrV, sve_orr)
 
 // vector xor
-BINARY_OP_UNSIZED(vxor, XorV, 16, sve_eor)
+BINARY_OP_UNSIZED(vxor, XorV, sve_eor)
+
+dnl BINARY_LOGIC_OP_PREDICATE($1,        $2,      $3  )
+dnl BINARY_LOGIC_OP_PREDICATE(insn_name, op_name, insn)
+define(`BINARY_LOGIC_OP_PREDICATE', `
+instruct $1(vReg dst_src1, vReg src2, pRegGov pg) %{
+  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= 16);
+  match(Set dst_src1 ($2 (Binary dst_src1 src2) pg));
+  ins_cost(SVE_COST);
+  format %{ "$3 $dst_src1, $pg, $dst_src1, $src2\t # vector (sve)" %}
+  ins_encode %{
+    BasicType bt = vector_element_basic_type(this);
+    Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
+    __ $3(as_FloatRegister($dst_src1$$reg), size,
+         as_PRegister($pg$$reg),
+         as_FloatRegister($src2$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+// vector and - predicated
+BINARY_LOGIC_OP_PREDICATE(vand_mask, AndV, sve_and)
+
+// vector or - predicated
+BINARY_LOGIC_OP_PREDICATE(vor_mask, OrV, sve_or)
+
+// vector xor - predicated
+BINARY_LOGIC_OP_PREDICATE(vxor_mask, XorV, sve_eor)
+
 dnl
 dnl VDIVF($1,          $2  , $3         )
 dnl VDIVF(name_suffix, size, min_vec_len)
@@ -542,52 +621,70 @@ instruct vdiv$1(vReg dst_src1, vReg src2) %{
   %}
   ins_pipe(pipe_slow);
 %}')dnl
-
-// vector float div
+dnl
+// vector fdiv
 VDIVF(F, S, 4)
 VDIVF(D, D, 2)
 
+// vector fdiv - predicated
+BINARY_OP_PREDICATE(vfdivF_mask, DivVF, S, sve_fdiv)
+BINARY_OP_PREDICATE(vfdivD_mask, DivVD, D, sve_fdiv)
+
+dnl
+dnl VMINMAX($1     , $2, $3   , $4  )
+dnl VMINMAX(op_name, op, finsn, insn)
+define(`VMINMAX', `
+instruct v$1(vReg dst_src1, vReg src2) %{
+  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= 16);
+  match(Set dst_src1 ($2 dst_src1 src2));
+  ins_cost(SVE_COST);
+  format %{ "sve_$1 $dst_src1, $dst_src1, $src2\t # vector (sve)" %}
+  ins_encode %{
+    BasicType bt = vector_element_basic_type(this);
+    Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
+    if (is_floating_point_type(bt)) {
+      __ $3(as_FloatRegister($dst_src1$$reg), size,
+                  ptrue, as_FloatRegister($src2$$reg));
+    } else {
+      assert(is_integral_type(bt), "Unsupported type");
+      __ $4(as_FloatRegister($dst_src1$$reg), size,
+                  ptrue, as_FloatRegister($src2$$reg));
+    }
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
 // vector min/max
+VMINMAX(min, MinV, sve_fmin, sve_smin)
+VMINMAX(max, MaxV, sve_fmax, sve_smax)
 
-instruct vmin(vReg dst_src1, vReg src2) %{
+dnl
+dnl VMINMAX_PREDICATE($1     , $2, $3   , $4  )
+dnl VMINMAX_PREDICATE(op_name, op, finsn, insn)
+define(`VMINMAX_PREDICATE', `
+instruct v$1_mask(vReg dst_src1, vReg src2, pRegGov pg) %{
   predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= 16);
-  match(Set dst_src1 (MinV dst_src1 src2));
+  match(Set dst_src1 ($2 (Binary dst_src1 src2) pg));
   ins_cost(SVE_COST);
-  format %{ "sve_min $dst_src1, $dst_src1, $src2\t # vector (sve)" %}
+  format %{ "sve_$1 $dst_src1, $pg, $dst_src1, $src2\t # vector (sve)" %}
   ins_encode %{
     BasicType bt = vector_element_basic_type(this);
     Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
     if (is_floating_point_type(bt)) {
-      __ sve_fmin(as_FloatRegister($dst_src1$$reg), size,
-                  ptrue, as_FloatRegister($src2$$reg));
+      __ $3(as_FloatRegister($dst_src1$$reg), size,
+                  as_PRegister($pg$$reg), as_FloatRegister($src2$$reg));
     } else {
       assert(is_integral_type(bt), "Unsupported type");
-      __ sve_smin(as_FloatRegister($dst_src1$$reg), size,
-                  ptrue, as_FloatRegister($src2$$reg));
+      __ $4(as_FloatRegister($dst_src1$$reg), size,
+                  as_PRegister($pg$$reg), as_FloatRegister($src2$$reg));
     }
   %}
   ins_pipe(pipe_slow);
-%}
-
-instruct vmax(vReg dst_src1, vReg src2) %{
-  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= 16);
-  match(Set dst_src1 (MaxV dst_src1 src2));
-  ins_cost(SVE_COST);
-  format %{ "sve_max $dst_src1, $dst_src1, $src2\t # vector (sve)" %}
-  ins_encode %{
-    BasicType bt = vector_element_basic_type(this);
-    Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
-    if (is_floating_point_type(bt)) {
-      __ sve_fmax(as_FloatRegister($dst_src1$$reg), size,
-                  ptrue, as_FloatRegister($src2$$reg));
-    } else {
-      assert(is_integral_type(bt), "Unsupported type");
-      __ sve_smax(as_FloatRegister($dst_src1$$reg), size,
-                  ptrue, as_FloatRegister($src2$$reg));
-    }
-  %}
-  ins_pipe(pipe_slow);
-%}
+%}')dnl
+dnl
+// vector min/max - predicated
+VMINMAX_PREDICATE(min, MinV, sve_fmin, sve_smin)
+VMINMAX_PREDICATE(max, MaxV, sve_fmax, sve_smax)
 
 dnl
 dnl VFMLA($1           $2    $3         )
@@ -740,14 +837,22 @@ instruct $1(vReg dst_src1, vReg src2) %{
   %}
   ins_pipe(pipe_slow);
 %}')dnl
-
+dnl
 // vector mul
 BINARY_OP_TRUE_PREDICATE(vmulB, MulVB, B, 16, sve_mul)
 BINARY_OP_TRUE_PREDICATE(vmulS, MulVS, H, 8,  sve_mul)
 BINARY_OP_TRUE_PREDICATE(vmulI, MulVI, S, 4,  sve_mul)
 BINARY_OP_TRUE_PREDICATE(vmulL, MulVL, D, 2,  sve_mul)
-BINARY_OP_UNPREDICATED(vmulF, MulVF, S, 4, sve_fmul)
-BINARY_OP_UNPREDICATED(vmulD, MulVD, D, 2, sve_fmul)
+BINARY_OP_UNPREDICATE(vmulF, MulVF, S, 4, sve_fmul)
+BINARY_OP_UNPREDICATE(vmulD, MulVD, D, 2, sve_fmul)
+
+// vector mul - predicated
+BINARY_OP_PREDICATE(vmulB_mask, MulVB, B, sve_mul)
+BINARY_OP_PREDICATE(vmulS_mask, MulVS, H, sve_mul)
+BINARY_OP_PREDICATE(vmulI_mask, MulVI, S, sve_mul)
+BINARY_OP_PREDICATE(vmulL_mask, MulVL, D, sve_mul)
+BINARY_OP_PREDICATE(vmulF_mask, MulVF, S, sve_fmul)
+BINARY_OP_PREDICATE(vmulD_mask, MulVD, D, sve_fmul)
 
 // vector neg
 
@@ -782,6 +887,10 @@ instruct $1(vReg dst, vReg src) %{
 dnl
 UNARY_OP_TRUE_PREDICATE(vnegF, NegVF, S, 16, sve_fneg)
 UNARY_OP_TRUE_PREDICATE(vnegD, NegVD, D, 16, sve_fneg)
+
+// vector fneg - predicated
+UNARY_OP_PREDICATE(vnegF_mask, NegVF, S, T_FLOAT,  sve_fneg)
+UNARY_OP_PREDICATE(vnegD_mask, NegVD, D, T_DOUBLE, sve_fneg)
 
 // popcount vector
 
@@ -1498,17 +1607,43 @@ VSHIFT_COUNT(vshiftcntS, H,  8, T_SHORT)
 VSHIFT_COUNT(vshiftcntI, S,  4, T_INT)
 VSHIFT_COUNT(vshiftcntL, D,  2, T_LONG)
 
+// vector shift - predicated
+BINARY_OP_PREDICATE(vasrB_mask, RShiftVB,  B, sve_asr)
+BINARY_OP_PREDICATE(vasrS_mask, RShiftVS,  H, sve_asr)
+BINARY_OP_PREDICATE(vasrI_mask, RShiftVI,  S, sve_asr)
+BINARY_OP_PREDICATE(vasrL_mask, RShiftVL,  D, sve_asr)
+BINARY_OP_PREDICATE(vlslB_mask, LShiftVB,  B, sve_lsl)
+BINARY_OP_PREDICATE(vlslS_mask, LShiftVS,  H, sve_lsl)
+BINARY_OP_PREDICATE(vlslI_mask, LShiftVI,  S, sve_lsl)
+BINARY_OP_PREDICATE(vlslL_mask, LShiftVL,  D, sve_lsl)
+BINARY_OP_PREDICATE(vlsrB_mask, URShiftVB, B, sve_lsr)
+BINARY_OP_PREDICATE(vlsrS_mask, URShiftVS, H, sve_lsr)
+BINARY_OP_PREDICATE(vlsrI_mask, URShiftVI, S, sve_lsr)
+BINARY_OP_PREDICATE(vlsrL_mask, URShiftVL, D, sve_lsr)
+
 // vector sqrt
 UNARY_OP_TRUE_PREDICATE(vsqrtF, SqrtVF, S, 16, sve_fsqrt)
 UNARY_OP_TRUE_PREDICATE(vsqrtD, SqrtVD, D, 16, sve_fsqrt)
 
+// vector sqrt - predicated
+UNARY_OP_PREDICATE(vsqrtF_mask, SqrtVF, S, T_FLOAT,  sve_fsqrt)
+UNARY_OP_PREDICATE(vsqrtD_mask, SqrtVD, D, T_DOUBLE, sve_fsqrt)
+
 // vector sub
-BINARY_OP_UNPREDICATED(vsubB, SubVB, B, 16, sve_sub)
-BINARY_OP_UNPREDICATED(vsubS, SubVS, H, 8, sve_sub)
-BINARY_OP_UNPREDICATED(vsubI, SubVI, S, 4, sve_sub)
-BINARY_OP_UNPREDICATED(vsubL, SubVL, D, 2, sve_sub)
-BINARY_OP_UNPREDICATED(vsubF, SubVF, S, 4, sve_fsub)
-BINARY_OP_UNPREDICATED(vsubD, SubVD, D, 2, sve_fsub)
+BINARY_OP_UNPREDICATE(vsubB, SubVB, B, 16, sve_sub)
+BINARY_OP_UNPREDICATE(vsubS, SubVS, H, 8, sve_sub)
+BINARY_OP_UNPREDICATE(vsubI, SubVI, S, 4, sve_sub)
+BINARY_OP_UNPREDICATE(vsubL, SubVL, D, 2, sve_sub)
+BINARY_OP_UNPREDICATE(vsubF, SubVF, S, 4, sve_fsub)
+BINARY_OP_UNPREDICATE(vsubD, SubVD, D, 2, sve_fsub)
+
+// vector sub - predicated
+BINARY_OP_PREDICATE(vsubB_mask, SubVB, B, sve_sub)
+BINARY_OP_PREDICATE(vsubS_mask, SubVS, H, sve_sub)
+BINARY_OP_PREDICATE(vsubI_mask, SubVI, S, sve_sub)
+BINARY_OP_PREDICATE(vsubL_mask, SubVL, D, sve_sub)
+BINARY_OP_PREDICATE(vsubF_mask, SubVF, S, sve_fsub)
+BINARY_OP_PREDICATE(vsubD_mask, SubVD, D, sve_fsub)
 
 // ------------------------------ Vector cast -------------------------------
 dnl
