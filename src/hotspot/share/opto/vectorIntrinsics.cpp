@@ -253,11 +253,18 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
       }
       return false;
     }
+    if (!Matcher::vector_size_supported(elem_bt, num_elem)) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** vector size (vlen=%d, etype=%s) is not supported",
+                      num_elem, type2name(elem_bt));
+      }
+      return false;
+    }
   }
 
   // TODO When mask usage is supported, VecMaskNotUsed needs to be VecMaskUseLoad.
-  int opcode = sopc != 0 ? sopc : Op_CallLeafVector;
-  if (!arch_supports_vector(opcode, num_elem, elem_bt, is_vector_mask(vbox_klass) ? VecMaskUseAll : VecMaskNotUsed)) {
+  if ((sopc != 0) &&
+      !arch_supports_vector(sopc, num_elem, elem_bt, is_vector_mask(vbox_klass) ? VecMaskUseAll : VecMaskNotUsed)) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** not supported: arity=%d opc=%d vlen=%d etype=%s ismask=%d",
                     n, sopc, num_elem, type2name(elem_bt),
