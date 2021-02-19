@@ -270,8 +270,8 @@ final class LongMaxVector extends LongVector {
 
     @Override
     @ForceInline
-    public LongMaxVector lanewise(Binary op, Vector<Long> v) {
-        return (LongMaxVector) super.lanewiseTemplate(op, v);  // specialize
+    public LongMaxVector lanewise(Binary op, Vector<Long> v, VectorMask<Long> m) {
+        return (LongMaxVector) super.lanewiseTemplate(op, LongMaxMask.class, v, (LongMaxMask) m);  // specialize
     }
 
     /*package-private*/

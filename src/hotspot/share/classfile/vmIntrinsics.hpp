@@ -818,6 +818,11 @@ class methodHandle;
                                        "Ljava/util/function/BiFunction;)Ljava/lang/Object;")                                                   \
    do_name(vector_binary_op_name,     "binaryOp")                                                                                              \
                                                                                                                                                \
+  do_intrinsic(_VectorBinaryMaskOp, jdk_internal_vm_vector_VectorSupport, vector_binary_mask_op_name, vector_binary_mask_op_sig, F_S)          \
+   do_signature(vector_binary_mask_op_sig, "(ILjava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Object;Ljava/lang/Object;"        \
+                                            "Ljava/lang/Object;Ljdk/internal/vm/vector/VectorSupport$BinaryMaskOperation;)Ljava/lang/Object;") \
+   do_name(vector_binary_mask_op_name,     "binaryMaskOp")                                                                                     \
+                                                                                                                                               \
   do_intrinsic(_VectorTernaryOp, jdk_internal_vm_vector_VectorSupport, vector_ternary_op_name, vector_ternary_op_sig, F_S)                     \
    do_signature(vector_ternary_op_sig, "(ILjava/lang/Class;Ljava/lang/Class;ILjava/lang/Object;Ljava/lang/Object;"                             \
                                         "Ljava/lang/Object;Ljdk/internal/vm/vector/VectorSupport$TernaryOperation;)Ljava/lang/Object;")        \

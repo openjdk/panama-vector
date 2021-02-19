@@ -29,7 +29,6 @@ import java.nio.ByteOrder;
 import java.nio.ReadOnlyBufferException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
@@ -215,6 +214,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     DoubleVector bOpTemplate(Vector<Double> o,
                                      VectorMask<Double> m,
                                      FBinOp f) {
+        if (m == null) {
+            return bOpTemplate(o, f);
+        }
         double[] res = new double[length()];
         double[] vec1 = this.vec();
         double[] vec2 = ((DoubleVector)o).vec();
@@ -616,14 +618,28 @@ public abstract class DoubleVector extends AbstractVector<Double> {
      * @see #lanewise(VectorOperators.Binary,double)
      * @see #lanewise(VectorOperators.Binary,double,VectorMask)
      */
+    @ForceInline
+    public final
+    DoubleVector lanewise(VectorOperators.Binary op,
+                                  Vector<Double> v) {
+        return lanewise(op, v, null);
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     * @see #lanewise(VectorOperators.Binary,double,VectorMask)
+     */
     @Override
     public abstract
     DoubleVector lanewise(VectorOperators.Binary op,
-                                  Vector<Double> v);
+                                  Vector<Double> v,
+                                  VectorMask<Double> m);
+
     @ForceInline
     final
     DoubleVector lanewiseTemplate(VectorOperators.Binary op,
-                                          Vector<Double> v) {
+                                          Class<? extends VectorMask<Double>> maskType,
+                                          Vector<Double> v, VectorMask<Double> m) {
         DoubleVector that = (DoubleVector) v;
         that.check(this);
         if (opKind(op, VO_SPECIAL )) {
@@ -634,55 +650,45 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                 that = that.blend((double) 0, thisNZ.cast(vspecies()));
                 op = OR_UNCHECKED;
                 // FIXME: Support OR_UNCHECKED on float/double also!
-                return this.viewAsIntegralLanes()
+                that = this.viewAsIntegralLanes()
                     .lanewise(op, that.viewAsIntegralLanes())
                     .viewAsFloatingLanes();
+                return m != null ? blend(that, m) : that;
             }
         }
         int opc = opCode(op);
-        return VectorSupport.binaryOp(
-            opc, getClass(), double.class, length(),
-            this, that,
-            BIN_IMPL.find(op, opc, (opc_) -> {
+        return VectorSupport.binaryMaskOp(
+            opc, getClass(), maskType, double.class, length(),
+            this, that, m,
+            BIN_MASK_IMPL.find(op, opc, (opc_) -> {
               switch (opc_) {
-                case VECTOR_OP_ADD: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (double)(a + b));
-                case VECTOR_OP_SUB: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (double)(a - b));
-                case VECTOR_OP_MUL: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (double)(a * b));
-                case VECTOR_OP_DIV: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (double)(a / b));
-                case VECTOR_OP_MAX: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (double)Math.max(a, b));
-                case VECTOR_OP_MIN: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (double)Math.min(a, b));
-                case VECTOR_OP_OR: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> fromBits(toBits(a) | toBits(b)));
-                case VECTOR_OP_ATAN2: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (double) Math.atan2(a, b));
-                case VECTOR_OP_POW: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (double) Math.pow(a, b));
-                case VECTOR_OP_HYPOT: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (double) Math.hypot(a, b));
+                case VECTOR_OP_ADD: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (double)(a + b));
+                case VECTOR_OP_SUB: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (double)(a - b));
+                case VECTOR_OP_MUL: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (double)(a * b));
+                case VECTOR_OP_DIV: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (double)(a / b));
+                case VECTOR_OP_MAX: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (double)Math.max(a, b));
+                case VECTOR_OP_MIN: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (double)Math.min(a, b));
+                case VECTOR_OP_OR: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> fromBits(toBits(a) | toBits(b)));
+                case VECTOR_OP_ATAN2: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (double) Math.atan2(a, b));
+                case VECTOR_OP_POW: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (double) Math.pow(a, b));
+                case VECTOR_OP_HYPOT: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (double) Math.hypot(a, b));
                 default: return null;
                 }}));
     }
     private static final
-    ImplCache<Binary,BinaryOperator<DoubleVector>> BIN_IMPL
+    ImplCache<Binary, BinaryMaskOperation<DoubleVector, VectorMask<Double>>> BIN_MASK_IMPL
         = new ImplCache<>(Binary.class, DoubleVector.class);
 
-    /**
-     * {@inheritDoc} <!--workaround-->
-     * @see #lanewise(VectorOperators.Binary,double,VectorMask)
-     */
-    @ForceInline
-    public final
-    DoubleVector lanewise(VectorOperators.Binary op,
-                                  Vector<Double> v,
-                                  VectorMask<Double> m) {
-        return blend(lanewise(op, v), m);
-    }
     // FIXME: Maybe all of the public final methods in this file (the
     // simple ones that just call lanewise) should be pushed down to
     // the X-VectorBits template.  They can't optimize properly at
@@ -711,7 +717,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     public final
     DoubleVector lanewise(VectorOperators.Binary op,
                                   double e) {
-        return lanewise(op, broadcast(e));
+        return lanewise(op, e, null);
     }
 
     /**
@@ -739,7 +745,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     DoubleVector lanewise(VectorOperators.Binary op,
                                   double e,
                                   VectorMask<Double> m) {
-        return blend(lanewise(op, e), m);
+        return lanewise(op, broadcast(e), m);
     }
 
     /**
@@ -756,12 +762,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     public final
     DoubleVector lanewise(VectorOperators.Binary op,
                                   long e) {
-        double e1 = (double) e;
-        if ((long)e1 != e
-            ) {
-            vspecies().checkValue(e);  // for exception
-        }
-        return lanewise(op, e1);
+        return lanewise(op, e, null);
     }
 
     /**
@@ -778,7 +779,12 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     public final
     DoubleVector lanewise(VectorOperators.Binary op,
                                   long e, VectorMask<Double> m) {
-        return blend(lanewise(op, e), m);
+        double e1 = (double) e;
+        if ((long)e1 != e
+            ) {
+            vspecies().checkValue(e);  // for exception
+        }
+        return lanewise(op, e1, m);
     }
 
 

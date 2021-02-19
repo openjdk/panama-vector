@@ -275,8 +275,8 @@ final class IntMaxVector extends IntVector {
 
     @Override
     @ForceInline
-    public IntMaxVector lanewise(Binary op, Vector<Integer> v) {
-        return (IntMaxVector) super.lanewiseTemplate(op, v);  // specialize
+    public IntMaxVector lanewise(Binary op, Vector<Integer> v, VectorMask<Integer> m) {
+        return (IntMaxVector) super.lanewiseTemplate(op, IntMaxMask.class, v, (IntMaxMask) m);  // specialize
     }
 
     /*package-private*/

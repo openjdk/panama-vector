@@ -275,8 +275,8 @@ final class Float256Vector extends FloatVector {
 
     @Override
     @ForceInline
-    public Float256Vector lanewise(Binary op, Vector<Float> v) {
-        return (Float256Vector) super.lanewiseTemplate(op, v);  // specialize
+    public Float256Vector lanewise(Binary op, Vector<Float> v, VectorMask<Float> m) {
+        return (Float256Vector) super.lanewiseTemplate(op, Float256Mask.class, v, (Float256Mask) m);  // specialize
     }
 
 

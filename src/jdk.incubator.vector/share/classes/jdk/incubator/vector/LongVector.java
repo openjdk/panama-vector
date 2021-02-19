@@ -29,7 +29,6 @@ import java.nio.ByteOrder;
 import java.nio.ReadOnlyBufferException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
@@ -215,6 +214,9 @@ public abstract class LongVector extends AbstractVector<Long> {
     LongVector bOpTemplate(Vector<Long> o,
                                      VectorMask<Long> m,
                                      FBinOp f) {
+        if (m == null) {
+            return bOpTemplate(o, f);
+        }
         long[] res = new long[length()];
         long[] vec1 = this.vec();
         long[] vec2 = ((LongVector)o).vec();
@@ -508,10 +510,10 @@ public abstract class LongVector extends AbstractVector<Long> {
                 return blend(broadcast(-1), compare(NE, 0));
             }
             if (op == NOT) {
-                return broadcast(-1).lanewiseTemplate(XOR, this);
+                return broadcast(-1).lanewise(XOR, this);
             } else if (op == NEG) {
                 // FIXME: Support this in the JIT.
-                return broadcast(0).lanewiseTemplate(SUB, this);
+                return broadcast(0).lanewise(SUB, this);
             }
         }
         int opc = opCode(op);
@@ -548,14 +550,28 @@ public abstract class LongVector extends AbstractVector<Long> {
      * @see #lanewise(VectorOperators.Binary,long)
      * @see #lanewise(VectorOperators.Binary,long,VectorMask)
      */
+    @ForceInline
+    public final
+    LongVector lanewise(VectorOperators.Binary op,
+                                  Vector<Long> v) {
+        return lanewise(op, v, null);
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     * @see #lanewise(VectorOperators.Binary,long,VectorMask)
+     */
     @Override
     public abstract
     LongVector lanewise(VectorOperators.Binary op,
-                                  Vector<Long> v);
+                                  Vector<Long> v,
+                                  VectorMask<Long> m);
+
     @ForceInline
     final
     LongVector lanewiseTemplate(VectorOperators.Binary op,
-                                          Vector<Long> v) {
+                                          Class<? extends VectorMask<Long>> maskType,
+                                          Vector<Long> v, VectorMask<Long> m) {
         LongVector that = (LongVector) v;
         that.check(this);
         if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
@@ -575,76 +591,63 @@ public abstract class LongVector extends AbstractVector<Long> {
                 LongVector neg = that.lanewise(NEG);
                 LongVector hi = this.lanewise(LSHL, (op == ROR) ? neg : that);
                 LongVector lo = this.lanewise(LSHR, (op == ROR) ? that : neg);
-                return hi.lanewise(OR, lo);
+                return m != null ? blend(hi.lanewise(OR, lo), m) : hi.lanewise(OR, lo);
             } else if (op == AND_NOT) {
                 // FIXME: Support this in the JIT.
                 that = that.lanewise(NOT);
                 op = AND;
             } else if (op == DIV) {
                 VectorMask<Long> eqz = that.eq((long)0);
-                if (eqz.anyTrue()) {
-                    throw that.divZeroException();
+                if (m != null) {
+                    if (eqz.and(m).anyTrue()) {
+                        throw that.divZeroException();
+                    }
+                    // suppress div/0 exceptions in unset lanes
+                    that = that.lanewise(NOT, eqz);
+                } else {
+                    if (eqz.anyTrue()) {
+                        throw that.divZeroException();
+                    }
                 }
             }
         }
         int opc = opCode(op);
-        return VectorSupport.binaryOp(
-            opc, getClass(), long.class, length(),
-            this, that,
-            BIN_IMPL.find(op, opc, (opc_) -> {
+        return VectorSupport.binaryMaskOp(
+            opc, getClass(), maskType, long.class, length(),
+            this, that, m,
+            BIN_MASK_IMPL.find(op, opc, (opc_) -> {
               switch (opc_) {
-                case VECTOR_OP_ADD: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (long)(a + b));
-                case VECTOR_OP_SUB: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (long)(a - b));
-                case VECTOR_OP_MUL: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (long)(a * b));
-                case VECTOR_OP_DIV: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (long)(a / b));
-                case VECTOR_OP_MAX: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (long)Math.max(a, b));
-                case VECTOR_OP_MIN: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (long)Math.min(a, b));
-                case VECTOR_OP_AND: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (long)(a & b));
-                case VECTOR_OP_OR: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (long)(a | b));
-                case VECTOR_OP_XOR: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> (long)(a ^ b));
-                case VECTOR_OP_LSHIFT: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, n) -> (long)(a << n));
-                case VECTOR_OP_RSHIFT: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, n) -> (long)(a >> n));
-                case VECTOR_OP_URSHIFT: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, n) -> (long)((a & LSHR_SETUP_MASK) >>> n));
+                case VECTOR_OP_ADD: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (long)(a + b));
+                case VECTOR_OP_SUB: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (long)(a - b));
+                case VECTOR_OP_MUL: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (long)(a * b));
+                case VECTOR_OP_DIV: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (long)(a / b));
+                case VECTOR_OP_MAX: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (long)Math.max(a, b));
+                case VECTOR_OP_MIN: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (long)Math.min(a, b));
+                case VECTOR_OP_AND: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (long)(a & b));
+                case VECTOR_OP_OR: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (long)(a | b));
+                case VECTOR_OP_XOR: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> (long)(a ^ b));
+                case VECTOR_OP_LSHIFT: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, n) -> (long)(a << n));
+                case VECTOR_OP_RSHIFT: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, n) -> (long)(a >> n));
+                case VECTOR_OP_URSHIFT: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, n) -> (long)((a & LSHR_SETUP_MASK) >>> n));
                 default: return null;
                 }}));
     }
     private static final
-    ImplCache<Binary,BinaryOperator<LongVector>> BIN_IMPL
+    ImplCache<Binary, BinaryMaskOperation<LongVector, VectorMask<Long>>> BIN_MASK_IMPL
         = new ImplCache<>(Binary.class, LongVector.class);
 
-    /**
-     * {@inheritDoc} <!--workaround-->
-     * @see #lanewise(VectorOperators.Binary,long,VectorMask)
-     */
-    @ForceInline
-    public final
-    LongVector lanewise(VectorOperators.Binary op,
-                                  Vector<Long> v,
-                                  VectorMask<Long> m) {
-        LongVector that = (LongVector) v;
-        if (op == DIV) {
-            VectorMask<Long> eqz = that.eq((long)0);
-            if (eqz.and(m).anyTrue()) {
-                throw that.divZeroException();
-            }
-            // suppress div/0 exceptions in unset lanes
-            that = that.lanewise(NOT, eqz);
-            return blend(lanewise(DIV, that), m);
-        }
-        return blend(lanewise(op, v), m);
-    }
     // FIXME: Maybe all of the public final methods in this file (the
     // simple ones that just call lanewise) should be pushed down to
     // the X-VectorBits template.  They can't optimize properly at
@@ -673,13 +676,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     public final
     LongVector lanewise(VectorOperators.Binary op,
                                   long e) {
-        if (opKind(op, VO_SHIFT) && (long)(int)e == e) {
-            return lanewiseShift(op, (int) e);
-        }
-        if (op == AND_NOT) {
-            op = AND; e = (long) ~e;
-        }
-        return lanewise(op, broadcast(e));
+        return lanewise(op, e, null);
     }
 
     /**
@@ -707,7 +704,14 @@ public abstract class LongVector extends AbstractVector<Long> {
     LongVector lanewise(VectorOperators.Binary op,
                                   long e,
                                   VectorMask<Long> m) {
-        return blend(lanewise(op, e), m);
+        if (opKind(op, VO_SHIFT) && (long)(int)e == e) {
+            LongVector shift = lanewiseShift(op, (int) e);
+            return m != null ? blend(shift, m) : shift;
+        }
+        if (op == AND_NOT) {
+            op = AND; e = (long) ~e;
+        }
+        return lanewise(op, broadcast(e), m);
     }
 
 

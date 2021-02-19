@@ -266,6 +266,20 @@ public class VectorSupport {
         return defaultImpl.apply(vm1, vm2);
     }
 
+    @IntrinsicCandidate
+    public static
+    <V, M>
+    V binaryMaskOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass,
+                   Class<?> elementType, int length, V v1, V v2, M m,
+                   BinaryMaskOperation<V, M> defaultImpl) {
+        assert isNonCapturingLambda(defaultImpl) : defaultImpl;
+        return defaultImpl.apply(v1, v2, m);
+    }
+
+    public interface BinaryMaskOperation<V, M> {
+        V apply(V v1, V v2, M mask);
+    }
+
     /* ============================================================================ */
 
     public interface TernaryOperation<V> {

@@ -29,7 +29,6 @@ import java.nio.ByteOrder;
 import java.nio.ReadOnlyBufferException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
@@ -219,6 +218,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     $abstractvectortype$ bOpTemplate(Vector<$Boxtype$> o,
                                      VectorMask<$Boxtype$> m,
                                      FBinOp f) {
+        if (m == null) {
+            return bOpTemplate(o, f);
+        }
         $type$[] res = new $type$[length()];
         $type$[] vec1 = this.vec();
         $type$[] vec2 = (($abstractvectortype$)o).vec();
@@ -563,10 +565,10 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             }
 #if[BITWISE]
             if (op == NOT) {
-                return broadcast(-1).lanewiseTemplate(XOR, this);
+                return broadcast(-1).lanewise(XOR, this);
             } else if (op == NEG) {
                 // FIXME: Support this in the JIT.
-                return broadcast(0).lanewiseTemplate(SUB, this);
+                return broadcast(0).lanewise(SUB, this);
             }
 #end[BITWISE]
         }
@@ -638,14 +640,28 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
      * @see #lanewise(VectorOperators.Binary,$type$)
      * @see #lanewise(VectorOperators.Binary,$type$,VectorMask)
      */
+    @ForceInline
+    public final
+    $abstractvectortype$ lanewise(VectorOperators.Binary op,
+                                  Vector<$Boxtype$> v) {
+        return lanewise(op, v, null);
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     * @see #lanewise(VectorOperators.Binary,$type$,VectorMask)
+     */
     @Override
     public abstract
     $abstractvectortype$ lanewise(VectorOperators.Binary op,
-                                  Vector<$Boxtype$> v);
+                                  Vector<$Boxtype$> v,
+                                  VectorMask<$Boxtype$> m);
+
     @ForceInline
     final
     $abstractvectortype$ lanewiseTemplate(VectorOperators.Binary op,
-                                          Vector<$Boxtype$> v) {
+                                          Class<? extends VectorMask<$Boxtype$>> maskType,
+                                          Vector<$Boxtype$> v, VectorMask<$Boxtype$> m) {
         $abstractvectortype$ that = ($abstractvectortype$) v;
         that.check(this);
         if (opKind(op, VO_SPECIAL {#if[!FP]? | VO_SHIFT})) {
@@ -657,9 +673,10 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 op = OR_UNCHECKED;
 #if[FP]
                 // FIXME: Support OR_UNCHECKED on float/double also!
-                return this.viewAsIntegralLanes()
+                that = this.viewAsIntegralLanes()
                     .lanewise(op, that.viewAsIntegralLanes())
                     .viewAsFloatingLanes();
+                return m != null ? blend(that, m) : that;
 #end[FP]
             }
 #if[BITWISE]
@@ -674,91 +691,76 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 $abstractvectortype$ neg = that.lanewise(NEG);
                 $abstractvectortype$ hi = this.lanewise(LSHL, (op == ROR) ? neg : that);
                 $abstractvectortype$ lo = this.lanewise(LSHR, (op == ROR) ? that : neg);
-                return hi.lanewise(OR, lo);
+                return m != null ? blend(hi.lanewise(OR, lo), m) : hi.lanewise(OR, lo);
             } else if (op == AND_NOT) {
                 // FIXME: Support this in the JIT.
                 that = that.lanewise(NOT);
                 op = AND;
             } else if (op == DIV) {
                 VectorMask<$Boxtype$> eqz = that.eq(($type$)0);
-                if (eqz.anyTrue()) {
-                    throw that.divZeroException();
+                if (m != null) {
+                    if (eqz.and(m).anyTrue()) {
+                        throw that.divZeroException();
+                    }
+                    // suppress div/0 exceptions in unset lanes
+                    that = that.lanewise(NOT, eqz);
+                } else {
+                    if (eqz.anyTrue()) {
+                        throw that.divZeroException();
+                    }
                 }
             }
 #end[BITWISE]
         }
         int opc = opCode(op);
-        return VectorSupport.binaryOp(
-            opc, getClass(), $type$.class, length(),
-            this, that,
-            BIN_IMPL.find(op, opc, (opc_) -> {
+        return VectorSupport.binaryMaskOp(
+            opc, getClass(), maskType, $type$.class, length(),
+            this, that, m,
+            BIN_MASK_IMPL.find(op, opc, (opc_) -> {
               switch (opc_) {
-                case VECTOR_OP_ADD: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> ($type$)(a + b));
-                case VECTOR_OP_SUB: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> ($type$)(a - b));
-                case VECTOR_OP_MUL: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> ($type$)(a * b));
-                case VECTOR_OP_DIV: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> ($type$)(a / b));
-                case VECTOR_OP_MAX: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> ($type$)Math.max(a, b));
-                case VECTOR_OP_MIN: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> ($type$)Math.min(a, b));
+                case VECTOR_OP_ADD: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> ($type$)(a + b));
+                case VECTOR_OP_SUB: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> ($type$)(a - b));
+                case VECTOR_OP_MUL: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> ($type$)(a * b));
+                case VECTOR_OP_DIV: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> ($type$)(a / b));
+                case VECTOR_OP_MAX: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> ($type$)Math.max(a, b));
+                case VECTOR_OP_MIN: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> ($type$)Math.min(a, b));
 #if[BITWISE]
-                case VECTOR_OP_AND: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> ($type$)(a & b));
-                case VECTOR_OP_OR: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> ($type$)(a | b));
-                case VECTOR_OP_XOR: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> ($type$)(a ^ b));
-                case VECTOR_OP_LSHIFT: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, n) -> ($type$)(a << n));
-                case VECTOR_OP_RSHIFT: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, n) -> ($type$)(a >> n));
-                case VECTOR_OP_URSHIFT: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, n) -> ($type$)((a & LSHR_SETUP_MASK) >>> n));
+                case VECTOR_OP_AND: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> ($type$)(a & b));
+                case VECTOR_OP_OR: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> ($type$)(a | b));
+                case VECTOR_OP_XOR: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> ($type$)(a ^ b));
+                case VECTOR_OP_LSHIFT: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, n) -> ($type$)(a << n));
+                case VECTOR_OP_RSHIFT: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, n) -> ($type$)(a >> n));
+                case VECTOR_OP_URSHIFT: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, n) -> ($type$)((a & LSHR_SETUP_MASK) >>> n));
 #end[BITWISE]
 #if[FP]
-                case VECTOR_OP_OR: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> fromBits(toBits(a) | toBits(b)));
-                case VECTOR_OP_ATAN2: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> ($type$) Math.atan2(a, b));
-                case VECTOR_OP_POW: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> ($type$) Math.pow(a, b));
-                case VECTOR_OP_HYPOT: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> ($type$) Math.hypot(a, b));
+                case VECTOR_OP_OR: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> fromBits(toBits(a) | toBits(b)));
+                case VECTOR_OP_ATAN2: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> ($type$) Math.atan2(a, b));
+                case VECTOR_OP_POW: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> ($type$) Math.pow(a, b));
+                case VECTOR_OP_HYPOT: return (v0, v1, vm) ->
+                        v0.bOp(v1, vm, (i, a, b) -> ($type$) Math.hypot(a, b));
 #end[FP]
                 default: return null;
                 }}));
     }
     private static final
-    ImplCache<Binary,BinaryOperator<$abstractvectortype$>> BIN_IMPL
+    ImplCache<Binary, BinaryMaskOperation<$abstractvectortype$, VectorMask<$Boxtype$>>> BIN_MASK_IMPL
         = new ImplCache<>(Binary.class, $Type$Vector.class);
 
-    /**
-     * {@inheritDoc} <!--workaround-->
-     * @see #lanewise(VectorOperators.Binary,$type$,VectorMask)
-     */
-    @ForceInline
-    public final
-    $abstractvectortype$ lanewise(VectorOperators.Binary op,
-                                  Vector<$Boxtype$> v,
-                                  VectorMask<$Boxtype$> m) {
-#if[BITWISE]
-        $abstractvectortype$ that = ($abstractvectortype$) v;
-        if (op == DIV) {
-            VectorMask<$Boxtype$> eqz = that.eq(($type$)0);
-            if (eqz.and(m).anyTrue()) {
-                throw that.divZeroException();
-            }
-            // suppress div/0 exceptions in unset lanes
-            that = that.lanewise(NOT, eqz);
-            return blend(lanewise(DIV, that), m);
-        }
-#end[BITWISE]
-        return blend(lanewise(op, v), m);
-    }
     // FIXME: Maybe all of the public final methods in this file (the
     // simple ones that just call lanewise) should be pushed down to
     // the X-VectorBits template.  They can't optimize properly at
@@ -787,15 +789,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     public final
     $abstractvectortype$ lanewise(VectorOperators.Binary op,
                                   $type$ e) {
-#if[BITWISE]
-        if (opKind(op, VO_SHIFT) && ($type$)(int)e == e) {
-            return lanewiseShift(op, (int) e);
-        }
-        if (op == AND_NOT) {
-            op = AND; e = ($type$) ~e;
-        }
-#end[BITWISE]
-        return lanewise(op, broadcast(e));
+        return lanewise(op, e, null);
     }
 
     /**
@@ -823,7 +817,16 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     $abstractvectortype$ lanewise(VectorOperators.Binary op,
                                   $type$ e,
                                   VectorMask<$Boxtype$> m) {
-        return blend(lanewise(op, e), m);
+#if[BITWISE]
+        if (opKind(op, VO_SHIFT) && ($type$)(int)e == e) {
+            $abstractvectortype$ shift = lanewiseShift(op, (int) e);
+            return m != null ? blend(shift, m) : shift;
+        }
+        if (op == AND_NOT) {
+            op = AND; e = ($type$) ~e;
+        }
+#end[BITWISE]
+        return lanewise(op, broadcast(e), m);
     }
 
 #if[!long]
@@ -841,16 +844,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     public final
     $abstractvectortype$ lanewise(VectorOperators.Binary op,
                                   long e) {
-        $type$ e1 = ($type$) e;
-        if ((long)e1 != e
-#if[BITWISE]
-            // allow shift ops to clip down their int parameters
-            && !(opKind(op, VO_SHIFT) && (int)e1 == e)
-#end[BITWISE]
-            ) {
-            vspecies().checkValue(e);  // for exception
-        }
-        return lanewise(op, e1);
+        return lanewise(op, e, null);
     }
 
     /**
@@ -867,7 +861,16 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     public final
     $abstractvectortype$ lanewise(VectorOperators.Binary op,
                                   long e, VectorMask<$Boxtype$> m) {
-        return blend(lanewise(op, e), m);
+        $type$ e1 = ($type$) e;
+        if ((long)e1 != e
+#if[BITWISE]
+            // allow shift ops to clip down their int parameters
+            && !(opKind(op, VO_SHIFT) && (int)e1 == e)
+#end[BITWISE]
+            ) {
+            vspecies().checkValue(e);  // for exception
+        }
+        return lanewise(op, e1, m);
     }
 #end[!long]
 

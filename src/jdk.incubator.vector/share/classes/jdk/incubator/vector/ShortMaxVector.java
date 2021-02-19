@@ -275,8 +275,8 @@ final class ShortMaxVector extends ShortVector {
 
     @Override
     @ForceInline
-    public ShortMaxVector lanewise(Binary op, Vector<Short> v) {
-        return (ShortMaxVector) super.lanewiseTemplate(op, v);  // specialize
+    public ShortMaxVector lanewise(Binary op, Vector<Short> v, VectorMask<Short> m) {
+        return (ShortMaxVector) super.lanewiseTemplate(op, ShortMaxMask.class, v, (ShortMaxMask) m);  // specialize
     }
 
     /*package-private*/

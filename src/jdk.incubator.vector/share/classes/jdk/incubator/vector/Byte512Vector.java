@@ -275,8 +275,8 @@ final class Byte512Vector extends ByteVector {
 
     @Override
     @ForceInline
-    public Byte512Vector lanewise(Binary op, Vector<Byte> v) {
-        return (Byte512Vector) super.lanewiseTemplate(op, v);  // specialize
+    public Byte512Vector lanewise(Binary op, Vector<Byte> v, VectorMask<Byte> m) {
+        return (Byte512Vector) super.lanewiseTemplate(op, Byte512Mask.class, v, (Byte512Mask) m);  // specialize
     }
 
     /*package-private*/

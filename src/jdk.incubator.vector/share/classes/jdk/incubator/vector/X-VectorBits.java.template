@@ -277,8 +277,8 @@ final class $vectortype$ extends $abstractvectortype$ {
 
     @Override
     @ForceInline
-    public $vectortype$ lanewise(Binary op, Vector<$Boxtype$> v) {
-        return ($vectortype$) super.lanewiseTemplate(op, v);  // specialize
+    public $vectortype$ lanewise(Binary op, Vector<$Boxtype$> v, VectorMask<$Boxtype$> m) {
+        return ($vectortype$) super.lanewiseTemplate(op, $masktype$.class, v, ($masktype$) m);  // specialize
     }
 
 #if[!FP]

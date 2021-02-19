@@ -275,8 +275,8 @@ final class Int128Vector extends IntVector {
 
     @Override
     @ForceInline
-    public Int128Vector lanewise(Binary op, Vector<Integer> v) {
-        return (Int128Vector) super.lanewiseTemplate(op, v);  // specialize
+    public Int128Vector lanewise(Binary op, Vector<Integer> v, VectorMask<Integer> m) {
+        return (Int128Vector) super.lanewiseTemplate(op, Int128Mask.class, v, (Int128Mask) m);  // specialize
     }
 
     /*package-private*/

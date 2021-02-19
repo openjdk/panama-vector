@@ -275,8 +275,8 @@ final class DoubleMaxVector extends DoubleVector {
 
     @Override
     @ForceInline
-    public DoubleMaxVector lanewise(Binary op, Vector<Double> v) {
-        return (DoubleMaxVector) super.lanewiseTemplate(op, v);  // specialize
+    public DoubleMaxVector lanewise(Binary op, Vector<Double> v, VectorMask<Double> m) {
+        return (DoubleMaxVector) super.lanewiseTemplate(op, DoubleMaxMask.class, v, (DoubleMaxMask) m);  // specialize
     }
 
 

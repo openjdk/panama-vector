@@ -275,8 +275,8 @@ final class Short512Vector extends ShortVector {
 
     @Override
     @ForceInline
-    public Short512Vector lanewise(Binary op, Vector<Short> v) {
-        return (Short512Vector) super.lanewiseTemplate(op, v);  // specialize
+    public Short512Vector lanewise(Binary op, Vector<Short> v, VectorMask<Short> m) {
+        return (Short512Vector) super.lanewiseTemplate(op, Short512Mask.class, v, (Short512Mask) m);  // specialize
     }
 
     /*package-private*/
