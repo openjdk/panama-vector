@@ -465,6 +465,7 @@ class NegVINode : public VectorNode {
  public:
   NegVINode(Node* in, const TypeVect* vt) : VectorNode(in, vt) {}
   virtual int Opcode() const;
+  virtual Node* Identity(PhaseGVN* phase);
 };
 
 //------------------------------NegVFNode--------------------------------------
@@ -758,6 +759,7 @@ class StoreVectorNode : public StoreNode {
   static StoreVectorNode* make(int opc, Node* ctl, Node* mem,
                                Node* adr, const TypePtr* atyp, Node* val,
                                uint vlen);
+  virtual Node* Identity(PhaseGVN* phase);
 
   uint element_size(void) { return type2aelembytes(vect_type()->element_basic_type()); }
 };
@@ -831,6 +833,51 @@ class VectorMaskGenNode : public TypeNode {
 };
 
 // ==========================Mask feature specific==============================
+
+class LoadVectorMaskNode : public LoadVectorNode {
+ private:
+  /**
+   * The type of the accessed memory, whose basic element type is T_BOOLEAN for mask vector.
+   * It is different with the basic element type of the node, which can be T_BYTE, T_SHORT,
+   * T_INT, T_LONG, T_FLOAT or T_DOUBLE.
+   **/
+  const TypeVect* _mem_type;
+
+ public:
+  LoadVectorMaskNode(Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, const TypeVect* mt)
+   : LoadVectorNode(c, mem, adr, at, vt), _mem_type(mt) {
+    assert(_mem_type->element_basic_type() == T_BOOLEAN, "Memory type must be T_BOOLEAN");
+    init_class_id(Class_LoadVector);
+  }
+
+  virtual int Opcode() const;
+  virtual int memory_size() const { return _mem_type->length_in_bytes(); }
+  virtual int store_Opcode() const { return Op_StoreVectorMask; }
+  virtual uint ideal_reg() const  { return Matcher::vector_ideal_reg(vect_type()->length_in_bytes()); }
+  virtual uint size_of() const { return sizeof(LoadVectorMaskNode); }
+};
+
+class StoreVectorMaskNode : public StoreVectorNode {
+ private:
+  /**
+   * The type of the accessed memory, whose basic element type is T_BOOLEAN for mask vector.
+   * It is different with the basic element type of the src value, which can be T_BYTE, T_SHORT,
+   * T_INT, T_LONG, T_FLOAT or T_DOUBLE.
+   **/
+  const TypeVect* _mem_type;
+
+ public:
+  StoreVectorMaskNode(Node* c, Node* mem, Node* adr, const TypePtr* at, Node* src, const TypeVect* mt)
+   : StoreVectorNode(c, mem, adr, at, src), _mem_type(mt) {
+    assert(_mem_type->element_basic_type() == T_BOOLEAN, "Memory type must be T_BOOLEAN");
+    init_class_id(Class_StoreVector);
+  }
+
+  virtual int Opcode() const;
+  virtual int memory_size() const { return _mem_type->length_in_bytes(); }
+  virtual uint ideal_reg() const  { return Matcher::vector_ideal_reg(vect_type()->length_in_bytes()); }
+  virtual uint size_of() const { return sizeof(StoreVectorMaskNode); }
+};
 
 class VectorMaskNode : public TypeNode {
  public:

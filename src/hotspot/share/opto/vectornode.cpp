@@ -720,6 +720,34 @@ StoreVectorNode* StoreVectorNode::make(int opc, Node* ctl, Node* mem,
   return new StoreVectorNode(ctl, mem, adr, atyp, val);
 }
 
+Node* StoreVectorNode::Identity(PhaseGVN* phase) {
+  // StoreVectorNode (VectorStoreMask src)  ==>  StoreVectorMask (NegVI src).
+  // TODO: Check whether "NegVI" can be removed.
+  Node* value = in(MemNode::ValueIn);
+  if (value->Opcode() == Op_VectorStoreMask) {
+    assert(this->vect_type()->element_basic_type() == T_BOOLEAN, "Invalid basic type to store mask");
+    if (Matcher::match_rule_supported(Op_StoreVectorMask)) {
+      const TypeVect* type = value->in(1)->bottom_type()->is_vect();
+      // Convert mask values -1/0 to boolean values 1/0.
+      Node* neg = phase->transform(new NegVINode(value->in(1), type));
+      const TypeVect* mem_type = TypeVect::make(T_BOOLEAN, type->length());
+      return phase->transform(new StoreVectorMaskNode(in(MemNode::Control),
+                                                      in(MemNode::Memory),
+                                                      in(MemNode::Address),
+                                                      adr_type(), neg, mem_type));
+    }
+  }
+  return StoreNode::Identity(phase);
+}
+
+Node* NegVINode::Identity(PhaseGVN* phase) {
+  // NegVI (NegVI src)  ==> src
+  if (in(1)->Opcode() == Op_NegVI) {
+    return in(1)->in(1);
+  }
+  return this;
+}
+
 Node* LoadVectorMaskedNode::Ideal(PhaseGVN* phase, bool can_reshape) {
   Node* mask_len = in(3)->in(1);
   const TypeLong* ty = phase->type(mask_len)->isa_long();
@@ -989,7 +1017,21 @@ ReductionNode* ReductionNode::make(int opc, Node *ctrl, Node* n1, Node* n2, Basi
 }
 
 Node* VectorLoadMaskNode::Identity(PhaseGVN* phase) {
+  // VectorLoadMask (LoadVector src)  ==> NegVI (LoadVectorMask src).
+  // TODO: Check whether "NegVI" can be removed.
+  LoadVectorNode* load = this->in(1)->isa_LoadVector();
   BasicType out_bt = type()->is_vect()->element_basic_type();
+  if (load != NULL && Matcher::match_rule_supported(Op_LoadVectorMask)) {
+    const TypeVect* mem_type = TypeVect::make(T_BOOLEAN, length());
+    const TypeVect* type = TypeVect::make(out_bt, length());
+    Node* load_mask = phase->transform(new LoadVectorMaskNode(load->in(MemNode::Control),
+                                                              load->in(MemNode::Memory),
+                                                              load->in(MemNode::Address),
+                                                              load->adr_type(), type, mem_type));
+    // Convert boolean values 1/0 to mask values -1/0.
+    return phase->transform(new NegVINode(load_mask, type));
+  }
+
   if (out_bt == T_BOOLEAN) {
     return in(1); // redundant conversion
   }

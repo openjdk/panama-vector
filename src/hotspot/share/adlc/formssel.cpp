@@ -3509,7 +3509,7 @@ int MatchNode::needs_ideal_memory_edge(FormDict &globals) const {
     "StoreB","StoreC","Store" ,"StoreFP",
     "LoadI", "LoadL", "LoadP" ,"LoadN", "LoadD" ,"LoadF"  ,
     "LoadB" , "LoadUB", "LoadUS" ,"LoadS" ,"Load" ,
-    "StoreVector", "LoadVector", "LoadVectorGather", "StoreVectorScatter", "LoadVectorMasked", "StoreVectorMasked",
+    "StoreVector", "LoadVector", "LoadVectorGather", "StoreVectorScatter", "LoadVectorMasked", "StoreVectorMasked", "LoadVectorMask", "StoreVectorMask",
     "LoadRange", "LoadKlass", "LoadNKlass", "LoadL_unaligned", "LoadD_unaligned",
     "LoadPLocked",
     "StorePConditional", "StoreIConditional", "StoreLConditional",
@@ -4085,6 +4085,11 @@ int MatchRule::is_expensive() const {
         strcmp(opType,"OrReductionV")==0 ||
         strcmp(opType,"XorReductionV")==0 ||
         strcmp(opType,"MaskToVector")==0 ||
+        /*
+         * TODO: Check whether NegVF/NegVD is neeeded here, in
+         * case unnecessary vector rematerialization happens.
+         */
+        strcmp(opType,"NegVI")==0 ||
         0 /* 0 to line up columns nicely */ )
       return 1;
   }
@@ -4207,7 +4212,7 @@ bool MatchRule::is_vector() const {
     // Next are not supported currently.
     "PackB","PackS","PackI","PackL","PackF","PackD","Pack2L","Pack2D",
     "ExtractB","ExtractUB","ExtractC","ExtractS","ExtractI","ExtractL","ExtractF","ExtractD",
-    "MaskToVector"
+    "MaskToVector", "LoadVectorMask", "StoreVectorMask"
   };
   int cnt = sizeof(vector_list)/sizeof(char*);
   if (_rChild) {

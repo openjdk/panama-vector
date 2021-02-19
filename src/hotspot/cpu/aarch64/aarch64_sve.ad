@@ -1049,7 +1049,21 @@ instruct vmulD(vReg dst, vReg src1, vReg src2) %{
   ins_pipe(pipe_slow);
 %}
 
-// vector fneg
+// vector neg
+
+instruct vnegI(vReg dst, vReg src) %{
+  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= 16);
+  match(Set dst (NegVI src));
+  ins_cost(SVE_COST);
+  format %{ "sve_neg $dst, $src\t# vector (sve)" %}
+  ins_encode %{
+    Assembler::SIMD_RegVariant element_size =
+      elemType_to_regVariant(vector_element_basic_type(this));
+    __ sve_neg(as_FloatRegister($dst$$reg), element_size,
+               ptrue, as_FloatRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
 
 instruct vnegF(vReg dst, vReg src) %{
   predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= 16);
@@ -1277,40 +1291,36 @@ instruct vstoremaskL(vReg dst, vReg src, vReg tmp, immI_8 size) %{
 
 // load/store mask vector
 
-instruct vloadmask_loadV(vReg dst, vmemA mem) %{
-  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= 16 &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BOOLEAN);
-  match(Set dst (VectorLoadMask (LoadVector mem)));
-  ins_cost(2 * SVE_COST);
-  format %{ "sve_ld1b $dst, $mem\n\t"
-            "sve_neg $dst, $dst\t # load vector mask (sve)" %}
+instruct loadVMask(vReg dst, vmemA mem) %{
+  predicate(UseSVE > 0);
+  match(Set dst (LoadVectorMask mem));
+  ins_cost(SVE_COST);
+  format %{ "sve_ld1b $dst, $mem\t# load vector mask (sve)" %}
   ins_encode %{
+    // Load mask values which are boolean type, and extend them to the
+    // expected vector element type.
     FloatRegister dst_reg = as_FloatRegister($dst$$reg);
-    Assembler::SIMD_RegVariant to_vect_size =
-              elemType_to_regVariant(vector_element_basic_type(this));
+    Assembler::SIMD_RegVariant element_size =
+      elemType_to_regVariant(vector_element_basic_type(this));
     loadStoreA_predicate(C2_MacroAssembler(&cbuf), false, dst_reg, ptrue,
-                         T_BOOLEAN, to_vect_size, $mem->opcode(),
+                         T_BOOLEAN, element_size, $mem->opcode(),
                          as_Register($mem$$base), $mem$$index, $mem$$scale, $mem$$disp);
-    __ sve_neg(dst_reg, to_vect_size, ptrue, dst_reg);
   %}
   ins_pipe(pipe_slow);
 %}
 
-instruct storeV_vstoremask(vmemA mem, vReg src, vReg tmp, immI size) %{
-  predicate(UseSVE > 0 && n->as_StoreVector()->length() >= 2 &&
-            n->as_StoreVector()->vect_type()->element_basic_type() == T_BOOLEAN);
-  match(Set mem (StoreVector mem (VectorStoreMask src size)));
-  effect(TEMP tmp);
-  ins_cost(2 * SVE_COST);
-  format %{ "sve_neg $tmp, $src\n\t"
-            "sve_st1b $tmp, $mem\t # store vector mask (sve)" %}
+instruct storeVMask(vReg src, vmemA mem) %{
+  predicate(UseSVE > 0);
+  match(Set mem (StoreVectorMask mem src));
+  format %{ "sve_st1b $src, $mem\t # store vector mask (sve)" %}
+  ins_cost(SVE_COST);
   ins_encode %{
-    Assembler::SIMD_RegVariant from_vect_size =
-              elemBytes_to_regVariant((int)$size$$constant);
-    __ sve_neg(as_FloatRegister($tmp$$reg), from_vect_size, ptrue,
-               as_FloatRegister($src$$reg));
-    loadStoreA_predicate(C2_MacroAssembler(&cbuf), true, as_FloatRegister($tmp$$reg),
-                         ptrue, T_BOOLEAN, from_vect_size, $mem->opcode(),
+    // Store the src vector elements as boolean values.
+    FloatRegister src_reg = as_FloatRegister($src$$reg);
+    Assembler::SIMD_RegVariant element_size =
+      elemType_to_regVariant(vector_element_basic_type(this, $src));
+    loadStoreA_predicate(C2_MacroAssembler(&cbuf), true, src_reg, ptrue,
+                         T_BOOLEAN, element_size, $mem->opcode(),
                          as_Register($mem$$base), $mem$$index, $mem$$scale, $mem$$disp);
   %}
   ins_pipe(pipe_slow);

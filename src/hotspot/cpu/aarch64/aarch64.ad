@@ -2418,6 +2418,8 @@ const bool Matcher::match_rule_supported(int opcode) {
         ret_value = false;
       }
       break;
+    case Op_LoadVectorMask:
+    case Op_StoreVectorMask:
     case Op_MaskToVector:
     case Op_VectorToMask:
     case Op_VectorCmpMaskGen:
