@@ -3353,6 +3353,8 @@ public:
   INSN(sve_whilelsw, 0b111, 0);
 #undef INSN
 
+private:
+
   void encode_cvtf_T (SIMD_RegVariant& T_dst, SIMD_RegVariant& T_src) {
     assert(T_src != B && T_dst != B &&
            T_src != Q && T_dst != Q, "invalid register variant");
@@ -3369,6 +3371,8 @@ public:
       T_src = B;
     }
   }
+public:
+
 // SVE convert integer to floating-point (predicated)
 #define INSN(NAME, sign)                                                \
   void NAME(FloatRegister Zd, SIMD_RegVariant T_dst, PRegister Pg,      \
