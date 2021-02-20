@@ -3363,10 +3363,21 @@ private:
     } else {
       assert(T_src != H, "invalid register variant");
     }
-    if (T_dst == S && T_src == D) {
+    // In most cases we can treat T_dst,T_src as opc,opc2
+    // except following four cases. These cases should be converted
+    // according to Arm's architecture reference manual:
+    // +-----+------+---+------------------------------------+
+    // | opc | opc2 | U |        Instruction Details         |
+    // +-----+------+---+------------------------------------+
+    // |  11 |   00 | 0 | SCVTF — 32-bit to double-precision |
+    // |  11 |   00 | 1 | UCVTF — 32-bit to double-precision |
+    // |  11 |   10 | 0 | SCVTF — 64-bit to single-precision |
+    // |  11 |   10 | 1 | UCVTF — 64-bit to single-precision |
+    // +-----+------+---+------------------------------------+
+    if (T_dst == S && T_src == D) { // 64-bit to single-precision
       T_dst = D;
       T_src = S;
-    } else if (T_dst == D && T_src == S) {
+    } else if (T_dst == D && T_src == S) { // 32-bit to double-precision
       T_dst = D;
       T_src = B;
     }
