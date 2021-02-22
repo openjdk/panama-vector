@@ -3389,11 +3389,12 @@ public:
   void NAME(FloatRegister Zd, SIMD_RegVariant T_dst, PRegister Pg,      \
             FloatRegister Zn, SIMD_RegVariant T_src) {                  \
     starti;                                                             \
-    f(0b01100101, 31, 24), f(0b010, 21, 19), f(0b101, 15, 13);          \
-    f(sign, 16);                                                        \
+    SIMD_RegVariant opc, opc2;                                          \
+    opc = T_dst; opc2 = T_src;                                          \
+    encode_cvtf_T(opc, opc2);                                           \
+    f(0b01100101, 31, 24), f(opc, 23, 22), f(0b010, 21, 19);            \
+    f(opc2, 18, 17), f(sign, 16), f(0b101, 15, 13);                     \
     pgrf(Pg, 10), rf(Zn, 5), rf(Zd, 0);                                 \
-    encode_cvtf_T(T_dst, T_src);                                        \
-    f(T_dst, 23, 22), f(T_src, 18, 17);                                 \
   }
 
   INSN(sve_scvtf, 0b0);
