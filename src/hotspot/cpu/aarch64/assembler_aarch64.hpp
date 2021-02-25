@@ -3356,7 +3356,7 @@ public:
 private:
 
   void encode_cvtf_T(SIMD_RegVariant T_dst, SIMD_RegVariant T_src,
-		      int& opc, int& opc2) {
+                     int& opc, int& opc2) {
     assert(T_src != B && T_dst != B &&
            T_src != Q && T_dst != Q, "invalid register variant");
     if (T_dst != D) {
