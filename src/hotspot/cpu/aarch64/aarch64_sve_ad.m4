@@ -1587,3 +1587,107 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
 dnl                 $1 $2 $3   $4 $5    $6 $7
 VECTOR_CAST_NARROW3(L, B, dup, S, uzp1, H, B)
 
+dnl
+define(`VECTOR_CAST_I2F_EXTEND2', `
+instruct vcvt$1to$2`'(vReg dst, vReg src)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
+  match(Set dst (VectorCast$1`'2X src));
+  ins_cost(3 * SVE_COST);
+  format %{ "sve_$3  $dst, $4, $src\n\t"
+            "sve_$3  $dst, $5, $dst\n\t"
+            "sve_$6  $dst, $5, $dst, $5\t# convert $1 to $2 vector" %}
+  ins_encode %{
+    __ sve_$3(as_FloatRegister($dst$$reg), __ $4, as_FloatRegister($src$$reg));
+    __ sve_$3(as_FloatRegister($dst$$reg), __ $5, as_FloatRegister($dst$$reg));
+    __ sve_$6(as_FloatRegister($dst$$reg), __ $5, ptrue, as_FloatRegister($dst$$reg), __ $5);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl                     $1 $2 $3       $4 $5 $6
+VECTOR_CAST_I2F_EXTEND2(B, F, sunpklo, H, S, scvtf)
+VECTOR_CAST_I2F_EXTEND2(S, D, sunpklo, S, D, scvtf)
+
+dnl
+define(`VECTOR_CAST_I2F_EXTEND3', `
+instruct vcvt$1to$2`'(vReg dst, vReg src)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
+  match(Set dst (VectorCast$1`'2X src));
+  ins_cost(4 * SVE_COST);
+  format %{ "sve_$3  $dst, $4, $src\n\t"
+            "sve_$3  $dst, $5, $dst\n\t"
+            "sve_$3  $dst, $6, $dst\n\t"
+            "sve_$7  $dst, $6, $dst, $6\t# convert $1 to $2 vector" %}
+  ins_encode %{
+    __ sve_$3(as_FloatRegister($dst$$reg), __ $4, as_FloatRegister($src$$reg));
+    __ sve_$3(as_FloatRegister($dst$$reg), __ $5, as_FloatRegister($dst$$reg));
+    __ sve_$3(as_FloatRegister($dst$$reg), __ $6, as_FloatRegister($dst$$reg));
+    __ sve_$7(as_FloatRegister($dst$$reg), __ $6, ptrue, as_FloatRegister($dst$$reg), __ $6);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl                     $1 $2 $3       $4 $5 $6 $7
+VECTOR_CAST_I2F_EXTEND3(B, D, sunpklo, H, S, D, scvtf)
+
+dnl
+define(`VECTOR_CAST_I2F_NARROW1', `
+instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
+  match(Set dst (VectorCast$1`'2X src));
+  effect(TEMP_DEF dst, TEMP tmp);
+  ins_cost(3 * SVE_COST);
+  format %{ "sve_$3  $dst, $4, $src, $5\n\t"
+            "sve_$6  $tmp, $7, 0\n\t"
+            "sve_$8  $dst, $7, $dst, $tmp\t# convert $1 to $2 vector" %}
+  ins_encode %{
+    __ sve_$3(as_FloatRegister($dst$$reg), __ $4, ptrue, as_FloatRegister($src$$reg), __ $5);
+    __ sve_$6(as_FloatRegister($tmp$$reg), __ $7, 0);
+    __ sve_$8(as_FloatRegister($dst$$reg), __ $7, as_FloatRegister($dst$$reg), as_FloatRegister($tmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl                     $1 $2 $3     $4 $5 $6   $7 $8
+VECTOR_CAST_I2F_NARROW1(L, F, scvtf, S, D, dup, S, uzp1)
+
+dnl
+define(`VECTOR_CAST_I2F', `
+instruct vcvt$1to$2`'(vReg dst, vReg src)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
+  match(Set dst (VectorCast$1`'2X src));
+  ins_cost(SVE_COST);
+  format %{ "sve_$3  $dst, $4, $src, $4\t# convert $1 to $2 vector" %}
+  ins_encode %{
+    __ sve_$3(as_FloatRegister($dst$$reg), __ $4, ptrue, as_FloatRegister($src$$reg), __ $4);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl             $1 $2 $3     $4
+VECTOR_CAST_I2F(I, F, scvtf, S)
+VECTOR_CAST_I2F(L, D, scvtf, D)
+
+dnl
+define(`VECTOR_CAST_I2F_EXTEND1', `
+instruct vcvt$1to$2`'(vReg dst, vReg src)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
+  match(Set dst (VectorCast$1`'2X src));
+  ins_cost(2 * SVE_COST);
+  format %{ "sve_$3  $dst, $4, $src\n\t"
+            "sve_$5  $dst, $4, $dst, $6\t# convert $1 to $2 vector" %}
+  ins_encode %{
+    __ sve_$3(as_FloatRegister($dst$$reg), __ $4, as_FloatRegister($src$$reg));
+    __ sve_$5(as_FloatRegister($dst$$reg), __ $4, ptrue, as_FloatRegister($dst$$reg), __ $6);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl                     $1 $2 $3       $4 $5     $6
+VECTOR_CAST_I2F_EXTEND1(I, D, sunpklo, D, scvtf, D)
+VECTOR_CAST_I2F_EXTEND1(S, F, sunpklo, S, scvtf, S)

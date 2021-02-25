@@ -1580,6 +1580,8 @@ generate(SpecialCases, [["ccmn",    "__ ccmn(zr, zr, 3u, Assembler::LE);",      
                         ["whilelo", "__ sve_whilelow(p0, __ H, r3, r4);",                 "whilelo\tp0.h, w3, w4"],
                         ["whilels", "__ sve_whilels(p1, __ S, r5, r6);",                  "whilels\tp1.s, x5, x6"],
                         ["whilels", "__ sve_whilelsw(p2, __ D, r10, r11);",               "whilels\tp2.d, w10, w11"],
+                        ["scvtf",   "__ sve_scvtf(z1, __ D, p0, z0, __ S);",              "scvtf\tz1.d, p0/m, z0.s"],
+                        ["ucvtf",   "__ sve_ucvtf(z3, __ D, p1, z2, __ S);",              "ucvtf\tz3.d, p1/m, z2.s"],
 ])
 
 print "\n// FloatImmediateOp"
