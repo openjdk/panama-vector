@@ -260,6 +260,12 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
       }
       return false;
     }
+    if (opr->get_con() == VectorSupport::VECTOR_OP_POW) {
+      if (UseAVX <= 2 || MaxVectorSize < 64 || type2aelembytes(elem_bt) * num_elem != 64) {
+        // svml pow is slow for none 512-bit vectorization
+        return false;
+      }
+    }
   }
 
   // TODO When mask usage is supported, VecMaskNotUsed needs to be VecMaskUseLoad.
