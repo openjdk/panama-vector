@@ -3403,6 +3403,53 @@ public:
   INSN(sve_ucvtf, 0b1);
 #undef INSN
 
+  void encode_fcvt_T(SIMD_RegVariant T_src,SIMD_RegVariant T_dst,
+                     unsigned& opc, unsigned& opc2) {
+    assert(T_src != B && T_dst != B &&
+           T_src != Q && T_dst != Q, "invalid register variant");
+    assert(T_src != T_dst, "invalid register variant");
+    if (T_src == S) {
+      if (T_dst == H) {
+        opc = 0b10;
+        opc2 = 0b00;
+      } else if (T_dst == D) {
+        opc = 0b11;
+        opc2 = 0b11;
+      }
+    } else if (T_src == H) {
+      if (T_dst == S) {
+        opc = 0b10;
+        opc2 = 0b01;
+      } else if (T_dst == D) {
+        opc = 0b11;
+        opc2 = 0b01;
+      }
+    } else if (T_src == D) {
+      if (T_dst == H) {
+        opc = 0b11;
+        opc2 = 0b00;
+      } else if (T_dst == S) {
+        opc = 0b11;
+        opc2 = 0b10;
+      }
+    }
+  }
+
+// SVE floating-point convert precision(predicated)
+#define INSN(NAME)                                                      \
+  void NAME(FloatRegister Zd, SIMD_RegVariant T_dst, PRegister Pg,      \
+            FloatRegister Zn, SIMD_RegVariant T_src) {                  \
+    starti;                                                             \
+    unsigned opc, opc2;                                                 \
+    encode_fcvt_T(T_src, T_dst, opc, opc2);                             \
+    f(0b01100101, 31, 24), f(opc, 23, 22), f(0b0010, 21, 18);           \
+    f(opc2, 17, 16), f(0b101, 15, 13);                                  \
+    pgrf(Pg, 10), rf(Zn, 5), rf(Zd, 0);                                 \
+  }
+
+  INSN(sve_fcvt);
+#undef INSN
+
   Assembler(CodeBuffer* code) : AbstractAssembler(code) {
   }
 

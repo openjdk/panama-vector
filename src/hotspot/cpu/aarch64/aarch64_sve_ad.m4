@@ -229,8 +229,6 @@ source %{
       // Vector API specific
       case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
-      case Op_VectorCastD2X:
-      case Op_VectorCastF2X:
       case Op_VectorInsert:
       case Op_VectorLoadConst:
       case Op_VectorLoadShuffle:
@@ -1653,6 +1651,7 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
 %}')dnl
 dnl                     $1 $2 $3     $4 $5 $6   $7 $8
 VECTOR_CAST_I2F_NARROW1(L, F, scvtf, S, D, dup, S, uzp1)
+VECTOR_CAST_I2F_NARROW1(D, F, fcvt,  S, D, dup, S, uzp1)
 
 dnl
 define(`VECTOR_CAST_I2F', `
@@ -1691,3 +1690,4 @@ instruct vcvt$1to$2`'(vReg dst, vReg src)
 dnl                     $1 $2 $3       $4 $5     $6
 VECTOR_CAST_I2F_EXTEND1(I, D, sunpklo, D, scvtf, D)
 VECTOR_CAST_I2F_EXTEND1(S, F, sunpklo, S, scvtf, S)
+VECTOR_CAST_I2F_EXTEND1(F, D, sunpklo, D, fcvt,  S)
