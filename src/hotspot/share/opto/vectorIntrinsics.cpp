@@ -803,37 +803,49 @@ bool LibraryCallKit::inline_vector_broadcast_coerced() {
   }
 
   Node* bits = argument(3); // long
-
-  Node* elem = NULL;
-  switch (elem_bt) {
-    case T_BOOLEAN: // fall-through
-    case T_BYTE:    // fall-through
-    case T_SHORT:   // fall-through
-    case T_CHAR:    // fall-through
-    case T_INT: {
-      elem = gvn().transform(new ConvL2INode(bits));
-      break;
-    }
-    case T_DOUBLE: {
-      elem = gvn().transform(new MoveL2DNode(bits));
-      break;
-    }
-    case T_FLOAT: {
-      bits = gvn().transform(new ConvL2INode(bits));
-      elem = gvn().transform(new MoveI2FNode(bits));
-      break;
-    }
-    case T_LONG: {
-      elem = bits; // no conversion needed
-      break;
-    }
-    default: fatal("%s", type2name(elem_bt));
+  Node* node = NULL;
+  const TypeLong* value = gvn().type(bits)->is_long();
+  if (is_vector_mask(vbox_klass) &&
+     value->is_con() && (value->get_con() == -1 || value->get_con() == 0) &&
+     arch_supports_vector(Op_MaskAll, num_elem, elem_bt, VecMaskNotUsed)) {
+     ConLNode* con = (ConLNode*)gvn().makecon(value);
+     node = gvn().transform(new MaskAllNode(con, TypeVMask::make(elem_bt, num_elem)));
+     // TODO: remove the conversion once reboxing for predicate is supported.
+     node = gvn().transform(new MaskToVectorNode(node, TypeVect::make(elem_bt, num_elem)));
   }
 
-  Node* broadcast = VectorNode::scalar2vector(elem, num_elem, Type::get_const_basic_type(elem_bt));
-  broadcast = gvn().transform(broadcast);
+  if (node == NULL) {
+    Node* elem = NULL;
+    switch (elem_bt) {
+      case T_BOOLEAN: // fall-through
+      case T_BYTE:    // fall-through
+      case T_SHORT:   // fall-through
+      case T_CHAR:    // fall-through
+      case T_INT: {
+        elem = gvn().transform(new ConvL2INode(bits));
+        break;
+      }
+      case T_DOUBLE: {
+        elem = gvn().transform(new MoveL2DNode(bits));
+        break;
+      }
+      case T_FLOAT: {
+        bits = gvn().transform(new ConvL2INode(bits));
+        elem = gvn().transform(new MoveI2FNode(bits));
+        break;
+      }
+      case T_LONG: {
+        elem = bits; // no conversion needed
+        break;
+      }
+      default: fatal("%s", type2name(elem_bt));
+    }
 
-  Node* box = box_vector(broadcast, vbox_type, elem_bt, num_elem);
+    node = VectorNode::scalar2vector(elem, num_elem, Type::get_const_basic_type(elem_bt));
+    node = gvn().transform(node);
+  }
+
+  Node* box = box_vector(node, vbox_type, elem_bt, num_elem);
   set_result(box);
   C->set_max_vector_size(MAX2(C->max_vector_size(), (uint)(num_elem * type2aelembytes(elem_bt))));
   return true;

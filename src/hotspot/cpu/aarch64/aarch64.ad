@@ -2421,6 +2421,7 @@ const bool Matcher::match_rule_supported(int opcode) {
     case Op_LoadVectorMask:
     case Op_StoreVectorMask:
     case Op_StoreVectorMasked:
+    case Op_MaskAll:
     case Op_MaskToVector:
     case Op_VectorToMask:
     case Op_VectorCmpMaskGen:

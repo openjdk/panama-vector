@@ -423,6 +423,25 @@ dnl
 VECTOR_CMP_PREDICATE(integral, is_integral_type, sve_compare_integral)
 VECTOR_CMP_PREDICATE(fp, is_floating_point_type, sve_compare_fp)
 
+// maskAll
+
+instruct vmaskAll(pRegGov pg, immL src) %{
+  predicate(UseSVE > 0);
+  match(Set pg (MaskAll src));
+  ins_cost(SVE_COST);
+  format %{ "sve_ptrue $pg\t# mask all (sve)" %}
+  ins_encode %{
+    long value = $src$$constant;
+    if (value == -1) {
+      __ sve_ptrue(as_PRegister($pg$$reg), __ B);
+    } else {
+      assert(value == 0, "Unsupported value");
+      __ sve_pfalse(as_PRegister($pg$$reg));
+    }
+  %}
+  ins_pipe(pipe_slow);
+%}
+
 // mask to vector
 
 instruct vmask2vector(vReg dst, pRegGov pg) %{

@@ -3235,6 +3235,12 @@ public:
     f(pattern, 9, 5), f(0b0, 4), prf(pd, 0);
   }
 
+  void sve_pfalse(PRegister pd) {
+    starti;
+    f(0b00100101, 31, 24), f(0b00, 23, 22), f(0b011000111001, 21, 10);
+    f(0b000000, 9, 4), prf(pd, 0);
+  }
+
 // SVE load/store predicate register
 #define INSN(NAME, op1)                                                  \
   void NAME(PRegister Pt, const Address &a)  {                           \

@@ -1891,6 +1891,7 @@ typedef HashtableEntry<InstanceKlass*, mtClass>  KlassHashtableEntry;
   declare_c2_type(VectorMaskNode, TypeNode)                               \
   declare_c2_type(VectorCmpMaskGenNode, VectorMaskNode)                   \
   declare_c2_type(VectorToMaskNode, VectorMaskNode)                       \
+  declare_c2_type(MaskAllNode, VectorMaskNode)                            \
                                                                           \
   /*********************/                                                 \
   /* Adapter Blob Entries */                                              \

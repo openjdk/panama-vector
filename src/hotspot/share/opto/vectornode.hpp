@@ -910,6 +910,15 @@ class VectorToMaskNode : public VectorMaskNode {
   virtual Node* Identity(PhaseGVN* phase);
 };
 
+class MaskAllNode : public VectorMaskNode {
+ public:
+  MaskAllNode(ConLNode* in, const TypeVMask* vmask_type) : VectorMaskNode(in, vmask_type) {
+    assert(in->get_long() == 0 || in->get_long() == -1, "Unsupported value to mask all");
+  }
+
+  virtual int Opcode() const;
+};
+
 // Vector compare node with a TypeVMask bottom_type. It is specially generated for platforms
 // that have mask hardware feature. The main difference with "VectorMaskCmpNode" is that this
 // is a kind of mask node, while "VectorMaskCmpNode" is a vector node.
