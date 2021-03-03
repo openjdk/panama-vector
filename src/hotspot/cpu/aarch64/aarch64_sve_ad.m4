@@ -1631,7 +1631,7 @@ dnl                     $1 $2 $3       $4 $5 $6 $7
 VECTOR_CAST_I2F_EXTEND3(B, D, sunpklo, H, S, D, scvtf)
 
 dnl
-define(`VECTOR_CAST_I2F_NARROW1', `
+define(`VECTOR_CAST_X2F_NARROW1', `
 instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
 %{
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
@@ -1650,8 +1650,8 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
   ins_pipe(pipe_slow);
 %}')dnl
 dnl                     $1 $2 $3     $4 $5 $6   $7 $8
-VECTOR_CAST_I2F_NARROW1(L, F, scvtf, S, D, dup, S, uzp1)
-VECTOR_CAST_I2F_NARROW1(D, F, fcvt,  S, D, dup, S, uzp1)
+VECTOR_CAST_X2F_NARROW1(L, F, scvtf, S, D, dup, S, uzp1)
+VECTOR_CAST_X2F_NARROW1(D, F, fcvt,  S, D, dup, S, uzp1)
 
 dnl
 define(`VECTOR_CAST_I2F', `
@@ -1672,7 +1672,7 @@ VECTOR_CAST_I2F(I, F, scvtf, S)
 VECTOR_CAST_I2F(L, D, scvtf, D)
 
 dnl
-define(`VECTOR_CAST_I2F_EXTEND1', `
+define(`VECTOR_CAST_X2F_EXTEND1', `
 instruct vcvt$1to$2`'(vReg dst, vReg src)
 %{
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
@@ -1688,6 +1688,6 @@ instruct vcvt$1to$2`'(vReg dst, vReg src)
   ins_pipe(pipe_slow);
 %}')dnl
 dnl                     $1 $2 $3       $4 $5     $6
-VECTOR_CAST_I2F_EXTEND1(I, D, sunpklo, D, scvtf, D)
-VECTOR_CAST_I2F_EXTEND1(S, F, sunpklo, S, scvtf, S)
-VECTOR_CAST_I2F_EXTEND1(F, D, sunpklo, D, fcvt,  S)
+VECTOR_CAST_X2F_EXTEND1(I, D, sunpklo, D, scvtf, D)
+VECTOR_CAST_X2F_EXTEND1(S, F, sunpklo, S, scvtf, S)
+VECTOR_CAST_X2F_EXTEND1(F, D, sunpklo, D, fcvt,  S)
