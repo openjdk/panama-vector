@@ -4085,11 +4085,6 @@ int MatchRule::is_expensive() const {
         strcmp(opType,"OrReductionV")==0 ||
         strcmp(opType,"XorReductionV")==0 ||
         strcmp(opType,"MaskToVector")==0 ||
-        /*
-         * TODO: Check whether NegVF/NegVD is neeeded here, in
-         * case unnecessary vector rematerialization happens.
-         */
-        strcmp(opType,"NegVI")==0 ||
         0 /* 0 to line up columns nicely */ )
       return 1;
   }
