@@ -124,6 +124,30 @@ bool LibraryCallKit::arch_supports_vector(int sopc, int num_elem, BasicType type
     assert(Matcher::match_rule_supported(sopc), "must be supported");
   }
 
+  if (num_elem == 1) {
+    if (mask_use_type != VecMaskNotUsed) {
+#ifndef PRODUCT
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** Rejected vector mask op (%s,%s,%d) because architecture does not support it",
+                      NodeClassNames[sopc], type2name(type), num_elem);
+      }
+#endif
+      return false;
+    }
+
+    if (sopc != 0) {
+      if (sopc != Op_LoadVector && sopc != Op_StoreVector) {
+#ifndef PRODUCT
+        if (C->print_intrinsics()) {
+          tty->print_cr("  ** Not a svml call or load/store vector op (%s,%s,%d)",
+                        NodeClassNames[sopc], type2name(type), num_elem);
+        }
+#endif
+        return false;
+      }
+    }
+  }
+
   if (!has_scalar_args && VectorNode::is_vector_shift(sopc) &&
       Matcher::supports_vector_variable_shifts() == false) {
     if (C->print_intrinsics()) {
@@ -236,6 +260,15 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
       tty->print_cr("  ** operation not supported: opc=%s bt=%s", NodeClassNames[opc], type2name(elem_bt));
     }
     return false; // operation not supported
+  }
+  if (num_elem == 1) {
+    if (opc != Op_CallLeafVector || elem_bt != T_DOUBLE) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** not a svml call: arity=%d opc=%d vlen=%d etype=%s",
+                      n, opc, num_elem, type2name(elem_bt));
+      }
+      return false;
+    }
   }
   ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
