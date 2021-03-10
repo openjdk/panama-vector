@@ -1671,6 +1671,7 @@ dnl             $1 $2 $3      $4
 VECTOR_CAST_X2X(I, F, scvtf,  S)
 VECTOR_CAST_X2X(L, D, scvtf,  D)
 VECTOR_CAST_X2X(F, I, fcvtzs, S)
+VECTOR_CAST_X2X(D, L, fcvtzs, D)
 
 dnl
 define(`VECTOR_CAST_X2F_EXTEND1', `
@@ -1714,6 +1715,7 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
 %}')dnl
 dnl                     $1 $2 $3      $4 $5   $6 $7
 VECTOR_CAST_F2X_NARROW1(F, S, fcvtzs, S, dup, H, uzp1)
+VECTOR_CAST_F2X_NARROW1(D, I, fcvtzs, D, dup, S, uzp1)
 
 
 dnl
@@ -1739,6 +1741,7 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
 %}')dnl
 dnl                     $1 $2 $3      $4 $5   $6 $7    $8
 VECTOR_CAST_F2X_NARROW2(F, B, fcvtzs, S, dup, H, uzp1, B)
+VECTOR_CAST_F2X_NARROW2(D, S, fcvtzs, D, dup, S, uzp1, H)
 
 
 dnl
@@ -1759,3 +1762,29 @@ instruct vcvt$1to$2`'(vReg dst, vReg src)
 %}')dnl
 dnl                     $1 $2 $3      $4 $5       $6
 VECTOR_CAST_F2X_EXTEND1(F, L, fcvtzs, S, sunpklo, D)
+
+dnl
+define(`VECTOR_CAST_F2X_NARROW3', `
+instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
+%{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->length_in_bytes() >= 8 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
+  match(Set dst (VectorCast$1`'2X src));
+  effect(TEMP_DEF dst, TEMP tmp);
+  ins_cost(5 * SVE_COST);
+  format %{ "sve_$3  $dst, $4, $src, $4\n\t"
+            "sve_$5  $tmp, $6, 0\n\t"
+            "sve_$7  $dst, $6, $dst, tmp\n\t"
+            "sve_$7  $dst, $8, $dst, tmp\n\t"
+            "sve_$7  $dst, $9, $dst, tmp\n\t# convert $1 to $2 vector" %}
+  ins_encode %{
+    __ sve_$3(as_FloatRegister($dst$$reg), __ $4, ptrue, as_FloatRegister($src$$reg), __ $4);
+    __ sve_$5(as_FloatRegister($tmp$$reg), __ $6, 0);
+    __ sve_$7(as_FloatRegister($dst$$reg), __ $6, as_FloatRegister($dst$$reg), as_FloatRegister($tmp$$reg));
+    __ sve_$7(as_FloatRegister($dst$$reg), __ $8, as_FloatRegister($dst$$reg), as_FloatRegister($tmp$$reg));
+    __ sve_$7(as_FloatRegister($dst$$reg), __ $9, as_FloatRegister($dst$$reg), as_FloatRegister($tmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl                     $1 $2 $3      $4 $5   $6 $7    $8 $9
+VECTOR_CAST_F2X_NARROW3(D, B, fcvtzs, D, dup, S, uzp1, H, B)
