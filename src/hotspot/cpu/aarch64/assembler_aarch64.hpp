@@ -3452,6 +3452,56 @@ public:
     pgrf(Pg, 10), rf(Zn, 5), rf(Zd, 0);
   }
 
+private:
+
+  void encode_fcvtz_T (SIMD_RegVariant T_dst, SIMD_RegVariant T_src,
+                       unsigned& opc, unsigned& opc2) {
+    assert(T_src != B && T_dst != B &&
+           T_src != Q && T_dst != Q, "invalid register variant");
+    if (T_src != D) {
+      assert(T_src <= T_dst, "invalid register variant");
+    } else {
+      assert(T_dst != H, "invalid register variant");
+    }
+    // In most cases we can treat T_dst,T_src as opc2,opc
+    // except following four cases. These cases should be converted
+    // according to Arm's architecture reference manual:
+    // +-----+------+---+-------------------------------------+
+    // | opc | opc2 | U |        Instruction Details          |
+    // +-----+------+---+-------------------------------------+
+    // |  11 |   10 | 0 | FCVTZS — Single-precision to 64-bit |
+    // |  11 |   10 | 1 | FCVTZU — Single-precision to 64-bit |
+    // |  11 |   00 | 0 | FCVTZS — Double-precision to 32-bit |
+    // |  11 |   00 | 1 | FCVTZU — Double-precision to 32-bit |
+    // +-----+------+---+-------------------------------------+
+    if (T_dst == D && T_src == S) { // Single-precision to 64-bit
+      T_dst = S;
+      T_src = D;
+    } else if (T_dst == S && T_src == D) { // Double-precision to 32-bit
+      T_dst = B;
+      T_src = D;
+    }
+    opc = T_src;
+    opc2 = T_dst;
+  }
+public:
+
+// SVE floating-point convert to integer (predicated)
+#define INSN(NAME, sign)                                                \
+  void NAME(FloatRegister Zd, SIMD_RegVariant T_dst, PRegister Pg,      \
+            FloatRegister Zn, SIMD_RegVariant T_src) {                  \
+    starti;                                                             \
+    unsigned opc, opc2;                                                 \
+    encode_fcvtz_T(T_dst, T_src, opc, opc2);                            \
+    f(0b01100101, 31, 24), f(opc, 23, 22), f(0b011, 21, 19);            \
+    f(opc2, 18, 17), f(sign, 16), f(0b101, 15, 13);                     \
+    pgrf(Pg, 10), rf(Zn, 5), rf(Zd, 0);                                 \
+  }
+
+  INSN(sve_fcvtzs, 0b0);
+  INSN(sve_fcvtzu, 0b1);
+#undef INSN
+
   Assembler(CodeBuffer* code) : AbstractAssembler(code) {
   }
 
