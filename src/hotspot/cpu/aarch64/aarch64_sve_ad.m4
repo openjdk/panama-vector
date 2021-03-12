@@ -217,14 +217,9 @@ source %{
       case Op_MulReductionVI:
       case Op_MulReductionVL:
         // Others
-      case Op_Extract:
-      case Op_ExtractB:
       case Op_ExtractC:
       case Op_ExtractD:
       case Op_ExtractF:
-      case Op_ExtractI:
-      case Op_ExtractL:
-      case Op_ExtractS:
       case Op_ExtractUB:
       // Vector API specific
       case Op_LoadVectorGather:
@@ -1788,3 +1783,49 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
 %}')dnl
 dnl                     $1 $2 $3      $4 $5   $6 $7    $8 $9
 VECTOR_CAST_F2X_NARROW3(D, B, fcvtzs, D, dup, S, uzp1, H, B)
+
+// ------------------------------ Vector extract ---------------------------------
+define(`VECTOR_EXTRACT_SXT', `
+instruct extract$1`'($2 dst, vReg src, immI idx, iRegINoSp tmp,  pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() >= 16);
+  match(Set dst (Extract$1 src idx));
+  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  ins_cost(2 * SVE_COST);
+  format %{ "movzw $tmp, $idx\n\t"
+            "sve_whilele $pTmp, $3, zr, $tmp\n\t"
+            "sve_lastb $dst, $3, $pTmp, $src\n\t"
+            "sbfmw $dst, $dst, 0U, $5\t# extract from vector($1)" %}
+  ins_encode %{
+    __ movzw(as_Register($tmp$$reg), (int)($idx$$constant));
+    __ sve_whilele(as_PRegister($pTmp$$reg), __ $3, zr, as_Register($tmp$$reg));
+    __ sve_lastb(as_$4($dst$$reg), __ $3, as_PRegister($pTmp$$reg), as_FloatRegister($src$$reg));
+    __ sbfmw(as_$4($dst$$reg), as_$4($dst$$reg), 0U, $5);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl                $1 $2         $3 $4        $5
+VECTOR_EXTRACT_SXT(B, iRegINoSp, B, Register, 7U)
+VECTOR_EXTRACT_SXT(S, iRegINoSp, H, Register, 15U)
+
+dnl
+define(`VECTOR_EXTRACT', `
+instruct extract$1`'($2 dst, vReg src, immI idx, iRegINoSp tmp,  pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() >= 16);
+  match(Set dst (Extract$1 src idx));
+  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  ins_cost(2 * SVE_COST);
+  format %{ "movzw $tmp, $idx\n\t"
+            "sve_whilele $pTmp, $3, zr, $tmp\n\t"
+            "sve_lastb $dst, $3, $pTmp, $src\n\t" %}
+  ins_encode %{
+    __ movzw(as_Register($tmp$$reg), (int)($idx$$constant));
+    __ sve_whilele(as_PRegister($pTmp$$reg), __ $3, zr, as_Register($tmp$$reg));
+    __ sve_lastb(as_$4($dst$$reg), __ $3, as_PRegister($pTmp$$reg), as_FloatRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl            $1 $2         $3 $4
+VECTOR_EXTRACT(I, iRegINoSp, S, Register)
+VECTOR_EXTRACT(L, iRegLNoSp, D, Register)
