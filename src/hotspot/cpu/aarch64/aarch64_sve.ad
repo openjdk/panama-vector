@@ -2989,38 +2989,38 @@ instruct vcvtDtoB(vReg dst, vReg src, vReg tmp)
 
 // ------------------------------ Vector extract ---------------------------------
 
-instruct extractB(iRegINoSp dst, vReg src, immI idx, iRegINoSp tmp,  pRegGov pTmp, rFlagsReg cr)
+instruct extractB(iRegINoSp dst, vReg src, immI idx, pRegGov pTmp, rFlagsReg cr)
 %{
-  predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() >= 16);
+  predicate(UseSVE > 0);
   match(Set dst (ExtractB src idx));
-  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  effect(TEMP pTmp, KILL cr);
   ins_cost(2 * SVE_COST);
-  format %{ "movzw $tmp, $idx\n\t"
-            "sve_whilele $pTmp, B, zr, $tmp\n\t"
+  format %{ "movzw rscratch1, $idx\n\t"
+            "sve_whilele $pTmp, B, zr, rscratch1\n\t"
             "sve_lastb $dst, B, $pTmp, $src\n\t"
             "sbfmw $dst, $dst, 0U, 7U\t# extract from vector(B)" %}
   ins_encode %{
-    __ movzw(as_Register($tmp$$reg), (int)($idx$$constant));
-    __ sve_whilele(as_PRegister($pTmp$$reg), __ B, zr, as_Register($tmp$$reg));
+    __ movzw(rscratch1, (int)($idx$$constant));
+    __ sve_whilele(as_PRegister($pTmp$$reg), __ B, zr, rscratch1);
     __ sve_lastb(as_Register($dst$$reg), __ B, as_PRegister($pTmp$$reg), as_FloatRegister($src$$reg));
     __ sbfmw(as_Register($dst$$reg), as_Register($dst$$reg), 0U, 7U);
   %}
   ins_pipe(pipe_slow);
 %}
 
-instruct extractS(iRegINoSp dst, vReg src, immI idx, iRegINoSp tmp,  pRegGov pTmp, rFlagsReg cr)
+instruct extractS(iRegINoSp dst, vReg src, immI idx, pRegGov pTmp, rFlagsReg cr)
 %{
-  predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() >= 16);
+  predicate(UseSVE > 0);
   match(Set dst (ExtractS src idx));
-  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  effect(TEMP pTmp, KILL cr);
   ins_cost(2 * SVE_COST);
-  format %{ "movzw $tmp, $idx\n\t"
-            "sve_whilele $pTmp, H, zr, $tmp\n\t"
+  format %{ "movzw rscratch1, $idx\n\t"
+            "sve_whilele $pTmp, H, zr, rscratch1\n\t"
             "sve_lastb $dst, H, $pTmp, $src\n\t"
             "sbfmw $dst, $dst, 0U, 15U\t# extract from vector(S)" %}
   ins_encode %{
-    __ movzw(as_Register($tmp$$reg), (int)($idx$$constant));
-    __ sve_whilele(as_PRegister($pTmp$$reg), __ H, zr, as_Register($tmp$$reg));
+    __ movzw(rscratch1, (int)($idx$$constant));
+    __ sve_whilele(as_PRegister($pTmp$$reg), __ H, zr, rscratch1);
     __ sve_lastb(as_Register($dst$$reg), __ H, as_PRegister($pTmp$$reg), as_FloatRegister($src$$reg));
     __ sbfmw(as_Register($dst$$reg), as_Register($dst$$reg), 0U, 15U);
   %}
@@ -3028,35 +3028,35 @@ instruct extractS(iRegINoSp dst, vReg src, immI idx, iRegINoSp tmp,  pRegGov pTm
 %}
 
 
-instruct extractI(iRegINoSp dst, vReg src, immI idx, iRegINoSp tmp,  pRegGov pTmp, rFlagsReg cr)
+instruct extractI(iRegINoSp dst, vReg src, immI idx,  pRegGov pTmp, rFlagsReg cr)
 %{
-  predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() >= 16);
+  predicate(UseSVE > 0);
   match(Set dst (ExtractI src idx));
-  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  effect(TEMP pTmp, KILL cr);
   ins_cost(2 * SVE_COST);
-  format %{ "movzw $tmp, $idx\n\t"
-            "sve_whilele $pTmp, S, zr, $tmp\n\t"
+  format %{ "movzw rscratch1, $idx\n\t"
+            "sve_whilele $pTmp, S, zr, rscratch1\n\t"
             "sve_lastb $dst, S, $pTmp, $src\n\t" %}
   ins_encode %{
-    __ movzw(as_Register($tmp$$reg), (int)($idx$$constant));
-    __ sve_whilele(as_PRegister($pTmp$$reg), __ S, zr, as_Register($tmp$$reg));
+    __ movzw(rscratch1, (int)($idx$$constant));
+    __ sve_whilele(as_PRegister($pTmp$$reg), __ S, zr, rscratch1);
     __ sve_lastb(as_Register($dst$$reg), __ S, as_PRegister($pTmp$$reg), as_FloatRegister($src$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
 
-instruct extractL(iRegLNoSp dst, vReg src, immI idx, iRegINoSp tmp,  pRegGov pTmp, rFlagsReg cr)
+instruct extractL(iRegLNoSp dst, vReg src, immI idx,  pRegGov pTmp, rFlagsReg cr)
 %{
-  predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() >= 16);
+  predicate(UseSVE > 0);
   match(Set dst (ExtractL src idx));
-  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  effect(TEMP pTmp, KILL cr);
   ins_cost(2 * SVE_COST);
-  format %{ "movzw $tmp, $idx\n\t"
-            "sve_whilele $pTmp, D, zr, $tmp\n\t"
+  format %{ "movzw rscratch1, $idx\n\t"
+            "sve_whilele $pTmp, D, zr, rscratch1\n\t"
             "sve_lastb $dst, D, $pTmp, $src\n\t" %}
   ins_encode %{
-    __ movzw(as_Register($tmp$$reg), (int)($idx$$constant));
-    __ sve_whilele(as_PRegister($pTmp$$reg), __ D, zr, as_Register($tmp$$reg));
+    __ movzw(rscratch1, (int)($idx$$constant));
+    __ sve_whilele(as_PRegister($pTmp$$reg), __ D, zr, rscratch1);
     __ sve_lastb(as_Register($dst$$reg), __ D, as_PRegister($pTmp$$reg), as_FloatRegister($src$$reg));
   %}
   ins_pipe(pipe_slow);
