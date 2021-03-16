@@ -1592,6 +1592,8 @@ generate(SpecialCases, [["ccmn",   "__ ccmn(zr, zr, 3u, Assembler::LE);",       
                         ["fcvt",    "__ sve_fcvt(z5, __ D, p3, z4, __ S);",               "fcvt\tz5.d, p3/m, z4.s"],
                         ["fcvtzs",  "__ sve_fcvtzs(z19, __ D, p2, z18, __ D);",           "fcvtzs\tz19.d, p2/m, z18.d"],
                         ["fcvtzu",  "__ sve_fcvtzu(z19, __ D, p2, z18, __ D);",           "fcvtzu\tz19.d, p2/m, z18.d"],
+                        ["lasta",   "__ sve_lasta(r0, __ B, p0, z15);",                   "lasta\tw0, p0, z15.b"],
+                        ["lastb",   "__ sve_lastb(r1, __ B, p1, z16);",                   "lastb\tw1, p1, z16.b"],
 ])
 
 print "\n// FloatImmediateOp"

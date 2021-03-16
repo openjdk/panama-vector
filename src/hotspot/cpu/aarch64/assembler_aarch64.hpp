@@ -3502,6 +3502,19 @@ public:
   INSN(sve_fcvtzu, 0b1);
 #undef INSN
 
+// SVE conditionally extract element to general-purpose register
+#define INSN(NAME, before)                                                      \
+  void NAME(Register Rd, SIMD_RegVariant T, PRegister Pg,  FloatRegister Zn) {  \
+    starti;                                                                     \
+    f(0b00000101, 31, 24), f(T, 23, 22), f(0b10000, 21, 17);                    \
+    f(before, 16), f(0b101, 15, 13);                                            \
+    pgrf(Pg, 10), rf(Zn, 5), rf(Rd, 0);                                         \
+  }
+
+  INSN(sve_lasta, 0b0);
+  INSN(sve_lastb, 0b1);
+#undef INSN
+
   Assembler(CodeBuffer* code) : AbstractAssembler(code) {
   }
 
