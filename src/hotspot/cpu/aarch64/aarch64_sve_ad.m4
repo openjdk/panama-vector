@@ -218,8 +218,6 @@ source %{
       case Op_MulReductionVL:
         // Others
       case Op_ExtractC:
-      case Op_ExtractD:
-      case Op_ExtractF:
       case Op_ExtractUB:
       // Vector API specific
       case Op_LoadVectorGather:
@@ -1829,3 +1827,5 @@ instruct extract$1`'($2 dst, vReg src, immI idx,  pRegGov pTmp, rFlagsReg cr)
 dnl            $1 $2         $3 $4
 VECTOR_EXTRACT(I, iRegINoSp, S, Register)
 VECTOR_EXTRACT(L, iRegLNoSp, D, Register)
+VECTOR_EXTRACT(F, vRegF,     S, FloatRegister)
+VECTOR_EXTRACT(D, vRegD,     D, FloatRegister)
