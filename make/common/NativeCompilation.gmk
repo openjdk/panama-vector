@@ -424,7 +424,7 @@ define SetupCompileNativeFileBody
           # Keep as much as possible on one execution line for best performance
           # on Windows. No need to save exit code from compilation since
           # pipefail is always active on Windows.
-          ifeq ($$(filter %.s, $$($1_FILENAME)), )
+          ifeq ($$(filter %.S, $$($1_FILENAME)), )
 	    $$(call ExecuteWithLog, $$@, $$(call MakeCommandRelative, \
 	        $$($1_COMPILER) -showIncludes $$($1_COMPILE_OPTIONS))) \
 	        | $(TR) -d '\r' | $(GREP) -v -e "^Note: including file:" \
