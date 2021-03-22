@@ -1808,7 +1808,7 @@ VECTOR_EXTRACT_SXT(S, iRegINoSp, H, Register, 15U)
 
 dnl
 define(`VECTOR_EXTRACT', `
-instruct extract$1`'($2 dst, vReg src, immI idx,  pRegGov pTmp, rFlagsReg cr)
+instruct extract$1`'($2 dst, vReg src, immI idx, pRegGov pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0);
   match(Set dst (Extract$1 src idx));
@@ -1816,7 +1816,7 @@ instruct extract$1`'($2 dst, vReg src, immI idx,  pRegGov pTmp, rFlagsReg cr)
   ins_cost(2 * SVE_COST);
   format %{ "movzw rscratch1, $idx\n\t"
             "sve_whilele $pTmp, $3, zr, rscratch1\n\t"
-            "sve_lastb $dst, $3, $pTmp, $src\n\t" %}
+            "sve_lastb $dst, $3, $pTmp, $src\t# extract from vector($1)" %}
   ins_encode %{
     __ movzw(rscratch1, (int)($idx$$constant));
     __ sve_whilele(as_PRegister($pTmp$$reg), __ $3, zr, rscratch1);
