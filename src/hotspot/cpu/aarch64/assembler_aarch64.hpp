@@ -3515,6 +3515,18 @@ public:
   INSN(sve_lastb, 0b1);
 #undef INSN
 
+#define INSN(NAME, before)                                                           \
+  void NAME(FloatRegister Vd, SIMD_RegVariant T, PRegister Pg,  FloatRegister Zn) {  \
+    starti;                                                                          \
+    f(0b00000101, 31, 24), f(T, 23, 22), f(0b10001, 21, 17);                         \
+    f(before, 16), f(0b100, 15, 13);                                                 \
+    pgrf(Pg, 10), rf(Zn, 5), rf(Vd, 0);                                              \
+  }
+
+  INSN(sve_lasta, 0b0);
+  INSN(sve_lastb, 0b1);
+#undef INSN
+
   Assembler(CodeBuffer* code) : AbstractAssembler(code) {
   }
 
