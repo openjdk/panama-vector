@@ -33,6 +33,7 @@ ifeq ($(call isTargetOs, linux windows)+$(call isTargetCpuArch, x86), true+true)
       CFLAGS := $(CFLAGS_JDKLIB), \
       LDFLAGS := $(LDFLAGS_JDKLIB) \
           $(call SET_SHARED_LIBRARY_ORIGIN), \
+      LDFLAGS_windows := -defaultlib:msvcrt, \
   ))
 
   TARGETS += $(BUILD_LIBSVML)
