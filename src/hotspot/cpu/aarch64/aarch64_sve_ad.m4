@@ -226,7 +226,6 @@ source %{
       case Op_VectorLoadConst:
       case Op_VectorLoadShuffle:
       case Op_VectorRearrange:
-      case Op_VectorTest:
         return false;
       default:
         return true;
@@ -1829,3 +1828,59 @@ VECTOR_EXTRACT(I, iRegINoSp, S, Register)
 VECTOR_EXTRACT(L, iRegLNoSp, D, Register)
 VECTOR_EXTRACT(F, vRegF,     S, FloatRegister)
 VECTOR_EXTRACT(D, vRegD,     D, FloatRegister)
+
+// ------------------------------- VectorTest ----------------------------------
+dnl
+dnl VTEST($1,      $2,   $3,  $4  )
+dnl VTEST(op_name, pred, imm, cond)
+define(`VTEST', `
+instruct vtest_$1`'(iRegINoSp dst, vReg src1, vReg src2, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize &&
+            static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::$2);
+  match(Set dst (VectorTest src1 src2));
+  effect(TEMP pTmp, KILL cr);
+  ins_cost(SVE_COST);
+  format %{ "sve_cmpeq $pTmp, $src1, $3\n\t"
+            "csetw $dst, $4\t# VectorTest (sve) - $1" %}
+  ins_encode %{
+    // "src2" is not used for sve.
+    BasicType bt = vector_element_basic_type(this, $src1);
+    Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), size, ptrue,
+                 as_FloatRegister($src1$$reg), $3);
+    __ csetw(as_Register($dst$$reg), Assembler::$4);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+VTEST(alltrue, overflow, 0, EQ)
+VTEST(anytrue, ne,      -1, NE)
+dnl
+dnl
+dnl VTEST_PARTIAL($1,      $2,   $3,  $4  )
+dnl VTEST_PARTIAL(op_name, pred, imm, cond)
+define(`VTEST_PARTIAL', `
+instruct vtest_$1_partial`'(iRegINoSp dst, vReg src1, vReg src2, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() < MaxVectorSize &&
+            static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::$2);
+  match(Set dst (VectorTest src1 src2));
+  effect(TEMP pTmp, KILL cr);
+  ins_cost(SVE_COST);
+  format %{ "vtest_$1_partial $dst, $src1, $src2\t# VectorTest partial (sve) - $1" %}
+  ins_encode %{
+    // "src2" is not used for sve.
+    BasicType bt = vector_element_basic_type(this, $src1);
+    Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
+    __ mov(rscratch1, vector_length(this, $src1));
+    __ sve_whilelo(as_PRegister($pTmp$$reg), size, zr, rscratch1);
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), size, as_PRegister($pTmp$$reg),
+                 as_FloatRegister($src1$$reg), $3);
+    __ csetw(as_Register($dst$$reg), Assembler::$4);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+VTEST_PARTIAL(alltrue, overflow, 0, EQ)
+VTEST_PARTIAL(anytrue, ne,      -1, NE)
