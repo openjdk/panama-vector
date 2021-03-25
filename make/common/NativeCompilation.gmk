@@ -349,20 +349,29 @@ define SetupCompileNativeFileBody
       $1_FLAGS := $(CFLAGS_CCACHE) $$($1_USE_PCH_FLAGS) $$($1_BASE_CFLAGS) \
           $$($1_OPT_CFLAGS) $$($1_CFLAGS) -c
       $1_COMPILER := $$($$($1_BASE)_CC)
+      $1_DEP_FLAG := $(GENDEPS_FLAGS)
     else ifneq ($$(filter %.m, $$($1_FILENAME)), )
       # Compile as an Objective-C file
       $1_FLAGS := -x objective-c $(CFLAGS_CCACHE) $$($1_USE_PCH_FLAGS) \
           $$($1_BASE_CFLAGS) $$($1_OPT_CFLAGS) $$($1_CFLAGS) -c
       $1_COMPILER := $$($$($1_BASE)_CC)
-    else ifneq ($$(filter %.s %.S, $$($1_FILENAME)), )
-      # Compile as assembler file
+      $1_DEP_FLAG := $(GENDEPS_FLAGS)
+    else ifneq ($$(filter %.S, $$($1_FILENAME)), )
+      # Compile as preprocessed assembler file
       $1_FLAGS := $$($1_BASE_ASFLAGS)
       $1_COMPILER := $(AS)
+      $1_DEP_FLAG := $(GENDEPS_FLAGS)
+    else ifneq ($$(filter %.s, $$($1_FILENAME)), )
+      # Compile as non-preprocessed assembler file
+      $1_FLAGS := $$($1_BASE_ASFLAGS)
+      $1_COMPILER := $(AS)
+      $1_DEP_FLAG :=
     else ifneq ($$(filter %.cpp %.cc %.mm, $$($1_FILENAME)), )
       # Compile as a C++ or Objective-C++ file
       $1_FLAGS := $(CFLAGS_CCACHE) $$($1_USE_PCH_FLAGS) $$($1_BASE_CXXFLAGS) \
           $$($1_OPT_CXXFLAGS) $$($1_CXXFLAGS) -c
       $1_COMPILER := $$($$($1_BASE)_CXX)
+      $1_DEP_FLAG := $(GENDEPS_FLAGS)
     else
       $$(error Internal error in NativeCompilation.gmk: no compiler for file $$($1_FILENAME))
     endif
@@ -401,7 +410,7 @@ define SetupCompileNativeFileBody
 	$$(call MakeDir, $$(@D))
         ifneq ($(TOOLCHAIN_TYPE), microsoft)
 	  $$(call ExecuteWithLog, $$@, $$(call MakeCommandRelative, \
-	      $$($1_COMPILER) $$(GENDEPS_FLAGS) \
+	      $$($1_COMPILER) $$($1_DEP_FLAG) \
 	      $$(addsuffix .tmp, $$($1_DEPS_FILE)) \
 	      $$($1_COMPILE_OPTIONS)))
           ifneq ($$($1_DEPS_FILE), )
