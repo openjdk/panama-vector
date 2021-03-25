@@ -29,8 +29,6 @@ dnl
 
 // AArch64 SVE Architecture Description File
 
-
-// 4 bit signed offset -- for predicated load/store
 dnl
 define(`TYPE2DATATYPE',
 `ifelse($1, `B', `BYTE',
@@ -41,31 +39,34 @@ define(`TYPE2DATATYPE',
         $1, `D', `DOUBLE',
         `error($1)')')dnl
 dnl
-dnl OPERAND_VMEMORYA_IMMEDIATE_OFFSET($1,            $2,       $3     )
-dnl OPERAND_VMEMORYA_IMMEDIATE_OFFSET(imm_type_abbr, imm_type, imm_len)
+dnl OPERAND_VMEMORYA_IMMEDIATE_OFFSET($1,            $2,       $3       $4   )
+dnl OPERAND_VMEMORYA_IMMEDIATE_OFFSET(imm_type_abbr, imm_type, imm_len, scale)
 define(`OPERAND_VMEMORYA_IMMEDIATE_OFFSET', `
 operand vmemA_imm$1Offset$3()
 %{
+  // (esize / msize) = $4
   predicate(Address::offset_ok_for_sve_immed(n->get_$2(), $3,
-            Matcher::scalable_vector_reg_size(T_BYTE)));
+            Matcher::scalable_vector_reg_size(T_BYTE)ifelse($4, `1', `', ` / $4')));
   match(Con$1);
 
   op_cost(0);
   format %{ %}
   interface(CONST_INTER);
 %}')dnl
-OPERAND_VMEMORYA_IMMEDIATE_OFFSET(I, int,  4)
-OPERAND_VMEMORYA_IMMEDIATE_OFFSET(L, long, 4)
+
+// 4 bit signed offset -- for predicated load/store
+OPERAND_VMEMORYA_IMMEDIATE_OFFSET(I, int,  4, 1)
+OPERAND_VMEMORYA_IMMEDIATE_OFFSET(L, long, 4, 1)
 dnl
 dnl OPERAND_VMEMORYA_INDIRECT_OFFSET($1,            $2     )
 dnl OPERAND_VMEMORYA_INDIRECT_OFFSET(imm_type_abbr, imm_len)
 define(`OPERAND_VMEMORYA_INDIRECT_OFFSET', `
-operand vmemA_indOff$1$2(iRegP reg, vmemA_imm$1Offset$2 off)
+operand vmemA_indOff$1$2$3(iRegP reg, vmemA_imm$1Offset$2 off)
 %{
   constraint(ALLOC_IN_RC(ptr_reg));
   match(AddP reg off);
   op_cost(0);
-  format %{ "[$reg, $off, MUL VL]" %}
+  format %{ "[$reg, $off]" %}
   interface(MEMORY_INTER) %{
     base($reg);
     `index'(0xffffffff);
@@ -76,12 +77,9 @@ operand vmemA_indOff$1$2(iRegP reg, vmemA_imm$1Offset$2 off)
 OPERAND_VMEMORYA_INDIRECT_OFFSET(I, 4)
 OPERAND_VMEMORYA_INDIRECT_OFFSET(L, 4)
 
+// The indOff of vmemA is valid only when the vector element (load to/store from)
+// size equals to memory element (load from/store to) size.
 opclass vmemA(indirect, vmemA_indOffI4, vmemA_indOffL4);
-
-// If the vector element size is not the same as memory
-// element size, the adddress displacement range is
-// different from vmemA_indOffL4/vmemA_indOffI4.
-opclass vmemA_narrow_extend(indirect);
 
 source_hpp %{
   bool op_sve_supported(int opcode, int vlen, BasicType bt);
@@ -259,7 +257,7 @@ instruct loadV(vReg dst, vmemA mem) %{
   predicate(UseSVE > 0 && n->as_LoadVector()->memory_size() >= 16 &&
             n->as_LoadVector()->memory_size() == MaxVectorSize);
   match(Set dst (LoadVector mem));
-  ins_cost(SVE_COST);
+  ins_cost(4 * SVE_COST);
   format %{ "sve_ldr $dst, $mem\t # vector (sve)" %}
   ins_encode %{
     FloatRegister dst_reg = as_FloatRegister($dst$$reg);
@@ -275,7 +273,7 @@ instruct storeV(vReg src, vmemA mem) %{
   predicate(UseSVE > 0 && n->as_StoreVector()->memory_size() >= 16 &&
             n->as_StoreVector()->memory_size() == MaxVectorSize);
   match(Set mem (StoreVector mem src));
-  ins_cost(SVE_COST);
+  ins_cost(4 * SVE_COST);
   format %{ "sve_str $mem, $src\t # vector (sve)" %}
   ins_encode %{
     FloatRegister src_reg = as_FloatRegister($src$$reg);
@@ -285,21 +283,44 @@ instruct storeV(vReg src, vmemA mem) %{
                          as_Register($mem$$base), $mem$$index, $mem$$scale, $mem$$disp);
   %}
   ins_pipe(pipe_slow);
-%}
+%}dnl
+
+dnl
+define(`VLoadStore', `
+// ifelse(load, $3, Load, Store) Vector ($6 bits)
+instruct $3V$4_vreg`'(vReg $7, vmem$4 mem)
+%{
+  predicate(UseSVE > 0 && `n->as_'ifelse(load, $3, Load, Store)Vector()->memory_size() == $4 &&
+            `n->as_'ifelse(load, $3, Load, Store)Vector()->memory_size() < MaxVectorSize);
+  match(Set ifelse(load, $3, dst (LoadVector mem), mem (StoreVector mem src)));
+  ins_cost(4 * SVE_COST);
+  format %{ "$1   ifelse(load, $3, `$dst,$mem', `$mem,$src')\t# vector ($6 bits)" %}
+  ins_encode( `aarch64_enc_'ifelse(load, $3, ldr, str)v$2($7, mem) );
+  ins_pipe(v$3`_reg_mem'ifelse(eval($4 * 8), 128, 128, 64));
+%}')dnl
+dnl        $1    $2 $3     $4  $5 $6   $7
+VLoadStore(ldrh, H, load,  2,  D, 16,  dst)
+VLoadStore(strh, H, store, 2,  D, 16,  src)
+VLoadStore(ldrs, S, load,  4,  D, 32,  dst)
+VLoadStore(strs, S, store, 4,  D, 32,  src)
+VLoadStore(ldrd, D, load,  8,  D, 64,  dst)
+VLoadStore(strd, D, store, 8,  D, 64,  src)
+VLoadStore(ldrq, Q, load, 16,  X, 128, dst)
+VLoadStore(strq, Q, store, 16, X, 128, src)
 
 // Predicated vector load/store, based on the vector length of the node.
 // Only load/store values in the range of the memory_size. This is needed
 // when the memory_size is lower than the hardware supported max vector size.
 // And this might happen for Vector API mask vector load/store.
 instruct loadV_partial(vReg dst, vmemA mem, pRegGov pTmp, rFlagsReg cr) %{
-  predicate(UseSVE > 0 && n->as_LoadVector()->memory_size() >= 2 &&
+  predicate(UseSVE > 0 && n->as_LoadVector()->memory_size() > 16 &&
             n->as_LoadVector()->memory_size() < MaxVectorSize);
   match(Set dst (LoadVector mem));
   effect(TEMP pTmp, KILL cr);
-  ins_cost(2 * SVE_COST);
+  ins_cost(6 * SVE_COST);
   format %{ "mov rscratch1, vector_length\n\t"
             "sve_whilelo $pTmp, zr, rscratch1\n\t"
-            "sve_ldr $dst, $pTmp, $mem\t # load vector mask" %}
+            "sve_ldr $dst, $pTmp, $mem\t # load vector mask (sve)" %}
   ins_encode %{
     BasicType bt = vector_element_basic_type(this);
     __ mov(rscratch1, vector_length(this));
@@ -314,14 +335,14 @@ instruct loadV_partial(vReg dst, vmemA mem, pRegGov pTmp, rFlagsReg cr) %{
 %}
 
 instruct storeV_partial(vReg src, vmemA mem, pRegGov pTmp, rFlagsReg cr) %{
-  predicate(UseSVE > 0 && n->as_StoreVector()->memory_size() >= 2 &&
+  predicate(UseSVE > 0 && n->as_StoreVector()->memory_size() > 16 &&
             n->as_StoreVector()->memory_size() < MaxVectorSize);
   match(Set mem (StoreVector mem src));
   effect(TEMP pTmp, KILL cr);
-  ins_cost(2 * SVE_COST);
+  ins_cost(5 * SVE_COST);
   format %{ "mov rscratch1, vector_length\n\t"
             "sve_whilelo $pTmp, zr, rscratch1\n\t"
-            "sve_str $src, $pTmp, $mem\t # store vector mask" %}
+            "sve_str $src, $pTmp, $mem\t # store vector mask (sve)" %}
   ins_encode %{
     BasicType bt = vector_element_basic_type(this, $src);
     __ mov(rscratch1, vector_length(this, $src));
@@ -912,14 +933,16 @@ instruct vstoremaskL(vReg dst, vReg src, vReg tmp, immI_8 size) %{
   %}
   ins_pipe(pipe_slow);
 %}
-
-// load/store mask vector
-
-instruct vloadmask_loadV(vReg dst, vmemA_narrow_extend mem) %{
-  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= 2 &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BOOLEAN);
+dnl
+dnl
+dnl VLOADMASK_LOADV($1,    $2  )
+dnl VLOADMASK_LOADV(esize, cond)
+define(`VLOADMASK_LOADV', `
+instruct vloadmask_loadV_$1(vReg dst, ifelse($1, `byte', vmemA, indirect) mem) %{
+  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() == MaxVectorSize &&
+            type2aelembytes(n->bottom_type()->is_vect()->element_basic_type()) $2);
   match(Set dst (VectorLoadMask (LoadVector mem)));
-  ins_cost(2 * SVE_COST);
+  ins_cost(5 * SVE_COST);
   format %{ "sve_ld1b $dst, $mem\n\t"
             "sve_neg $dst, $dst\t # load vector mask (sve)" %}
   ins_encode %{
@@ -932,14 +955,20 @@ instruct vloadmask_loadV(vReg dst, vmemA_narrow_extend mem) %{
     __ sve_neg(dst_reg, to_vect_variant, ptrue, dst_reg);
   %}
   ins_pipe(pipe_slow);
-%}
-
-instruct storeV_vstoremask(vmemA_narrow_extend mem, vReg src, vReg tmp, immI esize) %{
-  predicate(UseSVE > 0 && n->as_StoreVector()->length() >= 2 &&
-            n->as_StoreVector()->vect_type()->element_basic_type() == T_BOOLEAN);
+%}')dnl
+dnl
+define(`ARGLIST',
+`ifelse($1, `byte', vmemA, indirect) mem, vReg src, vReg tmp, ifelse($1, `byte', immI_1, immI_gt_1) esize')
+dnl
+dnl STOREV_VSTOREMASK($1,  )
+dnl STOREV_VSTOREMASK(esize)
+define(`STOREV_VSTOREMASK', `
+instruct storeV_vstoremask_$1(ARGLIST($1)) %{
+  predicate(UseSVE > 0 && n->as_StoreVector()->memory_size() *
+                          n->as_StoreVector()->in(MemNode::ValueIn)->in(2)->get_int() == MaxVectorSize);
   match(Set mem (StoreVector mem (VectorStoreMask src esize)));
   effect(TEMP tmp);
-  ins_cost(2 * SVE_COST);
+  ins_cost(5 * SVE_COST);
   format %{ "sve_neg $tmp, $src\n\t"
             "sve_st1b $tmp, $mem\t # store vector mask (sve)" %}
   ins_encode %{
@@ -953,7 +982,14 @@ instruct storeV_vstoremask(vmemA_narrow_extend mem, vReg src, vReg tmp, immI esi
                          as_Register($mem$$base), $mem$$index, $mem$$scale, $mem$$disp);
   %}
   ins_pipe(pipe_slow);
-%}dnl
+%}')dnl
+undefine(ARGLIST)dnl
+dnl
+// load/store mask vector
+VLOADMASK_LOADV(byte, == 1)
+VLOADMASK_LOADV(non_byte, > 1)
+STOREV_VSTOREMASK(byte)
+STOREV_VSTOREMASK(non_byte)
 
 dnl
 dnl REDUCE_ADD_EXT($1,        $2,      $3,      $4,      $5,   $6,        $7   )

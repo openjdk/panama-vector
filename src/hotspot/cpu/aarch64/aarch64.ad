@@ -4262,6 +4262,16 @@ operand immIExt()
   interface(CONST_INTER);
 %}
 
+operand immI_gt_1()
+%{
+  predicate(n->get_int() > 1);
+  match(ConI);
+
+  op_cost(0);
+  format %{ %}
+  interface(CONST_INTER);
+%}
+
 operand immI_le_4()
 %{
   predicate(n->get_int() <= 4);
