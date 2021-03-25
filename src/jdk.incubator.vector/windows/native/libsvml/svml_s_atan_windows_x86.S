@@ -23,7 +23,7 @@
 ; questions.
 ;
 
-INCLUDE globals_vectorApiSupport_windows.s.inc
+INCLUDE globals_vectorApiSupport_windows.S.inc
 IFNB __VECTOR_API_MATH_INTRINSICS_WINDOWS
 	OPTION DOTNAME
 
