@@ -230,7 +230,6 @@ source %{
       case Op_VectorLoadConst:
       case Op_VectorLoadShuffle:
       case Op_VectorRearrange:
-      case Op_VectorTest:
         return false;
       default:
         return true;
@@ -3090,6 +3089,90 @@ instruct extractD(vRegD dst, vReg src, immI idx, pRegGov pTmp, rFlagsReg cr)
     __ movzw(rscratch1, (int)($idx$$constant));
     __ sve_whilele(as_PRegister($pTmp$$reg), __ D, zr, rscratch1);
     __ sve_lastb(as_FloatRegister($dst$$reg), __ D, as_PRegister($pTmp$$reg), as_FloatRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------- VectorTest ----------------------------------
+
+instruct vtest_alltrue(iRegINoSp dst, vReg src1, vReg src2, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize &&
+            static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::overflow);
+  match(Set dst (VectorTest src1 src2));
+  effect(TEMP pTmp, KILL cr);
+  ins_cost(SVE_COST);
+  format %{ "sve_cmpeq $pTmp, $src1, 0\n\t"
+            "csetw $dst, EQ\t# VectorTest (sve) - alltrue" %}
+  ins_encode %{
+    // "src2" is not used for sve.
+    BasicType bt = vector_element_basic_type(this, $src1);
+    Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), size, ptrue,
+                 as_FloatRegister($src1$$reg), 0);
+    __ csetw(as_Register($dst$$reg), Assembler::EQ);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vtest_anytrue(iRegINoSp dst, vReg src1, vReg src2, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize &&
+            static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::ne);
+  match(Set dst (VectorTest src1 src2));
+  effect(TEMP pTmp, KILL cr);
+  ins_cost(SVE_COST);
+  format %{ "sve_cmpeq $pTmp, $src1, -1\n\t"
+            "csetw $dst, NE\t# VectorTest (sve) - anytrue" %}
+  ins_encode %{
+    // "src2" is not used for sve.
+    BasicType bt = vector_element_basic_type(this, $src1);
+    Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), size, ptrue,
+                 as_FloatRegister($src1$$reg), -1);
+    __ csetw(as_Register($dst$$reg), Assembler::NE);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vtest_alltrue_partial(iRegINoSp dst, vReg src1, vReg src2, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() < MaxVectorSize &&
+            static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::overflow);
+  match(Set dst (VectorTest src1 src2));
+  effect(TEMP pTmp, KILL cr);
+  ins_cost(SVE_COST);
+  format %{ "vtest_alltrue_partial $dst, $src1, $src2\t# VectorTest partial (sve) - alltrue" %}
+  ins_encode %{
+    // "src2" is not used for sve.
+    BasicType bt = vector_element_basic_type(this, $src1);
+    Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
+    __ mov(rscratch1, vector_length(this, $src1));
+    __ sve_whilelo(as_PRegister($pTmp$$reg), size, zr, rscratch1);
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), size, as_PRegister($pTmp$$reg),
+                 as_FloatRegister($src1$$reg), 0);
+    __ csetw(as_Register($dst$$reg), Assembler::EQ);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vtest_anytrue_partial(iRegINoSp dst, vReg src1, vReg src2, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() < MaxVectorSize &&
+            static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::ne);
+  match(Set dst (VectorTest src1 src2));
+  effect(TEMP pTmp, KILL cr);
+  ins_cost(SVE_COST);
+  format %{ "vtest_anytrue_partial $dst, $src1, $src2\t# VectorTest partial (sve) - anytrue" %}
+  ins_encode %{
+    // "src2" is not used for sve.
+    BasicType bt = vector_element_basic_type(this, $src1);
+    Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
+    __ mov(rscratch1, vector_length(this, $src1));
+    __ sve_whilelo(as_PRegister($pTmp$$reg), size, zr, rscratch1);
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), size, as_PRegister($pTmp$$reg),
+                 as_FloatRegister($src1$$reg), -1);
+    __ csetw(as_Register($dst$$reg), Assembler::NE);
   %}
   ins_pipe(pipe_slow);
 %}
