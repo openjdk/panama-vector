@@ -222,7 +222,6 @@ source %{
       // Vector API specific
       case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
-      case Op_VectorInsert:
       case Op_VectorLoadConst:
       case Op_VectorLoadShuffle:
       case Op_VectorRearrange:
@@ -1884,3 +1883,42 @@ instruct vtest_$1_partial`'(iRegINoSp dst, vReg src1, vReg src2, pRegGov pTmp, r
 dnl
 VTEST_PARTIAL(alltrue, overflow, 0, EQ)
 VTEST_PARTIAL(anytrue, ne,      -1, NE)
+
+// ------------------------------ Vector insert ---------------------------------
+define(`VECTOR_INSERT', `
+instruct insert$1`'(vReg dst, vReg src, $2 val, immI idx, vReg tmp, vReg tmp2, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($1));
+  match(Set dst (VectorInsert (Binary src val) idx));
+  effect(TEMP tmp, TEMP tmp2, TEMP pTmp, KILL cr);
+  ins_cost(5 * SVE_COST);
+  format %{ "sve_index $tmp, $3, 0, 1\n\t"
+            "sve_dup $tmp2, $3, $idx\n\t"
+            "sve_cmpeq $pTmp, $tmp, $tmp2\n\t"
+            "sve_orr $dst, $src, $src\n\t"
+            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector ($1)" %}
+  ins_encode %{
+    Assembler::SIMD_RegVariant size =
+              elemType_to_regVariant(vector_element_basic_type(this));
+    __ sve_index(as_FloatRegister($tmp$$reg), __ $3, 0, 1);
+    __ sve_dup(as_FloatRegister($tmp2$$reg), __ $3, (int)($idx$$constant));
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), size, ptrue,
+                 as_FloatRegister($tmp$$reg), as_FloatRegister($tmp2$$reg));
+    // If src and dst are the same reg, this move is not needed.
+    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
+      __ sve_orr(as_FloatRegister($dst$$reg),
+             as_FloatRegister($src$$reg),
+             as_FloatRegister($src$$reg));
+    }
+    __ sve_cpy(as_FloatRegister($dst$$reg), __ $3,
+               as_PRegister($pTmp$$reg), as_$4($val$$reg));
+
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl           $1 $2          $3 $4
+VECTOR_INSERT(B, iRegIorL2I, B, Register)
+VECTOR_INSERT(S, iRegIorL2I, H, Register)
+VECTOR_INSERT(I, iRegIorL2I, S, Register)
+VECTOR_INSERT(L, iRegL,      D, Register)

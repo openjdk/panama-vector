@@ -3527,6 +3527,23 @@ public:
   INSN(sve_lastb, 0b1);
 #undef INSN
 
+// SVE cpy general-purpose register
+  void sve_cpy(FloatRegister Zd, SIMD_RegVariant T, PRegister Pg, Register Rn) {
+    starti;
+    assert(T != Q, "invalid size");
+    f(0b00000101, 31, 24), f(T, 23, 22), f(0b101000101, 21, 13);
+    pgrf(Pg, 10), srf(Rn, 5), rf(Zd, 0);
+  }
+
+// SVE INDEX (immediates)
+  void sve_index(FloatRegister Zd, SIMD_RegVariant T,
+                 int imm1, int imm2) {
+    starti;
+    f(0b00000100, 31, 24), f(T, 23, 22), f(0b1, 21);
+    f(imm2, 20, 16), f(0b010000, 15, 10);
+    f(imm1, 9, 5), rf(Zd, 0);
+  }
+
   Assembler(CodeBuffer* code) : AbstractAssembler(code) {
   }
 

@@ -226,7 +226,6 @@ source %{
       // Vector API specific
       case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
-      case Op_VectorInsert:
       case Op_VectorLoadConst:
       case Op_VectorLoadShuffle:
       case Op_VectorRearrange:
@@ -3173,6 +3172,136 @@ instruct vtest_anytrue_partial(iRegINoSp dst, vReg src1, vReg src2, pRegGov pTmp
     __ sve_cmpeq(as_PRegister($pTmp$$reg), size, as_PRegister($pTmp$$reg),
                  as_FloatRegister($src1$$reg), -1);
     __ csetw(as_Register($dst$$reg), Assembler::NE);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ Vector insert ---------------------------------
+
+instruct insertB(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp, vReg tmp2, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorInsert (Binary src val) idx));
+  effect(TEMP tmp, TEMP tmp2, TEMP pTmp, KILL cr);
+  ins_cost(5 * SVE_COST);
+  format %{ "sve_index $tmp, B, 0, 1\n\t"
+            "sve_dup $tmp2, B, $idx\n\t"
+            "sve_cmpeq $pTmp, $tmp, $tmp2\n\t"
+            "sve_orr $dst, $src, $src\n\t"
+            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (B)" %}
+  ins_encode %{
+    Assembler::SIMD_RegVariant size =
+              elemType_to_regVariant(vector_element_basic_type(this));
+    __ sve_index(as_FloatRegister($tmp$$reg), __ B, 0, 1);
+    __ sve_dup(as_FloatRegister($tmp2$$reg), __ B, (int)($idx$$constant));
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), size, ptrue,
+                 as_FloatRegister($tmp$$reg), as_FloatRegister($tmp2$$reg));
+    // If src and dst are the same reg, this move is not needed.
+    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
+      __ sve_orr(as_FloatRegister($dst$$reg),
+             as_FloatRegister($src$$reg),
+             as_FloatRegister($src$$reg));
+    }
+    __ sve_cpy(as_FloatRegister($dst$$reg), __ B,
+               as_PRegister($pTmp$$reg), as_Register($val$$reg));
+
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct insertS(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp, vReg tmp2, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorInsert (Binary src val) idx));
+  effect(TEMP tmp, TEMP tmp2, TEMP pTmp, KILL cr);
+  ins_cost(5 * SVE_COST);
+  format %{ "sve_index $tmp, H, 0, 1\n\t"
+            "sve_dup $tmp2, H, $idx\n\t"
+            "sve_cmpeq $pTmp, $tmp, $tmp2\n\t"
+            "sve_orr $dst, $src, $src\n\t"
+            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (S)" %}
+  ins_encode %{
+    Assembler::SIMD_RegVariant size =
+              elemType_to_regVariant(vector_element_basic_type(this));
+    __ sve_index(as_FloatRegister($tmp$$reg), __ H, 0, 1);
+    __ sve_dup(as_FloatRegister($tmp2$$reg), __ H, (int)($idx$$constant));
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), size, ptrue,
+                 as_FloatRegister($tmp$$reg), as_FloatRegister($tmp2$$reg));
+    // If src and dst are the same reg, this move is not needed.
+    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
+      __ sve_orr(as_FloatRegister($dst$$reg),
+             as_FloatRegister($src$$reg),
+             as_FloatRegister($src$$reg));
+    }
+    __ sve_cpy(as_FloatRegister($dst$$reg), __ H,
+               as_PRegister($pTmp$$reg), as_Register($val$$reg));
+
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct insertI(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp, vReg tmp2, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorInsert (Binary src val) idx));
+  effect(TEMP tmp, TEMP tmp2, TEMP pTmp, KILL cr);
+  ins_cost(5 * SVE_COST);
+  format %{ "sve_index $tmp, S, 0, 1\n\t"
+            "sve_dup $tmp2, S, $idx\n\t"
+            "sve_cmpeq $pTmp, $tmp, $tmp2\n\t"
+            "sve_orr $dst, $src, $src\n\t"
+            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (I)" %}
+  ins_encode %{
+    Assembler::SIMD_RegVariant size =
+              elemType_to_regVariant(vector_element_basic_type(this));
+    __ sve_index(as_FloatRegister($tmp$$reg), __ S, 0, 1);
+    __ sve_dup(as_FloatRegister($tmp2$$reg), __ S, (int)($idx$$constant));
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), size, ptrue,
+                 as_FloatRegister($tmp$$reg), as_FloatRegister($tmp2$$reg));
+    // If src and dst are the same reg, this move is not needed.
+    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
+      __ sve_orr(as_FloatRegister($dst$$reg),
+             as_FloatRegister($src$$reg),
+             as_FloatRegister($src$$reg));
+    }
+    __ sve_cpy(as_FloatRegister($dst$$reg), __ S,
+               as_PRegister($pTmp$$reg), as_Register($val$$reg));
+
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct insertL(vReg dst, vReg src, iRegL val, immI idx, vReg tmp, vReg tmp2, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  match(Set dst (VectorInsert (Binary src val) idx));
+  effect(TEMP tmp, TEMP tmp2, TEMP pTmp, KILL cr);
+  ins_cost(5 * SVE_COST);
+  format %{ "sve_index $tmp, D, 0, 1\n\t"
+            "sve_dup $tmp2, D, $idx\n\t"
+            "sve_cmpeq $pTmp, $tmp, $tmp2\n\t"
+            "sve_orr $dst, $src, $src\n\t"
+            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (L)" %}
+  ins_encode %{
+    Assembler::SIMD_RegVariant size =
+              elemType_to_regVariant(vector_element_basic_type(this));
+    __ sve_index(as_FloatRegister($tmp$$reg), __ D, 0, 1);
+    __ sve_dup(as_FloatRegister($tmp2$$reg), __ D, (int)($idx$$constant));
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), size, ptrue,
+                 as_FloatRegister($tmp$$reg), as_FloatRegister($tmp2$$reg));
+    // If src and dst are the same reg, this move is not needed.
+    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
+      __ sve_orr(as_FloatRegister($dst$$reg),
+             as_FloatRegister($src$$reg),
+             as_FloatRegister($src$$reg));
+    }
+    __ sve_cpy(as_FloatRegister($dst$$reg), __ D,
+               as_PRegister($pTmp$$reg), as_Register($val$$reg));
+
   %}
   ins_pipe(pipe_slow);
 %}
