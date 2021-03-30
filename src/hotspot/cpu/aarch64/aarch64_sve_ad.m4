@@ -1905,7 +1905,7 @@ instruct insert$1`'(vReg dst, vReg src, $2 val, immI idx, vReg tmp, vReg tmp2, p
     __ sve_dup(as_FloatRegister($tmp2$$reg), __ $3, (int)($idx$$constant));
     __ sve_cmpeq(as_PRegister($pTmp$$reg), size, ptrue,
                  as_FloatRegister($tmp$$reg), as_FloatRegister($tmp2$$reg));
-    // If register is the same, then move is not needed.
+    // If src and dst are the same reg, this move is not needed.
     if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
       __ sve_orr(as_FloatRegister($dst$$reg),
              as_FloatRegister($src$$reg),

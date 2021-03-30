@@ -3197,7 +3197,7 @@ instruct insertB(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp, vReg tm
     __ sve_dup(as_FloatRegister($tmp2$$reg), __ B, (int)($idx$$constant));
     __ sve_cmpeq(as_PRegister($pTmp$$reg), size, ptrue,
                  as_FloatRegister($tmp$$reg), as_FloatRegister($tmp2$$reg));
-    // If register is the same, then move is not needed.
+    // If src and dst are the same reg, this move is not needed.
     if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
       __ sve_orr(as_FloatRegister($dst$$reg),
              as_FloatRegister($src$$reg),
@@ -3229,7 +3229,7 @@ instruct insertS(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp, vReg tm
     __ sve_dup(as_FloatRegister($tmp2$$reg), __ H, (int)($idx$$constant));
     __ sve_cmpeq(as_PRegister($pTmp$$reg), size, ptrue,
                  as_FloatRegister($tmp$$reg), as_FloatRegister($tmp2$$reg));
-    // If register is the same, then move is not needed.
+    // If src and dst are the same reg, this move is not needed.
     if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
       __ sve_orr(as_FloatRegister($dst$$reg),
              as_FloatRegister($src$$reg),
@@ -3261,7 +3261,7 @@ instruct insertI(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp, vReg tm
     __ sve_dup(as_FloatRegister($tmp2$$reg), __ S, (int)($idx$$constant));
     __ sve_cmpeq(as_PRegister($pTmp$$reg), size, ptrue,
                  as_FloatRegister($tmp$$reg), as_FloatRegister($tmp2$$reg));
-    // If register is the same, then move is not needed.
+    // If src and dst are the same reg, this move is not needed.
     if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
       __ sve_orr(as_FloatRegister($dst$$reg),
              as_FloatRegister($src$$reg),
@@ -3293,7 +3293,7 @@ instruct insertL(vReg dst, vReg src, iRegL val, immI idx, vReg tmp, vReg tmp2, p
     __ sve_dup(as_FloatRegister($tmp2$$reg), __ D, (int)($idx$$constant));
     __ sve_cmpeq(as_PRegister($pTmp$$reg), size, ptrue,
                  as_FloatRegister($tmp$$reg), as_FloatRegister($tmp2$$reg));
-    // If register is the same, then move is not needed.
+    // If src and dst are the same reg, this move is not needed.
     if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
       __ sve_orr(as_FloatRegister($dst$$reg),
              as_FloatRegister($src$$reg),

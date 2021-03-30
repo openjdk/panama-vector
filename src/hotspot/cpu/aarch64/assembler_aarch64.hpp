@@ -3537,10 +3537,11 @@ public:
 
 // SVE INDEX (immediates)
   void sve_index(FloatRegister Zd, SIMD_RegVariant T,
-            int16_t imm1, int16_t imm2) {
+                 unsigned imm1, unsigned imm2) {
     starti;
-    f(0b00000100, 31, 24), f(T, 23, 22), f(0b1, 21), f(imm2, 20, 16);
-    f(0b010000, 15, 10), f(imm1, 9, 5), rf(Zd, 0);
+    f(0b00000100, 31, 24), f(T, 23, 22), f(0b1, 21);
+    f(imm2, 20, 16), f(0b010000, 15, 10);
+    f(imm1, 9, 5), rf(Zd, 0);
   }
 
   Assembler(CodeBuffer* code) : AbstractAssembler(code) {
