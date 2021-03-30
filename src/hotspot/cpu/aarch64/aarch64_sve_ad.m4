@@ -1897,7 +1897,7 @@ instruct insert$1`'(vReg dst, vReg src, $2 val, immI idx, vReg tmp, vReg tmp2, p
             "sve_dup $tmp2, $3, $idx\n\t"
             "sve_cmpeq $pTmp, $tmp, $tmp2\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector($1)" %}
+            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector ($1)" %}
   ins_encode %{
     Assembler::SIMD_RegVariant size =
               elemType_to_regVariant(vector_element_basic_type(this));

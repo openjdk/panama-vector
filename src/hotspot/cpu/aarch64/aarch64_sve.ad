@@ -3189,7 +3189,7 @@ instruct insertB(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp, vReg tm
             "sve_dup $tmp2, B, $idx\n\t"
             "sve_cmpeq $pTmp, $tmp, $tmp2\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector(B)" %}
+            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (B)" %}
   ins_encode %{
     Assembler::SIMD_RegVariant size =
               elemType_to_regVariant(vector_element_basic_type(this));
@@ -3221,7 +3221,7 @@ instruct insertS(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp, vReg tm
             "sve_dup $tmp2, H, $idx\n\t"
             "sve_cmpeq $pTmp, $tmp, $tmp2\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector(S)" %}
+            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (S)" %}
   ins_encode %{
     Assembler::SIMD_RegVariant size =
               elemType_to_regVariant(vector_element_basic_type(this));
@@ -3253,7 +3253,7 @@ instruct insertI(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp, vReg tm
             "sve_dup $tmp2, S, $idx\n\t"
             "sve_cmpeq $pTmp, $tmp, $tmp2\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector(I)" %}
+            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (I)" %}
   ins_encode %{
     Assembler::SIMD_RegVariant size =
               elemType_to_regVariant(vector_element_basic_type(this));
@@ -3285,7 +3285,7 @@ instruct insertL(vReg dst, vReg src, iRegL val, immI idx, vReg tmp, vReg tmp2, p
             "sve_dup $tmp2, D, $idx\n\t"
             "sve_cmpeq $pTmp, $tmp, $tmp2\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector(L)" %}
+            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (L)" %}
   ins_encode %{
     Assembler::SIMD_RegVariant size =
               elemType_to_regVariant(vector_element_basic_type(this));
