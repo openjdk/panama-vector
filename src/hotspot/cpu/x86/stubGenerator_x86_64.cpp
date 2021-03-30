@@ -6965,9 +6965,6 @@ address generate_avx_ghash_processBlocks() {
       StubRoutines::_montgomerySquare
         = CAST_FROM_FN_PTR(address, SharedRuntime::montgomery_square);
     }
-    if (UseVectorizedMismatchIntrinsic) {
-      StubRoutines::_vectorizedMismatch = generate_vectorizedMismatch();
-    }
 #ifdef __VECTOR_API_MATH_INTRINSICS_COMMON
     void *libsvml = NULL;
     char ebuf[1024];
@@ -7291,6 +7288,10 @@ address generate_avx_ghash_processBlocks() {
     }
 #endif // __VECTOR_API_MATH_INTRINSICS_COMMON
 #endif // COMPILER2
+
+    if (UseVectorizedMismatchIntrinsic) {
+      StubRoutines::_vectorizedMismatch = generate_vectorizedMismatch();
+    }
   }
 
  public:
