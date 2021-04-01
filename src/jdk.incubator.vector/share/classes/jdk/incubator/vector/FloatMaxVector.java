@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -275,8 +275,8 @@ final class FloatMaxVector extends FloatVector {
 
     @Override
     @ForceInline
-    public FloatMaxVector lanewise(Binary op, Vector<Float> v) {
-        return (FloatMaxVector) super.lanewiseTemplate(op, v);  // specialize
+    public FloatMaxVector lanewise(Binary op, Vector<Float> v, VectorMask<Float> m) {
+        return (FloatMaxVector) super.lanewiseTemplate(op, FloatMaxMask.class, v, (FloatMaxMask) m);  // specialize
     }
 
 
@@ -790,6 +790,13 @@ final class FloatMaxVector extends FloatVector {
     final
     void intoArray0(float[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(float[] a, int offset, VectorMask<Float> m) {
+        super.intoArray0Template(FloatMaxMask.class, a, offset, (FloatMaxMask) m);
     }
 
     @ForceInline

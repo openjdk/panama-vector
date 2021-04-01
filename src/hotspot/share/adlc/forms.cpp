@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2012, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -270,6 +270,7 @@ Form::DataType Form::is_load_from_memory(const char *opType) const {
   if( strcmp(opType,"LoadVector")==0 )  return Form::idealV;
   if( strcmp(opType,"LoadVectorGather")==0 )  return Form::idealV;
   if( strcmp(opType,"LoadVectorMasked")==0 )  return Form::idealV;
+  if( strcmp(opType,"LoadVectorMask")==0 )  return Form::idealV;
   assert( strcmp(opType,"Load") != 0, "Must type Loads" );
   return Form::none;
 }
@@ -288,6 +289,7 @@ Form::DataType Form::is_store_to_memory(const char *opType) const {
   if( strcmp(opType,"StoreVector")==0 )  return Form::idealV;
   if( strcmp(opType,"StoreVectorScatter")==0 )  return Form::idealV;
   if( strcmp(opType,"StoreVectorMasked")==0 )  return Form::idealV;
+  if( strcmp(opType,"StoreVectorMask")==0 )  return Form::idealV;
   assert( strcmp(opType,"Store") != 0, "Must type Stores" );
   return Form::none;
 }

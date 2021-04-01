@@ -1765,6 +1765,10 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
   return true;  // Per default match rules are supported.
 }
 
+const bool Matcher::match_rule_supported_masked_vector(int opcode, int vlen, BasicType bt) {
+  return false;
+}
+
 // x86 supports generic vector operands: vec and legVec.
 const bool Matcher::supports_generic_vector_operands = true;
 

@@ -720,6 +720,23 @@ StoreVectorNode* StoreVectorNode::make(int opc, Node* ctl, Node* mem,
   return new StoreVectorNode(ctl, mem, adr, atyp, val);
 }
 
+Node* StoreVectorNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+  // StoreVectorNode (VectorStoreMask src)  ==>  (StoreVectorMask src).
+  Node* value = in(MemNode::ValueIn);
+  if (value->Opcode() == Op_VectorStoreMask) {
+    assert(this->vect_type()->element_basic_type() == T_BOOLEAN, "Invalid basic type to store mask");
+    if (Matcher::match_rule_supported(Op_StoreVectorMask)) {
+      const TypeVect* type = value->in(1)->bottom_type()->is_vect();
+      const TypeVect* mem_type = TypeVect::make(T_BOOLEAN, type->length());
+      return new StoreVectorMaskNode(in(MemNode::Control),
+                                     in(MemNode::Memory),
+                                     in(MemNode::Address),
+                                     adr_type(), value->in(1), mem_type);
+    }
+  }
+  return StoreNode::Ideal(phase, can_reshape);
+}
+
 Node* LoadVectorMaskedNode::Ideal(PhaseGVN* phase, bool can_reshape) {
   Node* mask_len = in(3)->in(1);
   const TypeLong* ty = phase->type(mask_len)->isa_long();
@@ -752,7 +769,33 @@ Node* StoreVectorMaskedNode::Ideal(PhaseGVN* phase, bool can_reshape) {
       return phase->transform(new StoreVectorNode(ctr, mem, adr, adr_type(), val));
     }
   }
-  return NULL;
+  return StoreNode::Ideal(phase, can_reshape);
+}
+
+const TypeVect* StoreVectorMaskedNode::vect_type() const {
+  Node* value = in(MemNode::ValueIn);
+  if (value->bottom_type()->isa_vect() != NULL) {
+    return value->bottom_type()->is_vect();
+  }
+  // The value input is actually a BinaryNode, which has two inputs value and mask.
+  return value->in(1)->bottom_type()->is_vect();
+}
+
+Node* VectorToMaskNode::Identity(PhaseGVN* phase) {
+  // VectorToMask (MaskToVector mask)  ==>  mask
+  if (in(1)->Opcode() == Op_MaskToVector) {
+    return in(1)->in(1);
+  }
+  return this;
+}
+
+VectorBlendNode* VectorBlendNode::make(PhaseGVN& gvn, Node* vec1, Node* vec2, Node* mask) {
+  if (Matcher::match_rule_supported(Op_VectorToMask) && !mask->is_VectorMask()) {
+    const TypeVect* vtype = mask->bottom_type()->is_vect();
+    const TypeVMask* vmask_type = TypeVMask::make(vtype->element_basic_type(), vtype->length());
+    mask = gvn.transform(new VectorToMaskNode(mask, vmask_type));
+  }
+  return new VectorBlendNode(vec1, vec2, mask);
 }
 
 int ExtractNode::opcode(BasicType bt) {
@@ -971,6 +1014,21 @@ ReductionNode* ReductionNode::make(int opc, Node *ctrl, Node* n1, Node* n2, Basi
   }
 }
 
+Node* VectorLoadMaskNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+  // VectorLoadMask (LoadVector src)  ==>  (LoadVectorMask src).
+  LoadVectorNode* load = this->in(1)->isa_LoadVector();
+  BasicType out_bt = type()->is_vect()->element_basic_type();
+  if (load != NULL && Matcher::match_rule_supported(Op_LoadVectorMask)) {
+    const TypeVect* mem_type = TypeVect::make(T_BOOLEAN, length());
+    const TypeVect* type = TypeVect::make(out_bt, length());
+    return new LoadVectorMaskNode(load->in(MemNode::Control),
+                                  load->in(MemNode::Memory),
+                                  load->in(MemNode::Address),
+                                  load->adr_type(), type, mem_type);
+  }
+  return NULL;
+}
+
 Node* VectorLoadMaskNode::Identity(PhaseGVN* phase) {
   BasicType out_bt = type()->is_vect()->element_basic_type();
   if (out_bt == T_BOOLEAN) {
@@ -1185,6 +1243,19 @@ Node* RotateRightVNode::Ideal(PhaseGVN* phase, bool can_reshape) {
   if ((!in(2)->is_Con() && !Matcher::supports_vector_variable_rotates()) ||
        !Matcher::match_rule_supported_vector(Op_RotateRightV, vlen, bt)) {
     return VectorNode::degenerate_vector_rotate(in(1), in(2), false, vlen, bt, phase);
+  }
+  return NULL;
+}
+
+Node* VectorMaskCmpNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+  // Generate the mask specific compare node if backend supported.
+  // (VectorMaskCmp src1 src2 cond)  ==> MaskToVector (VectorCmpMaskGen src1 src2 cond)
+  if (Matcher::match_rule_supported(Op_VectorCmpMaskGen) &&
+      Matcher::match_rule_supported(Op_MaskToVector)) {
+    const TypeVect* vtype = vect_type();
+    const TypeVMask* vmask_type = TypeVMask::make(vtype->element_basic_type(), vtype->length());
+    Node* cmp = phase->transform(new VectorCmpMaskGenNode(in(1), in(2), (ConINode*) in(3), vmask_type));
+    return new MaskToVectorNode(cmp, vtype);
   }
   return NULL;
 }

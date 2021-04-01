@@ -2314,6 +2314,17 @@ bool Matcher::find_shared_visit(MStack& mstack, Node* n, uint opcode, bool& mem_
 }
 
 void Matcher::find_shared_post_visit(Node* n, uint opcode) {
+  if (n->is_Vector() && (n->req() == 4) && n->in(3)->is_VectorMask()) {
+    // TODO: unary op
+    // Handle op with mask
+    Node* pair = new BinaryNode(n->in(1), n->in(2));
+    Node* mask = n->in(3);
+    n->set_req(1, pair);
+    n->set_req(2, mask);
+    n->del_req(3);
+    return;
+  }
+
   switch(opcode) {       // Handle some opcodes special
     case Op_StorePConditional:
     case Op_StoreIConditional:
@@ -2453,7 +2464,8 @@ void Matcher::find_shared_post_visit(Node* n, uint opcode) {
       n->del_req(MemNode::ValueIn+1);
       break;
     }
-    case Op_VectorMaskCmp: {
+    case Op_VectorMaskCmp:
+    case Op_VectorCmpMaskGen: {
       n->set_req(1, new BinaryNode(n->in(1), n->in(2)));
       n->set_req(2, n->in(3));
       n->del_req(3);

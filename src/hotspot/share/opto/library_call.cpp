@@ -634,6 +634,8 @@ bool LibraryCallKit::try_to_inline(int predicate) {
     return inline_vector_nary_operation(2);
   case vmIntrinsics::_VectorTernaryOp:
     return inline_vector_nary_operation(3);
+  case vmIntrinsics::_VectorBinaryMaskOp:
+    return inline_vector_nary_mask_operation(2);
   case vmIntrinsics::_VectorBroadcastCoerced:
     return inline_vector_broadcast_coerced();
   case vmIntrinsics::_VectorShuffleIota:
@@ -644,6 +646,8 @@ bool LibraryCallKit::try_to_inline(int predicate) {
     return inline_vector_mem_operation(/*is_store=*/false);
   case vmIntrinsics::_VectorStoreOp:
     return inline_vector_mem_operation(/*is_store=*/true);
+  case vmIntrinsics::_VectorStoreMaskedOp:
+    return inline_vector_mem_masked_operation(/*is_store=*/true);
   case vmIntrinsics::_VectorGatherOp:
     return inline_vector_gather_scatter(/*is_scatter*/ false);
   case vmIntrinsics::_VectorScatterOp:
