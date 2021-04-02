@@ -1955,6 +1955,4 @@ dnl           $1 $2          $3 $4
 VECTOR_INSERT(B, iRegIorL2I, B, Register)
 VECTOR_INSERT(S, iRegIorL2I, H, Register)
 VECTOR_INSERT(I, iRegIorL2I, S, Register)
-VECTOR_INSERT(L, iRegL,      D, Register)
 VECTOR_INSERT(F, vRegF,      S, FloatRegister)
-VECTOR_INSERT(D, vRegD,      D, FloatRegister)
