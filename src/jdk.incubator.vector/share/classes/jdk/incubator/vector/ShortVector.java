@@ -1767,17 +1767,27 @@ public abstract class ShortVector extends AbstractVector<Short> {
     }
 
     @ForceInline
-    private static
-    boolean compareWithOp(int cond, short a, short b) {
-        switch (cond) {
-        case BT_eq:  return a == b;
-        case BT_ne:  return a != b;
-        case BT_lt:  return a <  b;
-        case BT_le:  return a <= b;
-        case BT_gt:  return a >  b;
-        case BT_ge:  return a >= b;
+    private static boolean compareWithOp(int cond, short a, short b) {
+        boolean signed = (cond & VECTOR_OP_COMPARE_UNSIGNED) == 0;
+        if (signed) {
+            return switch (cond) {
+                case BT_eq -> a == b;
+                case BT_ne -> a != b;
+                case BT_lt -> a < b;
+                case BT_le -> a <= b;
+                case BT_gt -> a > b;
+                case BT_ge -> a >= b;
+                default -> throw new AssertionError();
+            };
+        } else {
+            return switch (cond & (VECTOR_OP_COMPARE_UNSIGNED - 1)) {
+                case BT_lt -> Short.compareUnsigned(a, b) < 0;
+                case BT_le -> Short.compareUnsigned(a, b) <= 0;
+                case BT_gt -> Short.compareUnsigned(a, b) > 0;
+                case BT_ge -> Short.compareUnsigned(a, b) >= 0;
+                default -> throw new AssertionError();
+            };
         }
-        throw new AssertionError();
     }
 
     /**

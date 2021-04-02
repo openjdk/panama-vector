@@ -563,7 +563,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] < bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= (as[i] lt bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -578,7 +578,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] > bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= (as[i] gt bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -593,7 +593,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] == bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= (as[i] eq bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -608,7 +608,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] != bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= (as[i] neq bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -623,7 +623,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] <= bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= (as[i] le bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -638,12 +638,16 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] >= bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= (as[i] ge bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
         bh.consume(r);
     }
+
+
+
+
 
     @Benchmark
     public void blend(Blackhole bh) {

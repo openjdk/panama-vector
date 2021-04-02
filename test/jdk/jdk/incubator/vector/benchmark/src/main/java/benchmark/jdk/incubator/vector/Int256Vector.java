@@ -1194,6 +1194,94 @@ public class Int256Vector extends AbstractVectorBenchmark {
         return m;
     }
 
+
+    @Benchmark
+    public Object UNSIGNED_LT() {
+        int[] a = fa.apply(size);
+        int[] b = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<Integer> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                IntVector bv = IntVector.fromArray(SPECIES, b, i);
+
+                // accumulate results, so JIT can't eliminate relevant computations
+                m = m.and(av.compare(VectorOperators.UNSIGNED_LT, bv));
+            }
+        }
+
+        return m;
+    }
+
+
+
+    @Benchmark
+    public Object UNSIGNED_GT() {
+        int[] a = fa.apply(size);
+        int[] b = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<Integer> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                IntVector bv = IntVector.fromArray(SPECIES, b, i);
+
+                // accumulate results, so JIT can't eliminate relevant computations
+                m = m.and(av.compare(VectorOperators.UNSIGNED_GT, bv));
+            }
+        }
+
+        return m;
+    }
+
+
+
+    @Benchmark
+    public Object UNSIGNED_LE() {
+        int[] a = fa.apply(size);
+        int[] b = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<Integer> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                IntVector bv = IntVector.fromArray(SPECIES, b, i);
+
+                // accumulate results, so JIT can't eliminate relevant computations
+                m = m.and(av.compare(VectorOperators.UNSIGNED_LE, bv));
+            }
+        }
+
+        return m;
+    }
+
+
+
+    @Benchmark
+    public Object UNSIGNED_GE() {
+        int[] a = fa.apply(size);
+        int[] b = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<Integer> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                IntVector bv = IntVector.fromArray(SPECIES, b, i);
+
+                // accumulate results, so JIT can't eliminate relevant computations
+                m = m.and(av.compare(VectorOperators.UNSIGNED_GE, bv));
+            }
+        }
+
+        return m;
+    }
+
+
     @Benchmark
     public void blend(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());

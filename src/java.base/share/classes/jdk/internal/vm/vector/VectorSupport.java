@@ -89,15 +89,20 @@ public class VectorSupport {
     public static final int VECTOR_OP_EXPM1 = 117;
     public static final int VECTOR_OP_HYPOT = 118;
 
-    // enum BoolTest
-    public static final int BT_eq = 0;
-    public static final int BT_ne = 4;
-    public static final int BT_le = 5;
-    public static final int BT_ge = 7;
-    public static final int BT_lt = 3;
-    public static final int BT_gt = 1;
-    public static final int BT_overflow = 2;
-    public static final int BT_no_overflow = 6;
+    // See src/hotspot/share/opto/subnode.hpp
+    //     struct BoolTest, and enclosed enum mask
+    public static final int BT_eq = 0;  // 0000
+    public static final int BT_ne = 4;  // 0100
+    public static final int BT_le = 5;  // 0101
+    public static final int BT_ge = 7;  // 0111
+    public static final int BT_lt = 3;  // 0011
+    public static final int BT_gt = 1;  // 0001
+    public static final int BT_overflow = 2;     // 0010
+    public static final int BT_no_overflow = 6;  // 0110
+    // never = 8    1000
+    // illegal = 9  1001
+    // Applies to BT_le, BT_ge, BT_lt, BT_gt
+    public static final int VECTOR_OP_COMPARE_UNSIGNED = 0b10000;
 
     // BasicType codes, for primitives only:
     public static final int

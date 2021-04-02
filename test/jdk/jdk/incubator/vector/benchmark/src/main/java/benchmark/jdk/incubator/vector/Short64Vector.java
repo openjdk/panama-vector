@@ -1194,6 +1194,94 @@ public class Short64Vector extends AbstractVectorBenchmark {
         return m;
     }
 
+
+    @Benchmark
+    public Object UNSIGNED_LT() {
+        short[] a = fa.apply(size);
+        short[] b = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<Short> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                ShortVector bv = ShortVector.fromArray(SPECIES, b, i);
+
+                // accumulate results, so JIT can't eliminate relevant computations
+                m = m.and(av.compare(VectorOperators.UNSIGNED_LT, bv));
+            }
+        }
+
+        return m;
+    }
+
+
+
+    @Benchmark
+    public Object UNSIGNED_GT() {
+        short[] a = fa.apply(size);
+        short[] b = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<Short> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                ShortVector bv = ShortVector.fromArray(SPECIES, b, i);
+
+                // accumulate results, so JIT can't eliminate relevant computations
+                m = m.and(av.compare(VectorOperators.UNSIGNED_GT, bv));
+            }
+        }
+
+        return m;
+    }
+
+
+
+    @Benchmark
+    public Object UNSIGNED_LE() {
+        short[] a = fa.apply(size);
+        short[] b = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<Short> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                ShortVector bv = ShortVector.fromArray(SPECIES, b, i);
+
+                // accumulate results, so JIT can't eliminate relevant computations
+                m = m.and(av.compare(VectorOperators.UNSIGNED_LE, bv));
+            }
+        }
+
+        return m;
+    }
+
+
+
+    @Benchmark
+    public Object UNSIGNED_GE() {
+        short[] a = fa.apply(size);
+        short[] b = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<Short> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                ShortVector bv = ShortVector.fromArray(SPECIES, b, i);
+
+                // accumulate results, so JIT can't eliminate relevant computations
+                m = m.and(av.compare(VectorOperators.UNSIGNED_GE, bv));
+            }
+        }
+
+        return m;
+    }
+
+
     @Benchmark
     public void blend(Blackhole bh) {
         short[] a = fa.apply(SPECIES.length());

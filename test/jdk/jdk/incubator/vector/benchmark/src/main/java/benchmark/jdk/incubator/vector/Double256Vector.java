@@ -724,6 +724,10 @@ public class Double256Vector extends AbstractVectorBenchmark {
         return m;
     }
 
+
+
+
+
     @Benchmark
     public void blend(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
