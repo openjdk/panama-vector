@@ -7,7 +7,7 @@
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] [[TEST_OP]] bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= [[TEST_OP]](as[i], bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
