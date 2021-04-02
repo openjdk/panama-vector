@@ -1203,7 +1203,7 @@ bool LibraryCallKit::inline_vector_compare() {
   if ((cond->get_con() & 0x10) != 0) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** not supported: unsigned comparison op=comp/%d vlen=%d etype=%s ismask=usestore",
-                    cond->get_con() & 0x01, num_elem, type2name(elem_bt));
+                    cond->get_con() & 0x0F, num_elem, type2name(elem_bt));
     }
     return false;
   }
