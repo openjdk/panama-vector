@@ -52,7 +52,6 @@ operand vmemA_immLOffset4()
   interface(CONST_INTER);
 %}
 
-
 operand vmemA_indOffI4(iRegP reg, vmemA_immIOffset4 off)
 %{
   constraint(ALLOC_IN_RC(ptr_reg));
@@ -88,7 +87,6 @@ source_hpp %{
 %}
 
 source %{
-
   static inline BasicType vector_element_basic_type(const MachNode* n) {
     const TypeVect* vt = n->bottom_type()->is_vect();
     return vt->element_basic_type();
@@ -234,13 +232,11 @@ source %{
         return true;
     }
   }
-
 %}
 
 definitions %{
   int_def SVE_COST             (200, 200);
 %}
-
 
 
 // All SVE instructions
