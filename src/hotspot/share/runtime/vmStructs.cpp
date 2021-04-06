@@ -1865,8 +1865,6 @@ typedef HashtableEntry<InstanceKlass*, mtClass>  KlassHashtableEntry;
   declare_c2_type(SignumDNode, Node)                                      \
   declare_c2_type(SignumFNode, Node)                                      \
   declare_c2_type(LoadVectorGatherNode, LoadVectorNode)                   \
-  declare_c2_type(LoadVectorMaskNode, LoadVectorNode)                     \
-  declare_c2_type(StoreVectorMaskNode, StoreVectorNode)                   \
   declare_c2_type(StoreVectorScatterNode, StoreVectorNode)                \
   declare_c2_type(VectorLoadMaskNode, VectorNode)                         \
   declare_c2_type(VectorLoadShuffleNode, VectorNode)                      \
@@ -1884,14 +1882,9 @@ typedef HashtableEntry<InstanceKlass*, mtClass>  KlassHashtableEntry;
   declare_c2_type(VectorInsertNode, VectorNode)                           \
   declare_c2_type(VectorUnboxNode, VectorNode)                            \
   declare_c2_type(VectorReinterpretNode, VectorNode)                      \
-  declare_c2_type(MaskToVectorNode, VectorNode)                           \
   declare_c2_type(VectorBoxNode, Node)                                    \
   declare_c2_type(VectorBoxAllocateNode, CallStaticJavaNode)              \
   declare_c2_type(VectorTestNode, Node)                                   \
-  declare_c2_type(VectorMaskNode, TypeNode)                               \
-  declare_c2_type(VectorCmpMaskGenNode, VectorMaskNode)                   \
-  declare_c2_type(VectorToMaskNode, VectorMaskNode)                       \
-  declare_c2_type(MaskAllNode, VectorMaskNode)                            \
                                                                           \
   /*********************/                                                 \
   /* Adapter Blob Entries */                                              \

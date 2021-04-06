@@ -99,10 +99,7 @@ class RegisterSaver {
   int reg_offset_in_bytes(Register r);
   int r0_offset_in_bytes()    { return reg_offset_in_bytes(r0); }
   int rscratch1_offset_in_bytes()    { return reg_offset_in_bytes(rscratch1); }
-  int v0_offset_in_bytes();
-
-  // Total stack size in bytes for saving sve predicate registers.
-  int total_sve_predicate_in_bytes();
+  int v0_offset_in_bytes(void)   { return 0; }
 
   // Capture info about frame layout
   // Note this is only correct when not saving full vectors.
@@ -140,49 +137,24 @@ int RegisterSaver::reg_offset_in_bytes(Register r) {
   }
 #endif
 
-  int r0_offset = v0_offset_in_bytes() + (slots_per_vect * FloatRegisterImpl::number_of_registers) * BytesPerInt;
+  int r0_offset = (slots_per_vect * FloatRegisterImpl::number_of_registers) * BytesPerInt;
   return r0_offset + r->encoding() * wordSize;
-}
-
-int RegisterSaver::v0_offset_in_bytes() {
-  // The floating point registers are located above the predicate registers if
-  // they are present in the stack frame pushed by save_live_registers(). So the
-  // offset depends on the saved total predicate vectors in the stack frame.
-  return (total_sve_predicate_in_bytes() / VMRegImpl::stack_slot_size) * BytesPerInt;
-}
-
-int RegisterSaver::total_sve_predicate_in_bytes() {
-#if COMPILER2
-  if (_save_vectors && Matcher::supports_scalable_vector()) {
-    // The number of total predicate bytes is unlikely to be a multiple
-    // of 16 bytes so we manually align it up.
-    return align_up(Matcher::scalable_predicate_reg_slots() *
-                    VMRegImpl::stack_slot_size *
-                    PRegisterImpl::number_of_saved_registers, 16);
-  }
-#endif
-  return 0;
 }
 
 OopMap* RegisterSaver::save_live_registers(MacroAssembler* masm, int additional_frame_words, int* total_frame_words) {
   bool use_sve = false;
   int sve_vector_size_in_bytes = 0;
   int sve_vector_size_in_slots = 0;
-  int sve_predicate_size_in_slots = 0;
-  int total_predicate_in_bytes = total_sve_predicate_in_bytes();
-  int total_predicate_in_slots = total_predicate_in_bytes / VMRegImpl::stack_slot_size;
 
 #ifdef COMPILER2
   use_sve = Matcher::supports_scalable_vector();
-  if (use_sve) {
-    sve_vector_size_in_bytes = Matcher::scalable_vector_reg_size(T_BYTE);
-    sve_vector_size_in_slots = Matcher::scalable_vector_reg_size(T_FLOAT);
-    sve_predicate_size_in_slots = Matcher::scalable_predicate_reg_slots();
-  }
+  sve_vector_size_in_bytes = Matcher::scalable_vector_reg_size(T_BYTE);
+  sve_vector_size_in_slots = Matcher::scalable_vector_reg_size(T_FLOAT);
 #endif
 
 #if COMPILER2_OR_JVMCI
   if (_save_vectors) {
+    int vect_words = 0;
     int extra_save_slots_per_register = 0;
     // Save upper half of vector registers
     if (use_sve) {
@@ -190,10 +162,9 @@ OopMap* RegisterSaver::save_live_registers(MacroAssembler* masm, int additional_
     } else {
       extra_save_slots_per_register = FloatRegisterImpl::extra_save_slots_per_neon_register;
     }
-    int extra_vector_bytes = extra_save_slots_per_register *
-                             VMRegImpl::stack_slot_size *
-                             FloatRegisterImpl::number_of_registers;
-    additional_frame_words += ((extra_vector_bytes + total_predicate_in_bytes) / wordSize);
+    vect_words = FloatRegisterImpl::number_of_registers * extra_save_slots_per_register /
+                 VMRegImpl::slots_per_word;
+    additional_frame_words += vect_words;
   }
 #else
   assert(!_save_vectors, "vectors are generated only by C2 and JVMCI");
@@ -211,7 +182,7 @@ OopMap* RegisterSaver::save_live_registers(MacroAssembler* masm, int additional_
 
   // Save Integer and Float registers.
   __ enter();
-  __ push_CPU_state(_save_vectors, use_sve, sve_vector_size_in_bytes, total_predicate_in_bytes);
+  __ push_CPU_state(_save_vectors, use_sve, sve_vector_size_in_bytes);
 
   // Set an oopmap for the call site.  This oopmap will map all
   // oop-registers and debug-info registers as callee-saved.  This
@@ -228,7 +199,8 @@ OopMap* RegisterSaver::save_live_registers(MacroAssembler* masm, int additional_
       // Register slots are 8 bytes wide, 32 floating-point registers.
       int sp_offset = RegisterImpl::max_slots_per_register * i +
                       FloatRegisterImpl::save_slots_per_register * FloatRegisterImpl::number_of_registers;
-      oop_map->set_callee_saved(VMRegImpl::stack2reg(sp_offset + additional_frame_slots), r->as_VMReg());
+      oop_map->set_callee_saved(VMRegImpl::stack2reg(sp_offset + additional_frame_slots),
+                                r->as_VMReg());
     }
   }
 
@@ -236,20 +208,13 @@ OopMap* RegisterSaver::save_live_registers(MacroAssembler* masm, int additional_
     FloatRegister r = as_FloatRegister(i);
     int sp_offset = 0;
     if (_save_vectors) {
-      sp_offset = use_sve ? (total_predicate_in_slots + sve_vector_size_in_slots * i) :
+      sp_offset = use_sve ? (sve_vector_size_in_slots * i) :
                             (FloatRegisterImpl::slots_per_neon_register * i);
     } else {
       sp_offset = FloatRegisterImpl::save_slots_per_register * i;
     }
-    oop_map->set_callee_saved(VMRegImpl::stack2reg(sp_offset), r->as_VMReg());
-  }
-
-  if (_save_vectors && use_sve) {
-    for (int i = 0; i < PRegisterImpl::number_of_saved_registers; i++) {
-      PRegister r = as_PRegister(i);
-      int sp_offset = sve_predicate_size_in_slots * i;
-      oop_map->set_callee_saved(VMRegImpl::stack2reg(sp_offset), r->as_VMReg());
-    }
+    oop_map->set_callee_saved(VMRegImpl::stack2reg(sp_offset),
+                              r->as_VMReg());
   }
 
   return oop_map;
@@ -258,7 +223,7 @@ OopMap* RegisterSaver::save_live_registers(MacroAssembler* masm, int additional_
 void RegisterSaver::restore_live_registers(MacroAssembler* masm) {
 #ifdef COMPILER2
   __ pop_CPU_state(_save_vectors, Matcher::supports_scalable_vector(),
-                   Matcher::scalable_vector_reg_size(T_BYTE), total_sve_predicate_in_bytes());
+                   Matcher::scalable_vector_reg_size(T_BYTE));
 #else
 #if !INCLUDE_JVMCI
   assert(!_save_vectors, "vectors are generated only by C2 and JVMCI");

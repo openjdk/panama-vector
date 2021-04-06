@@ -448,12 +448,12 @@ bool LibraryCallKit::inline_vector_nary_mask_operation(int n) {
 
   // "argument(n + 5)" should be the mask object. We assume it is "null" when no mask
   // is used to control this operation.
-  bool use_mask = gvn().type(argument(n + 5)) != TypePtr::NULL_PTR;
+  bool is_masked_op = gvn().type(argument(n + 5)) != TypePtr::NULL_PTR;
   if (is_vector_mask(vbox_klass)) {
-    assert(!use_mask, "mask operations do not need mask to control");
+    assert(!is_masked_op, "mask operations do not need mask to control");
   }
 
-  if (use_mask && !is_klass_initialized(mask_klass)) {
+  if (is_masked_op && !is_klass_initialized(mask_klass)) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** mask klass argument not initialized");
     }
@@ -484,7 +484,7 @@ bool LibraryCallKit::inline_vector_nary_mask_operation(int n) {
 
   // When using mask, mask use type needs to be VecMaskUseLoad.
   VectorMaskUseType mask_use_type = is_vector_mask(vbox_klass) ? VecMaskUseAll
-                                      : use_mask ? VecMaskUseLoad : VecMaskNotUsed;
+                                      : is_masked_op ? VecMaskUseLoad : VecMaskNotUsed;
   if ((sopc != 0) && !arch_supports_vector(sopc, num_elem, elem_bt, mask_use_type)) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** not supported: arity=%d opc=%d vlen=%d etype=%s ismask=%d",
@@ -533,18 +533,25 @@ bool LibraryCallKit::inline_vector_nary_mask_operation(int n) {
   }
 
   Node* mask = NULL;
-  if (use_mask) {
+  bool use_predicate = false;
+  if (is_masked_op) {
     ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
     assert(is_vector_mask(mbox_klass), "argument(2) should be a mask class");
     const TypeInstPtr* mbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, mbox_klass);
     mask = unbox_vector(argument(n + 5), mbox_type, elem_bt, num_elem);
     if (mask == NULL) {
-        if (C->print_intrinsics()) {
-          tty->print_cr("  ** unbox failed mask=%s",
-                        NodeClassNames[argument(n + 5)->Opcode()]);
-        }
-        return false;
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** unbox failed mask=%s",
+                      NodeClassNames[argument(n + 5)->Opcode()]);
       }
+      return false;
+    }
+
+    // Return true if current platform has implemented the masked operation with predicate feature.
+    use_predicate = sopc != 0 && Matcher::match_rule_supported_masked_vector(sopc, num_elem, elem_bt);
+    if (!use_predicate && !arch_supports_vector(Op_VectorBlend, num_elem, elem_bt, VecMaskUseLoad)) {
+      return false;
+    }
   }
 
   Node* operation = NULL;
@@ -573,20 +580,12 @@ bool LibraryCallKit::inline_vector_nary_mask_operation(int n) {
     }
   }
 
-  // Currently just focus on binary mask operation.
-  if (n == 2 && mask != NULL) {
-    if (sopc != 0 &&
-        Matcher::match_rule_supported_masked_vector(sopc, num_elem, elem_bt) &&
-        Matcher::match_rule_supported(Op_VectorToMask)) {
-      const TypeVMask* vmask_type = TypeVMask::make(elem_bt, num_elem);
-      mask = gvn().transform(new VectorToMaskNode(mask, vmask_type));
-      operation->add_req(mask);
+  if (is_masked_op && mask != NULL) {
+    if (use_predicate) {
+      // TODO: add predicate implementation for masked operation.
     } else {
-      // TODO: arch match rule support check for "Op_VectorBlend"
-      operation = VectorBlendNode::make(gvn(), opd1, operation, mask);
+      operation = new VectorBlendNode(opd1, operation, mask);
     }
-  } else {
-    assert(mask == NULL, "unsupported mask operation");
   }
   operation = gvn().transform(operation);
 
@@ -682,7 +681,7 @@ bool LibraryCallKit::inline_vector_shuffle_iota() {
     // Make the indices greater than lane count as -ve values. This matches the java side implementation.
     res = gvn().transform(VectorNode::make(Op_AndI, res, bcast_mod, num_elem, elem_bt));
     Node * biased_val = gvn().transform(VectorNode::make(Op_SubI, res, bcast_lane_cnt, num_elem, elem_bt));
-    res = gvn().transform(VectorBlendNode::make(gvn(), biased_val, res, mask));
+    res = gvn().transform(new VectorBlendNode(biased_val, res, mask));
   }
 
   ciKlass* sbox_klass = shuffle_klass->const_oop()->as_instance()->java_lang_Class_klass();
@@ -803,49 +802,37 @@ bool LibraryCallKit::inline_vector_broadcast_coerced() {
   }
 
   Node* bits = argument(3); // long
-  Node* node = NULL;
-  const TypeLong* value = gvn().type(bits)->is_long();
-  if (is_vector_mask(vbox_klass) &&
-     value->is_con() && (value->get_con() == -1 || value->get_con() == 0) &&
-     arch_supports_vector(Op_MaskAll, num_elem, elem_bt, VecMaskNotUsed)) {
-     ConLNode* con = (ConLNode*)gvn().makecon(value);
-     node = gvn().transform(new MaskAllNode(con, TypeVMask::make(elem_bt, num_elem)));
-     // TODO: remove the conversion once reboxing for predicate is supported.
-     node = gvn().transform(new MaskToVectorNode(node, TypeVect::make(elem_bt, num_elem)));
-  }
 
-  if (node == NULL) {
-    Node* elem = NULL;
-    switch (elem_bt) {
-      case T_BOOLEAN: // fall-through
-      case T_BYTE:    // fall-through
-      case T_SHORT:   // fall-through
-      case T_CHAR:    // fall-through
-      case T_INT: {
-        elem = gvn().transform(new ConvL2INode(bits));
-        break;
-      }
-      case T_DOUBLE: {
-        elem = gvn().transform(new MoveL2DNode(bits));
-        break;
-      }
-      case T_FLOAT: {
-        bits = gvn().transform(new ConvL2INode(bits));
-        elem = gvn().transform(new MoveI2FNode(bits));
-        break;
-      }
-      case T_LONG: {
-        elem = bits; // no conversion needed
-        break;
-      }
-      default: fatal("%s", type2name(elem_bt));
+  Node* elem = NULL;
+  switch (elem_bt) {
+    case T_BOOLEAN: // fall-through
+    case T_BYTE:    // fall-through
+    case T_SHORT:   // fall-through
+    case T_CHAR:    // fall-through
+    case T_INT: {
+      elem = gvn().transform(new ConvL2INode(bits));
+      break;
     }
-
-    node = VectorNode::scalar2vector(elem, num_elem, Type::get_const_basic_type(elem_bt));
-    node = gvn().transform(node);
+    case T_DOUBLE: {
+      elem = gvn().transform(new MoveL2DNode(bits));
+      break;
+    }
+    case T_FLOAT: {
+      bits = gvn().transform(new ConvL2INode(bits));
+      elem = gvn().transform(new MoveI2FNode(bits));
+      break;
+    }
+    case T_LONG: {
+      elem = bits; // no conversion needed
+      break;
+    }
+    default: fatal("%s", type2name(elem_bt));
   }
 
-  Node* box = box_vector(node, vbox_type, elem_bt, num_elem);
+  Node* broadcast = VectorNode::scalar2vector(elem, num_elem, Type::get_const_basic_type(elem_bt));
+  broadcast = gvn().transform(broadcast);
+
+  Node* box = box_vector(broadcast, vbox_type, elem_bt, num_elem);
   set_result(box);
   C->set_max_vector_size(MAX2(C->max_vector_size(), (uint)(num_elem * type2aelembytes(elem_bt))));
   return true;
@@ -1144,17 +1131,12 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
       return false;
     }
 
-    if (Matcher::match_rule_supported(Op_VectorToMask)) {
-      const TypeVMask* vmask_type = TypeVMask::make(elem_bt, num_elem);
-      mask = gvn().transform(new VectorToMaskNode(mask, vmask_type));
-    }
-
     set_all_memory(reset_memory());
     Node* vstore = gvn().transform(new StoreVectorMaskedNode(control(), memory(addr), addr, val, addr_type, mask));
     set_memory(vstore, addr_type);
   } else {
     // TODO: mask support for load op.
-    assert(is_store, "unimplemented load mask");
+    assert(false, "unimplemented masked memory operation");
   }
 
   if (can_access_non_heap) {
@@ -1509,7 +1491,7 @@ bool LibraryCallKit::inline_vector_blend() {
     return false; // operand unboxing failed
   }
 
-  Node* blend = gvn().transform(VectorBlendNode::make(gvn(), v1, v2, mask));
+  Node* blend = gvn().transform(new VectorBlendNode(v1, v2, mask));
 
   Node* box = box_vector(blend, vbox_type, elem_bt, num_elem);
   set_result(box);

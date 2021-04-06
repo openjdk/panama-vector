@@ -758,7 +758,6 @@ class StoreVectorNode : public StoreNode {
   static StoreVectorNode* make(int opc, Node* ctl, Node* mem,
                                Node* adr, const TypePtr* atyp, Node* val,
                                uint vlen);
-  virtual Node* Ideal(PhaseGVN* phase, bool can_reshape);
 
   uint element_size(void) { return type2aelembytes(vect_type()->element_basic_type()); }
 };
@@ -785,7 +784,8 @@ class StoreVectorMaskedNode : public StoreVectorNode {
  public:
   StoreVectorMaskedNode(Node* c, Node* mem, Node* dst, Node* src, const TypePtr* at, Node* mask)
    : StoreVectorNode(c, mem, dst, at, src) {
-    assert(mask->bottom_type()->isa_long() != NULL || mask->is_Vector() || mask->is_VectorMask(), "sanity");
+    // TDOO: Use mask type as the assertion
+    // assert(mask->bottom_type()->is_long(), "sanity");
     init_class_id(Class_StoreVector);
     set_mismatched_access();
     add_req(mask);
@@ -830,122 +830,6 @@ class VectorMaskGenNode : public TypeNode {
 
   private:
    const Type* _elemType;
-};
-
-// ==========================Mask feature specific==============================
-
-class LoadVectorMaskNode : public LoadVectorNode {
- private:
-  /**
-   * The type of the accessed memory, whose basic element type is T_BOOLEAN for mask vector.
-   * It is different with the basic element type of the node, which can be T_BYTE, T_SHORT,
-   * T_INT, T_LONG, T_FLOAT or T_DOUBLE.
-   **/
-  const TypeVect* _mem_type;
-
- public:
-  LoadVectorMaskNode(Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, const TypeVect* mt)
-   : LoadVectorNode(c, mem, adr, at, vt), _mem_type(mt) {
-    assert(_mem_type->element_basic_type() == T_BOOLEAN, "Memory type must be T_BOOLEAN");
-    init_class_id(Class_LoadVector);
-  }
-
-  virtual int Opcode() const;
-  virtual int memory_size() const { return _mem_type->length_in_bytes(); }
-  virtual int store_Opcode() const { return Op_StoreVectorMask; }
-  virtual uint ideal_reg() const  { return Matcher::vector_ideal_reg(vect_type()->length_in_bytes()); }
-  virtual uint size_of() const { return sizeof(LoadVectorMaskNode); }
-};
-
-class StoreVectorMaskNode : public StoreVectorNode {
- private:
-  /**
-   * The type of the accessed memory, whose basic element type is T_BOOLEAN for mask vector.
-   * It is different with the basic element type of the src value, which can be T_BYTE, T_SHORT,
-   * T_INT, T_LONG, T_FLOAT or T_DOUBLE.
-   **/
-  const TypeVect* _mem_type;
-
- public:
-  StoreVectorMaskNode(Node* c, Node* mem, Node* adr, const TypePtr* at, Node* src, const TypeVect* mt)
-   : StoreVectorNode(c, mem, adr, at, src), _mem_type(mt) {
-    assert(_mem_type->element_basic_type() == T_BOOLEAN, "Memory type must be T_BOOLEAN");
-    init_class_id(Class_StoreVector);
-  }
-
-  virtual int Opcode() const;
-  virtual int memory_size() const { return _mem_type->length_in_bytes(); }
-  virtual uint ideal_reg() const  { return Matcher::vector_ideal_reg(vect_type()->length_in_bytes()); }
-  virtual uint size_of() const { return sizeof(StoreVectorMaskNode); }
-};
-
-class VectorMaskNode : public TypeNode {
- public:
-  VectorMaskNode(Node* in1, const TypeVMask* vmask_type) :
-    TypeNode(vmask_type, 2) {
-    init_class_id(Class_VectorMask);
-    init_req(1, in1);
-  }
-
-  VectorMaskNode(Node* in1, Node* in2, Node* in3, const TypeVMask* vmask_type) :
-    TypeNode(vmask_type, 4) {
-    init_class_id(Class_VectorMask);
-    init_req(1, in1);
-    init_req(2, in2);
-    init_req(3, in3);
-  }
-
-  virtual int Opcode() const;
-};
-
-class VectorToMaskNode : public VectorMaskNode {
- public:
-  VectorToMaskNode(Node* in, const TypeVMask* vmask_type) : VectorMaskNode(in, vmask_type) {
-    assert(in->bottom_type()->is_vect()->length_in_bytes() ==
-           vmask_type->length() * vmask_type->element_size_in_bytes(), "wrong type");
-  }
-
-  virtual int Opcode() const;
-  virtual Node* Identity(PhaseGVN* phase);
-};
-
-class MaskAllNode : public VectorMaskNode {
- public:
-  MaskAllNode(ConLNode* in, const TypeVMask* vmask_type) : VectorMaskNode(in, vmask_type) {
-    assert(in->get_long() == 0 || in->get_long() == -1, "Unsupported value to mask all");
-  }
-
-  virtual int Opcode() const;
-};
-
-// Vector compare node with a TypeVMask bottom_type. It is specially generated for platforms
-// that have mask hardware feature. The main difference with "VectorMaskCmpNode" is that this
-// is a kind of mask node, while "VectorMaskCmpNode" is a vector node.
-class VectorCmpMaskGenNode : public VectorMaskNode {
- public:
-  VectorCmpMaskGenNode(Node* in1, Node* in2, ConINode* predicate_node, const TypeVMask* vmask_type) :
-    VectorMaskNode(in1, in2, predicate_node, vmask_type) {
-    assert(in1->bottom_type()->is_vect()->element_basic_type() == in2->bottom_type()->is_vect()->element_basic_type(),
-           "VectorCmpMaskGen inputs must have the same type for elements");
-    assert(in1->bottom_type()->is_vect()->length() == in2->bottom_type()->is_vect()->length(),
-           "VectorCmpMaskGen inputs must have the same number of elements");
-    assert(in1->bottom_type()->is_vect()->length_in_bytes() ==
-           vmask_type->length() * vmask_type->element_size_in_bytes(), "wrong type");
-  }
-
-  virtual int Opcode() const;
-};
-
-class MaskToVectorNode : public VectorNode {
- public:
-  MaskToVectorNode(Node* mask, const TypeVect* vt) : VectorNode(mask, vt) {
-    assert(mask->is_VectorMask(), "input must be a VectorMask");
-    const TypeVMask* vmask_type = mask->as_VectorMask()->bottom_type()->is_vmask();
-    assert(vmask_type->length() * vmask_type->element_size_in_bytes() ==
-           vt->length_in_bytes(), "wrong type");
-  }
-
-  virtual int Opcode() const;
 };
 
 //=========================Promote_Scalar_to_Vector============================
@@ -1239,7 +1123,6 @@ class VectorMaskCmpNode : public VectorNode {
     return VectorNode::cmp(n) && _predicate == ((VectorMaskCmpNode&)n)._predicate;
   }
   BoolTest::mask get_predicate() { return _predicate; }
-  virtual Node* Ideal(PhaseGVN* phase, bool can_reshape);
 #ifndef PRODUCT
   virtual void dump_spec(outputStream *st) const;
 #endif // !PRODUCT
@@ -1281,16 +1164,12 @@ class VectorTestNode : public Node {
 };
 
 class VectorBlendNode : public VectorNode {
- protected:
+ public:
   VectorBlendNode(Node* vec1, Node* vec2, Node* mask)
     : VectorNode(vec1, vec2, mask, vec1->bottom_type()->is_vect()) {
-    if (Matcher::match_rule_supported(Op_VectorToMask)) {
-      assert(mask->is_VectorMask(), "VectorBlendNode requires that third argument be a mask");
-    }
+    // assert(mask->is_VectorMask(), "VectorBlendNode requires that third argument be a mask");
   }
 
- public:
-  static VectorBlendNode* make(PhaseGVN& gvn, Node* vec1, Node* vec2, Node* mask);
   virtual int Opcode() const;
   Node* vec1() const { return in(1); }
   Node* vec2() const { return in(2); }
@@ -1327,7 +1206,6 @@ class VectorLoadMaskNode : public VectorNode {
   }
 
   virtual int Opcode() const;
-  virtual Node* Ideal(PhaseGVN* phase, bool can_reshape);
   virtual Node* Identity(PhaseGVN* phase);
 };
 

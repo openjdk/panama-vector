@@ -322,8 +322,6 @@ public:
   // Some microarchitectures have mask registers used on vectors
   static const bool has_predicated_vectors(void);
 
-  static const RegMask* predicate_reg_mask(void);
-
   // Some uarchs have different sized float register resources
   static const int float_pressure(int default_pressure_threshold);
 
@@ -345,8 +343,6 @@ public:
   static const bool supports_scalable_vector();
   // Actual max scalable vector register length.
   static const int scalable_vector_reg_size(const BasicType bt);
-  // Actual max scalable predicate register length.
-  static const int scalable_predicate_reg_slots();
 
   // Vector ideal reg
   static const uint vector_ideal_reg(int len);
