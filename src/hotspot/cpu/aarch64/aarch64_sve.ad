@@ -3291,7 +3291,7 @@ instruct insertF_small(vReg dst, vReg src, vRegF val, immI idx, vReg tmp, pRegGo
 %}
 
 
-instruct insertL_d(vReg dst, vReg src, iRegL val, immI idx, vReg tmp, pRegGov pTmp, rFlagsReg cr)
+instruct insertL(vReg dst, vReg src, iRegL val, immI idx, vReg tmp, pRegGov pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
@@ -3319,7 +3319,7 @@ instruct insertL_d(vReg dst, vReg src, iRegL val, immI idx, vReg tmp, pRegGov pT
   ins_pipe(pipe_slow);
 %}
 
-instruct insertD_d(vReg dst, vReg src, vRegD val, immI idx, vReg tmp, pRegGov pTmp, rFlagsReg cr)
+instruct insertD(vReg dst, vReg src, vRegD val, immI idx, vReg tmp, pRegGov pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);

@@ -1920,7 +1920,7 @@ VECTOR_INSERT_SMALL(I, iRegIorL2I, S, Register)
 VECTOR_INSERT_SMALL(F, vRegF,      S, FloatRegister)
 
 define(`VECTOR_INSERT_D', `
-instruct insert$1_d`'(vReg dst, vReg src, $2 val, immI idx, vReg tmp, pRegGov pTmp, rFlagsReg cr)
+instruct insert$1`'(vReg dst, vReg src, $2 val, immI idx, vReg tmp, pRegGov pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($1));
