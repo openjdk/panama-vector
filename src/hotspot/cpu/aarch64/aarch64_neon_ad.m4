@@ -1502,13 +1502,6 @@ VFABD(fabd, fabd, 2, F, D, S, 64)
 VFABD(fabd, fabd, 4, F, X, S, 128)
 VFABD(fabd, fabd, 2, D, X, D, 128)
 dnl
-VLoadStore(ldrs, S, load,  4,  D, 32,  dst, UseSVE == 0 && )
-VLoadStore(ldrd, D, load,  8,  D, 64,  dst, UseSVE == 0 && )
-VLoadStore(ldrq, Q, load, 16,  X, 128, dst, UseSVE == 0 && )
-VLoadStore(strs, S, store, 4,  D, 32,  src, )
-VLoadStore(strd, D, store, 8,  D, 64,  src, )
-VLoadStore(strq, Q, store, 16, X, 128, src, )
-dnl
 define(`VREPLICATE', `
 instruct replicate$3$4$5`'(vec$6 dst, $7 ifelse($7, immI0, zero, $7, immI, con, src))
 %{
