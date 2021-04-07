@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -446,7 +446,7 @@ void PhaseVector::expand_vunbox_node(VectorUnboxNode* vec_unbox) {
     C->set_max_vector_size(MAX2(C->max_vector_size(), vt->length_in_bytes()));
 
     if (is_vector_mask(from_kls)) {
-      vec_val_load = gvn.transform(new VectorLoadMaskNode(vec_val_load, TypeVect::make(masktype, num_elem)));
+      vec_val_load = gvn.transform(VectorNode::make_mask_node(gvn, Op_VectorLoadMask, vec_val_load, num_elem, masktype));
     } else if (is_vector_shuffle(from_kls)) {
       if (vec_unbox->is_shuffle_to_vector() == false) {
         assert(vec_unbox->bottom_type()->is_vect()->element_basic_type() == masktype, "expect shuffle type consistency");
