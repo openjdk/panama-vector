@@ -364,7 +364,6 @@ instruct reinterpretResize(vReg dst, vReg src, iRegINoSp tmp, pRegGov pTmp, rFla
   %}
   ins_pipe(pipe_slow);
 %}
-
 // vector abs
 
 instruct vabsB(vReg dst, vReg src) %{
@@ -1880,7 +1879,6 @@ instruct replicateL(vReg dst, iRegL src) %{
   ins_pipe(pipe_slow);
 %}
 
-
 instruct replicateB_imm8(vReg dst, immI8 con) %{
   predicate(UseSVE > 0 && n->as_Vector()->length() >= 16);
   match(Set dst (ReplicateB con));
@@ -1924,7 +1922,6 @@ instruct replicateL_imm8(vReg dst, immL8_shift8 con) %{
   %}
   ins_pipe(pipe_slow);
 %}
-
 
 instruct replicateF(vReg dst, vRegF src) %{
   predicate(UseSVE > 0 && n->as_Vector()->length() >= 4);
