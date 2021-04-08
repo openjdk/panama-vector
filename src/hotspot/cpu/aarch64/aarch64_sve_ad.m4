@@ -29,6 +29,8 @@ dnl
 
 // AArch64 SVE Architecture Description File
 
+
+// 4 bit signed offset -- for predicated load/store
 dnl
 define(`TYPE2DATATYPE',
 `ifelse($1, `B', `BYTE',
@@ -51,9 +53,7 @@ operand vmemA_imm$1Offset$3()
   op_cost(0);
   format %{ %}
   interface(CONST_INTER);
-%}')
-dnl
-// 4 bit signed offset -- for predicated load/store
+%}')dnl
 OPERAND_VMEMORYA_IMMEDIATE_OFFSET(I, int,  4)
 OPERAND_VMEMORYA_IMMEDIATE_OFFSET(L, long, 4)
 dnl
@@ -72,8 +72,7 @@ operand vmemA_indOff$1$2(iRegP reg, vmemA_imm$1Offset$2 off)
     scale(0x0);
     disp($off);
   %}
-%}')
-dnl
+%}')dnl
 OPERAND_VMEMORYA_INDIRECT_OFFSET(I, 4)
 OPERAND_VMEMORYA_INDIRECT_OFFSET(L, 4)
 
@@ -89,7 +88,6 @@ source_hpp %{
 %}
 
 source %{
-
   static inline BasicType vector_element_basic_type(const MachNode* n) {
     const TypeVect* vt = n->bottom_type()->is_vect();
     return vt->element_basic_type();
@@ -222,23 +220,14 @@ source %{
       case Op_MulReductionVI:
       case Op_MulReductionVL:
         // Others
-      case Op_Extract:
-      case Op_ExtractB:
       case Op_ExtractC:
-      case Op_ExtractD:
-      case Op_ExtractF:
-      case Op_ExtractI:
-      case Op_ExtractL:
-      case Op_ExtractS:
       case Op_ExtractUB:
       // Vector API specific
       case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
-      case Op_VectorInsert:
       case Op_VectorLoadConst:
       case Op_VectorLoadShuffle:
       case Op_VectorRearrange:
-      case Op_VectorTest:
         return false;
       default:
         // By default, we only support vector operations with larger than 16 bytes.
@@ -246,7 +235,6 @@ source %{
         return 16 <= length_in_bytes && length_in_bytes <= MaxVectorSize;
     }
   }
-
 %}
 
 definitions %{
@@ -259,7 +247,7 @@ dnl ELEMENT_SHORT_CHART(etype, node)
 define(`ELEMENT_SHORT_CHAR',`ifelse(`$1', `T_SHORT',
   `($2->bottom_type()->is_vect()->element_basic_type() == T_SHORT ||
             ($2->bottom_type()->is_vect()->element_basic_type() == T_CHAR))',
-   `($2->bottom_type()->is_vect()->element_basic_type() == $1)')')
+   `($2->bottom_type()->is_vect()->element_basic_type() == $1)')')dnl
 dnl
 
 // All SVE instructions
@@ -400,7 +388,7 @@ instruct $1(vReg dst, vReg src) %{
   %}
   ins_pipe(pipe_slow);
 %}')dnl
-
+dnl
 // vector abs
 UNARY_OP_TRUE_PREDICATE_ETYPE(vabsB, AbsVB, T_BYTE,   B, 16, sve_abs)
 UNARY_OP_TRUE_PREDICATE_ETYPE(vabsS, AbsVS, T_SHORT,  H, 8,  sve_abs)
@@ -1600,12 +1588,10 @@ REPLICATE(replicateB, ReplicateB, iRegIorL2I, B, 16)
 REPLICATE(replicateS, ReplicateS, iRegIorL2I, H, 8)
 REPLICATE(replicateI, ReplicateI, iRegIorL2I, S, 4)
 REPLICATE(replicateL, ReplicateL, iRegL,      D, 2)
-
 REPLICATE_IMM8(replicateB_imm8, ReplicateB, immI8,        B, 16)
 REPLICATE_IMM8(replicateS_imm8, ReplicateS, immI8_shift8, H, 8)
 REPLICATE_IMM8(replicateI_imm8, ReplicateI, immI8_shift8, S, 4)
 REPLICATE_IMM8(replicateL_imm8, ReplicateL, immL8_shift8, D, 2)
-
 FREPLICATE(replicateF, ReplicateF, vRegF, S, 4)
 FREPLICATE(replicateD, ReplicateD, vRegD, D, 2)
 dnl
@@ -1624,9 +1610,9 @@ instruct $1(vReg dst, vReg shift) %{
   ins_pipe(pipe_slow);
 %}')dnl
 dnl
-dnl VSHIFT_IMM_UNPREDICATE($1,        $2,      $3,       $4,   $5,          $6  )
-dnl VSHIFT_IMM_UNPREDICATE(insn_name, op_name, op_name2, size, min_vec_len, insn)
-define(`VSHIFT_IMM_UNPREDICATE', `
+dnl VSHIFT_IMM_UNPREDICATED($1,        $2,      $3,       $4,   $5,          $6  )
+dnl VSHIFT_IMM_UNPREDICATED(insn_name, op_name, op_name2, size, min_vec_len, insn)
+define(`VSHIFT_IMM_UNPREDICATED', `
 instruct $1(vReg dst, vReg src, immI shift) %{
   predicate(UseSVE > 0);
   match(Set dst ($2 src ($3 shift)));
@@ -1688,18 +1674,18 @@ VSHIFT_TRUE_PREDICATE(vlsrB, URShiftVB, B, 16, sve_lsr)
 VSHIFT_TRUE_PREDICATE(vlsrS, URShiftVS, H,  8, sve_lsr)
 VSHIFT_TRUE_PREDICATE(vlsrI, URShiftVI, S,  4, sve_lsr)
 VSHIFT_TRUE_PREDICATE(vlsrL, URShiftVL, D,  2, sve_lsr)
-VSHIFT_IMM_UNPREDICATE(vasrB_imm, RShiftVB,  RShiftCntV, B, 16, sve_asr)
-VSHIFT_IMM_UNPREDICATE(vasrS_imm, RShiftVS,  RShiftCntV, H,  8, sve_asr)
-VSHIFT_IMM_UNPREDICATE(vasrI_imm, RShiftVI,  RShiftCntV, S,  4, sve_asr)
-VSHIFT_IMM_UNPREDICATE(vasrL_imm, RShiftVL,  RShiftCntV, D,  2, sve_asr)
-VSHIFT_IMM_UNPREDICATE(vlsrB_imm, URShiftVB, RShiftCntV, B, 16, sve_lsr)
-VSHIFT_IMM_UNPREDICATE(vlsrS_imm, URShiftVS, RShiftCntV, H,  8, sve_lsr)
-VSHIFT_IMM_UNPREDICATE(vlsrI_imm, URShiftVI, RShiftCntV, S,  4, sve_lsr)
-VSHIFT_IMM_UNPREDICATE(vlsrL_imm, URShiftVL, RShiftCntV, D,  2, sve_lsr)
-VSHIFT_IMM_UNPREDICATE(vlslB_imm, LShiftVB,  LShiftCntV, B, 16, sve_lsl)
-VSHIFT_IMM_UNPREDICATE(vlslS_imm, LShiftVS,  LShiftCntV, H,  8, sve_lsl)
-VSHIFT_IMM_UNPREDICATE(vlslI_imm, LShiftVI,  LShiftCntV, S,  4, sve_lsl)
-VSHIFT_IMM_UNPREDICATE(vlslL_imm, LShiftVL,  LShiftCntV, D,  2, sve_lsl)
+VSHIFT_IMM_UNPREDICATED(vasrB_imm, RShiftVB,  RShiftCntV, B, 16, sve_asr)
+VSHIFT_IMM_UNPREDICATED(vasrS_imm, RShiftVS,  RShiftCntV, H,  8, sve_asr)
+VSHIFT_IMM_UNPREDICATED(vasrI_imm, RShiftVI,  RShiftCntV, S,  4, sve_asr)
+VSHIFT_IMM_UNPREDICATED(vasrL_imm, RShiftVL,  RShiftCntV, D,  2, sve_asr)
+VSHIFT_IMM_UNPREDICATED(vlsrB_imm, URShiftVB, RShiftCntV, B, 16, sve_lsr)
+VSHIFT_IMM_UNPREDICATED(vlsrS_imm, URShiftVS, RShiftCntV, H,  8, sve_lsr)
+VSHIFT_IMM_UNPREDICATED(vlsrI_imm, URShiftVI, RShiftCntV, S,  4, sve_lsr)
+VSHIFT_IMM_UNPREDICATED(vlsrL_imm, URShiftVL, RShiftCntV, D,  2, sve_lsr)
+VSHIFT_IMM_UNPREDICATED(vlslB_imm, LShiftVB,  LShiftCntV, B, 16, sve_lsl)
+VSHIFT_IMM_UNPREDICATED(vlslS_imm, LShiftVS,  LShiftCntV, H,  8, sve_lsl)
+VSHIFT_IMM_UNPREDICATED(vlslI_imm, LShiftVI,  LShiftCntV, S,  4, sve_lsl)
+VSHIFT_IMM_UNPREDICATED(vlslL_imm, LShiftVL,  LShiftCntV, D,  2, sve_lsl)
 VSHIFT_COUNT(vshiftcntB, B, 16, T_BYTE)
 VSHIFT_COUNT(vshiftcntS, H,  8, T_SHORT)
 VSHIFT_COUNT(vshiftcntI, S,  4, T_INT)
@@ -2052,3 +2038,210 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
 %}')dnl
 dnl                     $1 $2 $3      $4 $5   $6 $7    $8 $9
 VECTOR_CAST_F2X_NARROW3(D, B, fcvtzs, D, dup, S, uzp1, H, B)
+
+// ------------------------------ Vector extract ---------------------------------
+define(`VECTOR_EXTRACT_SXT', `
+instruct extract$1`'($2 dst, vReg src, immI idx, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0);
+  match(Set dst (Extract$1 src idx));
+  effect(TEMP pTmp, KILL cr);
+  ins_cost(2 * SVE_COST);
+  format %{ "movzw rscratch1, $idx\n\t"
+            "sve_whilele $pTmp, $3, zr, rscratch1\n\t"
+            "sve_lastb $dst, $3, $pTmp, $src\n\t"
+            "sbfmw $dst, $dst, 0U, $5\t# extract from vector($1)" %}
+  ins_encode %{
+    __ movzw(rscratch1, (int)($idx$$constant));
+    __ sve_whilele(as_PRegister($pTmp$$reg), __ $3, zr, rscratch1);
+    __ sve_lastb(as_$4($dst$$reg), __ $3, as_PRegister($pTmp$$reg), as_FloatRegister($src$$reg));
+    __ sbfmw(as_$4($dst$$reg), as_$4($dst$$reg), 0U, $5);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl                $1 $2         $3 $4        $5
+VECTOR_EXTRACT_SXT(B, iRegINoSp, B, Register, 7U)
+VECTOR_EXTRACT_SXT(S, iRegINoSp, H, Register, 15U)
+
+dnl
+define(`VECTOR_EXTRACT', `
+instruct extract$1`'($2 dst, vReg src, immI idx, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0);
+  match(Set dst (Extract$1 src idx));
+  effect(TEMP pTmp, KILL cr);
+  ins_cost(2 * SVE_COST);
+  format %{ "movzw rscratch1, $idx\n\t"
+            "sve_whilele $pTmp, $3, zr, rscratch1\n\t"
+            "sve_lastb $dst, $3, $pTmp, $src\t# extract from vector($1)" %}
+  ins_encode %{
+    __ movzw(rscratch1, (int)($idx$$constant));
+    __ sve_whilele(as_PRegister($pTmp$$reg), __ $3, zr, rscratch1);
+    __ sve_lastb(as_$4($dst$$reg), __ $3, as_PRegister($pTmp$$reg), as_FloatRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl            $1 $2         $3 $4
+VECTOR_EXTRACT(I, iRegINoSp, S, Register)
+VECTOR_EXTRACT(L, iRegLNoSp, D, Register)
+VECTOR_EXTRACT(F, vRegF,     S, FloatRegister)
+VECTOR_EXTRACT(D, vRegD,     D, FloatRegister)
+
+// ------------------------------- VectorTest ----------------------------------
+dnl
+dnl VTEST($1,      $2,   $3,  $4  )
+dnl VTEST(op_name, pred, imm, cond)
+define(`VTEST', `
+instruct vtest_$1`'(iRegINoSp dst, vReg src1, vReg src2, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize &&
+            static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::$2);
+  match(Set dst (VectorTest src1 src2));
+  effect(TEMP pTmp, KILL cr);
+  ins_cost(SVE_COST);
+  format %{ "sve_cmpeq $pTmp, $src1, $3\n\t"
+            "csetw $dst, $4\t# VectorTest (sve) - $1" %}
+  ins_encode %{
+    // "src2" is not used for sve.
+    BasicType bt = vector_element_basic_type(this, $src1);
+    Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), size, ptrue,
+                 as_FloatRegister($src1$$reg), $3);
+    __ csetw(as_Register($dst$$reg), Assembler::$4);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+VTEST(alltrue, overflow, 0, EQ)
+VTEST(anytrue, ne,      -1, NE)
+dnl
+dnl
+dnl VTEST_PARTIAL($1,      $2,   $3,  $4  )
+dnl VTEST_PARTIAL(op_name, pred, imm, cond)
+define(`VTEST_PARTIAL', `
+instruct vtest_$1_partial`'(iRegINoSp dst, vReg src1, vReg src2, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() < MaxVectorSize &&
+            static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::$2);
+  match(Set dst (VectorTest src1 src2));
+  effect(TEMP pTmp, KILL cr);
+  ins_cost(SVE_COST);
+  format %{ "vtest_$1_partial $dst, $src1, $src2\t# VectorTest partial (sve) - $1" %}
+  ins_encode %{
+    // "src2" is not used for sve.
+    BasicType bt = vector_element_basic_type(this, $src1);
+    Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
+    __ mov(rscratch1, vector_length(this, $src1));
+    __ sve_whilelo(as_PRegister($pTmp$$reg), size, zr, rscratch1);
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), size, as_PRegister($pTmp$$reg),
+                 as_FloatRegister($src1$$reg), $3);
+    __ csetw(as_Register($dst$$reg), Assembler::$4);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+VTEST_PARTIAL(alltrue, overflow, 0, EQ)
+VTEST_PARTIAL(anytrue, ne,      -1, NE)
+
+// ------------------------------ Vector insert ---------------------------------
+define(`VECTOR_INSERT_SMALL', `
+instruct insert$1_small`'(vReg dst, vReg src, $2 val, immI idx, vReg tmp, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 && n->as_Vector()->length() <= 32 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($1));
+  match(Set dst (VectorInsert (Binary src val) idx));
+  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  ins_cost(4 * SVE_COST);
+  format %{ "sve_index $tmp, $3, -16, 1\n\t"
+            "sve_cmpeq $pTmp, $tmp, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
+            "sve_orr $dst, $src, $src\n\t"
+            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector ($1)" %}
+  ins_encode %{
+    __ sve_index(as_FloatRegister($tmp$$reg), __ $3, -16, 1);
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), __ $3, ptrue,
+                 as_FloatRegister($tmp$$reg), (int)($idx$$constant) - 16);
+    // If src and dst are the same reg, this move is not needed.
+    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
+      __ sve_orr(as_FloatRegister($dst$$reg),
+             as_FloatRegister($src$$reg),
+             as_FloatRegister($src$$reg));
+    }
+    __ sve_cpy(as_FloatRegister($dst$$reg), __ $3,
+               as_PRegister($pTmp$$reg), as_$4($val$$reg));
+
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl                 $1 $2          $3 $4
+VECTOR_INSERT_SMALL(B, iRegIorL2I, B, Register)
+VECTOR_INSERT_SMALL(S, iRegIorL2I, H, Register)
+VECTOR_INSERT_SMALL(I, iRegIorL2I, S, Register)
+VECTOR_INSERT_SMALL(F, vRegF,      S, FloatRegister)
+
+define(`VECTOR_INSERT_D', `
+instruct insert$1`'(vReg dst, vReg src, $2 val, immI idx, vReg tmp, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($1));
+  match(Set dst (VectorInsert (Binary src val) idx));
+  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  ins_cost(4 * SVE_COST);
+  format %{ "sve_index $tmp, $3, -16, 1\n\t"
+            "sve_cmpeq $pTmp, $tmp, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
+            "sve_orr $dst, $src, $src\n\t"
+            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector ($1)" %}
+  ins_encode %{
+    __ sve_index(as_FloatRegister($tmp$$reg), __ $3, -16, 1);
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), __ $3, ptrue,
+                 as_FloatRegister($tmp$$reg), (int)($idx$$constant) - 16);
+    // If src and dst are the same reg, this move is not needed.
+    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
+      __ sve_orr(as_FloatRegister($dst$$reg),
+             as_FloatRegister($src$$reg),
+             as_FloatRegister($src$$reg));
+    }
+    __ sve_cpy(as_FloatRegister($dst$$reg), __ $3,
+               as_PRegister($pTmp$$reg), as_$4($val$$reg));
+
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl             $1 $2     $3 $4
+VECTOR_INSERT_D(L, iRegL, D, Register)
+VECTOR_INSERT_D(D, vRegD, D, FloatRegister)
+
+define(`VECTOR_INSERT', `
+instruct insert$1`'(vReg dst, vReg src, $2 val, immI idx, vReg tmp1, vReg tmp2, pRegGov pTmp, rFlagsReg cr)
+%{
+  predicate(UseSVE > 0 && n->as_Vector()->length() > 32 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($1));
+  match(Set dst (VectorInsert (Binary src val) idx));
+  effect(TEMP tmp1, TEMP tmp2, TEMP pTmp, KILL cr);
+  ins_cost(5 * SVE_COST);
+  format %{ "sve_index $tmp1, $3, 0, 1\n\t"
+            "sve_dup $tmp2, $3, $idx\n\t"
+            "sve_cmpeq $pTmp, $tmp1, $tmp2\n\t"
+            "sve_orr $dst, $src, $src\n\t"
+            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector ($1)" %}
+  ins_encode %{
+    __ sve_index(as_FloatRegister($tmp1$$reg), __ $3, 0, 1);
+    __ sve_dup(as_FloatRegister($tmp2$$reg), __ $3, (int)($idx$$constant));
+    __ sve_cmpeq(as_PRegister($pTmp$$reg), __ $3, ptrue,
+                 as_FloatRegister($tmp1$$reg), as_FloatRegister($tmp2$$reg));
+    // If src and dst are the same reg, this move is not needed.
+    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
+      __ sve_orr(as_FloatRegister($dst$$reg),
+             as_FloatRegister($src$$reg),
+             as_FloatRegister($src$$reg));
+    }
+    __ sve_cpy(as_FloatRegister($dst$$reg), __ $3,
+               as_PRegister($pTmp$$reg), as_$4($val$$reg));
+
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl           $1 $2          $3 $4
+VECTOR_INSERT(B, iRegIorL2I, B, Register)
+VECTOR_INSERT(S, iRegIorL2I, H, Register)
+VECTOR_INSERT(I, iRegIorL2I, S, Register)
+VECTOR_INSERT(F, vRegF,      S, FloatRegister)

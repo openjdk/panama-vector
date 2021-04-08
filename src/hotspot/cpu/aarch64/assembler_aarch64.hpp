@@ -2184,13 +2184,13 @@ public:
     if (value)
       fmov_imm(Vn, value, 0b00);
     else
-      fmovs(Vn, zr);
+      movi(Vn, T2S, 0);
   }
   void fmovd(FloatRegister Vn, double value) {
     if (value)
       fmov_imm(Vn, value, 0b01);
     else
-      fmovd(Vn, zr);
+      movi(Vn, T1D, 0);
   }
 
    // Floating-point rounding
@@ -2427,6 +2427,7 @@ public:
   INSN(addv,   0, 0b110001101110, 1); // accepted arrangements: T8B, T16B, T4H, T8H,      T4S
   INSN(smaxv,  0, 0b110000101010, 1); // accepted arrangements: T8B, T16B, T4H, T8H,      T4S
   INSN(sminv,  0, 0b110001101010, 1); // accepted arrangements: T8B, T16B, T4H, T8H,      T4S
+  INSN(uminv,  1, 0b110001101010, 1); // accepted arrangements: T8B, T16B, T4H, T8H,      T4S
   INSN(cls,    0, 0b100000010010, 2); // accepted arrangements: T8B, T16B, T4H, T8H, T2S, T4S
   INSN(clz,    1, 0b100000010010, 2); // accepted arrangements: T8B, T16B, T4H, T8H, T2S, T4S
   INSN(cnt,    0, 0b100000010110, 0); // accepted arrangements: T8B, T16B
@@ -2687,7 +2688,7 @@ public:
      *   1xxx xxx       1D/2D,  shift = UInt(immh:immb) - 64            \
      *   (1D is RESERVED)                                               \
      */                                                                 \
-    assert(!isSHR || (isSHR && (shift != 0)), "Zero right shift");      \
+    guarantee(!isSHR || (isSHR && (shift != 0)), "impossible encoding");\
     assert((1 << ((T>>1)+3)) > shift, "Invalid Shift value");           \
     int cVal = (1 << (((T >> 1) + 3) + (isSHR ? 1 : 0)));               \
     int encodedShift = isSHR ? cVal - shift : cVal + shift;             \
@@ -3501,6 +3502,48 @@ public:
   INSN(sve_fcvtzs, 0b0);
   INSN(sve_fcvtzu, 0b1);
 #undef INSN
+
+// SVE conditionally extract element to general-purpose register
+#define INSN(NAME, before)                                                      \
+  void NAME(Register Rd, SIMD_RegVariant T, PRegister Pg,  FloatRegister Zn) {  \
+    starti;                                                                     \
+    f(0b00000101, 31, 24), f(T, 23, 22), f(0b10000, 21, 17);                    \
+    f(before, 16), f(0b101, 15, 13);                                            \
+    pgrf(Pg, 10), rf(Zn, 5), rf(Rd, 0);                                         \
+  }
+
+  INSN(sve_lasta, 0b0);
+  INSN(sve_lastb, 0b1);
+#undef INSN
+
+#define INSN(NAME, before)                                                           \
+  void NAME(FloatRegister Vd, SIMD_RegVariant T, PRegister Pg,  FloatRegister Zn) {  \
+    starti;                                                                          \
+    f(0b00000101, 31, 24), f(T, 23, 22), f(0b10001, 21, 17);                         \
+    f(before, 16), f(0b100, 15, 13);                                                 \
+    pgrf(Pg, 10), rf(Zn, 5), rf(Vd, 0);                                              \
+  }
+
+  INSN(sve_lasta, 0b0);
+  INSN(sve_lastb, 0b1);
+#undef INSN
+
+// SVE cpy general-purpose register
+  void sve_cpy(FloatRegister Zd, SIMD_RegVariant T, PRegister Pg, Register Rn) {
+    starti;
+    assert(T != Q, "invalid size");
+    f(0b00000101, 31, 24), f(T, 23, 22), f(0b101000101, 21, 13);
+    pgrf(Pg, 10), srf(Rn, 5), rf(Zd, 0);
+  }
+
+// SVE INDEX (immediates)
+  void sve_index(FloatRegister Zd, SIMD_RegVariant T,
+                 int imm1, int imm2) {
+    starti;
+    f(0b00000100, 31, 24), f(T, 23, 22), f(0b1, 21);
+    sf(imm2, 20, 16), f(0b010000, 15, 10);
+    sf(imm1, 9, 5), rf(Zd, 0);
+  }
 
   Assembler(CodeBuffer* code) : AbstractAssembler(code) {
   }
