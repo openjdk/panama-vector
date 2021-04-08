@@ -755,15 +755,6 @@ Node* StoreVectorMaskedNode::Ideal(PhaseGVN* phase, bool can_reshape) {
   return StoreNode::Ideal(phase, can_reshape);
 }
 
-const TypeVect* StoreVectorMaskedNode::vect_type() const {
-  Node* value = in(MemNode::ValueIn);
-  if (value->bottom_type()->isa_vect() != NULL) {
-    return value->bottom_type()->is_vect();
-  }
-  // The value input is actually a BinaryNode, which has two inputs value and mask.
-  return value->in(1)->bottom_type()->is_vect();
-}
-
 int ExtractNode::opcode(BasicType bt) {
   switch (bt) {
     case T_BOOLEAN: return Op_ExtractUB;
