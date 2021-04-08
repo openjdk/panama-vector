@@ -1308,8 +1308,7 @@ instruct reduce_addI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 %}
 
 instruct reduce_addL(iRegLNoSp dst, iRegL src1, vReg src2, vRegD tmp) %{
-  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG &&
-            n->in(2)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
+  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
   match(Set dst (AddReductionVL src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);

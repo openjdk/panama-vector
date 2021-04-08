@@ -979,12 +979,16 @@ instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
   ins_pipe(pipe_slow);
 %}')dnl
 dnl
+define(`PREDICATE', `ifelse($1, AddReductionVL,
+       `predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);',
+       `predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT &&
+            n->in(2)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);')')dnl
+dnl
 dnl REDUCE_ADD($1,        $2,      $3,      $4,      $5,   $6,        $7   )
 dnl REDUCE_ADD(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
 define(`REDUCE_ADD', `
 instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
-  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6 &&
-            n->in(2)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
+  PREDICATE($2)
   match(Set dst ($2 src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -999,6 +1003,7 @@ instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
   %}
   ins_pipe(pipe_slow);
 %}')dnl
+undefine(PREDICATE)dnl
 dnl
 dnl REDUCE_ADDF($1,        $2,      $3,      $4  )
 dnl REDUCE_ADDF(insn_name, op_name, reg_dst, size)
