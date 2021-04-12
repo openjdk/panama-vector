@@ -8988,6 +8988,19 @@ void Assembler::evpcmpd(KRegister kdst, KRegister mask, XMMRegister nds, Address
   emit_int8((unsigned char)comparison);
 }
 
+void Assembler::evpcmpud(KRegister kdst, KRegister mask, XMMRegister nds, XMMRegister src,
+                        int comparison, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
+  assert(comparison >= Assembler::eq && comparison <= Assembler::_true, "");
+  // Encoding: EVEX.NDS.XXX.66.0F3A.W0 1F /r ib
+  InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
+  attributes.set_is_evex_instruction();
+  attributes.set_embedded_opmask_register_specifier(mask);
+  attributes.reset_is_clear_context();
+  int encode = vex_prefix_and_encode(kdst->encoding(), nds->encoding(), src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_3A, &attributes);
+  emit_int24(0x1E, (0xC0 | encode), comparison);
+}
+
 void Assembler::evpcmpq(KRegister kdst, KRegister mask, XMMRegister nds, XMMRegister src,
                         int comparison, int vector_len) {
   assert(VM_Version::supports_evex(), "");
@@ -9017,6 +9030,19 @@ void Assembler::evpcmpq(KRegister kdst, KRegister mask, XMMRegister nds, Address
   emit_int8((unsigned char)0x1F);
   emit_operand(as_Register(dst_enc), src);
   emit_int8((unsigned char)comparison);
+}
+
+void Assembler::evpcmpuq(KRegister kdst, KRegister mask, XMMRegister nds, XMMRegister src,
+                        int comparison, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
+  assert(comparison >= Assembler::eq && comparison <= Assembler::_true, "");
+  // Encoding: EVEX.NDS.XXX.66.0F3A.W1 1F /r ib
+  InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
+  attributes.set_is_evex_instruction();
+  attributes.set_embedded_opmask_register_specifier(mask);
+  attributes.reset_is_clear_context();
+  int encode = vex_prefix_and_encode(kdst->encoding(), nds->encoding(), src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_3A, &attributes);
+  emit_int24(0x1E, (0xC0 | encode), comparison);
 }
 
 void Assembler::evpcmpb(KRegister kdst, KRegister mask, XMMRegister nds, XMMRegister src,
@@ -9050,6 +9076,20 @@ void Assembler::evpcmpb(KRegister kdst, KRegister mask, XMMRegister nds, Address
   emit_int8((unsigned char)0x3F);
   emit_operand(as_Register(dst_enc), src);
   emit_int8((unsigned char)comparison);
+}
+
+void Assembler::evpcmpub(KRegister kdst, KRegister mask, XMMRegister nds, XMMRegister src,
+                        int comparison, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
+  assert(VM_Version::supports_avx512bw(), "");
+  assert(comparison >= Assembler::eq && comparison <= Assembler::_true, "");
+  // Encoding: EVEX.NDS.XXX.66.0F3A.W0 3F /r ib
+  InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ _legacy_mode_bw, /* no_mask_reg */ false, /* uses_vl */ true);
+  attributes.set_is_evex_instruction();
+  attributes.set_embedded_opmask_register_specifier(mask);
+  attributes.reset_is_clear_context();
+  int encode = vex_prefix_and_encode(kdst->encoding(), nds->encoding(), src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_3A, &attributes);
+  emit_int24(0x3E, (0xC0 | encode), comparison);
 }
 
 void Assembler::evpcmpw(KRegister kdst, KRegister mask, XMMRegister nds, XMMRegister src,

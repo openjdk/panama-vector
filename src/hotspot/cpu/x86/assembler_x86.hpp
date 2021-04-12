@@ -2447,17 +2447,23 @@ private:
                int comparison, int vector_len);
   void evpcmpd(KRegister kdst, KRegister mask, XMMRegister nds, Address src,
                int comparison, int vector_len);
+  void evpcmpud(KRegister kdst, KRegister mask, XMMRegister nds, XMMRegister src,
+               int comparison, int vector_len);
 
   // Vector long compares
   void evpcmpq(KRegister kdst, KRegister mask, XMMRegister nds, XMMRegister src,
                int comparison, int vector_len);
   void evpcmpq(KRegister kdst, KRegister mask, XMMRegister nds, Address src,
                int comparison, int vector_len);
+  void evpcmpuq(KRegister kdst, KRegister mask, XMMRegister nds, XMMRegister src,
+               int comparison, int vector_len);
 
   // Vector byte compares
   void evpcmpb(KRegister kdst, KRegister mask, XMMRegister nds, XMMRegister src,
                int comparison, int vector_len);
   void evpcmpb(KRegister kdst, KRegister mask, XMMRegister nds, Address src,
+               int comparison, int vector_len);
+  void evpcmpub(KRegister kdst, KRegister mask, XMMRegister nds, XMMRegister src,
                int comparison, int vector_len);
 
   // Vector short compares
