@@ -1767,26 +1767,19 @@ public abstract class IntVector extends AbstractVector<Integer> {
 
     @ForceInline
     private static boolean compareWithOp(int cond, int a, int b) {
-        boolean signed = (cond & VECTOR_OP_COMPARE_UNSIGNED) == 0;
-        if (signed) {
-            return switch (cond) {
-                case BT_eq -> a == b;
-                case BT_ne -> a != b;
-                case BT_lt -> a < b;
-                case BT_le -> a <= b;
-                case BT_gt -> a > b;
-                case BT_ge -> a >= b;
-                default -> throw new AssertionError();
-            };
-        } else {
-            return switch (cond & (VECTOR_OP_COMPARE_UNSIGNED - 1)) {
-                case BT_lt -> Integer.compareUnsigned(a, b) < 0;
-                case BT_le -> Integer.compareUnsigned(a, b) <= 0;
-                case BT_gt -> Integer.compareUnsigned(a, b) > 0;
-                case BT_ge -> Integer.compareUnsigned(a, b) >= 0;
-                default -> throw new AssertionError();
-            };
-        }
+        return switch (cond) {
+            case BT_eq -> a == b;
+            case BT_ne -> a != b;
+            case BT_lt -> a < b;
+            case BT_le -> a <= b;
+            case BT_gt -> a > b;
+            case BT_ge -> a >= b;
+            case VECTOR_OP_UNSIGNED_LT -> Integer.compareUnsigned(a, b) < 0;
+            case VECTOR_OP_UNSIGNED_LE -> Integer.compareUnsigned(a, b) <= 0;
+            case VECTOR_OP_UNSIGNED_GT -> Integer.compareUnsigned(a, b) > 0;
+            case VECTOR_OP_UNSIGNED_GE -> Integer.compareUnsigned(a, b) >= 0;
+            default -> throw new AssertionError();
+        };
     }
 
     /**

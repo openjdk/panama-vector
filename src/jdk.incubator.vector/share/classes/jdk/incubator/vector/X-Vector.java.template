@@ -2029,31 +2029,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             });
     }
 
-#if[!FP]
-    @ForceInline
-    private static boolean compareWithOp(int cond, $type$ a, $type$ b) {
-        boolean signed = (cond & VECTOR_OP_COMPARE_UNSIGNED) == 0;
-        if (signed) {
-            return switch (cond) {
-                case BT_eq -> a == b;
-                case BT_ne -> a != b;
-                case BT_lt -> a < b;
-                case BT_le -> a <= b;
-                case BT_gt -> a > b;
-                case BT_ge -> a >= b;
-                default -> throw new AssertionError();
-            };
-        } else {
-            return switch (cond & (VECTOR_OP_COMPARE_UNSIGNED - 1)) {
-                case BT_lt -> $Boxtype$.compareUnsigned(a, b) < 0;
-                case BT_le -> $Boxtype$.compareUnsigned(a, b) <= 0;
-                case BT_gt -> $Boxtype$.compareUnsigned(a, b) > 0;
-                case BT_ge -> $Boxtype$.compareUnsigned(a, b) >= 0;
-                default -> throw new AssertionError();
-            };
-        }
-    }
-#else[!FP]
     @ForceInline
     private static boolean compareWithOp(int cond, $type$ a, $type$ b) {
         return switch (cond) {
@@ -2063,10 +2038,15 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             case BT_le -> a <= b;
             case BT_gt -> a > b;
             case BT_ge -> a >= b;
+#if[!FP]
+            case VECTOR_OP_UNSIGNED_LT -> $Boxtype$.compareUnsigned(a, b) < 0;
+            case VECTOR_OP_UNSIGNED_LE -> $Boxtype$.compareUnsigned(a, b) <= 0;
+            case VECTOR_OP_UNSIGNED_GT -> $Boxtype$.compareUnsigned(a, b) > 0;
+            case VECTOR_OP_UNSIGNED_GE -> $Boxtype$.compareUnsigned(a, b) >= 0;
+#end[!FP]
             default -> throw new AssertionError();
         };
     }
-#end[!FP]
 
     /**
      * {@inheritDoc} <!--workaround-->

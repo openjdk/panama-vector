@@ -566,13 +566,13 @@ public abstract class VectorOperators {
     /** Compare {@code a>=b}. */
     public static final Comparison GE = compare("GE", ">=", VectorSupport.BT_ge, VO_ALL);
     /** Unsigned compare {@code a<b}.  Integral only. */
-    public static final Comparison UNSIGNED_LT = compare("UNSIGNED_LT", "<",  VectorSupport.BT_lt | VectorSupport.VECTOR_OP_COMPARE_UNSIGNED, VO_NOFP);
+    public static final Comparison UNSIGNED_LT = compare("UNSIGNED_LT", "<",  VectorSupport.VECTOR_OP_UNSIGNED_LT, VO_NOFP);
     /** Unsigned compare {@code a<=b}.  Integral only. */
-    public static final Comparison UNSIGNED_LE = compare("UNSIGNED_LE", "<=", VectorSupport.BT_le | VectorSupport.VECTOR_OP_COMPARE_UNSIGNED, VO_NOFP);
+    public static final Comparison UNSIGNED_LE = compare("UNSIGNED_LE", "<=", VectorSupport.VECTOR_OP_UNSIGNED_LE, VO_NOFP);
     /** Unsigned compare {@code a>b}.  Integral only. */
-    public static final Comparison UNSIGNED_GT = compare("UNSIGNED_GT", ">",  VectorSupport.BT_gt | VectorSupport.VECTOR_OP_COMPARE_UNSIGNED, VO_NOFP);
+    public static final Comparison UNSIGNED_GT = compare("UNSIGNED_GT", ">",  VectorSupport.VECTOR_OP_UNSIGNED_GT, VO_NOFP);
     /** Unsigned compare {@code a>=b}.  Integral only. */
-    public static final Comparison UNSIGNED_GE = compare("UNSIGNED_GE", ">=", VectorSupport.BT_ge | VectorSupport.VECTOR_OP_COMPARE_UNSIGNED, VO_NOFP);
+    public static final Comparison UNSIGNED_GE = compare("UNSIGNED_GE", ">=", VectorSupport.VECTOR_OP_UNSIGNED_GE, VO_NOFP);
 
     // Conversion operators
 

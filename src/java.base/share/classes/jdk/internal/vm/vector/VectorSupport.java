@@ -101,8 +101,13 @@ public class VectorSupport {
     public static final int BT_no_overflow = 6;  // 0110
     // never = 8    1000
     // illegal = 9  1001
-    // Applies to BT_le, BT_ge, BT_lt, BT_gt
+    // Unsigned comparisons apply to BT_le, BT_ge, BT_lt, BT_gt for integral types
     public static final int VECTOR_OP_COMPARE_UNSIGNED = 0b10000;
+    public static final int VECTOR_OP_UNSIGNED_LE = BT_le | VECTOR_OP_COMPARE_UNSIGNED;
+    public static final int VECTOR_OP_UNSIGNED_GE = BT_ge | VECTOR_OP_COMPARE_UNSIGNED;
+    public static final int VECTOR_OP_UNSIGNED_LT = BT_lt | VECTOR_OP_COMPARE_UNSIGNED;
+    public static final int VECTOR_OP_UNSIGNED_GT = BT_gt | VECTOR_OP_COMPARE_UNSIGNED;
+
 
     // BasicType codes, for primitives only:
     public static final int

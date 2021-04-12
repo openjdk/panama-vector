@@ -1685,26 +1685,19 @@ public abstract class LongVector extends AbstractVector<Long> {
 
     @ForceInline
     private static boolean compareWithOp(int cond, long a, long b) {
-        boolean signed = (cond & VECTOR_OP_COMPARE_UNSIGNED) == 0;
-        if (signed) {
-            return switch (cond) {
-                case BT_eq -> a == b;
-                case BT_ne -> a != b;
-                case BT_lt -> a < b;
-                case BT_le -> a <= b;
-                case BT_gt -> a > b;
-                case BT_ge -> a >= b;
-                default -> throw new AssertionError();
-            };
-        } else {
-            return switch (cond & (VECTOR_OP_COMPARE_UNSIGNED - 1)) {
-                case BT_lt -> Long.compareUnsigned(a, b) < 0;
-                case BT_le -> Long.compareUnsigned(a, b) <= 0;
-                case BT_gt -> Long.compareUnsigned(a, b) > 0;
-                case BT_ge -> Long.compareUnsigned(a, b) >= 0;
-                default -> throw new AssertionError();
-            };
-        }
+        return switch (cond) {
+            case BT_eq -> a == b;
+            case BT_ne -> a != b;
+            case BT_lt -> a < b;
+            case BT_le -> a <= b;
+            case BT_gt -> a > b;
+            case BT_ge -> a >= b;
+            case VECTOR_OP_UNSIGNED_LT -> Long.compareUnsigned(a, b) < 0;
+            case VECTOR_OP_UNSIGNED_LE -> Long.compareUnsigned(a, b) <= 0;
+            case VECTOR_OP_UNSIGNED_GT -> Long.compareUnsigned(a, b) > 0;
+            case VECTOR_OP_UNSIGNED_GE -> Long.compareUnsigned(a, b) >= 0;
+            default -> throw new AssertionError();
+        };
     }
 
     /**
