@@ -275,8 +275,8 @@ final class FloatMaxVector extends FloatVector {
 
     @Override
     @ForceInline
-    public FloatMaxVector lanewise(Binary op, Vector<Float> v, VectorMask<Float> m) {
-        return (FloatMaxVector) super.lanewiseTemplate(op, FloatMaxMask.class, v, (FloatMaxMask) m);  // specialize
+    FloatMaxVector lanewise0(Binary op, Vector<Float> v, VectorMask<Float> m) {
+        return (FloatMaxVector) super.lanewise0Template(op, FloatMaxMask.class, v, (FloatMaxMask) m);  // specialize
     }
 
 

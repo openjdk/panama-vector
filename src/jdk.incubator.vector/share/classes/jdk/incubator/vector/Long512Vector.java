@@ -270,8 +270,8 @@ final class Long512Vector extends LongVector {
 
     @Override
     @ForceInline
-    public Long512Vector lanewise(Binary op, Vector<Long> v, VectorMask<Long> m) {
-        return (Long512Vector) super.lanewiseTemplate(op, Long512Mask.class, v, (Long512Mask) m);  // specialize
+    Long512Vector lanewise0(Binary op, Vector<Long> v, VectorMask<Long> m) {
+        return (Long512Vector) super.lanewise0Template(op, Long512Mask.class, v, (Long512Mask) m);  // specialize
     }
 
     /*package-private*/

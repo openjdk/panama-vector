@@ -618,11 +618,25 @@ public abstract class DoubleVector extends AbstractVector<Double> {
      * @see #lanewise(VectorOperators.Binary,double)
      * @see #lanewise(VectorOperators.Binary,double,VectorMask)
      */
+    @Override
     @ForceInline
     public final
     DoubleVector lanewise(VectorOperators.Binary op,
                                   Vector<Double> v) {
-        return lanewise(op, v, null);
+        DoubleVector that = (DoubleVector) v;
+        that.check(this);
+        if (op == FIRST_NONZERO) {
+            // FIXME: Support this in the JIT.
+            VectorMask<Long> thisNZ
+                = this.viewAsIntegralLanes().compare(NE, (long) 0);
+            that = that.blend((double) 0, thisNZ.cast(vspecies()));
+            op = OR_UNCHECKED;
+            // FIXME: Support OR_UNCHECKED on float/double also!
+            return this.viewAsIntegralLanes()
+                .lanewise(op, that.viewAsIntegralLanes())
+                .viewAsFloatingLanes();
+        }
+        return lanewise0(op, that, null);
     }
 
     /**
@@ -630,32 +644,30 @@ public abstract class DoubleVector extends AbstractVector<Double> {
      * @see #lanewise(VectorOperators.Binary,double,VectorMask)
      */
     @Override
-    public abstract
+    @ForceInline
+    public final
     DoubleVector lanewise(VectorOperators.Binary op,
                                   Vector<Double> v,
-                                  VectorMask<Double> m);
+                                  VectorMask<Double> m) {
+        if (op == FIRST_NONZERO) {
+            return blend(lanewise(op, v), m);
+        }
 
-    @ForceInline
-    final
-    DoubleVector lanewiseTemplate(VectorOperators.Binary op,
-                                          Class<? extends VectorMask<Double>> maskType,
-                                          Vector<Double> v, VectorMask<Double> m) {
         DoubleVector that = (DoubleVector) v;
         that.check(this);
-        if (opKind(op, VO_SPECIAL )) {
-            if (op == FIRST_NONZERO) {
-                // FIXME: Support this in the JIT.
-                VectorMask<Long> thisNZ
-                    = this.viewAsIntegralLanes().compare(NE, (long) 0);
-                that = that.blend((double) 0, thisNZ.cast(vspecies()));
-                op = OR_UNCHECKED;
-                // FIXME: Support OR_UNCHECKED on float/double also!
-                that = this.viewAsIntegralLanes()
-                    .lanewise(op, that.viewAsIntegralLanes())
-                    .viewAsFloatingLanes();
-                return m != null ? blend(that, m) : that;
-            }
-        }
+        return lanewise0(op, that, m);
+    }
+
+    abstract
+    DoubleVector lanewise0(VectorOperators.Binary op,
+                                   Vector<Double> v,
+                                   VectorMask<Double> m);
+    @ForceInline
+    final
+    DoubleVector lanewise0Template(VectorOperators.Binary op,
+                                           Class<? extends VectorMask<Double>> maskType,
+                                           Vector<Double> v, VectorMask<Double> m) {
+        DoubleVector that = (DoubleVector) v;
         int opc = opCode(op);
         return VectorSupport.binaryMaskOp(
             opc, getClass(), maskType, double.class, length(),
@@ -717,7 +729,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     public final
     DoubleVector lanewise(VectorOperators.Binary op,
                                   double e) {
-        return lanewise(op, e, null);
+        return lanewise(op, broadcast(e));
     }
 
     /**
@@ -762,7 +774,12 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     public final
     DoubleVector lanewise(VectorOperators.Binary op,
                                   long e) {
-        return lanewise(op, e, null);
+        double e1 = (double) e;
+        if ((long)e1 != e
+            ) {
+            vspecies().checkValue(e);  // for exception
+        }
+        return lanewise(op, e1);
     }
 
     /**

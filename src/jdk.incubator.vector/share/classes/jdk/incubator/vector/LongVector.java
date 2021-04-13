@@ -550,11 +550,27 @@ public abstract class LongVector extends AbstractVector<Long> {
      * @see #lanewise(VectorOperators.Binary,long)
      * @see #lanewise(VectorOperators.Binary,long,VectorMask)
      */
+    @Override
     @ForceInline
     public final
     LongVector lanewise(VectorOperators.Binary op,
                                   Vector<Long> v) {
-        return lanewise(op, v, null);
+        LongVector that = (LongVector) v;
+        that.check(this);
+        if (op == ROR || op == ROL) { // FIXME: JIT should do this
+            LongVector neg = that.lanewise(NEG);
+            LongVector hi = this.lanewise(LSHL, (op == ROR) ? neg : that);
+            LongVector lo = this.lanewise(LSHR, (op == ROR) ? that : neg);
+            return hi.lanewise(OR, lo);
+        }
+
+        if (op == DIV) {
+            VectorMask<Long> eqz = that.eq((long)0);
+            if (eqz.anyTrue()) {
+                throw that.divZeroException();
+            }
+        }
+        return lanewise0(op, that, null);
     }
 
     /**
@@ -562,19 +578,39 @@ public abstract class LongVector extends AbstractVector<Long> {
      * @see #lanewise(VectorOperators.Binary,long,VectorMask)
      */
     @Override
-    public abstract
+    @ForceInline
+    public final
     LongVector lanewise(VectorOperators.Binary op,
                                   Vector<Long> v,
-                                  VectorMask<Long> m);
+                                  VectorMask<Long> m) {
+        if (op == ROR || op == ROL) {
+            return blend(lanewise(op, v), m);
+        }
 
-    @ForceInline
-    final
-    LongVector lanewiseTemplate(VectorOperators.Binary op,
-                                          Class<? extends VectorMask<Long>> maskType,
-                                          Vector<Long> v, VectorMask<Long> m) {
         LongVector that = (LongVector) v;
         that.check(this);
-        if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
+        if (op == DIV) {
+            VectorMask<Long> eqz = that.eq((long)0);
+            if (eqz.and(m).anyTrue()) {
+                throw that.divZeroException();
+            }
+            // suppress div/0 exceptions in unset lanes
+            that = that.lanewise(NOT, eqz);
+        }
+        return lanewise0(op, that, m);
+    }
+
+    abstract
+    LongVector lanewise0(VectorOperators.Binary op,
+                                   Vector<Long> v,
+                                   VectorMask<Long> m);
+    @ForceInline
+    final
+    LongVector lanewise0Template(VectorOperators.Binary op,
+                                           Class<? extends VectorMask<Long>> maskType,
+                                           Vector<Long> v, VectorMask<Long> m) {
+        LongVector that = (LongVector) v;
+        if (opKind(op, VO_SPECIAL | VO_SHIFT)) {
             if (op == FIRST_NONZERO) {
                 // FIXME: Support this in the JIT.
                 VectorMask<Long> thisNZ
@@ -587,28 +623,10 @@ public abstract class LongVector extends AbstractVector<Long> {
                 // This allows the JIT to ignore some ISA details.
                 that = that.lanewise(AND, SHIFT_MASK);
             }
-            if (op == ROR || op == ROL) {  // FIXME: JIT should do this
-                LongVector neg = that.lanewise(NEG);
-                LongVector hi = this.lanewise(LSHL, (op == ROR) ? neg : that);
-                LongVector lo = this.lanewise(LSHR, (op == ROR) ? that : neg);
-                return m != null ? blend(hi.lanewise(OR, lo), m) : hi.lanewise(OR, lo);
-            } else if (op == AND_NOT) {
+            if (op == AND_NOT) {
                 // FIXME: Support this in the JIT.
                 that = that.lanewise(NOT);
                 op = AND;
-            } else if (op == DIV) {
-                VectorMask<Long> eqz = that.eq((long)0);
-                if (m != null) {
-                    if (eqz.and(m).anyTrue()) {
-                        throw that.divZeroException();
-                    }
-                    // suppress div/0 exceptions in unset lanes
-                    that = that.lanewise(NOT, eqz);
-                } else {
-                    if (eqz.anyTrue()) {
-                        throw that.divZeroException();
-                    }
-                }
             }
         }
         int opc = opCode(op);
@@ -676,7 +694,13 @@ public abstract class LongVector extends AbstractVector<Long> {
     public final
     LongVector lanewise(VectorOperators.Binary op,
                                   long e) {
-        return lanewise(op, e, null);
+        if (opKind(op, VO_SHIFT) && (long)(int)e == e) {
+            return lanewiseShift(op, (int) e);
+        }
+        if (op == AND_NOT) {
+            op = AND; e = (long) ~e;
+        }
+        return lanewise(op, broadcast(e));
     }
 
     /**
@@ -705,8 +729,8 @@ public abstract class LongVector extends AbstractVector<Long> {
                                   long e,
                                   VectorMask<Long> m) {
         if (opKind(op, VO_SHIFT) && (long)(int)e == e) {
-            LongVector shift = lanewiseShift(op, (int) e);
-            return m != null ? blend(shift, m) : shift;
+            // TODO: calls masked lanewiseShift() once it is supported
+            return blend(lanewise(op, e), m);
         }
         if (op == AND_NOT) {
             op = AND; e = (long) ~e;

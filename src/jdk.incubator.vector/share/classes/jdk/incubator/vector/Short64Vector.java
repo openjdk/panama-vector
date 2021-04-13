@@ -275,8 +275,8 @@ final class Short64Vector extends ShortVector {
 
     @Override
     @ForceInline
-    public Short64Vector lanewise(Binary op, Vector<Short> v, VectorMask<Short> m) {
-        return (Short64Vector) super.lanewiseTemplate(op, Short64Mask.class, v, (Short64Mask) m);  // specialize
+    Short64Vector lanewise0(Binary op, Vector<Short> v, VectorMask<Short> m) {
+        return (Short64Vector) super.lanewise0Template(op, Short64Mask.class, v, (Short64Mask) m);  // specialize
     }
 
     /*package-private*/

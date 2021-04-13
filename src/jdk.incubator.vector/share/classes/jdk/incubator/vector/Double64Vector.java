@@ -275,8 +275,8 @@ final class Double64Vector extends DoubleVector {
 
     @Override
     @ForceInline
-    public Double64Vector lanewise(Binary op, Vector<Double> v, VectorMask<Double> m) {
-        return (Double64Vector) super.lanewiseTemplate(op, Double64Mask.class, v, (Double64Mask) m);  // specialize
+    Double64Vector lanewise0(Binary op, Vector<Double> v, VectorMask<Double> m) {
+        return (Double64Vector) super.lanewise0Template(op, Double64Mask.class, v, (Double64Mask) m);  // specialize
     }
 
 
