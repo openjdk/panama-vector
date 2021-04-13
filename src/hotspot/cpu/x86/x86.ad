@@ -6952,39 +6952,23 @@ instruct evcmp(vec dst, vec src1, vec src2, immI8 cond, rRegP scratch) %{
 
     switch (src1_elem_bt) {
       case T_BYTE: {
-        if (is_unsigned) {
-          __ evpcmpub(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
-        } else {
-          __ evpcmpb(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
-        }
+        __ evpcmpb(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, !is_unsigned, vlen_enc);
         __ evmovdqub($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), merge, vlen_enc, $scratch$$Register);
         break;
       }
       case T_SHORT: {
-        if (is_unsigned) {
-          __ evpcmpuw(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
-        } else {
-          __ evpcmpw(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
-        }
+        __ evpcmpw(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, !is_unsigned, vlen_enc);
         __ evmovdquw($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), merge, vlen_enc, $scratch$$Register);
         break;
       }
       case T_INT: {
-        if (is_unsigned) {
-          __ evpcmpud(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
-        } else {
-          __ evpcmpd(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
-        }
+        __ evpcmpd(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, !is_unsigned, vlen_enc);
         __ evmovdqul($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), merge, vlen_enc, $scratch$$Register);
 
         break;
       }
       case T_LONG: {
-        if (is_unsigned) {
-          __ evpcmpuq(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
-        } else {
-          __ evpcmpq(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
-        }
+        __ evpcmpq(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, !is_unsigned, vlen_enc);
         __ evmovdquq($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), merge, vlen_enc, $scratch$$Register);
         break;
       }

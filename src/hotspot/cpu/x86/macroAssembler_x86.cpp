@@ -3089,42 +3089,42 @@ void MacroAssembler::evpcmpeqd(KRegister kdst, KRegister mask, XMMRegister nds,
 }
 
 void MacroAssembler::evpcmpd(KRegister kdst, KRegister mask, XMMRegister nds, AddressLiteral src,
-                             int comparison, int vector_len, Register scratch_reg) {
+                             int comparison, bool is_signed, int vector_len, Register scratch_reg) {
   if (reachable(src)) {
-    Assembler::evpcmpd(kdst, mask, nds, as_Address(src), comparison, vector_len);
+    Assembler::evpcmpd(kdst, mask, nds, as_Address(src), comparison, is_signed, vector_len);
   } else {
     lea(scratch_reg, src);
-    Assembler::evpcmpd(kdst, mask, nds, Address(scratch_reg, 0), comparison, vector_len);
+    Assembler::evpcmpd(kdst, mask, nds, Address(scratch_reg, 0), comparison, is_signed, vector_len);
   }
 }
 
 void MacroAssembler::evpcmpq(KRegister kdst, KRegister mask, XMMRegister nds, AddressLiteral src,
-                             int comparison, int vector_len, Register scratch_reg) {
+                             int comparison, bool is_signed, int vector_len, Register scratch_reg) {
   if (reachable(src)) {
-    Assembler::evpcmpq(kdst, mask, nds, as_Address(src), comparison, vector_len);
+    Assembler::evpcmpq(kdst, mask, nds, as_Address(src), comparison, is_signed, vector_len);
   } else {
     lea(scratch_reg, src);
-    Assembler::evpcmpq(kdst, mask, nds, Address(scratch_reg, 0), comparison, vector_len);
+    Assembler::evpcmpq(kdst, mask, nds, Address(scratch_reg, 0), comparison, is_signed, vector_len);
   }
 }
 
 void MacroAssembler::evpcmpb(KRegister kdst, KRegister mask, XMMRegister nds, AddressLiteral src,
-                             int comparison, int vector_len, Register scratch_reg) {
+                             int comparison, bool is_signed, int vector_len, Register scratch_reg) {
   if (reachable(src)) {
-    Assembler::evpcmpb(kdst, mask, nds, as_Address(src), comparison, vector_len);
+    Assembler::evpcmpb(kdst, mask, nds, as_Address(src), comparison, is_signed, vector_len);
   } else {
     lea(scratch_reg, src);
-    Assembler::evpcmpb(kdst, mask, nds, Address(scratch_reg, 0), comparison, vector_len);
+    Assembler::evpcmpb(kdst, mask, nds, Address(scratch_reg, 0), comparison, is_signed, vector_len);
   }
 }
 
 void MacroAssembler::evpcmpw(KRegister kdst, KRegister mask, XMMRegister nds, AddressLiteral src,
-                             int comparison, int vector_len, Register scratch_reg) {
+                             int comparison, bool is_signed, int vector_len, Register scratch_reg) {
   if (reachable(src)) {
-    Assembler::evpcmpw(kdst, mask, nds, as_Address(src), comparison, vector_len);
+    Assembler::evpcmpw(kdst, mask, nds, as_Address(src), comparison, is_signed, vector_len);
   } else {
     lea(scratch_reg, src);
-    Assembler::evpcmpw(kdst, mask, nds, Address(scratch_reg, 0), comparison, vector_len);
+    Assembler::evpcmpw(kdst, mask, nds, Address(scratch_reg, 0), comparison, is_signed, vector_len);
   }
 }
 
@@ -7803,7 +7803,7 @@ void MacroAssembler::char_array_compress(Register src, Register dst, Register le
     kmovdl(k3, result);
 
     evmovdquw(tmp1Reg, k3, Address(src, 0), /*merge*/ false, Assembler::AVX_512bit);
-    evpcmpuw(k2, k3, tmp1Reg, tmp2Reg, Assembler::le, Assembler::AVX_512bit);
+    evpcmpw(k2, k3, tmp1Reg, tmp2Reg, Assembler::le, /*signed*/false, Assembler::AVX_512bit);
     ktestd(k2, k3);
     jcc(Assembler::carryClear, return_zero);
 
@@ -7853,7 +7853,7 @@ void MacroAssembler::char_array_compress(Register src, Register dst, Register le
     kmovdl(k3, result);
 
     evmovdquw(tmp1Reg, k3, Address(src, 0), /*merge*/ false, Assembler::AVX_512bit);
-    evpcmpuw(k2, k3, tmp1Reg, tmp2Reg, Assembler::le, Assembler::AVX_512bit);
+    evpcmpw(k2, k3, tmp1Reg, tmp2Reg, Assembler::le, /*signed*/ false, Assembler::AVX_512bit);
     ktestd(k2, k3);
     jcc(Assembler::carryClear, return_zero);
 

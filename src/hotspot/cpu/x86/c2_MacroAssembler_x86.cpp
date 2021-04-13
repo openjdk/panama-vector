@@ -2113,18 +2113,18 @@ void C2_MacroAssembler::get_elem(BasicType typ, XMMRegister dst, XMMRegister src
 void C2_MacroAssembler::evpcmp(BasicType typ, KRegister kdmask, KRegister ksmask, XMMRegister src1, AddressLiteral adr, int comparison, int vector_len, Register scratch) {
   switch(typ) {
     case T_BYTE:
-      evpcmpb(kdmask, ksmask, src1, adr, comparison, vector_len, scratch);
+      evpcmpb(kdmask, ksmask, src1, adr, comparison, vector_len, /*signed*/ true, scratch);
       break;
     case T_SHORT:
-      evpcmpw(kdmask, ksmask, src1, adr, comparison, vector_len, scratch);
+      evpcmpw(kdmask, ksmask, src1, adr, comparison, vector_len, /*signed*/ true, scratch);
       break;
     case T_INT:
     case T_FLOAT:
-      evpcmpd(kdmask, ksmask, src1, adr, comparison, vector_len, scratch);
+      evpcmpd(kdmask, ksmask, src1, adr, comparison, vector_len, /*signed*/ true, scratch);
       break;
     case T_LONG:
     case T_DOUBLE:
-      evpcmpq(kdmask, ksmask, src1, adr, comparison, vector_len, scratch);
+      evpcmpq(kdmask, ksmask, src1, adr, comparison, vector_len, /*signed*/ true, scratch);
       break;
     default:
       assert(false,"Should not reach here.");
