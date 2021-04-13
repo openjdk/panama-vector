@@ -1735,7 +1735,6 @@ instruct vcvt$1to$2`'(vReg dst, vReg src)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
   match(Set dst (VectorCast$1`'2X src));
-  effect(TEMP_DEF dst);
   ins_cost(2 * SVE_COST);
   format %{ "sve_$3  $dst, $4, $src\n\t"
             "sve_$3  $dst, $5, $dst\t# convert $1 to $2 vector" %}
@@ -1756,7 +1755,6 @@ instruct vcvt$1to$2`'(vReg dst, vReg src)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
   match(Set dst (VectorCast$1`'2X src));
-  effect(TEMP_DEF dst);
   ins_cost(3 * SVE_COST);
   format %{ "sve_$3  $dst, $4, $src\n\t"
             "sve_$3  $dst, $5, $dst\n\t"
@@ -1800,7 +1798,7 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
   match(Set dst (VectorCast$1`'2X src));
-  effect(TEMP_DEF dst, TEMP tmp);
+  effect(TEMP tmp);
   ins_cost(3 * SVE_COST);
   format %{ "sve_$3  $tmp, $4, 0\n\t"
             "sve_$5  $dst, $4, $src, tmp\n\t"
@@ -1823,7 +1821,7 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
   match(Set dst (VectorCast$1`'2X src));
-  effect(TEMP_DEF dst, TEMP tmp);
+  effect(TEMP tmp);
   ins_cost(4 * SVE_COST);
   format %{ "sve_$3  $tmp, $4, 0\n\t"
             "sve_$5  $dst, $4, $src, tmp\n\t"
@@ -1892,7 +1890,7 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
   match(Set dst (VectorCast$1`'2X src));
-  effect(TEMP_DEF dst, TEMP tmp);
+  effect(TEMP tmp);
   ins_cost(3 * SVE_COST);
   format %{ "sve_$3  $dst, $4, $src, $5\n\t"
             "sve_$6  $tmp, $7, 0\n\t"
@@ -1980,7 +1978,7 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
   match(Set dst (VectorCast$1`'2X src));
-  effect(TEMP_DEF dst, TEMP tmp);
+  effect(TEMP tmp);
   ins_cost(4 * SVE_COST);
   format %{ "sve_$3  $dst, $4, $src, $4\n\t"
             "sve_$5  $tmp, $6, 0\n\t"
@@ -2025,7 +2023,7 @@ instruct vcvt$1to$2`'(vReg dst, vReg src, vReg tmp)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($2));
   match(Set dst (VectorCast$1`'2X src));
-  effect(TEMP_DEF dst, TEMP tmp);
+  effect(TEMP tmp);
   ins_cost(5 * SVE_COST);
   format %{ "sve_$3  $dst, $4, $src, $4\n\t"
             "sve_$5  $tmp, $6, 0\n\t"
@@ -2155,7 +2153,7 @@ instruct insert$1_small`'(vReg dst, vReg src, $2 val, immI idx, vReg tmp, pRegGo
   predicate(UseSVE > 0 && n->as_Vector()->length() <= 32 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($1));
   match(Set dst (VectorInsert (Binary src val) idx));
-  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  effect(TEMP_DEF dst, TEMP tmp, TEMP pTmp, KILL cr);
   ins_cost(4 * SVE_COST);
   format %{ "sve_index $tmp, $3, -16, 1\n\t"
             "sve_cmpeq $pTmp, $tmp, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
@@ -2189,7 +2187,7 @@ instruct insert$1`'(vReg dst, vReg src, $2 val, immI idx, vReg tmp, pRegGov pTmp
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($1));
   match(Set dst (VectorInsert (Binary src val) idx));
-  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  effect(TEMP_DEF dst, TEMP tmp, TEMP pTmp, KILL cr);
   ins_cost(4 * SVE_COST);
   format %{ "sve_index $tmp, $3, -16, 1\n\t"
             "sve_cmpeq $pTmp, $tmp, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
@@ -2221,7 +2219,7 @@ instruct insert$1`'(vReg dst, vReg src, $2 val, immI idx, vReg tmp1, vReg tmp2, 
   predicate(UseSVE > 0 && n->as_Vector()->length() > 32 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($1));
   match(Set dst (VectorInsert (Binary src val) idx));
-  effect(TEMP tmp1, TEMP tmp2, TEMP pTmp, KILL cr);
+  effect(TEMP_DEF dst, TEMP tmp1, TEMP tmp2, TEMP pTmp, KILL cr);
   ins_cost(5 * SVE_COST);
   format %{ "sve_index $tmp1, $3, 0, 1\n\t"
             "sve_dup $tmp2, $3, $idx\n\t"
