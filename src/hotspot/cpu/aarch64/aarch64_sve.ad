@@ -1808,8 +1808,9 @@ instruct reduce_orL_partial(iRegLNoSp dst, iRegL src1, vReg src2, vRegD vtmp,
 // vector xor reduction
 
 instruct reduce_eorB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
-  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  predicate(UseSVE > 0 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE &&
+            n->in(2)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
   match(Set dst (XorReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1828,8 +1829,9 @@ instruct reduce_eorB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 %}
 
 instruct reduce_eorS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
-  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  predicate(UseSVE > 0 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT &&
+            n->in(2)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
   match(Set dst (XorReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1848,8 +1850,9 @@ instruct reduce_eorS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 %}
 
 instruct reduce_eorI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
-  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  predicate(UseSVE > 0 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT &&
+            n->in(2)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
   match(Set dst (XorReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1866,8 +1869,9 @@ instruct reduce_eorI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 %}
 
 instruct reduce_eorL(iRegLNoSp dst, iRegL src1, vReg src2, vRegD tmp) %{
-  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  predicate(UseSVE > 0 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG &&
+            n->in(2)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
   match(Set dst (XorReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);

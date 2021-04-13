@@ -1325,8 +1325,9 @@ dnl REDUCE_XOR_EXT($1,        $2,      $3,      $4,      $5,   $6,        $7   )
 dnl REDUCE_XOR_EXT(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
 define(`REDUCE_XOR_EXT', `
 instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
-  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6);
+  predicate(UseSVE > 0 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6 &&
+            n->in(2)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
   match(Set dst ($2 src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1348,8 +1349,9 @@ dnl REDUCE_XOR($1,        $2,      $3,      $4,      $5,   $6,        $7   )
 dnl REDUCE_XOR(insn_name, op_name, reg_dst, reg_src, size, elem_type, insn1)
 define(`REDUCE_XOR', `
 instruct $1($3 dst, $4 src1, vReg src2, vRegD tmp) %{
-  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6);
+  predicate(UseSVE > 0 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == $6 &&
+            n->in(2)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
   match(Set dst ($2 src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
