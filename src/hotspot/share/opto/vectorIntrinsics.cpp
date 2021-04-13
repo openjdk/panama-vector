@@ -1198,13 +1198,11 @@ bool LibraryCallKit::inline_vector_compare() {
   BasicType elem_bt = elem_type->basic_type();
   BasicType mask_bt = elem_bt;
 
-  // @@@ Check if arch supports unsigned comparisons
-  //     Update arch support for unsigned comparisons
-  if ((cond->get_con() & 0x10) != 0) {
+  if ((cond->get_con() & BoolTest::unsigned_compare) != 0) {
     if (!Matcher::supports_unsigned_vector_comparison(num_elem, elem_bt)) {
       if (C->print_intrinsics()) {
         tty->print_cr("  ** not supported: unsigned comparison op=comp/%d vlen=%d etype=%s ismask=usestore",
-                      cond->get_con() & 0x0F, num_elem, type2name(elem_bt));
+                      cond->get_con() & (BoolTest::unsigned_compare - 1), num_elem, type2name(elem_bt));
       }
       return false;
     }
