@@ -305,7 +305,8 @@ public:
 // We pick the values as 3 bits; the low order 2 bits we compare against the
 // condition codes, the high bit flips the sense of the result.
 struct BoolTest {
-  enum mask { eq = 0, ne = 4, le = 5, ge = 7, lt = 3, gt = 1, overflow = 2, no_overflow = 6, never = 8, illegal = 9 };
+  enum mask { eq = 0, ne = 4, le = 5, ge = 7, lt = 3, gt = 1, overflow = 2, no_overflow = 6, never = 8, illegal = 9,
+                              unsigned_compare = 16 };
   mask _test;
   BoolTest( mask btm ) : _test(btm) {}
   const Type *cc2logical( const Type *CC ) const;

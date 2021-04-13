@@ -1226,6 +1226,11 @@ static inline Assembler::AvxVectorLen vector_length_encoding(const MachNode* use
   return vector_length_encoding(def);
 }
 
+static inline bool is_unsigned_booltest_pred(int bt) {
+  return  ((bt & BoolTest::unsigned_compare) == BoolTest::unsigned_compare);
+}
+
+
 class Node::PD {
 public:
   enum NodeFlags {
@@ -1827,6 +1832,22 @@ bool Matcher::supports_vector_variable_rotates(void) {
   return true;
 }
 
+bool Matcher::supports_unsigned_vector_comparison(int vlen, BasicType bt) {
+  if ((UseAVX > 2) && (VM_Version::supports_avx512vl() || vlen == 64))
+    return true;
+  else {
+    // instruction set supports only signed comparison
+    // so need to zero extend to higher integral type and perform comparison
+    // cannot cast long to higher integral type
+    // and on avx1 cannot cast 128 bit integral vectors to higher size
+
+    if ((bt != T_LONG)  &&
+        ((UseAVX >= 2) || (vlen <= 8)))
+      return true;
+  }
+  return false;
+}
+
 const bool Matcher::has_predicated_vectors(void) {
   bool ret_value = false;
   if (UseAVX > 2) {
@@ -2117,6 +2138,7 @@ void Compile::reshape_address(AddPNode* addp) {
 }
 
 static inline Assembler::ComparisonPredicate booltest_pred_to_comparison_pred(int bt) {
+  bt = bt & ~BoolTest::unsigned_compare;
   switch (bt) {
     case BoolTest::eq: return Assembler::eq;
     case BoolTest::ne: return Assembler::neq;
@@ -6855,7 +6877,9 @@ instruct evcmpFD(vec dst, vec src1, vec src2, immI8 cond, rRegP scratch) %{
 %}
 
 instruct vcmp(legVec dst, legVec src1, legVec src2, immI8 cond, rRegP scratch) %{
-  predicate(vector_length_in_bytes(n->in(1)->in(1)) >=  8 && // src1
+  predicate((UseAVX <= 2 || !VM_Version::supports_avx512vl()) && 
+            !is_unsigned_booltest_pred(n->in(2)->get_int()) &&
+            vector_length_in_bytes(n->in(1)->in(1)) >=  8 && // src1
             vector_length_in_bytes(n->in(1)->in(1)) <= 32 && // src1
             is_integral_type(vector_element_basic_type(n->in(1)->in(1)))); // src1
   match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
@@ -6870,8 +6894,47 @@ instruct vcmp(legVec dst, legVec src1, legVec src2, immI8 cond, rRegP scratch) %
   ins_pipe( pipe_slow );
 %}
 
+instruct vcmpu(legVec dst, legVec src1, legVec src2, immI8 cond, legVec vtmp1, legVec vtmp2, rRegP scratch) %{
+  predicate((UseAVX == 2 || !VM_Version::supports_avx512vl()) && 
+            is_unsigned_booltest_pred(n->in(2)->get_int()) &&
+            vector_length_in_bytes(n->in(1)->in(1)) >=  8 && // src1
+            vector_length_in_bytes(n->in(1)->in(1)) <= 16 && // src1
+            is_integral_type(vector_element_basic_type(n->in(1)->in(1)))); // src1
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
+  effect(TEMP vtmp1, TEMP vtmp2, TEMP scratch);
+  format %{ "vector_compareu $dst,$src1,$src2,$cond\t! using $scratch as TEMP" %}
+  ins_encode %{
+    int vlen = vector_length_in_bytes(this, $src1);
+    Assembler::ComparisonPredicate cmp = booltest_pred_to_comparison_pred($cond$$constant);
+    BasicType bt = vector_element_basic_type(this, $src1);
+    __ vpcmpu(bt, $dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen, $vtmp1$$XMMRegister,
+              $vtmp2$$XMMRegister, $scratch$$Register);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vcmpu32(legVec dst, legVec src1, legVec src2, immI8 cond, legVec vtmp1, legVec vtmp2, legVec vtmp3, rRegP scratch) %{
+  predicate((UseAVX == 2 || !VM_Version::supports_avx512vl()) && 
+            is_unsigned_booltest_pred(n->in(2)->get_int()) &&
+            vector_length_in_bytes(n->in(1)->in(1)) == 32 && // src1
+            is_integral_type(vector_element_basic_type(n->in(1)->in(1)))); // src1
+  match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
+  effect(TEMP dst, TEMP vtmp1, TEMP vtmp2, TEMP vtmp3, TEMP scratch);
+  format %{ "vector_compareu $dst,$src1,$src2,$cond\t! using $scratch as TEMP" %}
+  ins_encode %{
+    int vlen = vector_length_in_bytes(this, $src1);
+    Assembler::ComparisonPredicate cmp = booltest_pred_to_comparison_pred($cond$$constant);
+    BasicType bt = vector_element_basic_type(this, $src1);
+    __ vpcmpu32(bt, $dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen, $vtmp1$$XMMRegister,
+                $vtmp2$$XMMRegister, $vtmp3$$XMMRegister, $scratch$$Register);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 instruct evcmp(vec dst, vec src1, vec src2, immI8 cond, rRegP scratch) %{
-  predicate(vector_length_in_bytes(n->in(1)->in(1)) == 64 && // src1
+  predicate(UseAVX > 2 && 
+            (VM_Version::supports_avx512vl() ||  
+             vector_length_in_bytes(n->in(1)->in(1)) == 64) && // src1
             is_integral_type(vector_element_basic_type(n->in(1)->in(1)))); // src1
   match(Set dst (VectorMaskCmp (Binary src1 src2) cond));
   effect(TEMP scratch);
@@ -6879,8 +6942,9 @@ instruct evcmp(vec dst, vec src1, vec src2, immI8 cond, rRegP scratch) %{
   ins_encode %{
     assert(UseAVX > 2, "required");
 
-    int vlen_enc = Assembler::AVX_512bit;
+    int vlen_enc = vector_length_encoding(this, $src1);
     Assembler::ComparisonPredicate cmp = booltest_pred_to_comparison_pred($cond$$constant);
+    bool is_unsigned = is_unsigned_booltest_pred($cond$$constant);
     KRegister ktmp = k2; // Use a hardcoded temp due to no k register allocation.
     KRegister mask = k0; // The comparison itself is not being masked.
     bool merge = false;
@@ -6888,26 +6952,26 @@ instruct evcmp(vec dst, vec src1, vec src2, immI8 cond, rRegP scratch) %{
 
     switch (src1_elem_bt) {
       case T_BYTE: {
-        __ evpcmpb(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
+        __ evpcmpb(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, !is_unsigned, vlen_enc);
         __ evmovdqub($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), merge, vlen_enc, $scratch$$Register);
         break;
       }
       case T_SHORT: {
-        __ evpcmpw(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
+        __ evpcmpw(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, !is_unsigned, vlen_enc);
         __ evmovdquw($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), merge, vlen_enc, $scratch$$Register);
         break;
       }
       case T_INT: {
-        __ evpcmpd(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
+        __ evpcmpd(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, !is_unsigned, vlen_enc);
         __ evmovdqul($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), merge, vlen_enc, $scratch$$Register);
+
         break;
       }
       case T_LONG: {
-        __ evpcmpq(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, vlen_enc);
+        __ evpcmpq(ktmp, mask, $src1$$XMMRegister, $src2$$XMMRegister, cmp, !is_unsigned, vlen_enc);
         __ evmovdquq($dst$$XMMRegister, ktmp, ExternalAddress(vector_all_bits_set()), merge, vlen_enc, $scratch$$Register);
         break;
       }
-
       default: assert(false, "%s", type2name(src1_elem_bt));
     }
   %}

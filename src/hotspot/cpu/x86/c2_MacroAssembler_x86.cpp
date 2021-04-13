@@ -2113,22 +2113,106 @@ void C2_MacroAssembler::get_elem(BasicType typ, XMMRegister dst, XMMRegister src
 void C2_MacroAssembler::evpcmp(BasicType typ, KRegister kdmask, KRegister ksmask, XMMRegister src1, AddressLiteral adr, int comparison, int vector_len, Register scratch) {
   switch(typ) {
     case T_BYTE:
-      evpcmpb(kdmask, ksmask, src1, adr, comparison, vector_len, scratch);
+      evpcmpb(kdmask, ksmask, src1, adr, comparison, vector_len, /*signed*/ true, scratch);
       break;
     case T_SHORT:
-      evpcmpw(kdmask, ksmask, src1, adr, comparison, vector_len, scratch);
+      evpcmpw(kdmask, ksmask, src1, adr, comparison, vector_len, /*signed*/ true, scratch);
       break;
     case T_INT:
     case T_FLOAT:
-      evpcmpd(kdmask, ksmask, src1, adr, comparison, vector_len, scratch);
+      evpcmpd(kdmask, ksmask, src1, adr, comparison, vector_len, /*signed*/ true, scratch);
       break;
     case T_LONG:
     case T_DOUBLE:
-      evpcmpq(kdmask, ksmask, src1, adr, comparison, vector_len, scratch);
+      evpcmpq(kdmask, ksmask, src1, adr, comparison, vector_len, /*signed*/ true, scratch);
       break;
     default:
       assert(false,"Should not reach here.");
       break;
+  }
+}
+
+void C2_MacroAssembler::vpcmpu(BasicType typ, XMMRegister dst, XMMRegister src1, XMMRegister src2, ComparisonPredicate comparison,
+                            int vlen_in_bytes, XMMRegister vtmp1, XMMRegister vtmp2, Register scratch) {
+  int vlen_enc = vector_length_encoding(vlen_in_bytes*2);
+  switch (typ) {
+  case T_BYTE:
+    vpmovzxbw(vtmp1, src1, vlen_enc);
+    vpmovzxbw(vtmp2, src2, vlen_enc);
+    vpcmpCCW(dst, vtmp1, vtmp2, comparison, Assembler::W, vlen_enc, scratch);
+    vpand(dst, dst, ExternalAddress(StubRoutines::x86::vector_short_to_byte_mask()), vlen_enc, scratch);
+    vpackuswb(dst, dst, dst, vlen_enc);
+    break;
+  case T_SHORT:
+    vpmovzxwd(vtmp1, src1, vlen_enc);
+    vpmovzxwd(vtmp2, src2, vlen_enc);
+    vpcmpCCW(dst, vtmp1, vtmp2, comparison, Assembler::D, vlen_enc, scratch);
+    vpand(dst, dst, ExternalAddress(StubRoutines::x86::vector_int_to_short_mask()), vlen_enc, scratch);
+    vpackusdw(dst, dst, dst, vlen_enc);
+    break;
+  case T_INT:
+    vpmovzxdq(vtmp1, src1, vlen_enc);
+    vpmovzxdq(vtmp2, src2, vlen_enc);
+    vpcmpCCW(dst, vtmp1, vtmp2, comparison, Assembler::Q, vlen_enc, scratch);
+    vpermilps(dst, dst, 8, vlen_enc);
+    break;
+  default:
+    assert(false, "Should not reach here");
+  }
+  if (vlen_in_bytes == 16) {
+    vpermpd(dst, dst, 0x8, vlen_enc);
+  }
+}
+
+void C2_MacroAssembler::vpcmpu32(BasicType typ, XMMRegister dst, XMMRegister src1, XMMRegister src2, ComparisonPredicate comparison, int vlen_in_bytes,
+                              XMMRegister vtmp1, XMMRegister vtmp2, XMMRegister vtmp3, Register scratch) {
+  int vlen_enc = vector_length_encoding(vlen_in_bytes);
+  switch (typ) {
+  case T_BYTE:
+    vpmovzxbw(vtmp1, src1, vlen_enc);
+    vpmovzxbw(vtmp2, src2, vlen_enc);
+    vpcmpCCW(dst, vtmp1, vtmp2, comparison, Assembler::W, vlen_enc, scratch);
+    vpand(dst, dst, ExternalAddress(StubRoutines::x86::vector_short_to_byte_mask()), vlen_enc, scratch);
+    vextracti128(vtmp1, src1, 1);
+    vextracti128(vtmp2, src2, 1);
+    vpmovzxbw(vtmp1, vtmp1, vlen_enc);
+    vpmovzxbw(vtmp2, vtmp2, vlen_enc);
+    vpcmpCCW(vtmp3, vtmp1, vtmp2, comparison, Assembler::W, vlen_enc, scratch);
+    vpand(vtmp3, vtmp3, ExternalAddress(StubRoutines::x86::vector_short_to_byte_mask()), vlen_enc, scratch);
+    vpackuswb(dst, dst, vtmp3, vlen_enc);
+    vpermpd(dst, dst, 0xd8, vlen_enc);
+    break;
+  case T_SHORT:
+    vpmovzxwd(vtmp1, src1, vlen_enc);
+    vpmovzxwd(vtmp2, src2, vlen_enc);
+    vpcmpCCW(dst, vtmp1, vtmp2, comparison, Assembler::D, vlen_enc, scratch);
+    vpand(dst, dst, ExternalAddress(StubRoutines::x86::vector_int_to_short_mask()), vlen_enc, scratch);
+    vextracti128(vtmp1, src1, 1);
+    vextracti128(vtmp2, src2, 1);
+    vpmovzxwd(vtmp1, vtmp1, vlen_enc);
+    vpmovzxwd(vtmp2, vtmp2, vlen_enc);
+    vpcmpCCW(vtmp3, vtmp1, vtmp2, comparison, Assembler::D,  vlen_enc, scratch);
+    vpand(vtmp3, vtmp3, ExternalAddress(StubRoutines::x86::vector_int_to_short_mask()), vlen_enc, scratch);
+    vpackusdw(dst, dst, vtmp3, vlen_enc);
+    vpermpd(dst, dst, 0xd8, vlen_enc);
+    break;
+  case T_INT:
+    vpmovzxdq(vtmp1, src1, vlen_enc);
+    vpmovzxdq(vtmp2, src2, vlen_enc);
+    vpcmpCCW(dst, vtmp1, vtmp2, comparison, Assembler::Q, vlen_enc, scratch);
+    vpermilps(dst, dst, 8, vlen_enc);
+    vpermpd(dst, dst, 8, vlen_enc);
+    vextracti128(vtmp1, src1, 1);
+    vextracti128(vtmp2, src2, 1);
+    vpmovzxdq(vtmp1, vtmp1, vlen_enc);
+    vpmovzxdq(vtmp2, vtmp2, vlen_enc);
+    vpcmpCCW(vtmp3, vtmp1, vtmp2, comparison, Assembler::Q,  vlen_enc, scratch);
+    vpermilps(vtmp3, vtmp3, 8, vlen_enc);
+    vpermpd(vtmp3, vtmp3, 0x80, vlen_enc);
+    vpblendd(dst, dst, vtmp3, 0xf0, vlen_enc);
+    break;
+  default:
+    assert(false, "Should not reach here");
   }
 }
 
