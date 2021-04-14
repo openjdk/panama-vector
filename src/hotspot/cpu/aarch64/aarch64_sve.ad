@@ -3027,7 +3027,6 @@ instruct vcvtBtoI(vReg dst, vReg src)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_INT);
   match(Set dst (VectorCastB2X src));
-  effect(TEMP_DEF dst);
   ins_cost(2 * SVE_COST);
   format %{ "sve_sunpklo  $dst, H, $src\n\t"
             "sve_sunpklo  $dst, S, $dst\t# convert B to I vector" %}
@@ -3043,7 +3042,6 @@ instruct vcvtStoL(vReg dst, vReg src)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
   match(Set dst (VectorCastS2X src));
-  effect(TEMP_DEF dst);
   ins_cost(2 * SVE_COST);
   format %{ "sve_sunpklo  $dst, S, $src\n\t"
             "sve_sunpklo  $dst, D, $dst\t# convert S to L vector" %}
@@ -3060,7 +3058,6 @@ instruct vcvtBtoL(vReg dst, vReg src)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
   match(Set dst (VectorCastB2X src));
-  effect(TEMP_DEF dst);
   ins_cost(3 * SVE_COST);
   format %{ "sve_sunpklo  $dst, H, $src\n\t"
             "sve_sunpklo  $dst, S, $dst\n\t"
@@ -3128,7 +3125,7 @@ instruct vcvtItoB(vReg dst, vReg src, vReg tmp)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (VectorCastI2X src));
-  effect(TEMP_DEF dst, TEMP tmp);
+  effect(TEMP tmp);
   ins_cost(3 * SVE_COST);
   format %{ "sve_dup  $tmp, H, 0\n\t"
             "sve_uzp1  $dst, H, $src, tmp\n\t"
@@ -3146,7 +3143,7 @@ instruct vcvtLtoS(vReg dst, vReg src, vReg tmp)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (VectorCastL2X src));
-  effect(TEMP_DEF dst, TEMP tmp);
+  effect(TEMP tmp);
   ins_cost(3 * SVE_COST);
   format %{ "sve_dup  $tmp, S, 0\n\t"
             "sve_uzp1  $dst, S, $src, tmp\n\t"
@@ -3165,7 +3162,7 @@ instruct vcvtLtoB(vReg dst, vReg src, vReg tmp)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (VectorCastL2X src));
-  effect(TEMP_DEF dst, TEMP tmp);
+  effect(TEMP tmp);
   ins_cost(4 * SVE_COST);
   format %{ "sve_dup  $tmp, S, 0\n\t"
             "sve_uzp1  $dst, S, $src, tmp\n\t"
@@ -3241,7 +3238,7 @@ instruct vcvtLtoF(vReg dst, vReg src, vReg tmp)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
   match(Set dst (VectorCastL2X src));
-  effect(TEMP_DEF dst, TEMP tmp);
+  effect(TEMP tmp);
   ins_cost(3 * SVE_COST);
   format %{ "sve_scvtf  $dst, S, $src, D\n\t"
             "sve_dup  $tmp, S, 0\n\t"
@@ -3259,7 +3256,7 @@ instruct vcvtDtoF(vReg dst, vReg src, vReg tmp)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
   match(Set dst (VectorCastD2X src));
-  effect(TEMP_DEF dst, TEMP tmp);
+  effect(TEMP tmp);
   ins_cost(3 * SVE_COST);
   format %{ "sve_fcvt  $dst, S, $src, D\n\t"
             "sve_dup  $tmp, S, 0\n\t"
@@ -3415,7 +3412,7 @@ instruct vcvtFtoB(vReg dst, vReg src, vReg tmp)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (VectorCastF2X src));
-  effect(TEMP_DEF dst, TEMP tmp);
+  effect(TEMP tmp);
   ins_cost(4 * SVE_COST);
   format %{ "sve_fcvtzs  $dst, S, $src, S\n\t"
             "sve_dup  $tmp, H, 0\n\t"
@@ -3435,7 +3432,7 @@ instruct vcvtDtoS(vReg dst, vReg src, vReg tmp)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (VectorCastD2X src));
-  effect(TEMP_DEF dst, TEMP tmp);
+  effect(TEMP tmp);
   ins_cost(4 * SVE_COST);
   format %{ "sve_fcvtzs  $dst, D, $src, D\n\t"
             "sve_dup  $tmp, S, 0\n\t"
@@ -3473,7 +3470,7 @@ instruct vcvtDtoB(vReg dst, vReg src, vReg tmp)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (VectorCastD2X src));
-  effect(TEMP_DEF dst, TEMP tmp);
+  effect(TEMP tmp);
   ins_cost(5 * SVE_COST);
   format %{ "sve_fcvtzs  $dst, D, $src, D\n\t"
             "sve_dup  $tmp, S, 0\n\t"
@@ -3685,292 +3682,252 @@ instruct vtest_anytrue_partial(iRegINoSp dst, vReg src1, vReg src2, pRegGov pTmp
 
 // ------------------------------ Vector insert ---------------------------------
 
-instruct insertB_small(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp, pRegGov pTmp, rFlagsReg cr)
+instruct insertB_small(vReg dst, vReg src, iRegIorL2I val, immI idx, pRegGov pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 && n->as_Vector()->length() <= 32 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (VectorInsert (Binary src val) idx));
-  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  effect(TEMP_DEF dst, TEMP pTmp, KILL cr);
   ins_cost(4 * SVE_COST);
-  format %{ "sve_index $tmp, B, -16, 1\n\t"
-            "sve_cmpeq $pTmp, $tmp, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
+  format %{ "sve_index $dst, B, -16, 1\n\t"
+            "sve_cmpeq $pTmp, $dst, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (B)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (B)" %}
   ins_encode %{
-    __ sve_index(as_FloatRegister($tmp$$reg), __ B, -16, 1);
+    __ sve_index(as_FloatRegister($dst$$reg), __ B, -16, 1);
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ B, ptrue,
-                 as_FloatRegister($tmp$$reg), (int)($idx$$constant) - 16);
-    // If src and dst are the same reg, this move is not needed.
-    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
-      __ sve_orr(as_FloatRegister($dst$$reg),
-             as_FloatRegister($src$$reg),
-             as_FloatRegister($src$$reg));
-    }
+                 as_FloatRegister($dst$$reg), (int)($idx$$constant) - 16);
+    __ sve_orr(as_FloatRegister($dst$$reg),
+               as_FloatRegister($src$$reg),
+               as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ B,
                as_PRegister($pTmp$$reg), as_Register($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
 
-instruct insertS_small(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp, pRegGov pTmp, rFlagsReg cr)
+instruct insertS_small(vReg dst, vReg src, iRegIorL2I val, immI idx, pRegGov pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 && n->as_Vector()->length() <= 32 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (VectorInsert (Binary src val) idx));
-  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  effect(TEMP_DEF dst, TEMP pTmp, KILL cr);
   ins_cost(4 * SVE_COST);
-  format %{ "sve_index $tmp, H, -16, 1\n\t"
-            "sve_cmpeq $pTmp, $tmp, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
+  format %{ "sve_index $dst, H, -16, 1\n\t"
+            "sve_cmpeq $pTmp, $dst, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (S)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (S)" %}
   ins_encode %{
-    __ sve_index(as_FloatRegister($tmp$$reg), __ H, -16, 1);
+    __ sve_index(as_FloatRegister($dst$$reg), __ H, -16, 1);
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ H, ptrue,
-                 as_FloatRegister($tmp$$reg), (int)($idx$$constant) - 16);
-    // If src and dst are the same reg, this move is not needed.
-    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
-      __ sve_orr(as_FloatRegister($dst$$reg),
-             as_FloatRegister($src$$reg),
-             as_FloatRegister($src$$reg));
-    }
+                 as_FloatRegister($dst$$reg), (int)($idx$$constant) - 16);
+    __ sve_orr(as_FloatRegister($dst$$reg),
+               as_FloatRegister($src$$reg),
+               as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ H,
                as_PRegister($pTmp$$reg), as_Register($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
 
-instruct insertI_small(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp, pRegGov pTmp, rFlagsReg cr)
+instruct insertI_small(vReg dst, vReg src, iRegIorL2I val, immI idx, pRegGov pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 && n->as_Vector()->length() <= 32 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_INT);
   match(Set dst (VectorInsert (Binary src val) idx));
-  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  effect(TEMP_DEF dst, TEMP pTmp, KILL cr);
   ins_cost(4 * SVE_COST);
-  format %{ "sve_index $tmp, S, -16, 1\n\t"
-            "sve_cmpeq $pTmp, $tmp, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
+  format %{ "sve_index $dst, S, -16, 1\n\t"
+            "sve_cmpeq $pTmp, $dst, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (I)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (I)" %}
   ins_encode %{
-    __ sve_index(as_FloatRegister($tmp$$reg), __ S, -16, 1);
+    __ sve_index(as_FloatRegister($dst$$reg), __ S, -16, 1);
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ S, ptrue,
-                 as_FloatRegister($tmp$$reg), (int)($idx$$constant) - 16);
-    // If src and dst are the same reg, this move is not needed.
-    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
-      __ sve_orr(as_FloatRegister($dst$$reg),
-             as_FloatRegister($src$$reg),
-             as_FloatRegister($src$$reg));
-    }
+                 as_FloatRegister($dst$$reg), (int)($idx$$constant) - 16);
+    __ sve_orr(as_FloatRegister($dst$$reg),
+               as_FloatRegister($src$$reg),
+               as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ S,
                as_PRegister($pTmp$$reg), as_Register($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
 
-instruct insertF_small(vReg dst, vReg src, vRegF val, immI idx, vReg tmp, pRegGov pTmp, rFlagsReg cr)
+instruct insertF_small(vReg dst, vReg src, vRegF val, immI idx, pRegGov pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 && n->as_Vector()->length() <= 32 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
   match(Set dst (VectorInsert (Binary src val) idx));
-  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  effect(TEMP_DEF dst, TEMP pTmp, KILL cr);
   ins_cost(4 * SVE_COST);
-  format %{ "sve_index $tmp, S, -16, 1\n\t"
-            "sve_cmpeq $pTmp, $tmp, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
+  format %{ "sve_index $dst, S, -16, 1\n\t"
+            "sve_cmpeq $pTmp, $dst, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (F)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (F)" %}
   ins_encode %{
-    __ sve_index(as_FloatRegister($tmp$$reg), __ S, -16, 1);
+    __ sve_index(as_FloatRegister($dst$$reg), __ S, -16, 1);
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ S, ptrue,
-                 as_FloatRegister($tmp$$reg), (int)($idx$$constant) - 16);
-    // If src and dst are the same reg, this move is not needed.
-    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
-      __ sve_orr(as_FloatRegister($dst$$reg),
-             as_FloatRegister($src$$reg),
-             as_FloatRegister($src$$reg));
-    }
+                 as_FloatRegister($dst$$reg), (int)($idx$$constant) - 16);
+    __ sve_orr(as_FloatRegister($dst$$reg),
+               as_FloatRegister($src$$reg),
+               as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ S,
                as_PRegister($pTmp$$reg), as_FloatRegister($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
 
 
-instruct insertL(vReg dst, vReg src, iRegL val, immI idx, vReg tmp, pRegGov pTmp, rFlagsReg cr)
+instruct insertL(vReg dst, vReg src, iRegL val, immI idx, pRegGov pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
   match(Set dst (VectorInsert (Binary src val) idx));
-  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  effect(TEMP_DEF dst, TEMP pTmp, KILL cr);
   ins_cost(4 * SVE_COST);
-  format %{ "sve_index $tmp, D, -16, 1\n\t"
-            "sve_cmpeq $pTmp, $tmp, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
+  format %{ "sve_index $dst, D, -16, 1\n\t"
+            "sve_cmpeq $pTmp, $dst, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (L)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (L)" %}
   ins_encode %{
-    __ sve_index(as_FloatRegister($tmp$$reg), __ D, -16, 1);
+    __ sve_index(as_FloatRegister($dst$$reg), __ D, -16, 1);
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ D, ptrue,
-                 as_FloatRegister($tmp$$reg), (int)($idx$$constant) - 16);
-    // If src and dst are the same reg, this move is not needed.
-    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
-      __ sve_orr(as_FloatRegister($dst$$reg),
-             as_FloatRegister($src$$reg),
-             as_FloatRegister($src$$reg));
-    }
+                 as_FloatRegister($dst$$reg), (int)($idx$$constant) - 16);
+    __ sve_orr(as_FloatRegister($dst$$reg),
+               as_FloatRegister($src$$reg),
+               as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ D,
                as_PRegister($pTmp$$reg), as_Register($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
 
-instruct insertD(vReg dst, vReg src, vRegD val, immI idx, vReg tmp, pRegGov pTmp, rFlagsReg cr)
+instruct insertD(vReg dst, vReg src, vRegD val, immI idx, pRegGov pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
   match(Set dst (VectorInsert (Binary src val) idx));
-  effect(TEMP tmp, TEMP pTmp, KILL cr);
+  effect(TEMP_DEF dst, TEMP pTmp, KILL cr);
   ins_cost(4 * SVE_COST);
-  format %{ "sve_index $tmp, D, -16, 1\n\t"
-            "sve_cmpeq $pTmp, $tmp, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
+  format %{ "sve_index $dst, D, -16, 1\n\t"
+            "sve_cmpeq $pTmp, $dst, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (D)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (D)" %}
   ins_encode %{
-    __ sve_index(as_FloatRegister($tmp$$reg), __ D, -16, 1);
+    __ sve_index(as_FloatRegister($dst$$reg), __ D, -16, 1);
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ D, ptrue,
-                 as_FloatRegister($tmp$$reg), (int)($idx$$constant) - 16);
-    // If src and dst are the same reg, this move is not needed.
-    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
-      __ sve_orr(as_FloatRegister($dst$$reg),
-             as_FloatRegister($src$$reg),
-             as_FloatRegister($src$$reg));
-    }
+                 as_FloatRegister($dst$$reg), (int)($idx$$constant) - 16);
+    __ sve_orr(as_FloatRegister($dst$$reg),
+               as_FloatRegister($src$$reg),
+               as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ D,
                as_PRegister($pTmp$$reg), as_FloatRegister($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
 
 
-instruct insertB(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp1, vReg tmp2, pRegGov pTmp, rFlagsReg cr)
+instruct insertB(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp1, pRegGov pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 && n->as_Vector()->length() > 32 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (VectorInsert (Binary src val) idx));
-  effect(TEMP tmp1, TEMP tmp2, TEMP pTmp, KILL cr);
+  effect(TEMP_DEF dst, TEMP tmp1, TEMP pTmp, KILL cr);
   ins_cost(5 * SVE_COST);
   format %{ "sve_index $tmp1, B, 0, 1\n\t"
-            "sve_dup $tmp2, B, $idx\n\t"
-            "sve_cmpeq $pTmp, $tmp1, $tmp2\n\t"
+            "sve_dup $dst, B, $idx\n\t"
+            "sve_cmpeq $pTmp, $tmp1, $dst\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (B)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (B)" %}
   ins_encode %{
     __ sve_index(as_FloatRegister($tmp1$$reg), __ B, 0, 1);
-    __ sve_dup(as_FloatRegister($tmp2$$reg), __ B, (int)($idx$$constant));
+    __ sve_dup(as_FloatRegister($dst$$reg), __ B, (int)($idx$$constant));
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ B, ptrue,
-                 as_FloatRegister($tmp1$$reg), as_FloatRegister($tmp2$$reg));
-    // If src and dst are the same reg, this move is not needed.
-    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
-      __ sve_orr(as_FloatRegister($dst$$reg),
-             as_FloatRegister($src$$reg),
-             as_FloatRegister($src$$reg));
-    }
+                 as_FloatRegister($tmp1$$reg), as_FloatRegister($dst$$reg));
+    __ sve_orr(as_FloatRegister($dst$$reg),
+               as_FloatRegister($src$$reg),
+               as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ B,
                as_PRegister($pTmp$$reg), as_Register($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
 
-instruct insertS(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp1, vReg tmp2, pRegGov pTmp, rFlagsReg cr)
+instruct insertS(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp1, pRegGov pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 && n->as_Vector()->length() > 32 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (VectorInsert (Binary src val) idx));
-  effect(TEMP tmp1, TEMP tmp2, TEMP pTmp, KILL cr);
+  effect(TEMP_DEF dst, TEMP tmp1, TEMP pTmp, KILL cr);
   ins_cost(5 * SVE_COST);
   format %{ "sve_index $tmp1, H, 0, 1\n\t"
-            "sve_dup $tmp2, H, $idx\n\t"
-            "sve_cmpeq $pTmp, $tmp1, $tmp2\n\t"
+            "sve_dup $dst, H, $idx\n\t"
+            "sve_cmpeq $pTmp, $tmp1, $dst\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (S)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (S)" %}
   ins_encode %{
     __ sve_index(as_FloatRegister($tmp1$$reg), __ H, 0, 1);
-    __ sve_dup(as_FloatRegister($tmp2$$reg), __ H, (int)($idx$$constant));
+    __ sve_dup(as_FloatRegister($dst$$reg), __ H, (int)($idx$$constant));
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ H, ptrue,
-                 as_FloatRegister($tmp1$$reg), as_FloatRegister($tmp2$$reg));
-    // If src and dst are the same reg, this move is not needed.
-    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
-      __ sve_orr(as_FloatRegister($dst$$reg),
-             as_FloatRegister($src$$reg),
-             as_FloatRegister($src$$reg));
-    }
+                 as_FloatRegister($tmp1$$reg), as_FloatRegister($dst$$reg));
+    __ sve_orr(as_FloatRegister($dst$$reg),
+               as_FloatRegister($src$$reg),
+               as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ H,
                as_PRegister($pTmp$$reg), as_Register($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
 
-instruct insertI(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp1, vReg tmp2, pRegGov pTmp, rFlagsReg cr)
+instruct insertI(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp1, pRegGov pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 && n->as_Vector()->length() > 32 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_INT);
   match(Set dst (VectorInsert (Binary src val) idx));
-  effect(TEMP tmp1, TEMP tmp2, TEMP pTmp, KILL cr);
+  effect(TEMP_DEF dst, TEMP tmp1, TEMP pTmp, KILL cr);
   ins_cost(5 * SVE_COST);
   format %{ "sve_index $tmp1, S, 0, 1\n\t"
-            "sve_dup $tmp2, S, $idx\n\t"
-            "sve_cmpeq $pTmp, $tmp1, $tmp2\n\t"
+            "sve_dup $dst, S, $idx\n\t"
+            "sve_cmpeq $pTmp, $tmp1, $dst\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (I)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (I)" %}
   ins_encode %{
     __ sve_index(as_FloatRegister($tmp1$$reg), __ S, 0, 1);
-    __ sve_dup(as_FloatRegister($tmp2$$reg), __ S, (int)($idx$$constant));
+    __ sve_dup(as_FloatRegister($dst$$reg), __ S, (int)($idx$$constant));
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ S, ptrue,
-                 as_FloatRegister($tmp1$$reg), as_FloatRegister($tmp2$$reg));
-    // If src and dst are the same reg, this move is not needed.
-    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
-      __ sve_orr(as_FloatRegister($dst$$reg),
-             as_FloatRegister($src$$reg),
-             as_FloatRegister($src$$reg));
-    }
+                 as_FloatRegister($tmp1$$reg), as_FloatRegister($dst$$reg));
+    __ sve_orr(as_FloatRegister($dst$$reg),
+               as_FloatRegister($src$$reg),
+               as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ S,
                as_PRegister($pTmp$$reg), as_Register($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
 
-instruct insertF(vReg dst, vReg src, vRegF val, immI idx, vReg tmp1, vReg tmp2, pRegGov pTmp, rFlagsReg cr)
+instruct insertF(vReg dst, vReg src, vRegF val, immI idx, vReg tmp1, pRegGov pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 && n->as_Vector()->length() > 32 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
   match(Set dst (VectorInsert (Binary src val) idx));
-  effect(TEMP tmp1, TEMP tmp2, TEMP pTmp, KILL cr);
+  effect(TEMP_DEF dst, TEMP tmp1, TEMP pTmp, KILL cr);
   ins_cost(5 * SVE_COST);
   format %{ "sve_index $tmp1, S, 0, 1\n\t"
-            "sve_dup $tmp2, S, $idx\n\t"
-            "sve_cmpeq $pTmp, $tmp1, $tmp2\n\t"
+            "sve_dup $dst, S, $idx\n\t"
+            "sve_cmpeq $pTmp, $tmp1, $dst\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (F)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (F)" %}
   ins_encode %{
     __ sve_index(as_FloatRegister($tmp1$$reg), __ S, 0, 1);
-    __ sve_dup(as_FloatRegister($tmp2$$reg), __ S, (int)($idx$$constant));
+    __ sve_dup(as_FloatRegister($dst$$reg), __ S, (int)($idx$$constant));
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ S, ptrue,
-                 as_FloatRegister($tmp1$$reg), as_FloatRegister($tmp2$$reg));
-    // If src and dst are the same reg, this move is not needed.
-    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
-      __ sve_orr(as_FloatRegister($dst$$reg),
-             as_FloatRegister($src$$reg),
-             as_FloatRegister($src$$reg));
-    }
+                 as_FloatRegister($tmp1$$reg), as_FloatRegister($dst$$reg));
+    __ sve_orr(as_FloatRegister($dst$$reg),
+               as_FloatRegister($src$$reg),
+               as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ S,
                as_PRegister($pTmp$$reg), as_FloatRegister($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
