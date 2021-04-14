@@ -3552,7 +3552,7 @@ instruct insertB_small(vReg dst, vReg src, iRegIorL2I val, immI idx, pRegGov pTm
   format %{ "sve_index $dst, B, -16, 1\n\t"
             "sve_cmpeq $pTmp, $dst, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (B)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (B)" %}
   ins_encode %{
     __ sve_index(as_FloatRegister($dst$$reg), __ B, -16, 1);
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ B, ptrue,
@@ -3577,7 +3577,7 @@ instruct insertS_small(vReg dst, vReg src, iRegIorL2I val, immI idx, pRegGov pTm
   format %{ "sve_index $dst, H, -16, 1\n\t"
             "sve_cmpeq $pTmp, $dst, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (S)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (S)" %}
   ins_encode %{
     __ sve_index(as_FloatRegister($dst$$reg), __ H, -16, 1);
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ H, ptrue,
@@ -3602,7 +3602,7 @@ instruct insertI_small(vReg dst, vReg src, iRegIorL2I val, immI idx, pRegGov pTm
   format %{ "sve_index $dst, S, -16, 1\n\t"
             "sve_cmpeq $pTmp, $dst, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (I)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (I)" %}
   ins_encode %{
     __ sve_index(as_FloatRegister($dst$$reg), __ S, -16, 1);
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ S, ptrue,
@@ -3627,7 +3627,7 @@ instruct insertF_small(vReg dst, vReg src, vRegF val, immI idx, pRegGov pTmp, rF
   format %{ "sve_index $dst, S, -16, 1\n\t"
             "sve_cmpeq $pTmp, $dst, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (F)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (F)" %}
   ins_encode %{
     __ sve_index(as_FloatRegister($dst$$reg), __ S, -16, 1);
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ S, ptrue,
@@ -3653,7 +3653,7 @@ instruct insertL(vReg dst, vReg src, iRegL val, immI idx, pRegGov pTmp, rFlagsRe
   format %{ "sve_index $dst, D, -16, 1\n\t"
             "sve_cmpeq $pTmp, $dst, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (L)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (L)" %}
   ins_encode %{
     __ sve_index(as_FloatRegister($dst$$reg), __ D, -16, 1);
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ D, ptrue,
@@ -3678,7 +3678,7 @@ instruct insertD(vReg dst, vReg src, vRegD val, immI idx, pRegGov pTmp, rFlagsRe
   format %{ "sve_index $dst, D, -16, 1\n\t"
             "sve_cmpeq $pTmp, $dst, ($idx-#16) // shift from [0, 31] to [-16, 15]\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (D)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (D)" %}
   ins_encode %{
     __ sve_index(as_FloatRegister($dst$$reg), __ D, -16, 1);
     __ sve_cmpeq(as_PRegister($pTmp$$reg), __ D, ptrue,
@@ -3705,7 +3705,7 @@ instruct insertB(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp1, pRegGo
             "sve_dup $dst, B, $idx\n\t"
             "sve_cmpeq $pTmp, $tmp1, $dst\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (B)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (B)" %}
   ins_encode %{
     __ sve_index(as_FloatRegister($tmp1$$reg), __ B, 0, 1);
     __ sve_dup(as_FloatRegister($dst$$reg), __ B, (int)($idx$$constant));
@@ -3732,7 +3732,7 @@ instruct insertS(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp1, pRegGo
             "sve_dup $dst, H, $idx\n\t"
             "sve_cmpeq $pTmp, $tmp1, $dst\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (S)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (S)" %}
   ins_encode %{
     __ sve_index(as_FloatRegister($tmp1$$reg), __ H, 0, 1);
     __ sve_dup(as_FloatRegister($dst$$reg), __ H, (int)($idx$$constant));
@@ -3759,7 +3759,7 @@ instruct insertI(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp1, pRegGo
             "sve_dup $dst, S, $idx\n\t"
             "sve_cmpeq $pTmp, $tmp1, $dst\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (I)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (I)" %}
   ins_encode %{
     __ sve_index(as_FloatRegister($tmp1$$reg), __ S, 0, 1);
     __ sve_dup(as_FloatRegister($dst$$reg), __ S, (int)($idx$$constant));
@@ -3786,7 +3786,7 @@ instruct insertF(vReg dst, vReg src, vRegF val, immI idx, vReg tmp1, pRegGov pTm
             "sve_dup $dst, S, $idx\n\t"
             "sve_cmpeq $pTmp, $tmp1, $dst\n\t"
             "sve_orr $dst, $src, $src\n\t"
-            "sve_cpy $dst, $pTmp, $val\n\t# insert into vector (F)" %}
+            "sve_cpy $dst, $pTmp, $val\t# insert into vector (F)" %}
   ins_encode %{
     __ sve_index(as_FloatRegister($tmp1$$reg), __ S, 0, 1);
     __ sve_dup(as_FloatRegister($dst$$reg), __ S, (int)($idx$$constant));
