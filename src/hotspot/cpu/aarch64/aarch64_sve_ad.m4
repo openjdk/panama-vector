@@ -2168,7 +2168,6 @@ instruct insert$1_small`'(vReg dst, vReg src, $2 val, immI idx, pRegGov pTmp, rF
                as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ $3,
                as_PRegister($pTmp$$reg), as_$4($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}')dnl
@@ -2199,7 +2198,6 @@ instruct insert$1`'(vReg dst, vReg src, $2 val, immI idx, pRegGov pTmp, rFlagsRe
                as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ $3,
                as_PRegister($pTmp$$reg), as_$4($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}')dnl
@@ -2230,7 +2228,6 @@ instruct insert$1`'(vReg dst, vReg src, $2 val, immI idx, vReg tmp1, pRegGov pTm
                as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ $3,
                as_PRegister($pTmp$$reg), as_$4($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}')dnl

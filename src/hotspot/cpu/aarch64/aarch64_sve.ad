@@ -3562,7 +3562,6 @@ instruct insertB_small(vReg dst, vReg src, iRegIorL2I val, immI idx, pRegGov pTm
                as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ B,
                as_PRegister($pTmp$$reg), as_Register($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
@@ -3587,7 +3586,6 @@ instruct insertS_small(vReg dst, vReg src, iRegIorL2I val, immI idx, pRegGov pTm
                as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ H,
                as_PRegister($pTmp$$reg), as_Register($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
@@ -3612,7 +3610,6 @@ instruct insertI_small(vReg dst, vReg src, iRegIorL2I val, immI idx, pRegGov pTm
                as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ S,
                as_PRegister($pTmp$$reg), as_Register($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
@@ -3637,7 +3634,6 @@ instruct insertF_small(vReg dst, vReg src, vRegF val, immI idx, pRegGov pTmp, rF
                as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ S,
                as_PRegister($pTmp$$reg), as_FloatRegister($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
@@ -3663,7 +3659,6 @@ instruct insertL(vReg dst, vReg src, iRegL val, immI idx, pRegGov pTmp, rFlagsRe
                as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ D,
                as_PRegister($pTmp$$reg), as_Register($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
@@ -3688,7 +3683,6 @@ instruct insertD(vReg dst, vReg src, vRegD val, immI idx, pRegGov pTmp, rFlagsRe
                as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ D,
                as_PRegister($pTmp$$reg), as_FloatRegister($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
@@ -3716,7 +3710,6 @@ instruct insertB(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp1, pRegGo
                as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ B,
                as_PRegister($pTmp$$reg), as_Register($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
@@ -3743,7 +3736,6 @@ instruct insertS(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp1, pRegGo
                as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ H,
                as_PRegister($pTmp$$reg), as_Register($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
@@ -3770,7 +3762,6 @@ instruct insertI(vReg dst, vReg src, iRegIorL2I val, immI idx, vReg tmp1, pRegGo
                as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ S,
                as_PRegister($pTmp$$reg), as_Register($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
@@ -3797,7 +3788,6 @@ instruct insertF(vReg dst, vReg src, vRegF val, immI idx, vReg tmp1, pRegGov pTm
                as_FloatRegister($src$$reg));
     __ sve_cpy(as_FloatRegister($dst$$reg), __ S,
                as_PRegister($pTmp$$reg), as_FloatRegister($val$$reg));
-
   %}
   ins_pipe(pipe_slow);
 %}
