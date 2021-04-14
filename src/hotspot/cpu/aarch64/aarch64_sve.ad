@@ -32,6 +32,7 @@
 
 operand vmemA_immIOffset4()
 %{
+  // (esize / msize) = 1
   predicate(Address::offset_ok_for_sve_immed(n->get_int(), 4,
             Matcher::scalable_vector_reg_size(T_BYTE)));
   match(ConI);
@@ -43,6 +44,7 @@ operand vmemA_immIOffset4()
 
 operand vmemA_immLOffset4()
 %{
+  // (esize / msize) = 1
   predicate(Address::offset_ok_for_sve_immed(n->get_long(), 4,
             Matcher::scalable_vector_reg_size(T_BYTE)));
   match(ConL);
@@ -57,7 +59,7 @@ operand vmemA_indOffI4(iRegP reg, vmemA_immIOffset4 off)
   constraint(ALLOC_IN_RC(ptr_reg));
   match(AddP reg off);
   op_cost(0);
-  format %{ "[$reg, $off, MUL VL]" %}
+  format %{ "[$reg, $off]" %}
   interface(MEMORY_INTER) %{
     base($reg);
     index(0xffffffff);
@@ -71,7 +73,7 @@ operand vmemA_indOffL4(iRegP reg, vmemA_immLOffset4 off)
   constraint(ALLOC_IN_RC(ptr_reg));
   match(AddP reg off);
   op_cost(0);
-  format %{ "[$reg, $off, MUL VL]" %}
+  format %{ "[$reg, $off]" %}
   interface(MEMORY_INTER) %{
     base($reg);
     index(0xffffffff);
@@ -80,12 +82,9 @@ operand vmemA_indOffL4(iRegP reg, vmemA_immLOffset4 off)
   %}
 %}
 
+// The indOff of vmemA is valid only when the vector element (load to/store from)
+// size equals to memory element (load from/store to) size.
 opclass vmemA(indirect, vmemA_indOffI4, vmemA_indOffL4);
-
-// If the vector element size is not the same as memory
-// element size, the adddress displacement range is
-// different from vmemA_indOffL4/vmemA_indOffI4.
-opclass vmemA_narrow_extend(indirect);
 
 source_hpp %{
   bool op_sve_supported(int opcode, int vlen, BasicType bt);
@@ -255,7 +254,7 @@ instruct loadV(vReg dst, vmemA mem) %{
   predicate(UseSVE > 0 && n->as_LoadVector()->memory_size() >= 16 &&
             n->as_LoadVector()->memory_size() == MaxVectorSize);
   match(Set dst (LoadVector mem));
-  ins_cost(SVE_COST);
+  ins_cost(4 * SVE_COST);
   format %{ "sve_ldr $dst, $mem\t # vector (sve)" %}
   ins_encode %{
     FloatRegister dst_reg = as_FloatRegister($dst$$reg);
@@ -271,7 +270,7 @@ instruct storeV(vReg src, vmemA mem) %{
   predicate(UseSVE > 0 && n->as_StoreVector()->memory_size() >= 16 &&
             n->as_StoreVector()->memory_size() == MaxVectorSize);
   match(Set mem (StoreVector mem src));
-  ins_cost(SVE_COST);
+  ins_cost(4 * SVE_COST);
   format %{ "sve_str $mem, $src\t # vector (sve)" %}
   ins_encode %{
     FloatRegister src_reg = as_FloatRegister($src$$reg);
@@ -283,19 +282,115 @@ instruct storeV(vReg src, vmemA mem) %{
   ins_pipe(pipe_slow);
 %}
 
+// Load Vector (16 bits)
+instruct loadV2_vreg(vReg dst, vmem2 mem)
+%{
+  predicate(UseSVE > 0 && n->as_LoadVector()->memory_size() == 2 &&
+            n->as_LoadVector()->memory_size() < MaxVectorSize);
+  match(Set dst (LoadVector mem));
+  ins_cost(4 * SVE_COST);
+  format %{ "ldrh   $dst,$mem\t# vector (16 bits)" %}
+  ins_encode( aarch64_enc_ldrvH(dst, mem) );
+  ins_pipe(vload_reg_mem64);
+%}
+
+// Store Vector (16 bits)
+instruct storeV2_vreg(vReg src, vmem2 mem)
+%{
+  predicate(UseSVE > 0 && n->as_StoreVector()->memory_size() == 2 &&
+            n->as_StoreVector()->memory_size() < MaxVectorSize);
+  match(Set mem (StoreVector mem src));
+  ins_cost(4 * SVE_COST);
+  format %{ "strh   $mem,$src\t# vector (16 bits)" %}
+  ins_encode( aarch64_enc_strvH(src, mem) );
+  ins_pipe(vstore_reg_mem64);
+%}
+
+// Load Vector (32 bits)
+instruct loadV4_vreg(vReg dst, vmem4 mem)
+%{
+  predicate(UseSVE > 0 && n->as_LoadVector()->memory_size() == 4 &&
+            n->as_LoadVector()->memory_size() < MaxVectorSize);
+  match(Set dst (LoadVector mem));
+  ins_cost(4 * SVE_COST);
+  format %{ "ldrs   $dst,$mem\t# vector (32 bits)" %}
+  ins_encode( aarch64_enc_ldrvS(dst, mem) );
+  ins_pipe(vload_reg_mem64);
+%}
+
+// Store Vector (32 bits)
+instruct storeV4_vreg(vReg src, vmem4 mem)
+%{
+  predicate(UseSVE > 0 && n->as_StoreVector()->memory_size() == 4 &&
+            n->as_StoreVector()->memory_size() < MaxVectorSize);
+  match(Set mem (StoreVector mem src));
+  ins_cost(4 * SVE_COST);
+  format %{ "strs   $mem,$src\t# vector (32 bits)" %}
+  ins_encode( aarch64_enc_strvS(src, mem) );
+  ins_pipe(vstore_reg_mem64);
+%}
+
+// Load Vector (64 bits)
+instruct loadV8_vreg(vReg dst, vmem8 mem)
+%{
+  predicate(UseSVE > 0 && n->as_LoadVector()->memory_size() == 8 &&
+            n->as_LoadVector()->memory_size() < MaxVectorSize);
+  match(Set dst (LoadVector mem));
+  ins_cost(4 * SVE_COST);
+  format %{ "ldrd   $dst,$mem\t# vector (64 bits)" %}
+  ins_encode( aarch64_enc_ldrvD(dst, mem) );
+  ins_pipe(vload_reg_mem64);
+%}
+
+// Store Vector (64 bits)
+instruct storeV8_vreg(vReg src, vmem8 mem)
+%{
+  predicate(UseSVE > 0 && n->as_StoreVector()->memory_size() == 8 &&
+            n->as_StoreVector()->memory_size() < MaxVectorSize);
+  match(Set mem (StoreVector mem src));
+  ins_cost(4 * SVE_COST);
+  format %{ "strd   $mem,$src\t# vector (64 bits)" %}
+  ins_encode( aarch64_enc_strvD(src, mem) );
+  ins_pipe(vstore_reg_mem64);
+%}
+
+// Load Vector (128 bits)
+instruct loadV16_vreg(vReg dst, vmem16 mem)
+%{
+  predicate(UseSVE > 0 && n->as_LoadVector()->memory_size() == 16 &&
+            n->as_LoadVector()->memory_size() < MaxVectorSize);
+  match(Set dst (LoadVector mem));
+  ins_cost(4 * SVE_COST);
+  format %{ "ldrq   $dst,$mem\t# vector (128 bits)" %}
+  ins_encode( aarch64_enc_ldrvQ(dst, mem) );
+  ins_pipe(vload_reg_mem128);
+%}
+
+// Store Vector (128 bits)
+instruct storeV16_vreg(vReg src, vmem16 mem)
+%{
+  predicate(UseSVE > 0 && n->as_StoreVector()->memory_size() == 16 &&
+            n->as_StoreVector()->memory_size() < MaxVectorSize);
+  match(Set mem (StoreVector mem src));
+  ins_cost(4 * SVE_COST);
+  format %{ "strq   $mem,$src\t# vector (128 bits)" %}
+  ins_encode( aarch64_enc_strvQ(src, mem) );
+  ins_pipe(vstore_reg_mem128);
+%}
+
 // Predicated vector load/store, based on the vector length of the node.
 // Only load/store values in the range of the memory_size. This is needed
 // when the memory_size is lower than the hardware supported max vector size.
 // And this might happen for Vector API mask vector load/store.
 instruct loadV_partial(vReg dst, vmemA mem, pRegGov pTmp, rFlagsReg cr) %{
-  predicate(UseSVE > 0 && n->as_LoadVector()->memory_size() >= 2 &&
+  predicate(UseSVE > 0 && n->as_LoadVector()->memory_size() > 16 &&
             n->as_LoadVector()->memory_size() < MaxVectorSize);
   match(Set dst (LoadVector mem));
   effect(TEMP pTmp, KILL cr);
-  ins_cost(2 * SVE_COST);
+  ins_cost(6 * SVE_COST);
   format %{ "mov rscratch1, vector_length\n\t"
             "sve_whilelo $pTmp, zr, rscratch1\n\t"
-            "sve_ldr $dst, $pTmp, $mem\t # load vector mask" %}
+            "sve_ldr $dst, $pTmp, $mem\t # load vector mask (sve)" %}
   ins_encode %{
     BasicType bt = vector_element_basic_type(this);
     __ mov(rscratch1, vector_length(this));
@@ -310,14 +405,14 @@ instruct loadV_partial(vReg dst, vmemA mem, pRegGov pTmp, rFlagsReg cr) %{
 %}
 
 instruct storeV_partial(vReg src, vmemA mem, pRegGov pTmp, rFlagsReg cr) %{
-  predicate(UseSVE > 0 && n->as_StoreVector()->memory_size() >= 2 &&
+  predicate(UseSVE > 0 && n->as_StoreVector()->memory_size() > 16 &&
             n->as_StoreVector()->memory_size() < MaxVectorSize);
   match(Set mem (StoreVector mem src));
   effect(TEMP pTmp, KILL cr);
-  ins_cost(2 * SVE_COST);
+  ins_cost(5 * SVE_COST);
   format %{ "mov rscratch1, vector_length\n\t"
             "sve_whilelo $pTmp, zr, rscratch1\n\t"
-            "sve_str $src, $pTmp, $mem\t # store vector mask" %}
+            "sve_str $src, $pTmp, $mem\t # store vector mask (sve)" %}
   ins_encode %{
     BasicType bt = vector_element_basic_type(this, $src);
     __ mov(rscratch1, vector_length(this, $src));
@@ -1207,11 +1302,11 @@ instruct vstoremaskL(vReg dst, vReg src, vReg tmp, immI_8 size) %{
 
 // load/store mask vector
 
-instruct vloadmask_loadV(vReg dst, vmemA_narrow_extend mem) %{
-  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() >= 2 &&
-            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BOOLEAN);
+instruct vloadmask_loadV_byte(vReg dst, vmemA mem) %{
+  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() == MaxVectorSize &&
+            type2aelembytes(n->bottom_type()->is_vect()->element_basic_type()) == 1);
   match(Set dst (VectorLoadMask (LoadVector mem)));
-  ins_cost(2 * SVE_COST);
+  ins_cost(5 * SVE_COST);
   format %{ "sve_ld1b $dst, $mem\n\t"
             "sve_neg $dst, $dst\t # load vector mask (sve)" %}
   ins_encode %{
@@ -1226,12 +1321,31 @@ instruct vloadmask_loadV(vReg dst, vmemA_narrow_extend mem) %{
   ins_pipe(pipe_slow);
 %}
 
-instruct storeV_vstoremask(vmemA_narrow_extend mem, vReg src, vReg tmp, immI esize) %{
-  predicate(UseSVE > 0 && n->as_StoreVector()->length() >= 2 &&
-            n->as_StoreVector()->vect_type()->element_basic_type() == T_BOOLEAN);
+instruct vloadmask_loadV_non_byte(vReg dst, indirect mem) %{
+  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() == MaxVectorSize &&
+            type2aelembytes(n->bottom_type()->is_vect()->element_basic_type()) > 1);
+  match(Set dst (VectorLoadMask (LoadVector mem)));
+  ins_cost(5 * SVE_COST);
+  format %{ "sve_ld1b $dst, $mem\n\t"
+            "sve_neg $dst, $dst\t # load vector mask (sve)" %}
+  ins_encode %{
+    FloatRegister dst_reg = as_FloatRegister($dst$$reg);
+    BasicType to_vect_bt = vector_element_basic_type(this);
+    Assembler::SIMD_RegVariant to_vect_variant = elemType_to_regVariant(to_vect_bt);
+    loadStoreA_predicate(C2_MacroAssembler(&cbuf), false, dst_reg, ptrue,
+                         T_BOOLEAN, to_vect_bt, $mem->opcode(),
+                         as_Register($mem$$base), $mem$$index, $mem$$scale, $mem$$disp);
+    __ sve_neg(dst_reg, to_vect_variant, ptrue, dst_reg);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct storeV_vstoremask_byte(vmemA mem, vReg src, vReg tmp, immI_1 esize) %{
+  predicate(UseSVE > 0 && n->as_StoreVector()->memory_size() *
+                          n->as_StoreVector()->in(MemNode::ValueIn)->in(2)->get_int() == MaxVectorSize);
   match(Set mem (StoreVector mem (VectorStoreMask src esize)));
   effect(TEMP tmp);
-  ins_cost(2 * SVE_COST);
+  ins_cost(5 * SVE_COST);
   format %{ "sve_neg $tmp, $src\n\t"
             "sve_st1b $tmp, $mem\t # store vector mask (sve)" %}
   ins_encode %{
@@ -1246,6 +1360,28 @@ instruct storeV_vstoremask(vmemA_narrow_extend mem, vReg src, vReg tmp, immI esi
   %}
   ins_pipe(pipe_slow);
 %}
+
+instruct storeV_vstoremask_non_byte(indirect mem, vReg src, vReg tmp, immI_gt_1 esize) %{
+  predicate(UseSVE > 0 && n->as_StoreVector()->memory_size() *
+                          n->as_StoreVector()->in(MemNode::ValueIn)->in(2)->get_int() == MaxVectorSize);
+  match(Set mem (StoreVector mem (VectorStoreMask src esize)));
+  effect(TEMP tmp);
+  ins_cost(5 * SVE_COST);
+  format %{ "sve_neg $tmp, $src\n\t"
+            "sve_st1b $tmp, $mem\t # store vector mask (sve)" %}
+  ins_encode %{
+    BasicType from_vect_bt = vector_element_basic_type(this, $src);
+    assert(type2aelembytes(from_vect_bt) == (int)$esize$$constant, "unsupported type.");
+    Assembler::SIMD_RegVariant from_vect_variant = elemBytes_to_regVariant($esize$$constant);
+    __ sve_neg(as_FloatRegister($tmp$$reg), from_vect_variant, ptrue,
+               as_FloatRegister($src$$reg));
+    loadStoreA_predicate(C2_MacroAssembler(&cbuf), true, as_FloatRegister($tmp$$reg),
+                         ptrue, T_BOOLEAN, from_vect_bt, $mem->opcode(),
+                         as_Register($mem$$base), $mem$$index, $mem$$scale, $mem$$disp);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
 
 // vector add reduction
 
@@ -1672,8 +1808,9 @@ instruct reduce_orL_partial(iRegLNoSp dst, iRegL src1, vReg src2, vRegD vtmp,
 // vector xor reduction
 
 instruct reduce_eorB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
-  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  predicate(UseSVE > 0 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_BYTE &&
+            n->in(2)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
   match(Set dst (XorReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1692,8 +1829,9 @@ instruct reduce_eorB(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 %}
 
 instruct reduce_eorS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
-  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  predicate(UseSVE > 0 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_SHORT &&
+            n->in(2)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
   match(Set dst (XorReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1712,8 +1850,9 @@ instruct reduce_eorS(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 %}
 
 instruct reduce_eorI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
-  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  predicate(UseSVE > 0 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_INT &&
+            n->in(2)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
   match(Set dst (XorReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
@@ -1730,8 +1869,9 @@ instruct reduce_eorI(iRegINoSp dst, iRegIorL2I src1, vReg src2, vRegD tmp) %{
 %}
 
 instruct reduce_eorL(iRegLNoSp dst, iRegL src1, vReg src2, vRegD tmp) %{
-  predicate(UseSVE > 0 && n->in(2)->bottom_type()->is_vect()->length_in_bytes() >= 16 &&
-            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  predicate(UseSVE > 0 &&
+            n->in(2)->bottom_type()->is_vect()->element_basic_type() == T_LONG &&
+            n->in(2)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
   match(Set dst (XorReductionV src1 src2));
   effect(TEMP_DEF dst, TEMP tmp);
   ins_cost(SVE_COST);
