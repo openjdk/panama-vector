@@ -3980,9 +3980,13 @@ instruct loadshuffleB(vReg dst, vReg src)
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (VectorLoadShuffle src));
   ins_cost(SVE_COST);
-  format %{ "sve_mov $dst, $src\t# vector load shuffle (B)" %}
+  format %{ "sve_orr $dst, $src, $src\t# vector load shuffle (B)" %}
   ins_encode %{
-    __ sve_orr(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), as_FloatRegister($src$$reg));
+    if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
+      __ sve_orr(as_FloatRegister($dst$$reg),
+                 as_FloatRegister($src$$reg),
+                 as_FloatRegister($src$$reg));
+    }
   %}
   ins_pipe(pipe_slow);
 %}
