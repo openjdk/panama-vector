@@ -2294,7 +2294,7 @@ instruct loadshuffleB(vReg dst, vReg src)
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (VectorLoadShuffle src));
   ins_cost(SVE_COST);
-  format %{ "sve_mov $dst, $src\n\t" %}
+  format %{ "sve_mov $dst, $src\t# vector load shuffle (B)" %}
   ins_encode %{
     __ sve_orr(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), as_FloatRegister($src$$reg));
   %}
@@ -2306,7 +2306,7 @@ instruct loadshuffleS(vReg dst, vReg src)
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (VectorLoadShuffle src));
   ins_cost(SVE_COST);
-  format %{ "sve_uunpklo $dst, $src\n\t" %}
+  format %{ "sve_uunpklo $dst, $src\t# vector load shuffle (B to H)" %}
   ins_encode %{
     __ sve_uunpklo(as_FloatRegister($dst$$reg), __ H, as_FloatRegister($src$$reg));
   %}
@@ -2321,7 +2321,7 @@ instruct loadshuffleI(vReg dst, vReg src)
   match(Set dst (VectorLoadShuffle src));
   ins_cost(2 * SVE_COST);
   format %{ "sve_uunpklo $dst, $src\n\t"
-            "sve_uunpklo $dst, $dst\n\t" %}
+            "sve_uunpklo $dst, $dst\t# vector load shuffle (B to S)" %}
   ins_encode %{
     __ sve_uunpklo(as_FloatRegister($dst$$reg), __ H, as_FloatRegister($src$$reg));
     __ sve_uunpklo(as_FloatRegister($dst$$reg), __ S, as_FloatRegister($dst$$reg));
@@ -2338,7 +2338,7 @@ instruct loadshuffleL(vReg dst, vReg src)
   ins_cost(3 * SVE_COST);
   format %{ "sve_uunpklo $dst, $src\n\t"
             "sve_uunpklo $dst, $dst\n\t"
-            "sve_uunpklo $dst, $dst\n\t" %}
+            "sve_uunpklo $dst, $dst\t# vector load shuffle (B to D)" %}
   ins_encode %{
     __ sve_uunpklo(as_FloatRegister($dst$$reg), __ H, as_FloatRegister($src$$reg));
     __ sve_uunpklo(as_FloatRegister($dst$$reg), __ S, as_FloatRegister($dst$$reg));
