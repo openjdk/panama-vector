@@ -1227,10 +1227,7 @@ static inline Assembler::AvxVectorLen vector_length_encoding(const MachNode* use
 }
 
 static inline bool is_unsigned_booltest_pred(int bt) {
-  return  (bt == BoolTest::ule ||
-           bt == BoolTest::ult ||
-           bt == BoolTest::uge ||
-           bt == BoolTest::ugt);
+  return  ((bt & BoolTest::unsigned_compare) == BoolTest::unsigned_compare);
 }
 
 class Node::PD {

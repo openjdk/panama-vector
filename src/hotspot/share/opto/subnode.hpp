@@ -309,7 +309,7 @@ struct BoolTest {
   enum mask { eq = 0, ne = 4, le = 5, ge = 7, lt = 3, gt = 1, overflow = 2, no_overflow = 6, never = 8, illegal = 9, unsigned_compare = 16,
               ule = unsigned_compare | le, uge = unsigned_compare | ge, ult = unsigned_compare | lt, ugt = unsigned_compare | gt };
   mask _test;
-  BoolTest( mask btm ) : _test(btm) {}
+  BoolTest( mask btm ) : _test(btm) { assert((btm & unsigned_compare) == 0, "unsupported");}
   const Type *cc2logical( const Type *CC ) const;
   // Commute the test.  I use a small table lookup.  The table is created as
   // a simple char array where each element is the ASCII version of a 'mask'
