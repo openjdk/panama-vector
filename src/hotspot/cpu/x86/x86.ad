@@ -1230,7 +1230,6 @@ static inline bool is_unsigned_booltest_pred(int bt) {
   return  ((bt & BoolTest::unsigned_compare) == BoolTest::unsigned_compare);
 }
 
-
 class Node::PD {
 public:
   enum NodeFlags {
@@ -2138,14 +2137,23 @@ void Compile::reshape_address(AddPNode* addp) {
 }
 
 static inline Assembler::ComparisonPredicate booltest_pred_to_comparison_pred(int bt) {
-  bt = bt & ~BoolTest::unsigned_compare;
   switch (bt) {
-    case BoolTest::eq: return Assembler::eq;
-    case BoolTest::ne: return Assembler::neq;
-    case BoolTest::le: return Assembler::le;
-    case BoolTest::ge: return Assembler::nlt;
-    case BoolTest::lt: return Assembler::lt;
-    case BoolTest::gt: return Assembler::nle;
+    case BoolTest::eq:
+      return Assembler::eq;
+    case BoolTest::ne:
+      return Assembler::neq;
+    case BoolTest::le:
+    case BoolTest::ule:
+      return Assembler::le;
+    case BoolTest::ge:
+    case BoolTest::uge:
+      return Assembler::nlt;
+    case BoolTest::lt:
+    case BoolTest::ult:
+      return Assembler::lt;
+    case BoolTest::gt:
+    case BoolTest::ugt:
+      return Assembler::nle;
     default : ShouldNotReachHere(); return Assembler::_false;
   }
 }
