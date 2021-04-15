@@ -304,9 +304,10 @@ public:
 // Convert condition codes to a boolean test value (0 or -1).
 // We pick the values as 3 bits; the low order 2 bits we compare against the
 // condition codes, the high bit flips the sense of the result.
+// For vector compares, additionaly, the 4th bit indicates if the compare is unsigned
 struct BoolTest {
-  enum mask { eq = 0, ne = 4, le = 5, ge = 7, lt = 3, gt = 1, overflow = 2, no_overflow = 6, never = 8, illegal = 9,
-                              unsigned_compare = 16 };
+  enum mask { eq = 0, ne = 4, le = 5, ge = 7, lt = 3, gt = 1, overflow = 2, no_overflow = 6, never = 8, illegal = 9, unsigned_compare = 16,
+              ule = unsigned_compare | le, uge = unsigned_compare | ge, ult = unsigned_compare | lt, ugt = unsigned_compare | gt };
   mask _test;
   BoolTest( mask btm ) : _test(btm) {}
   const Type *cc2logical( const Type *CC ) const;
