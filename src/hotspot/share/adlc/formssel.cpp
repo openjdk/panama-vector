@@ -2275,7 +2275,7 @@ bool OperandForm::is_bound_register() const {
   if (strcmp(name, "RegD") == 0) size = 2;
   if (strcmp(name, "RegL") == 0) size = 2;
   if (strcmp(name, "RegN") == 0) size = 1;
-  if (strcmp(name, "RegVectMask") == 0) size = 1;
+  if (strcmp(name, "RegVectMask") == 0) size = globalAD->get_preproc_def("AARCH64") ? 1 : 2;
   if (strcmp(name, "VecX") == 0) size = 4;
   if (strcmp(name, "VecY") == 0) size = 8;
   if (strcmp(name, "VecZ") == 0) size = 16;
