@@ -2973,6 +2973,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
         return vsp.vOp(m, n -> (short) a[offset + indexMap[mapOffset + n]]);
     }
 
+
     /**
      * Loads a vector from a {@linkplain ByteBuffer byte buffer}
      * starting at an offset into the byte buffer.
@@ -3373,6 +3374,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
              });
     }
 
+
     /**
      * {@inheritDoc} <!--workaround-->
      */
@@ -3493,6 +3495,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             (arr, off, s) -> s.ldOp(arr, off,
                                     (arr_, off_, i) -> (short) arr_[off_ + i]));
     }
+
 
     @Override
     abstract
@@ -3638,6 +3641,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
     static long charArrayAddress(char[] a, int index) {
         return ARRAY_CHAR_BASE + (((long)index) << ARRAY_CHAR_SHIFT);
     }
+
 
     @ForceInline
     static long byteArrayAddress(byte[] a, int index) {

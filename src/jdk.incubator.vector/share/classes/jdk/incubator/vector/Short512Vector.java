@@ -844,6 +844,7 @@ final class Short512Vector extends ShortVector {
         return super.fromCharArray0Template(a, offset);  // specialize
     }
 
+
     @ForceInline
     @Override
     final

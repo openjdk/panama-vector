@@ -2737,6 +2737,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
     }
 
 
+
     /**
      * Loads a vector from a {@linkplain ByteBuffer byte buffer}
      * starting at an offset into the byte buffer.
@@ -3008,6 +3009,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
     }
 
 
+
     /**
      * {@inheritDoc} <!--workaround-->
      */
@@ -3113,6 +3115,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             (arr, off, s) -> s.ldOp(arr, off,
                                     (arr_, off_, i) -> arr_[off_ + i]));
     }
+
 
 
     @Override
@@ -3249,6 +3252,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
     static long arrayAddress(float[] a, int index) {
         return ARRAY_BASE + (((long)index) << ARRAY_SHIFT);
     }
+
 
 
     @ForceInline
