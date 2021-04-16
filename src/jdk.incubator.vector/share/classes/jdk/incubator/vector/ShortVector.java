@@ -38,7 +38,7 @@ import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
 
 import static jdk.internal.vm.vector.VectorSupport.*;
-import static jdk.incubator.vector.VectorIntrinsics.*;q
+import static jdk.incubator.vector.VectorIntrinsics.*;
 
 import static jdk.incubator.vector.VectorOperators.*;
 
