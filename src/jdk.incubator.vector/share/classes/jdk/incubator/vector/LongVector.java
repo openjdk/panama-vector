@@ -380,20 +380,6 @@ public abstract class LongVector extends AbstractVector<Long> {
     }
 
     /*package-private*/
-    @ForceInline
-    static boolean doBinTest(int cond, long a, long b) {
-        switch (cond) {
-        case BT_eq:  return a == b;
-        case BT_ne:  return a != b;
-        case BT_lt:  return a < b;
-        case BT_le:  return a <= b;
-        case BT_gt:  return a > b;
-        case BT_ge:  return a >= b;
-        }
-        throw new AssertionError(Integer.toHexString(cond));
-    }
-
-    /*package-private*/
     @Override
     abstract LongSpecies vspecies();
 
@@ -1692,10 +1678,10 @@ public abstract class LongVector extends AbstractVector<Long> {
             case BT_le -> a <= b;
             case BT_gt -> a > b;
             case BT_ge -> a >= b;
-            case VECTOR_OP_UNSIGNED_LT -> Long.compareUnsigned(a, b) < 0;
-            case VECTOR_OP_UNSIGNED_LE -> Long.compareUnsigned(a, b) <= 0;
-            case VECTOR_OP_UNSIGNED_GT -> Long.compareUnsigned(a, b) > 0;
-            case VECTOR_OP_UNSIGNED_GE -> Long.compareUnsigned(a, b) >= 0;
+            case BT_ult -> Long.compareUnsigned(a, b) < 0;
+            case BT_ule -> Long.compareUnsigned(a, b) <= 0;
+            case BT_ugt -> Long.compareUnsigned(a, b) > 0;
+            case BT_uge -> Long.compareUnsigned(a, b) >= 0;
             default -> throw new AssertionError();
         };
     }

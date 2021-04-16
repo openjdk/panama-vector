@@ -27,11 +27,7 @@ package jdk.internal.vm.vector;
 
 import jdk.internal.vm.annotation.IntrinsicCandidate;
 import jdk.internal.misc.Unsafe;
-import jdk.internal.vm.annotation.ForceInline;
 
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
-import java.util.Objects;
 import java.util.function.*;
 
 public class VectorSupport {
@@ -102,11 +98,11 @@ public class VectorSupport {
     // never = 8    1000
     // illegal = 9  1001
     // Unsigned comparisons apply to BT_le, BT_ge, BT_lt, BT_gt for integral types
-    public static final int VECTOR_OP_COMPARE_UNSIGNED = 0b10000;
-    public static final int VECTOR_OP_UNSIGNED_LE = BT_le | VECTOR_OP_COMPARE_UNSIGNED;
-    public static final int VECTOR_OP_UNSIGNED_GE = BT_ge | VECTOR_OP_COMPARE_UNSIGNED;
-    public static final int VECTOR_OP_UNSIGNED_LT = BT_lt | VECTOR_OP_COMPARE_UNSIGNED;
-    public static final int VECTOR_OP_UNSIGNED_GT = BT_gt | VECTOR_OP_COMPARE_UNSIGNED;
+    public static final int BT_unsigned_compare = 0b10000;
+    public static final int BT_ule = BT_le | BT_unsigned_compare;
+    public static final int BT_uge = BT_ge | BT_unsigned_compare;
+    public static final int BT_ult = BT_lt | BT_unsigned_compare;
+    public static final int BT_ugt = BT_gt | BT_unsigned_compare;
 
 
     // BasicType codes, for primitives only:

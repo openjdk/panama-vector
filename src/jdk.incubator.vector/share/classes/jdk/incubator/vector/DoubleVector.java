@@ -380,20 +380,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     }
 
     /*package-private*/
-    @ForceInline
-    static boolean doBinTest(int cond, double a, double b) {
-        switch (cond) {
-        case BT_eq:  return a == b;
-        case BT_ne:  return a != b;
-        case BT_lt:  return a < b;
-        case BT_le:  return a <= b;
-        case BT_gt:  return a > b;
-        case BT_ge:  return a >= b;
-        }
-        throw new AssertionError(Integer.toHexString(cond));
-    }
-
-    /*package-private*/
     @Override
     abstract DoubleSpecies vspecies();
 

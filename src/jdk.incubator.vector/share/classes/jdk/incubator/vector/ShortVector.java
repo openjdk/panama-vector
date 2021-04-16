@@ -38,7 +38,7 @@ import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
 
 import static jdk.internal.vm.vector.VectorSupport.*;
-import static jdk.incubator.vector.VectorIntrinsics.*;
+import static jdk.incubator.vector.VectorIntrinsics.*;q
 
 import static jdk.incubator.vector.VectorOperators.*;
 
@@ -377,20 +377,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
             bits[i] = f.apply(cond, i, vec1[i], vec2[i]);
         }
         return maskFactory(bits);
-    }
-
-    /*package-private*/
-    @ForceInline
-    static boolean doBinTest(int cond, short a, short b) {
-        switch (cond) {
-        case BT_eq:  return a == b;
-        case BT_ne:  return a != b;
-        case BT_lt:  return a < b;
-        case BT_le:  return a <= b;
-        case BT_gt:  return a > b;
-        case BT_ge:  return a >= b;
-        }
-        throw new AssertionError(Integer.toHexString(cond));
     }
 
     /*package-private*/
@@ -1775,10 +1761,10 @@ public abstract class ShortVector extends AbstractVector<Short> {
             case BT_le -> a <= b;
             case BT_gt -> a > b;
             case BT_ge -> a >= b;
-            case VECTOR_OP_UNSIGNED_LT -> Short.compareUnsigned(a, b) < 0;
-            case VECTOR_OP_UNSIGNED_LE -> Short.compareUnsigned(a, b) <= 0;
-            case VECTOR_OP_UNSIGNED_GT -> Short.compareUnsigned(a, b) > 0;
-            case VECTOR_OP_UNSIGNED_GE -> Short.compareUnsigned(a, b) >= 0;
+            case BT_ult -> Short.compareUnsigned(a, b) < 0;
+            case BT_ule -> Short.compareUnsigned(a, b) <= 0;
+            case BT_ugt -> Short.compareUnsigned(a, b) > 0;
+            case BT_uge -> Short.compareUnsigned(a, b) >= 0;
             default -> throw new AssertionError();
         };
     }

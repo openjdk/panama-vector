@@ -380,20 +380,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
     }
 
     /*package-private*/
-    @ForceInline
-    static boolean doBinTest(int cond, int a, int b) {
-        switch (cond) {
-        case BT_eq:  return a == b;
-        case BT_ne:  return a != b;
-        case BT_lt:  return a < b;
-        case BT_le:  return a <= b;
-        case BT_gt:  return a > b;
-        case BT_ge:  return a >= b;
-        }
-        throw new AssertionError(Integer.toHexString(cond));
-    }
-
-    /*package-private*/
     @Override
     abstract IntSpecies vspecies();
 
@@ -1774,10 +1760,10 @@ public abstract class IntVector extends AbstractVector<Integer> {
             case BT_le -> a <= b;
             case BT_gt -> a > b;
             case BT_ge -> a >= b;
-            case VECTOR_OP_UNSIGNED_LT -> Integer.compareUnsigned(a, b) < 0;
-            case VECTOR_OP_UNSIGNED_LE -> Integer.compareUnsigned(a, b) <= 0;
-            case VECTOR_OP_UNSIGNED_GT -> Integer.compareUnsigned(a, b) > 0;
-            case VECTOR_OP_UNSIGNED_GE -> Integer.compareUnsigned(a, b) >= 0;
+            case BT_ult -> Integer.compareUnsigned(a, b) < 0;
+            case BT_ule -> Integer.compareUnsigned(a, b) <= 0;
+            case BT_ugt -> Integer.compareUnsigned(a, b) > 0;
+            case BT_uge -> Integer.compareUnsigned(a, b) >= 0;
             default -> throw new AssertionError();
         };
     }

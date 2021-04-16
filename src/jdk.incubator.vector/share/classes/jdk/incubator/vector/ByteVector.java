@@ -380,20 +380,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     }
 
     /*package-private*/
-    @ForceInline
-    static boolean doBinTest(int cond, byte a, byte b) {
-        switch (cond) {
-        case BT_eq:  return a == b;
-        case BT_ne:  return a != b;
-        case BT_lt:  return a < b;
-        case BT_le:  return a <= b;
-        case BT_gt:  return a > b;
-        case BT_ge:  return a >= b;
-        }
-        throw new AssertionError(Integer.toHexString(cond));
-    }
-
-    /*package-private*/
     @Override
     abstract ByteSpecies vspecies();
 
@@ -1775,10 +1761,10 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             case BT_le -> a <= b;
             case BT_gt -> a > b;
             case BT_ge -> a >= b;
-            case VECTOR_OP_UNSIGNED_LT -> Byte.compareUnsigned(a, b) < 0;
-            case VECTOR_OP_UNSIGNED_LE -> Byte.compareUnsigned(a, b) <= 0;
-            case VECTOR_OP_UNSIGNED_GT -> Byte.compareUnsigned(a, b) > 0;
-            case VECTOR_OP_UNSIGNED_GE -> Byte.compareUnsigned(a, b) >= 0;
+            case BT_ult -> Byte.compareUnsigned(a, b) < 0;
+            case BT_ule -> Byte.compareUnsigned(a, b) <= 0;
+            case BT_ugt -> Byte.compareUnsigned(a, b) > 0;
+            case BT_uge -> Byte.compareUnsigned(a, b) >= 0;
             default -> throw new AssertionError();
         };
     }
