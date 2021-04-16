@@ -9006,7 +9006,7 @@ void Assembler::evpcmpq(KRegister kdst, KRegister mask, XMMRegister nds, XMMRegi
   attributes.set_embedded_opmask_register_specifier(mask);
   attributes.reset_is_clear_context();
   int encode = vex_prefix_and_encode(kdst->encoding(), nds->encoding(), src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_3A, &attributes);
-  int opcode = is_signed ? 0x1F : 0x1E; 
+  int opcode = is_signed ? 0x1F : 0x1E;
   emit_int24(opcode, (0xC0 | encode), comparison);
 }
 
@@ -9023,7 +9023,7 @@ void Assembler::evpcmpq(KRegister kdst, KRegister mask, XMMRegister nds, Address
   attributes.reset_is_clear_context();
   int dst_enc = kdst->encoding();
   vex_prefix(src, nds->encoding(), dst_enc, VEX_SIMD_66, VEX_OPCODE_0F_3A, &attributes);
-  int opcode = is_signed ? 0x1F : 0x1E; 
+  int opcode = is_signed ? 0x1F : 0x1E;
   emit_int8((unsigned char)opcode);
   emit_operand(as_Register(dst_enc), src);
   emit_int8((unsigned char)comparison);
