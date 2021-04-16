@@ -1214,4 +1214,5 @@ public class ShortMaxVectorLoadStoreTests extends AbstractVectorTest {
         }
     }
 
+
 }

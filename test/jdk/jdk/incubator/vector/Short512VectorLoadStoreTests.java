@@ -1205,4 +1205,5 @@ public class Short512VectorLoadStoreTests extends AbstractVectorTest {
         }
     }
 
+
 }

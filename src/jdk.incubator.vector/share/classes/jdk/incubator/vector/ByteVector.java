@@ -2832,8 +2832,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * is first converted to a {@code byte} value and then
      * placed into the resulting vector at lane index {@code N}.
      * <p>
-     * A {@code true} value is converted to a {@code byte} value of {@code 1}.
-     * A {@code false} value is converted to a {@code byte} value of {@code 0}.
+     * A {@code boolean} value is converted to a {@code byte} value by applying the
+     * expression {@code (byte) (b ? 1 : 0)}, where {@code b} is the {@code boolean} value.
      *
      * @param species species of desired vector
      * @param a the array
@@ -2865,8 +2865,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * {@code N}, otherwise the default element value is placed into the
      * resulting vector at lane index {@code N}.
      * <p>
-     * A {@code true} value is converted to a {@code byte} value of {@code 1}.
-     * A {@code false} value is converted to a {@code byte} value of {@code 0}.
+     * A {@code boolean} value is converted to a {@code byte} value by applying the
+     * expression {@code (byte) (b ? 1 : 0)}, where {@code b} is the {@code boolean} value.
      *
      * @param species species of desired vector
      * @param a the array
@@ -2930,6 +2930,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     ByteVector fromBooleanArray(VectorSpecies<Byte> species,
                                           boolean[] a, int offset,
                                           int[] indexMap, int mapOffset) {
+        // FIXME: optimize
         ByteSpecies vsp = (ByteSpecies) species;
         return vsp.vOp(n -> (byte) (a[offset + indexMap[mapOffset + n]] ? 1 : 0));
     }
@@ -2976,6 +2977,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                           boolean[] a, int offset,
                                           int[] indexMap, int mapOffset,
                                           VectorMask<Byte> m) {
+        // FIXME: optimize
         ByteSpecies vsp = (ByteSpecies) species;
         return vsp.vOp(m, n -> (byte) (a[offset + indexMap[mapOffset + n]] ? 1 : 0));
     }
@@ -3232,8 +3234,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * is first converted to a {@code boolean} value and then
      * stored into the array element {@code a[offset+N]}.
      * <p>
-     * A {@code byte} value {@code != 0} is converted to a {@code true} value.
-     * A {@code byte} value {@code == 0} is converted to a {@code false} value.
+     * A {@code byte} value is converted to a {@code boolean} value by applying the
+     * expression {@code (b & 1) != 0} where {@code b} is the byte value.
      *
      * @param a the array
      * @param offset the offset into the array
@@ -3246,14 +3248,15 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     void intoBooleanArray(boolean[] a, int offset) {
         offset = checkFromIndexSize(offset, length(), a.length);
         ByteSpecies vsp = vspecies();
+        ByteVector normalized = this.and((byte) 1);
         VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, booleanArrayAddress(a, offset),
-            this,
+            normalized,
             a, offset,
             (arr, off, v)
             -> v.stOp(arr, off,
-                      (arr_, off_, i, e) -> arr_[off_ + i] = e != 0));
+                      (arr_, off_, i, e) -> arr_[off_ + i] = (e & 1) != 0));
     }
 
     /**
@@ -3267,8 +3270,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * If the mask lane at {@code N} is unset then the corresponding
      * array element {@code a[offset+N]} is left unchanged.
      * <p>
-     * A {@code byte} value {@code != 0} is converted to a {@code true} value.
-     * A {@code byte} value {@code == 0} is converted to a {@code false} value.
+     * A {@code byte} value is converted to a {@code boolean} value by applying the
+     * expression {@code (b & 1) != 0} where {@code b} is the byte value.
      * <p>
      * Array range checking is done for lanes where the mask is set.
      * Lanes where the mask is unset are not stored and do not need
@@ -3294,7 +3297,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             // FIXME: optimize
             ByteSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
-            stOp(a, offset, m, (arr, off, i, v) -> arr[off+i] = v != 0);
+            stOp(a, offset, m, (arr, off, i, e) -> arr[off+i] = (e & 1) != 0);
         }
     }
 
@@ -3314,8 +3317,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * index mapping expression
      * {@code offset + indexMap[mapOffset + N]]}.
      * <p>
-     * A {@code byte} value {@code != 0} is converted to a {@code true} value.
-     * A {@code byte} value {@code == 0} is converted to a {@code false} value.
+     * A {@code byte} value is converted to a {@code boolean} value by applying the
+     * expression {@code (b & 1) != 0} where {@code b} is the byte value.
      *
      * @param a the array
      * @param offset an offset to combine with the index map offsets
@@ -3333,10 +3336,11 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     public final
     void intoBooleanArray(boolean[] a, int offset,
                           int[] indexMap, int mapOffset) {
+        // FIXME: optimize
         stOp(a, offset,
              (arr, off, i, e) -> {
                  int j = indexMap[mapOffset + i];
-                 arr[off + j] = e != 0;
+                 arr[off + j] = (e & 1) != 0;
              });
     }
 
@@ -3358,8 +3362,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * index mapping expression
      * {@code offset + indexMap[mapOffset + N]]}.
      * <p>
-     * A {@code byte} value {@code != 0} is converted to a {@code true} value.
-     * A {@code byte} value {@code == 0} is converted to a {@code false} value.
+     * A {@code byte} value is converted to a {@code boolean} value by applying the
+     * expression {@code (b & 1) != 0} where {@code b} is the byte value.
      *
      * @param a the array
      * @param offset an offset to combine with the index map offsets
@@ -3380,10 +3384,11 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     void intoBooleanArray(boolean[] a, int offset,
                           int[] indexMap, int mapOffset,
                           VectorMask<Byte> m) {
+        // FIXME: optimize
         stOp(a, offset, m,
              (arr, off, i, e) -> {
                  int j = indexMap[mapOffset + i];
-                 arr[off + j] = e != 0;
+                 arr[off + j] = (e & 1) != 0;
              });
     }
 
