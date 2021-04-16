@@ -7907,7 +7907,7 @@ void MacroAssembler::char_array_compress(Register src, Register dst, Register le
     kmovdl(mask2, result);
 
     evmovdquw(tmp1Reg, mask2, Address(src, 0), /*merge*/ false, Assembler::AVX_512bit);
-    evpcmpuw(mask1, mask2, tmp1Reg, tmp2Reg, Assembler::le, /*signed*/ false, Assembler::AVX_512bit);
+    evpcmpw(mask1, mask2, tmp1Reg, tmp2Reg, Assembler::le, /*signed*/ false, Assembler::AVX_512bit);
     ktestd(mask1, mask2);
     jcc(Assembler::carryClear, return_zero);
 
