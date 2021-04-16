@@ -2184,13 +2184,13 @@ public:
     if (value)
       fmov_imm(Vn, value, 0b00);
     else
-      fmovs(Vn, zr);
+      movi(Vn, T2S, 0);
   }
   void fmovd(FloatRegister Vn, double value) {
     if (value)
       fmov_imm(Vn, value, 0b01);
     else
-      fmovd(Vn, zr);
+      movi(Vn, T1D, 0);
   }
 
    // Floating-point rounding
@@ -2427,6 +2427,7 @@ public:
   INSN(addv,   0, 0b110001101110, 1); // accepted arrangements: T8B, T16B, T4H, T8H,      T4S
   INSN(smaxv,  0, 0b110000101010, 1); // accepted arrangements: T8B, T16B, T4H, T8H,      T4S
   INSN(sminv,  0, 0b110001101010, 1); // accepted arrangements: T8B, T16B, T4H, T8H,      T4S
+  INSN(uminv,  1, 0b110001101010, 1); // accepted arrangements: T8B, T16B, T4H, T8H,      T4S
   INSN(cls,    0, 0b100000010010, 2); // accepted arrangements: T8B, T16B, T4H, T8H, T2S, T4S
   INSN(clz,    1, 0b100000010010, 2); // accepted arrangements: T8B, T16B, T4H, T8H, T2S, T4S
   INSN(cnt,    0, 0b100000010110, 0); // accepted arrangements: T8B, T16B
@@ -2687,7 +2688,7 @@ public:
      *   1xxx xxx       1D/2D,  shift = UInt(immh:immb) - 64            \
      *   (1D is RESERVED)                                               \
      */                                                                 \
-    assert(!isSHR || (isSHR && (shift != 0)), "Zero right shift");      \
+    guarantee(!isSHR || (isSHR && (shift != 0)), "impossible encoding");\
     assert((1 << ((T>>1)+3)) > shift, "Invalid Shift value");           \
     int cVal = (1 << (((T >> 1) + 3) + (isSHR ? 1 : 0)));               \
     int encodedShift = isSHR ? cVal - shift : cVal + shift;             \
@@ -3540,8 +3541,8 @@ public:
                  int imm1, int imm2) {
     starti;
     f(0b00000100, 31, 24), f(T, 23, 22), f(0b1, 21);
-    f(imm2, 20, 16), f(0b010000, 15, 10);
-    f(imm1, 9, 5), rf(Zd, 0);
+    sf(imm2, 20, 16), f(0b010000, 15, 10);
+    sf(imm1, 9, 5), rf(Zd, 0);
   }
 
   Assembler(CodeBuffer* code) : AbstractAssembler(code) {
