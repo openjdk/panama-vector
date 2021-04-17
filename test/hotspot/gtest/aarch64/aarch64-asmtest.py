@@ -1601,6 +1601,7 @@ generate(SpecialCases, [["ccmn",   "__ ccmn(zr, zr, 3u, Assembler::LE);",       
                         ["lastb",   "__ sve_lastb(v1, __ B, p1, z16);",                   "lastb\tb1, p1, z16.b"],
                         ["index",   "__ sve_index(z6, __ S, 1, 1);",                      "index\tz6.s, #1, #1"],
                         ["cpy",     "__ sve_cpy(z7, __ H, p3, r5);",                      "cpy\tz7.h, p3/m, w5"],
+                        ["tbl",     "__ sve_tbl(z16, __ S, z17, z18);",                   "tbl\tz16.s, {z17.s}, z18.s"],
 ])
 
 print "\n// FloatImmediateOp"

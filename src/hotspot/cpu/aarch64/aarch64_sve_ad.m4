@@ -224,7 +224,6 @@ source %{
       case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
       case Op_VectorLoadConst:
-      case Op_VectorRearrange:
         return false;
       default:
         // By default, we only support vector operations with larger than 16 bytes.
@@ -2336,3 +2335,27 @@ instruct loadshuffleL(vReg dst, vReg src)
   %}
   ins_pipe(pipe_slow);
 %}
+
+// ------------------------------ Vector rearrange -------------------------------
+dnl
+define(`VECTOR_REARRANGE', `
+instruct rearrange$1`'(vReg dst, vReg src, vReg shuffle)
+%{
+  predicate(UseSVE > 0 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($1));
+  match(Set dst (VectorRearrange src shuffle));
+  ins_cost(SVE_COST);
+  format %{ "sve_tbl $dst, $2, $src, $shuffle\t# vector rearrange ($2)" %}
+  ins_encode %{
+    __ sve_tbl(as_FloatRegister($dst$$reg), __ $2,
+               as_FloatRegister($src$$reg), as_FloatRegister($shuffle$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl              $1 $2
+VECTOR_REARRANGE(B, B)
+VECTOR_REARRANGE(S, H)
+VECTOR_REARRANGE(I, S)
+VECTOR_REARRANGE(F, S)
+VECTOR_REARRANGE(L, D)
+VECTOR_REARRANGE(D, D)

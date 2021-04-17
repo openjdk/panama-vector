@@ -229,7 +229,6 @@ source %{
       case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
       case Op_VectorLoadConst:
-      case Op_VectorRearrange:
         return false;
       default:
         // By default, we only support vector operations with larger than 16 bytes.
@@ -3990,6 +3989,92 @@ instruct loadshuffleL(vReg dst, vReg src)
     __ sve_uunpklo(as_FloatRegister($dst$$reg), __ H, as_FloatRegister($src$$reg));
     __ sve_uunpklo(as_FloatRegister($dst$$reg), __ S, as_FloatRegister($dst$$reg));
     __ sve_uunpklo(as_FloatRegister($dst$$reg), __ D, as_FloatRegister($dst$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ Vector rearrange -------------------------------
+
+instruct rearrangeB(vReg dst, vReg src, vReg shuffle)
+%{
+  predicate(UseSVE > 0 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorRearrange src shuffle));
+  ins_cost(SVE_COST);
+  format %{ "sve_tbl $dst, B, $src, $shuffle\t# vector rearrange (B)" %}
+  ins_encode %{
+    __ sve_tbl(as_FloatRegister($dst$$reg), __ B,
+               as_FloatRegister($src$$reg), as_FloatRegister($shuffle$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct rearrangeS(vReg dst, vReg src, vReg shuffle)
+%{
+  predicate(UseSVE > 0 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  match(Set dst (VectorRearrange src shuffle));
+  ins_cost(SVE_COST);
+  format %{ "sve_tbl $dst, H, $src, $shuffle\t# vector rearrange (H)" %}
+  ins_encode %{
+    __ sve_tbl(as_FloatRegister($dst$$reg), __ H,
+               as_FloatRegister($src$$reg), as_FloatRegister($shuffle$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct rearrangeI(vReg dst, vReg src, vReg shuffle)
+%{
+  predicate(UseSVE > 0 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_INT);
+  match(Set dst (VectorRearrange src shuffle));
+  ins_cost(SVE_COST);
+  format %{ "sve_tbl $dst, S, $src, $shuffle\t# vector rearrange (S)" %}
+  ins_encode %{
+    __ sve_tbl(as_FloatRegister($dst$$reg), __ S,
+               as_FloatRegister($src$$reg), as_FloatRegister($shuffle$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct rearrangeF(vReg dst, vReg src, vReg shuffle)
+%{
+  predicate(UseSVE > 0 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+  match(Set dst (VectorRearrange src shuffle));
+  ins_cost(SVE_COST);
+  format %{ "sve_tbl $dst, S, $src, $shuffle\t# vector rearrange (S)" %}
+  ins_encode %{
+    __ sve_tbl(as_FloatRegister($dst$$reg), __ S,
+               as_FloatRegister($src$$reg), as_FloatRegister($shuffle$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct rearrangeL(vReg dst, vReg src, vReg shuffle)
+%{
+  predicate(UseSVE > 0 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  match(Set dst (VectorRearrange src shuffle));
+  ins_cost(SVE_COST);
+  format %{ "sve_tbl $dst, D, $src, $shuffle\t# vector rearrange (D)" %}
+  ins_encode %{
+    __ sve_tbl(as_FloatRegister($dst$$reg), __ D,
+               as_FloatRegister($src$$reg), as_FloatRegister($shuffle$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct rearrangeD(vReg dst, vReg src, vReg shuffle)
+%{
+  predicate(UseSVE > 0 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
+  match(Set dst (VectorRearrange src shuffle));
+  ins_cost(SVE_COST);
+  format %{ "sve_tbl $dst, D, $src, $shuffle\t# vector rearrange (D)" %}
+  ins_encode %{
+    __ sve_tbl(as_FloatRegister($dst$$reg), __ D,
+               as_FloatRegister($src$$reg), as_FloatRegister($shuffle$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
