@@ -2141,15 +2141,13 @@ void C2_MacroAssembler::vpcmpu(BasicType typ, XMMRegister dst, XMMRegister src1,
     vpmovzxbw(vtmp1, src1, vlen_enc);
     vpmovzxbw(vtmp2, src2, vlen_enc);
     vpcmpCCW(dst, vtmp1, vtmp2, comparison, Assembler::W, vlen_enc, scratch);
-    vpand(dst, dst, ExternalAddress(StubRoutines::x86::vector_short_to_byte_mask()), vlen_enc, scratch);
-    vpackuswb(dst, dst, dst, vlen_enc);
+    vpacksswb(dst, dst, dst, vlen_enc);
     break;
   case T_SHORT:
     vpmovzxwd(vtmp1, src1, vlen_enc);
     vpmovzxwd(vtmp2, src2, vlen_enc);
     vpcmpCCW(dst, vtmp1, vtmp2, comparison, Assembler::D, vlen_enc, scratch);
-    vpand(dst, dst, ExternalAddress(StubRoutines::x86::vector_int_to_short_mask()), vlen_enc, scratch);
-    vpackusdw(dst, dst, dst, vlen_enc);
+    vpackssdw(dst, dst, dst, vlen_enc);
     break;
   case T_INT:
     vpmovzxdq(vtmp1, src1, vlen_enc);
@@ -2173,28 +2171,24 @@ void C2_MacroAssembler::vpcmpu32(BasicType typ, XMMRegister dst, XMMRegister src
     vpmovzxbw(vtmp1, src1, vlen_enc);
     vpmovzxbw(vtmp2, src2, vlen_enc);
     vpcmpCCW(dst, vtmp1, vtmp2, comparison, Assembler::W, vlen_enc, scratch);
-    vpand(dst, dst, ExternalAddress(StubRoutines::x86::vector_short_to_byte_mask()), vlen_enc, scratch);
     vextracti128(vtmp1, src1, 1);
     vextracti128(vtmp2, src2, 1);
     vpmovzxbw(vtmp1, vtmp1, vlen_enc);
     vpmovzxbw(vtmp2, vtmp2, vlen_enc);
     vpcmpCCW(vtmp3, vtmp1, vtmp2, comparison, Assembler::W, vlen_enc, scratch);
-    vpand(vtmp3, vtmp3, ExternalAddress(StubRoutines::x86::vector_short_to_byte_mask()), vlen_enc, scratch);
-    vpackuswb(dst, dst, vtmp3, vlen_enc);
+    vpacksswb(dst, dst, vtmp3, vlen_enc);
     vpermpd(dst, dst, 0xd8, vlen_enc);
     break;
   case T_SHORT:
     vpmovzxwd(vtmp1, src1, vlen_enc);
     vpmovzxwd(vtmp2, src2, vlen_enc);
     vpcmpCCW(dst, vtmp1, vtmp2, comparison, Assembler::D, vlen_enc, scratch);
-    vpand(dst, dst, ExternalAddress(StubRoutines::x86::vector_int_to_short_mask()), vlen_enc, scratch);
     vextracti128(vtmp1, src1, 1);
     vextracti128(vtmp2, src2, 1);
     vpmovzxwd(vtmp1, vtmp1, vlen_enc);
     vpmovzxwd(vtmp2, vtmp2, vlen_enc);
     vpcmpCCW(vtmp3, vtmp1, vtmp2, comparison, Assembler::D,  vlen_enc, scratch);
-    vpand(vtmp3, vtmp3, ExternalAddress(StubRoutines::x86::vector_int_to_short_mask()), vlen_enc, scratch);
-    vpackusdw(dst, dst, vtmp3, vlen_enc);
+    vpackssdw(dst, dst, vtmp3, vlen_enc);
     vpermpd(dst, dst, 0xd8, vlen_enc);
     break;
   case T_INT:
