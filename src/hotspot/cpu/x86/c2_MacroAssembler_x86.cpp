@@ -2195,15 +2195,15 @@ void C2_MacroAssembler::vpcmpu32(BasicType typ, XMMRegister dst, XMMRegister src
     vpmovzxdq(vtmp1, src1, vlen_enc);
     vpmovzxdq(vtmp2, src2, vlen_enc);
     vpcmpCCW(dst, vtmp1, vtmp2, comparison, Assembler::Q, vlen_enc, scratch);
-    vpermilps(dst, dst, 8, vlen_enc);
-    vpermpd(dst, dst, 8, vlen_enc);
+    vpshufd(dst, dst, 8, vlen_enc);
+    vpermq(dst, dst, 8, vlen_enc);
     vextracti128(vtmp1, src1, 1);
     vextracti128(vtmp2, src2, 1);
     vpmovzxdq(vtmp1, vtmp1, vlen_enc);
     vpmovzxdq(vtmp2, vtmp2, vlen_enc);
     vpcmpCCW(vtmp3, vtmp1, vtmp2, comparison, Assembler::Q,  vlen_enc, scratch);
-    vpermilps(vtmp3, vtmp3, 8, vlen_enc);
-    vpermpd(vtmp3, vtmp3, 0x80, vlen_enc);
+    vpshufd(vtmp3, vtmp3, 8, vlen_enc);
+    vpermq(vtmp3, vtmp3, 0x80, vlen_enc);
     vpblendd(dst, dst, vtmp3, 0xf0, vlen_enc);
     break;
   default:
