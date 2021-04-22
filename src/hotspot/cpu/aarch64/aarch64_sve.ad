@@ -4015,7 +4015,7 @@ instruct rearrangeS(vReg dst, vReg src, vReg shuffle)
             n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   match(Set dst (VectorRearrange src shuffle));
   ins_cost(SVE_COST);
-  format %{ "sve_tbl $dst, H, $src, $shuffle\t# vector rearrange (H)" %}
+  format %{ "sve_tbl $dst, H, $src, $shuffle\t# vector rearrange (S)" %}
   ins_encode %{
     __ sve_tbl(as_FloatRegister($dst$$reg), __ H,
                as_FloatRegister($src$$reg), as_FloatRegister($shuffle$$reg));
@@ -4029,7 +4029,7 @@ instruct rearrangeI(vReg dst, vReg src, vReg shuffle)
             n->bottom_type()->is_vect()->element_basic_type() == T_INT);
   match(Set dst (VectorRearrange src shuffle));
   ins_cost(SVE_COST);
-  format %{ "sve_tbl $dst, S, $src, $shuffle\t# vector rearrange (S)" %}
+  format %{ "sve_tbl $dst, S, $src, $shuffle\t# vector rearrange (I)" %}
   ins_encode %{
     __ sve_tbl(as_FloatRegister($dst$$reg), __ S,
                as_FloatRegister($src$$reg), as_FloatRegister($shuffle$$reg));
@@ -4043,7 +4043,7 @@ instruct rearrangeF(vReg dst, vReg src, vReg shuffle)
             n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
   match(Set dst (VectorRearrange src shuffle));
   ins_cost(SVE_COST);
-  format %{ "sve_tbl $dst, S, $src, $shuffle\t# vector rearrange (S)" %}
+  format %{ "sve_tbl $dst, S, $src, $shuffle\t# vector rearrange (F)" %}
   ins_encode %{
     __ sve_tbl(as_FloatRegister($dst$$reg), __ S,
                as_FloatRegister($src$$reg), as_FloatRegister($shuffle$$reg));
@@ -4057,7 +4057,7 @@ instruct rearrangeL(vReg dst, vReg src, vReg shuffle)
             n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
   match(Set dst (VectorRearrange src shuffle));
   ins_cost(SVE_COST);
-  format %{ "sve_tbl $dst, D, $src, $shuffle\t# vector rearrange (D)" %}
+  format %{ "sve_tbl $dst, D, $src, $shuffle\t# vector rearrange (L)" %}
   ins_encode %{
     __ sve_tbl(as_FloatRegister($dst$$reg), __ D,
                as_FloatRegister($src$$reg), as_FloatRegister($shuffle$$reg));

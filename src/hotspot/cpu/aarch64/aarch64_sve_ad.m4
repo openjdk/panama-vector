@@ -2345,7 +2345,7 @@ instruct rearrange$1`'(vReg dst, vReg src, vReg shuffle)
             n->bottom_type()->is_vect()->element_basic_type() == T_`'TYPE2DATATYPE($1));
   match(Set dst (VectorRearrange src shuffle));
   ins_cost(SVE_COST);
-  format %{ "sve_tbl $dst, $2, $src, $shuffle\t# vector rearrange ($2)" %}
+  format %{ "sve_tbl $dst, $2, $src, $shuffle\t# vector rearrange ($1)" %}
   ins_encode %{
     __ sve_tbl(as_FloatRegister($dst$$reg), __ $2,
                as_FloatRegister($src$$reg), as_FloatRegister($shuffle$$reg));
