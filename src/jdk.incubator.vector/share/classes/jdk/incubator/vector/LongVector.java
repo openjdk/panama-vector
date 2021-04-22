@@ -557,17 +557,33 @@ public abstract class LongVector extends AbstractVector<Long> {
                                   Vector<Long> v) {
         LongVector that = (LongVector) v;
         that.check(this);
-        if (op == ROR || op == ROL) { // FIXME: JIT should do this
-            LongVector neg = that.lanewise(NEG);
-            LongVector hi = this.lanewise(LSHL, (op == ROR) ? neg : that);
-            LongVector lo = this.lanewise(LSHR, (op == ROR) ? that : neg);
-            return hi.lanewise(OR, lo);
-        }
-
-        if (op == DIV) {
-            VectorMask<Long> eqz = that.eq((long)0);
-            if (eqz.anyTrue()) {
-                throw that.divZeroException();
+        if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
+            if (op == FIRST_NONZERO) {
+                // FIXME: Support this in the JIT.
+                VectorMask<Long> thisNZ
+                    = this.viewAsIntegralLanes().compare(NE, (long) 0);
+                that = that.blend((long) 0, thisNZ.cast(vspecies()));
+                op = OR_UNCHECKED;
+            }
+            if (opKind(op, VO_SHIFT)) {
+                // As per shift specification for Java, mask the shift count.
+                // This allows the JIT to ignore some ISA details.
+                that = that.lanewise(AND, SHIFT_MASK);
+            }
+            if (op == ROR || op == ROL) {  // FIXME: JIT should do this
+                LongVector neg = that.lanewise(NEG);
+                LongVector hi = this.lanewise(LSHL, (op == ROR) ? neg : that);
+                LongVector lo = this.lanewise(LSHR, (op == ROR) ? that : neg);
+                return hi.lanewise(OR, lo);
+            } else if (op == AND_NOT) {
+                // FIXME: Support this in the JIT.
+                that = that.lanewise(NOT);
+                op = AND;
+            } else if (op == DIV) {
+                VectorMask<Long> eqz = that.eq((long) 0);
+                if (eqz.anyTrue()) {
+                    throw that.divZeroException();
+                }
             }
         }
         return lanewise0(op, that, null);
@@ -583,34 +599,15 @@ public abstract class LongVector extends AbstractVector<Long> {
     LongVector lanewise(VectorOperators.Binary op,
                                   Vector<Long> v,
                                   VectorMask<Long> m) {
-        if (op == ROR || op == ROL) {
-            return blend(lanewise(op, v), m);
-        }
-
         LongVector that = (LongVector) v;
         that.check(this);
-        if (op == DIV) {
-            VectorMask<Long> eqz = that.eq((long)0);
-            if (eqz.and(m).anyTrue()) {
-                throw that.divZeroException();
-            }
-            // suppress div/0 exceptions in unset lanes
-            that = that.lanewise(NOT, eqz);
+        VectorSpecies<Long> maskSpecies =
+            ((jdk.incubator.vector.VectorMask<Long>) m).vectorSpecies();
+        if (maskSpecies != vspecies()) {
+            throw AbstractSpecies.checkFailed(maskSpecies, vspecies());
         }
-        return lanewise0(op, that, m);
-    }
 
-    abstract
-    LongVector lanewise0(VectorOperators.Binary op,
-                                   Vector<Long> v,
-                                   VectorMask<Long> m);
-    @ForceInline
-    final
-    LongVector lanewise0Template(VectorOperators.Binary op,
-                                           Class<? extends VectorMask<Long>> maskType,
-                                           Vector<Long> v, VectorMask<Long> m) {
-        LongVector that = (LongVector) v;
-        if (opKind(op, VO_SPECIAL | VO_SHIFT)) {
+        if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
             if (op == FIRST_NONZERO) {
                 // FIXME: Support this in the JIT.
                 VectorMask<Long> thisNZ
@@ -623,17 +620,39 @@ public abstract class LongVector extends AbstractVector<Long> {
                 // This allows the JIT to ignore some ISA details.
                 that = that.lanewise(AND, SHIFT_MASK);
             }
-            if (op == AND_NOT) {
+            if (op == ROR || op == ROL) {
+                return blend(lanewise(op, v), m);
+            } else if (op == AND_NOT) {
                 // FIXME: Support this in the JIT.
                 that = that.lanewise(NOT);
                 op = AND;
+            } else if (op == DIV) {
+                VectorMask<Long> eqz = that.eq((long)0);
+                if (eqz.and(m).anyTrue()) {
+                    throw that.divZeroException();
+                }
+                // suppress div/0 exceptions in unset lanes
+                that = that.lanewise(NOT, eqz);
             }
         }
+        return lanewise0(op, that, m);
+    }
+
+    abstract
+    LongVector lanewise0(VectorOperators.Binary op,
+                                   Vector<Long> v,
+                                   VectorMask<Long> m);
+    @ForceInline
+    final
+    LongVector lanewise0Template(VectorOperators.Binary op,
+                                           Class<? extends VectorMask<Long>> maskClass,
+                                           Vector<Long> v, VectorMask<Long> m) {
+        LongVector that = (LongVector) v;
         int opc = opCode(op);
-        return VectorSupport.binaryMaskOp(
-            opc, getClass(), maskType, long.class, length(),
+        return VectorSupport.binaryMaskedOp(
+            opc, getClass(), maskClass, long.class, length(),
             this, that, m,
-            BIN_MASK_IMPL.find(op, opc, (opc_) -> {
+            BIN_MASKED_IMPL.find(op, opc, (opc_) -> {
               switch (opc_) {
                 case VECTOR_OP_ADD: return (v0, v1, vm) ->
                         v0.bOp(v1, vm, (i, a, b) -> (long)(a + b));
@@ -663,8 +682,8 @@ public abstract class LongVector extends AbstractVector<Long> {
                 }}));
     }
     private static final
-    ImplCache<Binary, BinaryMaskOperation<LongVector, VectorMask<Long>>> BIN_MASK_IMPL
-        = new ImplCache<>(Binary.class, LongVector.class);
+    ImplCache<Binary, BinaryMaskedOperation<LongVector, VectorMask<Long>>>
+        BIN_MASKED_IMPL = new ImplCache<>(Binary.class, LongVector.class);
 
     // FIXME: Maybe all of the public final methods in this file (the
     // simple ones that just call lanewise) should be pushed down to

@@ -599,17 +599,33 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                   Vector<Byte> v) {
         ByteVector that = (ByteVector) v;
         that.check(this);
-        if (op == ROR || op == ROL) { // FIXME: JIT should do this
-            ByteVector neg = that.lanewise(NEG);
-            ByteVector hi = this.lanewise(LSHL, (op == ROR) ? neg : that);
-            ByteVector lo = this.lanewise(LSHR, (op == ROR) ? that : neg);
-            return hi.lanewise(OR, lo);
-        }
-
-        if (op == DIV) {
-            VectorMask<Byte> eqz = that.eq((byte)0);
-            if (eqz.anyTrue()) {
-                throw that.divZeroException();
+        if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
+            if (op == FIRST_NONZERO) {
+                // FIXME: Support this in the JIT.
+                VectorMask<Byte> thisNZ
+                    = this.viewAsIntegralLanes().compare(NE, (byte) 0);
+                that = that.blend((byte) 0, thisNZ.cast(vspecies()));
+                op = OR_UNCHECKED;
+            }
+            if (opKind(op, VO_SHIFT)) {
+                // As per shift specification for Java, mask the shift count.
+                // This allows the JIT to ignore some ISA details.
+                that = that.lanewise(AND, SHIFT_MASK);
+            }
+            if (op == ROR || op == ROL) {  // FIXME: JIT should do this
+                ByteVector neg = that.lanewise(NEG);
+                ByteVector hi = this.lanewise(LSHL, (op == ROR) ? neg : that);
+                ByteVector lo = this.lanewise(LSHR, (op == ROR) ? that : neg);
+                return hi.lanewise(OR, lo);
+            } else if (op == AND_NOT) {
+                // FIXME: Support this in the JIT.
+                that = that.lanewise(NOT);
+                op = AND;
+            } else if (op == DIV) {
+                VectorMask<Byte> eqz = that.eq((byte) 0);
+                if (eqz.anyTrue()) {
+                    throw that.divZeroException();
+                }
             }
         }
         return lanewise0(op, that, null);
@@ -625,34 +641,15 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     ByteVector lanewise(VectorOperators.Binary op,
                                   Vector<Byte> v,
                                   VectorMask<Byte> m) {
-        if (op == ROR || op == ROL) {
-            return blend(lanewise(op, v), m);
-        }
-
         ByteVector that = (ByteVector) v;
         that.check(this);
-        if (op == DIV) {
-            VectorMask<Byte> eqz = that.eq((byte)0);
-            if (eqz.and(m).anyTrue()) {
-                throw that.divZeroException();
-            }
-            // suppress div/0 exceptions in unset lanes
-            that = that.lanewise(NOT, eqz);
+        VectorSpecies<Byte> maskSpecies =
+            ((jdk.incubator.vector.VectorMask<Byte>) m).vectorSpecies();
+        if (maskSpecies != vspecies()) {
+            throw AbstractSpecies.checkFailed(maskSpecies, vspecies());
         }
-        return lanewise0(op, that, m);
-    }
 
-    abstract
-    ByteVector lanewise0(VectorOperators.Binary op,
-                                   Vector<Byte> v,
-                                   VectorMask<Byte> m);
-    @ForceInline
-    final
-    ByteVector lanewise0Template(VectorOperators.Binary op,
-                                           Class<? extends VectorMask<Byte>> maskType,
-                                           Vector<Byte> v, VectorMask<Byte> m) {
-        ByteVector that = (ByteVector) v;
-        if (opKind(op, VO_SPECIAL | VO_SHIFT)) {
+        if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
             if (op == FIRST_NONZERO) {
                 // FIXME: Support this in the JIT.
                 VectorMask<Byte> thisNZ
@@ -665,17 +662,39 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 // This allows the JIT to ignore some ISA details.
                 that = that.lanewise(AND, SHIFT_MASK);
             }
-            if (op == AND_NOT) {
+            if (op == ROR || op == ROL) {
+                return blend(lanewise(op, v), m);
+            } else if (op == AND_NOT) {
                 // FIXME: Support this in the JIT.
                 that = that.lanewise(NOT);
                 op = AND;
+            } else if (op == DIV) {
+                VectorMask<Byte> eqz = that.eq((byte)0);
+                if (eqz.and(m).anyTrue()) {
+                    throw that.divZeroException();
+                }
+                // suppress div/0 exceptions in unset lanes
+                that = that.lanewise(NOT, eqz);
             }
         }
+        return lanewise0(op, that, m);
+    }
+
+    abstract
+    ByteVector lanewise0(VectorOperators.Binary op,
+                                   Vector<Byte> v,
+                                   VectorMask<Byte> m);
+    @ForceInline
+    final
+    ByteVector lanewise0Template(VectorOperators.Binary op,
+                                           Class<? extends VectorMask<Byte>> maskClass,
+                                           Vector<Byte> v, VectorMask<Byte> m) {
+        ByteVector that = (ByteVector) v;
         int opc = opCode(op);
-        return VectorSupport.binaryMaskOp(
-            opc, getClass(), maskType, byte.class, length(),
+        return VectorSupport.binaryMaskedOp(
+            opc, getClass(), maskClass, byte.class, length(),
             this, that, m,
-            BIN_MASK_IMPL.find(op, opc, (opc_) -> {
+            BIN_MASKED_IMPL.find(op, opc, (opc_) -> {
               switch (opc_) {
                 case VECTOR_OP_ADD: return (v0, v1, vm) ->
                         v0.bOp(v1, vm, (i, a, b) -> (byte)(a + b));
@@ -705,8 +724,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 }}));
     }
     private static final
-    ImplCache<Binary, BinaryMaskOperation<ByteVector, VectorMask<Byte>>> BIN_MASK_IMPL
-        = new ImplCache<>(Binary.class, ByteVector.class);
+    ImplCache<Binary, BinaryMaskedOperation<ByteVector, VectorMask<Byte>>>
+        BIN_MASKED_IMPL = new ImplCache<>(Binary.class, ByteVector.class);
 
     // FIXME: Maybe all of the public final methods in this file (the
     // simple ones that just call lanewise) should be pushed down to

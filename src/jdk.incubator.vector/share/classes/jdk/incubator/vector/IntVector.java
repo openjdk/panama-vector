@@ -599,17 +599,33 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                   Vector<Integer> v) {
         IntVector that = (IntVector) v;
         that.check(this);
-        if (op == ROR || op == ROL) { // FIXME: JIT should do this
-            IntVector neg = that.lanewise(NEG);
-            IntVector hi = this.lanewise(LSHL, (op == ROR) ? neg : that);
-            IntVector lo = this.lanewise(LSHR, (op == ROR) ? that : neg);
-            return hi.lanewise(OR, lo);
-        }
-
-        if (op == DIV) {
-            VectorMask<Integer> eqz = that.eq((int)0);
-            if (eqz.anyTrue()) {
-                throw that.divZeroException();
+        if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
+            if (op == FIRST_NONZERO) {
+                // FIXME: Support this in the JIT.
+                VectorMask<Integer> thisNZ
+                    = this.viewAsIntegralLanes().compare(NE, (int) 0);
+                that = that.blend((int) 0, thisNZ.cast(vspecies()));
+                op = OR_UNCHECKED;
+            }
+            if (opKind(op, VO_SHIFT)) {
+                // As per shift specification for Java, mask the shift count.
+                // This allows the JIT to ignore some ISA details.
+                that = that.lanewise(AND, SHIFT_MASK);
+            }
+            if (op == ROR || op == ROL) {  // FIXME: JIT should do this
+                IntVector neg = that.lanewise(NEG);
+                IntVector hi = this.lanewise(LSHL, (op == ROR) ? neg : that);
+                IntVector lo = this.lanewise(LSHR, (op == ROR) ? that : neg);
+                return hi.lanewise(OR, lo);
+            } else if (op == AND_NOT) {
+                // FIXME: Support this in the JIT.
+                that = that.lanewise(NOT);
+                op = AND;
+            } else if (op == DIV) {
+                VectorMask<Integer> eqz = that.eq((int) 0);
+                if (eqz.anyTrue()) {
+                    throw that.divZeroException();
+                }
             }
         }
         return lanewise0(op, that, null);
@@ -625,34 +641,15 @@ public abstract class IntVector extends AbstractVector<Integer> {
     IntVector lanewise(VectorOperators.Binary op,
                                   Vector<Integer> v,
                                   VectorMask<Integer> m) {
-        if (op == ROR || op == ROL) {
-            return blend(lanewise(op, v), m);
-        }
-
         IntVector that = (IntVector) v;
         that.check(this);
-        if (op == DIV) {
-            VectorMask<Integer> eqz = that.eq((int)0);
-            if (eqz.and(m).anyTrue()) {
-                throw that.divZeroException();
-            }
-            // suppress div/0 exceptions in unset lanes
-            that = that.lanewise(NOT, eqz);
+        VectorSpecies<Integer> maskSpecies =
+            ((jdk.incubator.vector.VectorMask<Integer>) m).vectorSpecies();
+        if (maskSpecies != vspecies()) {
+            throw AbstractSpecies.checkFailed(maskSpecies, vspecies());
         }
-        return lanewise0(op, that, m);
-    }
 
-    abstract
-    IntVector lanewise0(VectorOperators.Binary op,
-                                   Vector<Integer> v,
-                                   VectorMask<Integer> m);
-    @ForceInline
-    final
-    IntVector lanewise0Template(VectorOperators.Binary op,
-                                           Class<? extends VectorMask<Integer>> maskType,
-                                           Vector<Integer> v, VectorMask<Integer> m) {
-        IntVector that = (IntVector) v;
-        if (opKind(op, VO_SPECIAL | VO_SHIFT)) {
+        if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
             if (op == FIRST_NONZERO) {
                 // FIXME: Support this in the JIT.
                 VectorMask<Integer> thisNZ
@@ -665,17 +662,39 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 // This allows the JIT to ignore some ISA details.
                 that = that.lanewise(AND, SHIFT_MASK);
             }
-            if (op == AND_NOT) {
+            if (op == ROR || op == ROL) {
+                return blend(lanewise(op, v), m);
+            } else if (op == AND_NOT) {
                 // FIXME: Support this in the JIT.
                 that = that.lanewise(NOT);
                 op = AND;
+            } else if (op == DIV) {
+                VectorMask<Integer> eqz = that.eq((int)0);
+                if (eqz.and(m).anyTrue()) {
+                    throw that.divZeroException();
+                }
+                // suppress div/0 exceptions in unset lanes
+                that = that.lanewise(NOT, eqz);
             }
         }
+        return lanewise0(op, that, m);
+    }
+
+    abstract
+    IntVector lanewise0(VectorOperators.Binary op,
+                                   Vector<Integer> v,
+                                   VectorMask<Integer> m);
+    @ForceInline
+    final
+    IntVector lanewise0Template(VectorOperators.Binary op,
+                                           Class<? extends VectorMask<Integer>> maskClass,
+                                           Vector<Integer> v, VectorMask<Integer> m) {
+        IntVector that = (IntVector) v;
         int opc = opCode(op);
-        return VectorSupport.binaryMaskOp(
-            opc, getClass(), maskType, int.class, length(),
+        return VectorSupport.binaryMaskedOp(
+            opc, getClass(), maskClass, int.class, length(),
             this, that, m,
-            BIN_MASK_IMPL.find(op, opc, (opc_) -> {
+            BIN_MASKED_IMPL.find(op, opc, (opc_) -> {
               switch (opc_) {
                 case VECTOR_OP_ADD: return (v0, v1, vm) ->
                         v0.bOp(v1, vm, (i, a, b) -> (int)(a + b));
@@ -705,8 +724,8 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 }}));
     }
     private static final
-    ImplCache<Binary, BinaryMaskOperation<IntVector, VectorMask<Integer>>> BIN_MASK_IMPL
-        = new ImplCache<>(Binary.class, IntVector.class);
+    ImplCache<Binary, BinaryMaskedOperation<IntVector, VectorMask<Integer>>>
+        BIN_MASKED_IMPL = new ImplCache<>(Binary.class, IntVector.class);
 
     // FIXME: Maybe all of the public final methods in this file (the
     // simple ones that just call lanewise) should be pushed down to

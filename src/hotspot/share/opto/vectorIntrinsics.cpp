@@ -378,9 +378,9 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
 
 // public static
 // <V, M>
-// V binaryMaskOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
-//                int length, V v1, V v2, M m,
-//                BinaryMaskOperation<V, M> defaultImpl) {
+// V binaryMaskedOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
+//                  int length, V v1, V v2, M m,
+//                  BinaryMaskedOperation<V, M> defaultImpl) {
 //
 // TODO: add the mask support for unary/ternay mask op. After then, the original intrinsics and above method
 // "LibraryCallKit::inline_vector_nary_operation" could be removed.
@@ -389,17 +389,17 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
 //
 // public static
 // <V, M>
-// V unaryMaskOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
-//               int length, V v, M m,
-//               UnaryMaskOperation<V, M> defaultImpl) {
+// V unaryMaskedOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
+//                 int length, V v, M m,
+//                 UnaryMaskedOperation<V, M> defaultImpl) {
 //
 // public static
 // <V, M>
-// V ternaryMaskOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
-//                 int length, V v1, V v2, V v3, M m,
-//                 TernaryMaskOperation<V, M> defaultImpl) {
+// V ternaryMaskedOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
+//                   int length, V v1, V v2, V v3, M m,
+//                   TernaryMaskedOperation<V, M> defaultImpl) {
 //
-bool LibraryCallKit::inline_vector_nary_mask_operation(int n) {
+bool LibraryCallKit::inline_vector_nary_masked_operation(int n) {
   const TypeInt*     opr          = gvn().type(argument(0))->isa_int();
   const TypeInstPtr* vector_klass = gvn().type(argument(1))->isa_instptr();
   const TypeInstPtr* mask_klass   = gvn().type(argument(2))->isa_instptr();
@@ -548,7 +548,7 @@ bool LibraryCallKit::inline_vector_nary_mask_operation(int n) {
     }
 
     // Return true if current platform has implemented the masked operation with predicate feature.
-    use_predicate = sopc != 0 && Matcher::match_rule_supported_masked_vector(sopc, num_elem, elem_bt);
+    use_predicate = sopc != 0 && Matcher::match_rule_supported_vector_masked(sopc, num_elem, elem_bt);
     if (!use_predicate && !arch_supports_vector(Op_VectorBlend, num_elem, elem_bt, VecMaskUseLoad)) {
       return false;
     }
@@ -1082,7 +1082,7 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
   int num_elem = vlen->get_con();
   int sopc = is_store ? Op_StoreVectorMasked : Op_LoadVectorMasked;
   if (!arch_supports_vector(sopc, num_elem, elem_bt, VecMaskUseLoad) ||
-      !Matcher::match_rule_supported_masked_vector(sopc, num_elem, elem_bt)) {
+      !Matcher::match_rule_supported_vector_masked(sopc, num_elem, elem_bt)) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** not supported: arity=%d op=%s vlen=%d etype=%s ismask=yes",
                     is_store, is_store ? "storeMask" : "loadMask",

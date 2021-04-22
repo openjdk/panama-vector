@@ -752,7 +752,7 @@ Node* StoreVectorMaskedNode::Ideal(PhaseGVN* phase, bool can_reshape) {
       return phase->transform(new StoreVectorNode(ctr, mem, adr, adr_type(), val));
     }
   }
-  return StoreNode::Ideal(phase, can_reshape);
+  return NULL;
 }
 
 int ExtractNode::opcode(BasicType bt) {

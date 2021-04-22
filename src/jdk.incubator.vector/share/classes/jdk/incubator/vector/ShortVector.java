@@ -599,17 +599,33 @@ public abstract class ShortVector extends AbstractVector<Short> {
                                   Vector<Short> v) {
         ShortVector that = (ShortVector) v;
         that.check(this);
-        if (op == ROR || op == ROL) { // FIXME: JIT should do this
-            ShortVector neg = that.lanewise(NEG);
-            ShortVector hi = this.lanewise(LSHL, (op == ROR) ? neg : that);
-            ShortVector lo = this.lanewise(LSHR, (op == ROR) ? that : neg);
-            return hi.lanewise(OR, lo);
-        }
-
-        if (op == DIV) {
-            VectorMask<Short> eqz = that.eq((short)0);
-            if (eqz.anyTrue()) {
-                throw that.divZeroException();
+        if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
+            if (op == FIRST_NONZERO) {
+                // FIXME: Support this in the JIT.
+                VectorMask<Short> thisNZ
+                    = this.viewAsIntegralLanes().compare(NE, (short) 0);
+                that = that.blend((short) 0, thisNZ.cast(vspecies()));
+                op = OR_UNCHECKED;
+            }
+            if (opKind(op, VO_SHIFT)) {
+                // As per shift specification for Java, mask the shift count.
+                // This allows the JIT to ignore some ISA details.
+                that = that.lanewise(AND, SHIFT_MASK);
+            }
+            if (op == ROR || op == ROL) {  // FIXME: JIT should do this
+                ShortVector neg = that.lanewise(NEG);
+                ShortVector hi = this.lanewise(LSHL, (op == ROR) ? neg : that);
+                ShortVector lo = this.lanewise(LSHR, (op == ROR) ? that : neg);
+                return hi.lanewise(OR, lo);
+            } else if (op == AND_NOT) {
+                // FIXME: Support this in the JIT.
+                that = that.lanewise(NOT);
+                op = AND;
+            } else if (op == DIV) {
+                VectorMask<Short> eqz = that.eq((short) 0);
+                if (eqz.anyTrue()) {
+                    throw that.divZeroException();
+                }
             }
         }
         return lanewise0(op, that, null);
@@ -625,34 +641,15 @@ public abstract class ShortVector extends AbstractVector<Short> {
     ShortVector lanewise(VectorOperators.Binary op,
                                   Vector<Short> v,
                                   VectorMask<Short> m) {
-        if (op == ROR || op == ROL) {
-            return blend(lanewise(op, v), m);
-        }
-
         ShortVector that = (ShortVector) v;
         that.check(this);
-        if (op == DIV) {
-            VectorMask<Short> eqz = that.eq((short)0);
-            if (eqz.and(m).anyTrue()) {
-                throw that.divZeroException();
-            }
-            // suppress div/0 exceptions in unset lanes
-            that = that.lanewise(NOT, eqz);
+        VectorSpecies<Short> maskSpecies =
+            ((jdk.incubator.vector.VectorMask<Short>) m).vectorSpecies();
+        if (maskSpecies != vspecies()) {
+            throw AbstractSpecies.checkFailed(maskSpecies, vspecies());
         }
-        return lanewise0(op, that, m);
-    }
 
-    abstract
-    ShortVector lanewise0(VectorOperators.Binary op,
-                                   Vector<Short> v,
-                                   VectorMask<Short> m);
-    @ForceInline
-    final
-    ShortVector lanewise0Template(VectorOperators.Binary op,
-                                           Class<? extends VectorMask<Short>> maskType,
-                                           Vector<Short> v, VectorMask<Short> m) {
-        ShortVector that = (ShortVector) v;
-        if (opKind(op, VO_SPECIAL | VO_SHIFT)) {
+        if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
             if (op == FIRST_NONZERO) {
                 // FIXME: Support this in the JIT.
                 VectorMask<Short> thisNZ
@@ -665,17 +662,39 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 // This allows the JIT to ignore some ISA details.
                 that = that.lanewise(AND, SHIFT_MASK);
             }
-            if (op == AND_NOT) {
+            if (op == ROR || op == ROL) {
+                return blend(lanewise(op, v), m);
+            } else if (op == AND_NOT) {
                 // FIXME: Support this in the JIT.
                 that = that.lanewise(NOT);
                 op = AND;
+            } else if (op == DIV) {
+                VectorMask<Short> eqz = that.eq((short)0);
+                if (eqz.and(m).anyTrue()) {
+                    throw that.divZeroException();
+                }
+                // suppress div/0 exceptions in unset lanes
+                that = that.lanewise(NOT, eqz);
             }
         }
+        return lanewise0(op, that, m);
+    }
+
+    abstract
+    ShortVector lanewise0(VectorOperators.Binary op,
+                                   Vector<Short> v,
+                                   VectorMask<Short> m);
+    @ForceInline
+    final
+    ShortVector lanewise0Template(VectorOperators.Binary op,
+                                           Class<? extends VectorMask<Short>> maskClass,
+                                           Vector<Short> v, VectorMask<Short> m) {
+        ShortVector that = (ShortVector) v;
         int opc = opCode(op);
-        return VectorSupport.binaryMaskOp(
-            opc, getClass(), maskType, short.class, length(),
+        return VectorSupport.binaryMaskedOp(
+            opc, getClass(), maskClass, short.class, length(),
             this, that, m,
-            BIN_MASK_IMPL.find(op, opc, (opc_) -> {
+            BIN_MASKED_IMPL.find(op, opc, (opc_) -> {
               switch (opc_) {
                 case VECTOR_OP_ADD: return (v0, v1, vm) ->
                         v0.bOp(v1, vm, (i, a, b) -> (short)(a + b));
@@ -705,8 +724,8 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 }}));
     }
     private static final
-    ImplCache<Binary, BinaryMaskOperation<ShortVector, VectorMask<Short>>> BIN_MASK_IMPL
-        = new ImplCache<>(Binary.class, ShortVector.class);
+    ImplCache<Binary, BinaryMaskedOperation<ShortVector, VectorMask<Short>>>
+        BIN_MASKED_IMPL = new ImplCache<>(Binary.class, ShortVector.class);
 
     // FIXME: Maybe all of the public final methods in this file (the
     // simple ones that just call lanewise) should be pushed down to
