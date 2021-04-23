@@ -221,15 +221,21 @@ source %{
       case Op_ExtractC:
       case Op_ExtractUB:
       // Vector API specific
-      case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
       case Op_VectorLoadConst:
         return false;
+      case Op_VectorLoadShuffle:
+      case Op_VectorRearrange:
+        if (vlen < 4) {
+          return false;
+        }
+        break;
       default:
-        // By default, we only support vector operations with larger than 16 bytes.
-        int length_in_bytes = vlen * type2aelembytes(bt);
-        return 16 <= length_in_bytes && length_in_bytes <= MaxVectorSize;
+        break;
     }
+    // By default, we only support vector operations with larger than 16 bytes.
+    int length_in_bytes = vlen * type2aelembytes(bt);
+    return 16 <= length_in_bytes && length_in_bytes <= MaxVectorSize;
   }
 %}
 
@@ -2305,8 +2311,8 @@ instruct loadshuffleS(vReg dst, vReg src)
 instruct loadshuffleI(vReg dst, vReg src)
 %{
   predicate(UseSVE > 0 &&
-            n->bottom_type()->is_vect()->element_basic_type() == T_INT ||
-            n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT);
+           (n->bottom_type()->is_vect()->element_basic_type() == T_INT ||
+            n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
   match(Set dst (VectorLoadShuffle src));
   ins_cost(2 * SVE_COST);
   format %{ "sve_uunpklo $dst, $src\n\t"
@@ -2321,8 +2327,8 @@ instruct loadshuffleI(vReg dst, vReg src)
 instruct loadshuffleL(vReg dst, vReg src)
 %{
   predicate(UseSVE > 0 &&
-            n->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
-            n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE);
+           (n->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
+            n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
   match(Set dst (VectorLoadShuffle src));
   ins_cost(3 * SVE_COST);
   format %{ "sve_uunpklo $dst, $src\n\t"
@@ -2359,3 +2365,32 @@ VECTOR_REARRANGE(I, S)
 VECTOR_REARRANGE(F, S)
 VECTOR_REARRANGE(L, D)
 VECTOR_REARRANGE(D, D)
+
+// ------------------------------ Vector Load Gather ---------------------------------
+instruct gatherI(vReg dst, vmemA mem, vReg idx) %{
+  predicate(UseSVE > 0 &&
+           (n->bottom_type()->is_vect()->element_basic_type() == T_INT ||
+            n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
+  match(Set dst (LoadVectorGather mem idx));
+  ins_cost(SVE_COST);
+  format %{ "load_vector_gather $dst, $mem, $idx\t# vector load gather (I/F)" %}
+  ins_encode %{
+    __ sve_ld1w_gather(as_FloatRegister($dst$$reg), ptrue, as_Register($mem$$base), as_FloatRegister($idx$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct gatherL(vReg dst, vmemA mem, vReg idx) %{
+  predicate(UseSVE > 0 &&
+           (n->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
+            n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
+  match(Set dst (LoadVectorGather mem idx));
+  ins_cost(2 * SVE_COST);
+  format %{ "sve_uunpklo $idx, $idx\n\t"
+            "load_vector_gather $dst, $mem, $idx\t# vector load gather (L/D)" %}
+  ins_encode %{
+    __ sve_uunpklo(as_FloatRegister($idx$$reg), __ D, as_FloatRegister($idx$$reg));
+    __ sve_ld1d_gather(as_FloatRegister($dst$$reg), ptrue, as_Register($mem$$base), as_FloatRegister($idx$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}

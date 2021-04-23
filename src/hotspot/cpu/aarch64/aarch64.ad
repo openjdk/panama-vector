@@ -2411,16 +2411,6 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
     return false;
   }
   if (UseSVE > 0) {
-    switch (opcode) {
-      case Op_VectorLoadShuffle:
-      case Op_VectorRearrange:
-        if (vlen < 4) {
-          return false;
-        }
-        break;
-      default:
-        break;
-    }
     return op_sve_supported(opcode, vlen, bt);
   } else { // NEON
     // Special cases

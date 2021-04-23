@@ -3154,6 +3154,18 @@ public:
   INSN(sve_st1d, 0b1110010, 0b11, 0b111, 0b010);
 #undef INSN
 
+// SVE load gather (scalar plus vector) - 32-bit scaled offset
+#define INSN(NAME, op1, type, op2, op3)                                         \
+  void NAME(FloatRegister Zt, PRegister Pg, Register Xn, FloatRegister Zm) {    \
+    starti;                                                                     \
+    f(op1, 31, 25), f(type, 24, 23), f(op2, 22, 21), rf(Zm, 16);                \
+    f(op3, 15, 13), pgrf(Pg, 10), srf(Xn, 5), rf(Zt, 0);                        \
+  }
+
+  INSN(sve_ld1w_gather,  0b1000010, 0b10, 0b01, 0b010);
+  INSN(sve_ld1d_gather,  0b1100010, 0b11, 0b01, 0b010);
+#undef INSN
+
 // SVE load/store - unpredicated
 #define INSN(NAME, op1)                                                         \
   void NAME(FloatRegister Zt, const Address &a)  {                              \
