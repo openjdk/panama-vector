@@ -81,6 +81,45 @@ public class ShortScalar extends AbstractVectorBenchmark {
     final IntFunction<boolean[]> fmr = vl -> rms;
     final IntFunction<int[]> fs = vl -> ss;
 
+    static boolean eq(short a, short b) {
+        return a == b;
+    }
+
+    static boolean neq(short a, short b) {
+        return a != b;
+    }
+
+    static boolean lt(short a, short b) {
+        return a < b;
+    }
+
+    static boolean le(short a, short b) {
+        return a <= b;
+    }
+
+    static boolean gt(short a, short b) {
+        return a > b;
+    }
+
+    static boolean ge(short a, short b) {
+        return a >= b;
+    }
+
+    static boolean ult(short a, short b) {
+        return Short.compareUnsigned(a, b) < 0;
+    }
+
+    static boolean ule(short a, short b) {
+        return Short.compareUnsigned(a, b) <= 0;
+    }
+
+    static boolean ugt(short a, short b) {
+        return Short.compareUnsigned(a, b) > 0;
+    }
+
+    static boolean uge(short a, short b) {
+        return Short.compareUnsigned(a, b) >= 0;
+    }
 
     @Benchmark
     public void ADD(Blackhole bh) {
@@ -987,7 +1026,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] < bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= lt(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -1002,7 +1041,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] > bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= gt(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -1017,7 +1056,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] == bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= eq(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -1032,7 +1071,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] != bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= neq(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -1047,7 +1086,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] <= bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= le(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -1062,12 +1101,80 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] >= bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= ge(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
         bh.consume(r);
     }
+
+
+    @Benchmark
+    public void UNSIGNED_LT(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                r &= ult(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+
+
+
+    @Benchmark
+    public void UNSIGNED_GT(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                r &= ugt(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+
+
+
+    @Benchmark
+    public void UNSIGNED_LE(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                r &= ule(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+
+
+
+    @Benchmark
+    public void UNSIGNED_GE(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                r &= uge(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+
 
     @Benchmark
     public void blend(Blackhole bh) {

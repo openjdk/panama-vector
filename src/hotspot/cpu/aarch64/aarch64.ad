@@ -2461,6 +2461,10 @@ bool Matcher::supports_vector_variable_shifts(void) {
   return true;
 }
 
+bool Matcher::supports_unsigned_vector_comparison(int vlen, BasicType bt) {
+  return false;
+}
+
 // Vector calling convention not yet implemented.
 const bool Matcher::supports_vector_calling_convention(void) {
   return false;

@@ -384,20 +384,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     }
 
     /*package-private*/
-    @ForceInline
-    static boolean doBinTest(int cond, $type$ a, $type$ b) {
-        switch (cond) {
-        case BT_eq:  return a == b;
-        case BT_ne:  return a != b;
-        case BT_lt:  return a < b;
-        case BT_le:  return a <= b;
-        case BT_gt:  return a > b;
-        case BT_ge:  return a >= b;
-        }
-        throw new AssertionError(Integer.toHexString(cond));
-    }
-
-    /*package-private*/
     @Override
     abstract $Type$Species vspecies();
 
@@ -2030,17 +2016,22 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     }
 
     @ForceInline
-    private static
-    boolean compareWithOp(int cond, $type$ a, $type$ b) {
-        switch (cond) {
-        case BT_eq:  return a == b;
-        case BT_ne:  return a != b;
-        case BT_lt:  return a <  b;
-        case BT_le:  return a <= b;
-        case BT_gt:  return a >  b;
-        case BT_ge:  return a >= b;
-        }
-        throw new AssertionError();
+    private static boolean compareWithOp(int cond, $type$ a, $type$ b) {
+        return switch (cond) {
+            case BT_eq -> a == b;
+            case BT_ne -> a != b;
+            case BT_lt -> a < b;
+            case BT_le -> a <= b;
+            case BT_gt -> a > b;
+            case BT_ge -> a >= b;
+#if[!FP]
+            case BT_ult -> $Boxtype$.compareUnsigned(a, b) < 0;
+            case BT_ule -> $Boxtype$.compareUnsigned(a, b) <= 0;
+            case BT_ugt -> $Boxtype$.compareUnsigned(a, b) > 0;
+            case BT_uge -> $Boxtype$.compareUnsigned(a, b) >= 0;
+#end[!FP]
+            default -> throw new AssertionError();
+        };
     }
 
     /**

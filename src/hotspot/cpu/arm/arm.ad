@@ -1005,6 +1005,10 @@ bool Matcher::supports_vector_variable_shifts(void) {
   return VM_Version::has_simd();
 }
 
+bool Matcher::supports_unsigned_vector_comparison(int vlen, BasicType bt) {
+  return false;
+}
+
 // Vector calling convention not yet implemented.
 const bool Matcher::supports_vector_calling_convention(void) {
   return false;
