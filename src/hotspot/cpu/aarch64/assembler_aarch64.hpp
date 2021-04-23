@@ -3545,6 +3545,14 @@ public:
     sf(imm1, 9, 5), rf(Zd, 0);
   }
 
+// SVE programmable table lookup in single vector table
+  void sve_tbl(FloatRegister Zd, SIMD_RegVariant T, FloatRegister Zn, FloatRegister Zm) {
+    starti;
+    assert(T != Q, "invalid size");
+    f(0b00000101, 31, 24), f(T, 23, 22), f(0b1, 21), rf(Zm, 16);
+    f(0b001100, 15, 10), rf(Zn, 5), rf(Zd, 0);
+  }
+
   Assembler(CodeBuffer* code) : AbstractAssembler(code) {
   }
 
