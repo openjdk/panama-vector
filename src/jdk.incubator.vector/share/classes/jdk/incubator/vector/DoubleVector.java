@@ -653,11 +653,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                   VectorMask<Double> m) {
         DoubleVector that = (DoubleVector) v;
         that.check(this);
-        VectorSpecies<Double> maskSpecies =
-            ((jdk.incubator.vector.VectorMask<Double>) m).vectorSpecies();
-        if (maskSpecies != vspecies()) {
-            throw AbstractSpecies.checkFailed(maskSpecies, vspecies());
-        }
+        check(m);
 
         if (opKind(op, VO_SPECIAL )) {
             if (op == FIRST_NONZERO) {

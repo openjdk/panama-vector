@@ -701,11 +701,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                                   VectorMask<$Boxtype$> m) {
         $abstractvectortype$ that = ($abstractvectortype$) v;
         that.check(this);
-        VectorSpecies<$Boxtype$> maskSpecies =
-            ((jdk.incubator.vector.VectorMask<$Boxtype$>) m).vectorSpecies();
-        if (maskSpecies != vspecies()) {
-            throw AbstractSpecies.checkFailed(maskSpecies, vspecies());
-        }
+        check(m);
 
         if (opKind(op, VO_SPECIAL {#if[!FP]? | VO_SHIFT})) {
             if (op == FIRST_NONZERO) {

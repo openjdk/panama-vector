@@ -643,11 +643,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                                   VectorMask<Short> m) {
         ShortVector that = (ShortVector) v;
         that.check(this);
-        VectorSpecies<Short> maskSpecies =
-            ((jdk.incubator.vector.VectorMask<Short>) m).vectorSpecies();
-        if (maskSpecies != vspecies()) {
-            throw AbstractSpecies.checkFailed(maskSpecies, vspecies());
-        }
+        check(m);
 
         if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
             if (op == FIRST_NONZERO) {

@@ -643,11 +643,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                   VectorMask<Byte> m) {
         ByteVector that = (ByteVector) v;
         that.check(this);
-        VectorSpecies<Byte> maskSpecies =
-            ((jdk.incubator.vector.VectorMask<Byte>) m).vectorSpecies();
-        if (maskSpecies != vspecies()) {
-            throw AbstractSpecies.checkFailed(maskSpecies, vspecies());
-        }
+        check(m);
 
         if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
             if (op == FIRST_NONZERO) {

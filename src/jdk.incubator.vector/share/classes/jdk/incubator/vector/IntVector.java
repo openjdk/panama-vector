@@ -643,11 +643,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                   VectorMask<Integer> m) {
         IntVector that = (IntVector) v;
         that.check(this);
-        VectorSpecies<Integer> maskSpecies =
-            ((jdk.incubator.vector.VectorMask<Integer>) m).vectorSpecies();
-        if (maskSpecies != vspecies()) {
-            throw AbstractSpecies.checkFailed(maskSpecies, vspecies());
-        }
+        check(m);
 
         if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
             if (op == FIRST_NONZERO) {

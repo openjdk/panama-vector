@@ -601,11 +601,7 @@ public abstract class LongVector extends AbstractVector<Long> {
                                   VectorMask<Long> m) {
         LongVector that = (LongVector) v;
         that.check(this);
-        VectorSpecies<Long> maskSpecies =
-            ((jdk.incubator.vector.VectorMask<Long>) m).vectorSpecies();
-        if (maskSpecies != vspecies()) {
-            throw AbstractSpecies.checkFailed(maskSpecies, vspecies());
-        }
+        check(m);
 
         if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
             if (op == FIRST_NONZERO) {

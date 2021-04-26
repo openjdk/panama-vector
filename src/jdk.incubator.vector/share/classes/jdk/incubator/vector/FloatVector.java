@@ -653,11 +653,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
                                   VectorMask<Float> m) {
         FloatVector that = (FloatVector) v;
         that.check(this);
-        VectorSpecies<Float> maskSpecies =
-            ((jdk.incubator.vector.VectorMask<Float>) m).vectorSpecies();
-        if (maskSpecies != vspecies()) {
-            throw AbstractSpecies.checkFailed(maskSpecies, vspecies());
-        }
+        check(m);
 
         if (opKind(op, VO_SPECIAL )) {
             if (op == FIRST_NONZERO) {

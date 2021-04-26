@@ -128,6 +128,17 @@ abstract class AbstractVector<E> extends Vector<E> {
     }
 
     @ForceInline
+    @SuppressWarnings("unchecked")
+    /*package-private*/ final
+    <F> AbstractVector<F> check(VectorMask<F> mask) {
+        VectorSpecies<F> maskSpecies = mask.vectorSpecies();
+        if (maskSpecies != vspecies()) {
+            throw AbstractSpecies.checkFailed(mask, this);
+        }
+        return (AbstractVector<F>) this;
+    }
+
+    @ForceInline
     private boolean sameSpecies(Vector<?> other) {
         // It's simpler and faster to do a class check.
         boolean same = (this.getClass() == other.getClass());
