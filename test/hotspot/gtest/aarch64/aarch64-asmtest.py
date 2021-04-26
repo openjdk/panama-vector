@@ -1604,6 +1604,8 @@ generate(SpecialCases, [["ccmn",   "__ ccmn(zr, zr, 3u, Assembler::LE);",       
                         ["tbl",     "__ sve_tbl(z16, __ S, z17, z18);",                   "tbl\tz16.s, {z17.s}, z18.s"],
                         ["ld1w",    "__ sve_ld1w_gather(z15, p0, r5, z16);",              "ld1w\t{z15.s}, p0/z, [x5, z16.s, uxtw #2]"],
                         ["ld1d",    "__ sve_ld1d_gather(z15, p0, r5, z16);",              "ld1d\t{z15.d}, p0/z, [x5, z16.d, uxtw #3]"],
+                        ["st1w",    "__ sve_st1w_scatter(z15, p0, r5, z16);",             "st1w\t{z15.s}, p0, [x5, z16.s, uxtw #2]"],
+                        ["st1d",    "__ sve_st1d_scatter(z15, p0, r5, z16);",             "st1d\t{z15.d}, p0, [x5, z16.d, uxtw #3]"],
 ])
 
 print "\n// FloatImmediateOp"
