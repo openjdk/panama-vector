@@ -786,6 +786,7 @@ final class Double512Vector extends DoubleVector {
     }
 
 
+
     @ForceInline
     @Override
     final

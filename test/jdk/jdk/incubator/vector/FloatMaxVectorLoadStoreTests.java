@@ -970,4 +970,5 @@ public class FloatMaxVectorLoadStoreTests extends AbstractVectorTest {
     }
 
 
+
 }

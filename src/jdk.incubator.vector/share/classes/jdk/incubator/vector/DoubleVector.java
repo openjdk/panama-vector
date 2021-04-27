@@ -2716,6 +2716,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     }
 
 
+
     /**
      * Loads a vector from a {@linkplain ByteBuffer byte buffer}
      * starting at an offset into the byte buffer.
@@ -3006,6 +3007,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     }
 
 
+
     /**
      * {@inheritDoc} <!--workaround-->
      */
@@ -3111,6 +3113,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             (arr, off, s) -> s.ldOp(arr, off,
                                     (arr_, off_, i) -> arr_[off_ + i]));
     }
+
 
 
     @Override
@@ -3247,6 +3250,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     static long arrayAddress(double[] a, int index) {
         return ARRAY_BASE + (((long)index) << ARRAY_SHIFT);
     }
+
 
 
     @ForceInline

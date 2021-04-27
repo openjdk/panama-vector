@@ -778,6 +778,7 @@ final class Double256Vector extends DoubleVector {
     }
 
 
+
     @ForceInline
     @Override
     final

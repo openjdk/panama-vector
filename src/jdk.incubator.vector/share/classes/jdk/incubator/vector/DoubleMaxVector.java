@@ -771,6 +771,7 @@ final class DoubleMaxVector extends DoubleVector {
     }
 
 
+
     @ForceInline
     @Override
     final

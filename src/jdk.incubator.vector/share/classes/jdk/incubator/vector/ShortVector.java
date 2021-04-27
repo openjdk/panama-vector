@@ -2912,6 +2912,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
     ShortVector fromCharArray(VectorSpecies<Short> species,
                                        char[] a, int offset,
                                        int[] indexMap, int mapOffset) {
+        // FIXME: optimize
         ShortSpecies vsp = (ShortSpecies) species;
         return vsp.vOp(n -> (short) a[offset + indexMap[mapOffset + n]]);
     }
@@ -2958,9 +2959,11 @@ public abstract class ShortVector extends AbstractVector<Short> {
                                        char[] a, int offset,
                                        int[] indexMap, int mapOffset,
                                        VectorMask<Short> m) {
+        // FIXME: optimize
         ShortSpecies vsp = (ShortSpecies) species;
         return vsp.vOp(m, n -> (short) a[offset + indexMap[mapOffset + n]]);
     }
+
 
     /**
      * Loads a vector from a {@linkplain ByteBuffer byte buffer}
@@ -3311,6 +3314,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
     public final
     void intoCharArray(char[] a, int offset,
                        int[] indexMap, int mapOffset) {
+        // FIXME: optimize
         stOp(a, offset,
              (arr, off, i, e) -> {
                  int j = indexMap[mapOffset + i];
@@ -3355,12 +3359,14 @@ public abstract class ShortVector extends AbstractVector<Short> {
     void intoCharArray(char[] a, int offset,
                        int[] indexMap, int mapOffset,
                        VectorMask<Short> m) {
+        // FIXME: optimize
         stOp(a, offset, m,
              (arr, off, i, e) -> {
                  int j = indexMap[mapOffset + i];
                  arr[off + j] = (char) e;
              });
     }
+
 
     /**
      * {@inheritDoc} <!--workaround-->
@@ -3482,6 +3488,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             (arr, off, s) -> s.ldOp(arr, off,
                                     (arr_, off_, i) -> (short) arr_[off_ + i]));
     }
+
 
     @Override
     abstract
@@ -3627,6 +3634,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
     static long charArrayAddress(char[] a, int index) {
         return ARRAY_CHAR_BASE + (((long)index) << ARRAY_CHAR_SHIFT);
     }
+
 
     @ForceInline
     static long byteArrayAddress(byte[] a, int index) {

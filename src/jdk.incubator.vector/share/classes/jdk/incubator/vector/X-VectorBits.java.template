@@ -1072,6 +1072,15 @@ final class $vectortype$ extends $abstractvectortype$ {
     }
 #end[short]
 
+#if[byte]
+    @ForceInline
+    @Override
+    final
+    $abstractvectortype$ fromBooleanArray0(boolean[] a, int offset) {
+        return super.fromBooleanArray0Template(a, offset);  // specialize
+    }
+#end[byte]
+
     @ForceInline
     @Override
     final

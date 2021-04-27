@@ -626,6 +626,9 @@ static bool elem_consistent_with_arr(BasicType elem_bt, const TypeAryPtr* arr_ty
   } else if (elem_bt == T_SHORT && arr_elem_bt == T_CHAR) {
     // Load/store of short vector from/to char[] is supported
     return true;
+  } else if (elem_bt == T_BYTE && arr_elem_bt == T_BOOLEAN) {
+    // Load/store of byte vector from/to boolean[] is supported
+    return true;
   } else {
     return false;
   }
