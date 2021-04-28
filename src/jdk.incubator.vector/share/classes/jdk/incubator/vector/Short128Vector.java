@@ -275,8 +275,14 @@ final class Short128Vector extends ShortVector {
 
     @Override
     @ForceInline
-    Short128Vector lanewise0(Binary op, Vector<Short> v, VectorMask<Short> m) {
-        return (Short128Vector) super.lanewise0Template(op, Short128Mask.class, v, (Short128Mask) m);  // specialize
+    public Short128Vector lanewise(Binary op, Vector<Short> v) {
+        return (Short128Vector) super.lanewiseTemplate(op, Short128Mask.class, v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Short128Vector lanewise(Binary op, Vector<Short> v, VectorMask<Short> m) {
+        return (Short128Vector) super.lanewiseTemplate(op, Short128Mask.class, v, m);  // specialize
     }
 
     /*package-private*/

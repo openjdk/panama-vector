@@ -275,8 +275,14 @@ final class Int256Vector extends IntVector {
 
     @Override
     @ForceInline
-    Int256Vector lanewise0(Binary op, Vector<Integer> v, VectorMask<Integer> m) {
-        return (Int256Vector) super.lanewise0Template(op, Int256Mask.class, v, (Int256Mask) m);  // specialize
+    public Int256Vector lanewise(Binary op, Vector<Integer> v) {
+        return (Int256Vector) super.lanewiseTemplate(op, Int256Mask.class, v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Int256Vector lanewise(Binary op, Vector<Integer> v, VectorMask<Integer> m) {
+        return (Int256Vector) super.lanewiseTemplate(op, Int256Mask.class, v, m);  // specialize
     }
 
     /*package-private*/

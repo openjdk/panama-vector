@@ -275,8 +275,14 @@ final class ByteMaxVector extends ByteVector {
 
     @Override
     @ForceInline
-    ByteMaxVector lanewise0(Binary op, Vector<Byte> v, VectorMask<Byte> m) {
-        return (ByteMaxVector) super.lanewise0Template(op, ByteMaxMask.class, v, (ByteMaxMask) m);  // specialize
+    public ByteMaxVector lanewise(Binary op, Vector<Byte> v) {
+        return (ByteMaxVector) super.lanewiseTemplate(op, ByteMaxMask.class, v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public ByteMaxVector lanewise(Binary op, Vector<Byte> v, VectorMask<Byte> m) {
+        return (ByteMaxVector) super.lanewiseTemplate(op, ByteMaxMask.class, v, m);  // specialize
     }
 
     /*package-private*/

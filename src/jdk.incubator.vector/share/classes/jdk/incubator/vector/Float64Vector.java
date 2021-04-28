@@ -275,8 +275,14 @@ final class Float64Vector extends FloatVector {
 
     @Override
     @ForceInline
-    Float64Vector lanewise0(Binary op, Vector<Float> v, VectorMask<Float> m) {
-        return (Float64Vector) super.lanewise0Template(op, Float64Mask.class, v, (Float64Mask) m);  // specialize
+    public Float64Vector lanewise(Binary op, Vector<Float> v) {
+        return (Float64Vector) super.lanewiseTemplate(op, Float64Mask.class, v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Float64Vector lanewise(Binary op, Vector<Float> v, VectorMask<Float> m) {
+        return (Float64Vector) super.lanewiseTemplate(op, Float64Mask.class, v, m);  // specialize
     }
 
 

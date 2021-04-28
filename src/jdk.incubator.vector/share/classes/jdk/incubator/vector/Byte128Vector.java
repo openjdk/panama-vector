@@ -275,8 +275,14 @@ final class Byte128Vector extends ByteVector {
 
     @Override
     @ForceInline
-    Byte128Vector lanewise0(Binary op, Vector<Byte> v, VectorMask<Byte> m) {
-        return (Byte128Vector) super.lanewise0Template(op, Byte128Mask.class, v, (Byte128Mask) m);  // specialize
+    public Byte128Vector lanewise(Binary op, Vector<Byte> v) {
+        return (Byte128Vector) super.lanewiseTemplate(op, Byte128Mask.class, v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Byte128Vector lanewise(Binary op, Vector<Byte> v, VectorMask<Byte> m) {
+        return (Byte128Vector) super.lanewiseTemplate(op, Byte128Mask.class, v, m);  // specialize
     }
 
     /*package-private*/

@@ -270,8 +270,14 @@ final class Long64Vector extends LongVector {
 
     @Override
     @ForceInline
-    Long64Vector lanewise0(Binary op, Vector<Long> v, VectorMask<Long> m) {
-        return (Long64Vector) super.lanewise0Template(op, Long64Mask.class, v, (Long64Mask) m);  // specialize
+    public Long64Vector lanewise(Binary op, Vector<Long> v) {
+        return (Long64Vector) super.lanewiseTemplate(op, Long64Mask.class, v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Long64Vector lanewise(Binary op, Vector<Long> v, VectorMask<Long> m) {
+        return (Long64Vector) super.lanewiseTemplate(op, Long64Mask.class, v, m);  // specialize
     }
 
     /*package-private*/

@@ -593,12 +593,17 @@ public abstract class IntVector extends AbstractVector<Integer> {
      * @see #lanewise(VectorOperators.Binary,int,VectorMask)
      */
     @Override
-    @ForceInline
-    public final
+    public abstract
     IntVector lanewise(VectorOperators.Binary op,
-                                  Vector<Integer> v) {
+                                  Vector<Integer> v);
+    @ForceInline
+    final
+    IntVector lanewiseTemplate(VectorOperators.Binary op,
+                                          Class<? extends VectorMask<Integer>> maskClass,
+                                          Vector<Integer> v) {
         IntVector that = (IntVector) v;
         that.check(this);
+
         if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
             if (op == FIRST_NONZERO) {
                 // FIXME: Support this in the JIT.
@@ -628,7 +633,12 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 }
             }
         }
-        return lanewise0(op, that, null);
+
+        int opc = opCode(op);
+        return VectorSupport.binaryMaskedOp(
+            opc, getClass(), maskClass, int.class, length(),
+            this, that, null,
+            BIN_MASKED_IMPL.find(op, opc, IntVector::binaryOperations));
     }
 
     /**
@@ -636,14 +646,18 @@ public abstract class IntVector extends AbstractVector<Integer> {
      * @see #lanewise(VectorOperators.Binary,int,VectorMask)
      */
     @Override
-    @ForceInline
-    public final
+    public abstract
     IntVector lanewise(VectorOperators.Binary op,
                                   Vector<Integer> v,
-                                  VectorMask<Integer> m) {
+                                  VectorMask<Integer> m);
+    @ForceInline
+    final
+    IntVector lanewiseTemplate(VectorOperators.Binary op,
+                                          Class<? extends VectorMask<Integer>> maskClass,
+                                          Vector<Integer> v, VectorMask<Integer> m) {
         IntVector that = (IntVector) v;
         that.check(this);
-        check(m);
+        m.check(maskClass, this);
 
         if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
             if (op == FIRST_NONZERO) {
@@ -673,55 +687,47 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 that = that.lanewise(NOT, eqz);
             }
         }
-        return lanewise0(op, that, m);
-    }
 
-    abstract
-    IntVector lanewise0(VectorOperators.Binary op,
-                                   Vector<Integer> v,
-                                   VectorMask<Integer> m);
-    @ForceInline
-    final
-    IntVector lanewise0Template(VectorOperators.Binary op,
-                                           Class<? extends VectorMask<Integer>> maskClass,
-                                           Vector<Integer> v, VectorMask<Integer> m) {
-        IntVector that = (IntVector) v;
         int opc = opCode(op);
         return VectorSupport.binaryMaskedOp(
             opc, getClass(), maskClass, int.class, length(),
             this, that, m,
-            BIN_MASKED_IMPL.find(op, opc, (opc_) -> {
-              switch (opc_) {
-                case VECTOR_OP_ADD: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (int)(a + b));
-                case VECTOR_OP_SUB: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (int)(a - b));
-                case VECTOR_OP_MUL: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (int)(a * b));
-                case VECTOR_OP_DIV: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (int)(a / b));
-                case VECTOR_OP_MAX: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (int)Math.max(a, b));
-                case VECTOR_OP_MIN: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (int)Math.min(a, b));
-                case VECTOR_OP_AND: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (int)(a & b));
-                case VECTOR_OP_OR: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (int)(a | b));
-                case VECTOR_OP_XOR: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (int)(a ^ b));
-                case VECTOR_OP_LSHIFT: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, n) -> (int)(a << n));
-                case VECTOR_OP_RSHIFT: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, n) -> (int)(a >> n));
-                case VECTOR_OP_URSHIFT: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, n) -> (int)((a & LSHR_SETUP_MASK) >>> n));
-                default: return null;
-                }}));
+            BIN_MASKED_IMPL.find(op, opc, IntVector::binaryOperations));
     }
+
     private static final
     ImplCache<Binary, BinaryMaskedOperation<IntVector, VectorMask<Integer>>>
         BIN_MASKED_IMPL = new ImplCache<>(Binary.class, IntVector.class);
+
+    private static BinaryMaskedOperation<IntVector, VectorMask<Integer>> binaryOperations(int opc_) {
+        switch (opc_) {
+            case VECTOR_OP_ADD: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (int)(a + b));
+            case VECTOR_OP_SUB: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (int)(a - b));
+            case VECTOR_OP_MUL: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (int)(a * b));
+            case VECTOR_OP_DIV: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (int)(a / b));
+            case VECTOR_OP_MAX: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (int)Math.max(a, b));
+            case VECTOR_OP_MIN: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (int)Math.min(a, b));
+            case VECTOR_OP_AND: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (int)(a & b));
+            case VECTOR_OP_OR: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (int)(a | b));
+            case VECTOR_OP_XOR: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (int)(a ^ b));
+            case VECTOR_OP_LSHIFT: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, n) -> (int)(a << n));
+            case VECTOR_OP_RSHIFT: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, n) -> (int)(a >> n));
+            case VECTOR_OP_URSHIFT: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, n) -> (int)((a & LSHR_SETUP_MASK) >>> n));
+            default: return null;
+        }
+    }
 
     // FIXME: Maybe all of the public final methods in this file (the
     // simple ones that just call lanewise) should be pushed down to

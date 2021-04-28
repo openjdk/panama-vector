@@ -275,8 +275,14 @@ final class Byte64Vector extends ByteVector {
 
     @Override
     @ForceInline
-    Byte64Vector lanewise0(Binary op, Vector<Byte> v, VectorMask<Byte> m) {
-        return (Byte64Vector) super.lanewise0Template(op, Byte64Mask.class, v, (Byte64Mask) m);  // specialize
+    public Byte64Vector lanewise(Binary op, Vector<Byte> v) {
+        return (Byte64Vector) super.lanewiseTemplate(op, Byte64Mask.class, v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Byte64Vector lanewise(Binary op, Vector<Byte> v, VectorMask<Byte> m) {
+        return (Byte64Vector) super.lanewiseTemplate(op, Byte64Mask.class, v, m);  // specialize
     }
 
     /*package-private*/

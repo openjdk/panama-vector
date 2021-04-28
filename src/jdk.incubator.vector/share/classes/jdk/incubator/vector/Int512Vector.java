@@ -275,8 +275,14 @@ final class Int512Vector extends IntVector {
 
     @Override
     @ForceInline
-    Int512Vector lanewise0(Binary op, Vector<Integer> v, VectorMask<Integer> m) {
-        return (Int512Vector) super.lanewise0Template(op, Int512Mask.class, v, (Int512Mask) m);  // specialize
+    public Int512Vector lanewise(Binary op, Vector<Integer> v) {
+        return (Int512Vector) super.lanewiseTemplate(op, Int512Mask.class, v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Int512Vector lanewise(Binary op, Vector<Integer> v, VectorMask<Integer> m) {
+        return (Int512Vector) super.lanewiseTemplate(op, Int512Mask.class, v, m);  // specialize
     }
 
     /*package-private*/

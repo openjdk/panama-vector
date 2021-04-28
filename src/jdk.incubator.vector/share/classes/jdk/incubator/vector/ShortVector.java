@@ -593,12 +593,17 @@ public abstract class ShortVector extends AbstractVector<Short> {
      * @see #lanewise(VectorOperators.Binary,short,VectorMask)
      */
     @Override
-    @ForceInline
-    public final
+    public abstract
     ShortVector lanewise(VectorOperators.Binary op,
-                                  Vector<Short> v) {
+                                  Vector<Short> v);
+    @ForceInline
+    final
+    ShortVector lanewiseTemplate(VectorOperators.Binary op,
+                                          Class<? extends VectorMask<Short>> maskClass,
+                                          Vector<Short> v) {
         ShortVector that = (ShortVector) v;
         that.check(this);
+
         if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
             if (op == FIRST_NONZERO) {
                 // FIXME: Support this in the JIT.
@@ -628,7 +633,12 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 }
             }
         }
-        return lanewise0(op, that, null);
+
+        int opc = opCode(op);
+        return VectorSupport.binaryMaskedOp(
+            opc, getClass(), maskClass, short.class, length(),
+            this, that, null,
+            BIN_MASKED_IMPL.find(op, opc, ShortVector::binaryOperations));
     }
 
     /**
@@ -636,14 +646,18 @@ public abstract class ShortVector extends AbstractVector<Short> {
      * @see #lanewise(VectorOperators.Binary,short,VectorMask)
      */
     @Override
-    @ForceInline
-    public final
+    public abstract
     ShortVector lanewise(VectorOperators.Binary op,
                                   Vector<Short> v,
-                                  VectorMask<Short> m) {
+                                  VectorMask<Short> m);
+    @ForceInline
+    final
+    ShortVector lanewiseTemplate(VectorOperators.Binary op,
+                                          Class<? extends VectorMask<Short>> maskClass,
+                                          Vector<Short> v, VectorMask<Short> m) {
         ShortVector that = (ShortVector) v;
         that.check(this);
-        check(m);
+        m.check(maskClass, this);
 
         if (opKind(op, VO_SPECIAL  | VO_SHIFT)) {
             if (op == FIRST_NONZERO) {
@@ -673,55 +687,47 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 that = that.lanewise(NOT, eqz);
             }
         }
-        return lanewise0(op, that, m);
-    }
 
-    abstract
-    ShortVector lanewise0(VectorOperators.Binary op,
-                                   Vector<Short> v,
-                                   VectorMask<Short> m);
-    @ForceInline
-    final
-    ShortVector lanewise0Template(VectorOperators.Binary op,
-                                           Class<? extends VectorMask<Short>> maskClass,
-                                           Vector<Short> v, VectorMask<Short> m) {
-        ShortVector that = (ShortVector) v;
         int opc = opCode(op);
         return VectorSupport.binaryMaskedOp(
             opc, getClass(), maskClass, short.class, length(),
             this, that, m,
-            BIN_MASKED_IMPL.find(op, opc, (opc_) -> {
-              switch (opc_) {
-                case VECTOR_OP_ADD: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (short)(a + b));
-                case VECTOR_OP_SUB: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (short)(a - b));
-                case VECTOR_OP_MUL: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (short)(a * b));
-                case VECTOR_OP_DIV: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (short)(a / b));
-                case VECTOR_OP_MAX: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (short)Math.max(a, b));
-                case VECTOR_OP_MIN: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (short)Math.min(a, b));
-                case VECTOR_OP_AND: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (short)(a & b));
-                case VECTOR_OP_OR: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (short)(a | b));
-                case VECTOR_OP_XOR: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, b) -> (short)(a ^ b));
-                case VECTOR_OP_LSHIFT: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, n) -> (short)(a << n));
-                case VECTOR_OP_RSHIFT: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, n) -> (short)(a >> n));
-                case VECTOR_OP_URSHIFT: return (v0, v1, vm) ->
-                        v0.bOp(v1, vm, (i, a, n) -> (short)((a & LSHR_SETUP_MASK) >>> n));
-                default: return null;
-                }}));
+            BIN_MASKED_IMPL.find(op, opc, ShortVector::binaryOperations));
     }
+
     private static final
     ImplCache<Binary, BinaryMaskedOperation<ShortVector, VectorMask<Short>>>
         BIN_MASKED_IMPL = new ImplCache<>(Binary.class, ShortVector.class);
+
+    private static BinaryMaskedOperation<ShortVector, VectorMask<Short>> binaryOperations(int opc_) {
+        switch (opc_) {
+            case VECTOR_OP_ADD: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (short)(a + b));
+            case VECTOR_OP_SUB: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (short)(a - b));
+            case VECTOR_OP_MUL: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (short)(a * b));
+            case VECTOR_OP_DIV: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (short)(a / b));
+            case VECTOR_OP_MAX: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (short)Math.max(a, b));
+            case VECTOR_OP_MIN: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (short)Math.min(a, b));
+            case VECTOR_OP_AND: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (short)(a & b));
+            case VECTOR_OP_OR: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (short)(a | b));
+            case VECTOR_OP_XOR: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> (short)(a ^ b));
+            case VECTOR_OP_LSHIFT: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, n) -> (short)(a << n));
+            case VECTOR_OP_RSHIFT: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, n) -> (short)(a >> n));
+            case VECTOR_OP_URSHIFT: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, n) -> (short)((a & LSHR_SETUP_MASK) >>> n));
+            default: return null;
+        }
+    }
 
     // FIXME: Maybe all of the public final methods in this file (the
     // simple ones that just call lanewise) should be pushed down to

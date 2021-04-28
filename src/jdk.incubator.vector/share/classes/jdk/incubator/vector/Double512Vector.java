@@ -275,8 +275,14 @@ final class Double512Vector extends DoubleVector {
 
     @Override
     @ForceInline
-    Double512Vector lanewise0(Binary op, Vector<Double> v, VectorMask<Double> m) {
-        return (Double512Vector) super.lanewise0Template(op, Double512Mask.class, v, (Double512Mask) m);  // specialize
+    public Double512Vector lanewise(Binary op, Vector<Double> v) {
+        return (Double512Vector) super.lanewiseTemplate(op, Double512Mask.class, v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Double512Vector lanewise(Binary op, Vector<Double> v, VectorMask<Double> m) {
+        return (Double512Vector) super.lanewiseTemplate(op, Double512Mask.class, v, m);  // specialize
     }
 
 

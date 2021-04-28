@@ -275,8 +275,14 @@ final class Float128Vector extends FloatVector {
 
     @Override
     @ForceInline
-    Float128Vector lanewise0(Binary op, Vector<Float> v, VectorMask<Float> m) {
-        return (Float128Vector) super.lanewise0Template(op, Float128Mask.class, v, (Float128Mask) m);  // specialize
+    public Float128Vector lanewise(Binary op, Vector<Float> v) {
+        return (Float128Vector) super.lanewiseTemplate(op, Float128Mask.class, v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Float128Vector lanewise(Binary op, Vector<Float> v, VectorMask<Float> m) {
+        return (Float128Vector) super.lanewiseTemplate(op, Float128Mask.class, v, m);  // specialize
     }
 
 
