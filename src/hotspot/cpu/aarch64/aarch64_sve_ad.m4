@@ -221,12 +221,12 @@ source %{
       case Op_ExtractC:
       case Op_ExtractUB:
       // Vector API specific
+        return false;
       case Op_StoreVectorScatter:
-      // Currently the implementation for partial vectors are not implemented yet.
-      // Will add them in a separate patch.
+       // Currently the implementation for partial vectors are not implemented yet.
+       // Will add them in a separate patch.
         return vlen * type2aelembytes(bt) == MaxVectorSize;
       case Op_VectorLoadConst:
-        return false;
       case Op_VectorLoadShuffle:
       case Op_VectorRearrange:
         if (vlen < 4) {
