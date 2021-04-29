@@ -2428,6 +2428,9 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
         return false;
       }
       break;
+    case Op_LoadVectorGather:
+    case Op_StoreVectorScatter:
+      return false;
     default:
       break;
     }
