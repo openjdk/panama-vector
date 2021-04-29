@@ -625,7 +625,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     @ForceInline
     final
     DoubleVector lanewiseTemplate(VectorOperators.Binary op,
-                                          Class<? extends VectorMask<Double>> maskClass,
                                           Vector<Double> v) {
         DoubleVector that = (DoubleVector) v;
         that.check(this);
@@ -646,7 +645,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
 
         int opc = opCode(op);
         return VectorSupport.binaryMaskedOp(
-            opc, getClass(), maskClass, double.class, length(),
+            opc, getClass(), null, double.class, length(),
             this, that, null,
             BIN_MASKED_IMPL.find(op, opc, DoubleVector::binaryOperations));
     }
@@ -786,8 +785,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     DoubleVector lanewise(VectorOperators.Binary op,
                                   long e) {
         double e1 = (double) e;
-        if ((long)e1 != e
-            ) {
+        if ((long)e1 != e) {
             vspecies().checkValue(e);  // for exception
         }
         return lanewise(op, e1);
@@ -808,8 +806,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     DoubleVector lanewise(VectorOperators.Binary op,
                                   long e, VectorMask<Double> m) {
         double e1 = (double) e;
-        if ((long)e1 != e
-            ) {
+        if ((long)e1 != e) {
             vspecies().checkValue(e);  // for exception
         }
         return lanewise(op, e1, m);

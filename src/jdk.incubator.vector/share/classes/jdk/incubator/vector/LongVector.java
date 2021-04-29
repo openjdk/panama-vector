@@ -557,7 +557,6 @@ public abstract class LongVector extends AbstractVector<Long> {
     @ForceInline
     final
     LongVector lanewiseTemplate(VectorOperators.Binary op,
-                                          Class<? extends VectorMask<Long>> maskClass,
                                           Vector<Long> v) {
         LongVector that = (LongVector) v;
         that.check(this);
@@ -594,7 +593,7 @@ public abstract class LongVector extends AbstractVector<Long> {
 
         int opc = opCode(op);
         return VectorSupport.binaryMaskedOp(
-            opc, getClass(), maskClass, long.class, length(),
+            opc, getClass(), null, long.class, length(),
             this, that, null,
             BIN_MASKED_IMPL.find(op, opc, LongVector::binaryOperations));
     }

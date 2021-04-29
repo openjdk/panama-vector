@@ -625,7 +625,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
     @ForceInline
     final
     FloatVector lanewiseTemplate(VectorOperators.Binary op,
-                                          Class<? extends VectorMask<Float>> maskClass,
                                           Vector<Float> v) {
         FloatVector that = (FloatVector) v;
         that.check(this);
@@ -646,7 +645,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
 
         int opc = opCode(op);
         return VectorSupport.binaryMaskedOp(
-            opc, getClass(), maskClass, float.class, length(),
+            opc, getClass(), null, float.class, length(),
             this, that, null,
             BIN_MASKED_IMPL.find(op, opc, FloatVector::binaryOperations));
     }
@@ -786,8 +785,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
     FloatVector lanewise(VectorOperators.Binary op,
                                   long e) {
         float e1 = (float) e;
-        if ((long)e1 != e
-            ) {
+        if ((long)e1 != e) {
             vspecies().checkValue(e);  // for exception
         }
         return lanewise(op, e1);
@@ -808,8 +806,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
     FloatVector lanewise(VectorOperators.Binary op,
                                   long e, VectorMask<Float> m) {
         float e1 = (float) e;
-        if ((long)e1 != e
-            ) {
+        if ((long)e1 != e) {
             vspecies().checkValue(e);  // for exception
         }
         return lanewise(op, e1, m);

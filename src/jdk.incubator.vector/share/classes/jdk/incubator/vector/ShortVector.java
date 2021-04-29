@@ -599,7 +599,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
     @ForceInline
     final
     ShortVector lanewiseTemplate(VectorOperators.Binary op,
-                                          Class<? extends VectorMask<Short>> maskClass,
                                           Vector<Short> v) {
         ShortVector that = (ShortVector) v;
         that.check(this);
@@ -636,7 +635,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
 
         int opc = opCode(op);
         return VectorSupport.binaryMaskedOp(
-            opc, getClass(), maskClass, short.class, length(),
+            opc, getClass(), null, short.class, length(),
             this, that, null,
             BIN_MASKED_IMPL.find(op, opc, ShortVector::binaryOperations));
     }
@@ -818,8 +817,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
         short e1 = (short) e;
         if ((long)e1 != e
             // allow shift ops to clip down their int parameters
-            && !(opKind(op, VO_SHIFT) && (int)e1 == e)
-            ) {
+            && !(opKind(op, VO_SHIFT) && (int)e1 == e)) {
             vspecies().checkValue(e);  // for exception
         }
         return lanewise(op, e1);
@@ -842,8 +840,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
         short e1 = (short) e;
         if ((long)e1 != e
             // allow shift ops to clip down their int parameters
-            && !(opKind(op, VO_SHIFT) && (int)e1 == e)
-            ) {
+            && !(opKind(op, VO_SHIFT) && (int)e1 == e)) {
             vspecies().checkValue(e);  // for exception
         }
         return lanewise(op, e1, m);

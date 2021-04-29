@@ -276,7 +276,7 @@ final class Double256Vector extends DoubleVector {
     @Override
     @ForceInline
     public Double256Vector lanewise(Binary op, Vector<Double> v) {
-        return (Double256Vector) super.lanewiseTemplate(op, Double256Mask.class, v);  // specialize
+        return (Double256Vector) super.lanewiseTemplate(op, v);  // specialize
     }
 
     @Override

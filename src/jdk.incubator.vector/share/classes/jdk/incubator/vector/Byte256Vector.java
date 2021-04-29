@@ -276,7 +276,7 @@ final class Byte256Vector extends ByteVector {
     @Override
     @ForceInline
     public Byte256Vector lanewise(Binary op, Vector<Byte> v) {
-        return (Byte256Vector) super.lanewiseTemplate(op, Byte256Mask.class, v);  // specialize
+        return (Byte256Vector) super.lanewiseTemplate(op, v);  // specialize
     }
 
     @Override

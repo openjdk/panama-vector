@@ -406,19 +406,18 @@ bool LibraryCallKit::inline_vector_nary_masked_operation(int n) {
   const TypeInstPtr* elem_klass   = gvn().type(argument(3))->isa_instptr();
   const TypeInt*     vlen         = gvn().type(argument(4))->isa_int();
 
-  if (opr == NULL || vector_klass == NULL || mask_klass == NULL || elem_klass == NULL || vlen == NULL ||
-      !opr->is_con() || vector_klass->const_oop() == NULL || mask_klass->const_oop() == NULL ||
-      elem_klass->const_oop() == NULL || !vlen->is_con()) {
+  if (opr == NULL || vector_klass == NULL || elem_klass == NULL || vlen == NULL ||
+      !opr->is_con() || vector_klass->const_oop() == NULL || elem_klass->const_oop() == NULL || !vlen->is_con()) {
     if (C->print_intrinsics()) {
-      tty->print_cr("  ** missing constant: opr=%s vclass=%s maskclass=%s etype=%s vlen=%s",
+      tty->print_cr("  ** missing constant: opr=%s vclass=%s etype=%s vlen=%s",
                     NodeClassNames[argument(0)->Opcode()],
                     NodeClassNames[argument(1)->Opcode()],
-                    NodeClassNames[argument(2)->Opcode()],
                     NodeClassNames[argument(3)->Opcode()],
                     NodeClassNames[argument(4)->Opcode()]);
     }
     return false; // not enough info for intrinsification
   }
+
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
   if (!elem_type->is_primitive_type()) {
     if (C->print_intrinsics()) {
@@ -431,6 +430,33 @@ bool LibraryCallKit::inline_vector_nary_masked_operation(int n) {
       tty->print_cr("  ** klass argument not initialized");
     }
     return false;
+  }
+
+  // "argument(n + 5)" should be the mask object. We assume it is "null" when no mask
+  // is used to control this operation.
+  const Type* vmask_type = gvn().type(argument(n + 5));
+  bool is_masked_op = vmask_type != TypePtr::NULL_PTR;
+  if (is_masked_op) {
+    if (mask_klass == NULL || mask_klass->const_oop() == NULL) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** missing constant: maskclass=%s", NodeClassNames[argument(2)->Opcode()]);
+      }
+      return false; // not enough info for intrinsification
+    }
+
+    if (!is_klass_initialized(mask_klass)) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** mask klass argument not initialized");
+      }
+      return false;
+    }
+
+    if (vmask_type->maybe_null()) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** null mask values are not allowed for masked op");
+      }
+      return false;
+    }
   }
 
   BasicType elem_bt = elem_type->basic_type();
@@ -446,18 +472,8 @@ bool LibraryCallKit::inline_vector_nary_masked_operation(int n) {
   ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
 
-  // "argument(n + 5)" should be the mask object. We assume it is "null" when no mask
-  // is used to control this operation.
-  bool is_masked_op = gvn().type(argument(n + 5)) != TypePtr::NULL_PTR;
   if (is_vector_mask(vbox_klass)) {
     assert(!is_masked_op, "mask operations do not need mask to control");
-  }
-
-  if (is_masked_op && !is_klass_initialized(mask_klass)) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** mask klass argument not initialized");
-    }
-    return false;
   }
 
   if (opc == Op_CallLeafVector) {
@@ -548,7 +564,8 @@ bool LibraryCallKit::inline_vector_nary_masked_operation(int n) {
     }
 
     // Return true if current platform has implemented the masked operation with predicate feature.
-    use_predicate = sopc != 0 && Matcher::match_rule_supported_vector_masked(sopc, num_elem, elem_bt);
+    use_predicate = sopc != 0 && Matcher::has_predicated_vectors() &&
+                    Matcher::match_rule_supported_vector_masked(sopc, num_elem, elem_bt);
     if (!use_predicate && !arch_supports_vector(Op_VectorBlend, num_elem, elem_bt, VecMaskUseLoad)) {
       return false;
     }
@@ -582,7 +599,10 @@ bool LibraryCallKit::inline_vector_nary_masked_operation(int n) {
 
   if (is_masked_op && mask != NULL) {
     if (use_predicate) {
-      // TODO: add predicate implementation for masked operation.
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** predicate feature is not supported yet!");
+      }
+      return false;
     } else {
       operation = new VectorBlendNode(opd1, operation, mask);
     }

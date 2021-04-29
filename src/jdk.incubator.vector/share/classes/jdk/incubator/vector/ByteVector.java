@@ -599,7 +599,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     @ForceInline
     final
     ByteVector lanewiseTemplate(VectorOperators.Binary op,
-                                          Class<? extends VectorMask<Byte>> maskClass,
                                           Vector<Byte> v) {
         ByteVector that = (ByteVector) v;
         that.check(this);
@@ -636,7 +635,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
 
         int opc = opCode(op);
         return VectorSupport.binaryMaskedOp(
-            opc, getClass(), maskClass, byte.class, length(),
+            opc, getClass(), null, byte.class, length(),
             this, that, null,
             BIN_MASKED_IMPL.find(op, opc, ByteVector::binaryOperations));
     }
@@ -818,8 +817,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         byte e1 = (byte) e;
         if ((long)e1 != e
             // allow shift ops to clip down their int parameters
-            && !(opKind(op, VO_SHIFT) && (int)e1 == e)
-            ) {
+            && !(opKind(op, VO_SHIFT) && (int)e1 == e)) {
             vspecies().checkValue(e);  // for exception
         }
         return lanewise(op, e1);
@@ -842,8 +840,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         byte e1 = (byte) e;
         if ((long)e1 != e
             // allow shift ops to clip down their int parameters
-            && !(opKind(op, VO_SHIFT) && (int)e1 == e)
-            ) {
+            && !(opKind(op, VO_SHIFT) && (int)e1 == e)) {
             vspecies().checkValue(e);  // for exception
         }
         return lanewise(op, e1, m);
