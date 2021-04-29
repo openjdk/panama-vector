@@ -791,6 +791,8 @@
     __ sve_tbl(z16, __ S, z17, z18);                   //       tbl     z16.s, {z17.s}, z18.s
     __ sve_ld1w_gather(z15, p0, r5, z16);              //       ld1w    {z15.s}, p0/z, [x5, z16.s, uxtw #2]
     __ sve_ld1d_gather(z15, p0, r5, z16);              //       ld1d    {z15.d}, p0/z, [x5, z16.d, uxtw #3]
+    __ sve_st1w_scatter(z15, p0, r5, z16);             //       st1w    {z15.s}, p0, [x5, z16.s, uxtw #2]
+    __ sve_st1d_scatter(z15, p0, r5, z16);             //       st1d    {z15.d}, p0, [x5, z16.d, uxtw #3]
 
 // FloatImmediateOp
     __ fmovd(v0, 2.0);                                 //       fmov d0, #2.0

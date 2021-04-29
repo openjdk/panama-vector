@@ -221,9 +221,12 @@ source %{
       case Op_ExtractC:
       case Op_ExtractUB:
       // Vector API specific
-      case Op_StoreVectorScatter:
       case Op_VectorLoadConst:
         return false;
+      case Op_StoreVectorScatter:
+        // Currently the implementation for partial vectors are not implemented yet.
+        // Will add them in a separate patch.
+        return vlen * type2aelembytes(bt) == MaxVectorSize;
       case Op_VectorLoadShuffle:
       case Op_VectorRearrange:
         if (vlen < 4) {
@@ -2460,3 +2463,31 @@ instruct vmaskcast(vReg dst) %{
   ins_pipe(pipe_class_empty);
 %}
 
+// ------------------------------ Vector Store Scatter -------------------------------
+instruct scatterI(vmemA mem, vReg src, vReg idx) %{
+  predicate(UseSVE > 0 &&
+           (n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT ||
+            n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
+  match(Set mem (StoreVectorScatter mem (Binary src idx)));
+  ins_cost(SVE_COST);
+  format %{ "store_vector_scatter $mem, $idx, $src\t# vector store scatter (I/F)" %}
+  ins_encode %{
+    __ sve_st1w_scatter(as_FloatRegister($src$$reg), ptrue, as_Register($mem$$base), as_FloatRegister($idx$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct scatterL(vmemA mem, vReg src, vReg idx) %{
+  predicate(UseSVE > 0 &&
+           (n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
+            n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
+  match(Set mem (StoreVectorScatter mem (Binary src idx)));
+  ins_cost(2 * SVE_COST);
+  format %{ "sve_uunpklo $idx, $idx\n\t"
+            "store_vector_scatter $mem, $idx, $src\t# vector store scatter (L/D)" %}
+  ins_encode %{
+    __ sve_uunpklo(as_FloatRegister($idx$$reg), __ D, as_FloatRegister($idx$$reg));
+    __ sve_st1d_scatter(as_FloatRegister($src$$reg), ptrue, as_Register($mem$$base), as_FloatRegister($idx$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
