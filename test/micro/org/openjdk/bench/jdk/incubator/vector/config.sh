@@ -25,7 +25,7 @@
 #
 
 VECTORTESTS_HOME="$(pwd)"
-JDK_SRC_HOME="./../../../../../"
+JDK_SRC_HOME="$(git rev-parse --show-toplevel)"
 JAVA="${JAVA_HOME}/bin/java"
 JAVAC="${JAVA_HOME}/bin/javac"
 BUILDLOG_FILE="./build.log"
@@ -34,11 +34,17 @@ SPP_CLASSNAME="build.tools.spp.Spp"
 # Linux: ':'
 SEPARATOR=":"
 TYPEPREFIX=""
-TEMPLATE_FILE="unit_tests.template"
 TESTNG_JAR="${TESTNG_PLUGIN}/plugins/org.testng.source_6.13.1.r201712040515.jar"
 TESTNG_RUN_JAR="${TESTNG_PLUGIN}/plugins/org.testng_6.13.1.r201712040515.jar"
 JCOMMANDER_JAR="${TESTNG_PLUGIN}/plugins/com.beust.jcommander_1.72.0.jar"
 TEST_ITER_COUNT=100
+
+GIT_TOP_FOLDER=$(git rev-parse --show-toplevel)
+KERNEL_TEMPLATE_FOLDER="$GIT_TOP_FOLDER/test/jdk/jdk/incubator/vector/templates/"
+TEMPLATE_FOLDER="$GIT_TOP_FOLDER/test/micro/org/openjdk/bench/jdk/incubator/vector/templates/"
+PERF_TEMPLATE_FILE="perf_tests.template"
+PERF_SCALAR_TEMPLATE_FILE="perf_scalar_tests.template"
+PERF_DEST="$GIT_TOP_FOLDER/test/micro/org/openjdk/bench/jdk/incubator/vector/benchmarks/src/main/java/benchmark/jdk/incubator/vector/"
 
 function Log () {
   if [ $1 == true ]; then

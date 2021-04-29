@@ -46,8 +46,10 @@ esac
 
 . config.sh
 
+generate_perf_tests=true
+
 # First, generate the template file.
-bash ./gen-template.sh
+. ./gen-template.sh $generate_perf_tests
 
 Log false "Generating Vector API tests, $(date)\n"
 
@@ -155,61 +157,46 @@ do
       bitargs="$bitargs -KMaxBit"
     fi
 
-    # Generate jtreg tests
-    case $vectorteststype in
-    $CLASS_FILTER)
-      Log true " ${bits}_jtreg $vectorteststype.java"
-      Log false "${JAVA} -cp . ${SPP_CLASSNAME} -nel $bitargs -i${TEMPLATE_FILE} -o$vectorteststype.java "
-      TEST_DEST_FILE="${vectorteststype}.java"
-      rm -f ${TEST_DEST_FILE}
-      ${JAVA} -cp . ${SPP_CLASSNAME} -nel $bitargs \
-        -i${TEMPLATE_FILE} \
-        -o${TEST_DEST_FILE}
-      if [ VAR_OS_ENV==windows.cygwin ]; then
-        tr -d  '\r' < ${TEST_DEST_FILE} > temp
-        mv temp ${TEST_DEST_FILE}
-      fi
-      ;;
-    esac
+    if [ $generate_perf_tests == true ]; then
+      # Generate jmh performance tests
+      case $vectorbenchtype in
+      $CLASS_FILTER)
+        Log true " ${bits}_jmh $vectorbenchtype.java"
+        Log false "${JAVA} -cp . ${SPP_CLASSNAME} -nel $bitargs -i${PERF_TEMPLATE_FILE} -o${vectorteststype}Perf.java "
+        PERF_DEST_FILE="${PERF_DEST}/${vectorbenchtype}.java"
+        rm -f ${PERF_DEST_FILE}
+        ${JAVA} -cp . ${SPP_CLASSNAME} -nel $bitargs \
+          -i${PERF_TEMPLATE_FILE} \
+          -o${PERF_DEST_FILE}
+        if [ VAR_OS_ENV==windows.cygwin ]; then
+          tr -d  '\r' < ${PERF_DEST_FILE} > temp
+          mv temp ${PERF_DEST_FILE}
+        fi
+        ;;
+      esac
+    fi
   done
 
-  # Generate tests for loads and stores
-  # For each size
-  for bits in 64 128 256 512 Max
-  do
-    vectortype=${typeprefix}${Type}${bits}Vector
-    vectorteststype=${typeprefix}${Type}${bits}VectorLoadStoreTests
-    vectorbenchtype=${typeprefix}${Type}${bits}VectorLoadStore
-    masktype=${typeprefix}${Type}${bits}Mask
-    bitsvectortype=${typeprefix}${Bitstype}${bits}Vector
-    fpvectortype=${typeprefix}${Fptype}${bits}Vector
-    shape=S${bits}Bit
-    Shape=S_${bits}_BIT
-    if [[ "${vectortype}" == "ByteMaxVector" ]]; then
-      args="$args -KByteMax"
-    fi
-    bitargs="$args -Dbits=$bits -Dvectortype=$vectortype -Dvectorteststype=$vectorteststype -Dvectorbenchtype=$vectorbenchtype -Dmasktype=$masktype -Dbitsvectortype=$bitsvectortype -Dfpvectortype=$fpvectortype -Dshape=$shape -DShape=$Shape"
-    if [ $bits == 'Max' ]; then
-      bitargs="$bitargs -KMaxBit"
-    fi
-
-    # Generate
-    case $vectorteststype in
+  if [ $generate_perf_tests == true ]; then
+    # Generate jmh performance tests
+    case ${Type}Scalar in
     $CLASS_FILTER)
-      Log true " ${bits}_ls $vectorteststype.java"
-      Log false "${JAVA} -cp . ${SPP_CLASSNAME} -nel $bitargs -itemplates/X-LoadStoreTest.java.template -o$vectorteststype.java "
-      TEST_DEST_FILE="${vectorteststype}.java"
-      rm -f ${TEST_DEST_FILE}
-      ${JAVA} -cp . ${SPP_CLASSNAME} -nel $bitargs \
-        -itemplates/X-LoadStoreTest.java.template \
-        -o${TEST_DEST_FILE}
-      if [ VAR_OS_ENV==windows.cygwin ]; then
-        tr -d  '\r' < ${TEST_DEST_FILE} > temp
-        mv temp ${TEST_DEST_FILE}
-      fi
+    Log true " scalar ${Type}Scalar.java"
+    PERF_DEST_FILE="${PERF_DEST}/${Type}Scalar.java"
+    rm -f ${PERF_DEST_FILE}
+    ${JAVA} -cp . ${SPP_CLASSNAME} -nel $args \
+      -i${PERF_SCALAR_TEMPLATE_FILE} \
+      -o${PERF_DEST_FILE}
+    if [ VAR_OS_ENV==windows.cygwin ]; then
+      tr -d  '\r' < ${PERF_DEST_FILE} > temp
+      mv temp ${PERF_DEST_FILE}
+    fi
       ;;
     esac
-  done
+  fi
+
+  # TODO: Generate jmh performance tests for LoadStore variants
+
 
   Log true " done\n"
 
