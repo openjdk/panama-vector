@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -277,6 +277,12 @@ final class Float256Vector extends FloatVector {
     @ForceInline
     public Float256Vector lanewise(Binary op, Vector<Float> v) {
         return (Float256Vector) super.lanewiseTemplate(op, v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Float256Vector lanewise(Binary op, Vector<Float> v, VectorMask<Float> m) {
+        return (Float256Vector) super.lanewiseTemplate(op, Float256Mask.class, v, m);  // specialize
     }
 
 
@@ -805,6 +811,13 @@ final class Float256Vector extends FloatVector {
     final
     void intoArray0(float[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(float[] a, int offset, VectorMask<Float> m) {
+        super.intoArray0Template(Float256Mask.class, a, offset, (Float256Mask) m);
     }
 
     @ForceInline

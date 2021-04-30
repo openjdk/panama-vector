@@ -2152,6 +2152,10 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
   return true; // Per default match rules are supported.
 }
 
+const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, BasicType bt) {
+  return false;
+}
+
 const bool Matcher::has_predicated_vectors(void) {
   return false;
 }

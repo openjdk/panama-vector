@@ -266,6 +266,20 @@ public class VectorSupport {
         return defaultImpl.apply(vm1, vm2);
     }
 
+    @IntrinsicCandidate
+    public static
+    <V, M>
+    V binaryMaskedOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass,
+                     Class<?> elementType, int length, V v1, V v2, M m,
+                     BinaryMaskedOperation<V, M> defaultImpl) {
+        assert isNonCapturingLambda(defaultImpl) : defaultImpl;
+        return defaultImpl.apply(v1, v2, m);
+    }
+
+    public interface BinaryMaskedOperation<V, M> {
+        V apply(V v1, V v2, M mask);
+    }
+
     /* ============================================================================ */
 
     public interface TernaryOperation<V> {
@@ -335,6 +349,23 @@ public class VectorSupport {
                StoreVectorOperation<C, V> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         defaultImpl.store(container, index, v);
+    }
+
+    public interface StoreVectorMaskedOperation<C, V extends Vector<?>, M extends VectorMask<?>> {
+        void store(C container, int index, V v, M m);
+    }
+
+    @IntrinsicCandidate
+    public static
+    <C, V extends Vector<?>,
+     M extends VectorMask<?>>
+    void storeMasked(Class<?> vectorClass, Class<M> maskClass, Class<?> elementType,
+                     int length, Object base, long offset,   // Unsafe addressing
+                     V v, M m,
+                     C container, int index,      // Arguments for default implementation
+                     StoreVectorMaskedOperation<C, V, M> defaultImpl) {
+        assert isNonCapturingLambda(defaultImpl) : defaultImpl;
+        defaultImpl.store(container, index, v, m);
     }
 
     /* ============================================================================ */

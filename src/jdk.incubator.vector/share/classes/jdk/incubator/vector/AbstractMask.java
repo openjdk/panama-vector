@@ -115,6 +115,24 @@ abstract class AbstractMask<E> extends VectorMask<E> {
     }
 
     @Override
+    @ForceInline
+    @SuppressWarnings("unchecked")
+    public
+    <F> VectorMask<F> check(Class<? extends VectorMask<F>> maskClass, Vector<F> vector) {
+        if (!sameSpecies(maskClass, vector)) {
+            throw AbstractSpecies.checkFailed(this, vector);
+        }
+        return (VectorMask<F>) this;
+    }
+
+    @ForceInline
+    private <F> boolean sameSpecies(Class<? extends VectorMask<F>> maskClass, Vector<F> vector) {
+        boolean same = getClass() == maskClass;
+        assert (same == (vectorSpecies() == vector.species())) : same;
+        return same;
+    }
+
+    @Override
     public int trueCount() {
         //FIXME: use a population count intrinsic here
         int c = 0;

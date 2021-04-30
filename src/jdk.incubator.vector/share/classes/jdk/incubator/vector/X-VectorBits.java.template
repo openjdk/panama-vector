@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -279,6 +279,12 @@ final class $vectortype$ extends $abstractvectortype$ {
     @ForceInline
     public $vectortype$ lanewise(Binary op, Vector<$Boxtype$> v) {
         return ($vectortype$) super.lanewiseTemplate(op, v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public $vectortype$ lanewise(Binary op, Vector<$Boxtype$> v, VectorMask<$Boxtype$> m) {
+        return ($vectortype$) super.lanewiseTemplate(op, $masktype$.class, v, m);  // specialize
     }
 
 #if[!FP]
@@ -1091,6 +1097,13 @@ final class $vectortype$ extends $abstractvectortype$ {
     final
     void intoArray0($type$[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0($type$[] a, int offset, VectorMask<$Boxtype$> m) {
+        super.intoArray0Template($masktype$.class, a, offset, ($masktype$) m);
     }
 
     @ForceInline

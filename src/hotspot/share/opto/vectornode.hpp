@@ -796,8 +796,8 @@ class StoreVectorNode : public StoreNode {
    }
    virtual int Opcode() const;
    virtual uint match_edge(uint idx) const { return idx == MemNode::Address ||
-                                                     idx == MemNode::ValueIn ||
-                                                     idx == MemNode::ValueIn + 1; }
+                                                    idx == MemNode::ValueIn ||
+                                                    idx == MemNode::ValueIn + 1; }
 };
 
 class StoreVectorMaskedNode : public StoreVectorNode {

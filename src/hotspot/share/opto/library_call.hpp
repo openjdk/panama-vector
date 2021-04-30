@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -310,10 +310,12 @@ class LibraryCallKit : public GraphKit {
 
   // Vector API support
   bool inline_vector_nary_operation(int n);
+  bool inline_vector_nary_masked_operation(int n);
   bool inline_vector_broadcast_coerced();
   bool inline_vector_shuffle_to_vector();
   bool inline_vector_shuffle_iota();
   bool inline_vector_mem_operation(bool is_store);
+  bool inline_vector_mem_masked_operation(bool is_store);
   bool inline_vector_gather_scatter(bool is_scatter);
   bool inline_vector_reduction();
   bool inline_vector_test();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -277,6 +277,12 @@ final class Short128Vector extends ShortVector {
     @ForceInline
     public Short128Vector lanewise(Binary op, Vector<Short> v) {
         return (Short128Vector) super.lanewiseTemplate(op, v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Short128Vector lanewise(Binary op, Vector<Short> v, VectorMask<Short> m) {
+        return (Short128Vector) super.lanewiseTemplate(op, Short128Mask.class, v, m);  // specialize
     }
 
     /*package-private*/
@@ -815,6 +821,13 @@ final class Short128Vector extends ShortVector {
     final
     void intoArray0(short[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(short[] a, int offset, VectorMask<Short> m) {
+        super.intoArray0Template(Short128Mask.class, a, offset, (Short128Mask) m);
     }
 
     @ForceInline

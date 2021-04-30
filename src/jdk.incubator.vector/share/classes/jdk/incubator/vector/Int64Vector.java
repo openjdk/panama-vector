@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -277,6 +277,12 @@ final class Int64Vector extends IntVector {
     @ForceInline
     public Int64Vector lanewise(Binary op, Vector<Integer> v) {
         return (Int64Vector) super.lanewiseTemplate(op, v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Int64Vector lanewise(Binary op, Vector<Integer> v, VectorMask<Integer> m) {
+        return (Int64Vector) super.lanewiseTemplate(op, Int64Mask.class, v, m);  // specialize
     }
 
     /*package-private*/
@@ -797,6 +803,13 @@ final class Int64Vector extends IntVector {
     final
     void intoArray0(int[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(int[] a, int offset, VectorMask<Integer> m) {
+        super.intoArray0Template(Int64Mask.class, a, offset, (Int64Mask) m);
     }
 
     @ForceInline
