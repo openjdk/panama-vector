@@ -478,7 +478,6 @@ bool LibraryCallKit::inline_vector_shuffle_iota() {
 // VM shuffleToVector(Class<VM> VecClass, Class<?>E , Class<?> ShuffleClass, Sh s, int length,
 //                    ShuffleToVectorOperation<VM,Sh,E> defaultImpl)
 bool LibraryCallKit::inline_vector_shuffle_to_vector() {
-  // TODO shuffle is not supported on SVE
   const TypeInstPtr* vector_klass  = gvn().type(argument(0))->isa_instptr();
   const TypeInstPtr* elem_klass    = gvn().type(argument(1))->isa_instptr();
   const TypeInstPtr* shuffle_klass = gvn().type(argument(2))->isa_instptr();
