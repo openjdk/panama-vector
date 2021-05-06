@@ -275,6 +275,12 @@ final class Int512Vector extends IntVector {
 
     @Override
     @ForceInline
+    public Int512Vector lanewise(Unary op, VectorMask<Integer> m) {
+        return (Int512Vector) super.lanewiseTemplate(op, Int512Mask.class, m);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public Int512Vector lanewise(Binary op, Vector<Integer> v) {
         return (Int512Vector) super.lanewiseTemplate(op, v);  // specialize
     }
@@ -297,8 +303,16 @@ final class Int512Vector extends IntVector {
     @ForceInline
     public final
     Int512Vector
-    lanewise(VectorOperators.Ternary op, Vector<Integer> v1, Vector<Integer> v2) {
+    lanewise(Ternary op, Vector<Integer> v1, Vector<Integer> v2) {
         return (Int512Vector) super.lanewiseTemplate(op, v1, v2);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public final
+    Int512Vector
+    lanewise(Ternary op, Vector<Integer> v1, Vector<Integer> v2, VectorMask<Integer> m) {
+        return (Int512Vector) super.lanewiseTemplate(op, Int512Mask.class, v1, v2, m);  // specialize
     }
 
     @Override
@@ -661,9 +675,9 @@ final class Int512Vector extends IntVector {
         public Int512Mask and(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
             Int512Mask m = (Int512Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, Int512Mask.class, int.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
+            return VectorSupport.binaryMaskedOp(VECTOR_OP_AND, Int512Mask.class, null, int.class, VLENGTH,
+                                                this, m, null,
+                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
@@ -671,9 +685,9 @@ final class Int512Vector extends IntVector {
         public Int512Mask or(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
             Int512Mask m = (Int512Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, Int512Mask.class, int.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
+            return VectorSupport.binaryMaskedOp(VECTOR_OP_OR, Int512Mask.class, null, int.class, VLENGTH,
+                                                this, m, null,
+                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @ForceInline
@@ -681,9 +695,9 @@ final class Int512Vector extends IntVector {
         Int512Mask xor(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
             Int512Mask m = (Int512Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, Int512Mask.class, int.class, VLENGTH,
-                                          this, m,
-                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+            return VectorSupport.binaryMaskedOp(VECTOR_OP_XOR, Int512Mask.class, null, int.class, VLENGTH,
+                                                this, m, null,
+                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
 
         // Reductions

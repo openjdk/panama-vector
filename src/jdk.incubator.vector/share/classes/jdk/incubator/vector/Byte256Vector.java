@@ -275,6 +275,12 @@ final class Byte256Vector extends ByteVector {
 
     @Override
     @ForceInline
+    public Byte256Vector lanewise(Unary op, VectorMask<Byte> m) {
+        return (Byte256Vector) super.lanewiseTemplate(op, Byte256Mask.class, m);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public Byte256Vector lanewise(Binary op, Vector<Byte> v) {
         return (Byte256Vector) super.lanewiseTemplate(op, v);  // specialize
     }
@@ -297,8 +303,16 @@ final class Byte256Vector extends ByteVector {
     @ForceInline
     public final
     Byte256Vector
-    lanewise(VectorOperators.Ternary op, Vector<Byte> v1, Vector<Byte> v2) {
+    lanewise(Ternary op, Vector<Byte> v1, Vector<Byte> v2) {
         return (Byte256Vector) super.lanewiseTemplate(op, v1, v2);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public final
+    Byte256Vector
+    lanewise(Ternary op, Vector<Byte> v1, Vector<Byte> v2, VectorMask<Byte> m) {
+        return (Byte256Vector) super.lanewiseTemplate(op, Byte256Mask.class, v1, v2, m);  // specialize
     }
 
     @Override
@@ -693,9 +707,9 @@ final class Byte256Vector extends ByteVector {
         public Byte256Mask and(VectorMask<Byte> mask) {
             Objects.requireNonNull(mask);
             Byte256Mask m = (Byte256Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, Byte256Mask.class, byte.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
+            return VectorSupport.binaryMaskedOp(VECTOR_OP_AND, Byte256Mask.class, null, byte.class, VLENGTH,
+                                                this, m, null,
+                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
@@ -703,9 +717,9 @@ final class Byte256Vector extends ByteVector {
         public Byte256Mask or(VectorMask<Byte> mask) {
             Objects.requireNonNull(mask);
             Byte256Mask m = (Byte256Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, Byte256Mask.class, byte.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
+            return VectorSupport.binaryMaskedOp(VECTOR_OP_OR, Byte256Mask.class, null, byte.class, VLENGTH,
+                                                this, m, null,
+                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @ForceInline
@@ -713,9 +727,9 @@ final class Byte256Vector extends ByteVector {
         Byte256Mask xor(VectorMask<Byte> mask) {
             Objects.requireNonNull(mask);
             Byte256Mask m = (Byte256Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, Byte256Mask.class, byte.class, VLENGTH,
-                                          this, m,
-                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+            return VectorSupport.binaryMaskedOp(VECTOR_OP_XOR, Byte256Mask.class, null, byte.class, VLENGTH,
+                                                this, m, null,
+                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
 
         // Reductions

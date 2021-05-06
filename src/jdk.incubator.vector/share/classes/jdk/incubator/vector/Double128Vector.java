@@ -275,6 +275,12 @@ final class Double128Vector extends DoubleVector {
 
     @Override
     @ForceInline
+    public Double128Vector lanewise(Unary op, VectorMask<Double> m) {
+        return (Double128Vector) super.lanewiseTemplate(op, Double128Mask.class, m);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public Double128Vector lanewise(Binary op, Vector<Double> v) {
         return (Double128Vector) super.lanewiseTemplate(op, v);  // specialize
     }
@@ -291,8 +297,16 @@ final class Double128Vector extends DoubleVector {
     @ForceInline
     public final
     Double128Vector
-    lanewise(VectorOperators.Ternary op, Vector<Double> v1, Vector<Double> v2) {
+    lanewise(Ternary op, Vector<Double> v1, Vector<Double> v2) {
         return (Double128Vector) super.lanewiseTemplate(op, v1, v2);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public final
+    Double128Vector
+    lanewise(Ternary op, Vector<Double> v1, Vector<Double> v2, VectorMask<Double> m) {
+        return (Double128Vector) super.lanewiseTemplate(op, Double128Mask.class, v1, v2, m);  // specialize
     }
 
     @Override
@@ -629,9 +643,9 @@ final class Double128Vector extends DoubleVector {
         public Double128Mask and(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             Double128Mask m = (Double128Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, Double128Mask.class, long.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
+            return VectorSupport.binaryMaskedOp(VECTOR_OP_AND, Double128Mask.class, null, long.class, VLENGTH,
+                                                this, m, null,
+                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
@@ -639,9 +653,9 @@ final class Double128Vector extends DoubleVector {
         public Double128Mask or(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             Double128Mask m = (Double128Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, Double128Mask.class, long.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
+            return VectorSupport.binaryMaskedOp(VECTOR_OP_OR, Double128Mask.class, null, long.class, VLENGTH,
+                                                this, m, null,
+                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @ForceInline
@@ -649,9 +663,9 @@ final class Double128Vector extends DoubleVector {
         Double128Mask xor(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             Double128Mask m = (Double128Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, Double128Mask.class, long.class, VLENGTH,
-                                          this, m,
-                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+            return VectorSupport.binaryMaskedOp(VECTOR_OP_XOR, Double128Mask.class, null, long.class, VLENGTH,
+                                                this, m, null,
+                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
 
         // Reductions

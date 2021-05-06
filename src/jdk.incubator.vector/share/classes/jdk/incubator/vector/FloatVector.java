@@ -171,6 +171,9 @@ public abstract class FloatVector extends AbstractVector<Float> {
     final
     FloatVector uOpTemplate(VectorMask<Float> m,
                                      FUnOp f) {
+        if (m == null) {
+            return uOpTemplate(f);
+        }
         float[] vec = vec();
         float[] res = new float[length()];
         boolean[] mbits = ((AbstractMask<Float>)m).getBits();
@@ -266,6 +269,9 @@ public abstract class FloatVector extends AbstractVector<Float> {
                                      Vector<Float> o2,
                                      VectorMask<Float> m,
                                      FTriOp f) {
+        if (m == null) {
+            return tOpTemplate(o1, o2, f);
+        }
         float[] res = new float[length()];
         float[] vec1 = this.vec();
         float[] vec2 = ((FloatVector)o1).vec();
@@ -553,62 +559,81 @@ public abstract class FloatVector extends AbstractVector<Float> {
             }
         }
         int opc = opCode(op);
-        return VectorSupport.unaryOp(
-            opc, getClass(), float.class, length(),
-            this,
-            UN_IMPL.find(op, opc, (opc_) -> {
-              switch (opc_) {
-                case VECTOR_OP_NEG: return v0 ->
-                        v0.uOp((i, a) -> (float) -a);
-                case VECTOR_OP_ABS: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.abs(a));
-                case VECTOR_OP_SIN: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.sin(a));
-                case VECTOR_OP_COS: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.cos(a));
-                case VECTOR_OP_TAN: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.tan(a));
-                case VECTOR_OP_ASIN: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.asin(a));
-                case VECTOR_OP_ACOS: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.acos(a));
-                case VECTOR_OP_ATAN: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.atan(a));
-                case VECTOR_OP_EXP: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.exp(a));
-                case VECTOR_OP_LOG: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.log(a));
-                case VECTOR_OP_LOG10: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.log10(a));
-                case VECTOR_OP_SQRT: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.sqrt(a));
-                case VECTOR_OP_CBRT: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.cbrt(a));
-                case VECTOR_OP_SINH: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.sinh(a));
-                case VECTOR_OP_COSH: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.cosh(a));
-                case VECTOR_OP_TANH: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.tanh(a));
-                case VECTOR_OP_EXPM1: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.expm1(a));
-                case VECTOR_OP_LOG1P: return v0 ->
-                        v0.uOp((i, a) -> (float) Math.log1p(a));
-                default: return null;
-              }}));
+        return VectorSupport.unaryMaskedOp(
+            opc, getClass(), null, float.class, length(),
+            this, null,
+            UN_MASKED_IMPL.find(op, opc, FloatVector::unaryOperations));
     }
-    private static final
-    ImplCache<Unary,UnaryOperator<FloatVector>> UN_IMPL
-        = new ImplCache<>(Unary.class, FloatVector.class);
 
     /**
      * {@inheritDoc} <!--workaround-->
      */
-    @ForceInline
-    public final
+    @Override
+    public abstract
     FloatVector lanewise(VectorOperators.Unary op,
-                                  VectorMask<Float> m) {
-        return blend(lanewise(op), m);
+                                  VectorMask<Float> m);
+    @ForceInline
+    final
+    FloatVector lanewiseTemplate(VectorOperators.Unary op,
+                                          Class<? extends VectorMask<Float>> maskClass,
+                                          VectorMask<Float> m) {
+        m.check(maskClass, this);
+        if (opKind(op, VO_SPECIAL)) {
+            if (op == ZOMO) {
+                return blend(broadcast(-1), compare(NE, 0).and(m));
+            }
+        }
+        int opc = opCode(op);
+        return VectorSupport.unaryMaskedOp(
+            opc, getClass(), maskClass, float.class, length(),
+            this, m,
+            UN_MASKED_IMPL.find(op, opc, FloatVector::unaryOperations));
+    }
+
+    private static final
+    ImplCache<Unary, UnaryMaskedOperation<FloatVector, VectorMask<Float>>>
+        UN_MASKED_IMPL = new ImplCache<>(Unary.class, FloatVector.class);
+
+    private static UnaryMaskedOperation<FloatVector, VectorMask<Float>> unaryOperations(int opc_) {
+        switch (opc_) {
+            case VECTOR_OP_NEG: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) -a);
+            case VECTOR_OP_ABS: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.abs(a));
+            case VECTOR_OP_SIN: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.sin(a));
+            case VECTOR_OP_COS: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.cos(a));
+            case VECTOR_OP_TAN: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.tan(a));
+            case VECTOR_OP_ASIN: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.asin(a));
+            case VECTOR_OP_ACOS: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.acos(a));
+            case VECTOR_OP_ATAN: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.atan(a));
+            case VECTOR_OP_EXP: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.exp(a));
+            case VECTOR_OP_LOG: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.log(a));
+            case VECTOR_OP_LOG10: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.log10(a));
+            case VECTOR_OP_SQRT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.sqrt(a));
+            case VECTOR_OP_CBRT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.cbrt(a));
+            case VECTOR_OP_SINH: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.sinh(a));
+            case VECTOR_OP_COSH: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.cosh(a));
+            case VECTOR_OP_TANH: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.tanh(a));
+            case VECTOR_OP_EXPM1: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.expm1(a));
+            case VECTOR_OP_LOG1P: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (float) Math.log1p(a));
+            default: return null;
+        }
     }
 
     // Binary lanewise support
@@ -850,19 +875,11 @@ public abstract class FloatVector extends AbstractVector<Float> {
         that.check(this);
         tother.check(this);
         int opc = opCode(op);
-        return VectorSupport.ternaryOp(
-            opc, getClass(), float.class, length(),
-            this, that, tother,
-            TERN_IMPL.find(op, opc, (opc_) -> {
-              switch (opc_) {
-                case VECTOR_OP_FMA: return (v0, v1_, v2_) ->
-                        v0.tOp(v1_, v2_, (i, a, b, c) -> Math.fma(a, b, c));
-                default: return null;
-                }}));
+        return VectorSupport.ternaryMaskedOp(
+            opc, getClass(), null, float.class, length(),
+            this, that, tother, null,
+            TERN_MASKED_IMPL.find(op, opc, FloatVector::ternaryOperations));
     }
-    private static final
-    ImplCache<Ternary,TernaryOperation<FloatVector>> TERN_IMPL
-        = new ImplCache<>(Ternary.class, FloatVector.class);
 
     /**
      * {@inheritDoc} <!--workaround-->
@@ -870,13 +887,45 @@ public abstract class FloatVector extends AbstractVector<Float> {
      * @see #lanewise(VectorOperators.Ternary,Vector,float,VectorMask)
      * @see #lanewise(VectorOperators.Ternary,float,Vector,VectorMask)
      */
-    @ForceInline
-    public final
+    @Override
+    public abstract
     FloatVector lanewise(VectorOperators.Ternary op,
                                   Vector<Float> v1,
                                   Vector<Float> v2,
-                                  VectorMask<Float> m) {
-        return blend(lanewise(op, v1, v2), m);
+                                  VectorMask<Float> m);
+    @ForceInline
+    final
+    FloatVector lanewiseTemplate(VectorOperators.Ternary op,
+                                          Class<? extends VectorMask<Float>> maskClass,
+                                          Vector<Float> v1,
+                                          Vector<Float> v2,
+                                          VectorMask<Float> m) {
+        FloatVector that = (FloatVector) v1;
+        FloatVector tother = (FloatVector) v2;
+        // It's a word: https://www.dictionary.com/browse/tother
+        // See also Chapter 11 of Dickens, Our Mutual Friend:
+        // "Totherest Governor," replied Mr Riderhood...
+        that.check(this);
+        tother.check(this);
+        m.check(maskClass, this);
+
+        int opc = opCode(op);
+        return VectorSupport.ternaryMaskedOp(
+            opc, getClass(), maskClass, float.class, length(),
+            this, that, tother, m,
+            TERN_MASKED_IMPL.find(op, opc, FloatVector::ternaryOperations));
+    }
+
+    private static final
+    ImplCache<Ternary, TernaryMaskedOperation<FloatVector, VectorMask<Float>>>
+        TERN_MASKED_IMPL = new ImplCache<>(Ternary.class, FloatVector.class);
+
+    private static TernaryMaskedOperation<FloatVector, VectorMask<Float>> ternaryOperations(int opc_) {
+        switch (opc_) {
+            case VECTOR_OP_FMA: return (v0, v1_, v2_, m) ->
+                    v0.tOp(v1_, v2_, m, (i, a, b, c) -> Math.fma(a, b, c));
+            default: return null;
+        }
     }
 
     /**
@@ -933,7 +982,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
                                   float e1,
                                   float e2,
                                   VectorMask<Float> m) {
-        return blend(lanewise(op, e1, e2), m);
+        return lanewise(op, broadcast(e1), broadcast(e2), m);
     }
 
     /**
@@ -991,7 +1040,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
                                   Vector<Float> v1,
                                   float e2,
                                   VectorMask<Float> m) {
-        return blend(lanewise(op, v1, e2), m);
+        return lanewise(op, v1, broadcast(e2), m);
     }
 
     /**
@@ -1048,7 +1097,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
                                   float e1,
                                   Vector<Float> v2,
                                   VectorMask<Float> m) {
-        return blend(lanewise(op, e1, v2), m);
+        return lanewise(op, broadcast(e1), v2, m);
     }
 
     // (Thus endeth the Great and Mighty Ternary Ogdoad.)

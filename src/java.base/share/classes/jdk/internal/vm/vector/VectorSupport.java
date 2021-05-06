@@ -246,25 +246,19 @@ public class VectorSupport {
 
     @IntrinsicCandidate
     public static
-    <VM>
-    VM unaryOp(int oprId, Class<? extends VM> vmClass, Class<?> elementType, int length,
-               VM vm,
-               Function<VM, VM> defaultImpl) {
+    <V, M>
+    V unaryMaskedOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass,
+                    Class<?> elementType, int length, V v, M m,
+                    UnaryMaskedOperation<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(vm);
+        return defaultImpl.apply(v, m);
+    }
+
+    public interface UnaryMaskedOperation<V, M> {
+        V apply(V v, M mask);
     }
 
     /* ============================================================================ */
-
-    @IntrinsicCandidate
-    public static
-    <VM>
-    VM binaryOp(int oprId, Class<? extends VM> vmClass, Class<?> elementType, int length,
-                VM vm1, VM vm2,
-                BiFunction<VM, VM, VM> defaultImpl) {
-        assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(vm1, vm2);
-    }
 
     @IntrinsicCandidate
     public static
@@ -282,18 +276,18 @@ public class VectorSupport {
 
     /* ============================================================================ */
 
-    public interface TernaryOperation<V> {
-        V apply(V v1, V v2, V v3);
-    }
-
     @IntrinsicCandidate
     public static
-    <VM>
-    VM ternaryOp(int oprId, Class<? extends VM> vmClass, Class<?> elementType, int length,
-                 VM vm1, VM vm2, VM vm3,
-                 TernaryOperation<VM> defaultImpl) {
+    <V, M>
+    V ternaryMaskedOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass,
+                      Class<?> elementType, int length, V v1, V v2, V v3, M m,
+                      TernaryMaskedOperation<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(vm1, vm2, vm3);
+        return defaultImpl.apply(v1, v2, v3, m);
+    }
+
+    public interface TernaryMaskedOperation<V, M> {
+        V apply(V v1, V v2, V v3, M mask);
     }
 
     /* ============================================================================ */

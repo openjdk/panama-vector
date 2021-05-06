@@ -277,6 +277,12 @@ final class $vectortype$ extends $abstractvectortype$ {
 
     @Override
     @ForceInline
+    public $vectortype$ lanewise(Unary op, VectorMask<$Boxtype$> m) {
+        return ($vectortype$) super.lanewiseTemplate(op, $masktype$.class, m);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public $vectortype$ lanewise(Binary op, Vector<$Boxtype$> v) {
         return ($vectortype$) super.lanewiseTemplate(op, v);  // specialize
     }
@@ -301,8 +307,16 @@ final class $vectortype$ extends $abstractvectortype$ {
     @ForceInline
     public final
     $vectortype$
-    lanewise(VectorOperators.Ternary op, Vector<$Boxtype$> v1, Vector<$Boxtype$> v2) {
+    lanewise(Ternary op, Vector<$Boxtype$> v1, Vector<$Boxtype$> v2) {
         return ($vectortype$) super.lanewiseTemplate(op, v1, v2);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public final
+    $vectortype$
+    lanewise(Ternary op, Vector<$Boxtype$> v1, Vector<$Boxtype$> v2, VectorMask<$Boxtype$> m) {
+        return ($vectortype$) super.lanewiseTemplate(op, $masktype$.class, v1, v2, m);  // specialize
     }
 
     @Override
@@ -904,9 +918,9 @@ final class $vectortype$ extends $abstractvectortype$ {
         public $masktype$ and(VectorMask<$Boxtype$> mask) {
             Objects.requireNonNull(mask);
             $masktype$ m = ($masktype$)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, $masktype$.class, $bitstype$.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
+            return VectorSupport.binaryMaskedOp(VECTOR_OP_AND, $masktype$.class, null, $bitstype$.class, VLENGTH,
+                                                this, m, null,
+                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
@@ -914,9 +928,9 @@ final class $vectortype$ extends $abstractvectortype$ {
         public $masktype$ or(VectorMask<$Boxtype$> mask) {
             Objects.requireNonNull(mask);
             $masktype$ m = ($masktype$)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, $masktype$.class, $bitstype$.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
+            return VectorSupport.binaryMaskedOp(VECTOR_OP_OR, $masktype$.class, null, $bitstype$.class, VLENGTH,
+                                                this, m, null,
+                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @ForceInline
@@ -924,9 +938,9 @@ final class $vectortype$ extends $abstractvectortype$ {
         $masktype$ xor(VectorMask<$Boxtype$> mask) {
             Objects.requireNonNull(mask);
             $masktype$ m = ($masktype$)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, $masktype$.class, $bitstype$.class, VLENGTH,
-                                          this, m,
-                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+            return VectorSupport.binaryMaskedOp(VECTOR_OP_XOR, $masktype$.class, null, $bitstype$.class, VLENGTH,
+                                                this, m, null,
+                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
 
         // Reductions
