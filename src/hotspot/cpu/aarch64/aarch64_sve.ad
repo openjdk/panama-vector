@@ -4226,7 +4226,7 @@ instruct loadconB(vReg dst, immI0 src)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (VectorLoadConst src));
-  ins_cost(INSN_COST);
+  ins_cost(INSN_COST + SVE_COST);
   format %{ "sve_ld1b $dst, CONSTANT_MEMORY\t# load iota indices" %}
   ins_encode %{
     __ lea(rscratch1, ExternalAddress(StubRoutines::aarch64::vector_iota_indices()));
