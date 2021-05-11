@@ -622,20 +622,6 @@ class StubGenerator: public StubCodeGenerator {
     address start = __ pc();
     __ emit_data64(0x0706050403020100, relocInfo::none);
     __ emit_data64(0x0F0E0D0C0B0A0908, relocInfo::none);
-    __ emit_data64(0x1716151413121110, relocInfo::none);
-    __ emit_data64(0x1F1E1D1C1B1A1918, relocInfo::none);
-    __ emit_data64(0x2726252423222120, relocInfo::none);
-    __ emit_data64(0x2F2E2D2C2B2A2928, relocInfo::none);
-    __ emit_data64(0x3736353433323130, relocInfo::none);
-    __ emit_data64(0x3F3E3D3C3B3A3938, relocInfo::none);
-    __ emit_data64(0x4746454443424140, relocInfo::none);
-    __ emit_data64(0x4F4E4D4C4B4A4948, relocInfo::none);
-    __ emit_data64(0x5756555453525150, relocInfo::none);
-    __ emit_data64(0x5F5E5D5C5B5A5958, relocInfo::none);
-    __ emit_data64(0x6766656463626160, relocInfo::none);
-    __ emit_data64(0x6F6E6D6C6B6A6968, relocInfo::none);
-    __ emit_data64(0x7776757473727170, relocInfo::none);
-    __ emit_data64(0x7F7E7D7C7B7A7978, relocInfo::none);
     return start;
   }
 

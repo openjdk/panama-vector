@@ -2498,11 +2498,10 @@ instruct loadconB(vReg dst, immI0 src)
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (VectorLoadConst src));
-  ins_cost(INSN_COST + SVE_COST);
-  format %{ "sve_ld1b $dst, CONSTANT_MEMORY\t# load iota indices" %}
+  ins_cost(SVE_COST);
+  format %{ "sve_index $dst, 0, 1\t# generate iota indices" %}
   ins_encode %{
-    __ lea(rscratch1, ExternalAddress(StubRoutines::aarch64::vector_iota_indices()));
-    __ sve_ld1b(as_FloatRegister($dst$$reg), __ B, ptrue, Address(rscratch1, 0));
+    __ sve_index(as_FloatRegister($dst$$reg), __ B, 0, 1);
   %}
   ins_pipe(pipe_slow);
 %}
