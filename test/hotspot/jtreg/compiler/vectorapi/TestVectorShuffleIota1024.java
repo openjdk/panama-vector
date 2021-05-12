@@ -82,6 +82,6 @@ public class TestVectorShuffleIotaByte1024 {
     static void testIota() {
         if (SPECESb_1024.length() == 1024) {
             testIota_1024();
-	}
+        }
     }
 }
