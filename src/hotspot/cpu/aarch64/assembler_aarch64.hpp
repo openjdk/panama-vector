@@ -3300,7 +3300,9 @@ public:
   INSN(sve_cmpeq, 0b00100100, 0b1010, 0);
   INSN(sve_cmpne, 0b00100100, 0b1011, 0);
   INSN(sve_cmpge, 0b00100100, 0b1000, 0);
+  INSN(sve_cmphs, 0b00100100, 0b0000, 0);
   INSN(sve_cmpgt, 0b00100100, 0b1001, 0);
+  INSN(sve_cmphi, 0b00100100, 0b0001, 0);
   INSN(sve_fcmeq, 0b01100101, 0b0110, 1);
   INSN(sve_fcmne, 0b01100101, 0b0111, 1);
   INSN(sve_fcmgt, 0b01100101, 0b0101, 1);
