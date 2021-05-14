@@ -2493,6 +2493,7 @@ instruct scatterL(vmemA mem, vReg src, vReg idx) %{
 %}
 
 // ------------------------------ Vector Load Const -------------------------------
+
 instruct loadconB(vReg dst, immI0 src) %{
   predicate(UseSVE > 0 &&
             n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
