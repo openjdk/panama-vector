@@ -220,9 +220,9 @@ source %{
         // Others
       case Op_ExtractC:
       case Op_ExtractUB:
-      // Vector API specific
-      case Op_VectorLoadConst:
         return false;
+      // Vector API specific
+      case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
         // Currently the implementation for partial vectors are not implemented yet.
         // Will add them in a separate patch.
@@ -2488,6 +2488,20 @@ instruct scatterL(vmemA mem, vReg src, vReg idx) %{
   ins_encode %{
     __ sve_uunpklo(as_FloatRegister($idx$$reg), __ D, as_FloatRegister($idx$$reg));
     __ sve_st1d_scatter(as_FloatRegister($src$$reg), ptrue, as_Register($mem$$base), as_FloatRegister($idx$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ Vector Load Const -------------------------------
+
+instruct loadconB(vReg dst, immI0 src) %{
+  predicate(UseSVE > 0 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  match(Set dst (VectorLoadConst src));
+  ins_cost(SVE_COST);
+  format %{ "sve_index $dst, 0, 1\t# generate iota indices" %}
+  ins_encode %{
+    __ sve_index(as_FloatRegister($dst$$reg), __ B, 0, 1);
   %}
   ins_pipe(pipe_slow);
 %}

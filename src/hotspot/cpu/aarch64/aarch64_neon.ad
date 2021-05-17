@@ -3368,9 +3368,10 @@ instruct vmaskcastX(vecX dst)
 
 instruct loadcon8B(vecD dst, immI0 src)
 %{
-  predicate((n->as_Vector()->length() == 2 || n->as_Vector()->length() == 4 ||
-             n->as_Vector()->length() == 8) &&
-             n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  predicate(UseSVE == 0 &&
+           (n->as_Vector()->length() == 2 || n->as_Vector()->length() == 4 ||
+            n->as_Vector()->length() == 8) &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (VectorLoadConst src));
   ins_cost(INSN_COST);
   format %{ "ldr $dst, CONSTANT_MEMORY\t# load iota indices" %}
@@ -3383,7 +3384,7 @@ instruct loadcon8B(vecD dst, immI0 src)
 
 instruct loadcon16B(vecX dst, immI0 src)
 %{
-  predicate(n->as_Vector()->length() == 16 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  predicate(UseSVE == 0 && n->as_Vector()->length() == 16 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   match(Set dst (VectorLoadConst src));
   ins_cost(INSN_COST);
   format %{ "ldr $dst, CONSTANT_MEMORY\t# load iota indices" %}
