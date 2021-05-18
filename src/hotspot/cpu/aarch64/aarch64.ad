@@ -2505,8 +2505,8 @@ const int Matcher::max_vector_size(const BasicType bt) {
 
 const int Matcher::min_vector_size(const BasicType bt) {
   int max_size = max_vector_size(bt);
-  // Limit the min vector size to 8 bytes for NEON, 16 bytes for SVE
-  int size = (UseSVE > 0 ? 16 : 8) / type2aelembytes(bt);
+  // Limit the min vector size to 8 bytes.
+  int size = 8 / type2aelembytes(bt);
   if (bt == T_BYTE) {
     // To support vector api shuffle/rearrange.
     size = 4;
