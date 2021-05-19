@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,7 @@
 #include "asm/assembler.inline.hpp"
 #include "opto/c2_MacroAssembler.hpp"
 #include "opto/intrinsicnode.hpp"
+#include "opto/subnode.hpp"
 #include "runtime/stubRoutines.hpp"
 
 #ifdef PRODUCT
@@ -831,4 +832,34 @@ void C2_MacroAssembler::string_compare(Register str1, Register str2,
   bind(DONE);
 
   BLOCK_COMMENT("} string_compare");
+}
+
+void C2_MacroAssembler::sve_compare(PRegister pd, BasicType bt, PRegister pg,
+                                    FloatRegister zn, FloatRegister zm, int cond) {
+  SIMD_RegVariant size = elemType_to_regVariant(bt);
+  if (bt == T_FLOAT || bt == T_DOUBLE) {
+    switch (cond) {
+      case BoolTest::eq: sve_fcmeq(pd, size, pg, zn, zm); break;
+      case BoolTest::ne: sve_fcmne(pd, size, pg, zn, zm); break;
+      case BoolTest::ge: sve_fcmge(pd, size, pg, zn, zm); break;
+      case BoolTest::gt: sve_fcmgt(pd, size, pg, zn, zm); break;
+      case BoolTest::le: sve_fcmge(pd, size, pg, zm, zn); break;
+      case BoolTest::lt: sve_fcmgt(pd, size, pg, zm, zn); break;
+      default:
+        assert(false, "unsupported");
+        ShouldNotReachHere();
+    }
+  } else {
+    switch (cond) {
+      case BoolTest::eq: sve_cmpeq(pd, size, pg, zn, zm); break;
+      case BoolTest::ne: sve_cmpne(pd, size, pg, zn, zm); break;
+      case BoolTest::ge: sve_cmpge(pd, size, pg, zn, zm); break;
+      case BoolTest::gt: sve_cmpgt(pd, size, pg, zn, zm); break;
+      case BoolTest::le: sve_cmpge(pd, size, pg, zm, zn); break;
+      case BoolTest::lt: sve_cmpgt(pd, size, pg, zm, zn); break;
+      default:
+        assert(false, "unsupported");
+        ShouldNotReachHere();
+    }
+  }
 }
