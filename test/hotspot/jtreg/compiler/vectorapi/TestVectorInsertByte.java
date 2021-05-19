@@ -56,8 +56,8 @@ public class TestVectorInsertByte {
 
     public static void main(String[] args) {
         init();
-		for (int ic = 0; ic < INVOC_COUNT; ic++) {
-			testByteVectorInsert();
-		}
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            testByteVectorInsert();
+        }
     }
 }
