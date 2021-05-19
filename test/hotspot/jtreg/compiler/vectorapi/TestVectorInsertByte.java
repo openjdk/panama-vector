@@ -37,7 +37,7 @@ public class TestVectorInsertByte {
     static final VectorSpecies<Byte> SPECIESb = ByteVector.SPECIES_MAX;
 
     static final int INVOC_COUNT = 50000;
-    static final int size = SPECIESb.length(); 
+    static final int size = SPECIESb.length();
 
     static byte[] ab = new byte[size];
     static byte[] rb = new byte[size];
