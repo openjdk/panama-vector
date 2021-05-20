@@ -635,9 +635,9 @@ final class LongMaxVector extends LongVector {
         public LongMaxMask and(VectorMask<Long> mask) {
             Objects.requireNonNull(mask);
             LongMaxMask m = (LongMaxMask)mask;
-            return VectorSupport.binaryMaskedOp(VECTOR_OP_AND, LongMaxMask.class, null, long.class, VLENGTH,
-                                                this, m, null,
-                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
+            return VectorSupport.binaryOp(VECTOR_OP_AND, LongMaxMask.class, null, long.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
@@ -645,9 +645,9 @@ final class LongMaxVector extends LongVector {
         public LongMaxMask or(VectorMask<Long> mask) {
             Objects.requireNonNull(mask);
             LongMaxMask m = (LongMaxMask)mask;
-            return VectorSupport.binaryMaskedOp(VECTOR_OP_OR, LongMaxMask.class, null, long.class, VLENGTH,
-                                                this, m, null,
-                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
+            return VectorSupport.binaryOp(VECTOR_OP_OR, LongMaxMask.class, null, long.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @ForceInline
@@ -655,9 +655,9 @@ final class LongMaxVector extends LongVector {
         LongMaxMask xor(VectorMask<Long> mask) {
             Objects.requireNonNull(mask);
             LongMaxMask m = (LongMaxMask)mask;
-            return VectorSupport.binaryMaskedOp(VECTOR_OP_XOR, LongMaxMask.class, null, long.class, VLENGTH,
-                                                this, m, null,
-                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, LongMaxMask.class, null, long.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
 
         // Reductions

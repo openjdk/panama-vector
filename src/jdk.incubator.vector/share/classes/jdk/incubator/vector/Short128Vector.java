@@ -659,9 +659,9 @@ final class Short128Vector extends ShortVector {
         public Short128Mask and(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             Short128Mask m = (Short128Mask)mask;
-            return VectorSupport.binaryMaskedOp(VECTOR_OP_AND, Short128Mask.class, null, short.class, VLENGTH,
-                                                this, m, null,
-                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Short128Mask.class, null, short.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
@@ -669,9 +669,9 @@ final class Short128Vector extends ShortVector {
         public Short128Mask or(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             Short128Mask m = (Short128Mask)mask;
-            return VectorSupport.binaryMaskedOp(VECTOR_OP_OR, Short128Mask.class, null, short.class, VLENGTH,
-                                                this, m, null,
-                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Short128Mask.class, null, short.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @ForceInline
@@ -679,9 +679,9 @@ final class Short128Vector extends ShortVector {
         Short128Mask xor(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             Short128Mask m = (Short128Mask)mask;
-            return VectorSupport.binaryMaskedOp(VECTOR_OP_XOR, Short128Mask.class, null, short.class, VLENGTH,
-                                                this, m, null,
-                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Short128Mask.class, null, short.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
 
         // Reductions

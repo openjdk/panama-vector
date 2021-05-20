@@ -643,9 +643,9 @@ final class Float64Vector extends FloatVector {
         public Float64Mask and(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             Float64Mask m = (Float64Mask)mask;
-            return VectorSupport.binaryMaskedOp(VECTOR_OP_AND, Float64Mask.class, null, int.class, VLENGTH,
-                                                this, m, null,
-                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Float64Mask.class, null, int.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
@@ -653,9 +653,9 @@ final class Float64Vector extends FloatVector {
         public Float64Mask or(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             Float64Mask m = (Float64Mask)mask;
-            return VectorSupport.binaryMaskedOp(VECTOR_OP_OR, Float64Mask.class, null, int.class, VLENGTH,
-                                                this, m, null,
-                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Float64Mask.class, null, int.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @ForceInline
@@ -663,9 +663,9 @@ final class Float64Vector extends FloatVector {
         Float64Mask xor(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             Float64Mask m = (Float64Mask)mask;
-            return VectorSupport.binaryMaskedOp(VECTOR_OP_XOR, Float64Mask.class, null, int.class, VLENGTH,
-                                                this, m, null,
-                                                (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Float64Mask.class, null, int.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
 
         // Reductions

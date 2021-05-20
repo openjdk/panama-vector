@@ -523,10 +523,10 @@ public abstract class LongVector extends AbstractVector<Long> {
             }
         }
         int opc = opCode(op);
-        return VectorSupport.unaryMaskedOp(
+        return VectorSupport.unaryOp(
             opc, getClass(), null, long.class, length(),
             this, null,
-            UN_MASKED_IMPL.find(op, opc, LongVector::unaryOperations));
+            UN_IMPL.find(op, opc, LongVector::unaryOperations));
     }
 
     /**
@@ -551,17 +551,17 @@ public abstract class LongVector extends AbstractVector<Long> {
             }
         }
         int opc = opCode(op);
-        return VectorSupport.unaryMaskedOp(
+        return VectorSupport.unaryOp(
             opc, getClass(), maskClass, long.class, length(),
             this, m,
-            UN_MASKED_IMPL.find(op, opc, LongVector::unaryOperations));
+            UN_IMPL.find(op, opc, LongVector::unaryOperations));
     }
 
     private static final
-    ImplCache<Unary, UnaryMaskedOperation<LongVector, VectorMask<Long>>>
-        UN_MASKED_IMPL = new ImplCache<>(Unary.class, LongVector.class);
+    ImplCache<Unary, UnaryOperation<LongVector, VectorMask<Long>>>
+        UN_IMPL = new ImplCache<>(Unary.class, LongVector.class);
 
-    private static UnaryMaskedOperation<LongVector, VectorMask<Long>> unaryOperations(int opc_) {
+    private static UnaryOperation<LongVector, VectorMask<Long>> unaryOperations(int opc_) {
         switch (opc_) {
             case VECTOR_OP_NEG: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (long) -a);
@@ -620,10 +620,10 @@ public abstract class LongVector extends AbstractVector<Long> {
         }
 
         int opc = opCode(op);
-        return VectorSupport.binaryMaskedOp(
+        return VectorSupport.binaryOp(
             opc, getClass(), null, long.class, length(),
             this, that, null,
-            BIN_MASKED_IMPL.find(op, opc, LongVector::binaryOperations));
+            BIN_IMPL.find(op, opc, LongVector::binaryOperations));
     }
 
     /**
@@ -674,17 +674,17 @@ public abstract class LongVector extends AbstractVector<Long> {
         }
 
         int opc = opCode(op);
-        return VectorSupport.binaryMaskedOp(
+        return VectorSupport.binaryOp(
             opc, getClass(), maskClass, long.class, length(),
             this, that, m,
-            BIN_MASKED_IMPL.find(op, opc, LongVector::binaryOperations));
+            BIN_IMPL.find(op, opc, LongVector::binaryOperations));
     }
 
     private static final
-    ImplCache<Binary, BinaryMaskedOperation<LongVector, VectorMask<Long>>>
-        BIN_MASKED_IMPL = new ImplCache<>(Binary.class, LongVector.class);
+    ImplCache<Binary, BinaryOperation<LongVector, VectorMask<Long>>>
+        BIN_IMPL = new ImplCache<>(Binary.class, LongVector.class);
 
-    private static BinaryMaskedOperation<LongVector, VectorMask<Long>> binaryOperations(int opc_) {
+    private static BinaryOperation<LongVector, VectorMask<Long>> binaryOperations(int opc_) {
         switch (opc_) {
             case VECTOR_OP_ADD: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> (long)(a + b));
@@ -873,10 +873,10 @@ public abstract class LongVector extends AbstractVector<Long> {
             return this.lanewise(XOR, that);
         }
         int opc = opCode(op);
-        return VectorSupport.ternaryMaskedOp(
+        return VectorSupport.ternaryOp(
             opc, getClass(), null, long.class, length(),
             this, that, tother, null,
-            TERN_MASKED_IMPL.find(op, opc, LongVector::ternaryOperations));
+            TERN_IMPL.find(op, opc, LongVector::ternaryOperations));
     }
 
     /**
@@ -913,17 +913,17 @@ public abstract class LongVector extends AbstractVector<Long> {
             return this.lanewise(XOR, that, m);
         }
         int opc = opCode(op);
-        return VectorSupport.ternaryMaskedOp(
+        return VectorSupport.ternaryOp(
             opc, getClass(), maskClass, long.class, length(),
             this, that, tother, m,
-            TERN_MASKED_IMPL.find(op, opc, LongVector::ternaryOperations));
+            TERN_IMPL.find(op, opc, LongVector::ternaryOperations));
     }
 
     private static final
-    ImplCache<Ternary, TernaryMaskedOperation<LongVector, VectorMask<Long>>>
-        TERN_MASKED_IMPL = new ImplCache<>(Ternary.class, LongVector.class);
+    ImplCache<Ternary, TernaryOperation<LongVector, VectorMask<Long>>>
+        TERN_IMPL = new ImplCache<>(Ternary.class, LongVector.class);
 
-    private static TernaryMaskedOperation<LongVector, VectorMask<Long>> ternaryOperations(int opc_) {
+    private static TernaryOperation<LongVector, VectorMask<Long>> ternaryOperations(int opc_) {
         switch (opc_) {
             default: return null;
         }

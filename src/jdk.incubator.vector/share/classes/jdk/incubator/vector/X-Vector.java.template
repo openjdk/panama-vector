@@ -579,10 +579,10 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 #end[BITWISE]
         }
         int opc = opCode(op);
-        return VectorSupport.unaryMaskedOp(
+        return VectorSupport.unaryOp(
             opc, getClass(), null, $type$.class, length(),
             this, null,
-            UN_MASKED_IMPL.find(op, opc, $abstractvectortype$::unaryOperations));
+            UN_IMPL.find(op, opc, $abstractvectortype$::unaryOperations));
     }
 
     /**
@@ -609,17 +609,17 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 #end[BITWISE]
         }
         int opc = opCode(op);
-        return VectorSupport.unaryMaskedOp(
+        return VectorSupport.unaryOp(
             opc, getClass(), maskClass, $type$.class, length(),
             this, m,
-            UN_MASKED_IMPL.find(op, opc, $abstractvectortype$::unaryOperations));
+            UN_IMPL.find(op, opc, $abstractvectortype$::unaryOperations));
     }
 
     private static final
-    ImplCache<Unary, UnaryMaskedOperation<$abstractvectortype$, VectorMask<$Boxtype$>>>
-        UN_MASKED_IMPL = new ImplCache<>(Unary.class, $Type$Vector.class);
+    ImplCache<Unary, UnaryOperation<$abstractvectortype$, VectorMask<$Boxtype$>>>
+        UN_IMPL = new ImplCache<>(Unary.class, $Type$Vector.class);
 
-    private static UnaryMaskedOperation<$abstractvectortype$, VectorMask<$Boxtype$>> unaryOperations(int opc_) {
+    private static UnaryOperation<$abstractvectortype$, VectorMask<$Boxtype$>> unaryOperations(int opc_) {
         switch (opc_) {
             case VECTOR_OP_NEG: return (v0, m) ->
                     v0.uOp(m, (i, a) -> ($type$) -a);
@@ -722,10 +722,10 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         }
 
         int opc = opCode(op);
-        return VectorSupport.binaryMaskedOp(
+        return VectorSupport.binaryOp(
             opc, getClass(), null, $type$.class, length(),
             this, that, null,
-            BIN_MASKED_IMPL.find(op, opc, $abstractvectortype$::binaryOperations));
+            BIN_IMPL.find(op, opc, $abstractvectortype$::binaryOperations));
     }
 
     /**
@@ -784,17 +784,17 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         }
 
         int opc = opCode(op);
-        return VectorSupport.binaryMaskedOp(
+        return VectorSupport.binaryOp(
             opc, getClass(), maskClass, $type$.class, length(),
             this, that, m,
-            BIN_MASKED_IMPL.find(op, opc, $abstractvectortype$::binaryOperations));
+            BIN_IMPL.find(op, opc, $abstractvectortype$::binaryOperations));
     }
 
     private static final
-    ImplCache<Binary, BinaryMaskedOperation<$abstractvectortype$, VectorMask<$Boxtype$>>>
-        BIN_MASKED_IMPL = new ImplCache<>(Binary.class, $Type$Vector.class);
+    ImplCache<Binary, BinaryOperation<$abstractvectortype$, VectorMask<$Boxtype$>>>
+        BIN_IMPL = new ImplCache<>(Binary.class, $Type$Vector.class);
 
-    private static BinaryMaskedOperation<$abstractvectortype$, VectorMask<$Boxtype$>> binaryOperations(int opc_) {
+    private static BinaryOperation<$abstractvectortype$, VectorMask<$Boxtype$>> binaryOperations(int opc_) {
         switch (opc_) {
             case VECTOR_OP_ADD: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> ($type$)(a + b));
@@ -1063,10 +1063,10 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         }
 #end[BITWISE]
         int opc = opCode(op);
-        return VectorSupport.ternaryMaskedOp(
+        return VectorSupport.ternaryOp(
             opc, getClass(), null, $type$.class, length(),
             this, that, tother, null,
-            TERN_MASKED_IMPL.find(op, opc, $abstractvectortype$::ternaryOperations));
+            TERN_IMPL.find(op, opc, $abstractvectortype$::ternaryOperations));
     }
 
     /**
@@ -1105,17 +1105,17 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         }
 #end[BITWISE]
         int opc = opCode(op);
-        return VectorSupport.ternaryMaskedOp(
+        return VectorSupport.ternaryOp(
             opc, getClass(), maskClass, $type$.class, length(),
             this, that, tother, m,
-            TERN_MASKED_IMPL.find(op, opc, $abstractvectortype$::ternaryOperations));
+            TERN_IMPL.find(op, opc, $abstractvectortype$::ternaryOperations));
     }
 
     private static final
-    ImplCache<Ternary, TernaryMaskedOperation<$abstractvectortype$, VectorMask<$Boxtype$>>>
-        TERN_MASKED_IMPL = new ImplCache<>(Ternary.class, $Type$Vector.class);
+    ImplCache<Ternary, TernaryOperation<$abstractvectortype$, VectorMask<$Boxtype$>>>
+        TERN_IMPL = new ImplCache<>(Ternary.class, $Type$Vector.class);
 
-    private static TernaryMaskedOperation<$abstractvectortype$, VectorMask<$Boxtype$>> ternaryOperations(int opc_) {
+    private static TernaryOperation<$abstractvectortype$, VectorMask<$Boxtype$>> ternaryOperations(int opc_) {
         switch (opc_) {
 #if[FP]
             case VECTOR_OP_FMA: return (v0, v1_, v2_, m) ->

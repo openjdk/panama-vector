@@ -309,7 +309,7 @@ class LibraryCallKit : public GraphKit {
   bool inline_isCompileConstant();
 
   // Vector API support
-  bool inline_vector_nary_masked_operation(int n);
+  bool inline_vector_nary_operation(int n);
   bool inline_vector_broadcast_coerced();
   bool inline_vector_shuffle_to_vector();
   bool inline_vector_shuffle_iota();

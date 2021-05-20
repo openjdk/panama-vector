@@ -559,10 +559,10 @@ public abstract class FloatVector extends AbstractVector<Float> {
             }
         }
         int opc = opCode(op);
-        return VectorSupport.unaryMaskedOp(
+        return VectorSupport.unaryOp(
             opc, getClass(), null, float.class, length(),
             this, null,
-            UN_MASKED_IMPL.find(op, opc, FloatVector::unaryOperations));
+            UN_IMPL.find(op, opc, FloatVector::unaryOperations));
     }
 
     /**
@@ -584,17 +584,17 @@ public abstract class FloatVector extends AbstractVector<Float> {
             }
         }
         int opc = opCode(op);
-        return VectorSupport.unaryMaskedOp(
+        return VectorSupport.unaryOp(
             opc, getClass(), maskClass, float.class, length(),
             this, m,
-            UN_MASKED_IMPL.find(op, opc, FloatVector::unaryOperations));
+            UN_IMPL.find(op, opc, FloatVector::unaryOperations));
     }
 
     private static final
-    ImplCache<Unary, UnaryMaskedOperation<FloatVector, VectorMask<Float>>>
-        UN_MASKED_IMPL = new ImplCache<>(Unary.class, FloatVector.class);
+    ImplCache<Unary, UnaryOperation<FloatVector, VectorMask<Float>>>
+        UN_IMPL = new ImplCache<>(Unary.class, FloatVector.class);
 
-    private static UnaryMaskedOperation<FloatVector, VectorMask<Float>> unaryOperations(int opc_) {
+    private static UnaryOperation<FloatVector, VectorMask<Float>> unaryOperations(int opc_) {
         switch (opc_) {
             case VECTOR_OP_NEG: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (float) -a);
@@ -669,10 +669,10 @@ public abstract class FloatVector extends AbstractVector<Float> {
         }
 
         int opc = opCode(op);
-        return VectorSupport.binaryMaskedOp(
+        return VectorSupport.binaryOp(
             opc, getClass(), null, float.class, length(),
             this, that, null,
-            BIN_MASKED_IMPL.find(op, opc, FloatVector::binaryOperations));
+            BIN_IMPL.find(op, opc, FloatVector::binaryOperations));
     }
 
     /**
@@ -700,17 +700,17 @@ public abstract class FloatVector extends AbstractVector<Float> {
         }
 
         int opc = opCode(op);
-        return VectorSupport.binaryMaskedOp(
+        return VectorSupport.binaryOp(
             opc, getClass(), maskClass, float.class, length(),
             this, that, m,
-            BIN_MASKED_IMPL.find(op, opc, FloatVector::binaryOperations));
+            BIN_IMPL.find(op, opc, FloatVector::binaryOperations));
     }
 
     private static final
-    ImplCache<Binary, BinaryMaskedOperation<FloatVector, VectorMask<Float>>>
-        BIN_MASKED_IMPL = new ImplCache<>(Binary.class, FloatVector.class);
+    ImplCache<Binary, BinaryOperation<FloatVector, VectorMask<Float>>>
+        BIN_IMPL = new ImplCache<>(Binary.class, FloatVector.class);
 
-    private static BinaryMaskedOperation<FloatVector, VectorMask<Float>> binaryOperations(int opc_) {
+    private static BinaryOperation<FloatVector, VectorMask<Float>> binaryOperations(int opc_) {
         switch (opc_) {
             case VECTOR_OP_ADD: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> (float)(a + b));
@@ -875,10 +875,10 @@ public abstract class FloatVector extends AbstractVector<Float> {
         that.check(this);
         tother.check(this);
         int opc = opCode(op);
-        return VectorSupport.ternaryMaskedOp(
+        return VectorSupport.ternaryOp(
             opc, getClass(), null, float.class, length(),
             this, that, tother, null,
-            TERN_MASKED_IMPL.find(op, opc, FloatVector::ternaryOperations));
+            TERN_IMPL.find(op, opc, FloatVector::ternaryOperations));
     }
 
     /**
@@ -910,17 +910,17 @@ public abstract class FloatVector extends AbstractVector<Float> {
         m.check(maskClass, this);
 
         int opc = opCode(op);
-        return VectorSupport.ternaryMaskedOp(
+        return VectorSupport.ternaryOp(
             opc, getClass(), maskClass, float.class, length(),
             this, that, tother, m,
-            TERN_MASKED_IMPL.find(op, opc, FloatVector::ternaryOperations));
+            TERN_IMPL.find(op, opc, FloatVector::ternaryOperations));
     }
 
     private static final
-    ImplCache<Ternary, TernaryMaskedOperation<FloatVector, VectorMask<Float>>>
-        TERN_MASKED_IMPL = new ImplCache<>(Ternary.class, FloatVector.class);
+    ImplCache<Ternary, TernaryOperation<FloatVector, VectorMask<Float>>>
+        TERN_IMPL = new ImplCache<>(Ternary.class, FloatVector.class);
 
-    private static TernaryMaskedOperation<FloatVector, VectorMask<Float>> ternaryOperations(int opc_) {
+    private static TernaryOperation<FloatVector, VectorMask<Float>> ternaryOperations(int opc_) {
         switch (opc_) {
             case VECTOR_OP_FMA: return (v0, v1_, v2_, m) ->
                     v0.tOp(v1_, v2_, m, (i, a, b, c) -> Math.fma(a, b, c));

@@ -247,14 +247,14 @@ public class VectorSupport {
     @IntrinsicCandidate
     public static
     <V, M>
-    V unaryMaskedOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass,
-                    Class<?> elementType, int length, V v, M m,
-                    UnaryMaskedOperation<V, M> defaultImpl) {
+    V unaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass,
+              Class<?> elementType, int length, V v, M m,
+              UnaryOperation<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.apply(v, m);
     }
 
-    public interface UnaryMaskedOperation<V, M> {
+    public interface UnaryOperation<V, M> {
         V apply(V v, M mask);
     }
 
@@ -263,14 +263,14 @@ public class VectorSupport {
     @IntrinsicCandidate
     public static
     <V, M>
-    V binaryMaskedOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass,
-                     Class<?> elementType, int length, V v1, V v2, M m,
-                     BinaryMaskedOperation<V, M> defaultImpl) {
+    V binaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass,
+               Class<?> elementType, int length, V v1, V v2, M m,
+               BinaryOperation<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.apply(v1, v2, m);
     }
 
-    public interface BinaryMaskedOperation<V, M> {
+    public interface BinaryOperation<V, M> {
         V apply(V v1, V v2, M mask);
     }
 
@@ -279,14 +279,14 @@ public class VectorSupport {
     @IntrinsicCandidate
     public static
     <V, M>
-    V ternaryMaskedOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass,
-                      Class<?> elementType, int length, V v1, V v2, V v3, M m,
-                      TernaryMaskedOperation<V, M> defaultImpl) {
+    V ternaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass,
+                Class<?> elementType, int length, V v1, V v2, V v3, M m,
+                TernaryOperation<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.apply(v1, v2, v3, m);
     }
 
-    public interface TernaryMaskedOperation<V, M> {
+    public interface TernaryOperation<V, M> {
         V apply(V v1, V v2, V v3, M mask);
     }
 

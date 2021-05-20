@@ -565,10 +565,10 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             }
         }
         int opc = opCode(op);
-        return VectorSupport.unaryMaskedOp(
+        return VectorSupport.unaryOp(
             opc, getClass(), null, byte.class, length(),
             this, null,
-            UN_MASKED_IMPL.find(op, opc, ByteVector::unaryOperations));
+            UN_IMPL.find(op, opc, ByteVector::unaryOperations));
     }
 
     /**
@@ -593,17 +593,17 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             }
         }
         int opc = opCode(op);
-        return VectorSupport.unaryMaskedOp(
+        return VectorSupport.unaryOp(
             opc, getClass(), maskClass, byte.class, length(),
             this, m,
-            UN_MASKED_IMPL.find(op, opc, ByteVector::unaryOperations));
+            UN_IMPL.find(op, opc, ByteVector::unaryOperations));
     }
 
     private static final
-    ImplCache<Unary, UnaryMaskedOperation<ByteVector, VectorMask<Byte>>>
-        UN_MASKED_IMPL = new ImplCache<>(Unary.class, ByteVector.class);
+    ImplCache<Unary, UnaryOperation<ByteVector, VectorMask<Byte>>>
+        UN_IMPL = new ImplCache<>(Unary.class, ByteVector.class);
 
-    private static UnaryMaskedOperation<ByteVector, VectorMask<Byte>> unaryOperations(int opc_) {
+    private static UnaryOperation<ByteVector, VectorMask<Byte>> unaryOperations(int opc_) {
         switch (opc_) {
             case VECTOR_OP_NEG: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (byte) -a);
@@ -662,10 +662,10 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         }
 
         int opc = opCode(op);
-        return VectorSupport.binaryMaskedOp(
+        return VectorSupport.binaryOp(
             opc, getClass(), null, byte.class, length(),
             this, that, null,
-            BIN_MASKED_IMPL.find(op, opc, ByteVector::binaryOperations));
+            BIN_IMPL.find(op, opc, ByteVector::binaryOperations));
     }
 
     /**
@@ -716,17 +716,17 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         }
 
         int opc = opCode(op);
-        return VectorSupport.binaryMaskedOp(
+        return VectorSupport.binaryOp(
             opc, getClass(), maskClass, byte.class, length(),
             this, that, m,
-            BIN_MASKED_IMPL.find(op, opc, ByteVector::binaryOperations));
+            BIN_IMPL.find(op, opc, ByteVector::binaryOperations));
     }
 
     private static final
-    ImplCache<Binary, BinaryMaskedOperation<ByteVector, VectorMask<Byte>>>
-        BIN_MASKED_IMPL = new ImplCache<>(Binary.class, ByteVector.class);
+    ImplCache<Binary, BinaryOperation<ByteVector, VectorMask<Byte>>>
+        BIN_IMPL = new ImplCache<>(Binary.class, ByteVector.class);
 
-    private static BinaryMaskedOperation<ByteVector, VectorMask<Byte>> binaryOperations(int opc_) {
+    private static BinaryOperation<ByteVector, VectorMask<Byte>> binaryOperations(int opc_) {
         switch (opc_) {
             case VECTOR_OP_ADD: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> (byte)(a + b));
@@ -961,10 +961,10 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             return this.lanewise(XOR, that);
         }
         int opc = opCode(op);
-        return VectorSupport.ternaryMaskedOp(
+        return VectorSupport.ternaryOp(
             opc, getClass(), null, byte.class, length(),
             this, that, tother, null,
-            TERN_MASKED_IMPL.find(op, opc, ByteVector::ternaryOperations));
+            TERN_IMPL.find(op, opc, ByteVector::ternaryOperations));
     }
 
     /**
@@ -1001,17 +1001,17 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             return this.lanewise(XOR, that, m);
         }
         int opc = opCode(op);
-        return VectorSupport.ternaryMaskedOp(
+        return VectorSupport.ternaryOp(
             opc, getClass(), maskClass, byte.class, length(),
             this, that, tother, m,
-            TERN_MASKED_IMPL.find(op, opc, ByteVector::ternaryOperations));
+            TERN_IMPL.find(op, opc, ByteVector::ternaryOperations));
     }
 
     private static final
-    ImplCache<Ternary, TernaryMaskedOperation<ByteVector, VectorMask<Byte>>>
-        TERN_MASKED_IMPL = new ImplCache<>(Ternary.class, ByteVector.class);
+    ImplCache<Ternary, TernaryOperation<ByteVector, VectorMask<Byte>>>
+        TERN_IMPL = new ImplCache<>(Ternary.class, ByteVector.class);
 
-    private static TernaryMaskedOperation<ByteVector, VectorMask<Byte>> ternaryOperations(int opc_) {
+    private static TernaryOperation<ByteVector, VectorMask<Byte>> ternaryOperations(int opc_) {
         switch (opc_) {
             default: return null;
         }

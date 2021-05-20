@@ -205,23 +205,23 @@ static bool is_klass_initialized(const TypeInstPtr* vec_klass) {
 
 // public static
 // <V, M>
-// V unaryMaskedOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
-//                 int length, V v, M m,
-//                 UnaryMaskedOperation<V, M> defaultImpl) {
+// V unaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
+//           int length, V v, M m,
+//           UnaryOperation<V, M> defaultImpl) {
 //
 // public static
 // <V, M>
-// V binaryMaskedOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
-//                  int length, V v1, V v2, M m,
-//                  BinaryMaskedOperation<V, M> defaultImpl) {
+// V binaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
+//            int length, V v1, V v2, M m,
+//            BinaryOperation<V, M> defaultImpl) {
 //
 // public static
 // <V, M>
-// V ternaryMaskedOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
-//                   int length, V v1, V v2, V v3, M m,
-//                   TernaryMaskedOperation<V, M> defaultImpl) {
+// V ternaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
+//             int length, V v1, V v2, V v3, M m,
+//             TernaryOperation<V, M> defaultImpl) {
 //
-bool LibraryCallKit::inline_vector_nary_masked_operation(int n) {
+bool LibraryCallKit::inline_vector_nary_operation(int n) {
   const TypeInt*     opr          = gvn().type(argument(0))->isa_int();
   const TypeInstPtr* vector_klass = gvn().type(argument(1))->isa_instptr();
   const TypeInstPtr* mask_klass   = gvn().type(argument(2))->isa_instptr();

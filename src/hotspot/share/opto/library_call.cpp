@@ -627,12 +627,12 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_minD:
     return inline_fp_min_max(intrinsic_id());
 
-  case vmIntrinsics::_VectorUnaryMaskedOp:
-    return inline_vector_nary_masked_operation(1);
-  case vmIntrinsics::_VectorBinaryMaskedOp:
-    return inline_vector_nary_masked_operation(2);
-  case vmIntrinsics::_VectorTernaryMaskedOp:
-    return inline_vector_nary_masked_operation(3);
+  case vmIntrinsics::_VectorUnaryOp:
+    return inline_vector_nary_operation(1);
+  case vmIntrinsics::_VectorBinaryOp:
+    return inline_vector_nary_operation(2);
+  case vmIntrinsics::_VectorTernaryOp:
+    return inline_vector_nary_operation(3);
   case vmIntrinsics::_VectorBroadcastCoerced:
     return inline_vector_broadcast_coerced();
   case vmIntrinsics::_VectorShuffleIota:
