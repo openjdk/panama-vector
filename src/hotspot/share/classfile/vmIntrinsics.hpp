@@ -849,14 +849,15 @@ class methodHandle;
                                       "Ljava/lang/Object;ILjdk/internal/vm/vector/VectorSupport$StoreVectorOperation;)V")                      \
    do_name(vector_store_op_name,     "store")                                                                                                  \
                                                                                                                                                \
-  do_intrinsic(_VectorStoreMaskedOp, jdk_internal_vm_vector_VectorSupport, vector_store_masked_op_name, vector_store_masked_op_sig, F_S)             \
-   do_signature(vector_store_masked_op_sig, "(Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Object;JLjdk/internal/vm/vector/VectorSupport$Vector;"    \
+  do_intrinsic(_VectorStoreMaskedOp, jdk_internal_vm_vector_VectorSupport, vector_store_masked_op_name, vector_store_masked_op_sig, F_S)       \
+   do_signature(vector_store_masked_op_sig, "(Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Object;JLjdk/internal/vm/vector/VectorSupport$Vector;"  \
                                              "Ljdk/internal/vm/vector/VectorSupport$VectorMask;Ljava/lang/Object;I"                            \
                                              "Ljdk/internal/vm/vector/VectorSupport$StoreVectorMaskedOperation;)V")                            \
    do_name(vector_store_masked_op_name,     "storeMasked")                                                                                     \
                                                                                                                                                \
-  do_intrinsic(_VectorReductionCoerced, jdk_internal_vm_vector_VectorSupport, vector_reduction_coerced_name, vector_reduction_coerced_sig, F_S) \
-   do_signature(vector_reduction_coerced_sig, "(ILjava/lang/Class;Ljava/lang/Class;ILjdk/internal/vm/vector/VectorSupport$Vector;Ljava/util/function/Function;)J") \
+  do_intrinsic(_VectorReductionCoerced, jdk_internal_vm_vector_VectorSupport, vector_reduction_coerced_name, vector_reduction_coerced_sig, F_S)\
+   do_signature(vector_reduction_coerced_sig, "(ILjava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Object;Ljava/lang/Object;"     \
+                                               "Ljdk/internal/vm/vector/VectorSupport$ReductionOperation;)J")                                  \
    do_name(vector_reduction_coerced_name, "reductionCoerced")                                                                                  \
                                                                                                                                                \
   do_intrinsic(_VectorTest, jdk_internal_vm_vector_VectorSupport, vector_test_name, vector_test_sig, F_S)                                      \

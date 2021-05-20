@@ -287,7 +287,22 @@ public abstract class LongVector extends AbstractVector<Long> {
 
     /*package-private*/
     abstract
-    long rOp(long v, FBinOp f);
+    long rOp(long v, VectorMask<Long> m, FBinOp f);
+
+    @ForceInline
+    final
+    long rOpTemplate(long v, VectorMask<Long> m, FBinOp f) {
+        if (m == null) {
+            return rOpTemplate(v, f);
+        }
+        long[] vec = vec();
+        boolean[] mbits = ((AbstractMask<Long>)m).getBits();
+        for (int i = 0; i < vec.length; i++) {
+            v = mbits[i] ? f.apply(i, v, vec[i]) : v;
+        }
+        return v;
+    }
+
     @ForceInline
     final
     long rOpTemplate(long v, FBinOp f) {
@@ -2373,9 +2388,18 @@ public abstract class LongVector extends AbstractVector<Long> {
     @ForceInline
     final
     long reduceLanesTemplate(VectorOperators.Associative op,
+                               Class<? extends VectorMask<Long>> maskClass,
                                VectorMask<Long> m) {
-        LongVector v = reduceIdentityVector(op).blend(this, m);
-        return v.reduceLanesTemplate(op);
+        m.check(maskClass, this);
+        if (op == FIRST_NONZERO) {
+            LongVector v = reduceIdentityVector(op).blend(this, m);
+            return v.reduceLanesTemplate(op);
+        }
+        int opc = opCode(op);
+        return fromBits(VectorSupport.reductionCoerced(
+            opc, getClass(), maskClass, long.class, length(),
+            this, m,
+            REDUCE_IMPL.find(op, opc, LongVector::reductionOperations)));
     }
 
     /*package-private*/
@@ -2390,30 +2414,34 @@ public abstract class LongVector extends AbstractVector<Long> {
         }
         int opc = opCode(op);
         return fromBits(VectorSupport.reductionCoerced(
-            opc, getClass(), long.class, length(),
-            this,
-            REDUCE_IMPL.find(op, opc, (opc_) -> {
-              switch (opc_) {
-              case VECTOR_OP_ADD: return v ->
-                      toBits(v.rOp((long)0, (i, a, b) -> (long)(a + b)));
-              case VECTOR_OP_MUL: return v ->
-                      toBits(v.rOp((long)1, (i, a, b) -> (long)(a * b)));
-              case VECTOR_OP_MIN: return v ->
-                      toBits(v.rOp(MAX_OR_INF, (i, a, b) -> (long) Math.min(a, b)));
-              case VECTOR_OP_MAX: return v ->
-                      toBits(v.rOp(MIN_OR_INF, (i, a, b) -> (long) Math.max(a, b)));
-              case VECTOR_OP_AND: return v ->
-                      toBits(v.rOp((long)-1, (i, a, b) -> (long)(a & b)));
-              case VECTOR_OP_OR: return v ->
-                      toBits(v.rOp((long)0, (i, a, b) -> (long)(a | b)));
-              case VECTOR_OP_XOR: return v ->
-                      toBits(v.rOp((long)0, (i, a, b) -> (long)(a ^ b)));
-              default: return null;
-              }})));
+            opc, getClass(), null, long.class, length(),
+            this, null,
+            REDUCE_IMPL.find(op, opc, LongVector::reductionOperations)));
     }
+
     private static final
-    ImplCache<Associative,Function<LongVector,Long>> REDUCE_IMPL
-        = new ImplCache<>(Associative.class, LongVector.class);
+    ImplCache<Associative, ReductionOperation<LongVector, VectorMask<Long>>>
+        REDUCE_IMPL = new ImplCache<>(Associative.class, LongVector.class);
+
+    private static ReductionOperation<LongVector, VectorMask<Long>> reductionOperations(int opc_) {
+        switch (opc_) {
+            case VECTOR_OP_ADD: return (v, m) ->
+                    toBits(v.rOp((long)0, m, (i, a, b) -> (long)(a + b)));
+            case VECTOR_OP_MUL: return (v, m) ->
+                    toBits(v.rOp((long)1, m, (i, a, b) -> (long)(a * b)));
+            case VECTOR_OP_MIN: return (v, m) ->
+                    toBits(v.rOp(MAX_OR_INF, m, (i, a, b) -> (long) Math.min(a, b)));
+            case VECTOR_OP_MAX: return (v, m) ->
+                    toBits(v.rOp(MIN_OR_INF, m, (i, a, b) -> (long) Math.max(a, b)));
+            case VECTOR_OP_AND: return (v, m) ->
+                    toBits(v.rOp((long)-1, m, (i, a, b) -> (long)(a & b)));
+            case VECTOR_OP_OR: return (v, m) ->
+                    toBits(v.rOp((long)0, m, (i, a, b) -> (long)(a | b)));
+            case VECTOR_OP_XOR: return (v, m) ->
+                    toBits(v.rOp((long)0, m, (i, a, b) -> (long)(a ^ b)));
+            default: return null;
+        }
+    }
 
     private
     @ForceInline

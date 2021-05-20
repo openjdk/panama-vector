@@ -202,13 +202,18 @@ public class VectorSupport {
 
     @IntrinsicCandidate
     public static
-    <V extends Vector<?>>
-    long reductionCoerced(int oprId, Class<?> vectorClass, Class<?> elementType, int length,
-                          V v,
-                          Function<V,Long> defaultImpl) {
+    <V, M>
+    long reductionCoerced(int oprId, Class<? extends V> vectorClass, Class<? extends M> maskClass,
+                          Class<?> elementType, int length, V v, M m,
+                          ReductionOperation<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(v);
+        return defaultImpl.apply(v, m);
     }
+
+    public interface ReductionOperation<V, M> {
+        long apply(V v, M mask);
+    }
+
 
     /* ============================================================================ */
 
