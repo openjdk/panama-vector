@@ -275,6 +275,12 @@ final class Double512Vector extends DoubleVector {
 
     @Override
     @ForceInline
+    public Double512Vector lanewise(Unary op, VectorMask<Double> m) {
+        return (Double512Vector) super.lanewiseTemplate(op, Double512Mask.class, m);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public Double512Vector lanewise(Binary op, Vector<Double> v) {
         return (Double512Vector) super.lanewiseTemplate(op, v);  // specialize
     }
@@ -291,8 +297,16 @@ final class Double512Vector extends DoubleVector {
     @ForceInline
     public final
     Double512Vector
-    lanewise(VectorOperators.Ternary op, Vector<Double> v1, Vector<Double> v2) {
+    lanewise(Ternary op, Vector<Double> v1, Vector<Double> v2) {
         return (Double512Vector) super.lanewiseTemplate(op, v1, v2);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public final
+    Double512Vector
+    lanewise(Ternary op, Vector<Double> v1, Vector<Double> v2, VectorMask<Double> m) {
+        return (Double512Vector) super.lanewiseTemplate(op, Double512Mask.class, v1, v2, m);  // specialize
     }
 
     @Override
@@ -641,9 +655,9 @@ final class Double512Vector extends DoubleVector {
         public Double512Mask and(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             Double512Mask m = (Double512Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, Double512Mask.class, long.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Double512Mask.class, null, long.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
@@ -651,9 +665,9 @@ final class Double512Vector extends DoubleVector {
         public Double512Mask or(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             Double512Mask m = (Double512Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, Double512Mask.class, long.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Double512Mask.class, null, long.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @ForceInline
@@ -661,9 +675,9 @@ final class Double512Vector extends DoubleVector {
         Double512Mask xor(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             Double512Mask m = (Double512Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, Double512Mask.class, long.class, VLENGTH,
-                                          this, m,
-                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Double512Mask.class, null, long.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
 
         // Reductions

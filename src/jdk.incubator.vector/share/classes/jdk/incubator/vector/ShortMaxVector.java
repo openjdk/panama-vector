@@ -275,6 +275,12 @@ final class ShortMaxVector extends ShortVector {
 
     @Override
     @ForceInline
+    public ShortMaxVector lanewise(Unary op, VectorMask<Short> m) {
+        return (ShortMaxVector) super.lanewiseTemplate(op, ShortMaxMask.class, m);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public ShortMaxVector lanewise(Binary op, Vector<Short> v) {
         return (ShortMaxVector) super.lanewiseTemplate(op, v);  // specialize
     }
@@ -297,8 +303,16 @@ final class ShortMaxVector extends ShortVector {
     @ForceInline
     public final
     ShortMaxVector
-    lanewise(VectorOperators.Ternary op, Vector<Short> v1, Vector<Short> v2) {
+    lanewise(Ternary op, Vector<Short> v1, Vector<Short> v2) {
         return (ShortMaxVector) super.lanewiseTemplate(op, v1, v2);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public final
+    ShortMaxVector
+    lanewise(Ternary op, Vector<Short> v1, Vector<Short> v2, VectorMask<Short> m) {
+        return (ShortMaxVector) super.lanewiseTemplate(op, ShortMaxMask.class, v1, v2, m);  // specialize
     }
 
     @Override
@@ -631,9 +645,9 @@ final class ShortMaxVector extends ShortVector {
         public ShortMaxMask and(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             ShortMaxMask m = (ShortMaxMask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, ShortMaxMask.class, short.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
+            return VectorSupport.binaryOp(VECTOR_OP_AND, ShortMaxMask.class, null, short.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
@@ -641,9 +655,9 @@ final class ShortMaxVector extends ShortVector {
         public ShortMaxMask or(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             ShortMaxMask m = (ShortMaxMask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, ShortMaxMask.class, short.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
+            return VectorSupport.binaryOp(VECTOR_OP_OR, ShortMaxMask.class, null, short.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @ForceInline
@@ -651,9 +665,9 @@ final class ShortMaxVector extends ShortVector {
         ShortMaxMask xor(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             ShortMaxMask m = (ShortMaxMask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, ShortMaxMask.class, short.class, VLENGTH,
-                                          this, m,
-                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, ShortMaxMask.class, null, short.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
 
         // Reductions

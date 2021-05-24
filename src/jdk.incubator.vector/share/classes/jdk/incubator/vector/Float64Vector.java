@@ -275,6 +275,12 @@ final class Float64Vector extends FloatVector {
 
     @Override
     @ForceInline
+    public Float64Vector lanewise(Unary op, VectorMask<Float> m) {
+        return (Float64Vector) super.lanewiseTemplate(op, Float64Mask.class, m);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public Float64Vector lanewise(Binary op, Vector<Float> v) {
         return (Float64Vector) super.lanewiseTemplate(op, v);  // specialize
     }
@@ -291,8 +297,16 @@ final class Float64Vector extends FloatVector {
     @ForceInline
     public final
     Float64Vector
-    lanewise(VectorOperators.Ternary op, Vector<Float> v1, Vector<Float> v2) {
+    lanewise(Ternary op, Vector<Float> v1, Vector<Float> v2) {
         return (Float64Vector) super.lanewiseTemplate(op, v1, v2);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public final
+    Float64Vector
+    lanewise(Ternary op, Vector<Float> v1, Vector<Float> v2, VectorMask<Float> m) {
+        return (Float64Vector) super.lanewiseTemplate(op, Float64Mask.class, v1, v2, m);  // specialize
     }
 
     @Override
@@ -629,9 +643,9 @@ final class Float64Vector extends FloatVector {
         public Float64Mask and(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             Float64Mask m = (Float64Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, Float64Mask.class, int.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Float64Mask.class, null, int.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
@@ -639,9 +653,9 @@ final class Float64Vector extends FloatVector {
         public Float64Mask or(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             Float64Mask m = (Float64Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, Float64Mask.class, int.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Float64Mask.class, null, int.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @ForceInline
@@ -649,9 +663,9 @@ final class Float64Vector extends FloatVector {
         Float64Mask xor(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             Float64Mask m = (Float64Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, Float64Mask.class, int.class, VLENGTH,
-                                          this, m,
-                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Float64Mask.class, null, int.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
 
         // Reductions

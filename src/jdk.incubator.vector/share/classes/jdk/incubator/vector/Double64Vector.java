@@ -275,6 +275,12 @@ final class Double64Vector extends DoubleVector {
 
     @Override
     @ForceInline
+    public Double64Vector lanewise(Unary op, VectorMask<Double> m) {
+        return (Double64Vector) super.lanewiseTemplate(op, Double64Mask.class, m);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public Double64Vector lanewise(Binary op, Vector<Double> v) {
         return (Double64Vector) super.lanewiseTemplate(op, v);  // specialize
     }
@@ -291,8 +297,16 @@ final class Double64Vector extends DoubleVector {
     @ForceInline
     public final
     Double64Vector
-    lanewise(VectorOperators.Ternary op, Vector<Double> v1, Vector<Double> v2) {
+    lanewise(Ternary op, Vector<Double> v1, Vector<Double> v2) {
         return (Double64Vector) super.lanewiseTemplate(op, v1, v2);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public final
+    Double64Vector
+    lanewise(Ternary op, Vector<Double> v1, Vector<Double> v2, VectorMask<Double> m) {
+        return (Double64Vector) super.lanewiseTemplate(op, Double64Mask.class, v1, v2, m);  // specialize
     }
 
     @Override
@@ -627,9 +641,9 @@ final class Double64Vector extends DoubleVector {
         public Double64Mask and(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             Double64Mask m = (Double64Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, Double64Mask.class, long.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Double64Mask.class, null, long.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
@@ -637,9 +651,9 @@ final class Double64Vector extends DoubleVector {
         public Double64Mask or(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             Double64Mask m = (Double64Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, Double64Mask.class, long.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Double64Mask.class, null, long.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @ForceInline
@@ -647,9 +661,9 @@ final class Double64Vector extends DoubleVector {
         Double64Mask xor(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             Double64Mask m = (Double64Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, Double64Mask.class, long.class, VLENGTH,
-                                          this, m,
-                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Double64Mask.class, null, long.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
 
         // Reductions

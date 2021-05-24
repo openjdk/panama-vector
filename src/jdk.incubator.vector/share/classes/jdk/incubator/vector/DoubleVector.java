@@ -171,6 +171,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     final
     DoubleVector uOpTemplate(VectorMask<Double> m,
                                      FUnOp f) {
+        if (m == null) {
+            return uOpTemplate(f);
+        }
         double[] vec = vec();
         double[] res = new double[length()];
         boolean[] mbits = ((AbstractMask<Double>)m).getBits();
@@ -266,6 +269,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                      Vector<Double> o2,
                                      VectorMask<Double> m,
                                      FTriOp f) {
+        if (m == null) {
+            return tOpTemplate(o1, o2, f);
+        }
         double[] res = new double[length()];
         double[] vec1 = this.vec();
         double[] vec2 = ((DoubleVector)o1).vec();
@@ -554,61 +560,80 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         }
         int opc = opCode(op);
         return VectorSupport.unaryOp(
-            opc, getClass(), double.class, length(),
-            this,
-            UN_IMPL.find(op, opc, (opc_) -> {
-              switch (opc_) {
-                case VECTOR_OP_NEG: return v0 ->
-                        v0.uOp((i, a) -> (double) -a);
-                case VECTOR_OP_ABS: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.abs(a));
-                case VECTOR_OP_SIN: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.sin(a));
-                case VECTOR_OP_COS: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.cos(a));
-                case VECTOR_OP_TAN: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.tan(a));
-                case VECTOR_OP_ASIN: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.asin(a));
-                case VECTOR_OP_ACOS: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.acos(a));
-                case VECTOR_OP_ATAN: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.atan(a));
-                case VECTOR_OP_EXP: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.exp(a));
-                case VECTOR_OP_LOG: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.log(a));
-                case VECTOR_OP_LOG10: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.log10(a));
-                case VECTOR_OP_SQRT: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.sqrt(a));
-                case VECTOR_OP_CBRT: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.cbrt(a));
-                case VECTOR_OP_SINH: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.sinh(a));
-                case VECTOR_OP_COSH: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.cosh(a));
-                case VECTOR_OP_TANH: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.tanh(a));
-                case VECTOR_OP_EXPM1: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.expm1(a));
-                case VECTOR_OP_LOG1P: return v0 ->
-                        v0.uOp((i, a) -> (double) Math.log1p(a));
-                default: return null;
-              }}));
+            opc, getClass(), null, double.class, length(),
+            this, null,
+            UN_IMPL.find(op, opc, DoubleVector::unaryOperations));
     }
-    private static final
-    ImplCache<Unary,UnaryOperator<DoubleVector>> UN_IMPL
-        = new ImplCache<>(Unary.class, DoubleVector.class);
 
     /**
      * {@inheritDoc} <!--workaround-->
      */
-    @ForceInline
-    public final
+    @Override
+    public abstract
     DoubleVector lanewise(VectorOperators.Unary op,
-                                  VectorMask<Double> m) {
-        return blend(lanewise(op), m);
+                                  VectorMask<Double> m);
+    @ForceInline
+    final
+    DoubleVector lanewiseTemplate(VectorOperators.Unary op,
+                                          Class<? extends VectorMask<Double>> maskClass,
+                                          VectorMask<Double> m) {
+        m.check(maskClass, this);
+        if (opKind(op, VO_SPECIAL)) {
+            if (op == ZOMO) {
+                return blend(broadcast(-1), compare(NE, 0).and(m));
+            }
+        }
+        int opc = opCode(op);
+        return VectorSupport.unaryOp(
+            opc, getClass(), maskClass, double.class, length(),
+            this, m,
+            UN_IMPL.find(op, opc, DoubleVector::unaryOperations));
+    }
+
+    private static final
+    ImplCache<Unary, UnaryOperation<DoubleVector, VectorMask<Double>>>
+        UN_IMPL = new ImplCache<>(Unary.class, DoubleVector.class);
+
+    private static UnaryOperation<DoubleVector, VectorMask<Double>> unaryOperations(int opc_) {
+        switch (opc_) {
+            case VECTOR_OP_NEG: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) -a);
+            case VECTOR_OP_ABS: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.abs(a));
+            case VECTOR_OP_SIN: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.sin(a));
+            case VECTOR_OP_COS: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.cos(a));
+            case VECTOR_OP_TAN: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.tan(a));
+            case VECTOR_OP_ASIN: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.asin(a));
+            case VECTOR_OP_ACOS: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.acos(a));
+            case VECTOR_OP_ATAN: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.atan(a));
+            case VECTOR_OP_EXP: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.exp(a));
+            case VECTOR_OP_LOG: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.log(a));
+            case VECTOR_OP_LOG10: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.log10(a));
+            case VECTOR_OP_SQRT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.sqrt(a));
+            case VECTOR_OP_CBRT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.cbrt(a));
+            case VECTOR_OP_SINH: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.sinh(a));
+            case VECTOR_OP_COSH: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.cosh(a));
+            case VECTOR_OP_TANH: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.tanh(a));
+            case VECTOR_OP_EXPM1: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.expm1(a));
+            case VECTOR_OP_LOG1P: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (double) Math.log1p(a));
+            default: return null;
+        }
     }
 
     // Binary lanewise support
@@ -644,10 +669,10 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         }
 
         int opc = opCode(op);
-        return VectorSupport.binaryMaskedOp(
+        return VectorSupport.binaryOp(
             opc, getClass(), null, double.class, length(),
             this, that, null,
-            BIN_MASKED_IMPL.find(op, opc, DoubleVector::binaryOperations));
+            BIN_IMPL.find(op, opc, DoubleVector::binaryOperations));
     }
 
     /**
@@ -675,17 +700,17 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         }
 
         int opc = opCode(op);
-        return VectorSupport.binaryMaskedOp(
+        return VectorSupport.binaryOp(
             opc, getClass(), maskClass, double.class, length(),
             this, that, m,
-            BIN_MASKED_IMPL.find(op, opc, DoubleVector::binaryOperations));
+            BIN_IMPL.find(op, opc, DoubleVector::binaryOperations));
     }
 
     private static final
-    ImplCache<Binary, BinaryMaskedOperation<DoubleVector, VectorMask<Double>>>
-        BIN_MASKED_IMPL = new ImplCache<>(Binary.class, DoubleVector.class);
+    ImplCache<Binary, BinaryOperation<DoubleVector, VectorMask<Double>>>
+        BIN_IMPL = new ImplCache<>(Binary.class, DoubleVector.class);
 
-    private static BinaryMaskedOperation<DoubleVector, VectorMask<Double>> binaryOperations(int opc_) {
+    private static BinaryOperation<DoubleVector, VectorMask<Double>> binaryOperations(int opc_) {
         switch (opc_) {
             case VECTOR_OP_ADD: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> (double)(a + b));
@@ -851,18 +876,10 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         tother.check(this);
         int opc = opCode(op);
         return VectorSupport.ternaryOp(
-            opc, getClass(), double.class, length(),
-            this, that, tother,
-            TERN_IMPL.find(op, opc, (opc_) -> {
-              switch (opc_) {
-                case VECTOR_OP_FMA: return (v0, v1_, v2_) ->
-                        v0.tOp(v1_, v2_, (i, a, b, c) -> Math.fma(a, b, c));
-                default: return null;
-                }}));
+            opc, getClass(), null, double.class, length(),
+            this, that, tother, null,
+            TERN_IMPL.find(op, opc, DoubleVector::ternaryOperations));
     }
-    private static final
-    ImplCache<Ternary,TernaryOperation<DoubleVector>> TERN_IMPL
-        = new ImplCache<>(Ternary.class, DoubleVector.class);
 
     /**
      * {@inheritDoc} <!--workaround-->
@@ -870,13 +887,45 @@ public abstract class DoubleVector extends AbstractVector<Double> {
      * @see #lanewise(VectorOperators.Ternary,Vector,double,VectorMask)
      * @see #lanewise(VectorOperators.Ternary,double,Vector,VectorMask)
      */
-    @ForceInline
-    public final
+    @Override
+    public abstract
     DoubleVector lanewise(VectorOperators.Ternary op,
                                   Vector<Double> v1,
                                   Vector<Double> v2,
-                                  VectorMask<Double> m) {
-        return blend(lanewise(op, v1, v2), m);
+                                  VectorMask<Double> m);
+    @ForceInline
+    final
+    DoubleVector lanewiseTemplate(VectorOperators.Ternary op,
+                                          Class<? extends VectorMask<Double>> maskClass,
+                                          Vector<Double> v1,
+                                          Vector<Double> v2,
+                                          VectorMask<Double> m) {
+        DoubleVector that = (DoubleVector) v1;
+        DoubleVector tother = (DoubleVector) v2;
+        // It's a word: https://www.dictionary.com/browse/tother
+        // See also Chapter 11 of Dickens, Our Mutual Friend:
+        // "Totherest Governor," replied Mr Riderhood...
+        that.check(this);
+        tother.check(this);
+        m.check(maskClass, this);
+
+        int opc = opCode(op);
+        return VectorSupport.ternaryOp(
+            opc, getClass(), maskClass, double.class, length(),
+            this, that, tother, m,
+            TERN_IMPL.find(op, opc, DoubleVector::ternaryOperations));
+    }
+
+    private static final
+    ImplCache<Ternary, TernaryOperation<DoubleVector, VectorMask<Double>>>
+        TERN_IMPL = new ImplCache<>(Ternary.class, DoubleVector.class);
+
+    private static TernaryOperation<DoubleVector, VectorMask<Double>> ternaryOperations(int opc_) {
+        switch (opc_) {
+            case VECTOR_OP_FMA: return (v0, v1_, v2_, m) ->
+                    v0.tOp(v1_, v2_, m, (i, a, b, c) -> Math.fma(a, b, c));
+            default: return null;
+        }
     }
 
     /**
@@ -933,7 +982,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                   double e1,
                                   double e2,
                                   VectorMask<Double> m) {
-        return blend(lanewise(op, e1, e2), m);
+        return lanewise(op, broadcast(e1), broadcast(e2), m);
     }
 
     /**
@@ -991,7 +1040,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                   Vector<Double> v1,
                                   double e2,
                                   VectorMask<Double> m) {
-        return blend(lanewise(op, v1, e2), m);
+        return lanewise(op, v1, broadcast(e2), m);
     }
 
     /**
@@ -1048,7 +1097,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                   double e1,
                                   Vector<Double> v2,
                                   VectorMask<Double> m) {
-        return blend(lanewise(op, e1, v2), m);
+        return lanewise(op, broadcast(e1), v2, m);
     }
 
     // (Thus endeth the Great and Mighty Ternary Ogdoad.)

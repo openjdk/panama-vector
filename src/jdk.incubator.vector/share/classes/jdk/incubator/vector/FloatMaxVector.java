@@ -275,6 +275,12 @@ final class FloatMaxVector extends FloatVector {
 
     @Override
     @ForceInline
+    public FloatMaxVector lanewise(Unary op, VectorMask<Float> m) {
+        return (FloatMaxVector) super.lanewiseTemplate(op, FloatMaxMask.class, m);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public FloatMaxVector lanewise(Binary op, Vector<Float> v) {
         return (FloatMaxVector) super.lanewiseTemplate(op, v);  // specialize
     }
@@ -291,8 +297,16 @@ final class FloatMaxVector extends FloatVector {
     @ForceInline
     public final
     FloatMaxVector
-    lanewise(VectorOperators.Ternary op, Vector<Float> v1, Vector<Float> v2) {
+    lanewise(Ternary op, Vector<Float> v1, Vector<Float> v2) {
         return (FloatMaxVector) super.lanewiseTemplate(op, v1, v2);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public final
+    FloatMaxVector
+    lanewise(Ternary op, Vector<Float> v1, Vector<Float> v2, VectorMask<Float> m) {
+        return (FloatMaxVector) super.lanewiseTemplate(op, FloatMaxMask.class, v1, v2, m);  // specialize
     }
 
     @Override
@@ -626,9 +640,9 @@ final class FloatMaxVector extends FloatVector {
         public FloatMaxMask and(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             FloatMaxMask m = (FloatMaxMask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, FloatMaxMask.class, int.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
+            return VectorSupport.binaryOp(VECTOR_OP_AND, FloatMaxMask.class, null, int.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
@@ -636,9 +650,9 @@ final class FloatMaxVector extends FloatVector {
         public FloatMaxMask or(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             FloatMaxMask m = (FloatMaxMask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, FloatMaxMask.class, int.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
+            return VectorSupport.binaryOp(VECTOR_OP_OR, FloatMaxMask.class, null, int.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @ForceInline
@@ -646,9 +660,9 @@ final class FloatMaxVector extends FloatVector {
         FloatMaxMask xor(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             FloatMaxMask m = (FloatMaxMask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, FloatMaxMask.class, int.class, VLENGTH,
-                                          this, m,
-                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, FloatMaxMask.class, null, int.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
 
         // Reductions

@@ -206,209 +206,24 @@ static bool is_klass_initialized(const TypeInstPtr* vec_klass) {
 }
 
 // public static
-// <VM>
-// VM unaryOp(int oprId, Class<? extends VM> vmClass, Class<?> elementType, int length,
-//            VM vm,
-//            Function<VM, VM> defaultImpl) {
+// <V, M>
+// V unaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
+//           int length, V v, M m,
+//           UnaryOperation<V, M> defaultImpl) {
 //
 // public static
-// <VM>
-// VM binaryOp(int oprId, Class<? extends VM> vmClass, Class<?> elementType, int length,
-//             VM vm1, VM vm2,
-//             BiFunction<VM, VM, VM> defaultImpl) {
+// <V, M>
+// V binaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
+//            int length, V v1, V v2, M m,
+//            BinaryOperation<V, M> defaultImpl) {
 //
 // public static
-// <VM>
-// VM ternaryOp(int oprId, Class<? extends VM> vmClass, Class<?> elementType, int length,
-//              VM vm1, VM vm2, VM vm3,
-//              TernaryOperation<VM> defaultImpl) {
+// <V, M>
+// V ternaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
+//             int length, V v1, V v2, V v3, M m,
+//             TernaryOperation<V, M> defaultImpl) {
 //
 bool LibraryCallKit::inline_vector_nary_operation(int n) {
-  const TypeInt*     opr          = gvn().type(argument(0))->isa_int();
-  const TypeInstPtr* vector_klass = gvn().type(argument(1))->isa_instptr();
-  const TypeInstPtr* elem_klass   = gvn().type(argument(2))->isa_instptr();
-  const TypeInt*     vlen         = gvn().type(argument(3))->isa_int();
-
-  if (opr == NULL || vector_klass == NULL || elem_klass == NULL || vlen == NULL ||
-      !opr->is_con() || vector_klass->const_oop() == NULL || elem_klass->const_oop() == NULL || !vlen->is_con()) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** missing constant: opr=%s vclass=%s etype=%s vlen=%s",
-                    NodeClassNames[argument(0)->Opcode()],
-                    NodeClassNames[argument(1)->Opcode()],
-                    NodeClassNames[argument(2)->Opcode()],
-                    NodeClassNames[argument(3)->Opcode()]);
-    }
-    return false; // not enough info for intrinsification
-  }
-  ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
-  if (!elem_type->is_primitive_type()) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** not a primitive bt=%d", elem_type->basic_type());
-    }
-    return false; // should be primitive type
-  }
-  if (!is_klass_initialized(vector_klass)) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** klass argument not initialized");
-    }
-    return false;
-  }
-  BasicType elem_bt = elem_type->basic_type();
-  int num_elem = vlen->get_con();
-  int opc = VectorSupport::vop2ideal(opr->get_con(), elem_bt);
-  int sopc = VectorNode::opcode(opc, elem_bt);
-  if ((opc != Op_CallLeafVector) && (sopc == 0)) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** operation not supported: opc=%s bt=%s", NodeClassNames[opc], type2name(elem_bt));
-    }
-    return false; // operation not supported
-  }
-  if (num_elem == 1) {
-    if (opc != Op_CallLeafVector || elem_bt != T_DOUBLE) {
-      if (C->print_intrinsics()) {
-        tty->print_cr("  ** not a svml call: arity=%d opc=%d vlen=%d etype=%s",
-                      n, opc, num_elem, type2name(elem_bt));
-      }
-      return false;
-    }
-  }
-  ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
-  const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
-
-  if (opc == Op_CallLeafVector) {
-    if (!UseVectorStubs) {
-      if (C->print_intrinsics()) {
-        tty->print_cr("  ** vector stubs support is disabled");
-      }
-      return false;
-    }
-    if (!Matcher::supports_vector_calling_convention()) {
-      if (C->print_intrinsics()) {
-        tty->print_cr("  ** no vector calling conventions supported");
-      }
-      return false;
-    }
-    if (!Matcher::vector_size_supported(elem_bt, num_elem)) {
-      if (C->print_intrinsics()) {
-        tty->print_cr("  ** vector size (vlen=%d, etype=%s) is not supported",
-                      num_elem, type2name(elem_bt));
-      }
-      return false;
-    }
-  }
-
-  // TODO When mask usage is supported, VecMaskNotUsed needs to be VecMaskUseLoad.
-  if ((sopc != 0) &&
-      !arch_supports_vector(sopc, num_elem, elem_bt, is_vector_mask(vbox_klass) ? VecMaskUseAll : VecMaskNotUsed)) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** not supported: arity=%d opc=%d vlen=%d etype=%s ismask=%d",
-                    n, sopc, num_elem, type2name(elem_bt),
-                    is_vector_mask(vbox_klass) ? 1 : 0);
-    }
-    return false; // not supported
-  }
-
-  Node* opd1 = NULL; Node* opd2 = NULL; Node* opd3 = NULL;
-  switch (n) {
-    case 3: {
-      opd3 = unbox_vector(argument(6), vbox_type, elem_bt, num_elem);
-      if (opd3 == NULL) {
-        if (C->print_intrinsics()) {
-          tty->print_cr("  ** unbox failed v3=%s",
-                        NodeClassNames[argument(6)->Opcode()]);
-        }
-        return false;
-      }
-      // fall-through
-    }
-    case 2: {
-      opd2 = unbox_vector(argument(5), vbox_type, elem_bt, num_elem);
-      if (opd2 == NULL) {
-        if (C->print_intrinsics()) {
-          tty->print_cr("  ** unbox failed v2=%s",
-                        NodeClassNames[argument(5)->Opcode()]);
-        }
-        return false;
-      }
-      // fall-through
-    }
-    case 1: {
-      opd1 = unbox_vector(argument(4), vbox_type, elem_bt, num_elem);
-      if (opd1 == NULL) {
-        if (C->print_intrinsics()) {
-          tty->print_cr("  ** unbox failed v1=%s",
-                        NodeClassNames[argument(4)->Opcode()]);
-        }
-        return false;
-      }
-      break;
-    }
-    default: fatal("unsupported arity: %d", n);
-  }
-
-  Node* operation = NULL;
-  if (opc == Op_CallLeafVector) {
-    assert(UseVectorStubs, "sanity");
-    operation = gen_call_to_svml(opr->get_con(), elem_bt, num_elem, opd1, opd2);
-    if (operation == NULL) {
-      if (C->print_intrinsics()) {
-        tty->print_cr("  ** svml call failed");
-      }
-      return false;
-     }
-  } else {
-    const TypeVect* vt = TypeVect::make(elem_bt, num_elem);
-    switch (n) {
-      case 1: {
-        operation = gvn().transform(VectorNode::make(sopc, opd1, opd2, vt));
-        break;
-      }
-      case 2: {
-        if (is_vector_mask(vbox_klass)) {
-          operation = gvn().transform(VectorNode::make_mask_node(sopc, opd1, opd2, num_elem, elem_bt));
-        } else {
-          operation = gvn().transform(VectorNode::make(sopc, opd1, opd2, vt));
-        }
-        break;
-      }
-      case 3: {
-        operation = gvn().transform(VectorNode::make(sopc, opd1, opd2, opd3, vt));
-        break;
-      }
-      default: fatal("unsupported arity: %d", n);
-    }
-  }
-  // Wrap it up in VectorBox to keep object type information.
-  Node* vbox = box_vector(operation, vbox_type, elem_bt, num_elem);
-  set_result(vbox);
-  C->set_max_vector_size(MAX2(C->max_vector_size(), (uint)(num_elem * type2aelembytes(elem_bt))));
-  return true;
-}
-
-// public static
-// <V, M>
-// V binaryMaskedOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
-//                  int length, V v1, V v2, M m,
-//                  BinaryMaskedOperation<V, M> defaultImpl) {
-//
-// TODO: add the mask support for unary/ternay mask op. After then, the original intrinsics and above method
-// "LibraryCallKit::inline_vector_nary_operation" could be removed.
-//
-// The prototype intrinsics might be:
-//
-// public static
-// <V, M>
-// V unaryMaskedOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
-//                 int length, V v, M m,
-//                 UnaryMaskedOperation<V, M> defaultImpl) {
-//
-// public static
-// <V, M>
-// V ternaryMaskedOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
-//                   int length, V v1, V v2, V v3, M m,
-//                   TernaryMaskedOperation<V, M> defaultImpl) {
-//
-bool LibraryCallKit::inline_vector_nary_masked_operation(int n) {
   const TypeInt*     opr          = gvn().type(argument(0))->isa_int();
   const TypeInstPtr* vector_klass = gvn().type(argument(1))->isa_instptr();
   const TypeInstPtr* mask_klass   = gvn().type(argument(2))->isa_instptr();
@@ -477,6 +292,15 @@ bool LibraryCallKit::inline_vector_nary_masked_operation(int n) {
       tty->print_cr("  ** operation not supported: opc=%s bt=%s", NodeClassNames[opc], type2name(elem_bt));
     }
     return false; // operation not supported
+  }
+  if (num_elem == 1) {
+    if (opc != Op_CallLeafVector || elem_bt != T_DOUBLE) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** not a svml call: arity=%d opc=%d vlen=%d etype=%s",
+                      n, opc, num_elem, type2name(elem_bt));
+      }
+      return false;
+    }
   }
   ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
@@ -593,9 +417,16 @@ bool LibraryCallKit::inline_vector_nary_masked_operation(int n) {
   } else {
     const TypeVect* vt = TypeVect::make(elem_bt, num_elem);
     switch (n) {
-      case 1:
-      case 2: {
+      case 1: {
         operation = VectorNode::make(sopc, opd1, opd2, vt);
+        break;
+      }
+      case 2: {
+        if (is_vector_mask(vbox_klass)) {
+          operation = VectorNode::make_mask_node(sopc, opd1, opd2, num_elem, elem_bt);
+        } else {
+          operation = VectorNode::make(sopc, opd1, opd2, vt);
+        }
         break;
       }
       case 3: {
