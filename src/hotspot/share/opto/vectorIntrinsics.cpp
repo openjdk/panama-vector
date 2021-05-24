@@ -440,6 +440,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
   if (is_masked_op && mask != NULL) {
     if (use_predicate) {
       operation->add_req(mask);
+      operation->add_flag(Node::Flag_is_predicated_vector);
     } else {
       operation = new VectorBlendNode(opd1, operation, mask);
     }
