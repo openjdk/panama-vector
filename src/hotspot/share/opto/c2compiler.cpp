@@ -660,7 +660,6 @@ bool C2Compiler::is_intrinsic_supported(const methodHandle& method, bool is_virt
   case vmIntrinsics::_VectorUnaryOp:
   case vmIntrinsics::_VectorBinaryOp:
   case vmIntrinsics::_VectorTernaryOp:
-  case vmIntrinsics::_VectorBinaryMaskedOp:
   case vmIntrinsics::_VectorBroadcastCoerced:
   case vmIntrinsics::_VectorShuffleIota:
   case vmIntrinsics::_VectorShuffleToVector:

@@ -270,6 +270,12 @@ final class LongMaxVector extends LongVector {
 
     @Override
     @ForceInline
+    public LongMaxVector lanewise(Unary op, VectorMask<Long> m) {
+        return (LongMaxVector) super.lanewiseTemplate(op, LongMaxMask.class, m);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public LongMaxVector lanewise(Binary op, Vector<Long> v) {
         return (LongMaxVector) super.lanewiseTemplate(op, v);  // specialize
     }
@@ -292,8 +298,16 @@ final class LongMaxVector extends LongVector {
     @ForceInline
     public final
     LongMaxVector
-    lanewise(VectorOperators.Ternary op, Vector<Long> v1, Vector<Long> v2) {
+    lanewise(Ternary op, Vector<Long> v1, Vector<Long> v2) {
         return (LongMaxVector) super.lanewiseTemplate(op, v1, v2);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public final
+    LongMaxVector
+    lanewise(Ternary op, Vector<Long> v1, Vector<Long> v2, VectorMask<Long> m) {
+        return (LongMaxVector) super.lanewiseTemplate(op, LongMaxMask.class, v1, v2, m);  // specialize
     }
 
     @Override
@@ -621,9 +635,9 @@ final class LongMaxVector extends LongVector {
         public LongMaxMask and(VectorMask<Long> mask) {
             Objects.requireNonNull(mask);
             LongMaxMask m = (LongMaxMask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, LongMaxMask.class, long.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
+            return VectorSupport.binaryOp(VECTOR_OP_AND, LongMaxMask.class, null, long.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
@@ -631,9 +645,9 @@ final class LongMaxVector extends LongVector {
         public LongMaxMask or(VectorMask<Long> mask) {
             Objects.requireNonNull(mask);
             LongMaxMask m = (LongMaxMask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, LongMaxMask.class, long.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
+            return VectorSupport.binaryOp(VECTOR_OP_OR, LongMaxMask.class, null, long.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @ForceInline
@@ -641,9 +655,9 @@ final class LongMaxVector extends LongVector {
         LongMaxMask xor(VectorMask<Long> mask) {
             Objects.requireNonNull(mask);
             LongMaxMask m = (LongMaxMask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, LongMaxMask.class, long.class, VLENGTH,
-                                          this, m,
-                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, LongMaxMask.class, null, long.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
 
         // Reductions

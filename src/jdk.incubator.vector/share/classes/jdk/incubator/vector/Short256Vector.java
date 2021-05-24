@@ -275,6 +275,12 @@ final class Short256Vector extends ShortVector {
 
     @Override
     @ForceInline
+    public Short256Vector lanewise(Unary op, VectorMask<Short> m) {
+        return (Short256Vector) super.lanewiseTemplate(op, Short256Mask.class, m);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public Short256Vector lanewise(Binary op, Vector<Short> v) {
         return (Short256Vector) super.lanewiseTemplate(op, v);  // specialize
     }
@@ -297,8 +303,16 @@ final class Short256Vector extends ShortVector {
     @ForceInline
     public final
     Short256Vector
-    lanewise(VectorOperators.Ternary op, Vector<Short> v1, Vector<Short> v2) {
+    lanewise(Ternary op, Vector<Short> v1, Vector<Short> v2) {
         return (Short256Vector) super.lanewiseTemplate(op, v1, v2);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public final
+    Short256Vector
+    lanewise(Ternary op, Vector<Short> v1, Vector<Short> v2, VectorMask<Short> m) {
+        return (Short256Vector) super.lanewiseTemplate(op, Short256Mask.class, v1, v2, m);  // specialize
     }
 
     @Override
@@ -661,9 +675,9 @@ final class Short256Vector extends ShortVector {
         public Short256Mask and(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             Short256Mask m = (Short256Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, Short256Mask.class, short.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a & b));
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Short256Mask.class, null, short.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
@@ -671,9 +685,9 @@ final class Short256Vector extends ShortVector {
         public Short256Mask or(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             Short256Mask m = (Short256Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, Short256Mask.class, short.class, VLENGTH,
-                                             this, m,
-                                             (m1, m2) -> m1.bOp(m2, (i, a, b) -> a | b));
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Short256Mask.class, null, short.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @ForceInline
@@ -681,9 +695,9 @@ final class Short256Vector extends ShortVector {
         Short256Mask xor(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             Short256Mask m = (Short256Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, Short256Mask.class, short.class, VLENGTH,
-                                          this, m,
-                                          (m1, m2) -> m1.bOp(m2, (i, a, b) -> a ^ b));
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Short256Mask.class, null, short.class, VLENGTH,
+                                          this, m, null,
+                                          (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
 
         // Reductions

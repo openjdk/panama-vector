@@ -171,6 +171,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
     final
     IntVector uOpTemplate(VectorMask<Integer> m,
                                      FUnOp f) {
+        if (m == null) {
+            return uOpTemplate(f);
+        }
         int[] vec = vec();
         int[] res = new int[length()];
         boolean[] mbits = ((AbstractMask<Integer>)m).getBits();
@@ -266,6 +269,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                      Vector<Integer> o2,
                                      VectorMask<Integer> m,
                                      FTriOp f) {
+        if (m == null) {
+            return tOpTemplate(o1, o2, f);
+        }
         int[] res = new int[length()];
         int[] vec1 = this.vec();
         int[] vec2 = ((IntVector)o1).vec();
@@ -560,29 +566,51 @@ public abstract class IntVector extends AbstractVector<Integer> {
         }
         int opc = opCode(op);
         return VectorSupport.unaryOp(
-            opc, getClass(), int.class, length(),
-            this,
-            UN_IMPL.find(op, opc, (opc_) -> {
-              switch (opc_) {
-                case VECTOR_OP_NEG: return v0 ->
-                        v0.uOp((i, a) -> (int) -a);
-                case VECTOR_OP_ABS: return v0 ->
-                        v0.uOp((i, a) -> (int) Math.abs(a));
-                default: return null;
-              }}));
+            opc, getClass(), null, int.class, length(),
+            this, null,
+            UN_IMPL.find(op, opc, IntVector::unaryOperations));
     }
-    private static final
-    ImplCache<Unary,UnaryOperator<IntVector>> UN_IMPL
-        = new ImplCache<>(Unary.class, IntVector.class);
 
     /**
      * {@inheritDoc} <!--workaround-->
      */
-    @ForceInline
-    public final
+    @Override
+    public abstract
     IntVector lanewise(VectorOperators.Unary op,
-                                  VectorMask<Integer> m) {
-        return blend(lanewise(op), m);
+                                  VectorMask<Integer> m);
+    @ForceInline
+    final
+    IntVector lanewiseTemplate(VectorOperators.Unary op,
+                                          Class<? extends VectorMask<Integer>> maskClass,
+                                          VectorMask<Integer> m) {
+        m.check(maskClass, this);
+        if (opKind(op, VO_SPECIAL)) {
+            if (op == ZOMO) {
+                return blend(broadcast(-1), compare(NE, 0).and(m));
+            }
+            if (op == NOT || op == NEG) {
+                return blend(lanewise(op), m);
+            }
+        }
+        int opc = opCode(op);
+        return VectorSupport.unaryOp(
+            opc, getClass(), maskClass, int.class, length(),
+            this, m,
+            UN_IMPL.find(op, opc, IntVector::unaryOperations));
+    }
+
+    private static final
+    ImplCache<Unary, UnaryOperation<IntVector, VectorMask<Integer>>>
+        UN_IMPL = new ImplCache<>(Unary.class, IntVector.class);
+
+    private static UnaryOperation<IntVector, VectorMask<Integer>> unaryOperations(int opc_) {
+        switch (opc_) {
+            case VECTOR_OP_NEG: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (int) -a);
+            case VECTOR_OP_ABS: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (int) Math.abs(a));
+            default: return null;
+        }
     }
 
     // Binary lanewise support
@@ -634,10 +662,10 @@ public abstract class IntVector extends AbstractVector<Integer> {
         }
 
         int opc = opCode(op);
-        return VectorSupport.binaryMaskedOp(
+        return VectorSupport.binaryOp(
             opc, getClass(), null, int.class, length(),
             this, that, null,
-            BIN_MASKED_IMPL.find(op, opc, IntVector::binaryOperations));
+            BIN_IMPL.find(op, opc, IntVector::binaryOperations));
     }
 
     /**
@@ -688,17 +716,17 @@ public abstract class IntVector extends AbstractVector<Integer> {
         }
 
         int opc = opCode(op);
-        return VectorSupport.binaryMaskedOp(
+        return VectorSupport.binaryOp(
             opc, getClass(), maskClass, int.class, length(),
             this, that, m,
-            BIN_MASKED_IMPL.find(op, opc, IntVector::binaryOperations));
+            BIN_IMPL.find(op, opc, IntVector::binaryOperations));
     }
 
     private static final
-    ImplCache<Binary, BinaryMaskedOperation<IntVector, VectorMask<Integer>>>
-        BIN_MASKED_IMPL = new ImplCache<>(Binary.class, IntVector.class);
+    ImplCache<Binary, BinaryOperation<IntVector, VectorMask<Integer>>>
+        BIN_IMPL = new ImplCache<>(Binary.class, IntVector.class);
 
-    private static BinaryMaskedOperation<IntVector, VectorMask<Integer>> binaryOperations(int opc_) {
+    private static BinaryOperation<IntVector, VectorMask<Integer>> binaryOperations(int opc_) {
         switch (opc_) {
             case VECTOR_OP_ADD: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> (int)(a + b));
@@ -933,16 +961,10 @@ public abstract class IntVector extends AbstractVector<Integer> {
         }
         int opc = opCode(op);
         return VectorSupport.ternaryOp(
-            opc, getClass(), int.class, length(),
-            this, that, tother,
-            TERN_IMPL.find(op, opc, (opc_) -> {
-              switch (opc_) {
-                default: return null;
-                }}));
+            opc, getClass(), null, int.class, length(),
+            this, that, tother, null,
+            TERN_IMPL.find(op, opc, IntVector::ternaryOperations));
     }
-    private static final
-    ImplCache<Ternary,TernaryOperation<IntVector>> TERN_IMPL
-        = new ImplCache<>(Ternary.class, IntVector.class);
 
     /**
      * {@inheritDoc} <!--workaround-->
@@ -950,13 +972,48 @@ public abstract class IntVector extends AbstractVector<Integer> {
      * @see #lanewise(VectorOperators.Ternary,Vector,int,VectorMask)
      * @see #lanewise(VectorOperators.Ternary,int,Vector,VectorMask)
      */
-    @ForceInline
-    public final
+    @Override
+    public abstract
     IntVector lanewise(VectorOperators.Ternary op,
                                   Vector<Integer> v1,
                                   Vector<Integer> v2,
-                                  VectorMask<Integer> m) {
-        return blend(lanewise(op, v1, v2), m);
+                                  VectorMask<Integer> m);
+    @ForceInline
+    final
+    IntVector lanewiseTemplate(VectorOperators.Ternary op,
+                                          Class<? extends VectorMask<Integer>> maskClass,
+                                          Vector<Integer> v1,
+                                          Vector<Integer> v2,
+                                          VectorMask<Integer> m) {
+        IntVector that = (IntVector) v1;
+        IntVector tother = (IntVector) v2;
+        // It's a word: https://www.dictionary.com/browse/tother
+        // See also Chapter 11 of Dickens, Our Mutual Friend:
+        // "Totherest Governor," replied Mr Riderhood...
+        that.check(this);
+        tother.check(this);
+        m.check(maskClass, this);
+
+        if (op == BITWISE_BLEND) {
+            // FIXME: Support this in the JIT.
+            that = this.lanewise(XOR, that).lanewise(AND, tother);
+            return this.lanewise(XOR, that, m);
+        }
+        int opc = opCode(op);
+        return VectorSupport.ternaryOp(
+            opc, getClass(), maskClass, int.class, length(),
+            this, that, tother, m,
+            TERN_IMPL.find(op, opc, IntVector::ternaryOperations));
+    }
+
+    private static final
+    ImplCache<Ternary, TernaryOperation<IntVector, VectorMask<Integer>>>
+        TERN_IMPL = new ImplCache<>(Ternary.class, IntVector.class);
+
+    private static TernaryOperation<IntVector, VectorMask<Integer>> ternaryOperations(int opc_) {
+        switch (opc_) {
+            default: return null;
+        }
     }
 
     /**
@@ -1013,7 +1070,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                   int e1,
                                   int e2,
                                   VectorMask<Integer> m) {
-        return blend(lanewise(op, e1, e2), m);
+        return lanewise(op, broadcast(e1), broadcast(e2), m);
     }
 
     /**
@@ -1071,7 +1128,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                   Vector<Integer> v1,
                                   int e2,
                                   VectorMask<Integer> m) {
-        return blend(lanewise(op, v1, e2), m);
+        return lanewise(op, v1, broadcast(e2), m);
     }
 
     /**
@@ -1128,7 +1185,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                   int e1,
                                   Vector<Integer> v2,
                                   VectorMask<Integer> m) {
-        return blend(lanewise(op, e1, v2), m);
+        return lanewise(op, broadcast(e1), v2, m);
     }
 
     // (Thus endeth the Great and Mighty Ternary Ogdoad.)
