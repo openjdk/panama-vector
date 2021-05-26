@@ -29,8 +29,9 @@ import jdk.incubator.vector.VectorSpecies;
 /*
  * @test
  * @bug 8267375
+ * @requires os.arch == "aarch64" & vm.debug == true & vm.compiler2.enabled
  * @modules jdk.incubator.vector
- * @run main/othervm -XX:UseSVE=2 -XX:CompileCommand=compileonly,compiler.vectorapi.TestVectorInsertByte::* -XX:PrintIdealGraphLevel=3 -XX:PrintIdealGraphFile=TestVectorInsertByte.xml compiler.vectorapi.TestVectorInsertByte
+ * @run main/othervm -XX:CompileCommand=compileonly,compiler.vectorapi.TestVectorInsertByte::* -XX:PrintIdealGraphLevel=3 -XX:PrintIdealGraphFile=TestVectorInsertByte.xml compiler.vectorapi.TestVectorInsertByte
  */
 
 public class TestVectorInsertByte {
