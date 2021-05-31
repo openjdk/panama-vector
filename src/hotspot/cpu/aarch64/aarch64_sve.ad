@@ -4170,7 +4170,6 @@ instruct scatterL(indirect mem, vReg src, vReg idx) %{
 // ------------------------------ Vector Load Gather Partial-------------------------------
 instruct gatherI_partial(vReg dst, indirect mem, vReg idx, pRegGov pTmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 &&
-            n->as_LoadVectorGather()->memory_size() >= 16 &&
             n->as_LoadVectorGather()->memory_size() < MaxVectorSize &&
            (n->bottom_type()->is_vect()->element_basic_type() == T_INT ||
             n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
@@ -4190,7 +4189,6 @@ instruct gatherI_partial(vReg dst, indirect mem, vReg idx, pRegGov pTmp, rFlagsR
 
 instruct gatherL_partial(vReg dst, indirect mem, vReg idx, pRegGov pTmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 &&
-            n->as_LoadVectorGather()->memory_size() >= 16 &&
             n->as_LoadVectorGather()->memory_size() < MaxVectorSize &&
            (n->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
             n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
@@ -4214,7 +4212,6 @@ instruct gatherL_partial(vReg dst, indirect mem, vReg idx, pRegGov pTmp, rFlagsR
 
 instruct scatterI_partial(indirect mem, vReg src, vReg idx, pRegGov pTmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 &&
-            n->as_StoreVectorScatter()->memory_size() >= 16 &&
             n->as_StoreVectorScatter()->memory_size() < MaxVectorSize &&
            (n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT ||
             n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
@@ -4234,7 +4231,6 @@ instruct scatterI_partial(indirect mem, vReg src, vReg idx, pRegGov pTmp, rFlags
 
 instruct scatterL_partial(indirect mem, vReg src, vReg idx, pRegGov pTmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 &&
-            n->as_StoreVectorScatter()->memory_size() >= 16 &&
             n->as_StoreVectorScatter()->memory_size() < MaxVectorSize &&
            (n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
             n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
