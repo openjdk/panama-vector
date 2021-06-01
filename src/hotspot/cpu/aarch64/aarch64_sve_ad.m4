@@ -2424,8 +2424,8 @@ VECTOR_REARRANGE(L, 8, D)
 instruct gatherI(vReg dst, indirect mem, vReg idx) %{
   predicate(UseSVE > 0 &&
             n->as_LoadVectorGather()->memory_size() == MaxVectorSize &&
-           (n->bottom_type()->is_vect()->element_basic_type() == T_INT ||
-            n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
+            (n->bottom_type()->is_vect()->element_basic_type() == T_INT ||
+             n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
   match(Set dst (LoadVectorGather mem idx));
   ins_cost(SVE_COST);
   format %{ "load_vector_gather $dst, $mem, $idx\t# vector load gather (I/F)" %}
@@ -2438,8 +2438,8 @@ instruct gatherI(vReg dst, indirect mem, vReg idx) %{
 instruct gatherL(vReg dst, indirect mem, vReg idx) %{
   predicate(UseSVE > 0 &&
             n->as_LoadVectorGather()->memory_size() == MaxVectorSize &&
-           (n->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
-            n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
+            (n->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
+             n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
   match(Set dst (LoadVectorGather mem idx));
   ins_cost(2 * SVE_COST);
   format %{ "sve_uunpklo $idx, $idx\n\t"
@@ -2451,44 +2451,13 @@ instruct gatherL(vReg dst, indirect mem, vReg idx) %{
   ins_pipe(pipe_slow);
 %}
 
-// ------------------------------ Vector Store Scatter -------------------------------
-
-instruct scatterI(indirect mem, vReg src, vReg idx) %{
-  predicate(UseSVE > 0 &&
-            n->as_StoreVectorScatter()->memory_size() == MaxVectorSize &&
-           (n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT ||
-            n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
-  match(Set mem (StoreVectorScatter mem (Binary src idx)));
-  ins_cost(SVE_COST);
-  format %{ "store_vector_scatter $mem, $idx, $src\t# vector store scatter (I/F)" %}
-  ins_encode %{
-    __ sve_st1w_scatter(as_FloatRegister($src$$reg), ptrue, as_Register($mem$$base), as_FloatRegister($idx$$reg));
-  %}
-  ins_pipe(pipe_slow);
-%}
-
-instruct scatterL(indirect mem, vReg src, vReg idx) %{
-  predicate(UseSVE > 0 &&
-            n->as_StoreVectorScatter()->memory_size() == MaxVectorSize &&
-           (n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
-            n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
-  match(Set mem (StoreVectorScatter mem (Binary src idx)));
-  ins_cost(2 * SVE_COST);
-  format %{ "sve_uunpklo $idx, $idx\n\t"
-            "store_vector_scatter $mem, $idx, $src\t# vector store scatter (L/D)" %}
-  ins_encode %{
-    __ sve_uunpklo(as_FloatRegister($idx$$reg), __ D, as_FloatRegister($idx$$reg));
-    __ sve_st1d_scatter(as_FloatRegister($src$$reg), ptrue, as_Register($mem$$base), as_FloatRegister($idx$$reg));
-  %}
-  ins_pipe(pipe_slow);
-%}
-
 // ------------------------------ Vector Load Gather Partial-------------------------------
+
 instruct gatherI_partial(vReg dst, indirect mem, vReg idx, pRegGov pTmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 &&
             n->as_LoadVectorGather()->memory_size() < MaxVectorSize &&
-           (n->bottom_type()->is_vect()->element_basic_type() == T_INT ||
-            n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
+            (n->bottom_type()->is_vect()->element_basic_type() == T_INT ||
+             n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
   match(Set dst (LoadVectorGather mem idx));
   effect(TEMP pTmp, KILL cr);
   ins_cost(2 * SVE_COST + INSN_COST);
@@ -2506,8 +2475,8 @@ instruct gatherI_partial(vReg dst, indirect mem, vReg idx, pRegGov pTmp, rFlagsR
 instruct gatherL_partial(vReg dst, indirect mem, vReg idx, pRegGov pTmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 &&
             n->as_LoadVectorGather()->memory_size() < MaxVectorSize &&
-           (n->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
-            n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
+            (n->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
+             n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
   match(Set dst (LoadVectorGather mem idx));
   effect(TEMP pTmp, KILL cr);
   ins_cost(3 * SVE_COST + INSN_COST);
@@ -2524,13 +2493,45 @@ instruct gatherL_partial(vReg dst, indirect mem, vReg idx, pRegGov pTmp, rFlagsR
   ins_pipe(pipe_slow);
 %}
 
+// ------------------------------ Vector Store Scatter -------------------------------
+
+instruct scatterI(indirect mem, vReg src, vReg idx) %{
+  predicate(UseSVE > 0 &&
+            n->as_StoreVectorScatter()->memory_size() == MaxVectorSize &&
+            (n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT ||
+             n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
+  match(Set mem (StoreVectorScatter mem (Binary src idx)));
+  ins_cost(SVE_COST);
+  format %{ "store_vector_scatter $mem, $idx, $src\t# vector store scatter (I/F)" %}
+  ins_encode %{
+    __ sve_st1w_scatter(as_FloatRegister($src$$reg), ptrue, as_Register($mem$$base), as_FloatRegister($idx$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct scatterL(indirect mem, vReg src, vReg idx) %{
+  predicate(UseSVE > 0 &&
+            n->as_StoreVectorScatter()->memory_size() == MaxVectorSize &&
+            (n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
+             n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
+  match(Set mem (StoreVectorScatter mem (Binary src idx)));
+  ins_cost(2 * SVE_COST);
+  format %{ "sve_uunpklo $idx, $idx\n\t"
+            "store_vector_scatter $mem, $idx, $src\t# vector store scatter (L/D)" %}
+  ins_encode %{
+    __ sve_uunpklo(as_FloatRegister($idx$$reg), __ D, as_FloatRegister($idx$$reg));
+    __ sve_st1d_scatter(as_FloatRegister($src$$reg), ptrue, as_Register($mem$$base), as_FloatRegister($idx$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
 // ------------------------------ Vector Store Scatter Partial-------------------------------
 
 instruct scatterI_partial(indirect mem, vReg src, vReg idx, pRegGov pTmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 &&
             n->as_StoreVectorScatter()->memory_size() < MaxVectorSize &&
-           (n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT ||
-            n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
+            (n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_INT ||
+             n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_FLOAT));
   match(Set mem (StoreVectorScatter mem (Binary src idx)));
   effect(TEMP pTmp, KILL cr);
   ins_cost(2 * SVE_COST + INSN_COST);
@@ -2548,8 +2549,8 @@ instruct scatterI_partial(indirect mem, vReg src, vReg idx, pRegGov pTmp, rFlags
 instruct scatterL_partial(indirect mem, vReg src, vReg idx, pRegGov pTmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 &&
             n->as_StoreVectorScatter()->memory_size() < MaxVectorSize &&
-           (n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
-            n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
+            (n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
+             n->in(3)->in(1)->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
   match(Set mem (StoreVectorScatter mem (Binary src idx)));
   effect(TEMP pTmp, KILL cr);
   ins_cost(3 * SVE_COST + INSN_COST);
