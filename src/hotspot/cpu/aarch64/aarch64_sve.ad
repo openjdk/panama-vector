@@ -204,13 +204,9 @@ source %{
         case BoolTest::eq: masm.sve_cmpeq(pd, size, pg, zn, zm); break;
         case BoolTest::ne: masm.sve_cmpne(pd, size, pg, zn, zm); break;
         case BoolTest::ge: masm.sve_cmpge(pd, size, pg, zn, zm); break;
-        case BoolTest::uge: masm.sve_cmphs(pd, size, pg, zn, zm); break;
         case BoolTest::gt: masm.sve_cmpgt(pd, size, pg, zn, zm); break;
-        case BoolTest::ugt: masm.sve_cmphi(pd, size, pg, zn, zm); break;
         case BoolTest::le: masm.sve_cmpge(pd, size, pg, zm, zn); break;
-        case BoolTest::ule: masm.sve_cmphs(pd, size, pg, zm, zn); break;
         case BoolTest::lt: masm.sve_cmpgt(pd, size, pg, zm, zn); break;
-        case BoolTest::ult: masm.sve_cmphi(pd, size, pg, zm, zn); break;
         default:
           assert(false, "unsupported");
           ShouldNotReachHere();
