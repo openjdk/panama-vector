@@ -1282,10 +1282,11 @@ dnl
 //-------------------------------- LOAD_IOTA_INDICES----------------------------------
 dnl
 define(`PREDICATE', `ifelse($1, 8,
-`predicate((n->as_Vector()->length() == 2 || n->as_Vector()->length() == 4 ||
-             n->as_Vector()->length() == 8) &&
-             n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);',
-`predicate(n->as_Vector()->length() == 16 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);')')dnl
+`predicate(UseSVE == 0 &&
+           (n->as_Vector()->length() == 2 || n->as_Vector()->length() == 4 ||
+            n->as_Vector()->length() == 8) &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);',
+`predicate(UseSVE == 0 && n->as_Vector()->length() == 16 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);')')dnl
 dnl
 define(`VECTOR_LOAD_CON', `
 instruct loadcon$1B`'(vec$2 dst, immI0 src)

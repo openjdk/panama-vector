@@ -3226,23 +3226,20 @@ public:
   }
 
   // SVE dup imm
-  void sve_dup(FloatRegister Zd, SIMD_RegVariant T, int imm16) {
+  void sve_dup(FloatRegister Zd, SIMD_RegVariant T, int imm8) {
     starti;
     assert(T != Q, "invalid size");
     int sh = 0;
-    unsigned imm = imm16;
-    if (imm16 <= 127 && imm16 >= -128) {
+    if (imm8 <= 127 && imm8 >= -128) {
       sh = 0;
-    } else if (T != B && imm16 <= 32512 && imm16 >= -32768 && (imm16 & 0xff) == 0) {
+    } else if (T != B && imm8 <= 32512 && imm8 >= -32768 && (imm8 & 0xff) == 0) {
       sh = 1;
-      imm = (imm >> 8);
+      imm8 = (imm8 >> 8);
     } else {
       guarantee(false, "invalid immediate");
     }
-    unsigned mask = (1U << 8) - 1;
-    imm &= mask;
     f(0b00100101, 31, 24), f(T, 23, 22), f(0b11100011, 21, 14);
-    f(sh, 13), f(imm, 12, 5), rf(Zd, 0);
+    f(sh, 13), sf(imm8, 12, 5), rf(Zd, 0);
   }
 
   void sve_ptrue(PRegister pd, SIMD_RegVariant esize, int pattern = 0b11111) {
@@ -3251,40 +3248,42 @@ public:
     f(pattern, 9, 5), f(0b0, 4), prf(pd, 0);
   }
 
-   // SVE cpy immediate
-  void sve_cpy(FloatRegister Zd, SIMD_RegVariant T, PRegister Pg, int imm16, bool isMerge) {
+  // SVE cpy general-purpose register
+  void sve_cpy(FloatRegister Zd, SIMD_RegVariant T, PRegister Pg, Register Rn) {
+    starti;
+    assert(T != Q, "invalid size");
+    f(0b00000101, 31, 24), f(T, 23, 22), f(0b101000101, 21, 13);
+    pgrf(Pg, 10), srf(Rn, 5), rf(Zd, 0);
+  }
+
+  // SVE cpy immediate
+  void sve_cpy(FloatRegister Zd, SIMD_RegVariant T, PRegister Pg, int imm8, bool isMerge) {
     starti;
     assert(T != Q, "invalid size");
     int sh = 0;
-    unsigned imm = imm16;
-    if (imm16 <= 127 && imm16 >= -128) {
+    if (imm8 <= 127 && imm8 >= -128) {
       sh = 0;
-    } else if (T != B && imm16 <= 32512 && imm16 >= -32768 && (imm16 & 0xff) == 0) {
+    } else if (T != B && imm8 <= 32512 && imm8 >= -32768 && (imm8 & 0xff) == 0) {
       sh = 1;
-      imm = (imm >> 8);
+      imm8 = (imm8 >> 8);
     } else {
       guarantee(false, "invalid immediate");
     }
-    unsigned mask = (1U << 8) - 1;
-    imm &= mask;
     int m = isMerge ? 1 : 0;
     f(0b00000101, 31, 24), f(T, 23, 22), f(0b01, 21, 20);
-    prf(Pg, 16), f(0b0, 15), f(m, 14), f(sh, 13), f(imm, 12, 5), rf(Zd, 0);
+    prf(Pg, 16), f(0b0, 15), f(m, 14), f(sh, 13), sf(imm8, 12, 5), rf(Zd, 0);
   }
 
-  // SVE vector sel
-  void sve_sel(FloatRegister Zd,
-               SIMD_RegVariant T,
-               PRegister Pg,
-               FloatRegister Zn,
-               FloatRegister Zm) {
+  // SVE sel (vectors)
+  void sve_sel(FloatRegister Zd, SIMD_RegVariant T, PRegister Pg,
+               FloatRegister Zn, FloatRegister Zm) {
     starti;
     assert(T != Q, "invalid size");
     f(0b00000101, 31, 24), f(T, 23, 22), f(0b1, 21), rf(Zm, 16);
     f(0b11, 15, 14), prf(Pg, 10), rf(Zn, 5), rf(Zd, 0);
   }
 
-// SVE compare vector
+// SVE compare vectors
 #define INSN(NAME, op, cond, fp)  \
   void NAME(PRegister Pd, SIMD_RegVariant T, PRegister Pg, FloatRegister Zn, FloatRegister Zm)  { \
     starti;                                                                                       \
@@ -3314,9 +3313,7 @@ public:
   void NAME(PRegister Pd, SIMD_RegVariant T, PRegister Pg, FloatRegister Zn, int imm5) { \
     starti;                                                                              \
     assert(T != Q, "invalid size");                                                      \
-    if (imm5 > 15 || imm5 < -16) {                                                       \
-      guarantee(false, "invalid immediate");                                             \
-    }                                                                                    \
+    guarantee(-16 <= imm5 && imm5 <= 15, "invalid immediate");                           \
     f(0b00100101, 31, 24), f(T, 23, 22), f(0b0, 21), sf(imm5, 20, 16),                   \
     f((cond >> 1) & 0x7, 15, 13), pgrf(Pg, 10), rf(Zn, 5), f(cond & 0x1, 4), prf(Pd, 0); \
   }
@@ -3344,7 +3341,7 @@ public:
   INSN(sve_sunpklo, 0b00);
 #undef INSN
 
-// SVE vector uzp1,uzp2
+// SVE uzp1/uzp2 (vectors)
 #define INSN(NAME, op) \
   void NAME(FloatRegister Zd, SIMD_RegVariant T, FloatRegister Zn, FloatRegister Zm) { \
     starti;                                                                            \
@@ -3377,151 +3374,73 @@ public:
   INSN(sve_whilelsw, 0b111, 0);
 #undef INSN
 
-private:
-
-  void encode_cvtf_T(SIMD_RegVariant T_dst, SIMD_RegVariant T_src,
-                     unsigned& opc, unsigned& opc2) {
-    assert(T_src != B && T_dst != B &&
-           T_src != Q && T_dst != Q, "invalid register variant");
-    if (T_dst != D) {
-      assert(T_dst <= T_src, "invalid register variant");
-    } else {
-      assert(T_src != H, "invalid register variant");
-    }
-    // In most cases we can treat T_dst,T_src as opc,opc2
-    // except following four cases. These cases should be converted
-    // according to Arm's architecture reference manual:
+  // SVE convert signed integer to floating-point (predicated)
+  void sve_scvtf(FloatRegister Zd, SIMD_RegVariant T_dst, PRegister Pg,
+                 FloatRegister Zn, SIMD_RegVariant T_src) {
+    starti;
+    assert(T_src != B && T_dst != B && T_src != Q && T_dst != Q &&
+           (T_src != H || T_dst == T_src), "invalid register variant");
+    int opc = T_dst;
+    int opc2 = T_src;
+    // In most cases we can treat T_dst, T_src as opc, opc2,
+    // except for the following two combinations.
     // +-----+------+---+------------------------------------+
     // | opc | opc2 | U |        Instruction Details         |
     // +-----+------+---+------------------------------------+
-    // |  11 |   00 | 0 | SCVTF — 32-bit to double-precision |
-    // |  11 |   00 | 1 | UCVTF — 32-bit to double-precision |
-    // |  11 |   10 | 0 | SCVTF — 64-bit to single-precision |
-    // |  11 |   10 | 1 | UCVTF — 64-bit to single-precision |
+    // |  11 |   00 | 0 | SCVTF - 32-bit to double-precision |
+    // |  11 |   10 | 0 | SCVTF - 64-bit to single-precision |
     // +-----+------+---+------------------------------------+
-    if (T_dst == S && T_src == D) { // 64-bit to single-precision
-      T_dst = D;
-      T_src = S;
-    } else if (T_dst == D && T_src == S) { // 32-bit to double-precision
-      T_dst = D;
-      T_src = B;
+    if (T_src == S && T_dst == D) {
+      opc = 0b11;
+      opc2 = 0b00;
+    } else if (T_src == D && T_dst == S) {
+      opc = 0b11;
+      opc2 = 0b10;
     }
-    opc = T_dst;
-    opc2 = T_src;
-  }
-public:
-
-// SVE convert integer to floating-point (predicated)
-#define INSN(NAME, sign)                                                \
-  void NAME(FloatRegister Zd, SIMD_RegVariant T_dst, PRegister Pg,      \
-            FloatRegister Zn, SIMD_RegVariant T_src) {                  \
-    starti;                                                             \
-    unsigned opc, opc2;                                                 \
-    encode_cvtf_T(T_dst, T_src, opc, opc2);                             \
-    f(0b01100101, 31, 24), f(opc, 23, 22), f(0b010, 21, 19);            \
-    f(opc2, 18, 17), f(sign, 16), f(0b101, 15, 13);                     \
-    pgrf(Pg, 10), rf(Zn, 5), rf(Zd, 0);                                 \
-  }
-
-  INSN(sve_scvtf, 0b0);
-  INSN(sve_ucvtf, 0b1);
-#undef INSN
-
-private:
-
-  void encode_fcvt_T(SIMD_RegVariant T_src,SIMD_RegVariant T_dst,
-                     unsigned& opc, unsigned& opc2) {
-    assert(T_src != B && T_dst != B &&
-           T_src != Q && T_dst != Q, "invalid register variant");
-    assert(T_src != T_dst, "invalid register variant");
-    if (T_src == S) {
-      if (T_dst == H) {
-        opc = 0b10;
-        opc2 = 0b00;
-      } else if (T_dst == D) {
-        opc = 0b11;
-        opc2 = 0b11;
-      }
-    } else if (T_src == H) {
-      if (T_dst == S) {
-        opc = 0b10;
-        opc2 = 0b01;
-      } else if (T_dst == D) {
-        opc = 0b11;
-        opc2 = 0b01;
-      }
-    } else if (T_src == D) {
-      if (T_dst == H) {
-        opc = 0b11;
-        opc2 = 0b00;
-      } else if (T_dst == S) {
-        opc = 0b11;
-        opc2 = 0b10;
-      }
-    }
-  }
-public:
-
-// SVE floating-point convert precision (predicated)
-  void sve_fcvt(FloatRegister Zd, SIMD_RegVariant T_dst, PRegister Pg,
-            FloatRegister Zn, SIMD_RegVariant T_src) {
-    starti;
-    unsigned opc, opc2;
-    encode_fcvt_T(T_src, T_dst, opc, opc2);
-    f(0b01100101, 31, 24), f(opc, 23, 22), f(0b0010, 21, 18);
-    f(opc2, 17, 16), f(0b101, 15, 13);
+    f(0b01100101, 31, 24), f(opc, 23, 22), f(0b010, 21, 19);
+    f(opc2, 18, 17), f(0b0101, 16, 13);
     pgrf(Pg, 10), rf(Zn, 5), rf(Zd, 0);
   }
 
-private:
-
-  void encode_fcvtz_T (SIMD_RegVariant T_dst, SIMD_RegVariant T_src,
-                       unsigned& opc, unsigned& opc2) {
-    assert(T_src != B && T_dst != B &&
-           T_src != Q && T_dst != Q, "invalid register variant");
-    if (T_src != D) {
-      assert(T_src <= T_dst, "invalid register variant");
-    } else {
-      assert(T_dst != H, "invalid register variant");
+  // SVE floating-point convert to signed integer, rounding toward zero (predicated)
+  void sve_fcvtzs(FloatRegister Zd, SIMD_RegVariant T_dst, PRegister Pg,
+                  FloatRegister Zn, SIMD_RegVariant T_src) {
+    starti;
+    assert(T_src != B && T_dst != B && T_src != Q && T_dst != Q &&
+           (T_dst != H || T_src == H), "invalid register variant");
+    int opc = T_src;
+    int opc2 = T_dst;
+    // In most cases we can treat T_src, T_dst as opc, opc2,
+    // except for the following two combinations.
+    // +-----+------+---+-------------------------------------+
+    // | opc | opc2 | U |         Instruction Details         |
+    // +-----+------+---+-------------------------------------+
+    // |  11 |  10  | 0 | FCVTZS - single-precision to 64-bit |
+    // |  11 |  00  | 0 | FCVTZS - double-precision to 32-bit |
+    // +-----+------+---+-------------------------------------+
+    if (T_src == S && T_dst == D) {
+      opc = 0b11;
+      opc2 = 0b10;
+    } else if (T_src == D && T_dst == S) {
+      opc = 0b11;
+      opc2 = 0b00;
     }
-    // In most cases we can treat T_dst,T_src as opc2,opc
-    // except following four cases. These cases should be converted
-    // according to Arm's architecture reference manual:
-    // +-----+------+---+-------------------------------------+
-    // | opc | opc2 | U |        Instruction Details          |
-    // +-----+------+---+-------------------------------------+
-    // |  11 |   10 | 0 | FCVTZS — Single-precision to 64-bit |
-    // |  11 |   10 | 1 | FCVTZU — Single-precision to 64-bit |
-    // |  11 |   00 | 0 | FCVTZS — Double-precision to 32-bit |
-    // |  11 |   00 | 1 | FCVTZU — Double-precision to 32-bit |
-    // +-----+------+---+-------------------------------------+
-    if (T_dst == D && T_src == S) { // Single-precision to 64-bit
-      T_dst = S;
-      T_src = D;
-    } else if (T_dst == S && T_src == D) { // Double-precision to 32-bit
-      T_dst = B;
-      T_src = D;
-    }
-    opc = T_src;
-    opc2 = T_dst;
-  }
-public:
-
-// SVE floating-point convert to integer (predicated)
-#define INSN(NAME, sign)                                                \
-  void NAME(FloatRegister Zd, SIMD_RegVariant T_dst, PRegister Pg,      \
-            FloatRegister Zn, SIMD_RegVariant T_src) {                  \
-    starti;                                                             \
-    unsigned opc, opc2;                                                 \
-    encode_fcvtz_T(T_dst, T_src, opc, opc2);                            \
-    f(0b01100101, 31, 24), f(opc, 23, 22), f(0b011, 21, 19);            \
-    f(opc2, 18, 17), f(sign, 16), f(0b101, 15, 13);                     \
-    pgrf(Pg, 10), rf(Zn, 5), rf(Zd, 0);                                 \
+    f(0b01100101, 31, 24), f(opc, 23, 22), f(0b011, 21, 19);
+    f(opc2, 18, 17), f(0b0101, 16, 13);
+    pgrf(Pg, 10), rf(Zn, 5), rf(Zd, 0);
   }
 
-  INSN(sve_fcvtzs, 0b0);
-  INSN(sve_fcvtzu, 0b1);
-#undef INSN
+  // SVE floating-point convert precision (predicated)
+  void sve_fcvt(FloatRegister Zd, SIMD_RegVariant T_dst, PRegister Pg,
+                FloatRegister Zn, SIMD_RegVariant T_src) {
+    starti;
+    assert(T_src != B && T_dst != B && T_src != Q && T_dst != Q &&
+           T_src != T_dst, "invalid register variant");
+    guarantee(T_src != H && T_dst != H, "half-precision unsupported");
+    f(0b01100101, 31, 24), f(0b11, 23, 22), f(0b0010, 21, 18);
+    f(T_dst, 17, 16), f(0b101, 15, 13);
+    pgrf(Pg, 10), rf(Zn, 5), rf(Zd, 0);
+  }
 
 // SVE conditionally extract element to general-purpose register
 #define INSN(NAME, before)                                                      \
@@ -3548,24 +3467,15 @@ public:
   INSN(sve_lastb, 0b1);
 #undef INSN
 
-// SVE cpy general-purpose register
-  void sve_cpy(FloatRegister Zd, SIMD_RegVariant T, PRegister Pg, Register Rn) {
-    starti;
-    assert(T != Q, "invalid size");
-    f(0b00000101, 31, 24), f(T, 23, 22), f(0b101000101, 21, 13);
-    pgrf(Pg, 10), srf(Rn, 5), rf(Zd, 0);
-  }
-
-// SVE INDEX (immediates)
-  void sve_index(FloatRegister Zd, SIMD_RegVariant T,
-                 int imm1, int imm2) {
+  // SVE INDEX (immediates)
+  void sve_index(FloatRegister Zd, SIMD_RegVariant T, int imm1, int imm2) {
     starti;
     f(0b00000100, 31, 24), f(T, 23, 22), f(0b1, 21);
     sf(imm2, 20, 16), f(0b010000, 15, 10);
     sf(imm1, 9, 5), rf(Zd, 0);
   }
 
-// SVE programmable table lookup in single vector table
+  // SVE programmable table lookup in single vector table
   void sve_tbl(FloatRegister Zd, SIMD_RegVariant T, FloatRegister Zn, FloatRegister Zm) {
     starti;
     assert(T != Q, "invalid size");
