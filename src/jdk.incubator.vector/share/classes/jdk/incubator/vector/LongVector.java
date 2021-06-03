@@ -2692,8 +2692,7 @@ public abstract class LongVector extends AbstractVector<Long> {
                                    VectorMask<Long> m) {
         LongSpecies vsp = (LongSpecies) species;
         if (offset >= 0 && offset <= (a.length - species.length())) {
-            LongVector zero = vsp.zero();
-            return zero.blend(zero.fromArray0(a, offset), m);
+            return vsp.dummyVector().fromArray0(a, offset, m);
         }
 
         // FIXME: optimize
@@ -3227,6 +3226,23 @@ public abstract class LongVector extends AbstractVector<Long> {
                                     (arr_, off_, i) -> arr_[off_ + i]));
     }
 
+    /*package-private*/
+    abstract
+    LongVector fromArray0(long[] a, int offset, VectorMask<Long> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Long>>
+    LongVector fromArray0Template(Class<M> maskClass, long[] a, int offset, M m) {
+        m.check(species());
+        LongSpecies vsp = vspecies();
+        return VectorSupport.loadMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, arrayAddress(a, offset), m,
+            a, offset, vsp,
+            (arr, off, s, vm) -> s.ldOp(arr, off, (AbstractMask<Long>) vm,
+                                        (arr_, off_, i) -> arr_[off_ + i]));
+    }
+
 
 
     @Override
@@ -3289,6 +3305,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     final
     <M extends VectorMask<Long>>
     void intoArray0Template(Class<M> maskClass, long[] a, int offset, M m) {
+        m.check(species());
         LongSpecies vsp = vspecies();
         VectorSupport.storeMasked(
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
@@ -3298,6 +3315,7 @@ public abstract class LongVector extends AbstractVector<Long> {
             -> v.stOp(arr, off, vm,
                       (arr_, off_, i, e) -> arr_[off_ + i] = e));
     }
+
 
     abstract
     void intoByteArray0(byte[] a, int offset);
@@ -3330,6 +3348,7 @@ public abstract class LongVector extends AbstractVector<Long> {
                         (wb_, o, i, e) -> wb_.putLong(o + i * 8, e));
             });
     }
+
 
     // End of low-level memory operations.
 

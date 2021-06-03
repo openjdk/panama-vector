@@ -2694,8 +2694,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
                                    VectorMask<Float> m) {
         FloatSpecies vsp = (FloatSpecies) species;
         if (offset >= 0 && offset <= (a.length - species.length())) {
-            FloatVector zero = vsp.zero();
-            return zero.blend(zero.fromArray0(a, offset), m);
+            return vsp.dummyVector().fromArray0(a, offset, m);
         }
 
         // FIXME: optimize
@@ -3192,6 +3191,23 @@ public abstract class FloatVector extends AbstractVector<Float> {
                                     (arr_, off_, i) -> arr_[off_ + i]));
     }
 
+    /*package-private*/
+    abstract
+    FloatVector fromArray0(float[] a, int offset, VectorMask<Float> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Float>>
+    FloatVector fromArray0Template(Class<M> maskClass, float[] a, int offset, M m) {
+        m.check(species());
+        FloatSpecies vsp = vspecies();
+        return VectorSupport.loadMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, arrayAddress(a, offset), m,
+            a, offset, vsp,
+            (arr, off, s, vm) -> s.ldOp(arr, off, (AbstractMask<Float>) vm,
+                                        (arr_, off_, i) -> arr_[off_ + i]));
+    }
+
 
 
     @Override
@@ -3254,6 +3270,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
     final
     <M extends VectorMask<Float>>
     void intoArray0Template(Class<M> maskClass, float[] a, int offset, M m) {
+        m.check(species());
         FloatSpecies vsp = vspecies();
         VectorSupport.storeMasked(
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
@@ -3263,6 +3280,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             -> v.stOp(arr, off, vm,
                       (arr_, off_, i, e) -> arr_[off_ + i] = e));
     }
+
 
     abstract
     void intoByteArray0(byte[] a, int offset);
@@ -3295,6 +3313,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
                         (wb_, o, i, e) -> wb_.putFloat(o + i * 4, e));
             });
     }
+
 
     // End of low-level memory operations.
 

@@ -791,6 +791,13 @@ final class Double512Vector extends DoubleVector {
         return super.fromArray0Template(a, offset);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    DoubleVector fromArray0(double[] a, int offset, VectorMask<Double> m) {
+        return super.fromArray0Template(Double512Mask.class, a, offset, (Double512Mask) m);  // specialize
+    }
+
 
 
     @ForceInline
@@ -821,12 +828,14 @@ final class Double512Vector extends DoubleVector {
         super.intoArray0Template(Double512Mask.class, a, offset, (Double512Mask) m);
     }
 
+
     @ForceInline
     @Override
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
     }
+
 
     // End of specialized low-level memory operations.
 

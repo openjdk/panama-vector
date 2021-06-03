@@ -790,8 +790,22 @@ final class Short64Vector extends ShortVector {
     @ForceInline
     @Override
     final
+    ShortVector fromArray0(short[] a, int offset, VectorMask<Short> m) {
+        return super.fromArray0Template(Short64Mask.class, a, offset, (Short64Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
     ShortVector fromCharArray0(char[] a, int offset) {
         return super.fromCharArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    ShortVector fromCharArray0(char[] a, int offset, VectorMask<Short> m) {
+        return super.fromCharArray0Template(Short64Mask.class, a, offset, (Short64Mask) m);  // specialize
     }
 
 
@@ -823,11 +837,19 @@ final class Short64Vector extends ShortVector {
         super.intoArray0Template(Short64Mask.class, a, offset, (Short64Mask) m);
     }
 
+
     @ForceInline
     @Override
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoCharArray0(char[] a, int offset, VectorMask<Short> m) {
+        super.intoCharArray0Template(Short64Mask.class, a, offset, (Short64Mask) m);
     }
 
     // End of specialized low-level memory operations.

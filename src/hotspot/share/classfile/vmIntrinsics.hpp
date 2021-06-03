@@ -847,6 +847,12 @@ class methodHandle;
                                      "ILjdk/internal/vm/vector/VectorSupport$VectorSpecies;Ljdk/internal/vm/vector/VectorSupport$LoadOperation;)Ljava/lang/Object;") \
    do_name(vector_load_op_name,     "load")                                                                                                    \
                                                                                                                                                \
+  do_intrinsic(_VectorLoadMaskedOp, jdk_internal_vm_vector_VectorSupport, vector_load_masked_op_name, vector_load_masked_op_sig, F_S)          \
+   do_signature(vector_load_masked_op_sig, "(Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Object;JLjdk/internal/vm/vector/VectorSupport$VectorMask;" \
+                                            "Ljava/lang/Object;ILjdk/internal/vm/vector/VectorSupport$VectorSpecies;"                          \
+                                            "Ljdk/internal/vm/vector/VectorSupport$LoadVectorMaskedOperation;)Ljava/lang/Object;")             \
+   do_name(vector_load_masked_op_name,     "loadMasked")                                                                                       \
+                                                                                                                                               \
   do_intrinsic(_VectorStoreOp, jdk_internal_vm_vector_VectorSupport, vector_store_op_name, vector_store_op_sig, F_S)                           \
    do_signature(vector_store_op_sig, "(Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Object;JLjdk/internal/vm/vector/VectorSupport$Vector;"    \
                                       "Ljava/lang/Object;ILjdk/internal/vm/vector/VectorSupport$StoreVectorOperation;)V")                      \
