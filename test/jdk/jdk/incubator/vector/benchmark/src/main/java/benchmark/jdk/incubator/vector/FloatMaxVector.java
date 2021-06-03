@@ -724,6 +724,10 @@ public class FloatMaxVector extends AbstractVectorBenchmark {
         return m;
     }
 
+
+
+
+
     @Benchmark
     public void blend(Blackhole bh) {
         float[] a = fa.apply(SPECIES.length());

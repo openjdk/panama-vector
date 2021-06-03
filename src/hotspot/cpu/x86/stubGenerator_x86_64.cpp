@@ -26,6 +26,7 @@
 #include "asm/macroAssembler.hpp"
 #include "asm/macroAssembler.inline.hpp"
 #include "ci/ciUtilities.hpp"
+#include "compiler/oopMap.hpp"
 #include "gc/shared/barrierSet.hpp"
 #include "gc/shared/barrierSetAssembler.hpp"
 #include "gc/shared/barrierSetNMethod.hpp"
@@ -6972,7 +6973,7 @@ address generate_avx_ghash_processBlocks() {
     if (libsvml != NULL) {
       log_info(library)("Loaded library %s, handle " INTPTR_FORMAT, JNI_LIB_PREFIX "svml" JNI_LIB_SUFFIX, p2i(libsvml));
       if (UseAVX > 2) {
-        StubRoutines::_vector_exp_float512    = (address)os::dll_lookup(libsvml, "__svml_exp8_ha_z0");
+        StubRoutines::_vector_exp_float512    = (address)os::dll_lookup(libsvml, "__svml_expf16_ha_z0");
         StubRoutines::_vector_exp_double512   = (address)os::dll_lookup(libsvml, "__svml_exp8_ha_z0");
         StubRoutines::_vector_expm1_float512  = (address)os::dll_lookup(libsvml, "__svml_expm1f16_ha_z0");
         StubRoutines::_vector_expm1_double512 = (address)os::dll_lookup(libsvml, "__svml_expm18_ha_z0");

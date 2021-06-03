@@ -81,3 +81,44 @@ public class $Type$Scalar extends AbstractVectorBenchmark {
     final IntFunction<boolean[]> fmr = vl -> rms;
     final IntFunction<int[]> fs = vl -> ss;
 
+    static boolean eq($type$ a, $type$ b) {
+        return a == b;
+    }
+
+    static boolean neq($type$ a, $type$ b) {
+        return a != b;
+    }
+
+    static boolean lt($type$ a, $type$ b) {
+        return a < b;
+    }
+
+    static boolean le($type$ a, $type$ b) {
+        return a <= b;
+    }
+
+    static boolean gt($type$ a, $type$ b) {
+        return a > b;
+    }
+
+    static boolean ge($type$ a, $type$ b) {
+        return a >= b;
+    }
+
+#if[!FP]
+    static boolean ult($type$ a, $type$ b) {
+        return $Boxtype$.compareUnsigned(a, b) < 0;
+    }
+
+    static boolean ule($type$ a, $type$ b) {
+        return $Boxtype$.compareUnsigned(a, b) <= 0;
+    }
+
+    static boolean ugt($type$ a, $type$ b) {
+        return $Boxtype$.compareUnsigned(a, b) > 0;
+    }
+
+    static boolean uge($type$ a, $type$ b) {
+        return $Boxtype$.compareUnsigned(a, b) >= 0;
+    }
+#end[!FP]

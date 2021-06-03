@@ -167,7 +167,7 @@ public:
              _is_predicate && (_num_regs == RegMask::SlotsPerRegVectMask), "unexpected scalable reg");
     }
 #endif
-    return _is_scalable;
+    return Matcher::implements_scalable_vector && _is_scalable;
   }
 
 private:

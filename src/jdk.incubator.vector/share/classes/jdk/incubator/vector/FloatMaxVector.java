@@ -401,14 +401,7 @@ final class FloatMaxVector extends FloatVector {
     @Override
     @ForceInline
     public FloatMaxVector slice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         FloatMaxShuffle Iota = iotaShuffle();
-         VectorMask<Float> BlendMask = Iota.toVector().compare(VectorOperators.LT, (broadcast((float)(VLENGTH-origin))));
-         Iota = iotaShuffle(origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (FloatMaxVector) super.sliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -429,14 +422,7 @@ final class FloatMaxVector extends FloatVector {
     @Override
     @ForceInline
     public FloatMaxVector unslice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         FloatMaxShuffle Iota = iotaShuffle();
-         VectorMask<Float> BlendMask = Iota.toVector().compare(VectorOperators.GE, (broadcast((float)(origin))));
-         Iota = iotaShuffle(-origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (FloatMaxVector) super.unsliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -789,6 +775,7 @@ final class FloatMaxVector extends FloatVector {
     FloatVector fromArray0(float[] a, int offset) {
         return super.fromArray0Template(a, offset);  // specialize
     }
+
 
 
     @ForceInline

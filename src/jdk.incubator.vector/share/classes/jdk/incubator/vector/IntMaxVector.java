@@ -407,14 +407,7 @@ final class IntMaxVector extends IntVector {
     @Override
     @ForceInline
     public IntMaxVector slice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         IntMaxShuffle Iota = iotaShuffle();
-         VectorMask<Integer> BlendMask = Iota.toVector().compare(VectorOperators.LT, (broadcast((int)(VLENGTH-origin))));
-         Iota = iotaShuffle(origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (IntMaxVector) super.sliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -435,14 +428,7 @@ final class IntMaxVector extends IntVector {
     @Override
     @ForceInline
     public IntMaxVector unslice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         IntMaxShuffle Iota = iotaShuffle();
-         VectorMask<Integer> BlendMask = Iota.toVector().compare(VectorOperators.GE, (broadcast((int)(origin))));
-         Iota = iotaShuffle(-origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (IntMaxVector) super.unsliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -805,6 +791,7 @@ final class IntMaxVector extends IntVector {
     IntVector fromArray0(int[] a, int offset) {
         return super.fromArray0Template(a, offset);  // specialize
     }
+
 
 
     @ForceInline
