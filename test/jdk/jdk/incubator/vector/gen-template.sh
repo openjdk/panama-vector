@@ -24,9 +24,13 @@
 # questions.
 #
 
+generate_perf_tests=$1
+
 TEMPLATE_FOLDER="templates/"
 
 unit_output="unit_tests.template"
+perf_output="perf_tests.template"
+perf_scalar_output="perf_scalar_tests.template"
 
 unary="Unary-op"
 unary_masked="Unary-Masked-op"
@@ -223,6 +227,31 @@ function gen_op_tmpl {
   # Replace template variables in unit test files (if any)
   replace_variables $unit_filename $unit_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" "$kernel_smoke"
 
+  local gen_perf_tests=$generate_perf_tests
+  if [[ $template == *"-Broadcast-"* ]] || [[ $template == "Miscellaneous" ]] ||
+     [[ $template == *"Compare-Masked"* ]] || [[ $template == *"Compare-Broadcast"* ]]; then
+    gen_perf_tests=false
+  fi
+  if [ $gen_perf_tests == true ]; then
+    # Replace template variables in performance test files (if any)
+    local perf_wrapper_filename="${TEMPLATE_FOLDER}/Perf-wrapper.template"
+    local perf_vector_filename="${TEMPLATE_FOLDER}/Perf-${template}.template"
+    local perf_scalar_filename="${TEMPLATE_FOLDER}/Perf-Scalar-${template}.template"
+
+    if [ -f $perf_vector_filename ]; then
+      replace_variables $perf_vector_filename  $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
+    elif [ -f $kernel_filename ]; then
+      replace_variables $perf_wrapper_filename $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
+    elif [[ $template != *"-Scalar-"* ]] && [[ $template != "Get-op" ]] && [[ $template != "With-Op" ]]; then
+      echo "Warning: missing perf: $@"
+    fi
+
+    if [ -f $perf_scalar_filename ]; then
+      replace_variables $perf_scalar_filename $perf_scalar_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
+    elif [[ $template != *"-Scalar-"* ]] && [[ $template != "Get-op" ]] && [[ $template != "With-Op" ]]; then
+      echo "Warning: Missing PERF SCALAR: $perf_scalar_filename"
+    fi
+  fi
 }
 
 function gen_binary_alu_op {
@@ -352,7 +381,28 @@ function gen_unit_footer {
   cat $TEMPLATE_FOLDER/Unit-footer.template >> $1
 }
 
+function gen_perf_header {
+  cat $TEMPLATE_FOLDER/Perf-header.template > $1
+}
+
+function gen_perf_footer {
+  cat $TEMPLATE_FOLDER/Perf-footer.template >> $1
+}
+
+function gen_perf_scalar_header {
+  cat $TEMPLATE_FOLDER/Perf-Scalar-header.template > $1
+}
+
+function gen_perf_scalar_footer {
+  cat $TEMPLATE_FOLDER/Perf-Scalar-footer.template >> $1
+}
+
 gen_unit_header $unit_output
+
+if [ $generate_perf_tests == true ]; then
+  gen_perf_header $perf_output
+  gen_perf_scalar_header $perf_scalar_output
+fi
 
 # ALU binary ops.
 # Here "ADD+add+withMask" says VectorOperator name is "ADD", and we have a dedicate method too named 'add', and add() is also available with mask variant.
@@ -518,5 +568,10 @@ gen_op_tmpl $scatter_masked_template "scatter" ""
 gen_op_tmpl $miscellaneous_template "MISC" "" ""
 
 gen_unit_footer $unit_output
+
+if [ $generate_perf_tests == true ]; then
+  gen_perf_footer $perf_output
+  gen_perf_scalar_footer $perf_scalar_output
+fi
 
 rm -f templates/*.current*

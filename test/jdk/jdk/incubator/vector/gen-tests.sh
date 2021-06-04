@@ -46,8 +46,14 @@ esac
 
 . config.sh
 
+# Detect whether to generate the performance tests
+generate_perf_tests=false
+if [ -d "$PERF_DEST" ]; then
+  generate_perf_tests=true
+fi
+
 # First, generate the template file.
-bash ./gen-template.sh
+bash ./gen-template.sh $generate_perf_tests
 
 Log false "Generating Vector API tests, $(date)\n"
 
@@ -171,7 +177,44 @@ do
       fi
       ;;
     esac
+
+    if [ $generate_perf_tests == true ]; then
+      # Generate jmh performance tests
+      case $vectorbenchtype in
+      $CLASS_FILTER)
+        Log true " ${bits}_jmh $vectorbenchtype.java"
+        Log false "${JAVA} -cp . ${SPP_CLASSNAME} -nel $bitargs -i${PERF_TEMPLATE_FILE} -o${vectorteststype}Perf.java "
+        PERF_DEST_FILE="${PERF_DEST}/${vectorbenchtype}.java"
+        rm -f ${PERF_DEST_FILE}
+        ${JAVA} -cp . ${SPP_CLASSNAME} -nel $bitargs \
+          -i${PERF_TEMPLATE_FILE} \
+          -o${PERF_DEST_FILE}
+        if [ VAR_OS_ENV==windows.cygwin ]; then
+          tr -d  '\r' < ${PERF_DEST_FILE} > temp
+          mv temp ${PERF_DEST_FILE}
+        fi
+        ;;
+      esac
+    fi
   done
+
+  if [ $generate_perf_tests == true ]; then
+    # Generate jmh performance tests
+    case ${Type}Scalar in
+    $CLASS_FILTER)
+    Log true " scalar ${Type}Scalar.java"
+    PERF_DEST_FILE="${PERF_DEST}/${Type}Scalar.java"
+    rm -f ${PERF_DEST_FILE}
+    ${JAVA} -cp . ${SPP_CLASSNAME} -nel $args \
+      -i${PERF_SCALAR_TEMPLATE_FILE} \
+      -o${PERF_DEST_FILE}
+    if [ VAR_OS_ENV==windows.cygwin ]; then
+      tr -d  '\r' < ${PERF_DEST_FILE} > temp
+      mv temp ${PERF_DEST_FILE}
+    fi
+      ;;
+    esac
+  fi
 
   # Generate tests for loads and stores
   # For each size
@@ -209,6 +252,8 @@ do
       fi
       ;;
     esac
+
+    # TODO: Generate jmh performance tests for LoadStore variants
   done
 
   Log true " done\n"
