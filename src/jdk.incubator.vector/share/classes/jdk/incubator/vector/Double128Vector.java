@@ -401,14 +401,7 @@ final class Double128Vector extends DoubleVector {
     @Override
     @ForceInline
     public Double128Vector slice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         Double128Shuffle Iota = iotaShuffle();
-         VectorMask<Double> BlendMask = Iota.toVector().compare(VectorOperators.LT, (broadcast((double)(VLENGTH-origin))));
-         Iota = iotaShuffle(origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (Double128Vector) super.sliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -429,14 +422,7 @@ final class Double128Vector extends DoubleVector {
     @Override
     @ForceInline
     public Double128Vector unslice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         Double128Shuffle Iota = iotaShuffle();
-         VectorMask<Double> BlendMask = Iota.toVector().compare(VectorOperators.GE, (broadcast((double)(origin))));
-         Iota = iotaShuffle(-origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (Double128Vector) super.unsliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -792,6 +778,7 @@ final class Double128Vector extends DoubleVector {
     DoubleVector fromArray0(double[] a, int offset) {
         return super.fromArray0Template(a, offset);  // specialize
     }
+
 
 
     @ForceInline

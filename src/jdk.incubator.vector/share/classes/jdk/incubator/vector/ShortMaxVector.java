@@ -407,14 +407,7 @@ final class ShortMaxVector extends ShortVector {
     @Override
     @ForceInline
     public ShortMaxVector slice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         ShortMaxShuffle Iota = iotaShuffle();
-         VectorMask<Short> BlendMask = Iota.toVector().compare(VectorOperators.LT, (broadcast((short)(VLENGTH-origin))));
-         Iota = iotaShuffle(origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (ShortMaxVector) super.sliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -435,14 +428,7 @@ final class ShortMaxVector extends ShortVector {
     @Override
     @ForceInline
     public ShortMaxVector unslice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         ShortMaxShuffle Iota = iotaShuffle();
-         VectorMask<Short> BlendMask = Iota.toVector().compare(VectorOperators.GE, (broadcast((short)(origin))));
-         Iota = iotaShuffle(-origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (ShortMaxVector) super.unsliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -801,6 +787,7 @@ final class ShortMaxVector extends ShortVector {
     ShortVector fromCharArray0(char[] a, int offset) {
         return super.fromCharArray0Template(a, offset);  // specialize
     }
+
 
     @ForceInline
     @Override

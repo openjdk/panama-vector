@@ -407,14 +407,7 @@ final class Short256Vector extends ShortVector {
     @Override
     @ForceInline
     public Short256Vector slice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         Short256Shuffle Iota = iotaShuffle();
-         VectorMask<Short> BlendMask = Iota.toVector().compare(VectorOperators.LT, (broadcast((short)(VLENGTH-origin))));
-         Iota = iotaShuffle(origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (Short256Vector) super.sliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -435,14 +428,7 @@ final class Short256Vector extends ShortVector {
     @Override
     @ForceInline
     public Short256Vector unslice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         Short256Shuffle Iota = iotaShuffle();
-         VectorMask<Short> BlendMask = Iota.toVector().compare(VectorOperators.GE, (broadcast((short)(origin))));
-         Iota = iotaShuffle(-origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (Short256Vector) super.unsliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -831,6 +817,7 @@ final class Short256Vector extends ShortVector {
     ShortVector fromCharArray0(char[] a, int offset) {
         return super.fromCharArray0Template(a, offset);  // specialize
     }
+
 
     @ForceInline
     @Override

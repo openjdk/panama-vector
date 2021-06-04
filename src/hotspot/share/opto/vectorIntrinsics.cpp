@@ -510,7 +510,8 @@ bool LibraryCallKit::inline_vector_shuffle_iota() {
     res = gvn().transform(VectorNode::make(Op_MulI, res, bcast_step, num_elem, elem_bt));
   } else if (step_val->get_con() > 1) {
     Node* cnt = gvn().makecon(TypeInt::make(log2i_exact(step_val->get_con())));
-    res = gvn().transform(VectorNode::make(Op_LShiftVB, res, cnt, vt));
+    Node* shift_cnt = vector_shift_count(cnt, Op_LShiftI, elem_bt, num_elem);
+    res = gvn().transform(VectorNode::make(Op_LShiftVB, res, shift_cnt, vt));
   }
 
   if (!start_val->is_con() || start_val->get_con() != 0) {
@@ -549,7 +550,6 @@ bool LibraryCallKit::inline_vector_shuffle_iota() {
 // VM shuffleToVector(Class<VM> VecClass, Class<?>E , Class<?> ShuffleClass, Sh s, int length,
 //                    ShuffleToVectorOperation<VM,Sh,E> defaultImpl)
 bool LibraryCallKit::inline_vector_shuffle_to_vector() {
-  // TODO shuffle is not supported on SVE
   const TypeInstPtr* vector_klass  = gvn().type(argument(0))->isa_instptr();
   const TypeInstPtr* elem_klass    = gvn().type(argument(1))->isa_instptr();
   const TypeInstPtr* shuffle_klass = gvn().type(argument(2))->isa_instptr();
@@ -689,6 +689,22 @@ bool LibraryCallKit::inline_vector_broadcast_coerced() {
   return true;
 }
 
+static bool elem_consistent_with_arr(BasicType elem_bt, const TypeAryPtr* arr_type) {
+  assert(arr_type != NULL, "unexpected");
+  BasicType arr_elem_bt = arr_type->elem()->array_element_basic_type();
+  if (elem_bt == arr_elem_bt) {
+    return true;
+  } else if (elem_bt == T_SHORT && arr_elem_bt == T_CHAR) {
+    // Load/store of short vector from/to char[] is supported
+    return true;
+  } else if (elem_bt == T_BYTE && arr_elem_bt == T_BOOLEAN) {
+    // Load/store of byte vector from/to boolean[] is supported
+    return true;
+  } else {
+    return false;
+  }
+}
+
 //    <C, V extends Vector<?,?>>
 //    V load(Class<?> vectorClass, Class<?> elementType, int vlen,
 //           Object base, long offset,
@@ -750,13 +766,12 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
 
   Node* base = argument(3);
   Node* offset = ConvL2X(argument(4));
-  DecoratorSet decorators = C2_UNSAFE_ACCESS;
 
   // Save state and restore on bailout
   uint old_sp = sp();
   SafePointNode* old_map = clone_map();
 
-  Node* addr = make_unsafe_address(base, offset, decorators, (is_mask ? T_BOOLEAN : elem_bt), true);
+  Node* addr = make_unsafe_address(base, offset, (is_mask ? T_BOOLEAN : elem_bt), true);
   // Can base be NULL? Otherwise, always on-heap access.
   bool can_access_non_heap = TypePtr::NULL_PTR->higher_equal(gvn().type(base));
 
@@ -767,7 +782,12 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
   bool using_byte_array = arr_type != NULL && arr_type->elem()->array_element_basic_type() == T_BYTE && elem_bt != T_BYTE;
   // Handle loading masks.
   // If there is no consistency between array and vector element types, it must be special byte array case or loading masks
-  if (arr_type != NULL && !using_byte_array && elem_bt != arr_type->elem()->array_element_basic_type() && !is_mask) {
+  if (arr_type != NULL && !using_byte_array && !is_mask && !elem_consistent_with_arr(elem_bt, arr_type)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not supported: arity=%d op=%s vlen=%d etype=%s atype=%s ismask=no",
+                    is_store, is_store ? "store" : "load",
+                    num_elem, type2name(elem_bt), type2name(arr_type->elem()->array_element_basic_type()));
+    }
     set_map(old_map);
     set_sp(old_sp);
     return false;
@@ -944,11 +964,17 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
 
   Node* base = argument(4);
   Node* offset = ConvL2X(argument(5));
-  DecoratorSet decorators = C2_UNSAFE_ACCESS;
-  Node* addr = make_unsafe_address(base, offset, decorators, elem_bt, true);
+
+  // Save state and restore on bailout
+  uint old_sp = sp();
+  SafePointNode* old_map = clone_map();
+
+  Node* addr = make_unsafe_address(base, offset, elem_bt, true);
   const TypePtr *addr_type = gvn().type(addr)->isa_ptr();
   const TypeAryPtr* arr_type = addr_type->isa_aryptr();
   if (arr_type != NULL && elem_bt != arr_type->elem()->array_element_basic_type()) {
+    set_map(old_map);
+    set_sp(old_sp);
     return false;
   }
 
@@ -971,6 +997,8 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
         tty->print_cr("  ** unbox failed vector=%s",
                       NodeClassNames[argument(7)->Opcode()]);
       }
+      set_map(old_map);
+      set_sp(old_sp);
       return false; // operand unboxing failed
     }
     Node* mask = unbox_vector(argument(8), mbox_type, elem_bt, num_elem);
@@ -979,6 +1007,8 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
         tty->print_cr("  ** unbox failed mask=%s",
                       NodeClassNames[argument(8)->Opcode()]);
       }
+      set_map(old_map);
+      set_sp(old_sp);
       return false;
     }
 
@@ -989,6 +1019,8 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
     // TODO: mask support for load op.
     assert(false, "unimplemented masked memory operation");
   }
+
+  old_map->destruct(&_gvn);
 
   if (can_access_non_heap) {
     insert_mem_bar(Op_MemBarCPUOrder);
@@ -1072,13 +1104,18 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
   uint old_sp = sp();
   SafePointNode* old_map = clone_map();
 
-  Node* addr = make_unsafe_address(base, offset, C2_UNSAFE_ACCESS, elem_bt, true);
+  Node* addr = make_unsafe_address(base, offset, elem_bt, true);
 
   const TypePtr *addr_type = gvn().type(addr)->isa_ptr();
   const TypeAryPtr* arr_type = addr_type->isa_aryptr();
 
   // The array must be consistent with vector type
-  if (arr_type == NULL || (arr_type != NULL && elem_bt != arr_type->elem()->array_element_basic_type())) {
+  if (arr_type == NULL || (arr_type != NULL && !elem_consistent_with_arr(elem_bt, arr_type))) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not supported: arity=%d op=%s vlen=%d etype=%s atype=%s ismask=no",
+                    is_scatter, is_scatter ? "scatter" : "gather",
+                    num_elem, type2name(elem_bt), type2name(arr_type->elem()->array_element_basic_type()));
+    }
     set_map(old_map);
     set_sp(old_sp);
     return false;
@@ -1396,6 +1433,16 @@ bool LibraryCallKit::inline_vector_compare() {
   int num_elem = vlen->get_con();
   BasicType elem_bt = elem_type->basic_type();
   BasicType mask_bt = elem_bt;
+
+  if ((cond->get_con() & BoolTest::unsigned_compare) != 0) {
+    if (!Matcher::supports_unsigned_vector_comparison(num_elem, elem_bt)) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** not supported: unsigned comparison op=comp/%d vlen=%d etype=%s ismask=usestore",
+                      cond->get_con() & (BoolTest::unsigned_compare - 1), num_elem, type2name(elem_bt));
+      }
+      return false;
+    }
+  }
 
   if (!arch_supports_vector(Op_VectorMaskCmp, num_elem, elem_bt, VecMaskUseStore)) {
     if (C->print_intrinsics()) {

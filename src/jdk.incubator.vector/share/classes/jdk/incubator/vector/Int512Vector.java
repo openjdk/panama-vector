@@ -407,14 +407,7 @@ final class Int512Vector extends IntVector {
     @Override
     @ForceInline
     public Int512Vector slice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         Int512Shuffle Iota = iotaShuffle();
-         VectorMask<Integer> BlendMask = Iota.toVector().compare(VectorOperators.LT, (broadcast((int)(VLENGTH-origin))));
-         Iota = iotaShuffle(origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (Int512Vector) super.sliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -435,14 +428,7 @@ final class Int512Vector extends IntVector {
     @Override
     @ForceInline
     public Int512Vector unslice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         Int512Shuffle Iota = iotaShuffle();
-         VectorMask<Integer> BlendMask = Iota.toVector().compare(VectorOperators.GE, (broadcast((int)(origin))));
-         Iota = iotaShuffle(-origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (Int512Vector) super.unsliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -824,6 +810,7 @@ final class Int512Vector extends IntVector {
     IntVector fromArray0(int[] a, int offset) {
         return super.fromArray0Template(a, offset);  // specialize
     }
+
 
 
     @ForceInline

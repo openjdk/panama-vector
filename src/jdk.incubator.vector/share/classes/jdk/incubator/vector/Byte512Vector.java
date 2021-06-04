@@ -407,14 +407,7 @@ final class Byte512Vector extends ByteVector {
     @Override
     @ForceInline
     public Byte512Vector slice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         Byte512Shuffle Iota = iotaShuffle();
-         VectorMask<Byte> BlendMask = Iota.toVector().compare(VectorOperators.LT, (broadcast((byte)(VLENGTH-origin))));
-         Iota = iotaShuffle(origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (Byte512Vector) super.sliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -435,14 +428,7 @@ final class Byte512Vector extends ByteVector {
     @Override
     @ForceInline
     public Byte512Vector unslice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         Byte512Shuffle Iota = iotaShuffle();
-         VectorMask<Byte> BlendMask = Iota.toVector().compare(VectorOperators.GE, (broadcast((byte)(origin))));
-         Iota = iotaShuffle(-origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (Byte512Vector) super.unsliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -921,6 +907,13 @@ final class Byte512Vector extends ByteVector {
         return super.fromArray0Template(a, offset);  // specialize
     }
 
+
+    @ForceInline
+    @Override
+    final
+    ByteVector fromBooleanArray0(boolean[] a, int offset) {
+        return super.fromBooleanArray0Template(a, offset);  // specialize
+    }
 
     @ForceInline
     @Override

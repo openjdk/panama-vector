@@ -69,9 +69,9 @@ instruct $3V$4`'(vec$5 $7, vmem$4 mem)
   ins_pipe(v$3`_reg_mem'ifelse(eval($4 * 8), 128, 128, 64));
 %}')dnl
 dnl        $1    $2 $3     $4  $5 $6   $7   $8
-VLoadStore(ldrh, H, load,  2,  D, 16,  dst, )
-VLoadStore(ldrs, S, load,  4,  D, 32,  dst, )
-VLoadStore(ldrd, D, load,  8,  D, 64,  dst, )
+VLoadStore(ldrh, H, load,  2,  D, 16,  dst, UseSVE == 0 && )
+VLoadStore(ldrs, S, load,  4,  D, 32,  dst, UseSVE == 0 && )
+VLoadStore(ldrd, D, load,  8,  D, 64,  dst, UseSVE == 0 && )
 VLoadStore(ldrq, Q, load, 16,  X, 128, dst, UseSVE == 0 && )
 VLoadStore(strh, H, store, 2,  D, 16,  src, )
 VLoadStore(strs, S, store, 4,  D, 32,  src, )
@@ -1036,6 +1036,32 @@ VECTOR_NOT(2, I, D, 8,  8B)
 VECTOR_NOT(4, I, X, 16, 16B)
 VECTOR_NOT(2, L, X, 16, 16B)
 undefine(MATCH_RULE)
+// ------------------------------ Vector and_not -------------------------------
+dnl
+define(`MATCH_RULE', `ifelse($1, I,
+`match(Set dst (AndV src1 (XorV src2 (ReplicateB m1))));
+  match(Set dst (AndV src1 (XorV src2 (ReplicateS m1))));
+  match(Set dst (AndV src1 (XorV src2 (ReplicateI m1))));',
+`match(Set dst (AndV src1 (XorV src2 (ReplicateL m1))));')')dnl
+dnl
+define(`VECTOR_AND_NOT', `
+instruct vand_not$1$2`'(vec$3 dst, vec$3 src1, vec$3 src2, imm$2_M1 m1)
+%{
+  predicate(n->as_Vector()->length_in_bytes() == $4);
+  MATCH_RULE($2)
+  ins_cost(INSN_COST);
+  format %{ "bic  $dst, T$5, $src1, $src2\t# vector ($5)" %}
+  ins_encode %{
+    __ bic(as_FloatRegister($dst$$reg), __ T$5,
+           as_FloatRegister($src1$$reg), as_FloatRegister($src2$$reg));
+  %}
+  ins_pipe(pipe_class_default);
+%}')dnl
+dnl            $1 $2 $3 $4  $5
+VECTOR_AND_NOT(2, I, D, 8,  8B)
+VECTOR_AND_NOT(4, I, X, 16, 16B)
+VECTOR_AND_NOT(2, L, X, 16, 16B)
+undefine(MATCH_RULE)
 dnl
 // ------------------------------ Vector max/min -------------------------------
 dnl
@@ -1090,7 +1116,7 @@ instruct v$1`'2L`'(vecX dst, vecX src1, vecX src2)
   %}
   ins_pipe(vdop128);
 %}')dnl
-dnl                $1   $2   $3    $4
+dnl                 $1   $2   $3    $4
 VECTOR_MAX_MIN_LONG(max, Max, src1, src2)
 VECTOR_MAX_MIN_LONG(min, Min, src2, src1)
 dnl
@@ -1232,13 +1258,35 @@ instruct storemask2L(vecD dst, vecX src, immI_8 size)
   ins_pipe(pipe_slow);
 %}
 
+// vector mask cast
+dnl
+define(`VECTOR_MASK_CAST', `
+instruct vmaskcast$1`'(vec$1 dst)
+%{
+  predicate(n->bottom_type()->is_vect()->length_in_bytes() == $2 &&
+            n->in(1)->bottom_type()->is_vect()->length_in_bytes() == $2 &&
+            n->bottom_type()->is_vect()->length() == n->in(1)->bottom_type()->is_vect()->length());
+  match(Set dst (VectorMaskCast dst));
+  ins_cost(0);
+  format %{ "vmaskcast $dst\t# empty" %}
+  ins_encode %{
+    // empty
+  %}
+  ins_pipe(pipe_class_empty);
+%}')dnl
+dnl              $1 $2
+VECTOR_MASK_CAST(D, 8)
+VECTOR_MASK_CAST(X, 16)
+dnl
+
 //-------------------------------- LOAD_IOTA_INDICES----------------------------------
 dnl
 define(`PREDICATE', `ifelse($1, 8,
-`predicate((n->as_Vector()->length() == 2 || n->as_Vector()->length() == 4 ||
-             n->as_Vector()->length() == 8) &&
-             n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);',
-`predicate(n->as_Vector()->length() == 16 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);')')dnl
+`predicate(UseSVE == 0 &&
+           (n->as_Vector()->length() == 2 || n->as_Vector()->length() == 4 ||
+            n->as_Vector()->length() == 8) &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);',
+`predicate(UseSVE == 0 && n->as_Vector()->length() == 16 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);')')dnl
 dnl
 define(`VECTOR_LOAD_CON', `
 instruct loadcon$1B`'(vec$2 dst, immI0 src)
@@ -1505,9 +1553,10 @@ dnl
 define(`VREPLICATE', `
 instruct replicate$3$4$5`'(vec$6 dst, $7 ifelse($7, immI0, zero, $7, immI, con, src))
 %{
-  predicate(ifelse($8, UseSVE == 0 && , $8,
-                   $8, , , $8`
-            ')n->as_Vector()->length() == $3);
+  predicate(UseSVE == 0 && ifelse($8, `',
+                                  n->as_Vector()->length() == $3,
+                                  (n->as_Vector()->length() == $3 ||`
+                            'n->as_Vector()->length() == $8)));
   match(Set dst (Replicate`'ifelse($7, immI0, I, $4) ifelse($7, immI0, zero, $7, immI, con, $7, zero, I, src)));
   ins_cost(INSN_COST);
   format %{ "$1  $dst, $ifelse($7, immI0, zero, $7, immI, con, src)`\t# vector ('ifelse($4$7, SimmI, $3H, $2, eor, 4I, $3$4)`)"' %}
@@ -1533,24 +1582,24 @@ instruct replicate$3$4$5`'(vec$6 dst, $7 ifelse($7, immI0, zero, $7, immI, con, 
                   $7, iRegL, vdup_reg_reg,
                   $4, F, vdup_reg_freg, vdup_reg_dreg)`'ifelse($6, X, 128, 64));
 %}')dnl
-dnl        $1    $2    $3  $4 $5     $6 $7          $8                                $9
-VREPLICATE(dup,  dup,  8,  B, ,      D, iRegIorL2I, n->as_Vector()->length() == 4 ||, B)
-VREPLICATE(dup,  dup,  16, B, ,      X, iRegIorL2I, UseSVE == 0 && ,                  B)
-VREPLICATE(movi, mov,  8,  B, _imm,  D, immI,       n->as_Vector()->length() == 4 ||, B)
-VREPLICATE(movi, mov,  16, B, _imm,  X, immI,       UseSVE == 0 && ,                  B)
-VREPLICATE(dup,  dup,  4,  S, ,      D, iRegIorL2I, n->as_Vector()->length() == 2 ||, H)
-VREPLICATE(dup,  dup,  8,  S, ,      X, iRegIorL2I, UseSVE == 0 && ,                  H)
-VREPLICATE(movi, mov,  4,  S, _imm,  D, immI,       n->as_Vector()->length() == 2 ||, H)
-VREPLICATE(movi, mov,  8,  S,  _imm, X, immI,       UseSVE == 0 && ,                  H)
-VREPLICATE(dup,  dup,  2,  I, ,      D, iRegIorL2I, ,                                 S)
-VREPLICATE(dup,  dup,  4,  I, ,      X, iRegIorL2I, UseSVE == 0 && ,                  S)
-VREPLICATE(movi, mov,  2,  I, _imm,  D, immI,       ,                                 S)
-VREPLICATE(movi, mov,  4,  I,  _imm, X, immI,       UseSVE == 0 && ,                  S)
-VREPLICATE(dup,  dup,  2,  L, ,      X, iRegL,      UseSVE == 0 && ,                  D)
-VREPLICATE(movi, eor,  2,  L, _zero, X, immI0,      UseSVE == 0 && ,                  D)
-VREPLICATE(dup,  dup,  2,  F, ,      D, vRegF,      ,                                 S)
-VREPLICATE(dup,  dup,  4,  F, ,      X, vRegF,      UseSVE == 0 && ,                  S)
-VREPLICATE(dup,  dup,  2,  D, ,      X, vRegD,      UseSVE == 0 && ,                  D)
+dnl        $1    $2    $3  $4 $5     $6 $7          $8 $9
+VREPLICATE(dup,  dup,  8,  B, ,      D, iRegIorL2I, 4, B)
+VREPLICATE(dup,  dup,  16, B, ,      X, iRegIorL2I,  , B)
+VREPLICATE(movi, mov,  8,  B, _imm,  D, immI,       4, B)
+VREPLICATE(movi, mov,  16, B, _imm,  X, immI,        , B)
+VREPLICATE(dup,  dup,  4,  S, ,      D, iRegIorL2I, 2, H)
+VREPLICATE(dup,  dup,  8,  S, ,      X, iRegIorL2I,  , H)
+VREPLICATE(movi, mov,  4,  S, _imm,  D, immI,       2, H)
+VREPLICATE(movi, mov,  8,  S,  _imm, X, immI,        , H)
+VREPLICATE(dup,  dup,  2,  I, ,      D, iRegIorL2I, ,  S)
+VREPLICATE(dup,  dup,  4,  I, ,      X, iRegIorL2I, ,  S)
+VREPLICATE(movi, mov,  2,  I, _imm,  D, immI,       ,  S)
+VREPLICATE(movi, mov,  4,  I,  _imm, X, immI,       ,  S)
+VREPLICATE(dup,  dup,  2,  L, ,      X, iRegL,      ,  D)
+VREPLICATE(movi, eor,  2,  L, _zero, X, immI0,      ,  D)
+VREPLICATE(dup,  dup,  2,  F, ,      D, vRegF,      ,  S)
+VREPLICATE(dup,  dup,  4,  F, ,      X, vRegF,      ,  S)
+VREPLICATE(dup,  dup,  2,  D, ,      X, vRegD,      ,  D)
 dnl
 
 // ====================REDUCTION ARITHMETIC====================================
@@ -1871,7 +1920,7 @@ instruct vsqrt$2$3`'(vec$4 dst, vec$4 src)
   %}
   ins_pipe(v`'ifelse($2$3, 2F, unop, sqrt)_fp`'ifelse($4, D, 64, 128));
 %}')dnl
-dnl  $1      $2  $3 $4 $5
+dnl   $1     $2  $3 $4 $5
 VSQRT(fsqrt, 2,  F, D, S)
 VSQRT(fsqrt, 4,  F, X, S)
 VSQRT(fsqrt, 2,  D, X, D)
@@ -1912,7 +1961,7 @@ instruct v$3$5$6`'(vec$7 dst, vec$7 src1, vec$7 src2)
 %}')dnl
 
 // --------------------------------- AND --------------------------------------
-dnl     $1    $2    $3   $4   $5  $6 $7
+dnl      $1   $2    $3   $4   $5  $6 $7
 VLOGICAL(and, andr, and, And, 8,  B, D)
 VLOGICAL(and, andr, and, And, 16, B, X)
 
@@ -1928,8 +1977,8 @@ VLOGICAL(xor, eor,  xor, Xor, 16, B, X)
 dnl
 define(`VSHIFTCNT', `
 instruct vshiftcnt$3$4`'(vec$5 dst, iRegIorL2I cnt) %{
-  predicate(ifelse($3, 8, n->as_Vector()->length_in_bytes() == 4 ||`
-            ')n->as_Vector()->length_in_bytes() == $3);
+  predicate(UseSVE == 0 && (ifelse($3, 8, n->as_Vector()->length_in_bytes() == 4 ||`
+            ')n->as_Vector()->length_in_bytes() == $3));
   match(Set dst (LShiftCntV cnt));
   match(Set dst (RShiftCntV cnt));
   format %{ "$1  $dst, $cnt\t# shift count vector ($3$4)" %}
