@@ -28,6 +28,7 @@ import jdk.incubator.vector.*;
 import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.*;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode(Mode.Throughput)
@@ -111,10 +112,6 @@ public class Merge extends AbstractVectorBenchmark {
 
     @TearDown
     public void tearDown() {
-        for (int i: in) {
-            for (int i2: out){
-                assert i == i2;
-            }
-        }
+        assert Arrays.deepEquals(new Object[] {in}, new Object[] {out});
     }
 }

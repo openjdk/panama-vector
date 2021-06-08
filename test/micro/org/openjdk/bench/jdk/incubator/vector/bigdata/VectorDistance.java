@@ -80,7 +80,7 @@ public class VectorDistance {
     }
 
     @Setup
-    public static void init() {
+    public void init() {
         queryVectorDouble = new double[queryVectorFloat.length];
         inputVectorDouble = new double[inputVectorFloat.length];
         for (int i = 0; i < queryVectorFloat.length; i++) {
@@ -98,7 +98,7 @@ public class VectorDistance {
     }
 
     @Benchmark
-    public static float cosinesimilOptimizedScalarFloat() {
+    public float cosinesimilOptimizedScalarFloat() {
         float dotProduct = 0.0f;
         float normInputVector = 0.0f;
         for (int i = 0; i < queryVectorFloat.length; i++) {
@@ -113,7 +113,7 @@ public class VectorDistance {
     }
 
     @Benchmark
-    public static float cosinesimilOptimizedVectorFloat128() {
+    public float cosinesimilOptimizedVectorFloat128() {
         FloatVector vecX, vecY, vecSum, xSquareV, ySquareV;
         vecSum = FloatVector.zero(SPECIES_FLOAT_128);
         xSquareV = FloatVector.zero(SPECIES_FLOAT_128);
@@ -136,7 +136,7 @@ public class VectorDistance {
     }
 
     @Benchmark
-    public static float cosinesimilOptimizedVectorFloat256() {
+    public float cosinesimilOptimizedVectorFloat256() {
         FloatVector vecX, vecY, vecSum, xSquareV, ySquareV;
         vecSum = FloatVector.zero(SPECIES_FLOAT_256);
         xSquareV = FloatVector.zero(SPECIES_FLOAT_256);
@@ -159,7 +159,7 @@ public class VectorDistance {
     }
 
     @Benchmark
-    public static float cosinesimilOptimizedVectorFloatMax() {
+    public float cosinesimilOptimizedVectorFloatMax() {
         FloatVector vecX, vecY, vecSum, xSquareV, ySquareV;
         vecSum = FloatVector.zero(SPECIES_FLOAT_MAX);
         xSquareV = FloatVector.zero(SPECIES_FLOAT_MAX);
@@ -182,7 +182,7 @@ public class VectorDistance {
     }
 
     @Benchmark
-    public static float cosinesimilScalarFloat() {
+    public float cosinesimilScalarFloat() {
         float dotProduct = 0.0f;
         float normQueryVectorFloat = 0.0f;
         float normInputVector = 0.0f;
@@ -277,7 +277,7 @@ public class VectorDistance {
     }
 
     @Benchmark
-    public static double cosinesimilOptimizedScalarDouble() {
+    public double cosinesimilOptimizedScalarDouble() {
         double dotProduct = 0.0;
         double normInputVector = 0.0;
         for (int i = 0; i < queryVectorDouble.length; i++) {
@@ -289,7 +289,7 @@ public class VectorDistance {
     }
 
     @Benchmark
-    public static double cosinesimilOptimizedVectorDouble128() {
+    public double cosinesimilOptimizedVectorDouble128() {
         DoubleVector vecX, vecY, vecSum, xSquareV, ySquareV;
         vecSum = DoubleVector.zero(SPECIES_DOUBLE_128);
         xSquareV = DoubleVector.zero(SPECIES_DOUBLE_128);
@@ -312,7 +312,7 @@ public class VectorDistance {
     }
 
     @Benchmark
-    public static double cosinesimilOptimizedVectorDouble256() {
+    public double cosinesimilOptimizedVectorDouble256() {
         DoubleVector vecX, vecY, vecSum, xSquareV, ySquareV;
         vecSum = DoubleVector.zero(SPECIES_DOUBLE_256);
         xSquareV = DoubleVector.zero(SPECIES_DOUBLE_256);
@@ -335,7 +335,7 @@ public class VectorDistance {
     }
 
     @Benchmark
-    public static double cosinesimilOptimizedVectorDoubleMax() {
+    public double cosinesimilOptimizedVectorDoubleMax() {
         DoubleVector vecX, vecY, vecSum, xSquareV, ySquareV;
         vecSum = DoubleVector.zero(SPECIES_DOUBLE_MAX);
         xSquareV = DoubleVector.zero(SPECIES_DOUBLE_MAX);
@@ -358,7 +358,7 @@ public class VectorDistance {
     }
 
     @Benchmark
-    public static double cosinesimilScalarDouble() {
+    public double cosinesimilScalarDouble() {
         double dotProduct = 0.0f;
         double normQueryVectorDouble = 0.0f;
         double normInputVector = 0.0f;
@@ -571,7 +571,7 @@ public class VectorDistance {
     }
 
     @Benchmark
-    public static float l2SquaredScalar() {
+    public float l2SquaredScalar() {
         float squaredDistance = 0;
         for (int i = 0; i < inputVectorFloat.length; i++) {
             float diff = queryVectorFloat[i] - inputVectorFloat[i];
