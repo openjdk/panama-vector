@@ -403,20 +403,6 @@ public abstract class LongVector extends AbstractVector<Long> {
     }
 
     /*package-private*/
-    @ForceInline
-    static boolean doBinTest(int cond, long a, long b) {
-        switch (cond) {
-        case BT_eq:  return a == b;
-        case BT_ne:  return a != b;
-        case BT_lt:  return a < b;
-        case BT_le:  return a <= b;
-        case BT_gt:  return a > b;
-        case BT_ge:  return a >= b;
-        }
-        throw new AssertionError(Integer.toHexString(cond));
-    }
-
-    /*package-private*/
     @Override
     abstract LongSpecies vspecies();
 
@@ -1804,17 +1790,20 @@ public abstract class LongVector extends AbstractVector<Long> {
     }
 
     @ForceInline
-    private static
-    boolean compareWithOp(int cond, long a, long b) {
-        switch (cond) {
-        case BT_eq:  return a == b;
-        case BT_ne:  return a != b;
-        case BT_lt:  return a <  b;
-        case BT_le:  return a <= b;
-        case BT_gt:  return a >  b;
-        case BT_ge:  return a >= b;
-        }
-        throw new AssertionError();
+    private static boolean compareWithOp(int cond, long a, long b) {
+        return switch (cond) {
+            case BT_eq -> a == b;
+            case BT_ne -> a != b;
+            case BT_lt -> a < b;
+            case BT_le -> a <= b;
+            case BT_gt -> a > b;
+            case BT_ge -> a >= b;
+            case BT_ult -> Long.compareUnsigned(a, b) < 0;
+            case BT_ule -> Long.compareUnsigned(a, b) <= 0;
+            case BT_ugt -> Long.compareUnsigned(a, b) > 0;
+            case BT_uge -> Long.compareUnsigned(a, b) >= 0;
+            default -> throw new AssertionError();
+        };
     }
 
     /**
@@ -1971,14 +1960,11 @@ public abstract class LongVector extends AbstractVector<Long> {
     LongVector sliceTemplate(int origin, Vector<Long> v1) {
         LongVector that = (LongVector) v1;
         that.check(this);
-        long[] a0 = this.vec();
-        long[] a1 = that.vec();
-        long[] res = new long[a0.length];
-        int vlen = res.length;
-        int firstPart = vlen - origin;
-        System.arraycopy(a0, origin, res, 0, firstPart);
-        System.arraycopy(a1, 0, res, firstPart, origin);
-        return vectorFactory(res);
+        Objects.checkIndex(origin, length() + 1);
+        VectorShuffle<Long> iota = iotaShuffle();
+        VectorMask<Long> blendMask = iota.toVector().compare(VectorOperators.LT, (broadcast((long)(length() - origin))));
+        iota = iotaShuffle(origin, 1, true);
+        return that.rearrange(iota).blend(this.rearrange(iota), blendMask);
     }
 
     /**
@@ -2000,6 +1986,17 @@ public abstract class LongVector extends AbstractVector<Long> {
     public abstract
     LongVector slice(int origin);
 
+    /*package-private*/
+    final
+    @ForceInline
+    LongVector sliceTemplate(int origin) {
+        Objects.checkIndex(origin, length() + 1);
+        VectorShuffle<Long> iota = iotaShuffle();
+        VectorMask<Long> blendMask = iota.toVector().compare(VectorOperators.LT, (broadcast((long)(length() - origin))));
+        iota = iotaShuffle(origin, 1, true);
+        return vspecies().zero().blend(this.rearrange(iota), blendMask);
+    }
+
     /**
      * {@inheritDoc} <!--workaround-->
      */
@@ -2014,21 +2011,12 @@ public abstract class LongVector extends AbstractVector<Long> {
     unsliceTemplate(int origin, Vector<Long> w, int part) {
         LongVector that = (LongVector) w;
         that.check(this);
-        long[] slice = this.vec();
-        long[] res = that.vec().clone();
-        int vlen = res.length;
-        int firstPart = vlen - origin;
-        switch (part) {
-        case 0:
-            System.arraycopy(slice, 0, res, origin, firstPart);
-            break;
-        case 1:
-            System.arraycopy(slice, firstPart, res, 0, origin);
-            break;
-        default:
-            throw wrongPartForSlice(part);
-        }
-        return vectorFactory(res);
+        Objects.checkIndex(origin, length() + 1);
+        VectorShuffle<Long> iota = iotaShuffle();
+        VectorMask<Long> blendMask = iota.toVector().compare((part == 0) ? VectorOperators.GE : VectorOperators.LT,
+                                                                  (broadcast((long)(origin))));
+        iota = iotaShuffle(-origin, 1, true);
+        return that.blend(this.rearrange(iota), blendMask);
     }
 
     /*package-private*/
@@ -2057,6 +2045,19 @@ public abstract class LongVector extends AbstractVector<Long> {
     @Override
     public abstract
     LongVector unslice(int origin);
+
+    /*package-private*/
+    final
+    @ForceInline
+    LongVector
+    unsliceTemplate(int origin) {
+        Objects.checkIndex(origin, length() + 1);
+        VectorShuffle<Long> iota = iotaShuffle();
+        VectorMask<Long> blendMask = iota.toVector().compare(VectorOperators.GE,
+                                                                  (broadcast((long)(origin))));
+        iota = iotaShuffle(-origin, 1, true);
+        return vspecies().zero().blend(this.rearrange(iota), blendMask);
+    }
 
     private ArrayIndexOutOfBoundsException
     wrongPartForSlice(int part) {
@@ -2857,6 +2858,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     }
 
 
+
     /**
      * Loads a vector from a {@linkplain ByteBuffer byte buffer}
      * starting at an offset into the byte buffer.
@@ -3146,6 +3148,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     }
 
 
+
     /**
      * {@inheritDoc} <!--workaround-->
      */
@@ -3251,6 +3254,7 @@ public abstract class LongVector extends AbstractVector<Long> {
             (arr, off, s) -> s.ldOp(arr, off,
                                     (arr_, off_, i) -> arr_[off_ + i]));
     }
+
 
 
     @Override
@@ -3403,6 +3407,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     static long arrayAddress(long[] a, int index) {
         return ARRAY_BASE + (((long)index) << ARRAY_SHIFT);
     }
+
 
 
     @ForceInline

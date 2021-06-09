@@ -81,6 +81,30 @@ public class FloatScalar extends AbstractVectorBenchmark {
     final IntFunction<boolean[]> fmr = vl -> rms;
     final IntFunction<int[]> fs = vl -> ss;
 
+    static boolean eq(float a, float b) {
+        return a == b;
+    }
+
+    static boolean neq(float a, float b) {
+        return a != b;
+    }
+
+    static boolean lt(float a, float b) {
+        return a < b;
+    }
+
+    static boolean le(float a, float b) {
+        return a <= b;
+    }
+
+    static boolean gt(float a, float b) {
+        return a > b;
+    }
+
+    static boolean ge(float a, float b) {
+        return a >= b;
+    }
+
 
     @Benchmark
     public void ADD(Blackhole bh) {
@@ -563,7 +587,7 @@ public class FloatScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] < bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= lt(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -578,7 +602,7 @@ public class FloatScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] > bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= gt(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -593,7 +617,7 @@ public class FloatScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] == bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= eq(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -608,7 +632,7 @@ public class FloatScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] != bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= neq(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -623,7 +647,7 @@ public class FloatScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] <= bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= le(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -638,12 +662,16 @@ public class FloatScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                r &= (as[i] >= bs[i]); // accumulate so JIT can't eliminate the computation
+                r &= ge(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
             }
         }
 
         bh.consume(r);
     }
+
+
+
+
 
     @Benchmark
     public void blend(Blackhole bh) {

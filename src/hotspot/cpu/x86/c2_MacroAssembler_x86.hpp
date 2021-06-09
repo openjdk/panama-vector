@@ -89,6 +89,10 @@ public:
                    KRegister ktmp, XMMRegister atmp, XMMRegister btmp,
                    int vlen_enc);
 
+  void signum_fp(int opcode, XMMRegister dst,
+                 XMMRegister zero, XMMRegister one,
+                 Register scratch);
+
   void vextendbw(bool sign, XMMRegister dst, XMMRegister src, int vector_len);
   void vextendbw(bool sign, XMMRegister dst, XMMRegister src);
   void vextendbd(bool sign, XMMRegister dst, XMMRegister src, int vector_len);
@@ -139,6 +143,12 @@ public:
 
   void load_vector_mask(XMMRegister dst, XMMRegister src, int vlen_in_bytes, BasicType elem_bt);
   void load_iota_indices(XMMRegister dst, Register scratch, int vlen_in_bytes);
+
+  // vector compare
+  void vpcmpu(BasicType typ, XMMRegister dst, XMMRegister src1, XMMRegister src2, ComparisonPredicate comparison, int vlen_in_bytes,
+              XMMRegister vtmp1, XMMRegister vtmp2, Register scratch);
+  void vpcmpu32(BasicType typ, XMMRegister dst, XMMRegister src1, XMMRegister src2, ComparisonPredicate comparison, int vlen_in_bytes,
+                XMMRegister vtmp1, XMMRegister vtmp2, XMMRegister vtmp3, Register scratch);
 
   // Reductions for vectors of bytes, shorts, ints, longs, floats, and doubles.
 

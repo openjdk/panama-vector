@@ -970,4 +970,5 @@ public class DoubleMaxVectorLoadStoreTests extends AbstractVectorTest {
     }
 
 
+
 }

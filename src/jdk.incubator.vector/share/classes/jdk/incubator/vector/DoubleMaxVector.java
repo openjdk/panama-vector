@@ -401,14 +401,7 @@ final class DoubleMaxVector extends DoubleVector {
     @Override
     @ForceInline
     public DoubleMaxVector slice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         DoubleMaxShuffle Iota = iotaShuffle();
-         VectorMask<Double> BlendMask = Iota.toVector().compare(VectorOperators.LT, (broadcast((double)(VLENGTH-origin))));
-         Iota = iotaShuffle(origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (DoubleMaxVector) super.sliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -429,14 +422,7 @@ final class DoubleMaxVector extends DoubleVector {
     @Override
     @ForceInline
     public DoubleMaxVector unslice(int origin) {
-       if ((origin < 0) || (origin >= VLENGTH)) {
-         throw new ArrayIndexOutOfBoundsException("Index " + origin + " out of bounds for vector length " + VLENGTH);
-       } else {
-         DoubleMaxShuffle Iota = iotaShuffle();
-         VectorMask<Double> BlendMask = Iota.toVector().compare(VectorOperators.GE, (broadcast((double)(origin))));
-         Iota = iotaShuffle(-origin, 1, true);
-         return ZERO.blend(this.rearrange(Iota), BlendMask);
-       }
+        return (DoubleMaxVector) super.unsliceTemplate(origin);  // specialize
     }
 
     @Override
@@ -789,6 +775,7 @@ final class DoubleMaxVector extends DoubleVector {
     DoubleVector fromArray0(double[] a, int offset) {
         return super.fromArray0Template(a, offset);  // specialize
     }
+
 
 
     @ForceInline

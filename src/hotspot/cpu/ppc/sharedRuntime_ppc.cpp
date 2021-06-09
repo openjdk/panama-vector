@@ -29,6 +29,7 @@
 #include "code/icBuffer.hpp"
 #include "code/vtableStubs.hpp"
 #include "frame_ppc.hpp"
+#include "compiler/oopMap.hpp"
 #include "gc/shared/gcLocker.hpp"
 #include "interpreter/interpreter.hpp"
 #include "interpreter/interp_masm.hpp"
@@ -919,7 +920,6 @@ int SharedRuntime::c_calling_convention(const BasicType *sig_bt,
 int SharedRuntime::vector_calling_convention(VMRegPair *regs,
                                              uint num_bits,
                                              uint total_args_passed) {
-  assert(!Matcher::supports_vector_calling_convention(), "not implemented");
   Unimplemented();
   return 0;
 }
