@@ -159,7 +159,7 @@
   }
 
   static bool supports_unsigned_vector_comparison(int vlen, BasicType bt) {
-    if ((UseAVX > 2) && (VM_Version::supports_avx512vl() || vlen == 64))
+    if ((UseAVX > 2) && (VM_Version::supports_avx512vl() || type2aelembytes(bt) * vlen == 64))
       return true;
     else {
       // instruction set supports only signed comparison
@@ -168,7 +168,7 @@
       // and on avx1 cannot cast 128 bit integral vectors to higher size
 
       if ((bt != T_LONG)  &&
-          ((UseAVX >= 2) || (vlen <= 8)))
+          ((UseAVX >= 2) || (type2aelembytes(bt) * vlen <= 8)))
         return true;
     }
     return false;
