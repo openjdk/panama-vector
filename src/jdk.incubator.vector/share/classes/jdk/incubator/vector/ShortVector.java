@@ -3606,7 +3606,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset), m,
             a, offset, vsp,
-            (arr, off, s, vm) -> s.ldOp(arr, off, (AbstractMask<Short>) vm,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
                                         (arr_, off_, i) -> arr_[off_ + i]));
     }
 
@@ -3638,7 +3638,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
                 a, charArrayAddress(a, offset), m,
                 a, offset, vsp,
-                (arr, off, s, vm) -> s.ldOp(arr, off, (AbstractMask<Short>) vm,
+                (arr, off, s, vm) -> s.ldOp(arr, off, vm,
                                             (arr_, off_, i) -> (short) arr_[off_ + i]));
     }
 
@@ -4099,7 +4099,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
         /*package-private*/
         @ForceInline
         <M> ShortVector ldOp(M memory, int offset,
-                                      AbstractMask<Short> m,
+                                      VectorMask<Short> m,
                                       FLdOp<M> f) {
             return dummyVector().ldOp(memory, offset, m, f);
         }

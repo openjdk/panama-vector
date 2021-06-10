@@ -3620,7 +3620,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset), m,
             a, offset, vsp,
-            (arr, off, s, vm) -> s.ldOp(arr, off, (AbstractMask<Byte>) vm,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
                                         (arr_, off_, i) -> arr_[off_ + i]));
     }
 
@@ -3653,7 +3653,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
             a, booleanArrayAddress(a, offset), m,
             a, offset, vsp,
-            (arr, off, s, vm) -> s.ldOp(arr, off, (AbstractMask<Byte>) vm,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
                                         (arr_, off_, i) -> (byte) (arr_[off_ + i] ? 1 : 0)));
     }
 
@@ -4105,7 +4105,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         /*package-private*/
         @ForceInline
         <M> ByteVector ldOp(M memory, int offset,
-                                      AbstractMask<Byte> m,
+                                      VectorMask<Byte> m,
                                       FLdOp<M> f) {
             return dummyVector().ldOp(memory, offset, m, f);
         }

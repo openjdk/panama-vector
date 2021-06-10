@@ -3239,7 +3239,7 @@ public abstract class LongVector extends AbstractVector<Long> {
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset), m,
             a, offset, vsp,
-            (arr, off, s, vm) -> s.ldOp(arr, off, (AbstractMask<Long>) vm,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
                                         (arr_, off_, i) -> arr_[off_ + i]));
     }
 
@@ -3658,7 +3658,7 @@ public abstract class LongVector extends AbstractVector<Long> {
         /*package-private*/
         @ForceInline
         <M> LongVector ldOp(M memory, int offset,
-                                      AbstractMask<Long> m,
+                                      VectorMask<Long> m,
                                       FLdOp<M> f) {
             return dummyVector().ldOp(memory, offset, m, f);
         }

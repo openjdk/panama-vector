@@ -3204,7 +3204,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset), m,
             a, offset, vsp,
-            (arr, off, s, vm) -> s.ldOp(arr, off, (AbstractMask<Float>) vm,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
                                         (arr_, off_, i) -> arr_[off_ + i]));
     }
 
@@ -3632,7 +3632,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
         /*package-private*/
         @ForceInline
         <M> FloatVector ldOp(M memory, int offset,
-                                      AbstractMask<Float> m,
+                                      VectorMask<Float> m,
                                       FLdOp<M> f) {
             return dummyVector().ldOp(memory, offset, m, f);
         }

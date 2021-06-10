@@ -329,10 +329,11 @@ class LibraryCallKit : public GraphKit {
   Node* gen_call_to_svml(int vector_api_op_id, BasicType bt, int num_elem, Node* opd1, Node* opd2);
 
   enum VectorMaskUseType {
-    VecMaskUseLoad,
-    VecMaskUseStore,
-    VecMaskUseAll,
-    VecMaskNotUsed
+    VecMaskUseLoad  = 1 << 0,
+    VecMaskUseStore = 1 << 1,
+    VecMaskUseAll   = VecMaskUseLoad | VecMaskUseStore,
+    VecMaskUsePred  = 1 << 2,
+    VecMaskNotUsed  = 1 << 3
   };
 
   bool arch_supports_vector(int op, int num_elem, BasicType type, VectorMaskUseType mask_use_type, bool has_scalar_args = false);

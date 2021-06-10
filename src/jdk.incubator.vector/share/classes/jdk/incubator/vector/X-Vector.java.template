@@ -4576,7 +4576,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset), m,
             a, offset, vsp,
-            (arr, off, s, vm) -> s.ldOp(arr, off, (AbstractMask<$Boxtype$>) vm,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
                                         (arr_, off_, i) -> arr_[off_ + i]));
     }
 
@@ -4609,7 +4609,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
                 a, charArrayAddress(a, offset), m,
                 a, offset, vsp,
-                (arr, off, s, vm) -> s.ldOp(arr, off, (AbstractMask<$Boxtype$>) vm,
+                (arr, off, s, vm) -> s.ldOp(arr, off, vm,
                                             (arr_, off_, i) -> (short) arr_[off_ + i]));
     }
 #end[short]
@@ -4643,7 +4643,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
             a, booleanArrayAddress(a, offset), m,
             a, offset, vsp,
-            (arr, off, s, vm) -> s.ldOp(arr, off, (AbstractMask<$Boxtype$>) vm,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
                                         (arr_, off_, i) -> (byte) (arr_[off_ + i] ? 1 : 0)));
     }
 #end[byte]
@@ -5166,7 +5166,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         /*package-private*/
         @ForceInline
         <M> $abstractvectortype$ ldOp(M memory, int offset,
-                                      AbstractMask<$Boxtype$> m,
+                                      VectorMask<$Boxtype$> m,
                                       FLdOp<M> f) {
             return dummyVector().ldOp(memory, offset, m, f);
         }

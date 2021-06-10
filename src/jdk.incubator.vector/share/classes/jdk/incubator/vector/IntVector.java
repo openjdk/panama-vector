@@ -3341,7 +3341,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset), m,
             a, offset, vsp,
-            (arr, off, s, vm) -> s.ldOp(arr, off, (AbstractMask<Integer>) vm,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
                                         (arr_, off_, i) -> arr_[off_ + i]));
     }
 
@@ -3769,7 +3769,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         /*package-private*/
         @ForceInline
         <M> IntVector ldOp(M memory, int offset,
-                                      AbstractMask<Integer> m,
+                                      VectorMask<Integer> m,
                                       FLdOp<M> f) {
             return dummyVector().ldOp(memory, offset, m, f);
         }

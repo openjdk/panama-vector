@@ -3217,7 +3217,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset), m,
             a, offset, vsp,
-            (arr, off, s, vm) -> s.ldOp(arr, off, (AbstractMask<Double>) vm,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
                                         (arr_, off_, i) -> arr_[off_ + i]));
     }
 
@@ -3645,7 +3645,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         /*package-private*/
         @ForceInline
         <M> DoubleVector ldOp(M memory, int offset,
-                                      AbstractMask<Double> m,
+                                      VectorMask<Double> m,
                                       FLdOp<M> f) {
             return dummyVector().ldOp(memory, offset, m, f);
         }

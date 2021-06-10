@@ -158,7 +158,7 @@ bool LibraryCallKit::arch_supports_vector(int sopc, int num_elem, BasicType type
   }
 
   // Check whether mask unboxing is supported.
-  if (mask_use_type == VecMaskUseAll || mask_use_type == VecMaskUseLoad) {
+  if ((mask_use_type & VecMaskUseLoad) != 0) {
     if (!Matcher::match_rule_supported_vector(Op_VectorLoadMask, num_elem, type)) {
     #ifndef PRODUCT
       if (C->print_intrinsics()) {
@@ -171,12 +171,25 @@ bool LibraryCallKit::arch_supports_vector(int sopc, int num_elem, BasicType type
   }
 
   // Check whether mask boxing is supported.
-  if (mask_use_type == VecMaskUseAll || mask_use_type == VecMaskUseStore) {
+  if ((mask_use_type & VecMaskUseStore) != 0) {
     if (!Matcher::match_rule_supported_vector(Op_VectorStoreMask, num_elem, type)) {
     #ifndef PRODUCT
       if (C->print_intrinsics()) {
         tty->print_cr("Rejected vector mask storing (%s,%s,%d) because architecture does not support it",
                       NodeClassNames[Op_VectorStoreMask], type2name(type), num_elem);
+      }
+    #endif
+      return false;
+    }
+  }
+
+  if ((mask_use_type & VecMaskUsePred) != 0) {
+    if (!Matcher::has_predicated_vectors() ||
+        !Matcher::match_rule_supported_vector_masked(sopc, num_elem, type)) {
+      #ifndef PRODUCT
+      if (C->print_intrinsics()) {
+        tty->print_cr("Rejected vector mask predicate using (%s,%s,%d) because architecture does not support it",
+                      NodeClassNames[sopc], type2name(type), num_elem);
       }
     #endif
       return false;
@@ -334,11 +347,21 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
                                       : is_masked_op ? VecMaskUseLoad : VecMaskNotUsed;
   if ((sopc != 0) && !arch_supports_vector(sopc, num_elem, elem_bt, mask_use_type)) {
     if (C->print_intrinsics()) {
-      tty->print_cr("  ** not supported: arity=%d opc=%d vlen=%d etype=%s ismask=%d",
+      tty->print_cr("  ** not supported: arity=%d opc=%d vlen=%d etype=%s ismask=%d is_masked_op=%d",
                     n, sopc, num_elem, type2name(elem_bt),
-                    is_vector_mask(vbox_klass) ? 1 : 0);
+                    is_vector_mask(vbox_klass) ? 1 : 0, is_masked_op ? 1 : 0);
     }
     return false; // not supported
+  }
+
+  // Return true if current platform has implemented the masked operation with predicate feature.
+  bool use_predicate = is_masked_op && sopc != 0 && arch_supports_vector(sopc, num_elem, elem_bt, VecMaskUsePred);
+  if (is_masked_op && !use_predicate && !arch_supports_vector(Op_VectorBlend, num_elem, elem_bt, VecMaskUseLoad)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not supported: arity=%d opc=%d vlen=%d etype=%s ismask=0 is_masked_op=1",
+                    n, sopc, num_elem, type2name(elem_bt));
+    }
+    return false;
   }
 
   Node* opd1 = NULL; Node* opd2 = NULL; Node* opd3 = NULL;
@@ -380,7 +403,6 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
   }
 
   Node* mask = NULL;
-  bool use_predicate = false;
   if (is_masked_op) {
     ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
     assert(is_vector_mask(mbox_klass), "argument(2) should be a mask class");
@@ -391,13 +413,6 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
         tty->print_cr("  ** unbox failed mask=%s",
                       NodeClassNames[argument(n + 5)->Opcode()]);
       }
-      return false;
-    }
-
-    // Return true if current platform has implemented the masked operation with predicate feature.
-    use_predicate = sopc != 0 && Matcher::has_predicated_vectors() &&
-                    Matcher::match_rule_supported_vector_masked(sopc, num_elem, elem_bt);
-    if (!use_predicate && !arch_supports_vector(Op_VectorBlend, num_elem, elem_bt, VecMaskUseLoad)) {
       return false;
     }
   }
@@ -950,10 +965,8 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
   BasicType elem_bt = elem_type->basic_type();
   int num_elem = vlen->get_con();
 
-  int sopc = is_store ? Op_StoreVectorMasked : Op_LoadVectorMasked;
-  bool use_predicate = Matcher::has_predicated_vectors() &&
-                       arch_supports_vector(sopc, num_elem, elem_bt, VecMaskUseLoad) &&
-                       Matcher::match_rule_supported_vector_masked(sopc, num_elem, elem_bt);
+  bool use_predicate = arch_supports_vector(is_store ? Op_StoreVectorMasked : Op_LoadVectorMasked,
+                                            num_elem, elem_bt, (VectorMaskUseType) (VecMaskUseLoad | VecMaskUsePred));
   // Masked vector store operation needs the architecture predicate feature. We need to check
   // whether the predicated vector operation is supported by backend.
   if (is_store && !use_predicate) {
