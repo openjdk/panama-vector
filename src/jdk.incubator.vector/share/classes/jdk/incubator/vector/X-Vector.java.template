@@ -706,8 +706,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                         v0.bOp(v1, (i, a, n) -> ($type$)((a & LSHR_SETUP_MASK) >>> n));
 #end[BITWISE]
 #if[FP]
-                case VECTOR_OP_OR: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> fromBits(toBits(a) | toBits(b)));
                 case VECTOR_OP_ATAN2: return (v0, v1) ->
                         v0.bOp(v1, (i, a, b) -> ($type$) Math.atan2(a, b));
                 case VECTOR_OP_POW: return (v0, v1) ->
@@ -2433,6 +2431,29 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                     return v1.lane(ei);
                 }));
         return r1.blend(r0, valid);
+    }
+
+    @ForceInline
+    private final
+    VectorShuffle<$Boxtype$> toShuffle0($Type$Species dsp) {
+        $type$[] a = toArray();
+        int[] sa = new int[a.length];
+        for (int i = 0; i < a.length; i++) {
+            sa[i] = (int) a[i];
+        }
+        return VectorShuffle.fromArray(dsp, sa, 0);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    VectorShuffle<$Boxtype$> toShuffleTemplate(Class<?> shuffleType) {
+        $Type$Species vsp = vspecies();
+        return VectorSupport.convert(VectorSupport.VECTOR_OP_CAST,
+                                     getClass(), $type$.class, length(),
+                                     shuffleType, byte.class, length(),
+                                     this, vsp,
+                                     $Type$Vector::toShuffle0);
     }
 
     /**

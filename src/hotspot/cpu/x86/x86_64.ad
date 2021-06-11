@@ -1694,6 +1694,23 @@ uint MachUEPNode::size(PhaseRegAlloc* ra_) const
 
 //=============================================================================
 
+const bool Matcher::supports_vector_calling_convention(void) {
+  if (EnableVectorSupport && UseVectorStubs) {
+    return true;
+  }
+  return false;
+}
+
+OptoRegPair Matcher::vector_return_value(uint ideal_reg) {
+  assert(EnableVectorSupport && UseVectorStubs, "sanity");
+  int lo = XMM0_num;
+  int hi = XMM0b_num;
+  if (ideal_reg == Op_VecX) hi = XMM0d_num;
+  else if (ideal_reg == Op_VecY) hi = XMM0h_num;
+  else if (ideal_reg == Op_VecZ) hi = XMM0p_num;
+  return OptoRegPair(hi, lo);
+}
+
 // Is this branch offset short enough that a short branch can be used?
 //
 // NOTE: If the platform does not provide any short branch variants, then
@@ -7621,6 +7638,28 @@ instruct castLL(rRegL dst)
 
   size(0);
   format %{ "# castLL of $dst" %}
+  ins_encode(/* empty encoding */);
+  ins_cost(0);
+  ins_pipe(empty);
+%}
+
+instruct castFF(regF dst)
+%{
+  match(Set dst (CastFF dst));
+
+  size(0);
+  format %{ "# castFF of $dst" %}
+  ins_encode(/* empty encoding */);
+  ins_cost(0);
+  ins_pipe(empty);
+%}
+
+instruct castDD(regD dst)
+%{
+  match(Set dst (CastDD dst));
+
+  size(0);
+  format %{ "# castDD of $dst" %}
   ins_encode(/* empty encoding */);
   ins_cost(0);
   ins_pipe(empty);

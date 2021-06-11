@@ -131,22 +131,9 @@
     return false; // not supported
   }
 
-  static bool supports_unsigned_vector_comparison(int vlen, BasicType bt) {
+  // Does the CPU supports vector unsigned comparison instructions?
+  static constexpr bool supports_vector_comparison_unsigned(int vlen, BasicType bt) {
     return false;
-  }
-
-  // Vector calling convention not yet implemented.
-  static const bool supports_vector_calling_convention(void) {
-    return false;
-  }
-
-  static void vector_calling_convention(VMRegPair *regs, uint num_bits, uint total_args_passed) {
-    (void) SharedRuntime::vector_calling_convention(regs, num_bits, total_args_passed);
-  }
-
-  static OptoRegPair vector_return_value(uint ideal_reg) {
-    Unimplemented();
-    return OptoRegPair(0, 0);
   }
 
   // Some microarchitectures have mask registers used on vectors
@@ -157,7 +144,7 @@
   // true means we have fast l2f convers
   // false means that conversion is done by runtime call
   static constexpr bool convL2FSupported(void) {
-      return true;
+      return false;
   }
 
 #endif // CPU_ARM_MATCHER_ARM_HPP
