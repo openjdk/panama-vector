@@ -186,7 +186,7 @@ bool LibraryCallKit::arch_supports_vector(int sopc, int num_elem, BasicType type
   if ((mask_use_type & VecMaskUsePred) != 0) {
     if (!Matcher::has_predicated_vectors() ||
         !Matcher::match_rule_supported_vector_masked(sopc, num_elem, type)) {
-      #ifndef PRODUCT
+    #ifndef PRODUCT
       if (C->print_intrinsics()) {
         tty->print_cr("Rejected vector mask predicate using (%s,%s,%d) because architecture does not support it",
                       NodeClassNames[sopc], type2name(type), num_elem);

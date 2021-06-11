@@ -3403,7 +3403,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         if (m.allTrue()) {
             intoBooleanArray(a, offset);
         } else {
-            // FIXME: optimize
             ByteSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
             intoBooleanArray0(a, offset, m);

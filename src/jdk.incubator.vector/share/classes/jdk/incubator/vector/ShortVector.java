@@ -3394,7 +3394,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
         if (m.allTrue()) {
             intoCharArray(a, offset);
         } else {
-            // FIXME: optimize
             ShortSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
             intoCharArray0(a, offset, m);

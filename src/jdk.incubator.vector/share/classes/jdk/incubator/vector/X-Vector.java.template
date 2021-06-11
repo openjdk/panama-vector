@@ -4195,7 +4195,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         if (m.allTrue()) {
             intoCharArray(a, offset);
         } else {
-            // FIXME: optimize
             $Type$Species vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
             intoCharArray0(a, offset, m);
@@ -4358,7 +4357,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         if (m.allTrue()) {
             intoBooleanArray(a, offset);
         } else {
-            // FIXME: optimize
             $Type$Species vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
             intoBooleanArray0(a, offset, m);
