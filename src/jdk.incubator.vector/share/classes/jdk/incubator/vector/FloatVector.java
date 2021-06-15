@@ -643,8 +643,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
                         v0.bOp(v1, (i, a, b) -> (float)Math.max(a, b));
                 case VECTOR_OP_MIN: return (v0, v1) ->
                         v0.bOp(v1, (i, a, b) -> (float)Math.min(a, b));
-                case VECTOR_OP_OR: return (v0, v1) ->
-                        v0.bOp(v1, (i, a, b) -> fromBits(toBits(a) | toBits(b)));
                 case VECTOR_OP_ATAN2: return (v0, v1) ->
                         v0.bOp(v1, (i, a, b) -> (float) Math.atan2(a, b));
                 case VECTOR_OP_POW: return (v0, v1) ->
@@ -2085,6 +2083,29 @@ public abstract class FloatVector extends AbstractVector<Float> {
                     return v1.lane(ei);
                 }));
         return r1.blend(r0, valid);
+    }
+
+    @ForceInline
+    private final
+    VectorShuffle<Float> toShuffle0(FloatSpecies dsp) {
+        float[] a = toArray();
+        int[] sa = new int[a.length];
+        for (int i = 0; i < a.length; i++) {
+            sa[i] = (int) a[i];
+        }
+        return VectorShuffle.fromArray(dsp, sa, 0);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    VectorShuffle<Float> toShuffleTemplate(Class<?> shuffleType) {
+        FloatSpecies vsp = vspecies();
+        return VectorSupport.convert(VectorSupport.VECTOR_OP_CAST,
+                                     getClass(), float.class, length(),
+                                     shuffleType, byte.class, length(),
+                                     this, vsp,
+                                     FloatVector::toShuffle0);
     }
 
     /**

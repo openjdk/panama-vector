@@ -158,8 +158,10 @@
     return true;
   }
 
-  static bool supports_unsigned_vector_comparison(int vlen, BasicType bt) {
-    if ((UseAVX > 2) && (VM_Version::supports_avx512vl() || vlen == 64))
+  // Does the CPU supports vector unsigned comparison instructions?
+  static const bool supports_vector_comparison_unsigned(int vlen, BasicType bt) {
+    int vlen_in_bytes = vlen * type2aelembytes(bt);
+    if ((UseAVX > 2) && (VM_Version::supports_avx512vl() || vlen_in_bytes == 64))
       return true;
     else {
       // instruction set supports only signed comparison
@@ -168,36 +170,10 @@
       // and on avx1 cannot cast 128 bit integral vectors to higher size
 
       if ((bt != T_LONG)  &&
-          ((UseAVX >= 2) || (vlen <= 8)))
+          ((UseAVX >= 2) || (vlen_in_bytes <= 8)))
         return true;
     }
     return false;
-  }
-
-  static const bool supports_vector_calling_convention() {
-#ifdef _LP64
-    return true;
-#else
-    return false;
-#endif
-  }
-
-  static void vector_calling_convention(VMRegPair *regs, uint num_bits, uint total_args_passed) {
-    (void) SharedRuntime::vector_calling_convention(regs, num_bits, total_args_passed);
-  }
-
-  static OptoRegPair vector_return_value(uint ideal_reg) {
-#ifdef _LP64
-    int lo = XMM0_num;
-    int hi = XMM0b_num;
-    if (ideal_reg == Op_VecX) hi = XMM0d_num;
-    else if (ideal_reg == Op_VecY) hi = XMM0h_num;
-    else if (ideal_reg == Op_VecZ) hi = XMM0p_num;
-    return OptoRegPair(hi, lo);
-#else
-    Unimplemented();
-    return OptoRegPair(0, 0);
-#endif
   }
 
   // Some microarchitectures have mask registers used on vectors

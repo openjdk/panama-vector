@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Intel Corporation.
+ * Copyright (c) 2018, 2021, Intel Corporation.
  * Intel Short Vector Math Library (SVML) Source Code
  *
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -1258,7 +1258,7 @@ __svml_shypot_ha_cout_rare_internal:
         movss     %xmm2, (%r8)                                  #1005.17
                                 # LOE rbx rbp r12 r13 r14 r15
 ..B7.10:                        # Preds ..B7.9 ..B7.12 ..B7.13 ..B7.15 ..B7.18
-                                #      
+                                #
                                 # Execution count [1.00e+00]
         xorl      %eax, %eax                                    #1042.12
         ret                                                     #1042.12

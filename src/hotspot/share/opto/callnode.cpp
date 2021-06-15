@@ -743,11 +743,13 @@ Node *CallNode::match( const ProjNode *proj, const Matcher *match ) {
         : match->  return_value(ideal_reg); // Calls into compiled Java code
     RegMask rm = RegMask(regs.first());
 
-    // If the return is in vector, compute appropriate regmask taking into account the whole range
-    if(ideal_reg >= Op_VecS && ideal_reg <= Op_VecZ) {
-      if(OptoReg::is_valid(regs.second())) {
-        for (OptoReg::Name r = regs.first(); r <= regs.second(); r = OptoReg::add(r, 1)) {
-          rm.Insert(r);
+    if (Opcode() == Op_CallLeafVector) {
+      // If the return is in vector, compute appropriate regmask taking into account the whole range
+      if(ideal_reg >= Op_VecS && ideal_reg <= Op_VecZ) {
+        if(OptoReg::is_valid(regs.second())) {
+          for (OptoReg::Name r = regs.first(); r <= regs.second(); r = OptoReg::add(r, 1)) {
+            rm.Insert(r);
+          }
         }
       }
     }
@@ -1078,6 +1080,12 @@ Node* CallStaticJavaNode::Ideal(PhaseGVN* phase, bool can_reshape) {
         phase->C->prepend_late_inline(cg);
         set_generator(NULL);
       }
+    } else if (iid == vmIntrinsics::_linkToNative) {
+      if (in(TypeFunc::Parms + callee->arg_size() - 1)->Opcode() == Op_ConP /* NEP */
+          && in(TypeFunc::Parms + 1)->Opcode() == Op_ConL /* address */) {
+        phase->C->prepend_late_inline(cg);
+        set_generator(NULL);
+      }
     } else {
       assert(callee->has_member_arg(), "wrong type of call?");
       if (in(TypeFunc::Parms + callee->arg_size() - 1)->Opcode() == Op_ConP) {
@@ -1295,7 +1303,7 @@ void CallLeafVectorNode::calling_convention( BasicType* sig_bt, VMRegPair *parm_
   }
 #endif
 
-  Matcher::vector_calling_convention(parm_regs, _num_bits, argcnt);
+  SharedRuntime::vector_calling_convention(parm_regs, _num_bits, argcnt);
 }
 
 void CallNativeNode::calling_convention( BasicType* sig_bt, VMRegPair *parm_regs, uint argcnt ) const {
