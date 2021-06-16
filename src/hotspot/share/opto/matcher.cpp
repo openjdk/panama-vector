@@ -1399,8 +1399,8 @@ MachNode *Matcher::match_sfpt( SafePointNode *sfpt ) {
       RegMask *rm = &mcall->_in_rms[i+TypeFunc::Parms];
       VMReg first = parm_regs[i].first();
       VMReg second = parm_regs[i].second();
-      if( !first->is_valid() &&
-          !second->is_valid() ) {
+      if(!first->is_valid() &&
+         !second->is_valid()) {
         continue;               // Avoid Halves
       }
       // Handle case where arguments are in vector registers.
@@ -2259,6 +2259,7 @@ bool Matcher::find_shared_visit(MStack& mstack, Node* n, uint opcode, bool& mem_
     case Op_FmaVF:
     case Op_MacroLogicV:
     case Op_LoadVectorMasked:
+    case Op_VectorCmpMasked:
       set_shared(n); // Force result into register (it will be anyways)
       break;
     case Op_ConP: {  // Convert pointers above the centerline to NUL
@@ -2349,6 +2350,12 @@ void Matcher::find_shared_post_visit(Node* n, uint opcode) {
       n->set_req(1, pair1);
       Node* pair2 = new BinaryNode(n->in(2), n->in(3));
       n->set_req(2, pair2);
+      n->del_req(3);
+      break;
+    }
+    case Op_VectorCmpMasked: {
+      Node* pair1 = new BinaryNode(n->in(2), n->in(3));
+      n->set_req(2, pair1);
       n->del_req(3);
       break;
     }
