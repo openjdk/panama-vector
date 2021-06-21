@@ -388,20 +388,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     }
 
     /*package-private*/
-    @ForceInline
-    static boolean doBinTest(int cond, double a, double b) {
-        switch (cond) {
-        case BT_eq:  return a == b;
-        case BT_ne:  return a != b;
-        case BT_lt:  return a < b;
-        case BT_le:  return a <= b;
-        case BT_gt:  return a > b;
-        case BT_ge:  return a >= b;
-        }
-        throw new AssertionError(Integer.toHexString(cond));
-    }
-
-    /*package-private*/
     @Override
     abstract DoubleSpecies vspecies();
 
@@ -1760,17 +1746,16 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     }
 
     @ForceInline
-    private static
-    boolean compareWithOp(int cond, double a, double b) {
-        switch (cond) {
-        case BT_eq:  return a == b;
-        case BT_ne:  return a != b;
-        case BT_lt:  return a <  b;
-        case BT_le:  return a <= b;
-        case BT_gt:  return a >  b;
-        case BT_ge:  return a >= b;
-        }
-        throw new AssertionError();
+    private static boolean compareWithOp(int cond, double a, double b) {
+        return switch (cond) {
+            case BT_eq -> a == b;
+            case BT_ne -> a != b;
+            case BT_lt -> a < b;
+            case BT_le -> a <= b;
+            case BT_gt -> a > b;
+            case BT_ge -> a >= b;
+            default -> throw new AssertionError();
+        };
     }
 
     /**
@@ -1974,14 +1959,11 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     DoubleVector sliceTemplate(int origin, Vector<Double> v1) {
         DoubleVector that = (DoubleVector) v1;
         that.check(this);
-        double[] a0 = this.vec();
-        double[] a1 = that.vec();
-        double[] res = new double[a0.length];
-        int vlen = res.length;
-        int firstPart = vlen - origin;
-        System.arraycopy(a0, origin, res, 0, firstPart);
-        System.arraycopy(a1, 0, res, firstPart, origin);
-        return vectorFactory(res);
+        Objects.checkIndex(origin, length() + 1);
+        VectorShuffle<Double> iota = iotaShuffle();
+        VectorMask<Double> blendMask = iota.toVector().compare(VectorOperators.LT, (broadcast((double)(length() - origin))));
+        iota = iotaShuffle(origin, 1, true);
+        return that.rearrange(iota).blend(this.rearrange(iota), blendMask);
     }
 
     /**
@@ -2003,6 +1985,17 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     public abstract
     DoubleVector slice(int origin);
 
+    /*package-private*/
+    final
+    @ForceInline
+    DoubleVector sliceTemplate(int origin) {
+        Objects.checkIndex(origin, length() + 1);
+        VectorShuffle<Double> iota = iotaShuffle();
+        VectorMask<Double> blendMask = iota.toVector().compare(VectorOperators.LT, (broadcast((double)(length() - origin))));
+        iota = iotaShuffle(origin, 1, true);
+        return vspecies().zero().blend(this.rearrange(iota), blendMask);
+    }
+
     /**
      * {@inheritDoc} <!--workaround-->
      */
@@ -2017,21 +2010,12 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     unsliceTemplate(int origin, Vector<Double> w, int part) {
         DoubleVector that = (DoubleVector) w;
         that.check(this);
-        double[] slice = this.vec();
-        double[] res = that.vec().clone();
-        int vlen = res.length;
-        int firstPart = vlen - origin;
-        switch (part) {
-        case 0:
-            System.arraycopy(slice, 0, res, origin, firstPart);
-            break;
-        case 1:
-            System.arraycopy(slice, firstPart, res, 0, origin);
-            break;
-        default:
-            throw wrongPartForSlice(part);
-        }
-        return vectorFactory(res);
+        Objects.checkIndex(origin, length() + 1);
+        VectorShuffle<Double> iota = iotaShuffle();
+        VectorMask<Double> blendMask = iota.toVector().compare((part == 0) ? VectorOperators.GE : VectorOperators.LT,
+                                                                  (broadcast((double)(origin))));
+        iota = iotaShuffle(-origin, 1, true);
+        return that.blend(this.rearrange(iota), blendMask);
     }
 
     /*package-private*/
@@ -2060,6 +2044,19 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     @Override
     public abstract
     DoubleVector unslice(int origin);
+
+    /*package-private*/
+    final
+    @ForceInline
+    DoubleVector
+    unsliceTemplate(int origin) {
+        Objects.checkIndex(origin, length() + 1);
+        VectorShuffle<Double> iota = iotaShuffle();
+        VectorMask<Double> blendMask = iota.toVector().compare(VectorOperators.GE,
+                                                                  (broadcast((double)(origin))));
+        iota = iotaShuffle(-origin, 1, true);
+        return vspecies().zero().blend(this.rearrange(iota), blendMask);
+    }
 
     private ArrayIndexOutOfBoundsException
     wrongPartForSlice(int part) {
@@ -2156,6 +2153,29 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                     return v1.lane(ei);
                 }));
         return r1.blend(r0, valid);
+    }
+
+    @ForceInline
+    private final
+    VectorShuffle<Double> toShuffle0(DoubleSpecies dsp) {
+        double[] a = toArray();
+        int[] sa = new int[a.length];
+        for (int i = 0; i < a.length; i++) {
+            sa[i] = (int) a[i];
+        }
+        return VectorShuffle.fromArray(dsp, sa, 0);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    VectorShuffle<Double> toShuffleTemplate(Class<?> shuffleType) {
+        DoubleSpecies vsp = vspecies();
+        return VectorSupport.convert(VectorSupport.VECTOR_OP_CAST,
+                                     getClass(), double.class, length(),
+                                     shuffleType, byte.class, length(),
+                                     this, vsp,
+                                     DoubleVector::toShuffle0);
     }
 
     /**
@@ -2811,6 +2831,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     }
 
 
+
     /**
      * Loads a vector from a {@linkplain ByteBuffer byte buffer}
      * starting at an offset into the byte buffer.
@@ -3100,6 +3121,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     }
 
 
+
     /**
      * {@inheritDoc} <!--workaround-->
      */
@@ -3205,6 +3227,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             (arr, off, s) -> s.ldOp(arr, off,
                                     (arr_, off_, i) -> arr_[off_ + i]));
     }
+
 
 
     @Override
@@ -3357,6 +3380,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     static long arrayAddress(double[] a, int index) {
         return ARRAY_BASE + (((long)index) << ARRAY_SHIFT);
     }
+
 
 
     @ForceInline

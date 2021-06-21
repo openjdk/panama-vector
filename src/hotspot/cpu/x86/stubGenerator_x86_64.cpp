@@ -26,6 +26,7 @@
 #include "asm/macroAssembler.hpp"
 #include "asm/macroAssembler.inline.hpp"
 #include "ci/ciUtilities.hpp"
+#include "compiler/oopMap.hpp"
 #include "gc/shared/barrierSet.hpp"
 #include "gc/shared/barrierSetAssembler.hpp"
 #include "gc/shared/barrierSetNMethod.hpp"
@@ -288,7 +289,7 @@ class StubGenerator: public StubCodeGenerator {
       __ stmxcsr(mxcsr_save);
       __ movl(rax, mxcsr_save);
       __ andl(rax, MXCSR_MASK);    // Only check control and mask bits
-      ExternalAddress mxcsr_std(StubRoutines::addr_mxcsr_std());
+      ExternalAddress mxcsr_std(StubRoutines::x86::addr_mxcsr_std());
       __ cmp32(rax, mxcsr_std);
       __ jcc(Assembler::equal, skip_ldmx);
       __ ldmxcsr(mxcsr_std);
@@ -601,7 +602,7 @@ class StubGenerator: public StubCodeGenerator {
 
     if (CheckJNICalls) {
       Label ok_ret;
-      ExternalAddress mxcsr_std(StubRoutines::addr_mxcsr_std());
+      ExternalAddress mxcsr_std(StubRoutines::x86::addr_mxcsr_std());
       __ push(rax);
       __ subptr(rsp, wordSize);      // allocate a temp location
       __ stmxcsr(mxcsr_save);
@@ -5789,6 +5790,47 @@ address generate_avx_ghash_processBlocks() {
       return start;
   }
 
+
+  /***
+   *  Arguments:
+   *
+   *  Inputs:
+   *   c_rarg0   - int   adler
+   *   c_rarg1   - byte* buff
+   *   c_rarg2   - int   len
+   *
+   * Output:
+   *   rax   - int adler result
+   */
+
+  address generate_updateBytesAdler32() {
+      assert(UseAdler32Intrinsics, "need AVX2");
+
+      __ align(CodeEntryAlignment);
+      StubCodeMark mark(this, "StubRoutines", "updateBytesAdler32");
+
+      address start = __ pc();
+
+      const Register data = r9;
+      const Register size = r10;
+
+      const XMMRegister yshuf0 = xmm6;
+      const XMMRegister yshuf1 = xmm7;
+      assert_different_registers(c_rarg0, c_rarg1, c_rarg2, data, size);
+
+      BLOCK_COMMENT("Entry:");
+      __ enter(); // required for proper stackwalking of RuntimeStub frame
+
+      __ vmovdqu(yshuf0, ExternalAddress((address) StubRoutines::x86::_adler32_shuf0_table), r9);
+      __ vmovdqu(yshuf1, ExternalAddress((address) StubRoutines::x86::_adler32_shuf1_table), r9);
+      __ movptr(data, c_rarg1); //data
+      __ movl(size, c_rarg2); //length
+      __ updateBytesAdler32(c_rarg0, data, size, yshuf0, yshuf1, ExternalAddress((address) StubRoutines::x86::_adler32_ascale_table));
+      __ leave();
+      __ ret(0);
+      return start;
+  }
+
   /**
    *  Arguments:
    *
@@ -6671,24 +6713,8 @@ address generate_avx_ghash_processBlocks() {
   }
 
   void create_control_words() {
-    // Round to nearest, 53-bit mode, exceptions masked
-    StubRoutines::_fpu_cntrl_wrd_std   = 0x027F;
-    // Round to zero, 53-bit mode, exception mased
-    StubRoutines::_fpu_cntrl_wrd_trunc = 0x0D7F;
-    // Round to nearest, 24-bit mode, exceptions masked
-    StubRoutines::_fpu_cntrl_wrd_24    = 0x007F;
     // Round to nearest, 64-bit mode, exceptions masked
-    StubRoutines::_mxcsr_std           = 0x1F80;
-    // Note: the following two constants are 80-bit values
-    //       layout is critical for correct loading by FPU.
-    // Bias for strict fp multiply/divide
-    StubRoutines::_fpu_subnormal_bias1[0]= 0x00000000; // 2^(-15360) == 0x03ff 8000 0000 0000 0000
-    StubRoutines::_fpu_subnormal_bias1[1]= 0x80000000;
-    StubRoutines::_fpu_subnormal_bias1[2]= 0x03ff;
-    // Un-Bias for strict fp multiply/divide
-    StubRoutines::_fpu_subnormal_bias2[0]= 0x00000000; // 2^(+15360) == 0x7bff 8000 0000 0000 0000
-    StubRoutines::_fpu_subnormal_bias2[1]= 0x80000000;
-    StubRoutines::_fpu_subnormal_bias2[2]= 0x7bff;
+    StubRoutines::x86::_mxcsr_std = 0x1F80;
   }
 
   // Initialization
@@ -6753,6 +6779,11 @@ address generate_avx_ghash_processBlocks() {
       StubRoutines::_crc32c_table_addr = (address)StubRoutines::x86::_crc32c_table;
       StubRoutines::_updateBytesCRC32C = generate_updateBytesCRC32C(supports_clmul);
     }
+
+    if (UseAdler32Intrinsics) {
+       StubRoutines::_updateBytesAdler32 = generate_updateBytesAdler32();
+    }
+
     if (UseLibmIntrinsic && InlineIntrinsics) {
       if (vmIntrinsics::is_intrinsic_available(vmIntrinsics::_dsin) ||
           vmIntrinsics::is_intrinsic_available(vmIntrinsics::_dcos) ||
@@ -6965,328 +6996,67 @@ address generate_avx_ghash_processBlocks() {
       StubRoutines::_montgomerySquare
         = CAST_FROM_FN_PTR(address, SharedRuntime::montgomery_square);
     }
-#ifdef __VECTOR_API_MATH_INTRINSICS_COMMON
+
+    // Get svml stub routine addresses
     void *libsvml = NULL;
     char ebuf[1024];
     libsvml = os::dll_load(JNI_LIB_PREFIX "svml" JNI_LIB_SUFFIX, ebuf, sizeof ebuf);
     if (libsvml != NULL) {
+      // SVML method naming convention
+      //   All the methods are named as __svml_op<T><N>_ha_<VV>
+      //   Where:
+      //      ha stands for high accuracy
+      //      <T> is optional to indicate float/double
+      //              Set to f for vector float operation
+      //              Omitted for vector double operation
+      //      <N> is the number of elements in the vector
+      //              1, 2, 4, 8, 16
+      //              e.g. 128 bit float vector has 4 float elements
+      //      <VV> indicates the avx/sse level:
+      //              z0 is AVX512, l9 is AVX2, e9 is AVX1 and ex is for SSE2
+      //      e.g. __svml_expf16_ha_z0 is the method for computing 16 element vector float exp using AVX 512 insns
+      //           __svml_exp8_ha_z0 is the method for computing 8 element vector double exp using AVX 512 insns
+
       log_info(library)("Loaded library %s, handle " INTPTR_FORMAT, JNI_LIB_PREFIX "svml" JNI_LIB_SUFFIX, p2i(libsvml));
       if (UseAVX > 2) {
-        StubRoutines::_vector_exp_float512    = (address)os::dll_lookup(libsvml, "__svml_exp8_ha_z0");
-        StubRoutines::_vector_exp_double512   = (address)os::dll_lookup(libsvml, "__svml_exp8_ha_z0");
-        StubRoutines::_vector_expm1_float512  = (address)os::dll_lookup(libsvml, "__svml_expm1f16_ha_z0");
-        StubRoutines::_vector_expm1_double512 = (address)os::dll_lookup(libsvml, "__svml_expm18_ha_z0");
-        StubRoutines::_vector_log1p_float512  = (address)os::dll_lookup(libsvml, "__svml_log1pf16_ha_z0");
-        StubRoutines::_vector_log1p_double512 = (address)os::dll_lookup(libsvml, "__svml_log1p8_ha_z0");
-        StubRoutines::_vector_log_float512    = (address)os::dll_lookup(libsvml, "__svml_logf16_ha_z0");
-        StubRoutines::_vector_log_double512   = (address)os::dll_lookup(libsvml, "__svml_log8_ha_z0");
-        StubRoutines::_vector_log10_float512  = (address)os::dll_lookup(libsvml, "__svml_log10f16_ha_z0");
-        StubRoutines::_vector_log10_double512 = (address)os::dll_lookup(libsvml, "__svml_log108_ha_z0");
-        StubRoutines::_vector_sin_float512    = (address)os::dll_lookup(libsvml, "__svml_sinf16_ha_z0");
-        StubRoutines::_vector_sin_double512   = (address)os::dll_lookup(libsvml, "__svml_sin8_ha_z0");
-        StubRoutines::_vector_cos_float512    = (address)os::dll_lookup(libsvml, "__svml_cosf16_ha_z0");
-        StubRoutines::_vector_cos_double512   = (address)os::dll_lookup(libsvml, "__svml_cos8_ha_z0");
-        StubRoutines::_vector_tan_float512    = (address)os::dll_lookup(libsvml, "__svml_tanf16_ha_z0");
-        StubRoutines::_vector_tan_double512   = (address)os::dll_lookup(libsvml, "__svml_tan8_ha_z0");
-        StubRoutines::_vector_sinh_float512   = (address)os::dll_lookup(libsvml, "__svml_sinhf16_ha_z0");
-        StubRoutines::_vector_sinh_double512  = (address)os::dll_lookup(libsvml, "__svml_sinh8_ha_z0");
-        StubRoutines::_vector_cosh_float512   = (address)os::dll_lookup(libsvml, "__svml_coshf16_ha_z0");
-        StubRoutines::_vector_cosh_double512  = (address)os::dll_lookup(libsvml, "__svml_cosh8_ha_z0");
-        StubRoutines::_vector_tanh_float512   = (address)os::dll_lookup(libsvml, "__svml_tanhf16_ha_z0");
-        StubRoutines::_vector_tanh_double512  = (address)os::dll_lookup(libsvml, "__svml_tanh8_ha_z0");
-        StubRoutines::_vector_acos_float512   = (address)os::dll_lookup(libsvml, "__svml_acosf16_ha_z0");
-        StubRoutines::_vector_acos_double512  = (address)os::dll_lookup(libsvml, "__svml_acos8_ha_z0");
-        StubRoutines::_vector_asin_float512   = (address)os::dll_lookup(libsvml, "__svml_asinf16_ha_z0");
-        StubRoutines::_vector_asin_double512  = (address)os::dll_lookup(libsvml, "__svml_asin8_ha_z0");
-        StubRoutines::_vector_atan_float512   = (address)os::dll_lookup(libsvml, "__svml_atanf16_ha_z0");
-        StubRoutines::_vector_atan_double512  = (address)os::dll_lookup(libsvml, "__svml_atan8_ha_z0");
-        StubRoutines::_vector_pow_float512    = (address)os::dll_lookup(libsvml, "__svml_powf16_ha_z0");
-        StubRoutines::_vector_pow_double512   = (address)os::dll_lookup(libsvml, "__svml_pow8_ha_z0");
-        StubRoutines::_vector_hypot_float512  = (address)os::dll_lookup(libsvml, "__svml_hypotf16_ha_z0");
-        StubRoutines::_vector_hypot_double512 = (address)os::dll_lookup(libsvml, "__svml_hypot8_ha_z0");
-        StubRoutines::_vector_cbrt_float512   = (address)os::dll_lookup(libsvml, "__svml_cbrtf16_ha_z0");
-        StubRoutines::_vector_cbrt_double512  = (address)os::dll_lookup(libsvml, "__svml_cbrt8_ha_z0");
-        StubRoutines::_vector_atan2_float512  = (address)os::dll_lookup(libsvml, "__svml_atan2f16_ha_z0");
-        StubRoutines::_vector_atan2_double512 = (address)os::dll_lookup(libsvml, "__svml_atan28_ha_z0");
-      } else if (UseAVX > 1) {
-        StubRoutines::_vector_exp_float64     = (address)os::dll_lookup(libsvml, "__svml_expf4_ha_l9");
-        StubRoutines::_vector_exp_float128    = (address)os::dll_lookup(libsvml, "__svml_expf4_ha_l9");
-        StubRoutines::_vector_exp_float256    = (address)os::dll_lookup(libsvml, "__svml_expf8_ha_l9");
-        StubRoutines::_vector_exp_double64    = (address)os::dll_lookup(libsvml, "__svml_exp1_ha_l9");
-        StubRoutines::_vector_exp_double128   = (address)os::dll_lookup(libsvml, "__svml_exp2_ha_l9");
-        StubRoutines::_vector_exp_double256   = (address)os::dll_lookup(libsvml, "__svml_exp4_ha_l9");
-        StubRoutines::_vector_expm1_float64   = (address)os::dll_lookup(libsvml, "__svml_expm1f4_ha_l9");
-        StubRoutines::_vector_expm1_float128  = (address)os::dll_lookup(libsvml, "__svml_expm1f4_ha_l9");
-        StubRoutines::_vector_expm1_float256  = (address)os::dll_lookup(libsvml, "__svml_expm1f8_ha_l9");
-        StubRoutines::_vector_expm1_double64  = (address)os::dll_lookup(libsvml, "__svml_expm11_ha_l9");
-        StubRoutines::_vector_expm1_double128 = (address)os::dll_lookup(libsvml, "__svml_expm12_ha_l9");
-        StubRoutines::_vector_expm1_double256 = (address)os::dll_lookup(libsvml, "__svml_expm14_ha_l9");
-        StubRoutines::_vector_log1p_float64   = (address)os::dll_lookup(libsvml, "__svml_log1pf4_ha_l9");
-        StubRoutines::_vector_log1p_float128  = (address)os::dll_lookup(libsvml, "__svml_log1pf4_ha_l9");
-        StubRoutines::_vector_log1p_float256  = (address)os::dll_lookup(libsvml, "__svml_log1pf8_ha_l9");
-        StubRoutines::_vector_log1p_double64  = (address)os::dll_lookup(libsvml, "__svml_log1p1_ha_l9");
-        StubRoutines::_vector_log1p_double128 = (address)os::dll_lookup(libsvml, "__svml_log1p2_ha_l9");
-        StubRoutines::_vector_log1p_double256 = (address)os::dll_lookup(libsvml, "__svml_log1p4_ha_l9");
-        StubRoutines::_vector_log_float64     = (address)os::dll_lookup(libsvml, "__svml_logf4_ha_l9");
-        StubRoutines::_vector_log_float128    = (address)os::dll_lookup(libsvml, "__svml_logf4_ha_l9");
-        StubRoutines::_vector_log_float256    = (address)os::dll_lookup(libsvml, "__svml_logf8_ha_l9");
-        StubRoutines::_vector_log_double64    = (address)os::dll_lookup(libsvml, "__svml_log1_ha_l9");
-        StubRoutines::_vector_log_double128   = (address)os::dll_lookup(libsvml, "__svml_log2_ha_l9");
-        StubRoutines::_vector_log_double256   = (address)os::dll_lookup(libsvml, "__svml_log4_ha_l9");
-        StubRoutines::_vector_log10_float64   = (address)os::dll_lookup(libsvml, "__svml_log10f4_ha_l9");
-        StubRoutines::_vector_log10_float128  = (address)os::dll_lookup(libsvml, "__svml_log10f4_ha_l9");
-        StubRoutines::_vector_log10_float256  = (address)os::dll_lookup(libsvml, "__svml_log10f8_ha_l9");
-        StubRoutines::_vector_log10_double64  = (address)os::dll_lookup(libsvml, "__svml_log101_ha_l9");
-        StubRoutines::_vector_log10_double128 = (address)os::dll_lookup(libsvml, "__svml_log102_ha_l9");
-        StubRoutines::_vector_log10_double256 = (address)os::dll_lookup(libsvml, "__svml_log104_ha_l9");
-        StubRoutines::_vector_sin_float64     = (address)os::dll_lookup(libsvml, "__svml_sinf4_ha_l9");
-        StubRoutines::_vector_sin_float128    = (address)os::dll_lookup(libsvml, "__svml_sinf4_ha_l9");
-        StubRoutines::_vector_sin_float256    = (address)os::dll_lookup(libsvml, "__svml_sinf8_ha_l9");
-        StubRoutines::_vector_sin_double64    = (address)os::dll_lookup(libsvml, "__svml_sin1_ha_l9");
-        StubRoutines::_vector_sin_double128   = (address)os::dll_lookup(libsvml, "__svml_sin2_ha_l9");
-        StubRoutines::_vector_sin_double256   = (address)os::dll_lookup(libsvml, "__svml_sin4_ha_l9");
-        StubRoutines::_vector_cos_float64     = (address)os::dll_lookup(libsvml, "__svml_cosf4_ha_l9");
-        StubRoutines::_vector_cos_float128    = (address)os::dll_lookup(libsvml, "__svml_cosf4_ha_l9");
-        StubRoutines::_vector_cos_float256    = (address)os::dll_lookup(libsvml, "__svml_cosf8_ha_l9");
-        StubRoutines::_vector_cos_double64    = (address)os::dll_lookup(libsvml, "__svml_cos1_ha_l9");
-        StubRoutines::_vector_cos_double128   = (address)os::dll_lookup(libsvml, "__svml_cos2_ha_l9");
-        StubRoutines::_vector_cos_double256   = (address)os::dll_lookup(libsvml, "__svml_cos4_ha_l9");
-        StubRoutines::_vector_tan_float64     = (address)os::dll_lookup(libsvml, "__svml_tanf4_ha_l9");
-        StubRoutines::_vector_tan_float128    = (address)os::dll_lookup(libsvml, "__svml_tanf4_ha_l9");
-        StubRoutines::_vector_tan_float256    = (address)os::dll_lookup(libsvml, "__svml_tanf8_ha_l9");
-        StubRoutines::_vector_tan_double64    = (address)os::dll_lookup(libsvml, "__svml_tan1_ha_l9");
-        StubRoutines::_vector_tan_double128   = (address)os::dll_lookup(libsvml, "__svml_tan2_ha_l9");
-        StubRoutines::_vector_tan_double256   = (address)os::dll_lookup(libsvml, "__svml_tan4_ha_l9");
-        StubRoutines::_vector_sinh_float64    = (address)os::dll_lookup(libsvml, "__svml_sinhf4_ha_l9");
-        StubRoutines::_vector_sinh_float128   = (address)os::dll_lookup(libsvml, "__svml_sinhf4_ha_l9");
-        StubRoutines::_vector_sinh_float256   = (address)os::dll_lookup(libsvml, "__svml_sinhf8_ha_l9");
-        StubRoutines::_vector_sinh_double64   = (address)os::dll_lookup(libsvml, "__svml_sinh1_ha_l9");
-        StubRoutines::_vector_sinh_double128  = (address)os::dll_lookup(libsvml, "__svml_sinh2_ha_l9");
-        StubRoutines::_vector_sinh_double256  = (address)os::dll_lookup(libsvml, "__svml_sinh4_ha_l9");
-        StubRoutines::_vector_cosh_float64    = (address)os::dll_lookup(libsvml, "__svml_coshf4_ha_l9");
-        StubRoutines::_vector_cosh_float128   = (address)os::dll_lookup(libsvml, "__svml_coshf4_ha_l9");
-        StubRoutines::_vector_cosh_float256   = (address)os::dll_lookup(libsvml, "__svml_coshf8_ha_l9");
-        StubRoutines::_vector_cosh_double64   = (address)os::dll_lookup(libsvml, "__svml_cosh1_ha_l9");
-        StubRoutines::_vector_cosh_double128  = (address)os::dll_lookup(libsvml, "__svml_cosh2_ha_l9");
-        StubRoutines::_vector_cosh_double256  = (address)os::dll_lookup(libsvml, "__svml_cosh4_ha_l9");
-        StubRoutines::_vector_tanh_float64    = (address)os::dll_lookup(libsvml, "__svml_tanhf4_ha_l9");
-        StubRoutines::_vector_tanh_float128   = (address)os::dll_lookup(libsvml, "__svml_tanhf4_ha_l9");
-        StubRoutines::_vector_tanh_float256   = (address)os::dll_lookup(libsvml, "__svml_tanhf8_ha_l9");
-        StubRoutines::_vector_tanh_double64   = (address)os::dll_lookup(libsvml, "__svml_tanh1_ha_l9");
-        StubRoutines::_vector_tanh_double128  = (address)os::dll_lookup(libsvml, "__svml_tanh2_ha_l9");
-        StubRoutines::_vector_tanh_double256  = (address)os::dll_lookup(libsvml, "__svml_tanh4_ha_l9");
-        StubRoutines::_vector_acos_float64    = (address)os::dll_lookup(libsvml, "__svml_acosf4_ha_l9");
-        StubRoutines::_vector_acos_float128   = (address)os::dll_lookup(libsvml, "__svml_acosf4_ha_l9");
-        StubRoutines::_vector_acos_float256   = (address)os::dll_lookup(libsvml, "__svml_acosf8_ha_l9");
-        StubRoutines::_vector_acos_double64   = (address)os::dll_lookup(libsvml, "__svml_acos1_ha_l9");
-        StubRoutines::_vector_acos_double128  = (address)os::dll_lookup(libsvml, "__svml_acos2_ha_l9");
-        StubRoutines::_vector_acos_double256  = (address)os::dll_lookup(libsvml, "__svml_acos4_ha_l9");
-        StubRoutines::_vector_asin_float64    = (address)os::dll_lookup(libsvml, "__svml_asinf4_ha_l9");
-        StubRoutines::_vector_asin_float128   = (address)os::dll_lookup(libsvml, "__svml_asinf4_ha_l9");
-        StubRoutines::_vector_asin_float256   = (address)os::dll_lookup(libsvml, "__svml_asinf8_ha_l9");
-        StubRoutines::_vector_asin_double64   = (address)os::dll_lookup(libsvml, "__svml_asin1_ha_l9");
-        StubRoutines::_vector_asin_double128  = (address)os::dll_lookup(libsvml, "__svml_asin2_ha_l9");
-        StubRoutines::_vector_asin_double256  = (address)os::dll_lookup(libsvml, "__svml_asin4_ha_l9");
-        StubRoutines::_vector_atan_float64    = (address)os::dll_lookup(libsvml, "__svml_atanf4_ha_l9");
-        StubRoutines::_vector_atan_float128   = (address)os::dll_lookup(libsvml, "__svml_atanf4_ha_l9");
-        StubRoutines::_vector_atan_float256   = (address)os::dll_lookup(libsvml, "__svml_atanf8_ha_l9");
-        StubRoutines::_vector_atan_double64   = (address)os::dll_lookup(libsvml, "__svml_atan1_ha_l9");
-        StubRoutines::_vector_atan_double128  = (address)os::dll_lookup(libsvml, "__svml_atan2_ha_l9");
-        StubRoutines::_vector_atan_double256  = (address)os::dll_lookup(libsvml, "__svml_atan4_ha_l9");
-        StubRoutines::_vector_hypot_float64   = (address)os::dll_lookup(libsvml, "__svml_hypotf4_ha_l9");
-        StubRoutines::_vector_hypot_float128  = (address)os::dll_lookup(libsvml, "__svml_hypotf4_ha_l9");
-        StubRoutines::_vector_hypot_float256  = (address)os::dll_lookup(libsvml, "__svml_hypotf8_ha_l9");
-        StubRoutines::_vector_hypot_double64  = (address)os::dll_lookup(libsvml, "__svml_hypot1_ha_l9");
-        StubRoutines::_vector_hypot_double128 = (address)os::dll_lookup(libsvml, "__svml_hypot2_ha_l9");
-        StubRoutines::_vector_hypot_double256 = (address)os::dll_lookup(libsvml, "__svml_hypot4_ha_l9");
-        StubRoutines::_vector_cbrt_float64    = (address)os::dll_lookup(libsvml, "__svml_cbrtf4_ha_l9");
-        StubRoutines::_vector_cbrt_float128   = (address)os::dll_lookup(libsvml, "__svml_cbrtf4_ha_l9");
-        StubRoutines::_vector_cbrt_float256   = (address)os::dll_lookup(libsvml, "__svml_cbrtf8_ha_l9");
-        StubRoutines::_vector_cbrt_double64   = (address)os::dll_lookup(libsvml, "__svml_cbrt1_ha_l9");
-        StubRoutines::_vector_cbrt_double128  = (address)os::dll_lookup(libsvml, "__svml_cbrt2_ha_l9");
-        StubRoutines::_vector_cbrt_double256  = (address)os::dll_lookup(libsvml, "__svml_cbrt4_ha_l9");
-        StubRoutines::_vector_atan2_float64   = (address)os::dll_lookup(libsvml, "__svml_atan2f4_ha_l9");
-        StubRoutines::_vector_atan2_float128  = (address)os::dll_lookup(libsvml, "__svml_atan2f4_ha_l9");
-        StubRoutines::_vector_atan2_float256  = (address)os::dll_lookup(libsvml, "__svml_atan2f8_ha_l9");
-        StubRoutines::_vector_atan2_double64  = (address)os::dll_lookup(libsvml, "__svml_atan21_ha_l9");
-        StubRoutines::_vector_atan2_double128 = (address)os::dll_lookup(libsvml, "__svml_atan22_ha_l9");
-        StubRoutines::_vector_atan2_double256 = (address)os::dll_lookup(libsvml, "__svml_atan24_ha_l9");
-      } else if (UseAVX > 0) {
-        StubRoutines::_vector_exp_float64     = (address)os::dll_lookup(libsvml, "__svml_expf4_ha_e9");
-        StubRoutines::_vector_exp_float128    = (address)os::dll_lookup(libsvml, "__svml_expf4_ha_e9");
-        StubRoutines::_vector_exp_float256    = (address)os::dll_lookup(libsvml, "__svml_expf8_ha_e9");
-        StubRoutines::_vector_exp_double64    = (address)os::dll_lookup(libsvml, "__svml_exp1_ha_e9");
-        StubRoutines::_vector_exp_double128   = (address)os::dll_lookup(libsvml, "__svml_exp2_ha_e9");
-        StubRoutines::_vector_exp_double256   = (address)os::dll_lookup(libsvml, "__svml_exp4_ha_e9");
-        StubRoutines::_vector_expm1_float64   = (address)os::dll_lookup(libsvml, "__svml_expm1f4_ha_e9");
-        StubRoutines::_vector_expm1_float128  = (address)os::dll_lookup(libsvml, "__svml_expm1f4_ha_e9");
-        StubRoutines::_vector_expm1_float256  = (address)os::dll_lookup(libsvml, "__svml_expm1f8_ha_e9");
-        StubRoutines::_vector_expm1_double64  = (address)os::dll_lookup(libsvml, "__svml_expm11_ha_e9");
-        StubRoutines::_vector_expm1_double128 = (address)os::dll_lookup(libsvml, "__svml_expm12_ha_e9");
-        StubRoutines::_vector_expm1_double256 = (address)os::dll_lookup(libsvml, "__svml_expm14_ha_e9");
-        StubRoutines::_vector_log1p_float64   = (address)os::dll_lookup(libsvml, "__svml_log1pf4_ha_e9");
-        StubRoutines::_vector_log1p_float128  = (address)os::dll_lookup(libsvml, "__svml_log1pf4_ha_e9");
-        StubRoutines::_vector_log1p_float256  = (address)os::dll_lookup(libsvml, "__svml_log1pf8_ha_e9");
-        StubRoutines::_vector_log1p_double64  = (address)os::dll_lookup(libsvml, "__svml_log1p1_ha_e9");
-        StubRoutines::_vector_log1p_double128 = (address)os::dll_lookup(libsvml, "__svml_log1p2_ha_e9");
-        StubRoutines::_vector_log1p_double256 = (address)os::dll_lookup(libsvml, "__svml_log1p4_ha_e9");
-        StubRoutines::_vector_log_float64     = (address)os::dll_lookup(libsvml, "__svml_logf4_ha_e9");
-        StubRoutines::_vector_log_float128    = (address)os::dll_lookup(libsvml, "__svml_logf4_ha_e9");
-        StubRoutines::_vector_log_float256    = (address)os::dll_lookup(libsvml, "__svml_logf8_ha_e9");
-        StubRoutines::_vector_log_double64    = (address)os::dll_lookup(libsvml, "__svml_log1_ha_e9");
-        StubRoutines::_vector_log_double128   = (address)os::dll_lookup(libsvml, "__svml_log2_ha_e9");
-        StubRoutines::_vector_log_double256   = (address)os::dll_lookup(libsvml, "__svml_log4_ha_e9");
-        StubRoutines::_vector_log10_float64   = (address)os::dll_lookup(libsvml, "__svml_log10f4_ha_e9");
-        StubRoutines::_vector_log10_float128  = (address)os::dll_lookup(libsvml, "__svml_log10f4_ha_e9");
-        StubRoutines::_vector_log10_float256  = (address)os::dll_lookup(libsvml, "__svml_log10f8_ha_e9");
-        StubRoutines::_vector_log10_double64  = (address)os::dll_lookup(libsvml, "__svml_log101_ha_e9");
-        StubRoutines::_vector_log10_double128 = (address)os::dll_lookup(libsvml, "__svml_log102_ha_e9");
-        StubRoutines::_vector_log10_double256 = (address)os::dll_lookup(libsvml, "__svml_log104_ha_e9");
-        StubRoutines::_vector_sin_float64     = (address)os::dll_lookup(libsvml, "__svml_sinf4_ha_e9");
-        StubRoutines::_vector_sin_float128    = (address)os::dll_lookup(libsvml, "__svml_sinf4_ha_e9");
-        StubRoutines::_vector_sin_float256    = (address)os::dll_lookup(libsvml, "__svml_sinf8_ha_e9");
-        StubRoutines::_vector_sin_double64    = (address)os::dll_lookup(libsvml, "__svml_sin1_ha_e9");
-        StubRoutines::_vector_sin_double128   = (address)os::dll_lookup(libsvml, "__svml_sin2_ha_e9");
-        StubRoutines::_vector_sin_double256   = (address)os::dll_lookup(libsvml, "__svml_sin4_ha_e9");
-        StubRoutines::_vector_cos_float64     = (address)os::dll_lookup(libsvml, "__svml_cosf4_ha_e9");
-        StubRoutines::_vector_cos_float128    = (address)os::dll_lookup(libsvml, "__svml_cosf4_ha_e9");
-        StubRoutines::_vector_cos_float256    = (address)os::dll_lookup(libsvml, "__svml_cosf8_ha_e9");
-        StubRoutines::_vector_cos_double64    = (address)os::dll_lookup(libsvml, "__svml_cos1_ha_e9");
-        StubRoutines::_vector_cos_double128   = (address)os::dll_lookup(libsvml, "__svml_cos2_ha_e9");
-        StubRoutines::_vector_cos_double256   = (address)os::dll_lookup(libsvml, "__svml_cos4_ha_e9");
-        StubRoutines::_vector_tan_float64     = (address)os::dll_lookup(libsvml, "__svml_tanf4_ha_e9");
-        StubRoutines::_vector_tan_float128    = (address)os::dll_lookup(libsvml, "__svml_tanf4_ha_e9");
-        StubRoutines::_vector_tan_float256    = (address)os::dll_lookup(libsvml, "__svml_tanf8_ha_e9");
-        StubRoutines::_vector_tan_double64    = (address)os::dll_lookup(libsvml, "__svml_tan1_ha_e9");
-        StubRoutines::_vector_tan_double128   = (address)os::dll_lookup(libsvml, "__svml_tan2_ha_e9");
-        StubRoutines::_vector_tan_double256   = (address)os::dll_lookup(libsvml, "__svml_tan4_ha_e9");
-        StubRoutines::_vector_sinh_float64    = (address)os::dll_lookup(libsvml, "__svml_sinhf4_ha_e9");
-        StubRoutines::_vector_sinh_float128   = (address)os::dll_lookup(libsvml, "__svml_sinhf4_ha_e9");
-        StubRoutines::_vector_sinh_float256   = (address)os::dll_lookup(libsvml, "__svml_sinhf8_ha_e9");
-        StubRoutines::_vector_sinh_double64   = (address)os::dll_lookup(libsvml, "__svml_sinh1_ha_e9");
-        StubRoutines::_vector_sinh_double128  = (address)os::dll_lookup(libsvml, "__svml_sinh2_ha_e9");
-        StubRoutines::_vector_sinh_double256  = (address)os::dll_lookup(libsvml, "__svml_sinh4_ha_e9");
-        StubRoutines::_vector_cosh_float64    = (address)os::dll_lookup(libsvml, "__svml_coshf4_ha_e9");
-        StubRoutines::_vector_cosh_float128   = (address)os::dll_lookup(libsvml, "__svml_coshf4_ha_e9");
-        StubRoutines::_vector_cosh_float256   = (address)os::dll_lookup(libsvml, "__svml_coshf8_ha_e9");
-        StubRoutines::_vector_cosh_double64   = (address)os::dll_lookup(libsvml, "__svml_cosh1_ha_e9");
-        StubRoutines::_vector_cosh_double128  = (address)os::dll_lookup(libsvml, "__svml_cosh2_ha_e9");
-        StubRoutines::_vector_cosh_double256  = (address)os::dll_lookup(libsvml, "__svml_cosh4_ha_e9");
-        StubRoutines::_vector_tanh_float64    = (address)os::dll_lookup(libsvml, "__svml_tanhf4_ha_e9");
-        StubRoutines::_vector_tanh_float128   = (address)os::dll_lookup(libsvml, "__svml_tanhf4_ha_e9");
-        StubRoutines::_vector_tanh_float256   = (address)os::dll_lookup(libsvml, "__svml_tanhf8_ha_e9");
-        StubRoutines::_vector_tanh_double64   = (address)os::dll_lookup(libsvml, "__svml_tanh1_ha_e9");
-        StubRoutines::_vector_tanh_double128  = (address)os::dll_lookup(libsvml, "__svml_tanh2_ha_e9");
-        StubRoutines::_vector_tanh_double256  = (address)os::dll_lookup(libsvml, "__svml_tanh4_ha_e9");
-        StubRoutines::_vector_acos_float64    = (address)os::dll_lookup(libsvml, "__svml_acosf4_ha_e9");
-        StubRoutines::_vector_acos_float128   = (address)os::dll_lookup(libsvml, "__svml_acosf4_ha_e9");
-        StubRoutines::_vector_acos_float256   = (address)os::dll_lookup(libsvml, "__svml_acosf8_ha_e9");
-        StubRoutines::_vector_acos_double64   = (address)os::dll_lookup(libsvml, "__svml_acos1_ha_e9");
-        StubRoutines::_vector_acos_double128  = (address)os::dll_lookup(libsvml, "__svml_acos2_ha_e9");
-        StubRoutines::_vector_acos_double256  = (address)os::dll_lookup(libsvml, "__svml_acos4_ha_e9");
-        StubRoutines::_vector_asin_float64    = (address)os::dll_lookup(libsvml, "__svml_asinf4_ha_e9");
-        StubRoutines::_vector_asin_float128   = (address)os::dll_lookup(libsvml, "__svml_asinf4_ha_e9");
-        StubRoutines::_vector_asin_float256   = (address)os::dll_lookup(libsvml, "__svml_asinf8_ha_e9");
-        StubRoutines::_vector_asin_double64   = (address)os::dll_lookup(libsvml, "__svml_asin1_ha_e9");
-        StubRoutines::_vector_asin_double128  = (address)os::dll_lookup(libsvml, "__svml_asin2_ha_e9");
-        StubRoutines::_vector_asin_double256  = (address)os::dll_lookup(libsvml, "__svml_asin4_ha_e9");
-        StubRoutines::_vector_atan_float64    = (address)os::dll_lookup(libsvml, "__svml_atanf4_ha_e9");
-        StubRoutines::_vector_atan_float128   = (address)os::dll_lookup(libsvml, "__svml_atanf4_ha_e9");
-        StubRoutines::_vector_atan_float256   = (address)os::dll_lookup(libsvml, "__svml_atanf8_ha_e9");
-        StubRoutines::_vector_atan_double64   = (address)os::dll_lookup(libsvml, "__svml_atan1_ha_e9");
-        StubRoutines::_vector_atan_double128  = (address)os::dll_lookup(libsvml, "__svml_atan2_ha_e9");
-        StubRoutines::_vector_atan_double256  = (address)os::dll_lookup(libsvml, "__svml_atan4_ha_e9");
-        StubRoutines::_vector_hypot_float64   = (address)os::dll_lookup(libsvml, "__svml_hypotf4_ha_e9");
-        StubRoutines::_vector_hypot_float128  = (address)os::dll_lookup(libsvml, "__svml_hypotf4_ha_e9");
-        StubRoutines::_vector_hypot_float256  = (address)os::dll_lookup(libsvml, "__svml_hypotf8_ha_e9");
-        StubRoutines::_vector_hypot_double64  = (address)os::dll_lookup(libsvml, "__svml_hypot1_ha_e9");
-        StubRoutines::_vector_hypot_double128 = (address)os::dll_lookup(libsvml, "__svml_hypot2_ha_e9");
-        StubRoutines::_vector_hypot_double256 = (address)os::dll_lookup(libsvml, "__svml_hypot4_ha_e9");
-        StubRoutines::_vector_cbrt_float64    = (address)os::dll_lookup(libsvml, "__svml_cbrtf4_ha_e9");
-        StubRoutines::_vector_cbrt_float128   = (address)os::dll_lookup(libsvml, "__svml_cbrtf4_ha_e9");
-        StubRoutines::_vector_cbrt_float256   = (address)os::dll_lookup(libsvml, "__svml_cbrtf8_ha_e9");
-        StubRoutines::_vector_cbrt_double64   = (address)os::dll_lookup(libsvml, "__svml_cbrt1_ha_e9");
-        StubRoutines::_vector_cbrt_double128  = (address)os::dll_lookup(libsvml, "__svml_cbrt2_ha_e9");
-        StubRoutines::_vector_cbrt_double256  = (address)os::dll_lookup(libsvml, "__svml_cbrt4_ha_e9");
-        StubRoutines::_vector_atan2_float64   = (address)os::dll_lookup(libsvml, "__svml_atan2f4_ha_e9");
-        StubRoutines::_vector_atan2_float128  = (address)os::dll_lookup(libsvml, "__svml_atan2f4_ha_e9");
-        StubRoutines::_vector_atan2_float256  = (address)os::dll_lookup(libsvml, "__svml_atan2f8_ha_e9");
-        StubRoutines::_vector_atan2_double64  = (address)os::dll_lookup(libsvml, "__svml_atan21_ha_e9");
-        StubRoutines::_vector_atan2_double128 = (address)os::dll_lookup(libsvml, "__svml_atan22_ha_e9");
-        StubRoutines::_vector_atan2_double256 = (address)os::dll_lookup(libsvml, "__svml_atan24_ha_e9");
-      } else {
-        assert(UseAVX == 0 && UseSSE >= 2, "");
-        StubRoutines::_vector_exp_float64     = (address)os::dll_lookup(libsvml, "__svml_expf4_ha_ex");
-        StubRoutines::_vector_exp_float128    = (address)os::dll_lookup(libsvml, "__svml_expf4_ha_ex");
-        StubRoutines::_vector_exp_double64    = (address)os::dll_lookup(libsvml, "__svml_exp1_ha_ex");
-        StubRoutines::_vector_exp_double128   = (address)os::dll_lookup(libsvml, "__svml_exp2_ha_ex");
-        StubRoutines::_vector_expm1_float64   = (address)os::dll_lookup(libsvml, "__svml_expm1f4_ha_ex");
-        StubRoutines::_vector_expm1_float128  = (address)os::dll_lookup(libsvml, "__svml_expm1f4_ha_ex");
-        StubRoutines::_vector_expm1_double64  = (address)os::dll_lookup(libsvml, "__svml_expm11_ha_ex");
-        StubRoutines::_vector_expm1_double128 = (address)os::dll_lookup(libsvml, "__svml_expm12_ha_ex");
-        StubRoutines::_vector_acos_float64    = (address)os::dll_lookup(libsvml, "__svml_acosf4_ha_ex");
-        StubRoutines::_vector_acos_float128   = (address)os::dll_lookup(libsvml, "__svml_acosf4_ha_ex");
-        StubRoutines::_vector_acos_double64   = (address)os::dll_lookup(libsvml, "__svml_acos1_ha_ex");
-        StubRoutines::_vector_acos_double128  = (address)os::dll_lookup(libsvml, "__svml_acos2_ha_ex");
-        StubRoutines::_vector_asin_float64    = (address)os::dll_lookup(libsvml, "__svml_asinf4_ha_ex");
-        StubRoutines::_vector_asin_float128   = (address)os::dll_lookup(libsvml, "__svml_asinf4_ha_ex");
-        StubRoutines::_vector_asin_double64   = (address)os::dll_lookup(libsvml, "__svml_asin1_ha_ex");
-        StubRoutines::_vector_asin_double128  = (address)os::dll_lookup(libsvml, "__svml_asin2_ha_ex");
-        StubRoutines::_vector_atan_float64    = (address)os::dll_lookup(libsvml, "__svml_atanf4_ha_ex");
-        StubRoutines::_vector_atan_float128   = (address)os::dll_lookup(libsvml, "__svml_atanf4_ha_ex");
-        StubRoutines::_vector_atan_double64   = (address)os::dll_lookup(libsvml, "__svml_atan1_ha_ex");
-        StubRoutines::_vector_atan_double128  = (address)os::dll_lookup(libsvml, "__svml_atan2_ha_ex");
-        StubRoutines::_vector_sin_float64     = (address)os::dll_lookup(libsvml, "__svml_sinf4_ha_ex");
-        StubRoutines::_vector_sin_float128    = (address)os::dll_lookup(libsvml, "__svml_sinf4_ha_ex");
-        StubRoutines::_vector_sin_double64    = (address)os::dll_lookup(libsvml, "__svml_sin1_ha_ex");
-        StubRoutines::_vector_sin_double128   = (address)os::dll_lookup(libsvml, "__svml_sin2_ha_ex");
-        StubRoutines::_vector_cos_float64     = (address)os::dll_lookup(libsvml, "__svml_cosf4_ha_ex");
-        StubRoutines::_vector_cos_float128    = (address)os::dll_lookup(libsvml, "__svml_cosf4_ha_ex");
-        StubRoutines::_vector_cos_double64    = (address)os::dll_lookup(libsvml, "__svml_cos1_ha_ex");
-        StubRoutines::_vector_cos_double128   = (address)os::dll_lookup(libsvml, "__svml_cos2_ha_ex");
-        StubRoutines::_vector_tan_float64     = (address)os::dll_lookup(libsvml, "__svml_tanf4_ha_ex");
-        StubRoutines::_vector_tan_float128    = (address)os::dll_lookup(libsvml, "__svml_tanf4_ha_ex");
-        StubRoutines::_vector_tan_double64    = (address)os::dll_lookup(libsvml, "__svml_tan1_ha_ex");
-        StubRoutines::_vector_tan_double128   = (address)os::dll_lookup(libsvml, "__svml_tan2_ha_ex");
-        StubRoutines::_vector_sinh_float64    = (address)os::dll_lookup(libsvml, "__svml_sinhf4_ha_ex");
-        StubRoutines::_vector_sinh_float128   = (address)os::dll_lookup(libsvml, "__svml_sinhf4_ha_ex");
-        StubRoutines::_vector_sinh_double64   = (address)os::dll_lookup(libsvml, "__svml_sinh1_ha_ex");
-        StubRoutines::_vector_sinh_double128  = (address)os::dll_lookup(libsvml, "__svml_sinh2_ha_ex");
-        StubRoutines::_vector_cosh_float64    = (address)os::dll_lookup(libsvml, "__svml_coshf4_ha_ex");
-        StubRoutines::_vector_cosh_float128   = (address)os::dll_lookup(libsvml, "__svml_coshf4_ha_ex");
-        StubRoutines::_vector_cosh_double64   = (address)os::dll_lookup(libsvml, "__svml_cosh1_ha_ex");
-        StubRoutines::_vector_cosh_double128  = (address)os::dll_lookup(libsvml, "__svml_cosh2_ha_ex");
-        StubRoutines::_vector_tanh_float64    = (address)os::dll_lookup(libsvml, "__svml_tanhf4_ha_ex");
-        StubRoutines::_vector_tanh_float128   = (address)os::dll_lookup(libsvml, "__svml_tanhf4_ha_ex");
-        StubRoutines::_vector_tanh_double64   = (address)os::dll_lookup(libsvml, "__svml_tanh1_ha_ex");
-        StubRoutines::_vector_tanh_double128  = (address)os::dll_lookup(libsvml, "__svml_tanh2_ha_ex");
-        StubRoutines::_vector_log_float64     = (address)os::dll_lookup(libsvml, "__svml_logf4_ha_ex");
-        StubRoutines::_vector_log_float128    = (address)os::dll_lookup(libsvml, "__svml_logf4_ha_ex");
-        StubRoutines::_vector_log_double64    = (address)os::dll_lookup(libsvml, "__svml_log1_ha_ex");
-        StubRoutines::_vector_log_double128   = (address)os::dll_lookup(libsvml, "__svml_log2_ha_ex");
-        StubRoutines::_vector_log10_float64   = (address)os::dll_lookup(libsvml, "__svml_log10f4_ha_ex");
-        StubRoutines::_vector_log10_float128  = (address)os::dll_lookup(libsvml, "__svml_log10f4_ha_ex");
-        StubRoutines::_vector_log10_double64  = (address)os::dll_lookup(libsvml, "__svml_log101_ha_ex");
-        StubRoutines::_vector_log10_double128 = (address)os::dll_lookup(libsvml, "__svml_log102_ha_ex");
-        StubRoutines::_vector_log1p_float64   = (address)os::dll_lookup(libsvml, "__svml_log1pf4_ha_ex");
-        StubRoutines::_vector_log1p_float128  = (address)os::dll_lookup(libsvml, "__svml_log1pf4_ha_ex");
-        StubRoutines::_vector_log1p_double64  = (address)os::dll_lookup(libsvml, "__svml_log1p1_ha_ex");
-        StubRoutines::_vector_log1p_double128 = (address)os::dll_lookup(libsvml, "__svml_log1p2_ha_ex");
-        StubRoutines::_vector_atan2_float64   = (address)os::dll_lookup(libsvml, "__svml_atan2f4_ha_ex");
-        StubRoutines::_vector_atan2_float128  = (address)os::dll_lookup(libsvml, "__svml_atan2f4_ha_ex");
-        StubRoutines::_vector_atan2_double64  = (address)os::dll_lookup(libsvml, "__svml_atan21_ha_ex");
-        StubRoutines::_vector_atan2_double128 = (address)os::dll_lookup(libsvml, "__svml_atan22_ha_ex");
-        StubRoutines::_vector_hypot_float64   = (address)os::dll_lookup(libsvml, "__svml_hypotf4_ha_ex");
-        StubRoutines::_vector_hypot_float128  = (address)os::dll_lookup(libsvml, "__svml_hypotf4_ha_ex");
-        StubRoutines::_vector_hypot_double64  = (address)os::dll_lookup(libsvml, "__svml_hypot1_ha_ex");
-        StubRoutines::_vector_hypot_double128 = (address)os::dll_lookup(libsvml, "__svml_hypot2_ha_ex");
-        StubRoutines::_vector_cbrt_float64    = (address)os::dll_lookup(libsvml, "__svml_cbrtf4_ha_ex");
-        StubRoutines::_vector_cbrt_float128   = (address)os::dll_lookup(libsvml, "__svml_cbrtf4_ha_ex");
-        StubRoutines::_vector_cbrt_double64   = (address)os::dll_lookup(libsvml, "__svml_cbrt1_ha_ex");
-        StubRoutines::_vector_cbrt_double128  = (address)os::dll_lookup(libsvml, "__svml_cbrt2_ha_ex");
+        for (int op = 0; op < VectorSupport::NUM_SVML_OP; op++) {
+          int vop = VectorSupport::VECTOR_OP_SVML_START + op;
+          if ((!VM_Version::supports_avx512dq()) &&
+              (vop == VectorSupport::VECTOR_OP_LOG || vop == VectorSupport::VECTOR_OP_LOG10 || vop == VectorSupport::VECTOR_OP_POW)) {
+            continue;
+          }
+          snprintf(ebuf, sizeof(ebuf), "__svml_%sf16_ha_z0", VectorSupport::svmlname[op]);
+          StubRoutines::_vector_f_math[VectorSupport::VEC_SIZE_512][op] = (address)os::dll_lookup(libsvml, ebuf);
+
+          snprintf(ebuf, sizeof(ebuf), "__svml_%s8_ha_z0", VectorSupport::svmlname[op]);
+          StubRoutines::_vector_d_math[VectorSupport::VEC_SIZE_512][op] = (address)os::dll_lookup(libsvml, ebuf);
+        }
+      }
+      const char* avx_sse_str = (UseAVX >= 2) ? "l9" : ((UseAVX == 1) ? "e9" : "ex");
+      for (int op = 0; op < VectorSupport::NUM_SVML_OP; op++) {
+        int vop = VectorSupport::VECTOR_OP_SVML_START + op;
+        if (vop == VectorSupport::VECTOR_OP_POW) {
+          continue;
+        }
+        snprintf(ebuf, sizeof(ebuf), "__svml_%sf4_ha_%s", VectorSupport::svmlname[op], avx_sse_str);
+        StubRoutines::_vector_f_math[VectorSupport::VEC_SIZE_64][op] = (address)os::dll_lookup(libsvml, ebuf);
+
+        snprintf(ebuf, sizeof(ebuf), "__svml_%sf4_ha_%s", VectorSupport::svmlname[op], avx_sse_str);
+        StubRoutines::_vector_f_math[VectorSupport::VEC_SIZE_128][op] = (address)os::dll_lookup(libsvml, ebuf);
+
+        snprintf(ebuf, sizeof(ebuf), "__svml_%sf8_ha_%s", VectorSupport::svmlname[op], avx_sse_str);
+        StubRoutines::_vector_f_math[VectorSupport::VEC_SIZE_256][op] = (address)os::dll_lookup(libsvml, ebuf);
+
+        snprintf(ebuf, sizeof(ebuf), "__svml_%s1_ha_%s", VectorSupport::svmlname[op], avx_sse_str);
+        StubRoutines::_vector_d_math[VectorSupport::VEC_SIZE_64][op] = (address)os::dll_lookup(libsvml, ebuf);
+
+        snprintf(ebuf, sizeof(ebuf), "__svml_%s2_ha_%s", VectorSupport::svmlname[op], avx_sse_str);
+        StubRoutines::_vector_d_math[VectorSupport::VEC_SIZE_128][op] = (address)os::dll_lookup(libsvml, ebuf);
+
+        snprintf(ebuf, sizeof(ebuf), "__svml_%s4_ha_%s", VectorSupport::svmlname[op], avx_sse_str);
+        StubRoutines::_vector_d_math[VectorSupport::VEC_SIZE_256][op] = (address)os::dll_lookup(libsvml, ebuf);
       }
     }
-#endif // __VECTOR_API_MATH_INTRINSICS_COMMON
 #endif // COMPILER2
 
     if (UseVectorizedMismatchIntrinsic) {

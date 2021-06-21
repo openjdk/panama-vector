@@ -766,6 +766,11 @@ int InstructForm::memory_operand(FormDict &globals) const {
 bool InstructForm::captures_bottom_type(FormDict &globals) const {
   if (_matrule && _matrule->_rChild &&
       (!strcmp(_matrule->_rChild->_opType,"CastPP")       ||  // new result type
+       !strcmp(_matrule->_rChild->_opType,"CastDD")       ||
+       !strcmp(_matrule->_rChild->_opType,"CastFF")       ||
+       !strcmp(_matrule->_rChild->_opType,"CastII")       ||
+       !strcmp(_matrule->_rChild->_opType,"CastLL")       ||
+       !strcmp(_matrule->_rChild->_opType,"CastVV")       ||
        !strcmp(_matrule->_rChild->_opType,"CastX2P")      ||  // new result type
        !strcmp(_matrule->_rChild->_opType,"DecodeN")      ||
        !strcmp(_matrule->_rChild->_opType,"EncodeP")      ||
@@ -784,6 +789,7 @@ bool InstructForm::captures_bottom_type(FormDict &globals) const {
        !strcmp(_matrule->_rChild->_opType,"ShenandoahCompareAndExchangeN") ||
 #endif
        !strcmp(_matrule->_rChild->_opType,"StrInflatedCopy") ||
+       !strcmp(_matrule->_rChild->_opType,"VectorCmpMasked")||
        !strcmp(_matrule->_rChild->_opType,"VectorMaskGen")||
        !strcmp(_matrule->_rChild->_opType,"CompareAndExchangeP") ||
        !strcmp(_matrule->_rChild->_opType,"CompareAndExchangeN"))) return true;
@@ -4234,7 +4240,8 @@ bool MatchRule::is_vector() const {
     "VectorToMask", "MaskAll", "VectorCmpMaskGen", "AndVMask", "OrVMask", "XorVMask",
     // Next are not supported currently.
     "PackB","PackS","PackI","PackL","PackF","PackD","Pack2L","Pack2D",
-    "ExtractB","ExtractUB","ExtractC","ExtractS","ExtractI","ExtractL","ExtractF","ExtractD"
+    "ExtractB","ExtractUB","ExtractC","ExtractS","ExtractI","ExtractL","ExtractF","ExtractD",
+    "VectorMaskCast"
   };
   int cnt = sizeof(vector_list)/sizeof(char*);
   if (_rChild) {

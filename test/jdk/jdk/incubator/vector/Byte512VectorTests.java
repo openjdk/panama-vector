@@ -1043,6 +1043,10 @@ public class Byte512VectorTests extends AbstractVectorTest {
                 return fill(s * BUFFER_REPS,
                             i -> (byte)i);
             }),
+            withToString("byte[i - length / 2]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> (byte)(i - (s * BUFFER_REPS / 2)));
+            }),
             withToString("byte[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> (byte)(i + 1));
@@ -1164,6 +1168,46 @@ public class Byte512VectorTests extends AbstractVectorTest {
                 a[i] = v;
             }
         }
+    }
+
+    static boolean eq(byte a, byte b) {
+        return a == b;
+    }
+
+    static boolean neq(byte a, byte b) {
+        return a != b;
+    }
+
+    static boolean lt(byte a, byte b) {
+        return a < b;
+    }
+
+    static boolean le(byte a, byte b) {
+        return a <= b;
+    }
+
+    static boolean gt(byte a, byte b) {
+        return a > b;
+    }
+
+    static boolean ge(byte a, byte b) {
+        return a >= b;
+    }
+
+    static boolean ult(byte a, byte b) {
+        return Byte.compareUnsigned(a, b) < 0;
+    }
+
+    static boolean ule(byte a, byte b) {
+        return Byte.compareUnsigned(a, b) <= 0;
+    }
+
+    static boolean ugt(byte a, byte b) {
+        return Byte.compareUnsigned(a, b) > 0;
+    }
+
+    static boolean uge(byte a, byte b) {
+        return Byte.compareUnsigned(a, b) >= 0;
     }
 
     @Test
@@ -3338,7 +3382,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-                    Assert.assertEquals(mv.laneIsSet(j), a[i + j] < b[i + j]);
+                    Assert.assertEquals(mv.laneIsSet(j), lt(a[i + j], b[i + j]));
                 }
             }
         }
@@ -3358,7 +3402,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-                    Assert.assertEquals(mv.laneIsSet(j), a[i + j] < b[i + j]);
+                    Assert.assertEquals(mv.laneIsSet(j), lt(a[i + j], b[i + j]));
                 }
             }
         }
@@ -3381,7 +3425,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] < b[i + j]));
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && lt(a[i + j], b[i + j]));
                 }
             }
         }
@@ -3401,7 +3445,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-                    Assert.assertEquals(mv.laneIsSet(j), a[i + j] > b[i + j]);
+                    Assert.assertEquals(mv.laneIsSet(j), gt(a[i + j], b[i + j]));
                 }
             }
         }
@@ -3424,7 +3468,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] > b[i + j]));
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && gt(a[i + j], b[i + j]));
                 }
             }
         }
@@ -3444,7 +3488,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-                    Assert.assertEquals(mv.laneIsSet(j), a[i + j] == b[i + j]);
+                    Assert.assertEquals(mv.laneIsSet(j), eq(a[i + j], b[i + j]));
                 }
             }
         }
@@ -3464,7 +3508,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-                    Assert.assertEquals(mv.laneIsSet(j), a[i + j] == b[i + j]);
+                    Assert.assertEquals(mv.laneIsSet(j), eq(a[i + j], b[i + j]));
                 }
             }
         }
@@ -3487,7 +3531,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] == b[i + j]));
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && eq(a[i + j], b[i + j]));
                 }
             }
         }
@@ -3507,7 +3551,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-                    Assert.assertEquals(mv.laneIsSet(j), a[i + j] != b[i + j]);
+                    Assert.assertEquals(mv.laneIsSet(j), neq(a[i + j], b[i + j]));
                 }
             }
         }
@@ -3530,7 +3574,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] != b[i + j]));
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && neq(a[i + j], b[i + j]));
                 }
             }
         }
@@ -3550,7 +3594,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-                    Assert.assertEquals(mv.laneIsSet(j), a[i + j] <= b[i + j]);
+                    Assert.assertEquals(mv.laneIsSet(j), le(a[i + j], b[i + j]));
                 }
             }
         }
@@ -3573,7 +3617,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] <= b[i + j]));
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && le(a[i + j], b[i + j]));
                 }
             }
         }
@@ -3593,7 +3637,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-                    Assert.assertEquals(mv.laneIsSet(j), a[i + j] >= b[i + j]);
+                    Assert.assertEquals(mv.laneIsSet(j), ge(a[i + j], b[i + j]));
                 }
             }
         }
@@ -3616,11 +3660,199 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
                 // Check results as part of computation.
                 for (int j = 0; j < SPECIES.length(); j++) {
-                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] >= b[i + j]));
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && ge(a[i + j], b[i + j]));
                 }
             }
         }
     }
+
+
+
+    @Test(dataProvider = "byteCompareOpProvider")
+    static void UNSIGNED_LTByte512VectorTests(IntFunction<byte[]> fa, IntFunction<byte[]> fb) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
+                VectorMask<Byte> mv = av.compare(VectorOperators.UNSIGNED_LT, bv);
+
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j), ult(a[i + j], b[i + j]));
+                }
+            }
+        }
+    }
+
+
+
+    @Test(dataProvider = "byteCompareOpMaskProvider")
+    static void UNSIGNED_LTByte512VectorTestsMasked(IntFunction<byte[]> fa, IntFunction<byte[]> fb,
+                                                IntFunction<boolean[]> fm) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
+                VectorMask<Byte> mv = av.compare(VectorOperators.UNSIGNED_LT, bv, vmask);
+
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && ult(a[i + j], b[i + j]));
+                }
+            }
+        }
+    }
+
+
+
+
+    @Test(dataProvider = "byteCompareOpProvider")
+    static void UNSIGNED_GTByte512VectorTests(IntFunction<byte[]> fa, IntFunction<byte[]> fb) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
+                VectorMask<Byte> mv = av.compare(VectorOperators.UNSIGNED_GT, bv);
+
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j), ugt(a[i + j], b[i + j]));
+                }
+            }
+        }
+    }
+
+
+
+    @Test(dataProvider = "byteCompareOpMaskProvider")
+    static void UNSIGNED_GTByte512VectorTestsMasked(IntFunction<byte[]> fa, IntFunction<byte[]> fb,
+                                                IntFunction<boolean[]> fm) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
+                VectorMask<Byte> mv = av.compare(VectorOperators.UNSIGNED_GT, bv, vmask);
+
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && ugt(a[i + j], b[i + j]));
+                }
+            }
+        }
+    }
+
+
+
+
+    @Test(dataProvider = "byteCompareOpProvider")
+    static void UNSIGNED_LEByte512VectorTests(IntFunction<byte[]> fa, IntFunction<byte[]> fb) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
+                VectorMask<Byte> mv = av.compare(VectorOperators.UNSIGNED_LE, bv);
+
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j), ule(a[i + j], b[i + j]));
+                }
+            }
+        }
+    }
+
+
+
+    @Test(dataProvider = "byteCompareOpMaskProvider")
+    static void UNSIGNED_LEByte512VectorTestsMasked(IntFunction<byte[]> fa, IntFunction<byte[]> fb,
+                                                IntFunction<boolean[]> fm) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
+                VectorMask<Byte> mv = av.compare(VectorOperators.UNSIGNED_LE, bv, vmask);
+
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && ule(a[i + j], b[i + j]));
+                }
+            }
+        }
+    }
+
+
+
+
+    @Test(dataProvider = "byteCompareOpProvider")
+    static void UNSIGNED_GEByte512VectorTests(IntFunction<byte[]> fa, IntFunction<byte[]> fb) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
+                VectorMask<Byte> mv = av.compare(VectorOperators.UNSIGNED_GE, bv);
+
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j), uge(a[i + j], b[i + j]));
+                }
+            }
+        }
+    }
+
+
+
+    @Test(dataProvider = "byteCompareOpMaskProvider")
+    static void UNSIGNED_GEByte512VectorTestsMasked(IntFunction<byte[]> fa, IntFunction<byte[]> fb,
+                                                IntFunction<boolean[]> fm) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
+                VectorMask<Byte> mv = av.compare(VectorOperators.UNSIGNED_GE, bv, vmask);
+
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j), mask[j] && uge(a[i + j], b[i + j]));
+                }
+            }
+        }
+    }
+
 
 
     @Test(dataProvider = "byteCompareOpProvider")
@@ -5176,6 +5408,24 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
             Assert.assertTrue(ltrue == expectedLtrue, "at index " + i +
                 ", lastTrue should be = " + expectedLtrue + ", but is = " + ltrue);
+        }
+    }
+
+    @Test(dataProvider = "maskProvider")
+    static void maskFirstTrueByte512VectorTestsSmokeTest(IntFunction<boolean[]> fa) {
+        boolean[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var vmask = SPECIES.loadMask(a, i);
+            int ftrue = vmask.firstTrue();
+            int j = i;
+            for (; j < i + SPECIES.length() ; j++) {
+                if (a[j]) break;
+            }
+            int expectedFtrue = j - i;
+
+            Assert.assertTrue(ftrue == expectedFtrue, "at index " + i +
+                ", firstTrue should be = " + expectedFtrue + ", but is = " + ftrue);
         }
     }
 
