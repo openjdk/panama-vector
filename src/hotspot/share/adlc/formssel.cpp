@@ -4115,7 +4115,6 @@ int MatchRule::is_expensive() const {
         strcmp(opType,"AndReductionV")==0 ||
         strcmp(opType,"OrReductionV")==0 ||
         strcmp(opType,"XorReductionV")==0 ||
-        strcmp(opType,"MaskToVector")==0 ||
         strcmp(opType,"MaskAll")==0 ||
         0 /* 0 to line up columns nicely */ )
       return 1;
@@ -4235,13 +4234,12 @@ bool MatchRule::is_vector() const {
     "VectorCastL2X", "VectorCastF2X", "VectorCastD2X",
     "VectorMaskWrapper", "VectorMaskCmp", "VectorReinterpret","LoadVectorMasked","StoreVectorMasked",
     "FmaVD", "FmaVF","PopCountVI",
-    "MaskToVector", "LoadVectorMask", "StoreVectorMask",
+    "LoadVectorMask", "StoreVectorMask",
     // Next are vector mask ops.
-    "VectorToMask", "MaskAll", "VectorCmpMaskGen", "AndVMask", "OrVMask", "XorVMask",
+    "MaskAll", "AndVMask", "OrVMask", "XorVMask", "VectorMaskCast",
     // Next are not supported currently.
     "PackB","PackS","PackI","PackL","PackF","PackD","Pack2L","Pack2D",
-    "ExtractB","ExtractUB","ExtractC","ExtractS","ExtractI","ExtractL","ExtractF","ExtractD",
-    "VectorMaskCast"
+    "ExtractB","ExtractUB","ExtractC","ExtractS","ExtractI","ExtractL","ExtractF","ExtractD"
   };
   int cnt = sizeof(vector_list)/sizeof(char*);
   if (_rChild) {

@@ -171,7 +171,6 @@ class LoadVectorGatherNode;
 class StoreVectorNode;
 class StoreVectorScatterNode;
 class VectorMaskCmpNode;
-class VectorMaskNode;
 class VectorSet;
 
 // The type of all node counts and indexes.
@@ -708,7 +707,6 @@ public:
         DEFINE_CLASS_ID(EncodePKlass, EncodeNarrowPtr, 1)
       DEFINE_CLASS_ID(Vector, Type, 7)
         DEFINE_CLASS_ID(VectorMaskCmp, Vector, 0)
-        DEFINE_CLASS_ID(VectorMask, Vector, 1)
 
     DEFINE_CLASS_ID(Proj,  Node, 3)
       DEFINE_CLASS_ID(CatchProj, Proj, 0)
@@ -938,7 +936,6 @@ public:
   DEFINE_CLASS_QUERY(LoadVectorGather)
   DEFINE_CLASS_QUERY(StoreVector)
   DEFINE_CLASS_QUERY(StoreVectorScatter)
-  DEFINE_CLASS_QUERY(VectorMask)
   DEFINE_CLASS_QUERY(VectorMaskCmp)
   DEFINE_CLASS_QUERY(Unlock)
 

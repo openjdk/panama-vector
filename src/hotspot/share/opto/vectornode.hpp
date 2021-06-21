@@ -66,15 +66,20 @@ class VectorNode : public TypeNode {
 
   virtual int Opcode() const;
 
-  virtual uint ideal_reg() const { return Matcher::vector_ideal_reg(vect_type()->length_in_bytes()); }
+  virtual uint ideal_reg() const {
+    if (vect_type()->isa_vectmask()) {
+      return Op_RegVectMask;
+    }
+    return Matcher::vector_ideal_reg(vect_type()->length_in_bytes());
+  }
 
-  static VectorNode* broadcast(PhaseGVN& gvn, Node* bits, uint vlen, BasicType bt);
-  static VectorNode* scalar2vector(Node* s, uint vlen, const Type* opd_t);
+  static VectorNode* scalar2vector(Node* s, uint vlen, const Type* opd_t, bool is_mask = false);
   static VectorNode* shift_count(int opc, Node* cnt, uint vlen, BasicType bt);
   static VectorNode* make(int opc, Node* n1, Node* n2, uint vlen, BasicType bt);
-  static VectorNode* make(int vopc, Node* n1, Node* n2, const TypeVect* vt);
+  static VectorNode* make(int vopc, Node* n1, Node* n2, const TypeVect* vt, bool is_mask = false);
   static VectorNode* make(int opc, Node* n1, Node* n2, Node* n3, uint vlen, BasicType bt);
   static VectorNode* make(int vopc, Node* n1, Node* n2, Node* n3, const TypeVect* vt);
+  static VectorNode* make_mask_node(int vopc, Node* n1, Node* n2, uint vlen, BasicType bt);
 
   static bool is_shift_opcode(int opc);
 
@@ -107,12 +112,6 @@ class VectorNode : public TypeNode {
   static bool is_vector_shift_count(Node* n) {
     return is_vector_shift_count(n->Opcode());
   }
-
-  static int mask_opcode(int vopc);
-  static const TypeVect* mask_type(int vopc, uint vlen, BasicType bt);
-  static VectorNode* make_mask_node(PhaseGVN& gvn, int vopc, Node* n1, uint vlen, BasicType bt);
-  static VectorNode* make_mask_node(int vopc, Node* n1, Node* n2, uint vlen, BasicType bt);
-  static VectorNode* make_mask_node(PhaseGVN& gvn, int vopc, Node* n1, Node* n2, Node* n3, uint vlen, BasicType bt);
 };
 
 //===========================Vector=ALU=Operations=============================
@@ -862,7 +861,6 @@ class VectorCmpMaskedNode : public TypeNode {
   virtual int Opcode() const;
 };
 
-
 class VectorMaskGenNode : public TypeNode {
  public:
   VectorMaskGenNode(Node* length, const Type* ty, BasicType ety): TypeNode(ty, 2), _elemType(ety) {
@@ -940,7 +938,7 @@ class LoadVectorMaskNode : public LoadVectorNode {
   virtual int Opcode() const;
   virtual int memory_size() const { return _mem_type->length_in_bytes(); }
   virtual int store_Opcode() const { return Op_StoreVectorMask; }
-  virtual uint ideal_reg() const  { return Matcher::vector_ideal_reg(vect_type()->length_in_bytes()); }
+  virtual uint ideal_reg() const  { return vect_type()->ideal_reg(); }
   virtual uint size_of() const { return sizeof(LoadVectorMaskNode); }
 };
 
@@ -962,108 +960,34 @@ class StoreVectorMaskNode : public StoreVectorNode {
 
   virtual int Opcode() const;
   virtual int memory_size() const { return _mem_type->length_in_bytes(); }
-  virtual uint ideal_reg() const  { return Matcher::vector_ideal_reg(vect_type()->length_in_bytes()); }
   virtual uint size_of() const { return sizeof(StoreVectorMaskNode); }
 };
 
-class VectorMaskNode : public VectorNode {
+class MaskAllNode : public VectorNode {
  public:
-  VectorMaskNode(Node* in1, const TypeVectMask* type) :
-    VectorNode(in1, type) {
-    init_class_id(Class_VectorMask);
-  }
-
-  VectorMaskNode(Node* in1, Node* in2, const TypeVectMask* type) :
-    VectorNode(in1, in2, type) {
-    init_class_id(Class_VectorMask);
-  }
-
-  VectorMaskNode(Node* in1, Node* in2, Node* in3, const TypeVectMask* type) :
-    VectorNode(in1, in2, in3, type) {
-    init_class_id(Class_VectorMask);
-  }
-
-  virtual int Opcode() const;
-  virtual uint ideal_reg() const { return Op_RegVectMask; }
-};
-
-class VectorToMaskNode : public VectorMaskNode {
- public:
-  VectorToMaskNode(Node* in, const TypeVectMask* type) : VectorMaskNode(in, type) {}
-
-  virtual int Opcode() const;
-  virtual Node* Identity(PhaseGVN* phase);
-};
-
-class MaskAllNode : public VectorMaskNode {
- public:
-  MaskAllNode(ConLNode* in, const TypeVectMask* type) : VectorMaskNode(in, type) {
-    assert(in->get_long() == 0 || in->get_long() == -1, "Unsupported value to mask all");
-  }
-
-  virtual int Opcode() const;
-};
-
-// Vector compare node with a TypeVectMask bottom_type. It is specially generated for
-// platforms that have mask hardware feature. The main difference with "VectorMaskCmpNode"
-// is that this is a kind of mask node, while "VectorMaskCmpNode" is a vector node.
-class VectorCmpMaskGenNode : public VectorMaskNode {
- public:
-  VectorCmpMaskGenNode(Node* in1, Node* in2, ConINode* predicate_node, const TypeVectMask* type) :
-    VectorMaskNode(in1, in2, predicate_node, type) {
-    assert(in1->bottom_type()->is_vect()->element_basic_type() == in2->bottom_type()->is_vect()->element_basic_type(),
-           "VectorCmpMaskGen inputs must have the same type for elements");
-    assert(in1->bottom_type()->is_vect()->length() == in2->bottom_type()->is_vect()->length(),
-           "VectorCmpMaskGen inputs must have the same number of elements");
-  }
-
+  MaskAllNode(Node* in, const TypeVect* vt) : VectorNode(in, vt) {}
   virtual int Opcode() const;
 };
 
 // Vector mask logical and
-class AndVMaskNode : public VectorMaskNode {
+class AndVMaskNode : public VectorNode {
  public:
-  AndVMaskNode(Node* in1, Node* in2, const TypeVectMask* type) :
-    VectorMaskNode(in1, in2, type) {
-    assert(in1->bottom_type()->isa_vectmask() &&
-           in2->bottom_type()->isa_vectmask(), "Input must be vector mask type");
-  }
-
+  AndVMaskNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1, in2, vt) {}
   virtual int Opcode() const;
 };
 
 // Vector mask logical or
-class OrVMaskNode : public VectorMaskNode {
+class OrVMaskNode : public VectorNode {
  public:
-  OrVMaskNode(Node* in1, Node* in2, const TypeVectMask* type) :
-    VectorMaskNode(in1, in2, type) {
-    assert(in1->bottom_type()->isa_vectmask() &&
-           in2->bottom_type()->isa_vectmask(), "Input must be vector mask type");
-  }
-
+  OrVMaskNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1, in2, vt) {}
   virtual int Opcode() const;
 };
 
 // Vector mask logical xor
-class XorVMaskNode : public VectorMaskNode {
+class XorVMaskNode : public VectorNode {
  public:
-  XorVMaskNode(Node* in1, Node* in2, const TypeVectMask* type) :
-    VectorMaskNode(in1, in2, type) {
-    assert(in1->bottom_type()->isa_vectmask() &&
-           in2->bottom_type()->isa_vectmask(), "Input must be vector mask type");
-  }
-
+  XorVMaskNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1, in2, vt) {}
   virtual int Opcode() const;
-};
-
-class MaskToVectorNode : public VectorNode {
- public:
-  MaskToVectorNode(Node* mask, const TypeVect* vt) : VectorNode(mask, vt) {
-    assert(mask->bottom_type()->isa_vectmask(), "input must be a VectorMask");
-  }
-
-  virtual int Opcode() const;
-  virtual Node* Identity(PhaseGVN* phase);
 };
 
 //=========================Promote_Scalar_to_Vector============================

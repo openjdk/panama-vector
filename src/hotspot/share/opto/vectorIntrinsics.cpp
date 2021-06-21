@@ -81,8 +81,7 @@ Node* GraphKit::box_vector(Node* vector, const TypeInstPtr* vbox_type, BasicType
   Node* ret = gvn().transform(new ProjNode(alloc, TypeFunc::Parms));
 
   assert(check_vbox(vbox_type), "");
-  const TypeVect* vt = is_vector_mask(vbox_type->klass()) ?
-                       TypeVect::makemask(elem_bt, num_elem) : TypeVect::make(elem_bt, num_elem);
+  const TypeVect* vt = TypeVect::make(elem_bt, num_elem, is_vector_mask(vbox_type->klass()));
   VectorBoxNode* vbox = new VectorBoxNode(C, ret, vector, vbox_type, vt);
   return gvn().transform(vbox);
 }
@@ -97,8 +96,7 @@ Node* GraphKit::unbox_vector(Node* v, const TypeInstPtr* vbox_type, BasicType el
     return NULL; // no nulls are allowed
   }
   assert(check_vbox(vbox_type), "");
-  const TypeVect* vt = is_vector_mask(vbox_type->klass()) ?
-                       TypeVect::makemask(elem_bt, num_elem) : TypeVect::make(elem_bt, num_elem);
+  const TypeVect* vt = TypeVect::make(elem_bt, num_elem, is_vector_mask(vbox_type->klass()));
   Node* unbox = gvn().transform(new VectorUnboxNode(C, vt, v, merged_memory(), shuffle_to_vector));
   return unbox;
 }
@@ -421,16 +419,9 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
   } else {
     const TypeVect* vt = TypeVect::make(elem_bt, num_elem);
     switch (n) {
-      case 1: {
-        operation = VectorNode::make(sopc, opd1, opd2, vt);
-        break;
-      }
+      case 1:
       case 2: {
-        if (is_vector_mask(vbox_klass)) {
-          operation = VectorNode::make_mask_node(sopc, opd1, opd2, num_elem, elem_bt);
-        } else {
-          operation = VectorNode::make(sopc, opd1, opd2, vt);
-        }
+        operation = VectorNode::make(sopc, opd1, opd2, vt, is_vector_mask(vbox_klass));
         break;
       }
       case 3: {
@@ -539,7 +530,8 @@ bool LibraryCallKit::inline_vector_shuffle_iota() {
     ConINode* pred_node = (ConINode*)gvn().makecon(TypeInt::make(BoolTest::ge));
     Node * lane_cnt  = gvn().makecon(TypeInt::make(num_elem));
     Node * bcast_lane_cnt = gvn().transform(VectorNode::scalar2vector(lane_cnt, num_elem, type_bt));
-    Node* mask = gvn().transform(VectorNode::make_mask_node(gvn(), Op_VectorMaskCmp, bcast_lane_cnt, res, pred_node, num_elem, elem_bt));
+    const TypeVect* vmask_type = TypeVect::makemask(elem_bt, num_elem);
+    Node* mask = gvn().transform(new VectorMaskCmpNode(BoolTest::ge, bcast_lane_cnt, res, pred_node, vmask_type));
 
     // Make the indices greater than lane count as -ve values. This matches the java side implementation.
     res = gvn().transform(VectorNode::make(Op_AndI, res, bcast_mod, num_elem, elem_bt));
@@ -722,15 +714,36 @@ bool LibraryCallKit::inline_vector_broadcast_coerced() {
   }
 
   Node* bits = argument(3); // long
-  Node* node = NULL;
-  if (is_vector_mask(vbox_klass)) {
-    node = VectorNode::make_mask_node(gvn(), Op_MaskAll, bits, num_elem, elem_bt);
-  } else {
-    node = VectorNode::broadcast(gvn(), bits, num_elem, elem_bt);
+  Node* elem = NULL;
+  switch (elem_bt) {
+    case T_BOOLEAN: // fall-through
+    case T_BYTE:    // fall-through
+    case T_SHORT:   // fall-through
+    case T_CHAR:    // fall-through
+    case T_INT: {
+      elem = gvn().transform(new ConvL2INode(bits));
+      break;
+    }
+    case T_DOUBLE: {
+      elem = gvn().transform(new MoveL2DNode(bits));
+      break;
+    }
+    case T_FLOAT: {
+      bits = gvn().transform(new ConvL2INode(bits));
+      elem = gvn().transform(new MoveI2FNode(bits));
+      break;
+    }
+    case T_LONG: {
+      elem = bits; // no conversion needed
+      break;
+    }
+    default: fatal("%s", type2name(elem_bt));
   }
 
-  node = gvn().transform(node);
-  Node* box = box_vector(node, vbox_type, elem_bt, num_elem);
+  Node* broadcast = VectorNode::scalar2vector(elem, num_elem, Type::get_const_basic_type(elem_bt), is_vector_mask(vbox_klass));
+  broadcast = gvn().transform(broadcast);
+
+  Node* box = box_vector(broadcast, vbox_type, elem_bt, num_elem);
   set_result(box);
   C->set_max_vector_size(MAX2(C->max_vector_size(), (uint)(num_elem * type2aelembytes(elem_bt))));
   return true;
@@ -917,7 +930,7 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
       // Special handle for masks
       if (is_mask) {
         vload = gvn().transform(LoadVectorNode::make(0, control(), memory(addr), addr, addr_type, num_elem, T_BOOLEAN));
-        vload = gvn().transform(VectorNode::make_mask_node(gvn(), Op_VectorLoadMask, vload, num_elem, elem_bt));
+        vload = gvn().transform(new VectorLoadMaskNode(vload, TypeVect::makemask(elem_bt, num_elem)));
       } else {
         vload = gvn().transform(LoadVectorNode::make(0, control(), memory(addr), addr, addr_type, num_elem, elem_bt));
       }
@@ -1510,9 +1523,11 @@ bool LibraryCallKit::inline_vector_compare() {
   if (v1 == NULL || v2 == NULL) {
     return false; // operand unboxing failed
   }
-
+  BoolTest::mask pred = (BoolTest::mask)cond->get_con();
   ConINode* pred_node = (ConINode*)gvn().makecon(cond);
-  Node* operation = gvn().transform(VectorNode::make_mask_node(gvn(), Op_VectorMaskCmp, v1, v2, pred_node, num_elem, mask_bt));
+
+  const TypeVect* vmask_type = TypeVect::makemask(mask_bt, num_elem);
+  Node* operation = gvn().transform(new VectorMaskCmpNode(pred, v1, v2, pred_node, vmask_type));
 
   Node* box = box_vector(operation, mbox_type, mask_bt, num_elem);
   set_result(box);
@@ -1848,8 +1863,8 @@ bool LibraryCallKit::inline_vector_convert() {
     return false;
   }
 
-  const TypeVect* src_type = TypeVect::make(elem_bt_from, num_elem_from);
-  const TypeVect* dst_type = TypeVect::make(elem_bt_to,   num_elem_to);
+  const TypeVect* src_type = TypeVect::make(elem_bt_from, num_elem_from, is_mask);
+  const TypeVect* dst_type = TypeVect::make(elem_bt_to, num_elem_to, is_mask);
 
   Node* op = opd1;
   if (is_cast) {

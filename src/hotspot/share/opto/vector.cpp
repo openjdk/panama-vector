@@ -454,7 +454,7 @@ void PhaseVector::expand_vunbox_node(VectorUnboxNode* vec_unbox) {
     C->set_max_vector_size(MAX2(C->max_vector_size(), vt->length_in_bytes()));
 
     if (is_vector_mask(from_kls)) {
-      vec_val_load = gvn.transform(VectorNode::make_mask_node(gvn, Op_VectorLoadMask, vec_val_load, num_elem, masktype));
+      vec_val_load = gvn.transform(new VectorLoadMaskNode(vec_val_load, TypeVect::makemask(masktype, num_elem)));
     } else if (is_vector_shuffle(from_kls) && !vec_unbox->is_shuffle_to_vector()) {
       assert(vec_unbox->bottom_type()->is_vect()->element_basic_type() == masktype, "expect shuffle type consistency");
       vec_val_load = gvn.transform(new VectorLoadShuffleNode(vec_val_load, TypeVect::make(masktype, num_elem)));

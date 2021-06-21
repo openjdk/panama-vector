@@ -2344,7 +2344,10 @@ const TypeVect *TypeVect::VECTZ = NULL; // 512-bit vectors
 const TypeVect *TypeVect::VECTMASK = NULL; // predicate/mask vector
 
 //------------------------------make-------------------------------------------
-const TypeVect* TypeVect::make(const Type *elem, uint length) {
+const TypeVect* TypeVect::make(const Type *elem, uint length, bool is_mask) {
+  if (is_mask) {
+    return makemask(elem, length);
+  }
   BasicType elem_bt = elem->array_element_basic_type();
   assert(is_java_primitive(elem_bt), "only primitive types in vector");
   assert(Matcher::vector_size_supported(elem_bt, length), "length in range");

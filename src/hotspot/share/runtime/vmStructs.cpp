@@ -1882,14 +1882,10 @@ typedef HashtableEntry<InstanceKlass*, mtClass>  KlassHashtableEntry;
   declare_c2_type(VectorUnboxNode, VectorNode)                            \
   declare_c2_type(VectorReinterpretNode, VectorNode)                      \
   declare_c2_type(VectorMaskCastNode, VectorNode)                         \
-  declare_c2_type(MaskToVectorNode, VectorNode)                           \
-  declare_c2_type(VectorMaskNode, VectorNode)                             \
-  declare_c2_type(VectorCmpMaskGenNode, VectorMaskNode)                   \
-  declare_c2_type(VectorToMaskNode, VectorMaskNode)                       \
-  declare_c2_type(MaskAllNode, VectorMaskNode)                            \
-  declare_c2_type(AndVMaskNode, VectorMaskNode)                           \
-  declare_c2_type(OrVMaskNode, VectorMaskNode)                            \
-  declare_c2_type(XorVMaskNode, VectorMaskNode)                           \
+  declare_c2_type(MaskAllNode, VectorNode)                                \
+  declare_c2_type(AndVMaskNode, VectorNode)                               \
+  declare_c2_type(OrVMaskNode, VectorNode)                                \
+  declare_c2_type(XorVMaskNode, VectorNode)                               \
   declare_c2_type(VectorBoxNode, Node)                                    \
   declare_c2_type(VectorBoxAllocateNode, CallStaticJavaNode)              \
   declare_c2_type(VectorTestNode, Node)                                   \
