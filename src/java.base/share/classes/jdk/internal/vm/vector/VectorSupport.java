@@ -344,20 +344,23 @@ public class VectorSupport {
 
     /* ============================================================================ */
 
-    public interface LoadVectorOperationWithMap<C, V extends Vector<?>, E, S extends VectorSpecies<E>> {
-        V loadWithMap(C container, int index, int[] indexMap, int indexM, S s);
+    public interface LoadVectorOperationWithMap<C, V extends Vector<?>, E, S extends VectorSpecies<E>,
+                                                M extends VectorMask<E>> {
+        V loadWithMap(C container, int index, int[] indexMap, int indexM, S s, M m);
     }
 
     @IntrinsicCandidate
     public static
-    <C, V extends Vector<?>, W extends Vector<Integer>, E, S extends VectorSpecies<E>>
-    V loadWithMap(Class<?> vectorClass, Class<E> E, int length, Class<?> vectorIndexClass,
+    <C, V extends Vector<?>, W extends Vector<Integer>, E,
+     S extends VectorSpecies<E>, M extends VectorMask<E>>
+    V loadWithMap(Class<?> vectorClass, Class<M> maskClass, Class<E> E, int length,
+                  Class<?> vectorIndexClass,
                   Object base, long offset, // Unsafe addressing
-                  W index_vector,
+                  W index_vector, M m,
                   C container, int index, int[] indexMap, int indexM, S s, // Arguments for default implementation
-                  LoadVectorOperationWithMap<C, V, E, S> defaultImpl) {
+                  LoadVectorOperationWithMap<C, V, E, S, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.loadWithMap(container, index, indexMap, indexM, s);
+        return defaultImpl.loadWithMap(container, index, indexMap, indexM, s, m);
     }
 
     /* ============================================================================ */
@@ -397,20 +400,20 @@ public class VectorSupport {
 
     /* ============================================================================ */
 
-    public interface StoreVectorOperationWithMap<C, V extends Vector<?>> {
-        void storeWithMap(C container, int index, V v, int[] indexMap, int indexM);
+    public interface StoreVectorOperationWithMap<C, V extends Vector<?>, M extends VectorMask<?>> {
+        void storeWithMap(C container, int index, V v, int[] indexMap, int indexM, M m);
     }
 
     @IntrinsicCandidate
     public static
-    <C, V extends Vector<?>, W extends Vector<Integer>>
-    void storeWithMap(Class<?> vectorClass, Class<?> elementType, int length, Class<?> vectorIndexClass,
-                      Object base, long offset,    // Unsafe addressing
-                      W index_vector, V v,
+    <C, V extends Vector<?>, W extends Vector<Integer>, M extends VectorMask<?>>
+    void storeWithMap(Class<?> vectorClass, Class<M> maskClass, Class<?> elementType,
+                      int length, Class<?> vectorIndexClass, Object base, long offset,    // Unsafe addressing
+                      W index_vector, V v, M m,
                       C container, int index, int[] indexMap, int indexM, // Arguments for default implementation
-                      StoreVectorOperationWithMap<C, V> defaultImpl) {
+                      StoreVectorOperationWithMap<C, V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        defaultImpl.storeWithMap(container, index, v, indexMap, indexM);
+        defaultImpl.storeWithMap(container, index, v, indexMap, indexM, m);
     }
 
     /* ============================================================================ */

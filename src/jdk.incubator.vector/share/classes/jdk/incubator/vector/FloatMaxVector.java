@@ -820,6 +820,13 @@ final class FloatMaxVector extends FloatVector {
         return super.fromArray0Template(FloatMaxMask.class, a, offset, (FloatMaxMask) m);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    FloatVector fromArray0(float[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Float> m) {
+        return super.fromArray0Template(FloatMaxMask.class, a, offset, indexMap, mapOffset, (FloatMaxMask) m);
+    }
+
 
 
     @ForceInline
@@ -848,6 +855,13 @@ final class FloatMaxVector extends FloatVector {
     final
     void intoArray0(float[] a, int offset, VectorMask<Float> m) {
         super.intoArray0Template(FloatMaxMask.class, a, offset, (FloatMaxMask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(float[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Float> m) {
+        super.intoArray0Template(FloatMaxMask.class, a, offset, indexMap, mapOffset, (FloatMaxMask) m);
     }
 
 

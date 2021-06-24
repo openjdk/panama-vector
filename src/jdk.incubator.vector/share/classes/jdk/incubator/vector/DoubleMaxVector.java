@@ -820,6 +820,13 @@ final class DoubleMaxVector extends DoubleVector {
         return super.fromArray0Template(DoubleMaxMask.class, a, offset, (DoubleMaxMask) m);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    DoubleVector fromArray0(double[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Double> m) {
+        return super.fromArray0Template(DoubleMaxMask.class, a, offset, indexMap, mapOffset, (DoubleMaxMask) m);
+    }
+
 
 
     @ForceInline
@@ -848,6 +855,13 @@ final class DoubleMaxVector extends DoubleVector {
     final
     void intoArray0(double[] a, int offset, VectorMask<Double> m) {
         super.intoArray0Template(DoubleMaxMask.class, a, offset, (DoubleMaxMask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(double[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Double> m) {
+        super.intoArray0Template(DoubleMaxMask.class, a, offset, indexMap, mapOffset, (DoubleMaxMask) m);
     }
 
 

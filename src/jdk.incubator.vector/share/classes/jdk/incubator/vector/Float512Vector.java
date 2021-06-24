@@ -851,6 +851,13 @@ final class Float512Vector extends FloatVector {
         return super.fromArray0Template(Float512Mask.class, a, offset, (Float512Mask) m);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    FloatVector fromArray0(float[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Float> m) {
+        return super.fromArray0Template(Float512Mask.class, a, offset, indexMap, mapOffset, (Float512Mask) m);
+    }
+
 
 
     @ForceInline
@@ -879,6 +886,13 @@ final class Float512Vector extends FloatVector {
     final
     void intoArray0(float[] a, int offset, VectorMask<Float> m) {
         super.intoArray0Template(Float512Mask.class, a, offset, (Float512Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(float[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Float> m) {
+        super.intoArray0Template(Float512Mask.class, a, offset, indexMap, mapOffset, (Float512Mask) m);
     }
 
 

@@ -836,6 +836,13 @@ final class IntMaxVector extends IntVector {
         return super.fromArray0Template(IntMaxMask.class, a, offset, (IntMaxMask) m);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    IntVector fromArray0(int[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Integer> m) {
+        return super.fromArray0Template(IntMaxMask.class, a, offset, indexMap, mapOffset, (IntMaxMask) m);
+    }
+
 
 
     @ForceInline
@@ -864,6 +871,13 @@ final class IntMaxVector extends IntVector {
     final
     void intoArray0(int[] a, int offset, VectorMask<Integer> m) {
         super.intoArray0Template(IntMaxMask.class, a, offset, (IntMaxMask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(int[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Integer> m) {
+        super.intoArray0Template(IntMaxMask.class, a, offset, indexMap, mapOffset, (IntMaxMask) m);
     }
 
 

@@ -831,6 +831,13 @@ final class Int128Vector extends IntVector {
         return super.fromArray0Template(Int128Mask.class, a, offset, (Int128Mask) m);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    IntVector fromArray0(int[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Integer> m) {
+        return super.fromArray0Template(Int128Mask.class, a, offset, indexMap, mapOffset, (Int128Mask) m);
+    }
+
 
 
     @ForceInline
@@ -859,6 +866,13 @@ final class Int128Vector extends IntVector {
     final
     void intoArray0(int[] a, int offset, VectorMask<Integer> m) {
         super.intoArray0Template(Int128Mask.class, a, offset, (Int128Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(int[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Integer> m) {
+        super.intoArray0Template(Int128Mask.class, a, offset, indexMap, mapOffset, (Int128Mask) m);
     }
 
 

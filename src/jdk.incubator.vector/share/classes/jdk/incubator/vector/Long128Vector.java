@@ -817,6 +817,13 @@ final class Long128Vector extends LongVector {
         return super.fromArray0Template(Long128Mask.class, a, offset, (Long128Mask) m);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    LongVector fromArray0(long[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Long> m) {
+        return super.fromArray0Template(Long128Mask.class, a, offset, indexMap, mapOffset, (Long128Mask) m);
+    }
+
 
 
     @ForceInline
@@ -845,6 +852,13 @@ final class Long128Vector extends LongVector {
     final
     void intoArray0(long[] a, int offset, VectorMask<Long> m) {
         super.intoArray0Template(Long128Mask.class, a, offset, (Long128Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(long[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Long> m) {
+        super.intoArray0Template(Long128Mask.class, a, offset, indexMap, mapOffset, (Long128Mask) m);
     }
 
 

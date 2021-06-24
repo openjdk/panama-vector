@@ -826,6 +826,7 @@ final class ByteMaxVector extends ByteVector {
     }
 
 
+
     @ForceInline
     @Override
     final
@@ -867,6 +868,7 @@ final class ByteMaxVector extends ByteVector {
     void intoArray0(byte[] a, int offset, VectorMask<Byte> m) {
         super.intoArray0Template(ByteMaxMask.class, a, offset, (ByteMaxMask) m);
     }
+
 
     @ForceInline
     @Override
