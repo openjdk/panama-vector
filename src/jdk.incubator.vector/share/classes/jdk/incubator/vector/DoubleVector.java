@@ -2693,8 +2693,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                    VectorMask<Double> m) {
         DoubleSpecies vsp = (DoubleSpecies) species;
         if (offset >= 0 && offset <= (a.length - species.length())) {
-            DoubleVector zero = vsp.zero();
-            return zero.blend(zero.fromArray0(a, offset), m);
+            return vsp.dummyVector().fromArray0(a, offset, m);
         }
 
         // FIXME: optimize
@@ -3228,6 +3227,23 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                     (arr_, off_, i) -> arr_[off_ + i]));
     }
 
+    /*package-private*/
+    abstract
+    DoubleVector fromArray0(double[] a, int offset, VectorMask<Double> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Double>>
+    DoubleVector fromArray0Template(Class<M> maskClass, double[] a, int offset, M m) {
+        m.check(species());
+        DoubleSpecies vsp = vspecies();
+        return VectorSupport.loadMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, arrayAddress(a, offset), m,
+            a, offset, vsp,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
+                                        (arr_, off_, i) -> arr_[off_ + i]));
+    }
+
 
 
     @Override
@@ -3290,6 +3306,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     final
     <M extends VectorMask<Double>>
     void intoArray0Template(Class<M> maskClass, double[] a, int offset, M m) {
+        m.check(species());
         DoubleSpecies vsp = vspecies();
         VectorSupport.storeMasked(
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
@@ -3299,6 +3316,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             -> v.stOp(arr, off, vm,
                       (arr_, off_, i, e) -> arr_[off_ + i] = e));
     }
+
 
     abstract
     void intoByteArray0(byte[] a, int offset);
@@ -3331,6 +3349,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                         (wb_, o, i, e) -> wb_.putDouble(o + i * 8, e));
             });
     }
+
 
     // End of low-level memory operations.
 
@@ -3649,7 +3668,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         /*package-private*/
         @ForceInline
         <M> DoubleVector ldOp(M memory, int offset,
-                                      AbstractMask<Double> m,
+                                      VectorMask<Double> m,
                                       FLdOp<M> f) {
             return dummyVector().ldOp(memory, offset, m, f);
         }

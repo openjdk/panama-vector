@@ -2862,8 +2862,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                                    VectorMask<Short> m) {
         ShortSpecies vsp = (ShortSpecies) species;
         if (offset >= 0 && offset <= (a.length - species.length())) {
-            ShortVector zero = vsp.zero();
-            return zero.blend(zero.fromArray0(a, offset), m);
+            return vsp.dummyVector().fromArray0(a, offset, m);
         }
 
         // FIXME: optimize
@@ -3012,8 +3011,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                                        VectorMask<Short> m) {
         ShortSpecies vsp = (ShortSpecies) species;
         if (offset >= 0 && offset <= (a.length - species.length())) {
-            ShortVector zero = vsp.zero();
-            return zero.blend(zero.fromCharArray0(a, offset), m);
+            return vsp.dummyVector().fromCharArray0(a, offset, m);
         }
 
         // FIXME: optimize
@@ -3419,10 +3417,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
         if (m.allTrue()) {
             intoCharArray(a, offset);
         } else {
-            // FIXME: optimize
             ShortSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
-            stOp(a, offset, m, (arr, off, i, v) -> arr[off+i] = (char) v);
+            intoCharArray0(a, offset, m);
         }
     }
 
@@ -3620,6 +3617,23 @@ public abstract class ShortVector extends AbstractVector<Short> {
 
     /*package-private*/
     abstract
+    ShortVector fromArray0(short[] a, int offset, VectorMask<Short> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Short>>
+    ShortVector fromArray0Template(Class<M> maskClass, short[] a, int offset, M m) {
+        m.check(species());
+        ShortSpecies vsp = vspecies();
+        return VectorSupport.loadMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, arrayAddress(a, offset), m,
+            a, offset, vsp,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
+                                        (arr_, off_, i) -> arr_[off_ + i]));
+    }
+
+    /*package-private*/
+    abstract
     ShortVector fromCharArray0(char[] a, int offset);
     @ForceInline
     final
@@ -3631,6 +3645,23 @@ public abstract class ShortVector extends AbstractVector<Short> {
             a, offset, vsp,
             (arr, off, s) -> s.ldOp(arr, off,
                                     (arr_, off_, i) -> (short) arr_[off_ + i]));
+    }
+
+    /*package-private*/
+    abstract
+    ShortVector fromCharArray0(char[] a, int offset, VectorMask<Short> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Short>>
+    ShortVector fromCharArray0Template(Class<M> maskClass, char[] a, int offset, M m) {
+        m.check(species());
+        ShortSpecies vsp = vspecies();
+        return VectorSupport.loadMasked(
+                vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+                a, charArrayAddress(a, offset), m,
+                a, offset, vsp,
+                (arr, off, s, vm) -> s.ldOp(arr, off, vm,
+                                            (arr_, off_, i) -> (short) arr_[off_ + i]));
     }
 
 
@@ -3694,6 +3725,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
     final
     <M extends VectorMask<Short>>
     void intoArray0Template(Class<M> maskClass, short[] a, int offset, M m) {
+        m.check(species());
         ShortSpecies vsp = vspecies();
         VectorSupport.storeMasked(
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
@@ -3703,6 +3735,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             -> v.stOp(arr, off, vm,
                       (arr_, off_, i, e) -> arr_[off_ + i] = e));
     }
+
 
     abstract
     void intoByteArray0(byte[] a, int offset);
@@ -3734,6 +3767,24 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 v.stOp(wb, off,
                         (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
             });
+    }
+
+    /*package-private*/
+    abstract
+    void intoCharArray0(char[] a, int offset, VectorMask<Short> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Short>>
+    void intoCharArray0Template(Class<M> maskClass, char[] a, int offset, M m) {
+        m.check(species());
+        ShortSpecies vsp = vspecies();
+        VectorSupport.storeMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, charArrayAddress(a, offset),
+            this, m, a, offset,
+            (arr, off, v, vm)
+            -> v.stOp(arr, off, vm,
+                      (arr_, off_, i, e) -> arr_[off_ + i] = (char) e));
     }
 
     // End of low-level memory operations.
@@ -4070,7 +4121,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
         /*package-private*/
         @ForceInline
         <M> ShortVector ldOp(M memory, int offset,
-                                      AbstractMask<Short> m,
+                                      VectorMask<Short> m,
                                       FLdOp<M> f) {
             return dummyVector().ldOp(memory, offset, m, f);
         }

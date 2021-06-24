@@ -1106,12 +1106,26 @@ final class $vectortype$ extends $abstractvectortype$ {
         return super.fromArray0Template(a, offset);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    $abstractvectortype$ fromArray0($type$[] a, int offset, VectorMask<$Boxtype$> m) {
+        return super.fromArray0Template($masktype$.class, a, offset, ($masktype$) m);  // specialize
+    }
+
 #if[short]
     @ForceInline
     @Override
     final
     $abstractvectortype$ fromCharArray0(char[] a, int offset) {
         return super.fromCharArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    $abstractvectortype$ fromCharArray0(char[] a, int offset, VectorMask<$Boxtype$> m) {
+        return super.fromCharArray0Template($masktype$.class, a, offset, ($masktype$) m);  // specialize
     }
 #end[short]
 
@@ -1121,6 +1135,13 @@ final class $vectortype$ extends $abstractvectortype$ {
     final
     $abstractvectortype$ fromBooleanArray0(boolean[] a, int offset) {
         return super.fromBooleanArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    $abstractvectortype$ fromBooleanArray0(boolean[] a, int offset, VectorMask<$Boxtype$> m) {
+        return super.fromBooleanArray0Template($masktype$.class, a, offset, ($masktype$) m);  // specialize
     }
 #end[byte]
 
@@ -1152,12 +1173,30 @@ final class $vectortype$ extends $abstractvectortype$ {
         super.intoArray0Template($masktype$.class, a, offset, ($masktype$) m);
     }
 
+#if[byte]
+    @ForceInline
+    @Override
+    final
+    void intoBooleanArray0(boolean[] a, int offset, VectorMask<$Boxtype$> m) {
+        super.intoBooleanArray0Template($masktype$.class, a, offset, ($masktype$) m);
+    }
+#end[byte]
+
     @ForceInline
     @Override
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
     }
+
+#if[short]
+    @ForceInline
+    @Override
+    final
+    void intoCharArray0(char[] a, int offset, VectorMask<$Boxtype$> m) {
+        super.intoCharArray0Template($masktype$.class, a, offset, ($masktype$) m);
+    }
+#end[short]
 
     // End of specialized low-level memory operations.
 

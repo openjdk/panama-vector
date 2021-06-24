@@ -2862,8 +2862,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                    VectorMask<Byte> m) {
         ByteSpecies vsp = (ByteSpecies) species;
         if (offset >= 0 && offset <= (a.length - species.length())) {
-            ByteVector zero = vsp.zero();
-            return zero.blend(zero.fromArray0(a, offset), m);
+            return vsp.dummyVector().fromArray0(a, offset, m);
         }
 
         // FIXME: optimize
@@ -3020,7 +3019,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         ByteSpecies vsp = (ByteSpecies) species;
         if (offset >= 0 && offset <= (a.length - species.length())) {
             ByteVector zero = vsp.zero();
-            return zero.blend(zero.fromBooleanArray0(a, offset), m);
+            return vsp.dummyVector().fromBooleanArray0(a, offset, m);
         }
 
         // FIXME: optimize
@@ -3427,10 +3426,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         if (m.allTrue()) {
             intoBooleanArray(a, offset);
         } else {
-            // FIXME: optimize
             ByteSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
-            stOp(a, offset, m, (arr, off, i, e) -> arr[off+i] = (e & 1) != 0);
+            intoBooleanArray0(a, offset, m);
         }
     }
 
@@ -3631,6 +3629,23 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                     (arr_, off_, i) -> arr_[off_ + i]));
     }
 
+    /*package-private*/
+    abstract
+    ByteVector fromArray0(byte[] a, int offset, VectorMask<Byte> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Byte>>
+    ByteVector fromArray0Template(Class<M> maskClass, byte[] a, int offset, M m) {
+        m.check(species());
+        ByteSpecies vsp = vspecies();
+        return VectorSupport.loadMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, arrayAddress(a, offset), m,
+            a, offset, vsp,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
+                                        (arr_, off_, i) -> arr_[off_ + i]));
+    }
+
 
     /*package-private*/
     abstract
@@ -3645,6 +3660,23 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             a, offset, vsp,
             (arr, off, s) -> s.ldOp(arr, off,
                                     (arr_, off_, i) -> (byte) (arr_[off_ + i] ? 1 : 0)));
+    }
+
+    /*package-private*/
+    abstract
+    ByteVector fromBooleanArray0(boolean[] a, int offset, VectorMask<Byte> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Byte>>
+    ByteVector fromBooleanArray0Template(Class<M> maskClass, boolean[] a, int offset, M m) {
+        m.check(species());
+        ByteSpecies vsp = vspecies();
+        return VectorSupport.loadMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, booleanArrayAddress(a, offset), m,
+            a, offset, vsp,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
+                                        (arr_, off_, i) -> (byte) (arr_[off_ + i] ? 1 : 0)));
     }
 
     @Override
@@ -3707,6 +3739,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     final
     <M extends VectorMask<Byte>>
     void intoArray0Template(Class<M> maskClass, byte[] a, int offset, M m) {
+        m.check(species());
         ByteSpecies vsp = vspecies();
         VectorSupport.storeMasked(
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
@@ -3715,6 +3748,24 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             (arr, off, v, vm)
             -> v.stOp(arr, off, vm,
                       (arr_, off_, i, e) -> arr_[off_ + i] = e));
+    }
+
+    abstract
+    void intoBooleanArray0(boolean[] a, int offset, VectorMask<Byte> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Byte>>
+    void intoBooleanArray0Template(Class<M> maskClass, boolean[] a, int offset, M m) {
+        m.check(species());
+        ByteSpecies vsp = vspecies();
+        ByteVector normalized = this.and((byte) 1);
+        VectorSupport.storeMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, booleanArrayAddress(a, offset),
+            normalized, m, a, offset,
+            (arr, off, v, vm)
+            -> v.stOp(arr, off, vm,
+                      (arr_, off_, i, e) -> arr_[off_ + i] = (e & 1) != 0));
     }
 
     abstract
@@ -3748,6 +3799,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                         (wb_, o, i, e) -> wb_.put(o + i * 1, e));
             });
     }
+
 
     // End of low-level memory operations.
 
@@ -4075,7 +4127,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         /*package-private*/
         @ForceInline
         <M> ByteVector ldOp(M memory, int offset,
-                                      AbstractMask<Byte> m,
+                                      VectorMask<Byte> m,
                                       FLdOp<M> f) {
             return dummyVector().ldOp(memory, offset, m, f);
         }

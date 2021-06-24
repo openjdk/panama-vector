@@ -810,6 +810,13 @@ final class Long128Vector extends LongVector {
         return super.fromArray0Template(a, offset);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    LongVector fromArray0(long[] a, int offset, VectorMask<Long> m) {
+        return super.fromArray0Template(Long128Mask.class, a, offset, (Long128Mask) m);  // specialize
+    }
+
 
 
     @ForceInline
@@ -840,12 +847,14 @@ final class Long128Vector extends LongVector {
         super.intoArray0Template(Long128Mask.class, a, offset, (Long128Mask) m);
     }
 
+
     @ForceInline
     @Override
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
     }
+
 
     // End of specialized low-level memory operations.
 

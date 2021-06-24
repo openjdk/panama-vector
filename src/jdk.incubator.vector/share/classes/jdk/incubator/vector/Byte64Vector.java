@@ -832,12 +832,26 @@ final class Byte64Vector extends ByteVector {
         return super.fromArray0Template(a, offset);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    ByteVector fromArray0(byte[] a, int offset, VectorMask<Byte> m) {
+        return super.fromArray0Template(Byte64Mask.class, a, offset, (Byte64Mask) m);  // specialize
+    }
+
 
     @ForceInline
     @Override
     final
     ByteVector fromBooleanArray0(boolean[] a, int offset) {
         return super.fromBooleanArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    ByteVector fromBooleanArray0(boolean[] a, int offset, VectorMask<Byte> m) {
+        return super.fromBooleanArray0Template(Byte64Mask.class, a, offset, (Byte64Mask) m);  // specialize
     }
 
     @ForceInline
@@ -871,9 +885,17 @@ final class Byte64Vector extends ByteVector {
     @ForceInline
     @Override
     final
+    void intoBooleanArray0(boolean[] a, int offset, VectorMask<Byte> m) {
+        super.intoBooleanArray0Template(Byte64Mask.class, a, offset, (Byte64Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
     }
+
 
     // End of specialized low-level memory operations.
 

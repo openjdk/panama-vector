@@ -844,6 +844,13 @@ final class Float512Vector extends FloatVector {
         return super.fromArray0Template(a, offset);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    FloatVector fromArray0(float[] a, int offset, VectorMask<Float> m) {
+        return super.fromArray0Template(Float512Mask.class, a, offset, (Float512Mask) m);  // specialize
+    }
+
 
 
     @ForceInline
@@ -874,12 +881,14 @@ final class Float512Vector extends FloatVector {
         super.intoArray0Template(Float512Mask.class, a, offset, (Float512Mask) m);
     }
 
+
     @ForceInline
     @Override
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
     }
+
 
     // End of specialized low-level memory operations.
 
