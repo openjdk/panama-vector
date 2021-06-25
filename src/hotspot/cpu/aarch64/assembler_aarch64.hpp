@@ -1539,11 +1539,13 @@ private:
 
 public:
 
-  static SIMD_Arrangement esize2arrangement(int esize, bool isQ);
-
   enum SIMD_RegVariant {
     B, H, S, D, Q, INVALID
   };
+
+  static SIMD_Arrangement esize2arrangement(int esize, bool isQ);
+  static SIMD_RegVariant elemType_to_regVariant(BasicType bt);
+  static SIMD_RegVariant elemBytes_to_regVariant(int esize);
 
   enum shift_kind { LSL, LSR, ASR, ROR };
 
@@ -3451,7 +3453,7 @@ public:
     pgrf(Pg, 10), rf(Zn, 5), rf(Zd, 0);
   }
 
-// SVE conditionally extract element to general-purpose register
+// SVE extract element to general-purpose register
 #define INSN(NAME, before)                                                      \
   void NAME(Register Rd, SIMD_RegVariant T, PRegister Pg,  FloatRegister Zn) {  \
     starti;                                                                     \
@@ -3464,6 +3466,7 @@ public:
   INSN(sve_lastb, 0b1);
 #undef INSN
 
+// SVE extract element to SIMD&FP scalar register
 #define INSN(NAME, before)                                                           \
   void NAME(FloatRegister Vd, SIMD_RegVariant T, PRegister Pg,  FloatRegister Zn) {  \
     starti;                                                                          \
