@@ -236,8 +236,8 @@ final class IntMaxVector extends IntVector {
 
     @ForceInline
     final @Override
-    int rOp(int v, FBinOp f) {
-        return super.rOpTemplate(v, f);  // specialize
+    int rOp(int v, VectorMask<Integer> m, FBinOp f) {
+        return super.rOpTemplate(v, m, f);  // specialize
     }
 
     @Override
@@ -334,7 +334,7 @@ final class IntMaxVector extends IntVector {
     @ForceInline
     public final int reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Integer> m) {
-        return super.reduceLanesTemplate(op, m);  // specialized
+        return super.reduceLanesTemplate(op, IntMaxMask.class, m);  // specialized
     }
 
     @Override
@@ -347,7 +347,7 @@ final class IntMaxVector extends IntVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Integer> m) {
-        return (long) super.reduceLanesTemplate(op, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, IntMaxMask.class, m);  // specialized
     }
 
     @ForceInline
@@ -829,6 +829,13 @@ final class IntMaxVector extends IntVector {
         return super.fromArray0Template(a, offset);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    IntVector fromArray0(int[] a, int offset, VectorMask<Integer> m) {
+        return super.fromArray0Template(IntMaxMask.class, a, offset, (IntMaxMask) m);  // specialize
+    }
+
 
 
     @ForceInline
@@ -859,12 +866,14 @@ final class IntMaxVector extends IntVector {
         super.intoArray0Template(IntMaxMask.class, a, offset, (IntMaxMask) m);
     }
 
+
     @ForceInline
     @Override
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
     }
+
 
     // End of specialized low-level memory operations.
 

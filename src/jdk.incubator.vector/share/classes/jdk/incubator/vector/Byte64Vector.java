@@ -236,8 +236,8 @@ final class Byte64Vector extends ByteVector {
 
     @ForceInline
     final @Override
-    byte rOp(byte v, FBinOp f) {
-        return super.rOpTemplate(v, f);  // specialize
+    byte rOp(byte v, VectorMask<Byte> m, FBinOp f) {
+        return super.rOpTemplate(v, m, f);  // specialize
     }
 
     @Override
@@ -334,7 +334,7 @@ final class Byte64Vector extends ByteVector {
     @ForceInline
     public final byte reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Byte> m) {
-        return super.reduceLanesTemplate(op, m);  // specialized
+        return super.reduceLanesTemplate(op, Byte64Mask.class, m);  // specialized
     }
 
     @Override
@@ -347,7 +347,7 @@ final class Byte64Vector extends ByteVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Byte> m) {
-        return (long) super.reduceLanesTemplate(op, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, Byte64Mask.class, m);  // specialized
     }
 
     @ForceInline
@@ -832,12 +832,26 @@ final class Byte64Vector extends ByteVector {
         return super.fromArray0Template(a, offset);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    ByteVector fromArray0(byte[] a, int offset, VectorMask<Byte> m) {
+        return super.fromArray0Template(Byte64Mask.class, a, offset, (Byte64Mask) m);  // specialize
+    }
+
 
     @ForceInline
     @Override
     final
     ByteVector fromBooleanArray0(boolean[] a, int offset) {
         return super.fromBooleanArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    ByteVector fromBooleanArray0(boolean[] a, int offset, VectorMask<Byte> m) {
+        return super.fromBooleanArray0Template(Byte64Mask.class, a, offset, (Byte64Mask) m);  // specialize
     }
 
     @ForceInline
@@ -871,9 +885,17 @@ final class Byte64Vector extends ByteVector {
     @ForceInline
     @Override
     final
+    void intoBooleanArray0(boolean[] a, int offset, VectorMask<Byte> m) {
+        super.intoBooleanArray0Template(Byte64Mask.class, a, offset, (Byte64Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
     }
+
 
     // End of specialized low-level memory operations.
 

@@ -236,8 +236,8 @@ final class Short512Vector extends ShortVector {
 
     @ForceInline
     final @Override
-    short rOp(short v, FBinOp f) {
-        return super.rOpTemplate(v, f);  // specialize
+    short rOp(short v, VectorMask<Short> m, FBinOp f) {
+        return super.rOpTemplate(v, m, f);  // specialize
     }
 
     @Override
@@ -334,7 +334,7 @@ final class Short512Vector extends ShortVector {
     @ForceInline
     public final short reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Short> m) {
-        return super.reduceLanesTemplate(op, m);  // specialized
+        return super.reduceLanesTemplate(op, Short512Mask.class, m);  // specialized
     }
 
     @Override
@@ -347,7 +347,7 @@ final class Short512Vector extends ShortVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Short> m) {
-        return (long) super.reduceLanesTemplate(op, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, Short512Mask.class, m);  // specialized
     }
 
     @ForceInline
@@ -883,8 +883,22 @@ final class Short512Vector extends ShortVector {
     @ForceInline
     @Override
     final
+    ShortVector fromArray0(short[] a, int offset, VectorMask<Short> m) {
+        return super.fromArray0Template(Short512Mask.class, a, offset, (Short512Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
     ShortVector fromCharArray0(char[] a, int offset) {
         return super.fromCharArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    ShortVector fromCharArray0(char[] a, int offset, VectorMask<Short> m) {
+        return super.fromCharArray0Template(Short512Mask.class, a, offset, (Short512Mask) m);  // specialize
     }
 
 
@@ -916,11 +930,19 @@ final class Short512Vector extends ShortVector {
         super.intoArray0Template(Short512Mask.class, a, offset, (Short512Mask) m);
     }
 
+
     @ForceInline
     @Override
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoCharArray0(char[] a, int offset, VectorMask<Short> m) {
+        super.intoCharArray0Template(Short512Mask.class, a, offset, (Short512Mask) m);
     }
 
     // End of specialized low-level memory operations.

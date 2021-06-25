@@ -236,8 +236,8 @@ final class DoubleMaxVector extends DoubleVector {
 
     @ForceInline
     final @Override
-    double rOp(double v, FBinOp f) {
-        return super.rOpTemplate(v, f);  // specialize
+    double rOp(double v, VectorMask<Double> m, FBinOp f) {
+        return super.rOpTemplate(v, m, f);  // specialize
     }
 
     @Override
@@ -328,7 +328,7 @@ final class DoubleMaxVector extends DoubleVector {
     @ForceInline
     public final double reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Double> m) {
-        return super.reduceLanesTemplate(op, m);  // specialized
+        return super.reduceLanesTemplate(op, DoubleMaxMask.class, m);  // specialized
     }
 
     @Override
@@ -341,7 +341,7 @@ final class DoubleMaxVector extends DoubleVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Double> m) {
-        return (long) super.reduceLanesTemplate(op, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, DoubleMaxMask.class, m);  // specialized
     }
 
     @ForceInline
@@ -813,6 +813,13 @@ final class DoubleMaxVector extends DoubleVector {
         return super.fromArray0Template(a, offset);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    DoubleVector fromArray0(double[] a, int offset, VectorMask<Double> m) {
+        return super.fromArray0Template(DoubleMaxMask.class, a, offset, (DoubleMaxMask) m);  // specialize
+    }
+
 
 
     @ForceInline
@@ -843,12 +850,14 @@ final class DoubleMaxVector extends DoubleVector {
         super.intoArray0Template(DoubleMaxMask.class, a, offset, (DoubleMaxMask) m);
     }
 
+
     @ForceInline
     @Override
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
     }
+
 
     // End of specialized low-level memory operations.
 

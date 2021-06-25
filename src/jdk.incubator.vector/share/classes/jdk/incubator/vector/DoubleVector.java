@@ -287,7 +287,22 @@ public abstract class DoubleVector extends AbstractVector<Double> {
 
     /*package-private*/
     abstract
-    double rOp(double v, FBinOp f);
+    double rOp(double v, VectorMask<Double> m, FBinOp f);
+
+    @ForceInline
+    final
+    double rOpTemplate(double v, VectorMask<Double> m, FBinOp f) {
+        if (m == null) {
+            return rOpTemplate(v, f);
+        }
+        double[] vec = vec();
+        boolean[] mbits = ((AbstractMask<Double>)m).getBits();
+        for (int i = 0; i < vec.length; i++) {
+            v = mbits[i] ? f.apply(i, v, vec[i]) : v;
+        }
+        return v;
+    }
+
     @ForceInline
     final
     double rOpTemplate(double v, FBinOp f) {
@@ -2389,9 +2404,18 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     @ForceInline
     final
     double reduceLanesTemplate(VectorOperators.Associative op,
+                               Class<? extends VectorMask<Double>> maskClass,
                                VectorMask<Double> m) {
-        DoubleVector v = reduceIdentityVector(op).blend(this, m);
-        return v.reduceLanesTemplate(op);
+        m.check(maskClass, this);
+        if (op == FIRST_NONZERO) {
+            DoubleVector v = reduceIdentityVector(op).blend(this, m);
+            return v.reduceLanesTemplate(op);
+        }
+        int opc = opCode(op);
+        return fromBits(VectorSupport.reductionCoerced(
+            opc, getClass(), maskClass, double.class, length(),
+            this, m,
+            REDUCE_IMPL.find(op, opc, DoubleVector::reductionOperations)));
     }
 
     /*package-private*/
@@ -2406,24 +2430,28 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         }
         int opc = opCode(op);
         return fromBits(VectorSupport.reductionCoerced(
-            opc, getClass(), double.class, length(),
-            this,
-            REDUCE_IMPL.find(op, opc, (opc_) -> {
-              switch (opc_) {
-              case VECTOR_OP_ADD: return v ->
-                      toBits(v.rOp((double)0, (i, a, b) -> (double)(a + b)));
-              case VECTOR_OP_MUL: return v ->
-                      toBits(v.rOp((double)1, (i, a, b) -> (double)(a * b)));
-              case VECTOR_OP_MIN: return v ->
-                      toBits(v.rOp(MAX_OR_INF, (i, a, b) -> (double) Math.min(a, b)));
-              case VECTOR_OP_MAX: return v ->
-                      toBits(v.rOp(MIN_OR_INF, (i, a, b) -> (double) Math.max(a, b)));
-              default: return null;
-              }})));
+            opc, getClass(), null, double.class, length(),
+            this, null,
+            REDUCE_IMPL.find(op, opc, DoubleVector::reductionOperations)));
     }
+
     private static final
-    ImplCache<Associative,Function<DoubleVector,Long>> REDUCE_IMPL
-        = new ImplCache<>(Associative.class, DoubleVector.class);
+    ImplCache<Associative, ReductionOperation<DoubleVector, VectorMask<Double>>>
+        REDUCE_IMPL = new ImplCache<>(Associative.class, DoubleVector.class);
+
+    private static ReductionOperation<DoubleVector, VectorMask<Double>> reductionOperations(int opc_) {
+        switch (opc_) {
+            case VECTOR_OP_ADD: return (v, m) ->
+                    toBits(v.rOp((double)0, m, (i, a, b) -> (double)(a + b)));
+            case VECTOR_OP_MUL: return (v, m) ->
+                    toBits(v.rOp((double)1, m, (i, a, b) -> (double)(a * b)));
+            case VECTOR_OP_MIN: return (v, m) ->
+                    toBits(v.rOp(MAX_OR_INF, m, (i, a, b) -> (double) Math.min(a, b)));
+            case VECTOR_OP_MAX: return (v, m) ->
+                    toBits(v.rOp(MIN_OR_INF, m, (i, a, b) -> (double) Math.max(a, b)));
+            default: return null;
+        }
+    }
 
     private
     @ForceInline
@@ -2693,8 +2721,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                    VectorMask<Double> m) {
         DoubleSpecies vsp = (DoubleSpecies) species;
         if (offset >= 0 && offset <= (a.length - species.length())) {
-            DoubleVector zero = vsp.zero();
-            return zero.blend(zero.fromArray0(a, offset), m);
+            return vsp.dummyVector().fromArray0(a, offset, m);
         }
 
         // FIXME: optimize
@@ -3228,6 +3255,23 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                     (arr_, off_, i) -> arr_[off_ + i]));
     }
 
+    /*package-private*/
+    abstract
+    DoubleVector fromArray0(double[] a, int offset, VectorMask<Double> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Double>>
+    DoubleVector fromArray0Template(Class<M> maskClass, double[] a, int offset, M m) {
+        m.check(species());
+        DoubleSpecies vsp = vspecies();
+        return VectorSupport.loadMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, arrayAddress(a, offset), m,
+            a, offset, vsp,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
+                                        (arr_, off_, i) -> arr_[off_ + i]));
+    }
+
 
 
     @Override
@@ -3290,6 +3334,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     final
     <M extends VectorMask<Double>>
     void intoArray0Template(Class<M> maskClass, double[] a, int offset, M m) {
+        m.check(species());
         DoubleSpecies vsp = vspecies();
         VectorSupport.storeMasked(
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
@@ -3299,6 +3344,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             -> v.stOp(arr, off, vm,
                       (arr_, off_, i, e) -> arr_[off_ + i] = e));
     }
+
 
     abstract
     void intoByteArray0(byte[] a, int offset);
@@ -3331,6 +3377,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                         (wb_, o, i, e) -> wb_.putDouble(o + i * 8, e));
             });
     }
+
 
     // End of low-level memory operations.
 
@@ -3649,7 +3696,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         /*package-private*/
         @ForceInline
         <M> DoubleVector ldOp(M memory, int offset,
-                                      AbstractMask<Double> m,
+                                      VectorMask<Double> m,
                                       FLdOp<M> f) {
             return dummyVector().ldOp(memory, offset, m, f);
         }

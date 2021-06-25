@@ -236,8 +236,8 @@ final class Float64Vector extends FloatVector {
 
     @ForceInline
     final @Override
-    float rOp(float v, FBinOp f) {
-        return super.rOpTemplate(v, f);  // specialize
+    float rOp(float v, VectorMask<Float> m, FBinOp f) {
+        return super.rOpTemplate(v, m, f);  // specialize
     }
 
     @Override
@@ -328,7 +328,7 @@ final class Float64Vector extends FloatVector {
     @ForceInline
     public final float reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Float> m) {
-        return super.reduceLanesTemplate(op, m);  // specialized
+        return super.reduceLanesTemplate(op, Float64Mask.class, m);  // specialized
     }
 
     @Override
@@ -341,7 +341,7 @@ final class Float64Vector extends FloatVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Float> m) {
-        return (long) super.reduceLanesTemplate(op, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, Float64Mask.class, m);  // specialized
     }
 
     @ForceInline
@@ -816,6 +816,13 @@ final class Float64Vector extends FloatVector {
         return super.fromArray0Template(a, offset);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    FloatVector fromArray0(float[] a, int offset, VectorMask<Float> m) {
+        return super.fromArray0Template(Float64Mask.class, a, offset, (Float64Mask) m);  // specialize
+    }
+
 
 
     @ForceInline
@@ -846,12 +853,14 @@ final class Float64Vector extends FloatVector {
         super.intoArray0Template(Float64Mask.class, a, offset, (Float64Mask) m);
     }
 
+
     @ForceInline
     @Override
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
     }
+
 
     // End of specialized low-level memory operations.
 

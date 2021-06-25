@@ -287,7 +287,22 @@ public abstract class ByteVector extends AbstractVector<Byte> {
 
     /*package-private*/
     abstract
-    byte rOp(byte v, FBinOp f);
+    byte rOp(byte v, VectorMask<Byte> m, FBinOp f);
+
+    @ForceInline
+    final
+    byte rOpTemplate(byte v, VectorMask<Byte> m, FBinOp f) {
+        if (m == null) {
+            return rOpTemplate(v, f);
+        }
+        byte[] vec = vec();
+        boolean[] mbits = ((AbstractMask<Byte>)m).getBits();
+        for (int i = 0; i < vec.length; i++) {
+            v = mbits[i] ? f.apply(i, v, vec[i]) : v;
+        }
+        return v;
+    }
+
     @ForceInline
     final
     byte rOpTemplate(byte v, FBinOp f) {
@@ -2532,9 +2547,18 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     @ForceInline
     final
     byte reduceLanesTemplate(VectorOperators.Associative op,
+                               Class<? extends VectorMask<Byte>> maskClass,
                                VectorMask<Byte> m) {
-        ByteVector v = reduceIdentityVector(op).blend(this, m);
-        return v.reduceLanesTemplate(op);
+        m.check(maskClass, this);
+        if (op == FIRST_NONZERO) {
+            ByteVector v = reduceIdentityVector(op).blend(this, m);
+            return v.reduceLanesTemplate(op);
+        }
+        int opc = opCode(op);
+        return fromBits(VectorSupport.reductionCoerced(
+            opc, getClass(), maskClass, byte.class, length(),
+            this, m,
+            REDUCE_IMPL.find(op, opc, ByteVector::reductionOperations)));
     }
 
     /*package-private*/
@@ -2549,30 +2573,34 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         }
         int opc = opCode(op);
         return fromBits(VectorSupport.reductionCoerced(
-            opc, getClass(), byte.class, length(),
-            this,
-            REDUCE_IMPL.find(op, opc, (opc_) -> {
-              switch (opc_) {
-              case VECTOR_OP_ADD: return v ->
-                      toBits(v.rOp((byte)0, (i, a, b) -> (byte)(a + b)));
-              case VECTOR_OP_MUL: return v ->
-                      toBits(v.rOp((byte)1, (i, a, b) -> (byte)(a * b)));
-              case VECTOR_OP_MIN: return v ->
-                      toBits(v.rOp(MAX_OR_INF, (i, a, b) -> (byte) Math.min(a, b)));
-              case VECTOR_OP_MAX: return v ->
-                      toBits(v.rOp(MIN_OR_INF, (i, a, b) -> (byte) Math.max(a, b)));
-              case VECTOR_OP_AND: return v ->
-                      toBits(v.rOp((byte)-1, (i, a, b) -> (byte)(a & b)));
-              case VECTOR_OP_OR: return v ->
-                      toBits(v.rOp((byte)0, (i, a, b) -> (byte)(a | b)));
-              case VECTOR_OP_XOR: return v ->
-                      toBits(v.rOp((byte)0, (i, a, b) -> (byte)(a ^ b)));
-              default: return null;
-              }})));
+            opc, getClass(), null, byte.class, length(),
+            this, null,
+            REDUCE_IMPL.find(op, opc, ByteVector::reductionOperations)));
     }
+
     private static final
-    ImplCache<Associative,Function<ByteVector,Long>> REDUCE_IMPL
-        = new ImplCache<>(Associative.class, ByteVector.class);
+    ImplCache<Associative, ReductionOperation<ByteVector, VectorMask<Byte>>>
+        REDUCE_IMPL = new ImplCache<>(Associative.class, ByteVector.class);
+
+    private static ReductionOperation<ByteVector, VectorMask<Byte>> reductionOperations(int opc_) {
+        switch (opc_) {
+            case VECTOR_OP_ADD: return (v, m) ->
+                    toBits(v.rOp((byte)0, m, (i, a, b) -> (byte)(a + b)));
+            case VECTOR_OP_MUL: return (v, m) ->
+                    toBits(v.rOp((byte)1, m, (i, a, b) -> (byte)(a * b)));
+            case VECTOR_OP_MIN: return (v, m) ->
+                    toBits(v.rOp(MAX_OR_INF, m, (i, a, b) -> (byte) Math.min(a, b)));
+            case VECTOR_OP_MAX: return (v, m) ->
+                    toBits(v.rOp(MIN_OR_INF, m, (i, a, b) -> (byte) Math.max(a, b)));
+            case VECTOR_OP_AND: return (v, m) ->
+                    toBits(v.rOp((byte)-1, m, (i, a, b) -> (byte)(a & b)));
+            case VECTOR_OP_OR: return (v, m) ->
+                    toBits(v.rOp((byte)0, m, (i, a, b) -> (byte)(a | b)));
+            case VECTOR_OP_XOR: return (v, m) ->
+                    toBits(v.rOp((byte)0, m, (i, a, b) -> (byte)(a ^ b)));
+            default: return null;
+        }
+    }
 
     private
     @ForceInline
@@ -2862,8 +2890,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                    VectorMask<Byte> m) {
         ByteSpecies vsp = (ByteSpecies) species;
         if (offset >= 0 && offset <= (a.length - species.length())) {
-            ByteVector zero = vsp.zero();
-            return zero.blend(zero.fromArray0(a, offset), m);
+            return vsp.dummyVector().fromArray0(a, offset, m);
         }
 
         // FIXME: optimize
@@ -3020,7 +3047,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         ByteSpecies vsp = (ByteSpecies) species;
         if (offset >= 0 && offset <= (a.length - species.length())) {
             ByteVector zero = vsp.zero();
-            return zero.blend(zero.fromBooleanArray0(a, offset), m);
+            return vsp.dummyVector().fromBooleanArray0(a, offset, m);
         }
 
         // FIXME: optimize
@@ -3427,10 +3454,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         if (m.allTrue()) {
             intoBooleanArray(a, offset);
         } else {
-            // FIXME: optimize
             ByteSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
-            stOp(a, offset, m, (arr, off, i, e) -> arr[off+i] = (e & 1) != 0);
+            intoBooleanArray0(a, offset, m);
         }
     }
 
@@ -3631,6 +3657,23 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                     (arr_, off_, i) -> arr_[off_ + i]));
     }
 
+    /*package-private*/
+    abstract
+    ByteVector fromArray0(byte[] a, int offset, VectorMask<Byte> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Byte>>
+    ByteVector fromArray0Template(Class<M> maskClass, byte[] a, int offset, M m) {
+        m.check(species());
+        ByteSpecies vsp = vspecies();
+        return VectorSupport.loadMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, arrayAddress(a, offset), m,
+            a, offset, vsp,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
+                                        (arr_, off_, i) -> arr_[off_ + i]));
+    }
+
 
     /*package-private*/
     abstract
@@ -3645,6 +3688,23 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             a, offset, vsp,
             (arr, off, s) -> s.ldOp(arr, off,
                                     (arr_, off_, i) -> (byte) (arr_[off_ + i] ? 1 : 0)));
+    }
+
+    /*package-private*/
+    abstract
+    ByteVector fromBooleanArray0(boolean[] a, int offset, VectorMask<Byte> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Byte>>
+    ByteVector fromBooleanArray0Template(Class<M> maskClass, boolean[] a, int offset, M m) {
+        m.check(species());
+        ByteSpecies vsp = vspecies();
+        return VectorSupport.loadMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, booleanArrayAddress(a, offset), m,
+            a, offset, vsp,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
+                                        (arr_, off_, i) -> (byte) (arr_[off_ + i] ? 1 : 0)));
     }
 
     @Override
@@ -3707,6 +3767,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     final
     <M extends VectorMask<Byte>>
     void intoArray0Template(Class<M> maskClass, byte[] a, int offset, M m) {
+        m.check(species());
         ByteSpecies vsp = vspecies();
         VectorSupport.storeMasked(
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
@@ -3715,6 +3776,24 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             (arr, off, v, vm)
             -> v.stOp(arr, off, vm,
                       (arr_, off_, i, e) -> arr_[off_ + i] = e));
+    }
+
+    abstract
+    void intoBooleanArray0(boolean[] a, int offset, VectorMask<Byte> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Byte>>
+    void intoBooleanArray0Template(Class<M> maskClass, boolean[] a, int offset, M m) {
+        m.check(species());
+        ByteSpecies vsp = vspecies();
+        ByteVector normalized = this.and((byte) 1);
+        VectorSupport.storeMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, booleanArrayAddress(a, offset),
+            normalized, m, a, offset,
+            (arr, off, v, vm)
+            -> v.stOp(arr, off, vm,
+                      (arr_, off_, i, e) -> arr_[off_ + i] = (e & 1) != 0));
     }
 
     abstract
@@ -3748,6 +3827,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                         (wb_, o, i, e) -> wb_.put(o + i * 1, e));
             });
     }
+
 
     // End of low-level memory operations.
 
@@ -4075,7 +4155,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         /*package-private*/
         @ForceInline
         <M> ByteVector ldOp(M memory, int offset,
-                                      AbstractMask<Byte> m,
+                                      VectorMask<Byte> m,
                                       FLdOp<M> f) {
             return dummyVector().ldOp(memory, offset, m, f);
         }

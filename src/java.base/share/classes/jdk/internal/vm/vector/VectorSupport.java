@@ -212,13 +212,18 @@ public class VectorSupport {
 
     @IntrinsicCandidate
     public static
-    <V extends Vector<?>>
-    long reductionCoerced(int oprId, Class<?> vectorClass, Class<?> elementType, int length,
-                          V v,
-                          Function<V,Long> defaultImpl) {
+    <V, M>
+    long reductionCoerced(int oprId, Class<? extends V> vectorClass, Class<? extends M> maskClass,
+                          Class<?> elementType, int length, V v, M m,
+                          ReductionOperation<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(v);
+        return defaultImpl.apply(v, m);
     }
+
+    public interface ReductionOperation<V, M> {
+        long apply(V v, M mask);
+    }
+
 
     /* ============================================================================ */
 
@@ -317,6 +322,24 @@ public class VectorSupport {
            LoadOperation<C, VM, E, S> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.load(container, index, s);
+    }
+
+    /* ============================================================================ */
+
+    public interface LoadVectorMaskedOperation<C, V, E, S extends VectorSpecies<E>, M extends VectorMask<E>> {
+        V load(C container, int index, S s, M m);
+    }
+
+    @IntrinsicCandidate
+    public static
+    <C, V, E, S extends VectorSpecies<E>,
+     M extends VectorMask<E>>
+    V loadMasked(Class<? extends V> vectorClass, Class<M> maskClass, Class<E> elementType,
+                 int length, Object base, long offset, M m,
+                 C container, int index, S s,  // Arguments for default implementation
+                 LoadVectorMaskedOperation<C, V, E, S, M> defaultImpl) {
+        assert isNonCapturingLambda(defaultImpl) : defaultImpl;
+        return defaultImpl.load(container, index, s, m);
     }
 
     /* ============================================================================ */
