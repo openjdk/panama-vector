@@ -1270,16 +1270,17 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
   return true;
 }
 
-// <V extends Vector<?,?>>
-// long reductionCoerced(int oprId, Class<?> vectorClass, Class<?> elementType, int vlen,
-//                       V v,
-//                       Function<V,Long> defaultImpl)
-
+// <V, M>
+// long reductionCoerced(int oprId, Class<? extends V> vectorClass, Class<? extends M> maskClass,
+//                       Class<?> elementType, int length, V v, M m,
+//                       ReductionOperation<V, M> defaultImpl) {
+//
 bool LibraryCallKit::inline_vector_reduction() {
   const TypeInt*     opr          = gvn().type(argument(0))->isa_int();
   const TypeInstPtr* vector_klass = gvn().type(argument(1))->isa_instptr();
-  const TypeInstPtr* elem_klass   = gvn().type(argument(2))->isa_instptr();
-  const TypeInt*     vlen         = gvn().type(argument(3))->isa_int();
+  const TypeInstPtr* mask_klass   = gvn().type(argument(2))->isa_instptr();
+  const TypeInstPtr* elem_klass   = gvn().type(argument(3))->isa_instptr();
+  const TypeInt*     vlen         = gvn().type(argument(4))->isa_int();
 
   if (opr == NULL || vector_klass == NULL || elem_klass == NULL || vlen == NULL ||
       !opr->is_con() || vector_klass->const_oop() == NULL || elem_klass->const_oop() == NULL || !vlen->is_con()) {
@@ -1287,8 +1288,8 @@ bool LibraryCallKit::inline_vector_reduction() {
       tty->print_cr("  ** missing constant: opr=%s vclass=%s etype=%s vlen=%s",
                     NodeClassNames[argument(0)->Opcode()],
                     NodeClassNames[argument(1)->Opcode()],
-                    NodeClassNames[argument(2)->Opcode()],
-                    NodeClassNames[argument(3)->Opcode()]);
+                    NodeClassNames[argument(3)->Opcode()],
+                    NodeClassNames[argument(4)->Opcode()]);
     }
     return false; // not enough info for intrinsification
   }
@@ -1305,16 +1306,51 @@ bool LibraryCallKit::inline_vector_reduction() {
     }
     return false; // should be primitive type
   }
+
+  const Type* vmask_type = gvn().type(argument(6));
+  bool is_masked_op = vmask_type != TypePtr::NULL_PTR;
+  if (is_masked_op) {
+    if (mask_klass == NULL || mask_klass->const_oop() == NULL) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** missing constant: maskclass=%s", NodeClassNames[argument(2)->Opcode()]);
+      }
+      return false; // not enough info for intrinsification
+    }
+
+    if (!is_klass_initialized(mask_klass)) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** mask klass argument not initialized");
+      }
+      return false;
+    }
+
+    if (vmask_type->maybe_null()) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** null mask values are not allowed for masked op");
+      }
+      return false;
+    }
+  }
+
   BasicType elem_bt = elem_type->basic_type();
   int num_elem = vlen->get_con();
-
   int opc  = VectorSupport::vop2ideal(opr->get_con(), elem_bt);
   int sopc = ReductionNode::opcode(opc, elem_bt);
 
-  // TODO When mask usage is supported, VecMaskNotUsed needs to be VecMaskUseLoad.
-  if (!arch_supports_vector(sopc, num_elem, elem_bt, VecMaskNotUsed)) {
+  // When using mask, mask use type needs to be VecMaskUseLoad.
+  if (!arch_supports_vector(sopc, num_elem, elem_bt, is_masked_op ? VecMaskUseLoad : VecMaskNotUsed)) {
     if (C->print_intrinsics()) {
-      tty->print_cr("  ** not supported: arity=1 op=%d/reduce vlen=%d etype=%s ismask=no",
+      tty->print_cr("  ** not supported: arity=1 op=%d/reduce vlen=%d etype=%s is_masked_op=%d",
+                    sopc, num_elem, type2name(elem_bt), is_masked_op ? 1 : 0);
+    }
+    return false;
+  }
+
+  // Return true if current platform has implemented the masked operation with predicate feature.
+  bool use_predicate = is_masked_op && arch_supports_vector(sopc, num_elem, elem_bt, VecMaskUsePred);
+  if (is_masked_op && !use_predicate && !arch_supports_vector(Op_VectorBlend, num_elem, elem_bt, VecMaskUseLoad)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not supported: arity=1 op=%d/reduce vlen=%d etype=%s is_masked_op=1",
                     sopc, num_elem, type2name(elem_bt));
     }
     return false;
@@ -1323,33 +1359,64 @@ bool LibraryCallKit::inline_vector_reduction() {
   ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
 
-  Node* opd = unbox_vector(argument(4), vbox_type, elem_bt, num_elem);
+  Node* opd = unbox_vector(argument(5), vbox_type, elem_bt, num_elem);
   if (opd == NULL) {
     return false; // operand unboxing failed
   }
 
+  Node* mask = NULL;
+  if (is_masked_op) {
+    ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
+    assert(is_vector_mask(mbox_klass), "argument(2) should be a mask class");
+    const TypeInstPtr* mbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, mbox_klass);
+    mask = unbox_vector(argument(6), mbox_type, elem_bt, num_elem);
+    if (mask == NULL) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** unbox failed mask=%s",
+                      NodeClassNames[argument(6)->Opcode()]);
+      }
+      return false;
+    }
+  }
+
   Node* init = ReductionNode::make_reduction_input(gvn(), opc, elem_bt);
-  Node* rn = gvn().transform(ReductionNode::make(opc, NULL, init, opd, elem_bt));
+  Node* value = NULL;
+  if (mask == NULL) {
+    assert(!is_masked_op, "Masked op needs the mask value never null");
+    value = ReductionNode::make(opc, NULL, init, opd, elem_bt);
+  } else {
+    if (use_predicate) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** predicate feature is not supported on current platform!");
+      }
+      return false;
+    } else {
+      Node* reduce_identity = gvn().transform(VectorNode::scalar2vector(init, num_elem, Type::get_const_basic_type(elem_bt)));
+      value = gvn().transform(new VectorBlendNode(reduce_identity, opd, mask));
+      value = ReductionNode::make(opc, NULL, init, value, elem_bt);
+    }
+  }
+  value = gvn().transform(value);
 
   Node* bits = NULL;
   switch (elem_bt) {
     case T_BYTE:
     case T_SHORT:
     case T_INT: {
-      bits = gvn().transform(new ConvI2LNode(rn));
+      bits = gvn().transform(new ConvI2LNode(value));
       break;
     }
     case T_FLOAT: {
-      rn   = gvn().transform(new MoveF2INode(rn));
-      bits = gvn().transform(new ConvI2LNode(rn));
+      value = gvn().transform(new MoveF2INode(value));
+      bits  = gvn().transform(new ConvI2LNode(value));
       break;
     }
     case T_DOUBLE: {
-      bits = gvn().transform(new MoveD2LNode(rn));
+      bits = gvn().transform(new MoveD2LNode(value));
       break;
     }
     case T_LONG: {
-      bits = rn; // no conversion needed
+      bits = value; // no conversion needed
       break;
     }
     default: fatal("%s", type2name(elem_bt));

@@ -287,7 +287,22 @@ public abstract class IntVector extends AbstractVector<Integer> {
 
     /*package-private*/
     abstract
-    int rOp(int v, FBinOp f);
+    int rOp(int v, VectorMask<Integer> m, FBinOp f);
+
+    @ForceInline
+    final
+    int rOpTemplate(int v, VectorMask<Integer> m, FBinOp f) {
+        if (m == null) {
+            return rOpTemplate(v, f);
+        }
+        int[] vec = vec();
+        boolean[] mbits = ((AbstractMask<Integer>)m).getBits();
+        for (int i = 0; i < vec.length; i++) {
+            v = mbits[i] ? f.apply(i, v, vec[i]) : v;
+        }
+        return v;
+    }
+
     @ForceInline
     final
     int rOpTemplate(int v, FBinOp f) {
@@ -2531,9 +2546,18 @@ public abstract class IntVector extends AbstractVector<Integer> {
     @ForceInline
     final
     int reduceLanesTemplate(VectorOperators.Associative op,
+                               Class<? extends VectorMask<Integer>> maskClass,
                                VectorMask<Integer> m) {
-        IntVector v = reduceIdentityVector(op).blend(this, m);
-        return v.reduceLanesTemplate(op);
+        m.check(maskClass, this);
+        if (op == FIRST_NONZERO) {
+            IntVector v = reduceIdentityVector(op).blend(this, m);
+            return v.reduceLanesTemplate(op);
+        }
+        int opc = opCode(op);
+        return fromBits(VectorSupport.reductionCoerced(
+            opc, getClass(), maskClass, int.class, length(),
+            this, m,
+            REDUCE_IMPL.find(op, opc, IntVector::reductionOperations)));
     }
 
     /*package-private*/
@@ -2548,30 +2572,34 @@ public abstract class IntVector extends AbstractVector<Integer> {
         }
         int opc = opCode(op);
         return fromBits(VectorSupport.reductionCoerced(
-            opc, getClass(), int.class, length(),
-            this,
-            REDUCE_IMPL.find(op, opc, (opc_) -> {
-              switch (opc_) {
-              case VECTOR_OP_ADD: return v ->
-                      toBits(v.rOp((int)0, (i, a, b) -> (int)(a + b)));
-              case VECTOR_OP_MUL: return v ->
-                      toBits(v.rOp((int)1, (i, a, b) -> (int)(a * b)));
-              case VECTOR_OP_MIN: return v ->
-                      toBits(v.rOp(MAX_OR_INF, (i, a, b) -> (int) Math.min(a, b)));
-              case VECTOR_OP_MAX: return v ->
-                      toBits(v.rOp(MIN_OR_INF, (i, a, b) -> (int) Math.max(a, b)));
-              case VECTOR_OP_AND: return v ->
-                      toBits(v.rOp((int)-1, (i, a, b) -> (int)(a & b)));
-              case VECTOR_OP_OR: return v ->
-                      toBits(v.rOp((int)0, (i, a, b) -> (int)(a | b)));
-              case VECTOR_OP_XOR: return v ->
-                      toBits(v.rOp((int)0, (i, a, b) -> (int)(a ^ b)));
-              default: return null;
-              }})));
+            opc, getClass(), null, int.class, length(),
+            this, null,
+            REDUCE_IMPL.find(op, opc, IntVector::reductionOperations)));
     }
+
     private static final
-    ImplCache<Associative,Function<IntVector,Long>> REDUCE_IMPL
-        = new ImplCache<>(Associative.class, IntVector.class);
+    ImplCache<Associative, ReductionOperation<IntVector, VectorMask<Integer>>>
+        REDUCE_IMPL = new ImplCache<>(Associative.class, IntVector.class);
+
+    private static ReductionOperation<IntVector, VectorMask<Integer>> reductionOperations(int opc_) {
+        switch (opc_) {
+            case VECTOR_OP_ADD: return (v, m) ->
+                    toBits(v.rOp((int)0, m, (i, a, b) -> (int)(a + b)));
+            case VECTOR_OP_MUL: return (v, m) ->
+                    toBits(v.rOp((int)1, m, (i, a, b) -> (int)(a * b)));
+            case VECTOR_OP_MIN: return (v, m) ->
+                    toBits(v.rOp(MAX_OR_INF, m, (i, a, b) -> (int) Math.min(a, b)));
+            case VECTOR_OP_MAX: return (v, m) ->
+                    toBits(v.rOp(MIN_OR_INF, m, (i, a, b) -> (int) Math.max(a, b)));
+            case VECTOR_OP_AND: return (v, m) ->
+                    toBits(v.rOp((int)-1, m, (i, a, b) -> (int)(a & b)));
+            case VECTOR_OP_OR: return (v, m) ->
+                    toBits(v.rOp((int)0, m, (i, a, b) -> (int)(a | b)));
+            case VECTOR_OP_XOR: return (v, m) ->
+                    toBits(v.rOp((int)0, m, (i, a, b) -> (int)(a ^ b)));
+            default: return null;
+        }
+    }
 
     private
     @ForceInline

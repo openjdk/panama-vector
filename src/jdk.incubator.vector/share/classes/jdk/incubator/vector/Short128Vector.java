@@ -236,8 +236,8 @@ final class Short128Vector extends ShortVector {
 
     @ForceInline
     final @Override
-    short rOp(short v, FBinOp f) {
-        return super.rOpTemplate(v, f);  // specialize
+    short rOp(short v, VectorMask<Short> m, FBinOp f) {
+        return super.rOpTemplate(v, m, f);  // specialize
     }
 
     @Override
@@ -334,7 +334,7 @@ final class Short128Vector extends ShortVector {
     @ForceInline
     public final short reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Short> m) {
-        return super.reduceLanesTemplate(op, m);  // specialized
+        return super.reduceLanesTemplate(op, Short128Mask.class, m);  // specialized
     }
 
     @Override
@@ -347,7 +347,7 @@ final class Short128Vector extends ShortVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Short> m) {
-        return (long) super.reduceLanesTemplate(op, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, Short128Mask.class, m);  // specialized
     }
 
     @ForceInline

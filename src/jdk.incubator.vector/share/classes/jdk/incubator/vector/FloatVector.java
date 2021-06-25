@@ -287,7 +287,22 @@ public abstract class FloatVector extends AbstractVector<Float> {
 
     /*package-private*/
     abstract
-    float rOp(float v, FBinOp f);
+    float rOp(float v, VectorMask<Float> m, FBinOp f);
+
+    @ForceInline
+    final
+    float rOpTemplate(float v, VectorMask<Float> m, FBinOp f) {
+        if (m == null) {
+            return rOpTemplate(v, f);
+        }
+        float[] vec = vec();
+        boolean[] mbits = ((AbstractMask<Float>)m).getBits();
+        for (int i = 0; i < vec.length; i++) {
+            v = mbits[i] ? f.apply(i, v, vec[i]) : v;
+        }
+        return v;
+    }
+
     @ForceInline
     final
     float rOpTemplate(float v, FBinOp f) {
@@ -2409,9 +2424,18 @@ public abstract class FloatVector extends AbstractVector<Float> {
     @ForceInline
     final
     float reduceLanesTemplate(VectorOperators.Associative op,
+                               Class<? extends VectorMask<Float>> maskClass,
                                VectorMask<Float> m) {
-        FloatVector v = reduceIdentityVector(op).blend(this, m);
-        return v.reduceLanesTemplate(op);
+        m.check(maskClass, this);
+        if (op == FIRST_NONZERO) {
+            FloatVector v = reduceIdentityVector(op).blend(this, m);
+            return v.reduceLanesTemplate(op);
+        }
+        int opc = opCode(op);
+        return fromBits(VectorSupport.reductionCoerced(
+            opc, getClass(), maskClass, float.class, length(),
+            this, m,
+            REDUCE_IMPL.find(op, opc, FloatVector::reductionOperations)));
     }
 
     /*package-private*/
@@ -2426,24 +2450,28 @@ public abstract class FloatVector extends AbstractVector<Float> {
         }
         int opc = opCode(op);
         return fromBits(VectorSupport.reductionCoerced(
-            opc, getClass(), float.class, length(),
-            this,
-            REDUCE_IMPL.find(op, opc, (opc_) -> {
-              switch (opc_) {
-              case VECTOR_OP_ADD: return v ->
-                      toBits(v.rOp((float)0, (i, a, b) -> (float)(a + b)));
-              case VECTOR_OP_MUL: return v ->
-                      toBits(v.rOp((float)1, (i, a, b) -> (float)(a * b)));
-              case VECTOR_OP_MIN: return v ->
-                      toBits(v.rOp(MAX_OR_INF, (i, a, b) -> (float) Math.min(a, b)));
-              case VECTOR_OP_MAX: return v ->
-                      toBits(v.rOp(MIN_OR_INF, (i, a, b) -> (float) Math.max(a, b)));
-              default: return null;
-              }})));
+            opc, getClass(), null, float.class, length(),
+            this, null,
+            REDUCE_IMPL.find(op, opc, FloatVector::reductionOperations)));
     }
+
     private static final
-    ImplCache<Associative,Function<FloatVector,Long>> REDUCE_IMPL
-        = new ImplCache<>(Associative.class, FloatVector.class);
+    ImplCache<Associative, ReductionOperation<FloatVector, VectorMask<Float>>>
+        REDUCE_IMPL = new ImplCache<>(Associative.class, FloatVector.class);
+
+    private static ReductionOperation<FloatVector, VectorMask<Float>> reductionOperations(int opc_) {
+        switch (opc_) {
+            case VECTOR_OP_ADD: return (v, m) ->
+                    toBits(v.rOp((float)0, m, (i, a, b) -> (float)(a + b)));
+            case VECTOR_OP_MUL: return (v, m) ->
+                    toBits(v.rOp((float)1, m, (i, a, b) -> (float)(a * b)));
+            case VECTOR_OP_MIN: return (v, m) ->
+                    toBits(v.rOp(MAX_OR_INF, m, (i, a, b) -> (float) Math.min(a, b)));
+            case VECTOR_OP_MAX: return (v, m) ->
+                    toBits(v.rOp(MIN_OR_INF, m, (i, a, b) -> (float) Math.max(a, b)));
+            default: return null;
+        }
+    }
 
     private
     @ForceInline
