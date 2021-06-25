@@ -276,7 +276,7 @@ final class Byte512Vector extends ByteVector {
     @Override
     @ForceInline
     public Byte512Vector lanewise(Unary op, VectorMask<Byte> m) {
-        return (Byte512Vector) super.lanewiseTemplate(op, Byte512Mask.class, m);  // specialize
+        return (Byte512Vector) super.lanewiseTemplate(op, Byte512Mask.class, (Byte512Mask) m);  // specialize
     }
 
     @Override
@@ -288,7 +288,7 @@ final class Byte512Vector extends ByteVector {
     @Override
     @ForceInline
     public Byte512Vector lanewise(Binary op, Vector<Byte> v, VectorMask<Byte> m) {
-        return (Byte512Vector) super.lanewiseTemplate(op, Byte512Mask.class, v, m);  // specialize
+        return (Byte512Vector) super.lanewiseTemplate(op, Byte512Mask.class, v, (Byte512Mask) m);  // specialize
     }
 
     /*package-private*/
@@ -312,7 +312,7 @@ final class Byte512Vector extends ByteVector {
     public final
     Byte512Vector
     lanewise(Ternary op, Vector<Byte> v1, Vector<Byte> v2, VectorMask<Byte> m) {
-        return (Byte512Vector) super.lanewiseTemplate(op, Byte512Mask.class, v1, v2, m);  // specialize
+        return (Byte512Vector) super.lanewiseTemplate(op, Byte512Mask.class, v1, v2, (Byte512Mask) m);  // specialize
     }
 
     @Override
@@ -334,7 +334,7 @@ final class Byte512Vector extends ByteVector {
     @ForceInline
     public final byte reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Byte> m) {
-        return super.reduceLanesTemplate(op, Byte512Mask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, Byte512Mask.class, (Byte512Mask) m);  // specialized
     }
 
     @Override
@@ -347,7 +347,7 @@ final class Byte512Vector extends ByteVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Byte> m) {
-        return (long) super.reduceLanesTemplate(op, Byte512Mask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, Byte512Mask.class, (Byte512Mask) m);  // specialized
     }
 
     @ForceInline

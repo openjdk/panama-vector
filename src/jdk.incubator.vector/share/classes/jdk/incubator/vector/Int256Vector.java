@@ -276,7 +276,7 @@ final class Int256Vector extends IntVector {
     @Override
     @ForceInline
     public Int256Vector lanewise(Unary op, VectorMask<Integer> m) {
-        return (Int256Vector) super.lanewiseTemplate(op, Int256Mask.class, m);  // specialize
+        return (Int256Vector) super.lanewiseTemplate(op, Int256Mask.class, (Int256Mask) m);  // specialize
     }
 
     @Override
@@ -288,7 +288,7 @@ final class Int256Vector extends IntVector {
     @Override
     @ForceInline
     public Int256Vector lanewise(Binary op, Vector<Integer> v, VectorMask<Integer> m) {
-        return (Int256Vector) super.lanewiseTemplate(op, Int256Mask.class, v, m);  // specialize
+        return (Int256Vector) super.lanewiseTemplate(op, Int256Mask.class, v, (Int256Mask) m);  // specialize
     }
 
     /*package-private*/
@@ -312,7 +312,7 @@ final class Int256Vector extends IntVector {
     public final
     Int256Vector
     lanewise(Ternary op, Vector<Integer> v1, Vector<Integer> v2, VectorMask<Integer> m) {
-        return (Int256Vector) super.lanewiseTemplate(op, Int256Mask.class, v1, v2, m);  // specialize
+        return (Int256Vector) super.lanewiseTemplate(op, Int256Mask.class, v1, v2, (Int256Mask) m);  // specialize
     }
 
     @Override
@@ -334,7 +334,7 @@ final class Int256Vector extends IntVector {
     @ForceInline
     public final int reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Integer> m) {
-        return super.reduceLanesTemplate(op, Int256Mask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, Int256Mask.class, (Int256Mask) m);  // specialized
     }
 
     @Override
@@ -347,7 +347,7 @@ final class Int256Vector extends IntVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Integer> m) {
-        return (long) super.reduceLanesTemplate(op, Int256Mask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, Int256Mask.class, (Int256Mask) m);  // specialized
     }
 
     @ForceInline

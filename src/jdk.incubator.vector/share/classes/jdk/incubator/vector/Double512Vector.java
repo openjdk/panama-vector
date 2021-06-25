@@ -276,7 +276,7 @@ final class Double512Vector extends DoubleVector {
     @Override
     @ForceInline
     public Double512Vector lanewise(Unary op, VectorMask<Double> m) {
-        return (Double512Vector) super.lanewiseTemplate(op, Double512Mask.class, m);  // specialize
+        return (Double512Vector) super.lanewiseTemplate(op, Double512Mask.class, (Double512Mask) m);  // specialize
     }
 
     @Override
@@ -288,7 +288,7 @@ final class Double512Vector extends DoubleVector {
     @Override
     @ForceInline
     public Double512Vector lanewise(Binary op, Vector<Double> v, VectorMask<Double> m) {
-        return (Double512Vector) super.lanewiseTemplate(op, Double512Mask.class, v, m);  // specialize
+        return (Double512Vector) super.lanewiseTemplate(op, Double512Mask.class, v, (Double512Mask) m);  // specialize
     }
 
 
@@ -306,7 +306,7 @@ final class Double512Vector extends DoubleVector {
     public final
     Double512Vector
     lanewise(Ternary op, Vector<Double> v1, Vector<Double> v2, VectorMask<Double> m) {
-        return (Double512Vector) super.lanewiseTemplate(op, Double512Mask.class, v1, v2, m);  // specialize
+        return (Double512Vector) super.lanewiseTemplate(op, Double512Mask.class, v1, v2, (Double512Mask) m);  // specialize
     }
 
     @Override
@@ -328,7 +328,7 @@ final class Double512Vector extends DoubleVector {
     @ForceInline
     public final double reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Double> m) {
-        return super.reduceLanesTemplate(op, Double512Mask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, Double512Mask.class, (Double512Mask) m);  // specialized
     }
 
     @Override
@@ -341,7 +341,7 @@ final class Double512Vector extends DoubleVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Double> m) {
-        return (long) super.reduceLanesTemplate(op, Double512Mask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, Double512Mask.class, (Double512Mask) m);  // specialized
     }
 
     @ForceInline

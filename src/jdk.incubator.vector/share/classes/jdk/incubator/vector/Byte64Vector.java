@@ -276,7 +276,7 @@ final class Byte64Vector extends ByteVector {
     @Override
     @ForceInline
     public Byte64Vector lanewise(Unary op, VectorMask<Byte> m) {
-        return (Byte64Vector) super.lanewiseTemplate(op, Byte64Mask.class, m);  // specialize
+        return (Byte64Vector) super.lanewiseTemplate(op, Byte64Mask.class, (Byte64Mask) m);  // specialize
     }
 
     @Override
@@ -288,7 +288,7 @@ final class Byte64Vector extends ByteVector {
     @Override
     @ForceInline
     public Byte64Vector lanewise(Binary op, Vector<Byte> v, VectorMask<Byte> m) {
-        return (Byte64Vector) super.lanewiseTemplate(op, Byte64Mask.class, v, m);  // specialize
+        return (Byte64Vector) super.lanewiseTemplate(op, Byte64Mask.class, v, (Byte64Mask) m);  // specialize
     }
 
     /*package-private*/
@@ -312,7 +312,7 @@ final class Byte64Vector extends ByteVector {
     public final
     Byte64Vector
     lanewise(Ternary op, Vector<Byte> v1, Vector<Byte> v2, VectorMask<Byte> m) {
-        return (Byte64Vector) super.lanewiseTemplate(op, Byte64Mask.class, v1, v2, m);  // specialize
+        return (Byte64Vector) super.lanewiseTemplate(op, Byte64Mask.class, v1, v2, (Byte64Mask) m);  // specialize
     }
 
     @Override
@@ -334,7 +334,7 @@ final class Byte64Vector extends ByteVector {
     @ForceInline
     public final byte reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Byte> m) {
-        return super.reduceLanesTemplate(op, Byte64Mask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, Byte64Mask.class, (Byte64Mask) m);  // specialized
     }
 
     @Override
@@ -347,7 +347,7 @@ final class Byte64Vector extends ByteVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Byte> m) {
-        return (long) super.reduceLanesTemplate(op, Byte64Mask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, Byte64Mask.class, (Byte64Mask) m);  // specialized
     }
 
     @ForceInline

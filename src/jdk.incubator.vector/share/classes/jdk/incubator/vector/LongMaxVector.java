@@ -271,7 +271,7 @@ final class LongMaxVector extends LongVector {
     @Override
     @ForceInline
     public LongMaxVector lanewise(Unary op, VectorMask<Long> m) {
-        return (LongMaxVector) super.lanewiseTemplate(op, LongMaxMask.class, m);  // specialize
+        return (LongMaxVector) super.lanewiseTemplate(op, LongMaxMask.class, (LongMaxMask) m);  // specialize
     }
 
     @Override
@@ -283,7 +283,7 @@ final class LongMaxVector extends LongVector {
     @Override
     @ForceInline
     public LongMaxVector lanewise(Binary op, Vector<Long> v, VectorMask<Long> m) {
-        return (LongMaxVector) super.lanewiseTemplate(op, LongMaxMask.class, v, m);  // specialize
+        return (LongMaxVector) super.lanewiseTemplate(op, LongMaxMask.class, v, (LongMaxMask) m);  // specialize
     }
 
     /*package-private*/
@@ -307,7 +307,7 @@ final class LongMaxVector extends LongVector {
     public final
     LongMaxVector
     lanewise(Ternary op, Vector<Long> v1, Vector<Long> v2, VectorMask<Long> m) {
-        return (LongMaxVector) super.lanewiseTemplate(op, LongMaxMask.class, v1, v2, m);  // specialize
+        return (LongMaxVector) super.lanewiseTemplate(op, LongMaxMask.class, v1, v2, (LongMaxMask) m);  // specialize
     }
 
     @Override
@@ -329,7 +329,7 @@ final class LongMaxVector extends LongVector {
     @ForceInline
     public final long reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Long> m) {
-        return super.reduceLanesTemplate(op, LongMaxMask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, LongMaxMask.class, (LongMaxMask) m);  // specialized
     }
 
     @Override
@@ -342,7 +342,7 @@ final class LongMaxVector extends LongVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Long> m) {
-        return (long) super.reduceLanesTemplate(op, LongMaxMask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, LongMaxMask.class, (LongMaxMask) m);  // specialized
     }
 
     @ForceInline

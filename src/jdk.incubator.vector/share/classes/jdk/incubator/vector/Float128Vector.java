@@ -276,7 +276,7 @@ final class Float128Vector extends FloatVector {
     @Override
     @ForceInline
     public Float128Vector lanewise(Unary op, VectorMask<Float> m) {
-        return (Float128Vector) super.lanewiseTemplate(op, Float128Mask.class, m);  // specialize
+        return (Float128Vector) super.lanewiseTemplate(op, Float128Mask.class, (Float128Mask) m);  // specialize
     }
 
     @Override
@@ -288,7 +288,7 @@ final class Float128Vector extends FloatVector {
     @Override
     @ForceInline
     public Float128Vector lanewise(Binary op, Vector<Float> v, VectorMask<Float> m) {
-        return (Float128Vector) super.lanewiseTemplate(op, Float128Mask.class, v, m);  // specialize
+        return (Float128Vector) super.lanewiseTemplate(op, Float128Mask.class, v, (Float128Mask) m);  // specialize
     }
 
 
@@ -306,7 +306,7 @@ final class Float128Vector extends FloatVector {
     public final
     Float128Vector
     lanewise(Ternary op, Vector<Float> v1, Vector<Float> v2, VectorMask<Float> m) {
-        return (Float128Vector) super.lanewiseTemplate(op, Float128Mask.class, v1, v2, m);  // specialize
+        return (Float128Vector) super.lanewiseTemplate(op, Float128Mask.class, v1, v2, (Float128Mask) m);  // specialize
     }
 
     @Override
@@ -328,7 +328,7 @@ final class Float128Vector extends FloatVector {
     @ForceInline
     public final float reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Float> m) {
-        return super.reduceLanesTemplate(op, Float128Mask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, Float128Mask.class, (Float128Mask) m);  // specialized
     }
 
     @Override
@@ -341,7 +341,7 @@ final class Float128Vector extends FloatVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Float> m) {
-        return (long) super.reduceLanesTemplate(op, Float128Mask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, Float128Mask.class, (Float128Mask) m);  // specialized
     }
 
     @ForceInline
