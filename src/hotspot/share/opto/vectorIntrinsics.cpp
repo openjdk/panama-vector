@@ -1340,7 +1340,17 @@ bool LibraryCallKit::inline_vector_reduction() {
   // When using mask, mask use type needs to be VecMaskUseLoad.
   if (!arch_supports_vector(sopc, num_elem, elem_bt, is_masked_op ? VecMaskUseLoad : VecMaskNotUsed)) {
     if (C->print_intrinsics()) {
-      tty->print_cr("  ** not supported: arity=1 op=%d/reduce vlen=%d etype=%s ismask=no",
+      tty->print_cr("  ** not supported: arity=1 op=%d/reduce vlen=%d etype=%s is_masked_op=%d",
+                    sopc, num_elem, type2name(elem_bt), is_masked_op ? 1 : 0);
+    }
+    return false;
+  }
+
+  // Return true if current platform has implemented the masked operation with predicate feature.
+  bool use_predicate = is_masked_op && arch_supports_vector(sopc, num_elem, elem_bt, VecMaskUsePred);
+  if (is_masked_op && !use_predicate && !arch_supports_vector(Op_VectorBlend, num_elem, elem_bt, VecMaskUseLoad)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not supported: arity=1 op=%d/reduce vlen=%d etype=%s is_masked_op=1",
                     sopc, num_elem, type2name(elem_bt));
     }
     return false;
@@ -1355,7 +1365,6 @@ bool LibraryCallKit::inline_vector_reduction() {
   }
 
   Node* mask = NULL;
-  bool use_predicate = false;
   if (is_masked_op) {
     ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
     assert(is_vector_mask(mbox_klass), "argument(2) should be a mask class");
@@ -1366,13 +1375,6 @@ bool LibraryCallKit::inline_vector_reduction() {
         tty->print_cr("  ** unbox failed mask=%s",
                       NodeClassNames[argument(6)->Opcode()]);
       }
-      return false;
-    }
-
-    // Return true if current platform has implemented the masked operation with predicate feature.
-    use_predicate = Matcher::has_predicated_vectors() &&
-                    Matcher::match_rule_supported_vector_masked(sopc, num_elem, elem_bt);
-    if (!use_predicate && !arch_supports_vector(Op_VectorBlend, num_elem, elem_bt, VecMaskUseLoad)) {
       return false;
     }
   }
