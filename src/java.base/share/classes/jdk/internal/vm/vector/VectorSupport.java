@@ -65,6 +65,11 @@ public class VectorSupport {
     public static final int VECTOR_OP_CAST        = 17;
     public static final int VECTOR_OP_REINTERPRET = 18;
 
+    // Mask manipulation operations
+    public static final int VECTOR_OP_MASK_TRUECOUNT = 19;
+    public static final int VECTOR_OP_MASK_FIRSTTRUE = 20;
+    public static final int VECTOR_OP_MASK_LASTTRUE  = 21;
+
     // Math routines
     public static final int VECTOR_OP_TAN = 101;
     public static final int VECTOR_OP_TANH = 102;
@@ -103,7 +108,6 @@ public class VectorSupport {
     public static final int BT_uge = BT_ge | BT_unsigned_compare;
     public static final int BT_ult = BT_lt | BT_unsigned_compare;
     public static final int BT_ugt = BT_gt | BT_unsigned_compare;
-
 
     // BasicType codes, for primitives only:
     public static final int
@@ -322,6 +326,24 @@ public class VectorSupport {
 
     /* ============================================================================ */
 
+    public interface LoadVectorMaskedOperation<C, V, E, S extends VectorSpecies<E>, M extends VectorMask<E>> {
+        V load(C container, int index, S s, M m);
+    }
+
+    @IntrinsicCandidate
+    public static
+    <C, V, E, S extends VectorSpecies<E>,
+     M extends VectorMask<E>>
+    V loadMasked(Class<? extends V> vectorClass, Class<M> maskClass, Class<E> elementType,
+                 int length, Object base, long offset, M m,
+                 C container, int index, S s,  // Arguments for default implementation
+                 LoadVectorMaskedOperation<C, V, E, S, M> defaultImpl) {
+        assert isNonCapturingLambda(defaultImpl) : defaultImpl;
+        return defaultImpl.load(container, index, s, m);
+    }
+
+    /* ============================================================================ */
+
     public interface LoadVectorOperationWithMap<C, V extends Vector<?>, E, S extends VectorSpecies<E>> {
         V loadWithMap(C container, int index, int[] indexMap, int indexM, S s);
     }
@@ -507,6 +529,20 @@ public class VectorSupport {
         // TODO: move the fence generation into C2. Generate only when reboxing is taking place.
         U.loadFence();
         return v;
+    }
+
+    /* ============================================================================ */
+    public interface VectorMaskOp<M> {
+        int apply(M m);
+    }
+
+    @IntrinsicCandidate
+    public static
+    <E, M>
+    int maskReductionCoerced(int oper, Class<? extends M> maskClass, Class<?> elemClass, int length, M m,
+               VectorMaskOp<M> defaultImpl) {
+       assert isNonCapturingLambda(defaultImpl) : defaultImpl;
+       return defaultImpl.apply(m);
     }
 
     /* ============================================================================ */

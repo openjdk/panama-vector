@@ -664,6 +664,7 @@ bool C2Compiler::is_intrinsic_supported(const methodHandle& method, bool is_virt
   case vmIntrinsics::_VectorShuffleIota:
   case vmIntrinsics::_VectorShuffleToVector:
   case vmIntrinsics::_VectorLoadOp:
+  case vmIntrinsics::_VectorLoadMaskedOp:
   case vmIntrinsics::_VectorStoreOp:
   case vmIntrinsics::_VectorStoreMaskedOp:
   case vmIntrinsics::_VectorGatherOp:
@@ -677,6 +678,7 @@ bool C2Compiler::is_intrinsic_supported(const methodHandle& method, bool is_virt
   case vmIntrinsics::_VectorConvert:
   case vmIntrinsics::_VectorInsert:
   case vmIntrinsics::_VectorExtract:
+  case vmIntrinsics::_VectorMaskOp:
     return EnableVectorSupport;
   case vmIntrinsics::_blackhole:
     break;

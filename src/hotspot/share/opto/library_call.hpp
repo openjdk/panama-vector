@@ -314,6 +314,7 @@ class LibraryCallKit : public GraphKit {
   bool inline_vector_broadcast_coerced();
   bool inline_vector_shuffle_to_vector();
   bool inline_vector_shuffle_iota();
+  bool inline_vector_mask_operation();
   bool inline_vector_mem_operation(bool is_store);
   bool inline_vector_mem_masked_operation(bool is_store);
   bool inline_vector_gather_scatter(bool is_scatter);
@@ -329,10 +330,11 @@ class LibraryCallKit : public GraphKit {
   Node* gen_call_to_svml(int vector_api_op_id, BasicType bt, int num_elem, Node* opd1, Node* opd2);
 
   enum VectorMaskUseType {
-    VecMaskUseLoad,
-    VecMaskUseStore,
-    VecMaskUseAll,
-    VecMaskNotUsed
+    VecMaskUseLoad  = 1 << 0,
+    VecMaskUseStore = 1 << 1,
+    VecMaskUseAll   = VecMaskUseLoad | VecMaskUseStore,
+    VecMaskUsePred  = 1 << 2,
+    VecMaskNotUsed  = 1 << 3
   };
 
   bool arch_supports_vector(int op, int num_elem, BasicType type, VectorMaskUseType mask_use_type, bool has_scalar_args = false);

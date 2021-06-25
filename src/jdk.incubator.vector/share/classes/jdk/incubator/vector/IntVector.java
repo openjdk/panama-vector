@@ -2290,6 +2290,29 @@ public abstract class IntVector extends AbstractVector<Integer> {
         return r1.blend(r0, valid);
     }
 
+    @ForceInline
+    private final
+    VectorShuffle<Integer> toShuffle0(IntSpecies dsp) {
+        int[] a = toArray();
+        int[] sa = new int[a.length];
+        for (int i = 0; i < a.length; i++) {
+            sa[i] = (int) a[i];
+        }
+        return VectorShuffle.fromArray(dsp, sa, 0);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    VectorShuffle<Integer> toShuffleTemplate(Class<?> shuffleType) {
+        IntSpecies vsp = vspecies();
+        return VectorSupport.convert(VectorSupport.VECTOR_OP_CAST,
+                                     getClass(), int.class, length(),
+                                     shuffleType, byte.class, length(),
+                                     this, vsp,
+                                     IntVector::toShuffle0);
+    }
+
     /**
      * {@inheritDoc} <!--workaround-->
      */
@@ -2859,8 +2882,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                    VectorMask<Integer> m) {
         IntSpecies vsp = (IntSpecies) species;
         if (offset >= 0 && offset <= (a.length - species.length())) {
-            IntVector zero = vsp.zero();
-            return zero.blend(zero.fromArray0(a, offset), m);
+            return vsp.dummyVector().fromArray0(a, offset, m);
         }
 
         // FIXME: optimize
@@ -3357,6 +3379,23 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                     (arr_, off_, i) -> arr_[off_ + i]));
     }
 
+    /*package-private*/
+    abstract
+    IntVector fromArray0(int[] a, int offset, VectorMask<Integer> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Integer>>
+    IntVector fromArray0Template(Class<M> maskClass, int[] a, int offset, M m) {
+        m.check(species());
+        IntSpecies vsp = vspecies();
+        return VectorSupport.loadMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, arrayAddress(a, offset), m,
+            a, offset, vsp,
+            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
+                                        (arr_, off_, i) -> arr_[off_ + i]));
+    }
+
 
 
     @Override
@@ -3419,6 +3458,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
     final
     <M extends VectorMask<Integer>>
     void intoArray0Template(Class<M> maskClass, int[] a, int offset, M m) {
+        m.check(species());
         IntSpecies vsp = vspecies();
         VectorSupport.storeMasked(
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
@@ -3428,6 +3468,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
             -> v.stOp(arr, off, vm,
                       (arr_, off_, i, e) -> arr_[off_ + i] = e));
     }
+
 
     abstract
     void intoByteArray0(byte[] a, int offset);
@@ -3460,6 +3501,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                         (wb_, o, i, e) -> wb_.putInt(o + i * 4, e));
             });
     }
+
 
     // End of low-level memory operations.
 
@@ -3778,7 +3820,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         /*package-private*/
         @ForceInline
         <M> IntVector ldOp(M memory, int offset,
-                                      AbstractMask<Integer> m,
+                                      VectorMask<Integer> m,
                                       FLdOp<M> f) {
             return dummyVector().ldOp(memory, offset, m, f);
         }

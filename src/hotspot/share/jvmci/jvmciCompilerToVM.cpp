@@ -827,7 +827,11 @@ C2V_END
 C2V_VMENTRY_0(jboolean, hasFinalizableSubclass,(JNIEnv* env, jobject, jobject jvmci_type))
   Klass* klass = JVMCIENV->asKlass(jvmci_type);
   assert(klass != NULL, "method must not be called for primitive types");
-  return Dependencies::find_finalizable_subclass(klass) != NULL;
+  if (!klass->is_instance_klass()) {
+    return false;
+  }
+  InstanceKlass* iklass = InstanceKlass::cast(klass);
+  return Dependencies::find_finalizable_subclass(iklass) != NULL;
 C2V_END
 
 C2V_VMENTRY_NULL(jobject, getClassInitializer, (JNIEnv* env, jobject, jobject jvmci_type))
@@ -877,11 +881,13 @@ C2V_VMENTRY_0(jint, installCode, (JNIEnv *env, jobject, jobject target, jobject 
 
   TraceTime install_time("installCode", JVMCICompiler::codeInstallTimer(!thread->is_Compiler_thread()));
 
+  nmethodLocker nmethod_handle;
   CodeInstaller installer(JVMCIENV);
   JVMCI::CodeInstallResult result = installer.install(compiler,
       target_handle,
       compiled_code_handle,
       cb,
+      nmethod_handle,
       installed_code_handle,
       (FailedSpeculation**)(address) failed_speculations_address,
       speculations,
