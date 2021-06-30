@@ -276,7 +276,7 @@ final class ShortMaxVector extends ShortVector {
     @Override
     @ForceInline
     public ShortMaxVector lanewise(Unary op, VectorMask<Short> m) {
-        return (ShortMaxVector) super.lanewiseTemplate(op, ShortMaxMask.class, m);  // specialize
+        return (ShortMaxVector) super.lanewiseTemplate(op, ShortMaxMask.class, (ShortMaxMask) m);  // specialize
     }
 
     @Override
@@ -288,7 +288,7 @@ final class ShortMaxVector extends ShortVector {
     @Override
     @ForceInline
     public ShortMaxVector lanewise(Binary op, Vector<Short> v, VectorMask<Short> m) {
-        return (ShortMaxVector) super.lanewiseTemplate(op, ShortMaxMask.class, v, m);  // specialize
+        return (ShortMaxVector) super.lanewiseTemplate(op, ShortMaxMask.class, v, (ShortMaxMask) m);  // specialize
     }
 
     /*package-private*/
@@ -312,7 +312,7 @@ final class ShortMaxVector extends ShortVector {
     public final
     ShortMaxVector
     lanewise(Ternary op, Vector<Short> v1, Vector<Short> v2, VectorMask<Short> m) {
-        return (ShortMaxVector) super.lanewiseTemplate(op, ShortMaxMask.class, v1, v2, m);  // specialize
+        return (ShortMaxVector) super.lanewiseTemplate(op, ShortMaxMask.class, v1, v2, (ShortMaxMask) m);  // specialize
     }
 
     @Override
@@ -334,7 +334,7 @@ final class ShortMaxVector extends ShortVector {
     @ForceInline
     public final short reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Short> m) {
-        return super.reduceLanesTemplate(op, ShortMaxMask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, ShortMaxMask.class, (ShortMaxMask) m);  // specialized
     }
 
     @Override
@@ -347,7 +347,7 @@ final class ShortMaxVector extends ShortVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Short> m) {
-        return (long) super.reduceLanesTemplate(op, ShortMaxMask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, ShortMaxMask.class, (ShortMaxMask) m);  // specialized
     }
 
     @ForceInline

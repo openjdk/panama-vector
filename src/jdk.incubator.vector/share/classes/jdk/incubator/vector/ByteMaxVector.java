@@ -276,7 +276,7 @@ final class ByteMaxVector extends ByteVector {
     @Override
     @ForceInline
     public ByteMaxVector lanewise(Unary op, VectorMask<Byte> m) {
-        return (ByteMaxVector) super.lanewiseTemplate(op, ByteMaxMask.class, m);  // specialize
+        return (ByteMaxVector) super.lanewiseTemplate(op, ByteMaxMask.class, (ByteMaxMask) m);  // specialize
     }
 
     @Override
@@ -288,7 +288,7 @@ final class ByteMaxVector extends ByteVector {
     @Override
     @ForceInline
     public ByteMaxVector lanewise(Binary op, Vector<Byte> v, VectorMask<Byte> m) {
-        return (ByteMaxVector) super.lanewiseTemplate(op, ByteMaxMask.class, v, m);  // specialize
+        return (ByteMaxVector) super.lanewiseTemplate(op, ByteMaxMask.class, v, (ByteMaxMask) m);  // specialize
     }
 
     /*package-private*/
@@ -312,7 +312,7 @@ final class ByteMaxVector extends ByteVector {
     public final
     ByteMaxVector
     lanewise(Ternary op, Vector<Byte> v1, Vector<Byte> v2, VectorMask<Byte> m) {
-        return (ByteMaxVector) super.lanewiseTemplate(op, ByteMaxMask.class, v1, v2, m);  // specialize
+        return (ByteMaxVector) super.lanewiseTemplate(op, ByteMaxMask.class, v1, v2, (ByteMaxMask) m);  // specialize
     }
 
     @Override
@@ -334,7 +334,7 @@ final class ByteMaxVector extends ByteVector {
     @ForceInline
     public final byte reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Byte> m) {
-        return super.reduceLanesTemplate(op, ByteMaxMask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, ByteMaxMask.class, (ByteMaxMask) m);  // specialized
     }
 
     @Override
@@ -347,7 +347,7 @@ final class ByteMaxVector extends ByteVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Byte> m) {
-        return (long) super.reduceLanesTemplate(op, ByteMaxMask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, ByteMaxMask.class, (ByteMaxMask) m);  // specialized
     }
 
     @ForceInline
