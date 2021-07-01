@@ -918,20 +918,20 @@ class methodHandle;
    do_name(vector_convert_name, "convert")                                                                                                     \
                                                                                                                                                \
    do_intrinsic(_VectorGatherOp, jdk_internal_vm_vector_VectorSupport, vector_gather_name, vector_gather_sig, F_S)                             \
-    do_signature(vector_gather_sig, "(Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Class;"                                                    \
+    do_signature(vector_gather_sig, "(Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Class;"                                   \
                                      "Ljava/lang/Object;J"                                                                                     \
                                      "Ljdk/internal/vm/vector/VectorSupport$Vector;"                                                           \
-                                     "Ljava/lang/Object;I[II"                                                                                  \
+                                     "Ljdk/internal/vm/vector/VectorSupport$VectorMask;Ljava/lang/Object;I[II"                                 \
                                      "Ljdk/internal/vm/vector/VectorSupport$VectorSpecies;"                                                    \
                                      "Ljdk/internal/vm/vector/VectorSupport$LoadVectorOperationWithMap;)"                                      \
                                      "Ljdk/internal/vm/vector/VectorSupport$Vector;")                                                          \
     do_name(vector_gather_name, "loadWithMap")                                                                                                 \
                                                                                                                                                \
    do_intrinsic(_VectorScatterOp, jdk_internal_vm_vector_VectorSupport, vector_scatter_name, vector_scatter_sig, F_S)                          \
-    do_signature(vector_scatter_sig, "(Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Class;"                                                   \
+    do_signature(vector_scatter_sig, "(Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Class;"                                  \
                                       "Ljava/lang/Object;J"                                                                                    \
                                       "Ljdk/internal/vm/vector/VectorSupport$Vector;Ljdk/internal/vm/vector/VectorSupport$Vector;"             \
-                                      "Ljava/lang/Object;I[II"                                                                                 \
+                                      "Ljdk/internal/vm/vector/VectorSupport$VectorMask;Ljava/lang/Object;I[II"                                \
                                       "Ljdk/internal/vm/vector/VectorSupport$StoreVectorOperationWithMap;)V")                                  \
     do_name(vector_scatter_name, "storeWithMap")                                                                                               \
                                                                                                                                                \

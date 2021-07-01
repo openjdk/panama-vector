@@ -2797,13 +2797,13 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         vix = VectorIntrinsics.checkIndex(vix, a.length);
 
         return VectorSupport.loadWithMap(
-            vectorType, double.class, vsp.laneCount(),
-            IntVector.species(vsp.indexShape()).vectorType(),
-            a, ARRAY_BASE, vix,
+            vectorType, null, double.class, vsp.laneCount(),
+            isp.vectorType(),
+            a, ARRAY_BASE, vix, null,
             a, offset, indexMap, mapOffset, vsp,
-            (double[] c, int idx, int[] iMap, int idy, DoubleSpecies s) ->
+            (c, idx, iMap, idy, s, vm) ->
             s.vOp(n -> c[idx + iMap[idy+n]]));
-        }
+    }
 
     /**
      * Gathers a new vector composed of elements from an array of type
@@ -2851,9 +2851,8 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             return fromArray(species, a, offset, indexMap, mapOffset);
         }
         else {
-            // FIXME: Cannot vectorize yet, if there's a mask.
             DoubleSpecies vsp = (DoubleSpecies) species;
-            return vsp.vOp(m, n -> a[offset + indexMap[mapOffset + n]]);
+            return vsp.dummyVector().fromArray0(a, offset, indexMap, mapOffset, m);
         }
     }
 
@@ -3086,12 +3085,12 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         vix = VectorIntrinsics.checkIndex(vix, a.length);
 
         VectorSupport.storeWithMap(
-            vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+            vsp.vectorType(), null, vsp.elementType(), vsp.laneCount(),
             isp.vectorType(),
             a, arrayAddress(a, 0), vix,
-            this,
+            this, null,
             a, offset, indexMap, mapOffset,
-            (arr, off, v, map, mo)
+            (arr, off, v, map, mo, vm)
             -> v.stOp(arr, off,
                       (arr_, off_, i, e) -> {
                           int j = map[mo + i];
@@ -3138,12 +3137,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             intoArray(a, offset, indexMap, mapOffset);
         }
         else {
-            // FIXME: Cannot vectorize yet, if there's a mask.
-            stOp(a, offset, m,
-                 (arr, off, i, e) -> {
-                     int j = indexMap[mapOffset + i];
-                     arr[off + j] = e;
-                 });
+            intoArray0(a, offset, indexMap, mapOffset, m);
         }
     }
 
@@ -3272,6 +3266,58 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                         (arr_, off_, i) -> arr_[off_ + i]));
     }
 
+    /*package-private*/
+    abstract
+    DoubleVector fromArray0(double[] a, int offset,
+                                    int[] indexMap, int mapOffset,
+                                    VectorMask<Double> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Double>>
+    DoubleVector fromArray0Template(Class<M> maskClass, double[] a, int offset,
+                                            int[] indexMap, int mapOffset, M m) {
+        DoubleSpecies vsp = vspecies();
+        IntVector.IntSpecies isp = IntVector.species(vsp.indexShape());
+        Objects.requireNonNull(a);
+        Objects.requireNonNull(indexMap);
+        m.check(vsp);
+        Class<? extends DoubleVector> vectorType = vsp.vectorType();
+
+        if (vsp.laneCount() == 1) {
+          return DoubleVector.fromArray(vsp, a, offset + indexMap[mapOffset], m);
+        }
+
+        // Index vector: vix[0:n] = k -> offset + indexMap[mapOffset + k]
+        IntVector vix;
+        if (isp.laneCount() != vsp.laneCount()) {
+            // For DoubleMaxVector,  if vector length is non-power-of-two or
+            // 2048 bits, indexShape of Double species is S_MAX_BIT.
+            // Assume that vector length is 2048, then the lane count of Double
+            // vector is 32. When converting Double species to int species,
+            // indexShape is still S_MAX_BIT, but the lane count of int vector
+            // is 64. So when loading index vector (IntVector), only lower half
+            // of index data is needed.
+            vix = IntVector
+                .fromArray(isp, indexMap, mapOffset, IntMaxVector.IntMaxMask.LOWER_HALF_TRUE_MASK)
+                .add(offset);
+        } else {
+            vix = IntVector
+                .fromArray(isp, indexMap, mapOffset)
+                .add(offset);
+        }
+
+        // FIXME: Check index under mask controlling.
+        vix = VectorIntrinsics.checkIndex(vix, a.length);
+
+        return VectorSupport.loadWithMap(
+            vectorType, maskClass, double.class, vsp.laneCount(),
+            isp.vectorType(),
+            a, ARRAY_BASE, vix, m,
+            a, offset, indexMap, mapOffset, vsp,
+            (c, idx, iMap, idy, s, vm) ->
+            s.vOp(vm, n -> c[idx + iMap[idy+n]]));
+    }
+
 
 
     @Override
@@ -3343,6 +3389,59 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             (arr, off, v, vm)
             -> v.stOp(arr, off, vm,
                       (arr_, off_, i, e) -> arr_[off_ + i] = e));
+    }
+
+    abstract
+    void intoArray0(double[] a, int offset,
+                    int[] indexMap, int mapOffset,
+                    VectorMask<Double> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Double>>
+    void intoArray0Template(Class<M> maskClass, double[] a, int offset,
+                            int[] indexMap, int mapOffset, M m) {
+        m.check(species());
+        DoubleSpecies vsp = vspecies();
+        IntVector.IntSpecies isp = IntVector.species(vsp.indexShape());
+        if (vsp.laneCount() == 1) {
+            intoArray(a, offset + indexMap[mapOffset], m);
+            return;
+        }
+
+        // Index vector: vix[0:n] = i -> offset + indexMap[mo + i]
+        IntVector vix;
+        if (isp.laneCount() != vsp.laneCount()) {
+            // For DoubleMaxVector,  if vector length  is 2048 bits, indexShape
+            // of Double species is S_MAX_BIT. and the lane count of Double
+            // vector is 32. When converting Double species to int species,
+            // indexShape is still S_MAX_BIT, but the lane count of int vector
+            // is 64. So when loading index vector (IntVector), only lower half
+            // of index data is needed.
+            vix = IntVector
+                .fromArray(isp, indexMap, mapOffset, IntMaxVector.IntMaxMask.LOWER_HALF_TRUE_MASK)
+                .add(offset);
+        } else {
+            vix = IntVector
+                .fromArray(isp, indexMap, mapOffset)
+                .add(offset);
+        }
+
+
+        // FIXME: Check index under mask controlling.
+        vix = VectorIntrinsics.checkIndex(vix, a.length);
+
+        VectorSupport.storeWithMap(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            isp.vectorType(),
+            a, arrayAddress(a, 0), vix,
+            this, m,
+            a, offset, indexMap, mapOffset,
+            (arr, off, v, map, mo, vm)
+            -> v.stOp(arr, off, vm,
+                      (arr_, off_, i, e) -> {
+                          int j = map[mo + i];
+                          arr[off + j] = e;
+                      }));
     }
 
 

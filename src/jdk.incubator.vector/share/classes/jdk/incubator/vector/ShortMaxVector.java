@@ -825,6 +825,7 @@ final class ShortMaxVector extends ShortVector {
         return super.fromArray0Template(ShortMaxMask.class, a, offset, (ShortMaxMask) m);  // specialize
     }
 
+
     @ForceInline
     @Override
     final
@@ -867,6 +868,7 @@ final class ShortMaxVector extends ShortVector {
     void intoArray0(short[] a, int offset, VectorMask<Short> m) {
         super.intoArray0Template(ShortMaxMask.class, a, offset, (ShortMaxMask) m);
     }
+
 
 
     @ForceInline

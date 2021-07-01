@@ -887,6 +887,7 @@ final class Short512Vector extends ShortVector {
         return super.fromArray0Template(Short512Mask.class, a, offset, (Short512Mask) m);  // specialize
     }
 
+
     @ForceInline
     @Override
     final
@@ -929,6 +930,7 @@ final class Short512Vector extends ShortVector {
     void intoArray0(short[] a, int offset, VectorMask<Short> m) {
         super.intoArray0Template(Short512Mask.class, a, offset, (Short512Mask) m);
     }
+
 
 
     @ForceInline

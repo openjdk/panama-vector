@@ -827,6 +827,13 @@ final class Double256Vector extends DoubleVector {
         return super.fromArray0Template(Double256Mask.class, a, offset, (Double256Mask) m);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    DoubleVector fromArray0(double[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Double> m) {
+        return super.fromArray0Template(Double256Mask.class, a, offset, indexMap, mapOffset, (Double256Mask) m);
+    }
+
 
 
     @ForceInline
@@ -855,6 +862,13 @@ final class Double256Vector extends DoubleVector {
     final
     void intoArray0(double[] a, int offset, VectorMask<Double> m) {
         super.intoArray0Template(Double256Mask.class, a, offset, (Double256Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(double[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Double> m) {
+        super.intoArray0Template(Double256Mask.class, a, offset, indexMap, mapOffset, (Double256Mask) m);
     }
 
 

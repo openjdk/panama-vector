@@ -2940,13 +2940,13 @@ public abstract class IntVector extends AbstractVector<Integer> {
         vix = VectorIntrinsics.checkIndex(vix, a.length);
 
         return VectorSupport.loadWithMap(
-            vectorType, int.class, vsp.laneCount(),
-            IntVector.species(vsp.indexShape()).vectorType(),
-            a, ARRAY_BASE, vix,
+            vectorType, null, int.class, vsp.laneCount(),
+            isp.vectorType(),
+            a, ARRAY_BASE, vix, null,
             a, offset, indexMap, mapOffset, vsp,
-            (int[] c, int idx, int[] iMap, int idy, IntSpecies s) ->
+            (c, idx, iMap, idy, s, vm) ->
             s.vOp(n -> c[idx + iMap[idy+n]]));
-        }
+    }
 
     /**
      * Gathers a new vector composed of elements from an array of type
@@ -2994,9 +2994,8 @@ public abstract class IntVector extends AbstractVector<Integer> {
             return fromArray(species, a, offset, indexMap, mapOffset);
         }
         else {
-            // FIXME: Cannot vectorize yet, if there's a mask.
             IntSpecies vsp = (IntSpecies) species;
-            return vsp.vOp(m, n -> a[offset + indexMap[mapOffset + n]]);
+            return vsp.dummyVector().fromArray0(a, offset, indexMap, mapOffset, m);
         }
     }
 
@@ -3210,12 +3209,12 @@ public abstract class IntVector extends AbstractVector<Integer> {
         vix = VectorIntrinsics.checkIndex(vix, a.length);
 
         VectorSupport.storeWithMap(
-            vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+            vsp.vectorType(), null, vsp.elementType(), vsp.laneCount(),
             isp.vectorType(),
             a, arrayAddress(a, 0), vix,
-            this,
+            this, null,
             a, offset, indexMap, mapOffset,
-            (arr, off, v, map, mo)
+            (arr, off, v, map, mo, vm)
             -> v.stOp(arr, off,
                       (arr_, off_, i, e) -> {
                           int j = map[mo + i];
@@ -3262,12 +3261,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
             intoArray(a, offset, indexMap, mapOffset);
         }
         else {
-            // FIXME: Cannot vectorize yet, if there's a mask.
-            stOp(a, offset, m,
-                 (arr, off, i, e) -> {
-                     int j = indexMap[mapOffset + i];
-                     arr[off + j] = e;
-                 });
+            intoArray0(a, offset, indexMap, mapOffset, m);
         }
     }
 
@@ -3396,6 +3390,40 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                         (arr_, off_, i) -> arr_[off_ + i]));
     }
 
+    /*package-private*/
+    abstract
+    IntVector fromArray0(int[] a, int offset,
+                                    int[] indexMap, int mapOffset,
+                                    VectorMask<Integer> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Integer>>
+    IntVector fromArray0Template(Class<M> maskClass, int[] a, int offset,
+                                            int[] indexMap, int mapOffset, M m) {
+        IntSpecies vsp = vspecies();
+        IntVector.IntSpecies isp = IntVector.species(vsp.indexShape());
+        Objects.requireNonNull(a);
+        Objects.requireNonNull(indexMap);
+        m.check(vsp);
+        Class<? extends IntVector> vectorType = vsp.vectorType();
+
+        // Index vector: vix[0:n] = k -> offset + indexMap[mapOffset + k]
+        IntVector vix = IntVector
+            .fromArray(isp, indexMap, mapOffset)
+            .add(offset);
+
+        // FIXME: Check index under mask controlling.
+        vix = VectorIntrinsics.checkIndex(vix, a.length);
+
+        return VectorSupport.loadWithMap(
+            vectorType, maskClass, int.class, vsp.laneCount(),
+            isp.vectorType(),
+            a, ARRAY_BASE, vix, m,
+            a, offset, indexMap, mapOffset, vsp,
+            (c, idx, iMap, idy, s, vm) ->
+            s.vOp(vm, n -> c[idx + iMap[idy+n]]));
+    }
+
 
 
     @Override
@@ -3467,6 +3495,40 @@ public abstract class IntVector extends AbstractVector<Integer> {
             (arr, off, v, vm)
             -> v.stOp(arr, off, vm,
                       (arr_, off_, i, e) -> arr_[off_ + i] = e));
+    }
+
+    abstract
+    void intoArray0(int[] a, int offset,
+                    int[] indexMap, int mapOffset,
+                    VectorMask<Integer> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Integer>>
+    void intoArray0Template(Class<M> maskClass, int[] a, int offset,
+                            int[] indexMap, int mapOffset, M m) {
+        m.check(species());
+        IntSpecies vsp = vspecies();
+        IntVector.IntSpecies isp = IntVector.species(vsp.indexShape());
+        // Index vector: vix[0:n] = i -> offset + indexMap[mo + i]
+        IntVector vix = IntVector
+            .fromArray(isp, indexMap, mapOffset)
+            .add(offset);
+
+        // FIXME: Check index under mask controlling.
+        vix = VectorIntrinsics.checkIndex(vix, a.length);
+
+        VectorSupport.storeWithMap(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            isp.vectorType(),
+            a, arrayAddress(a, 0), vix,
+            this, m,
+            a, offset, indexMap, mapOffset,
+            (arr, off, v, map, mo, vm)
+            -> v.stOp(arr, off, vm,
+                      (arr_, off_, i, e) -> {
+                          int j = map[mo + i];
+                          arr[off + j] = e;
+                      }));
     }
 
 

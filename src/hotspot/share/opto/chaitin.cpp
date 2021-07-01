@@ -639,8 +639,8 @@ void PhaseChaitin::Register_Allocate() {
       LRG &lrg = lrgs(_lrg_map.live_range_id(i));
       if (!lrg.alive()) {
         set_bad(i);
-      } else if (lrg.num_regs() == 1 && !lrg.is_scalable() ||
-                 lrg.is_scalable() && lrg.scalable_reg_slots() == 1) {
+      } else if ((lrg.num_regs() == 1 && !lrg.is_scalable()) ||
+                 (lrg.is_scalable() && lrg.scalable_reg_slots() == 1)) {
         set1(i, lrg.reg());
       } else {                  // Must be a register-set
         if (!lrg._fat_proj) {   // Must be aligned adjacent register set

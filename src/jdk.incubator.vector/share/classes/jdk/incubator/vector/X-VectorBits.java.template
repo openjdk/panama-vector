@@ -1113,6 +1113,15 @@ final class $vectortype$ extends $abstractvectortype$ {
         return super.fromArray0Template($masktype$.class, a, offset, ($masktype$) m);  // specialize
     }
 
+#if[!byteOrShort]
+    @ForceInline
+    @Override
+    final
+    $abstractvectortype$ fromArray0($type$[] a, int offset, int[] indexMap, int mapOffset, VectorMask<$Boxtype$> m) {
+        return super.fromArray0Template($masktype$.class, a, offset, indexMap, mapOffset, ($masktype$) m);
+    }
+#end[!byteOrShort]
+
 #if[short]
     @ForceInline
     @Override
@@ -1172,6 +1181,15 @@ final class $vectortype$ extends $abstractvectortype$ {
     void intoArray0($type$[] a, int offset, VectorMask<$Boxtype$> m) {
         super.intoArray0Template($masktype$.class, a, offset, ($masktype$) m);
     }
+
+#if[!byteOrShort]
+    @ForceInline
+    @Override
+    final
+    void intoArray0($type$[] a, int offset, int[] indexMap, int mapOffset, VectorMask<$Boxtype$> m) {
+        super.intoArray0Template($masktype$.class, a, offset, indexMap, mapOffset, ($masktype$) m);
+    }
+#end[!byteOrShort]
 
 #if[byte]
     @ForceInline

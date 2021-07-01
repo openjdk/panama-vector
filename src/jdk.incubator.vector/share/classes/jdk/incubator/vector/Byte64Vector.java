@@ -840,6 +840,7 @@ final class Byte64Vector extends ByteVector {
     }
 
 
+
     @ForceInline
     @Override
     final
@@ -881,6 +882,7 @@ final class Byte64Vector extends ByteVector {
     void intoArray0(byte[] a, int offset, VectorMask<Byte> m) {
         super.intoArray0Template(Byte64Mask.class, a, offset, (Byte64Mask) m);
     }
+
 
     @ForceInline
     @Override
