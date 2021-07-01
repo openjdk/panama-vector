@@ -3660,6 +3660,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                                         (arr_, off_, i) -> arr_[off_ + i]));
     }
 
+
     /*package-private*/
     abstract
     ShortVector fromCharArray0(char[] a, int offset);
@@ -3763,6 +3764,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             -> v.stOp(arr, off, vm,
                       (arr_, off_, i, e) -> arr_[off_ + i] = e));
     }
+
 
 
     abstract

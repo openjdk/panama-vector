@@ -271,7 +271,7 @@ final class Long128Vector extends LongVector {
     @Override
     @ForceInline
     public Long128Vector lanewise(Unary op, VectorMask<Long> m) {
-        return (Long128Vector) super.lanewiseTemplate(op, Long128Mask.class, m);  // specialize
+        return (Long128Vector) super.lanewiseTemplate(op, Long128Mask.class, (Long128Mask) m);  // specialize
     }
 
     @Override
@@ -283,7 +283,7 @@ final class Long128Vector extends LongVector {
     @Override
     @ForceInline
     public Long128Vector lanewise(Binary op, Vector<Long> v, VectorMask<Long> m) {
-        return (Long128Vector) super.lanewiseTemplate(op, Long128Mask.class, v, m);  // specialize
+        return (Long128Vector) super.lanewiseTemplate(op, Long128Mask.class, v, (Long128Mask) m);  // specialize
     }
 
     /*package-private*/
@@ -307,7 +307,7 @@ final class Long128Vector extends LongVector {
     public final
     Long128Vector
     lanewise(Ternary op, Vector<Long> v1, Vector<Long> v2, VectorMask<Long> m) {
-        return (Long128Vector) super.lanewiseTemplate(op, Long128Mask.class, v1, v2, m);  // specialize
+        return (Long128Vector) super.lanewiseTemplate(op, Long128Mask.class, v1, v2, (Long128Mask) m);  // specialize
     }
 
     @Override
@@ -329,7 +329,7 @@ final class Long128Vector extends LongVector {
     @ForceInline
     public final long reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Long> m) {
-        return super.reduceLanesTemplate(op, Long128Mask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, Long128Mask.class, (Long128Mask) m);  // specialized
     }
 
     @Override
@@ -342,7 +342,7 @@ final class Long128Vector extends LongVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Long> m) {
-        return (long) super.reduceLanesTemplate(op, Long128Mask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, Long128Mask.class, (Long128Mask) m);  // specialized
     }
 
     @ForceInline
@@ -817,6 +817,13 @@ final class Long128Vector extends LongVector {
         return super.fromArray0Template(Long128Mask.class, a, offset, (Long128Mask) m);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    LongVector fromArray0(long[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Long> m) {
+        return super.fromArray0Template(Long128Mask.class, a, offset, indexMap, mapOffset, (Long128Mask) m);
+    }
+
 
 
     @ForceInline
@@ -845,6 +852,13 @@ final class Long128Vector extends LongVector {
     final
     void intoArray0(long[] a, int offset, VectorMask<Long> m) {
         super.intoArray0Template(Long128Mask.class, a, offset, (Long128Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(long[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Long> m) {
+        super.intoArray0Template(Long128Mask.class, a, offset, indexMap, mapOffset, (Long128Mask) m);
     }
 
 

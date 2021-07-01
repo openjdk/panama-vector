@@ -276,7 +276,7 @@ final class IntMaxVector extends IntVector {
     @Override
     @ForceInline
     public IntMaxVector lanewise(Unary op, VectorMask<Integer> m) {
-        return (IntMaxVector) super.lanewiseTemplate(op, IntMaxMask.class, m);  // specialize
+        return (IntMaxVector) super.lanewiseTemplate(op, IntMaxMask.class, (IntMaxMask) m);  // specialize
     }
 
     @Override
@@ -288,7 +288,7 @@ final class IntMaxVector extends IntVector {
     @Override
     @ForceInline
     public IntMaxVector lanewise(Binary op, Vector<Integer> v, VectorMask<Integer> m) {
-        return (IntMaxVector) super.lanewiseTemplate(op, IntMaxMask.class, v, m);  // specialize
+        return (IntMaxVector) super.lanewiseTemplate(op, IntMaxMask.class, v, (IntMaxMask) m);  // specialize
     }
 
     /*package-private*/
@@ -312,7 +312,7 @@ final class IntMaxVector extends IntVector {
     public final
     IntMaxVector
     lanewise(Ternary op, Vector<Integer> v1, Vector<Integer> v2, VectorMask<Integer> m) {
-        return (IntMaxVector) super.lanewiseTemplate(op, IntMaxMask.class, v1, v2, m);  // specialize
+        return (IntMaxVector) super.lanewiseTemplate(op, IntMaxMask.class, v1, v2, (IntMaxMask) m);  // specialize
     }
 
     @Override
@@ -334,7 +334,7 @@ final class IntMaxVector extends IntVector {
     @ForceInline
     public final int reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Integer> m) {
-        return super.reduceLanesTemplate(op, IntMaxMask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, IntMaxMask.class, (IntMaxMask) m);  // specialized
     }
 
     @Override
@@ -347,7 +347,7 @@ final class IntMaxVector extends IntVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Integer> m) {
-        return (long) super.reduceLanesTemplate(op, IntMaxMask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, IntMaxMask.class, (IntMaxMask) m);  // specialized
     }
 
     @ForceInline
@@ -836,6 +836,13 @@ final class IntMaxVector extends IntVector {
         return super.fromArray0Template(IntMaxMask.class, a, offset, (IntMaxMask) m);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    IntVector fromArray0(int[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Integer> m) {
+        return super.fromArray0Template(IntMaxMask.class, a, offset, indexMap, mapOffset, (IntMaxMask) m);
+    }
+
 
 
     @ForceInline
@@ -864,6 +871,13 @@ final class IntMaxVector extends IntVector {
     final
     void intoArray0(int[] a, int offset, VectorMask<Integer> m) {
         super.intoArray0Template(IntMaxMask.class, a, offset, (IntMaxMask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(int[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Integer> m) {
+        super.intoArray0Template(IntMaxMask.class, a, offset, indexMap, mapOffset, (IntMaxMask) m);
     }
 
 

@@ -276,7 +276,7 @@ final class Byte128Vector extends ByteVector {
     @Override
     @ForceInline
     public Byte128Vector lanewise(Unary op, VectorMask<Byte> m) {
-        return (Byte128Vector) super.lanewiseTemplate(op, Byte128Mask.class, m);  // specialize
+        return (Byte128Vector) super.lanewiseTemplate(op, Byte128Mask.class, (Byte128Mask) m);  // specialize
     }
 
     @Override
@@ -288,7 +288,7 @@ final class Byte128Vector extends ByteVector {
     @Override
     @ForceInline
     public Byte128Vector lanewise(Binary op, Vector<Byte> v, VectorMask<Byte> m) {
-        return (Byte128Vector) super.lanewiseTemplate(op, Byte128Mask.class, v, m);  // specialize
+        return (Byte128Vector) super.lanewiseTemplate(op, Byte128Mask.class, v, (Byte128Mask) m);  // specialize
     }
 
     /*package-private*/
@@ -312,7 +312,7 @@ final class Byte128Vector extends ByteVector {
     public final
     Byte128Vector
     lanewise(Ternary op, Vector<Byte> v1, Vector<Byte> v2, VectorMask<Byte> m) {
-        return (Byte128Vector) super.lanewiseTemplate(op, Byte128Mask.class, v1, v2, m);  // specialize
+        return (Byte128Vector) super.lanewiseTemplate(op, Byte128Mask.class, v1, v2, (Byte128Mask) m);  // specialize
     }
 
     @Override
@@ -334,7 +334,7 @@ final class Byte128Vector extends ByteVector {
     @ForceInline
     public final byte reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Byte> m) {
-        return super.reduceLanesTemplate(op, Byte128Mask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, Byte128Mask.class, (Byte128Mask) m);  // specialized
     }
 
     @Override
@@ -347,7 +347,7 @@ final class Byte128Vector extends ByteVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Byte> m) {
-        return (long) super.reduceLanesTemplate(op, Byte128Mask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, Byte128Mask.class, (Byte128Mask) m);  // specialized
     }
 
     @ForceInline
@@ -856,6 +856,7 @@ final class Byte128Vector extends ByteVector {
     }
 
 
+
     @ForceInline
     @Override
     final
@@ -897,6 +898,7 @@ final class Byte128Vector extends ByteVector {
     void intoArray0(byte[] a, int offset, VectorMask<Byte> m) {
         super.intoArray0Template(Byte128Mask.class, a, offset, (Byte128Mask) m);
     }
+
 
     @ForceInline
     @Override

@@ -3675,6 +3675,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     }
 
 
+
     /*package-private*/
     abstract
     ByteVector fromBooleanArray0(boolean[] a, int offset);
@@ -3777,6 +3778,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             -> v.stOp(arr, off, vm,
                       (arr_, off_, i, e) -> arr_[off_ + i] = e));
     }
+
 
     abstract
     void intoBooleanArray0(boolean[] a, int offset, VectorMask<Byte> m);

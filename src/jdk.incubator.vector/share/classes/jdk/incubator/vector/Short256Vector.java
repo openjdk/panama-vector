@@ -276,7 +276,7 @@ final class Short256Vector extends ShortVector {
     @Override
     @ForceInline
     public Short256Vector lanewise(Unary op, VectorMask<Short> m) {
-        return (Short256Vector) super.lanewiseTemplate(op, Short256Mask.class, m);  // specialize
+        return (Short256Vector) super.lanewiseTemplate(op, Short256Mask.class, (Short256Mask) m);  // specialize
     }
 
     @Override
@@ -288,7 +288,7 @@ final class Short256Vector extends ShortVector {
     @Override
     @ForceInline
     public Short256Vector lanewise(Binary op, Vector<Short> v, VectorMask<Short> m) {
-        return (Short256Vector) super.lanewiseTemplate(op, Short256Mask.class, v, m);  // specialize
+        return (Short256Vector) super.lanewiseTemplate(op, Short256Mask.class, v, (Short256Mask) m);  // specialize
     }
 
     /*package-private*/
@@ -312,7 +312,7 @@ final class Short256Vector extends ShortVector {
     public final
     Short256Vector
     lanewise(Ternary op, Vector<Short> v1, Vector<Short> v2, VectorMask<Short> m) {
-        return (Short256Vector) super.lanewiseTemplate(op, Short256Mask.class, v1, v2, m);  // specialize
+        return (Short256Vector) super.lanewiseTemplate(op, Short256Mask.class, v1, v2, (Short256Mask) m);  // specialize
     }
 
     @Override
@@ -334,7 +334,7 @@ final class Short256Vector extends ShortVector {
     @ForceInline
     public final short reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Short> m) {
-        return super.reduceLanesTemplate(op, Short256Mask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, Short256Mask.class, (Short256Mask) m);  // specialized
     }
 
     @Override
@@ -347,7 +347,7 @@ final class Short256Vector extends ShortVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Short> m) {
-        return (long) super.reduceLanesTemplate(op, Short256Mask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, Short256Mask.class, (Short256Mask) m);  // specialized
     }
 
     @ForceInline
@@ -855,6 +855,7 @@ final class Short256Vector extends ShortVector {
         return super.fromArray0Template(Short256Mask.class, a, offset, (Short256Mask) m);  // specialize
     }
 
+
     @ForceInline
     @Override
     final
@@ -897,6 +898,7 @@ final class Short256Vector extends ShortVector {
     void intoArray0(short[] a, int offset, VectorMask<Short> m) {
         super.intoArray0Template(Short256Mask.class, a, offset, (Short256Mask) m);
     }
+
 
 
     @ForceInline

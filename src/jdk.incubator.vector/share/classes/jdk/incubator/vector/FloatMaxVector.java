@@ -276,7 +276,7 @@ final class FloatMaxVector extends FloatVector {
     @Override
     @ForceInline
     public FloatMaxVector lanewise(Unary op, VectorMask<Float> m) {
-        return (FloatMaxVector) super.lanewiseTemplate(op, FloatMaxMask.class, m);  // specialize
+        return (FloatMaxVector) super.lanewiseTemplate(op, FloatMaxMask.class, (FloatMaxMask) m);  // specialize
     }
 
     @Override
@@ -288,7 +288,7 @@ final class FloatMaxVector extends FloatVector {
     @Override
     @ForceInline
     public FloatMaxVector lanewise(Binary op, Vector<Float> v, VectorMask<Float> m) {
-        return (FloatMaxVector) super.lanewiseTemplate(op, FloatMaxMask.class, v, m);  // specialize
+        return (FloatMaxVector) super.lanewiseTemplate(op, FloatMaxMask.class, v, (FloatMaxMask) m);  // specialize
     }
 
 
@@ -306,7 +306,7 @@ final class FloatMaxVector extends FloatVector {
     public final
     FloatMaxVector
     lanewise(Ternary op, Vector<Float> v1, Vector<Float> v2, VectorMask<Float> m) {
-        return (FloatMaxVector) super.lanewiseTemplate(op, FloatMaxMask.class, v1, v2, m);  // specialize
+        return (FloatMaxVector) super.lanewiseTemplate(op, FloatMaxMask.class, v1, v2, (FloatMaxMask) m);  // specialize
     }
 
     @Override
@@ -328,7 +328,7 @@ final class FloatMaxVector extends FloatVector {
     @ForceInline
     public final float reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Float> m) {
-        return super.reduceLanesTemplate(op, FloatMaxMask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, FloatMaxMask.class, (FloatMaxMask) m);  // specialized
     }
 
     @Override
@@ -341,7 +341,7 @@ final class FloatMaxVector extends FloatVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Float> m) {
-        return (long) super.reduceLanesTemplate(op, FloatMaxMask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, FloatMaxMask.class, (FloatMaxMask) m);  // specialized
     }
 
     @ForceInline
@@ -820,6 +820,13 @@ final class FloatMaxVector extends FloatVector {
         return super.fromArray0Template(FloatMaxMask.class, a, offset, (FloatMaxMask) m);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    FloatVector fromArray0(float[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Float> m) {
+        return super.fromArray0Template(FloatMaxMask.class, a, offset, indexMap, mapOffset, (FloatMaxMask) m);
+    }
+
 
 
     @ForceInline
@@ -848,6 +855,13 @@ final class FloatMaxVector extends FloatVector {
     final
     void intoArray0(float[] a, int offset, VectorMask<Float> m) {
         super.intoArray0Template(FloatMaxMask.class, a, offset, (FloatMaxMask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(float[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Float> m) {
+        super.intoArray0Template(FloatMaxMask.class, a, offset, indexMap, mapOffset, (FloatMaxMask) m);
     }
 
 

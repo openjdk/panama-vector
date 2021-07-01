@@ -278,7 +278,7 @@ final class $vectortype$ extends $abstractvectortype$ {
     @Override
     @ForceInline
     public $vectortype$ lanewise(Unary op, VectorMask<$Boxtype$> m) {
-        return ($vectortype$) super.lanewiseTemplate(op, $masktype$.class, m);  // specialize
+        return ($vectortype$) super.lanewiseTemplate(op, $masktype$.class, ($masktype$) m);  // specialize
     }
 
     @Override
@@ -290,7 +290,7 @@ final class $vectortype$ extends $abstractvectortype$ {
     @Override
     @ForceInline
     public $vectortype$ lanewise(Binary op, Vector<$Boxtype$> v, VectorMask<$Boxtype$> m) {
-        return ($vectortype$) super.lanewiseTemplate(op, $masktype$.class, v, m);  // specialize
+        return ($vectortype$) super.lanewiseTemplate(op, $masktype$.class, v, ($masktype$) m);  // specialize
     }
 
 #if[!FP]
@@ -316,7 +316,7 @@ final class $vectortype$ extends $abstractvectortype$ {
     public final
     $vectortype$
     lanewise(Ternary op, Vector<$Boxtype$> v1, Vector<$Boxtype$> v2, VectorMask<$Boxtype$> m) {
-        return ($vectortype$) super.lanewiseTemplate(op, $masktype$.class, v1, v2, m);  // specialize
+        return ($vectortype$) super.lanewiseTemplate(op, $masktype$.class, v1, v2, ($masktype$) m);  // specialize
     }
 
     @Override
@@ -338,7 +338,7 @@ final class $vectortype$ extends $abstractvectortype$ {
     @ForceInline
     public final $type$ reduceLanes(VectorOperators.Associative op,
                                     VectorMask<$Boxtype$> m) {
-        return super.reduceLanesTemplate(op, $masktype$.class, m);  // specialized
+        return super.reduceLanesTemplate(op, $masktype$.class, ($masktype$) m);  // specialized
     }
 
     @Override
@@ -351,7 +351,7 @@ final class $vectortype$ extends $abstractvectortype$ {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<$Boxtype$> m) {
-        return (long) super.reduceLanesTemplate(op, $masktype$.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, $masktype$.class, ($masktype$) m);  // specialized
     }
 
     @ForceInline
@@ -1113,6 +1113,15 @@ final class $vectortype$ extends $abstractvectortype$ {
         return super.fromArray0Template($masktype$.class, a, offset, ($masktype$) m);  // specialize
     }
 
+#if[!byteOrShort]
+    @ForceInline
+    @Override
+    final
+    $abstractvectortype$ fromArray0($type$[] a, int offset, int[] indexMap, int mapOffset, VectorMask<$Boxtype$> m) {
+        return super.fromArray0Template($masktype$.class, a, offset, indexMap, mapOffset, ($masktype$) m);
+    }
+#end[!byteOrShort]
+
 #if[short]
     @ForceInline
     @Override
@@ -1172,6 +1181,15 @@ final class $vectortype$ extends $abstractvectortype$ {
     void intoArray0($type$[] a, int offset, VectorMask<$Boxtype$> m) {
         super.intoArray0Template($masktype$.class, a, offset, ($masktype$) m);
     }
+
+#if[!byteOrShort]
+    @ForceInline
+    @Override
+    final
+    void intoArray0($type$[] a, int offset, int[] indexMap, int mapOffset, VectorMask<$Boxtype$> m) {
+        super.intoArray0Template($masktype$.class, a, offset, indexMap, mapOffset, ($masktype$) m);
+    }
+#end[!byteOrShort]
 
 #if[byte]
     @ForceInline

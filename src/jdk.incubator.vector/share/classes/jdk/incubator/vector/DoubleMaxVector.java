@@ -276,7 +276,7 @@ final class DoubleMaxVector extends DoubleVector {
     @Override
     @ForceInline
     public DoubleMaxVector lanewise(Unary op, VectorMask<Double> m) {
-        return (DoubleMaxVector) super.lanewiseTemplate(op, DoubleMaxMask.class, m);  // specialize
+        return (DoubleMaxVector) super.lanewiseTemplate(op, DoubleMaxMask.class, (DoubleMaxMask) m);  // specialize
     }
 
     @Override
@@ -288,7 +288,7 @@ final class DoubleMaxVector extends DoubleVector {
     @Override
     @ForceInline
     public DoubleMaxVector lanewise(Binary op, Vector<Double> v, VectorMask<Double> m) {
-        return (DoubleMaxVector) super.lanewiseTemplate(op, DoubleMaxMask.class, v, m);  // specialize
+        return (DoubleMaxVector) super.lanewiseTemplate(op, DoubleMaxMask.class, v, (DoubleMaxMask) m);  // specialize
     }
 
 
@@ -306,7 +306,7 @@ final class DoubleMaxVector extends DoubleVector {
     public final
     DoubleMaxVector
     lanewise(Ternary op, Vector<Double> v1, Vector<Double> v2, VectorMask<Double> m) {
-        return (DoubleMaxVector) super.lanewiseTemplate(op, DoubleMaxMask.class, v1, v2, m);  // specialize
+        return (DoubleMaxVector) super.lanewiseTemplate(op, DoubleMaxMask.class, v1, v2, (DoubleMaxMask) m);  // specialize
     }
 
     @Override
@@ -328,7 +328,7 @@ final class DoubleMaxVector extends DoubleVector {
     @ForceInline
     public final double reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Double> m) {
-        return super.reduceLanesTemplate(op, DoubleMaxMask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, DoubleMaxMask.class, (DoubleMaxMask) m);  // specialized
     }
 
     @Override
@@ -341,7 +341,7 @@ final class DoubleMaxVector extends DoubleVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Double> m) {
-        return (long) super.reduceLanesTemplate(op, DoubleMaxMask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, DoubleMaxMask.class, (DoubleMaxMask) m);  // specialized
     }
 
     @ForceInline
@@ -820,6 +820,13 @@ final class DoubleMaxVector extends DoubleVector {
         return super.fromArray0Template(DoubleMaxMask.class, a, offset, (DoubleMaxMask) m);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    DoubleVector fromArray0(double[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Double> m) {
+        return super.fromArray0Template(DoubleMaxMask.class, a, offset, indexMap, mapOffset, (DoubleMaxMask) m);
+    }
+
 
 
     @ForceInline
@@ -848,6 +855,13 @@ final class DoubleMaxVector extends DoubleVector {
     final
     void intoArray0(double[] a, int offset, VectorMask<Double> m) {
         super.intoArray0Template(DoubleMaxMask.class, a, offset, (DoubleMaxMask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(double[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Double> m) {
+        super.intoArray0Template(DoubleMaxMask.class, a, offset, indexMap, mapOffset, (DoubleMaxMask) m);
     }
 
 

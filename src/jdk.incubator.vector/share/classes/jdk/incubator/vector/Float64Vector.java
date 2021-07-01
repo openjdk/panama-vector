@@ -276,7 +276,7 @@ final class Float64Vector extends FloatVector {
     @Override
     @ForceInline
     public Float64Vector lanewise(Unary op, VectorMask<Float> m) {
-        return (Float64Vector) super.lanewiseTemplate(op, Float64Mask.class, m);  // specialize
+        return (Float64Vector) super.lanewiseTemplate(op, Float64Mask.class, (Float64Mask) m);  // specialize
     }
 
     @Override
@@ -288,7 +288,7 @@ final class Float64Vector extends FloatVector {
     @Override
     @ForceInline
     public Float64Vector lanewise(Binary op, Vector<Float> v, VectorMask<Float> m) {
-        return (Float64Vector) super.lanewiseTemplate(op, Float64Mask.class, v, m);  // specialize
+        return (Float64Vector) super.lanewiseTemplate(op, Float64Mask.class, v, (Float64Mask) m);  // specialize
     }
 
 
@@ -306,7 +306,7 @@ final class Float64Vector extends FloatVector {
     public final
     Float64Vector
     lanewise(Ternary op, Vector<Float> v1, Vector<Float> v2, VectorMask<Float> m) {
-        return (Float64Vector) super.lanewiseTemplate(op, Float64Mask.class, v1, v2, m);  // specialize
+        return (Float64Vector) super.lanewiseTemplate(op, Float64Mask.class, v1, v2, (Float64Mask) m);  // specialize
     }
 
     @Override
@@ -328,7 +328,7 @@ final class Float64Vector extends FloatVector {
     @ForceInline
     public final float reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Float> m) {
-        return super.reduceLanesTemplate(op, Float64Mask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, Float64Mask.class, (Float64Mask) m);  // specialized
     }
 
     @Override
@@ -341,7 +341,7 @@ final class Float64Vector extends FloatVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Float> m) {
-        return (long) super.reduceLanesTemplate(op, Float64Mask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, Float64Mask.class, (Float64Mask) m);  // specialized
     }
 
     @ForceInline
@@ -823,6 +823,13 @@ final class Float64Vector extends FloatVector {
         return super.fromArray0Template(Float64Mask.class, a, offset, (Float64Mask) m);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    FloatVector fromArray0(float[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Float> m) {
+        return super.fromArray0Template(Float64Mask.class, a, offset, indexMap, mapOffset, (Float64Mask) m);
+    }
+
 
 
     @ForceInline
@@ -851,6 +858,13 @@ final class Float64Vector extends FloatVector {
     final
     void intoArray0(float[] a, int offset, VectorMask<Float> m) {
         super.intoArray0Template(Float64Mask.class, a, offset, (Float64Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(float[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Float> m) {
+        super.intoArray0Template(Float64Mask.class, a, offset, indexMap, mapOffset, (Float64Mask) m);
     }
 
 

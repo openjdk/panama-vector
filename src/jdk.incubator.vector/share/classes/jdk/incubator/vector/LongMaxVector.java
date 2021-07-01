@@ -271,7 +271,7 @@ final class LongMaxVector extends LongVector {
     @Override
     @ForceInline
     public LongMaxVector lanewise(Unary op, VectorMask<Long> m) {
-        return (LongMaxVector) super.lanewiseTemplate(op, LongMaxMask.class, m);  // specialize
+        return (LongMaxVector) super.lanewiseTemplate(op, LongMaxMask.class, (LongMaxMask) m);  // specialize
     }
 
     @Override
@@ -283,7 +283,7 @@ final class LongMaxVector extends LongVector {
     @Override
     @ForceInline
     public LongMaxVector lanewise(Binary op, Vector<Long> v, VectorMask<Long> m) {
-        return (LongMaxVector) super.lanewiseTemplate(op, LongMaxMask.class, v, m);  // specialize
+        return (LongMaxVector) super.lanewiseTemplate(op, LongMaxMask.class, v, (LongMaxMask) m);  // specialize
     }
 
     /*package-private*/
@@ -307,7 +307,7 @@ final class LongMaxVector extends LongVector {
     public final
     LongMaxVector
     lanewise(Ternary op, Vector<Long> v1, Vector<Long> v2, VectorMask<Long> m) {
-        return (LongMaxVector) super.lanewiseTemplate(op, LongMaxMask.class, v1, v2, m);  // specialize
+        return (LongMaxVector) super.lanewiseTemplate(op, LongMaxMask.class, v1, v2, (LongMaxMask) m);  // specialize
     }
 
     @Override
@@ -329,7 +329,7 @@ final class LongMaxVector extends LongVector {
     @ForceInline
     public final long reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Long> m) {
-        return super.reduceLanesTemplate(op, LongMaxMask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, LongMaxMask.class, (LongMaxMask) m);  // specialized
     }
 
     @Override
@@ -342,7 +342,7 @@ final class LongMaxVector extends LongVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Long> m) {
-        return (long) super.reduceLanesTemplate(op, LongMaxMask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, LongMaxMask.class, (LongMaxMask) m);  // specialized
     }
 
     @ForceInline
@@ -815,6 +815,13 @@ final class LongMaxVector extends LongVector {
         return super.fromArray0Template(LongMaxMask.class, a, offset, (LongMaxMask) m);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    LongVector fromArray0(long[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Long> m) {
+        return super.fromArray0Template(LongMaxMask.class, a, offset, indexMap, mapOffset, (LongMaxMask) m);
+    }
+
 
 
     @ForceInline
@@ -843,6 +850,13 @@ final class LongMaxVector extends LongVector {
     final
     void intoArray0(long[] a, int offset, VectorMask<Long> m) {
         super.intoArray0Template(LongMaxMask.class, a, offset, (LongMaxMask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(long[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Long> m) {
+        super.intoArray0Template(LongMaxMask.class, a, offset, indexMap, mapOffset, (LongMaxMask) m);
     }
 
 

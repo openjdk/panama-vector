@@ -1133,34 +1133,37 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
   return true;
 }
 
-//   <C, V extends Vector<?>, W extends IntVector, E, S extends VectorSpecies<E>>
-//   void loadWithMap(Class<?> vectorClass, Class<E> E, int length, Class<?> vectorIndexClass,
-//                    Object base, long offset, // Unsafe addressing
-//                    W index_vector,
-//                    C container, int index, int[] indexMap, int indexM, S s, // Arguments for default implementation
-//                    LoadVectorOperationWithMap<C, V, E, S> defaultImpl)
+//   <C, V extends Vector<?>, W extends Vector<Integer>, E,
+//    S extends VectorSpecies<E>, M extends VectorMask<E>>
+//   V loadWithMap(Class<?> vectorClass, Class<M> maskClass, Class<E> E, int length,
+//                 Class<?> vectorIndexClass,
+//                 Object base, long offset, // Unsafe addressing
+//                 W index_vector, M m,
+//                 C container, int index, int[] indexMap, int indexM, S s, // Arguments for default implementation
+//                 LoadVectorOperationWithMap<C, V, E, S, M> defaultImpl)
 //
-//    <C, V extends Vector<?>, W extends IntVector>
-//    void storeWithMap(Class<?> vectorClass, Class<?> elementType, int length, Class<?> vectorIndexClass,
-//                      Object base, long offset,    // Unsafe addressing
-//                      W index_vector, V v,
+//    <C, V extends Vector<?>, W extends Vector<Integer>, M extends VectorMask<?>>
+//    void storeWithMap(Class<?> vectorClass, Class<M> maskClass, Class<?> elementType,
+//                      int length, Class<?> vectorIndexClass, Object base, long offset,    // Unsafe addressing
+//                      W index_vector, V v, M m,
 //                      C container, int index, int[] indexMap, int indexM, // Arguments for default implementation
-//                      StoreVectorOperationWithMap<C, V> defaultImpl) {
+//                      StoreVectorOperationWithMap<C, V, M> defaultImpl)
 //
 bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
   const TypeInstPtr* vector_klass     = gvn().type(argument(0))->isa_instptr();
-  const TypeInstPtr* elem_klass       = gvn().type(argument(1))->isa_instptr();
-  const TypeInt*     vlen             = gvn().type(argument(2))->isa_int();
-  const TypeInstPtr* vector_idx_klass = gvn().type(argument(3))->isa_instptr();
+  const TypeInstPtr* mask_klass       = gvn().type(argument(1))->isa_instptr();
+  const TypeInstPtr* elem_klass       = gvn().type(argument(2))->isa_instptr();
+  const TypeInt*     vlen             = gvn().type(argument(3))->isa_int();
+  const TypeInstPtr* vector_idx_klass = gvn().type(argument(4))->isa_instptr();
 
   if (vector_klass == NULL || elem_klass == NULL || vector_idx_klass == NULL || vlen == NULL ||
       vector_klass->const_oop() == NULL || elem_klass->const_oop() == NULL || vector_idx_klass->const_oop() == NULL || !vlen->is_con()) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** missing constant: vclass=%s etype=%s vlen=%s viclass=%s",
                     NodeClassNames[argument(0)->Opcode()],
-                    NodeClassNames[argument(1)->Opcode()],
                     NodeClassNames[argument(2)->Opcode()],
-                    NodeClassNames[argument(3)->Opcode()]);
+                    NodeClassNames[argument(3)->Opcode()],
+                    NodeClassNames[argument(4)->Opcode()]);
     }
     return false; // not enough info for intrinsification
   }
@@ -1171,6 +1174,7 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
     }
     return false;
   }
+
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
   if (!elem_type->is_primitive_type()) {
     if (C->print_intrinsics()) {
@@ -1178,30 +1182,68 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
     }
     return false; // should be primitive type
   }
+
   BasicType elem_bt = elem_type->basic_type();
   int num_elem = vlen->get_con();
 
-  if (!arch_supports_vector(is_scatter ? Op_StoreVectorScatter : Op_LoadVectorGather, num_elem, elem_bt, VecMaskNotUsed)) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** not supported: arity=%d op=%s vlen=%d etype=%s ismask=no",
-                    is_scatter, is_scatter ? "scatter" : "gather",
-                    num_elem, type2name(elem_bt));
+  const Type* vmask_type = gvn().type(is_scatter ? argument(10) : argument(9));
+  bool is_masked_op = vmask_type != TypePtr::NULL_PTR;
+  if (is_masked_op) {
+    if (mask_klass == NULL || mask_klass->const_oop() == NULL) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** missing constant: maskclass=%s", NodeClassNames[argument(1)->Opcode()]);
+      }
+      return false; // not enough info for intrinsification
     }
-    return false; // not supported
+
+    if (!is_klass_initialized(mask_klass)) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** mask klass argument not initialized");
+      }
+      return false;
+    }
+
+    if (vmask_type->maybe_null()) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** null mask values are not allowed for masked op");
+      }
+      return false;
+    }
+
+    // Check whether the predicated gather/scatter node is supported by architecture.
+    if (!arch_supports_vector(is_scatter ? Op_StoreVectorScatterMasked : Op_LoadVectorGatherMasked, num_elem, elem_bt,
+                              (VectorMaskUseType) (VecMaskUseLoad | VecMaskUsePred))) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** not supported: arity=%d op=%s vlen=%d etype=%s is_masked_op=1",
+                      is_scatter, is_scatter ? "scatterMasked" : "gatherMasked",
+                      num_elem, type2name(elem_bt));
+      }
+      return false; // not supported
+    }
+  } else {
+    // Check whether the normal gather/scatter node is supported for non-masked operation.
+    if (!arch_supports_vector(is_scatter ? Op_StoreVectorScatter : Op_LoadVectorGather, num_elem, elem_bt, VecMaskNotUsed)) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** not supported: arity=%d op=%s vlen=%d etype=%s is_masked_op=0",
+                      is_scatter, is_scatter ? "scatter" : "gather",
+                      num_elem, type2name(elem_bt));
+      }
+      return false; // not supported
+    }
   }
 
   // Check that the vector holding indices is supported by architecture
   if (!arch_supports_vector(Op_LoadVector, num_elem, T_INT, VecMaskNotUsed)) {
       if (C->print_intrinsics()) {
-        tty->print_cr("  ** not supported: arity=%d op=%s/loadindex vlen=%d etype=int ismask=no",
+        tty->print_cr("  ** not supported: arity=%d op=%s/loadindex vlen=%d etype=int is_masked_op=%d",
                       is_scatter, is_scatter ? "scatter" : "gather",
-                      num_elem);
+                      num_elem, is_masked_op ? 1 : 0);
       }
       return false; // not supported
-    }
+  }
 
-  Node* base = argument(4);
-  Node* offset = ConvL2X(argument(5));
+  Node* base = argument(5);
+  Node* offset = ConvL2X(argument(6));
 
   // Save state and restore on bailout
   uint old_sp = sp();
@@ -1223,11 +1265,10 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
     set_sp(old_sp);
     return false;
   }
+
   ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
-
   ciKlass* vbox_idx_klass = vector_idx_klass->const_oop()->as_instance()->java_lang_Class_klass();
-
   if (vbox_idx_klass == NULL) {
     set_map(old_map);
     set_sp(old_sp);
@@ -1235,16 +1276,33 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
   }
 
   const TypeInstPtr* vbox_idx_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_idx_klass);
-
-  Node* index_vect = unbox_vector(argument(7), vbox_idx_type, T_INT, num_elem);
+  Node* index_vect = unbox_vector(argument(8), vbox_idx_type, T_INT, num_elem);
   if (index_vect == NULL) {
     set_map(old_map);
     set_sp(old_sp);
     return false;
   }
+
+  Node* mask = NULL;
+  if (is_masked_op) {
+    ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
+    const TypeInstPtr* mbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, mbox_klass);
+    mask = unbox_vector(is_scatter ? argument(10) : argument(9), mbox_type, elem_bt, num_elem);
+    if (mask == NULL) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** unbox failed mask=%s",
+                    is_scatter ? NodeClassNames[argument(10)->Opcode()]
+                               : NodeClassNames[argument(9)->Opcode()]);
+      }
+      set_map(old_map);
+      set_sp(old_sp);
+      return false;
+    }
+  }
+
   const TypeVect* vector_type = TypeVect::make(elem_bt, num_elem);
   if (is_scatter) {
-    Node* val = unbox_vector(argument(8), vbox_type, elem_bt, num_elem);
+    Node* val = unbox_vector(argument(9), vbox_type, elem_bt, num_elem);
     if (val == NULL) {
       set_map(old_map);
       set_sp(old_sp);
@@ -1252,11 +1310,20 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
     }
     set_all_memory(reset_memory());
 
-    Node* vstore = gvn().transform(new StoreVectorScatterNode(control(), memory(addr), addr, addr_type, val, index_vect));
+    Node* vstore = NULL;
+    if (mask != NULL) {
+      vstore = gvn().transform(new StoreVectorScatterMaskedNode(control(), memory(addr), addr, addr_type, val, index_vect, mask));
+    } else {
+      vstore = gvn().transform(new StoreVectorScatterNode(control(), memory(addr), addr, addr_type, val, index_vect));
+    }
     set_memory(vstore, addr_type);
   } else {
-    Node* vload = gvn().transform(new LoadVectorGatherNode(control(), memory(addr), addr, addr_type, vector_type, index_vect));
-
+    Node* vload = NULL;
+    if (mask != NULL) {
+      vload = gvn().transform(new LoadVectorGatherMaskedNode(control(), memory(addr), addr, addr_type, vector_type, index_vect, mask));
+    } else {
+      vload = gvn().transform(new LoadVectorGatherNode(control(), memory(addr), addr, addr_type, vector_type, index_vect));
+    }
     Node* box = box_vector(vload, vbox_type, elem_bt, num_elem);
     set_result(box);
   }

@@ -847,6 +847,45 @@ class LoadVectorMaskedNode : public LoadVectorNode {
   Node* Ideal(PhaseGVN* phase, bool can_reshape);
 };
 
+//-------------------------------LoadVectorGatherMaskedNode---------------------------------
+// Load Vector from memory via index map under the influence of a predicate register(mask).
+class LoadVectorGatherMaskedNode : public LoadVectorNode {
+ public:
+  LoadVectorGatherMaskedNode(Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, Node* indices, Node* mask)
+    : LoadVectorNode(c, mem, adr, at, vt) {
+    init_class_id(Class_LoadVector);
+    assert(indices->bottom_type()->is_vect(), "indices must be in vector");
+    assert(mask->bottom_type()->isa_vectmask(), "sanity");
+    add_req(indices);
+    add_req(mask);
+    assert(req() == MemNode::ValueIn + 2, "match_edge expects that last input is in MemNode::ValueIn+1");
+  }
+
+  virtual int Opcode() const;
+  virtual uint match_edge(uint idx) const { return idx == MemNode::Address ||
+                                                   idx == MemNode::ValueIn ||
+                                                   idx == MemNode::ValueIn + 1; }
+};
+
+//------------------------------StoreVectorScatterMaskedNode--------------------------------
+// Store Vector into memory via index map under the influence of a predicate register(mask).
+class StoreVectorScatterMaskedNode : public StoreVectorNode {
+  public:
+   StoreVectorScatterMaskedNode(Node* c, Node* mem, Node* adr, const TypePtr* at, Node* val, Node* indices, Node* mask)
+     : StoreVectorNode(c, mem, adr, at, val) {
+     init_class_id(Class_StoreVector);
+     assert(indices->bottom_type()->is_vect(), "indices must be in vector");
+     assert(mask->bottom_type()->isa_vectmask(), "sanity");
+     add_req(indices);
+     add_req(mask);
+     assert(req() == MemNode::ValueIn + 3, "match_edge expects that last input is in MemNode::ValueIn+2");
+   }
+   virtual int Opcode() const;
+   virtual uint match_edge(uint idx) const { return idx == MemNode::Address ||
+                                                    idx == MemNode::ValueIn ||
+                                                    idx == MemNode::ValueIn + 1 ||
+                                                    idx == MemNode::ValueIn + 2; }
+};
 
 //------------------------------VectorCmpMaskedNode--------------------------------
 // Vector Comparison under the influence of a predicate register(mask).
@@ -917,8 +956,6 @@ class VectorMaskLastTrueNode : public VectorMaskOpNode {
   virtual int Opcode() const;
 };
 
-// ==========================Mask feature specific==============================
-
 class LoadVectorMaskNode : public LoadVectorNode {
  private:
   /**
@@ -963,27 +1000,28 @@ class StoreVectorMaskNode : public StoreVectorNode {
   virtual uint size_of() const { return sizeof(StoreVectorMaskNode); }
 };
 
+//-------------------------- Vector mask broadcast -----------------------------------
 class MaskAllNode : public VectorNode {
  public:
   MaskAllNode(Node* in, const TypeVect* vt) : VectorNode(in, vt) {}
   virtual int Opcode() const;
 };
 
-// Vector mask logical and
+//--------------------------- Vector mask logical and --------------------------------
 class AndVMaskNode : public VectorNode {
  public:
   AndVMaskNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1, in2, vt) {}
   virtual int Opcode() const;
 };
 
-// Vector mask logical or
+//--------------------------- Vector mask logical or ---------------------------------
 class OrVMaskNode : public VectorNode {
  public:
   OrVMaskNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1, in2, vt) {}
   virtual int Opcode() const;
 };
 
-// Vector mask logical xor
+//--------------------------- Vector mask logical xor --------------------------------
 class XorVMaskNode : public VectorNode {
  public:
   XorVMaskNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1, in2, vt) {}

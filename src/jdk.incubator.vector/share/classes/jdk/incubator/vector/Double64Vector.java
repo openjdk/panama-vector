@@ -276,7 +276,7 @@ final class Double64Vector extends DoubleVector {
     @Override
     @ForceInline
     public Double64Vector lanewise(Unary op, VectorMask<Double> m) {
-        return (Double64Vector) super.lanewiseTemplate(op, Double64Mask.class, m);  // specialize
+        return (Double64Vector) super.lanewiseTemplate(op, Double64Mask.class, (Double64Mask) m);  // specialize
     }
 
     @Override
@@ -288,7 +288,7 @@ final class Double64Vector extends DoubleVector {
     @Override
     @ForceInline
     public Double64Vector lanewise(Binary op, Vector<Double> v, VectorMask<Double> m) {
-        return (Double64Vector) super.lanewiseTemplate(op, Double64Mask.class, v, m);  // specialize
+        return (Double64Vector) super.lanewiseTemplate(op, Double64Mask.class, v, (Double64Mask) m);  // specialize
     }
 
 
@@ -306,7 +306,7 @@ final class Double64Vector extends DoubleVector {
     public final
     Double64Vector
     lanewise(Ternary op, Vector<Double> v1, Vector<Double> v2, VectorMask<Double> m) {
-        return (Double64Vector) super.lanewiseTemplate(op, Double64Mask.class, v1, v2, m);  // specialize
+        return (Double64Vector) super.lanewiseTemplate(op, Double64Mask.class, v1, v2, (Double64Mask) m);  // specialize
     }
 
     @Override
@@ -328,7 +328,7 @@ final class Double64Vector extends DoubleVector {
     @ForceInline
     public final double reduceLanes(VectorOperators.Associative op,
                                     VectorMask<Double> m) {
-        return super.reduceLanesTemplate(op, Double64Mask.class, m);  // specialized
+        return super.reduceLanesTemplate(op, Double64Mask.class, (Double64Mask) m);  // specialized
     }
 
     @Override
@@ -341,7 +341,7 @@ final class Double64Vector extends DoubleVector {
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
                                         VectorMask<Double> m) {
-        return (long) super.reduceLanesTemplate(op, Double64Mask.class, m);  // specialized
+        return (long) super.reduceLanesTemplate(op, Double64Mask.class, (Double64Mask) m);  // specialized
     }
 
     @ForceInline
@@ -821,6 +821,13 @@ final class Double64Vector extends DoubleVector {
         return super.fromArray0Template(Double64Mask.class, a, offset, (Double64Mask) m);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    DoubleVector fromArray0(double[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Double> m) {
+        return super.fromArray0Template(Double64Mask.class, a, offset, indexMap, mapOffset, (Double64Mask) m);
+    }
+
 
 
     @ForceInline
@@ -849,6 +856,13 @@ final class Double64Vector extends DoubleVector {
     final
     void intoArray0(double[] a, int offset, VectorMask<Double> m) {
         super.intoArray0Template(Double64Mask.class, a, offset, (Double64Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoArray0(double[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Double> m) {
+        super.intoArray0Template(Double64Mask.class, a, offset, indexMap, mapOffset, (Double64Mask) m);
     }
 
 
