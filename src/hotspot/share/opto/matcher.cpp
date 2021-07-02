@@ -2305,6 +2305,21 @@ bool Matcher::find_shared_visit(MStack& mstack, Node* n, uint opcode, bool& mem_
 }
 
 void Matcher::find_shared_post_visit(Node* n, uint opcode) {
+  if (n->is_predicated_vector()) {
+    // Restructure into binary trees for Matching.
+    if (n->req() == 4) {
+      n->set_req(1, new BinaryNode(n->in(1), n->in(2)));
+      n->set_req(2, n->in(3));
+      n->del_req(3);
+    } else if (n->req() == 5) {
+      n->set_req(1, new BinaryNode(n->in(1), n->in(2)));
+      n->set_req(2, new BinaryNode(n->in(3), n->in(4)));
+      n->del_req(4);
+      n->del_req(3);
+    }
+    return;
+  }
+
   switch(opcode) {       // Handle some opcodes special
     case Op_StorePConditional:
     case Op_StoreIConditional:

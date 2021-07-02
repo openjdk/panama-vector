@@ -423,10 +423,40 @@ void VectorNode::vector_operands(Node* n, uint* start, uint* end) {
   }
 }
 
+VectorNode* VectorNode::make_mask_node(int vopc, Node* n1, Node* n2, uint vlen, BasicType bt) {
+  guarantee(vopc > 0, "vopc must be > 0");
+  const TypeVect* vmask_type = TypeVect::makemask(bt, vlen);
+  switch (vopc) {
+    case Op_AndV:
+      if (Matcher::match_rule_supported_vector(Op_AndVMask, vlen, bt)) {
+        return new AndVMaskNode(n1, n2, vmask_type);
+      }
+      return new AndVNode(n1, n2, vmask_type);
+    case Op_OrV:
+      if (Matcher::match_rule_supported_vector(Op_OrVMask, vlen, bt)) {
+        return new OrVMaskNode(n1, n2, vmask_type);
+      }
+      return new OrVNode(n1, n2, vmask_type);
+    case Op_XorV:
+      if (Matcher::match_rule_supported_vector(Op_XorVMask, vlen, bt)) {
+        return new XorVMaskNode(n1, n2, vmask_type);
+      }
+      return new XorVNode(n1, n2, vmask_type);
+    default:
+      fatal("Unsupported mask vector creation for '%s'", NodeClassNames[vopc]);
+      return NULL;
+  }
+}
+
 // Make a vector node for binary operation
-VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt) {
+VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt, bool is_mask) {
   // This method should not be called for unimplemented vectors.
   guarantee(vopc > 0, "vopc must be > 0");
+
+  if (is_mask) {
+    return make_mask_node(vopc, n1, n2, vt->length(), vt->element_basic_type());
+  }
+
   switch (vopc) {
   case Op_AddVB: return new AddVBNode(n1, n2, vt);
   case Op_AddVS: return new AddVSNode(n1, n2, vt);
@@ -533,10 +563,15 @@ VectorNode* VectorNode::make(int opc, Node* n1, Node* n2, Node* n3, uint vlen, B
 }
 
 // Scalar promotion
-VectorNode* VectorNode::scalar2vector(Node* s, uint vlen, const Type* opd_t) {
+VectorNode* VectorNode::scalar2vector(Node* s, uint vlen, const Type* opd_t, bool is_mask) {
   BasicType bt = opd_t->array_element_basic_type();
-  const TypeVect* vt = opd_t->singleton() ? TypeVect::make(opd_t, vlen)
-                                          : TypeVect::make(bt, vlen);
+  const TypeVect* vt = opd_t->singleton() ? TypeVect::make(opd_t, vlen, is_mask)
+                                          : TypeVect::make(bt, vlen, is_mask);
+
+  if (is_mask && Matcher::match_rule_supported_vector(Op_MaskAll, vlen, bt)) {
+    return new MaskAllNode(s, vt);
+  }
+
   switch (bt) {
   case T_BOOLEAN:
   case T_BYTE:
@@ -718,6 +753,23 @@ StoreVectorNode* StoreVectorNode::make(int opc, Node* ctl, Node* mem,
                                        Node* adr, const TypePtr* atyp, Node* val,
                                        uint vlen) {
   return new StoreVectorNode(ctl, mem, adr, atyp, val);
+}
+
+Node* StoreVectorNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+  // StoreVector (VectorStoreMask src)  ==>  (StoreVectorMask src).
+  Node* value = in(MemNode::ValueIn);
+  if (value->Opcode() == Op_VectorStoreMask) {
+    assert(vect_type()->element_basic_type() == T_BOOLEAN, "Invalid basic type to store mask");
+    const TypeVect* type = value->in(1)->bottom_type()->is_vect();
+    if (Matcher::match_rule_supported_vector(Op_StoreVectorMask, type->length(), type->element_basic_type())) {
+      const TypeVect* mem_type = TypeVect::make(T_BOOLEAN, type->length());
+      return new StoreVectorMaskNode(in(MemNode::Control),
+                                     in(MemNode::Memory),
+                                     in(MemNode::Address),
+                                     adr_type(), value->in(1), mem_type);
+    }
+  }
+  return StoreNode::Ideal(phase, can_reshape);
 }
 
 Node* LoadVectorMaskedNode::Ideal(PhaseGVN* phase, bool can_reshape) {
@@ -973,6 +1025,21 @@ ReductionNode* ReductionNode::make(int opc, Node *ctrl, Node* n1, Node* n2, Basi
     assert(false, "unknown node: %s", NodeClassNames[vopc]);
     return NULL;
   }
+}
+
+Node* VectorLoadMaskNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+  // (VectorLoadMask (LoadVector mem))  ==> (LoadVectorMask mem)
+  LoadVectorNode* load = this->in(1)->isa_LoadVector();
+  BasicType out_bt = vect_type()->element_basic_type();
+  if (load != NULL &&
+      Matcher::match_rule_supported_vector(Op_LoadVectorMask, length(), out_bt)) {
+    const TypeVect* mem_type = TypeVect::make(T_BOOLEAN, length());
+    return new LoadVectorMaskNode(load->in(MemNode::Control),
+                                  load->in(MemNode::Memory),
+                                  load->in(MemNode::Address),
+                                  load->adr_type(), vect_type(), mem_type);
+  }
+  return NULL;
 }
 
 Node* VectorLoadMaskNode::Identity(PhaseGVN* phase) {
@@ -1240,16 +1307,17 @@ Node* VectorUnboxNode::Ideal(PhaseGVN* phase, bool can_reshape) {
         bool is_vector_mask    = vbox_klass->is_subclass_of(ciEnv::current()->vector_VectorMask_klass());
         bool is_vector_shuffle = vbox_klass->is_subclass_of(ciEnv::current()->vector_VectorShuffle_klass());
         if (is_vector_mask) {
+          const TypeVect* vmask_type = TypeVect::makemask(out_vt->element_basic_type(), out_vt->length());
           if (in_vt->length_in_bytes() == out_vt->length_in_bytes() &&
               Matcher::match_rule_supported_vector(Op_VectorMaskCast, out_vt->length(), out_vt->element_basic_type())) {
             // Apply "VectorUnbox (VectorBox vmask) ==> VectorMaskCast (vmask)"
             // directly. This could avoid the transformation ordering issue from
             // "VectorStoreMask (VectorLoadMask vmask) => vmask".
-            return new VectorMaskCastNode(value, out_vt);
+            return new VectorMaskCastNode(value, vmask_type);
           }
           // VectorUnbox (VectorBox vmask) ==> VectorLoadMask (VectorStoreMask vmask)
           value = phase->transform(VectorStoreMaskNode::make(*phase, value, in_vt->element_basic_type(), in_vt->length()));
-          return new VectorLoadMaskNode(value, out_vt);
+          return new VectorLoadMaskNode(value, vmask_type);
         } else if (is_vector_shuffle) {
           if (!is_shuffle_to_vector()) {
             // VectorUnbox (VectorBox vshuffle) ==> VectorLoadShuffle vshuffle

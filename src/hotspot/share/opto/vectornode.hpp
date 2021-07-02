@@ -66,14 +66,20 @@ class VectorNode : public TypeNode {
 
   virtual int Opcode() const;
 
-  virtual uint ideal_reg() const { return Matcher::vector_ideal_reg(vect_type()->length_in_bytes()); }
+  virtual uint ideal_reg() const {
+    if (vect_type()->isa_vectmask()) {
+      return Op_RegVectMask;
+    }
+    return Matcher::vector_ideal_reg(vect_type()->length_in_bytes());
+  }
 
-  static VectorNode* scalar2vector(Node* s, uint vlen, const Type* opd_t);
+  static VectorNode* scalar2vector(Node* s, uint vlen, const Type* opd_t, bool is_mask = false);
   static VectorNode* shift_count(int opc, Node* cnt, uint vlen, BasicType bt);
   static VectorNode* make(int opc, Node* n1, Node* n2, uint vlen, BasicType bt);
-  static VectorNode* make(int vopc, Node* n1, Node* n2, const TypeVect* vt);
+  static VectorNode* make(int vopc, Node* n1, Node* n2, const TypeVect* vt, bool is_mask = false);
   static VectorNode* make(int opc, Node* n1, Node* n2, Node* n3, uint vlen, BasicType bt);
   static VectorNode* make(int vopc, Node* n1, Node* n2, Node* n3, const TypeVect* vt);
+  static VectorNode* make_mask_node(int vopc, Node* n1, Node* n2, uint vlen, BasicType bt);
 
   static bool is_shift_opcode(int opc);
 
@@ -771,6 +777,7 @@ class StoreVectorNode : public StoreNode {
   virtual uint ideal_reg() const  { return Matcher::vector_ideal_reg(memory_size()); }
   virtual BasicType memory_type() const { return T_VOID; }
   virtual int memory_size() const { return vect_type()->length_in_bytes(); }
+  virtual Node* Ideal(PhaseGVN* phase, bool can_reshape);
 
   static StoreVectorNode* make(int opc, Node* ctl, Node* mem,
                                Node* adr, const TypePtr* atyp, Node* val,
@@ -806,7 +813,7 @@ class StoreVectorMaskedNode : public StoreVectorNode {
  public:
   StoreVectorMaskedNode(Node* c, Node* mem, Node* dst, Node* src, const TypePtr* at, Node* mask)
    : StoreVectorNode(c, mem, dst, at, src) {
-    assert(mask->bottom_type()->is_vectmask(), "sanity");
+    assert(mask->bottom_type()->isa_vectmask(), "sanity");
     init_class_id(Class_StoreVector);
     set_mismatched_access();
     add_req(mask);
@@ -826,7 +833,7 @@ class LoadVectorMaskedNode : public LoadVectorNode {
  public:
   LoadVectorMaskedNode(Node* c, Node* mem, Node* src, const TypePtr* at, const TypeVect* vt, Node* mask)
    : LoadVectorNode(c, mem, src, at, vt) {
-    assert(mask->bottom_type()->is_vectmask(), "sanity");
+    assert(mask->bottom_type()->isa_vectmask(), "sanity");
     init_class_id(Class_LoadVector);
     set_mismatched_access();
     add_req(mask);
@@ -893,7 +900,6 @@ class VectorCmpMaskedNode : public TypeNode {
   virtual int Opcode() const;
 };
 
-
 class VectorMaskGenNode : public TypeNode {
  public:
   VectorMaskGenNode(Node* length, const Type* ty, BasicType ety): TypeNode(ty, 2), _elemType(ety) {
@@ -947,6 +953,78 @@ class VectorMaskLastTrueNode : public VectorMaskOpNode {
  public:
   VectorMaskLastTrueNode(Node* mask, const Type* ty):
     VectorMaskOpNode(mask, ty, Op_VectorMaskLastTrue) {}
+  virtual int Opcode() const;
+};
+
+class LoadVectorMaskNode : public LoadVectorNode {
+ private:
+  /**
+   * The type of the accessed memory, whose basic element type is T_BOOLEAN for mask vector.
+   * It is different with the basic element type of the node, which can be T_BYTE, T_SHORT,
+   * T_INT, T_LONG, T_FLOAT or T_DOUBLE.
+   **/
+  const TypeVect* _mem_type;
+
+ public:
+  LoadVectorMaskNode(Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, const TypeVect* mt)
+   : LoadVectorNode(c, mem, adr, at, vt), _mem_type(mt) {
+    assert(_mem_type->element_basic_type() == T_BOOLEAN, "Memory type must be T_BOOLEAN");
+    init_class_id(Class_LoadVector);
+  }
+
+  virtual int Opcode() const;
+  virtual int memory_size() const { return _mem_type->length_in_bytes(); }
+  virtual int store_Opcode() const { return Op_StoreVectorMask; }
+  virtual uint ideal_reg() const  { return vect_type()->ideal_reg(); }
+  virtual uint size_of() const { return sizeof(LoadVectorMaskNode); }
+};
+
+class StoreVectorMaskNode : public StoreVectorNode {
+ private:
+  /**
+   * The type of the accessed memory, whose basic element type is T_BOOLEAN for mask vector.
+   * It is different with the basic element type of the src value, which can be T_BYTE, T_SHORT,
+   * T_INT, T_LONG, T_FLOAT or T_DOUBLE.
+   **/
+  const TypeVect* _mem_type;
+
+ public:
+  StoreVectorMaskNode(Node* c, Node* mem, Node* adr, const TypePtr* at, Node* src, const TypeVect* mt)
+   : StoreVectorNode(c, mem, adr, at, src), _mem_type(mt) {
+    assert(_mem_type->element_basic_type() == T_BOOLEAN, "Memory type must be T_BOOLEAN");
+    init_class_id(Class_StoreVector);
+  }
+
+  virtual int Opcode() const;
+  virtual int memory_size() const { return _mem_type->length_in_bytes(); }
+  virtual uint size_of() const { return sizeof(StoreVectorMaskNode); }
+};
+
+//-------------------------- Vector mask broadcast -----------------------------------
+class MaskAllNode : public VectorNode {
+ public:
+  MaskAllNode(Node* in, const TypeVect* vt) : VectorNode(in, vt) {}
+  virtual int Opcode() const;
+};
+
+//--------------------------- Vector mask logical and --------------------------------
+class AndVMaskNode : public VectorNode {
+ public:
+  AndVMaskNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1, in2, vt) {}
+  virtual int Opcode() const;
+};
+
+//--------------------------- Vector mask logical or ---------------------------------
+class OrVMaskNode : public VectorNode {
+ public:
+  OrVMaskNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1, in2, vt) {}
+  virtual int Opcode() const;
+};
+
+//--------------------------- Vector mask logical xor --------------------------------
+class XorVMaskNode : public VectorNode {
+ public:
+  XorVMaskNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1, in2, vt) {}
   virtual int Opcode() const;
 };
 
@@ -1324,6 +1402,7 @@ class VectorLoadMaskNode : public VectorNode {
   }
 
   virtual int Opcode() const;
+  virtual Node* Ideal(PhaseGVN* phase, bool can_reshape);
   virtual Node* Identity(PhaseGVN* phase);
 };
 
