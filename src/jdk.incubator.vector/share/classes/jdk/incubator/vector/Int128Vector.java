@@ -300,6 +300,13 @@ final class Int128Vector extends IntVector {
 
     /*package-private*/
     @Override
+    @ForceInline Int128Vector
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<Integer> m) {
+        return (Int128Vector) super.lanewiseShiftTemplate(op, Int128Mask.class, e, (Int128Mask) m);  // specialize
+    }
+
+    /*package-private*/
+    @Override
     @ForceInline
     public final
     Int128Vector

@@ -300,6 +300,13 @@ final class Byte256Vector extends ByteVector {
 
     /*package-private*/
     @Override
+    @ForceInline Byte256Vector
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<Byte> m) {
+        return (Byte256Vector) super.lanewiseShiftTemplate(op, Byte256Mask.class, e, (Byte256Mask) m);  // specialize
+    }
+
+    /*package-private*/
+    @Override
     @ForceInline
     public final
     Byte256Vector

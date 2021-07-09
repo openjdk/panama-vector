@@ -904,8 +904,8 @@ class methodHandle;
    do_name(vector_insert_name, "insert")                                                                                                       \
                                                                                                                                                \
   do_intrinsic(_VectorBroadcastInt, jdk_internal_vm_vector_VectorSupport, vector_broadcast_int_name, vector_broadcast_int_sig, F_S)            \
-   do_signature(vector_broadcast_int_sig, "(ILjava/lang/Class;Ljava/lang/Class;I"                                                              \
-                                           "Ljdk/internal/vm/vector/VectorSupport$Vector;I"                                                    \
+   do_signature(vector_broadcast_int_sig, "(ILjava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;I"                                             \
+                                           "Ljdk/internal/vm/vector/VectorSupport$Vector;ILjava/lang/Object;"                                  \
                                            "Ljdk/internal/vm/vector/VectorSupport$VectorBroadcastIntOp;)Ljdk/internal/vm/vector/VectorSupport$Vector;") \
    do_name(vector_broadcast_int_name, "broadcastInt")                                                                                          \
                                                                                                                                                \

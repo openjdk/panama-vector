@@ -295,6 +295,13 @@ final class LongMaxVector extends LongVector {
 
     /*package-private*/
     @Override
+    @ForceInline LongMaxVector
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<Long> m) {
+        return (LongMaxVector) super.lanewiseShiftTemplate(op, LongMaxMask.class, e, (LongMaxMask) m);  // specialize
+    }
+
+    /*package-private*/
+    @Override
     @ForceInline
     public final
     LongMaxVector

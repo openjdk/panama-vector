@@ -300,6 +300,13 @@ final class ByteMaxVector extends ByteVector {
 
     /*package-private*/
     @Override
+    @ForceInline ByteMaxVector
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<Byte> m) {
+        return (ByteMaxVector) super.lanewiseShiftTemplate(op, ByteMaxMask.class, e, (ByteMaxMask) m);  // specialize
+    }
+
+    /*package-private*/
+    @Override
     @ForceInline
     public final
     ByteMaxVector

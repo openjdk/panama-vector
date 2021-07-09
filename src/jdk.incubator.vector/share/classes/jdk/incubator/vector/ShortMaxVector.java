@@ -300,6 +300,13 @@ final class ShortMaxVector extends ShortVector {
 
     /*package-private*/
     @Override
+    @ForceInline ShortMaxVector
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<Short> m) {
+        return (ShortMaxVector) super.lanewiseShiftTemplate(op, ShortMaxMask.class, e, (ShortMaxMask) m);  // specialize
+    }
+
+    /*package-private*/
+    @Override
     @ForceInline
     public final
     ShortMaxVector

@@ -820,8 +820,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                                   short e,
                                   VectorMask<Short> m) {
         if (opKind(op, VO_SHIFT) && (short)(int)e == e) {
-            // TODO: calls masked lanewiseShift() once it is supported
-            return blend(lanewise(op, e), m);
+            return lanewiseShift(op, (int) e, m);
         }
         if (op == AND_NOT) {
             op = AND; e = (short) ~e;
@@ -894,22 +893,50 @@ public abstract class ShortVector extends AbstractVector<Short> {
         }
         int opc = opCode(op);
         return VectorSupport.broadcastInt(
-            opc, getClass(), short.class, length(),
-            this, e,
-            BIN_INT_IMPL.find(op, opc, (opc_) -> {
-              switch (opc_) {
-                case VECTOR_OP_LSHIFT: return (v, n) ->
-                        v.uOp((i, a) -> (short)(a << n));
-                case VECTOR_OP_RSHIFT: return (v, n) ->
-                        v.uOp((i, a) -> (short)(a >> n));
-                case VECTOR_OP_URSHIFT: return (v, n) ->
-                        v.uOp((i, a) -> (short)((a & LSHR_SETUP_MASK) >>> n));
-                default: return null;
-                }}));
+            opc, getClass(), null, short.class, length(),
+            this, e, null,
+            BIN_INT_IMPL.find(op, opc, ShortVector::broadcastIntOperations));
     }
+
+    /*package-private*/
+    abstract ShortVector
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<Short> m);
+
+    /*package-private*/
+    @ForceInline
+    final ShortVector
+    lanewiseShiftTemplate(VectorOperators.Binary op,
+                          Class<? extends VectorMask<Short>> maskClass,
+                          int e, VectorMask<Short> m) {
+        m.check(maskClass, this);
+        assert(opKind(op, VO_SHIFT));
+        // As per shift specification for Java, mask the shift count.
+        e &= SHIFT_MASK;
+        if (op == ROR || op == ROL) {
+            return blend(lanewiseShift(op, e), m);
+        }
+        int opc = opCode(op);
+        return VectorSupport.broadcastInt(
+            opc, getClass(), maskClass, short.class, length(),
+            this, e, m,
+            BIN_INT_IMPL.find(op, opc, ShortVector::broadcastIntOperations));
+    }
+
     private static final
-    ImplCache<Binary,VectorBroadcastIntOp<ShortVector>> BIN_INT_IMPL
+    ImplCache<Binary,VectorBroadcastIntOp<ShortVector, VectorMask<Short>>> BIN_INT_IMPL
         = new ImplCache<>(Binary.class, ShortVector.class);
+
+    private static VectorBroadcastIntOp<ShortVector, VectorMask<Short>> broadcastIntOperations(int opc_) {
+        switch (opc_) {
+            case VECTOR_OP_LSHIFT: return (v, n, m) ->
+                    v.uOp(m, (i, a) -> (short)(a << n));
+            case VECTOR_OP_RSHIFT: return (v, n, m) ->
+                    v.uOp(m, (i, a) -> (short)(a >> n));
+            case VECTOR_OP_URSHIFT: return (v, n, m) ->
+                    v.uOp(m, (i, a) -> (short)((a & LSHR_SETUP_MASK) >>> n));
+            default: return null;
+        }
+    }
 
     // As per shift specification for Java, mask the shift count.
     // We mask 0X3F (long), 0X1F (int), 0x0F (short), 0x7 (byte).

@@ -300,6 +300,13 @@ final class Byte512Vector extends ByteVector {
 
     /*package-private*/
     @Override
+    @ForceInline Byte512Vector
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<Byte> m) {
+        return (Byte512Vector) super.lanewiseShiftTemplate(op, Byte512Mask.class, e, (Byte512Mask) m);  // specialize
+    }
+
+    /*package-private*/
+    @Override
     @ForceInline
     public final
     Byte512Vector
