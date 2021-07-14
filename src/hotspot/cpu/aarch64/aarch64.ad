@@ -2427,6 +2427,20 @@ const bool Matcher::match_rule_supported(int opcode) {
         ret_value = false;
       }
       break;
+    case Op_LoadVectorMask:
+    case Op_StoreVectorMask:
+    case Op_LoadVectorMasked:
+    case Op_StoreVectorMasked:
+    case Op_LoadVectorGatherMasked:
+    case Op_StoreVectorScatterMasked:
+    case Op_MaskAll:
+    case Op_AndVMask:
+    case Op_OrVMask:
+    case Op_XorVMask:
+      if (UseSVE == 0) {
+        ret_value = false;
+      }
+      break;
   }
 
   return ret_value; // Per default match rules are supported.
@@ -2496,7 +2510,12 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
 }
 
 const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, BasicType bt) {
-  return false;
+  // Only SVE supports masked operations.
+  if (UseSVE == 0) {
+    return false;
+  }
+  return match_rule_supported(opcode) &&
+         masked_op_sve_supported(opcode, vlen, bt);
 }
 
 const RegMask* Matcher::predicate_reg_mask(void) {
@@ -8905,6 +8924,17 @@ instruct castVVX(vecX dst)
 %}
 
 instruct castVV(vReg dst)
+%{
+  match(Set dst (CastVV dst));
+
+  size(0);
+  format %{ "# castVV of $dst" %}
+  ins_encode(/* empty encoding */);
+  ins_cost(0);
+  ins_pipe(pipe_class_empty);
+%}
+
+instruct castVVMask(pRegGov dst)
 %{
   match(Set dst (CastVV dst));
 
