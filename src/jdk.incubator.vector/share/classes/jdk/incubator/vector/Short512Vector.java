@@ -300,6 +300,13 @@ final class Short512Vector extends ShortVector {
 
     /*package-private*/
     @Override
+    @ForceInline Short512Vector
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<Short> m) {
+        return (Short512Vector) super.lanewiseShiftTemplate(op, Short512Mask.class, e, (Short512Mask) m);  // specialize
+    }
+
+    /*package-private*/
+    @Override
     @ForceInline
     public final
     Short512Vector

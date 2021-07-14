@@ -300,6 +300,13 @@ final class Byte64Vector extends ByteVector {
 
     /*package-private*/
     @Override
+    @ForceInline Byte64Vector
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<Byte> m) {
+        return (Byte64Vector) super.lanewiseShiftTemplate(op, Byte64Mask.class, e, (Byte64Mask) m);  // specialize
+    }
+
+    /*package-private*/
+    @Override
     @ForceInline
     public final
     Byte64Vector

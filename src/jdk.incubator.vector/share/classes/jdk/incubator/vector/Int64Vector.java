@@ -300,6 +300,13 @@ final class Int64Vector extends IntVector {
 
     /*package-private*/
     @Override
+    @ForceInline Int64Vector
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<Integer> m) {
+        return (Int64Vector) super.lanewiseShiftTemplate(op, Int64Mask.class, e, (Int64Mask) m);  // specialize
+    }
+
+    /*package-private*/
+    @Override
     @ForceInline
     public final
     Int64Vector

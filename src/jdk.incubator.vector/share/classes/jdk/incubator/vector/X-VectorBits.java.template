@@ -300,6 +300,13 @@ final class $vectortype$ extends $abstractvectortype$ {
     lanewiseShift(VectorOperators.Binary op, int e) {
         return ($vectortype$) super.lanewiseShiftTemplate(op, e);  // specialize
     }
+
+    /*package-private*/
+    @Override
+    @ForceInline $vectortype$
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<$Boxtype$> m) {
+        return ($vectortype$) super.lanewiseShiftTemplate(op, $masktype$.class, e, ($masktype$) m);  // specialize
+    }
 #end[!FP]
 
     /*package-private*/

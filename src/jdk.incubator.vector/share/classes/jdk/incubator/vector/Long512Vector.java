@@ -295,6 +295,13 @@ final class Long512Vector extends LongVector {
 
     /*package-private*/
     @Override
+    @ForceInline Long512Vector
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<Long> m) {
+        return (Long512Vector) super.lanewiseShiftTemplate(op, Long512Mask.class, e, (Long512Mask) m);  // specialize
+    }
+
+    /*package-private*/
+    @Override
     @ForceInline
     public final
     Long512Vector

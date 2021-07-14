@@ -300,6 +300,13 @@ final class IntMaxVector extends IntVector {
 
     /*package-private*/
     @Override
+    @ForceInline IntMaxVector
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<Integer> m) {
+        return (IntMaxVector) super.lanewiseShiftTemplate(op, IntMaxMask.class, e, (IntMaxMask) m);  // specialize
+    }
+
+    /*package-private*/
+    @Override
     @ForceInline
     public final
     IntMaxVector

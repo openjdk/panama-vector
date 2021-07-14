@@ -300,6 +300,13 @@ final class Short256Vector extends ShortVector {
 
     /*package-private*/
     @Override
+    @ForceInline Short256Vector
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<Short> m) {
+        return (Short256Vector) super.lanewiseShiftTemplate(op, Short256Mask.class, e, (Short256Mask) m);  // specialize
+    }
+
+    /*package-private*/
+    @Override
     @ForceInline
     public final
     Short256Vector

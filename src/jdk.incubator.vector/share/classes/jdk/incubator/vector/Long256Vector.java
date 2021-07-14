@@ -295,6 +295,13 @@ final class Long256Vector extends LongVector {
 
     /*package-private*/
     @Override
+    @ForceInline Long256Vector
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<Long> m) {
+        return (Long256Vector) super.lanewiseShiftTemplate(op, Long256Mask.class, e, (Long256Mask) m);  // specialize
+    }
+
+    /*package-private*/
+    @Override
     @ForceInline
     public final
     Long256Vector
