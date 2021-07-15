@@ -67,10 +67,7 @@ class VectorNode : public TypeNode {
   virtual int Opcode() const;
 
   virtual uint ideal_reg() const {
-    if (vect_type()->isa_vectmask()) {
-      return Op_RegVectMask;
-    }
-    return Matcher::vector_ideal_reg(vect_type()->length_in_bytes());
+    return type()->ideal_reg();
   }
 
   static VectorNode* scalar2vector(Node* s, uint vlen, const Type* opd_t, bool is_mask = false);
@@ -82,6 +79,7 @@ class VectorNode : public TypeNode {
   static VectorNode* make_mask_node(int vopc, Node* n1, Node* n2, uint vlen, BasicType bt);
 
   static bool is_shift_opcode(int opc);
+  static bool is_vshift_cnt_opcode(int opc);
 
   static int  opcode(int opc, BasicType bt);
   static int replicate_opcode(BasicType bt);
@@ -1299,7 +1297,7 @@ class VectorMaskCmpNode : public VectorNode {
   BoolTest::mask _predicate;
 
  protected:
-  uint size_of() const { return sizeof(*this); }
+  virtual  uint  size_of() const { return sizeof(VectorMaskCmpNode); }
 
  public:
   VectorMaskCmpNode(BoolTest::mask predicate, Node* in1, Node* in2, ConINode* predicate_node, const TypeVect* vt) :
@@ -1570,6 +1568,7 @@ class VectorUnboxNode : public VectorNode {
   VectorUnboxNode(Compile* C, const TypeVect* vec_type, Node* obj, Node* mem, bool shuffle_to_vector)
     : VectorNode(mem, obj, vec_type) {
     _shuffle_to_vector = shuffle_to_vector;
+    init_class_id(Class_VectorUnbox);
     init_flags(Flag_is_macro);
     C->add_macro_node(this);
   }
@@ -1599,5 +1598,4 @@ public:
   virtual int Opcode() const;
   Node* Ideal(PhaseGVN* phase, bool can_reshape);
 };
-
 #endif // SHARE_OPTO_VECTORNODE_HPP

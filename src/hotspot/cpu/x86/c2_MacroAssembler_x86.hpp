@@ -142,7 +142,8 @@ public:
   void evpcmp(BasicType typ, KRegister kdmask, KRegister ksmask, XMMRegister src1, XMMRegister src2, int comparison, int vector_len);
   void evpblend(BasicType typ, XMMRegister dst, KRegister kmask, XMMRegister src1, XMMRegister src2, bool merge, int vector_len);
 
-  void load_vector_mask(XMMRegister dst, XMMRegister src, int vlen_in_bytes, BasicType elem_bt);
+  void load_vector_mask(XMMRegister dst, XMMRegister src, int vlen_in_bytes, BasicType elem_bt, bool is_legacy);
+
   void load_iota_indices(XMMRegister dst, Register scratch, int vlen_in_bytes);
 
   // vector compare
@@ -274,4 +275,15 @@ public:
                      Register limit, Register result, Register chr,
                      XMMRegister vec1, XMMRegister vec2, bool is_char, KRegister mask = knoreg);
 
+
+  void evmasked_op(int ideal_opc, BasicType eType, KRegister mask,
+                   XMMRegister dst, XMMRegister src1, XMMRegister src2,
+                   bool merge, int vlen_enc, bool is_varshift = false);
+
+  void evmasked_op(int ideal_opc, BasicType eType, KRegister mask,
+                   XMMRegister dst, XMMRegister src1, Address src2,
+                   bool merge, int vlen_enc);
+
+  void masked_op(int ideal_opc, BasicType eType, KRegister dst,
+                 KRegister src1, KRegister src2);
 #endif // CPU_X86_C2_MACROASSEMBLER_X86_HPP

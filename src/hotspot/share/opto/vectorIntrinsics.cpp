@@ -432,7 +432,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
       return false;
      }
   } else {
-    const TypeVect* vt = TypeVect::make(elem_bt, num_elem);
+    const TypeVect* vt = TypeVect::make(elem_bt, num_elem, is_vector_mask(vbox_klass));
     switch (n) {
       case 1:
       case 2: {

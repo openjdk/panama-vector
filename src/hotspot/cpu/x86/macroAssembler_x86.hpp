@@ -1345,6 +1345,75 @@ public:
   void evpsraq(XMMRegister dst, XMMRegister nds, XMMRegister shift, int vector_len);
   void evpsraq(XMMRegister dst, XMMRegister nds, int shift, int vector_len);
 
+  void evpsllw(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len, bool is_varshift) {
+    if (!is_varshift) {
+      Assembler::evpsllw(dst, mask, nds, src, merge, vector_len);
+    } else {
+      Assembler::evpsllvw(dst, mask, nds, src, merge, vector_len);
+    }
+  }
+  void evpslld(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len, bool is_varshift) {
+    if (!is_varshift) {
+      Assembler::evpslld(dst, mask, nds, src, merge, vector_len);
+    } else {
+      Assembler::evpsllvd(dst, mask, nds, src, merge, vector_len);
+    }
+  }
+  void evpsllq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len, bool is_varshift) {
+    if (!is_varshift) {
+      Assembler::evpsllq(dst, mask, nds, src, merge, vector_len);
+    } else {
+      Assembler::evpsllvq(dst, mask, nds, src, merge, vector_len);
+    }
+  }
+  void evpsrlw(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len, bool is_varshift) {
+    if (!is_varshift) {
+      Assembler::evpsrlw(dst, mask, nds, src, merge, vector_len);
+    } else {
+      Assembler::evpsrlvw(dst, mask, nds, src, merge, vector_len);
+    }
+  }
+  void evpsrld(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len, bool is_varshift) {
+    if (!is_varshift) {
+      Assembler::evpsrld(dst, mask, nds, src, merge, vector_len);
+    } else {
+      Assembler::evpsrlvd(dst, mask, nds, src, merge, vector_len);
+    }
+  }
+  void evpsrlq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len, bool is_varshift) {
+    if (!is_varshift) {
+      Assembler::evpsrlq(dst, mask, nds, src, merge, vector_len);
+    } else {
+      Assembler::evpsrlvq(dst, mask, nds, src, merge, vector_len);
+    }
+  }
+  void evpsraw(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len, bool is_varshift) {
+    if (!is_varshift) {
+      Assembler::evpsraw(dst, mask, nds, src, merge, vector_len);
+    } else {
+      Assembler::evpsravw(dst, mask, nds, src, merge, vector_len);
+    }
+  }
+  void evpsrad(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len, bool is_varshift) {
+    if (!is_varshift) {
+      Assembler::evpsrad(dst, mask, nds, src, merge, vector_len);
+    } else {
+      Assembler::evpsravd(dst, mask, nds, src, merge, vector_len);
+    }
+  }
+  void evpsraq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len, bool is_varshift) {
+    if (!is_varshift) {
+      Assembler::evpsraq(dst, mask, nds, src, merge, vector_len);
+    } else {
+      Assembler::evpsravq(dst, mask, nds, src, merge, vector_len);
+    }
+  }
+
+  void evpmins(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
+  void evpmaxs(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
+  void evpmins(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
+  void evpmaxs(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
+
   void vpsrlw(XMMRegister dst, XMMRegister nds, XMMRegister shift, int vector_len);
   void vpsrlw(XMMRegister dst, XMMRegister nds, int shift, int vector_len);
 
@@ -1634,7 +1703,19 @@ public:
     Assembler::evpclmulqdq(dst, nds, src, 0x11, vector_len);
   }
 
-  // Data
+  // AVX-512 mask operations.
+  void kand(BasicType etype, KRegister dst, KRegister src1, KRegister src2);
+  void kor(BasicType type, KRegister dst, KRegister src1, KRegister src2);
+  void kxor(BasicType type, KRegister dst, KRegister src1, KRegister src2);
+  void kortest(uint masklen, KRegister src1, KRegister src2);
+  void ktest(uint masklen, KRegister src1, KRegister src2);
+
+  void evpperm(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
+  void evpperm(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
+
+
+  void alltrue(Register dst, uint masklen, KRegister src, KRegister kscratch);
+  void anytrue(Register dst, uint masklen, KRegister src, KRegister kscratch);
 
   void cmov32( Condition cc, Register dst, Address  src);
   void cmov32( Condition cc, Register dst, Register src);
