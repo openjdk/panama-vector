@@ -8933,6 +8933,7 @@ instruct mask_all_evexI(kReg dst, rRegI src, vec xtmp) %{
   ins_pipe( pipe_slow );
 %}
 
+#ifdef _LP64
 instruct mask_all_evexL(kReg dst, rRegL src, vec xtmp) %{
   match(Set dst (MaskAll src));
   effect(TEMP xtmp);
@@ -8944,6 +8945,7 @@ instruct mask_all_evexL(kReg dst, rRegL src, vec xtmp) %{
   %}
   ins_pipe( pipe_slow );
 %}
+#endif
 
 instruct mask_opers_evex(kReg dst, kReg src1, kReg src2, kReg kscratch) %{
   predicate(VM_Version::supports_avx512vlbwdq());
