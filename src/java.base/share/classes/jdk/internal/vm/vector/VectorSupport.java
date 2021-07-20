@@ -487,18 +487,19 @@ public class VectorSupport {
 
     /* ============================================================================ */
 
-    public interface VectorBroadcastIntOp<V extends Vector<?>> {
-        V apply(V v, int n);
+    public interface VectorBroadcastIntOp<V extends Vector<?>, M> {
+        V apply(V v, int n, M m);
     }
 
     @IntrinsicCandidate
     public static
-    <V extends Vector<?>>
-    V broadcastInt(int opr, Class<? extends V> vectorClass, Class<?> elementType, int length,
-                   V v, int n,
-                   VectorBroadcastIntOp<V> defaultImpl) {
+    <V extends Vector<?>, M>
+    V broadcastInt(int opr, Class<? extends V> vectorClass, Class<? extends M> maskClass,
+                   Class<?> elementType, int length,
+                   V v, int n, M m,
+                   VectorBroadcastIntOp<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(v, n);
+        return defaultImpl.apply(v, n, m);
     }
 
     /* ============================================================================ */
