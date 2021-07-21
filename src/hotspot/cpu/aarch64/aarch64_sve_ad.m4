@@ -159,10 +159,6 @@ source %{
       case Op_LoadVector:
       case Op_StoreVector:
         return Matcher::vector_size_supported(bt, vlen);
-      case Op_VectorMaskTrueCount:
-      case Op_VectorMaskLastTrue:
-      case Op_VectorMaskFirstTrue:
-        return false;
       default:
         break;
     }
@@ -2089,7 +2085,7 @@ dnl
 dnl VTEST($1,      $2,   $3,  $4  )
 dnl VTEST(op_name, pred, imm, cond)
 define(`VTEST', `
-instruct vtest_$1`'(iRegINoSp dst, vReg src1, vReg src2, pRegGov pTmp, rFlagsReg cr)
+instruct vtest_$1`'(iRegINoSp dst, vReg src1, vReg src2, pReg pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize &&
             static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::$2);
@@ -2535,5 +2531,101 @@ instruct string$1_indexof_char_sve(iRegP_R1 str1, iRegI_R2 cnt1, iRegI_R3 ch,
 dnl                 $1 $2      $3
 STRING_INDEXOF_CHAR(L, Latin1, true)
 STRING_INDEXOF_CHAR(U, UTF16,  false)
-dnl
 
+dnl
+dnl VMASK_REDUCTION($1,     $2,      $3  )
+dnl VMASK_REDUCTION(suffix, op_name, cost)
+define(`VMASK_REDUCTION', `
+instruct vmask_$1(iRegINoSp dst, vReg src, pReg ptmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
+  match(Set dst ($2 src));
+  effect(TEMP ptmp, KILL cr);
+  ins_cost($3 * SVE_COST);
+  format %{ "vmask_$1 $dst, $src\t# vector mask $1 (sve)" %}
+  ins_encode %{
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, __ B,
+                           as_FloatRegister($src$$reg), ptrue, as_PRegister($ptmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+// ---------------------------- Vector mask reductions ---------------------------
+VMASK_REDUCTION(truecount, VectorMaskTrueCount, 2)
+VMASK_REDUCTION(firsttrue, VectorMaskFirstTrue, 3)
+VMASK_REDUCTION(lasttrue,  VectorMaskLastTrue, 4)
+dnl
+dnl VMASK_REDUCTION_PARTIAL($1,     $2,      $3  )
+dnl VMASK_REDUCTION_PARTIAL(suffix, op_name, cost)
+define(`VMASK_REDUCTION_PARTIAL', `
+instruct vmask_$1_partial(iRegINoSp dst, vReg src, pRegGov ifelse($1, `firsttrue', `pgtmp, pReg ptmp', `ptmp'), rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->bottom_type()->is_vect()->length_in_bytes() < MaxVectorSize);
+  match(Set dst ($2 src));
+  effect(TEMP ifelse($1, `firsttrue', `pgtmp, TEMP ptmp', `ptmp'), KILL cr);
+  ins_cost($3 * SVE_COST);
+  format %{ "vmask_$1 $dst, $src\t# vector mask $1 partial (sve)" %}
+  ins_encode %{
+    __ mov(rscratch1, vector_length(this, $src));
+    __ sve_whilelo(as_PRegister(ifelse($1, `firsttrue', `$pgtmp', `$ptmp')$$reg), __ B, zr, rscratch1);
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, __ B, as_FloatRegister($src$$reg),
+                           as_PRegister(ifelse($1, `firsttrue', `$pgtmp', `$ptmp')$$reg), as_PRegister($ptmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+VMASK_REDUCTION_PARTIAL(truecount, VectorMaskTrueCount, 3)
+VMASK_REDUCTION_PARTIAL(firsttrue, VectorMaskFirstTrue, 4)
+VMASK_REDUCTION_PARTIAL(lasttrue,  VectorMaskLastTrue, 5)
+
+dnl
+dnl VSTOREMASK_REDUCTION($1,     $2,      $3  )
+dnl VSTOREMASK_REDUCTION(suffix, op_name, cost)
+define(`VSTOREMASK_REDUCTION', `
+instruct vstoremask_$1(iRegINoSp dst, vReg src, immI esize, pReg ptmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
+  match(Set dst ($2 (VectorStoreMask src esize)));
+  effect(TEMP ptmp, KILL cr);
+  ins_cost($3 * SVE_COST);
+  format %{ "vstoremask_$1 $dst, $src\t# vector mask $1 (sve)" %}
+  ins_encode %{
+    int size = $esize$$constant;
+    assert(size == 1 || size == 2 || size == 4 || size == 8, "unsupported element size");
+    Assembler::SIMD_RegVariant variant = __ elemBytes_to_regVariant(size);
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, variant, as_FloatRegister($src$$reg),
+                           ptrue, as_PRegister($ptmp$$reg), vector_length(this, $src));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+// ----------------- Vector mask reductions combined with VectorMaskStore ---------------
+VSTOREMASK_REDUCTION(truecount, VectorMaskTrueCount, 2)
+VSTOREMASK_REDUCTION(firsttrue, VectorMaskFirstTrue, 3)
+VSTOREMASK_REDUCTION(lasttrue,  VectorMaskLastTrue, 4)
+dnl
+dnl VSTOREMASK_REDUCTION_PARTIAL($1,     $2,      $3  )
+dnl VSTOREMASK_REDUCTION_PARTIAL(suffix, op_name, cost)
+define(`VSTOREMASK_REDUCTION_PARTIAL', `
+instruct vstoremask_$1_partial(iRegINoSp dst, vReg src, immI esize, pRegGov ifelse($1, `firsttrue', `pgtmp, pReg ptmp', `ptmp'), rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() < MaxVectorSize);
+  match(Set dst ($2 (VectorStoreMask src esize)));
+  effect(TEMP ifelse($1, `firsttrue', `pgtmp, TEMP ptmp', `ptmp'), KILL cr);
+  ins_cost($3 * SVE_COST);
+  format %{ "vstoremask_$1 $dst, $src\t# vector mask $1 partial (sve)" %}
+  ins_encode %{
+    int size = $esize$$constant;
+    assert(size == 1 || size == 2 || size == 4 || size == 8, "unsupported element size");
+    Assembler::SIMD_RegVariant variant = __ elemBytes_to_regVariant(size);
+    __ mov(rscratch1, vector_length(this, $src));
+    __ sve_whilelo(as_PRegister(ifelse($1, `firsttrue', `$pgtmp', `$ptmp')$$reg), variant, zr, rscratch1);
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, variant, as_FloatRegister($src$$reg),
+                           as_PRegister(ifelse($1, `firsttrue', `$pgtmp', `$ptmp')$$reg), as_PRegister($ptmp$$reg), MaxVectorSize / size);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+VSTOREMASK_REDUCTION_PARTIAL(truecount, VectorMaskTrueCount, 3)
+VSTOREMASK_REDUCTION_PARTIAL(firsttrue, VectorMaskFirstTrue, 4)
+VSTOREMASK_REDUCTION_PARTIAL(lasttrue,  VectorMaskLastTrue, 5)

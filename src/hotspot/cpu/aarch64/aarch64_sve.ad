@@ -164,10 +164,6 @@ source %{
       case Op_LoadVector:
       case Op_StoreVector:
         return Matcher::vector_size_supported(bt, vlen);
-      case Op_VectorMaskTrueCount:
-      case Op_VectorMaskLastTrue:
-      case Op_VectorMaskFirstTrue:
-        return false;
       default:
         break;
     }
@@ -3337,7 +3333,7 @@ instruct extractD(vRegD dst, vReg src, immI idx, pRegGov pTmp, rFlagsReg cr)
 
 // ------------------------------- VectorTest ----------------------------------
 
-instruct vtest_alltrue(iRegINoSp dst, vReg src1, vReg src2, pRegGov pTmp, rFlagsReg cr)
+instruct vtest_alltrue(iRegINoSp dst, vReg src1, vReg src2, pReg pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize &&
             static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::overflow);
@@ -3357,7 +3353,7 @@ instruct vtest_alltrue(iRegINoSp dst, vReg src1, vReg src2, pRegGov pTmp, rFlags
   ins_pipe(pipe_slow);
 %}
 
-instruct vtest_anytrue(iRegINoSp dst, vReg src1, vReg src2, pRegGov pTmp, rFlagsReg cr)
+instruct vtest_anytrue(iRegINoSp dst, vReg src1, vReg src2, pReg pTmp, rFlagsReg cr)
 %{
   predicate(UseSVE > 0 && n->in(1)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize &&
             static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::ne);
@@ -3845,3 +3841,204 @@ instruct stringU_indexof_char_sve(iRegP_R1 str1, iRegI_R2 cnt1, iRegI_R3 ch,
   ins_pipe(pipe_class_memory);
 %}
 
+// ---------------------------- Vector mask reductions ---------------------------
+
+instruct vmask_truecount(iRegINoSp dst, vReg src, pReg ptmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
+  match(Set dst (VectorMaskTrueCount src));
+  effect(TEMP ptmp, KILL cr);
+  ins_cost(2 * SVE_COST);
+  format %{ "vmask_truecount $dst, $src\t# vector mask truecount (sve)" %}
+  ins_encode %{
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, __ B,
+                           as_FloatRegister($src$$reg), ptrue, as_PRegister($ptmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vmask_firsttrue(iRegINoSp dst, vReg src, pReg ptmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
+  match(Set dst (VectorMaskFirstTrue src));
+  effect(TEMP ptmp, KILL cr);
+  ins_cost(3 * SVE_COST);
+  format %{ "vmask_firsttrue $dst, $src\t# vector mask firsttrue (sve)" %}
+  ins_encode %{
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, __ B,
+                           as_FloatRegister($src$$reg), ptrue, as_PRegister($ptmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vmask_lasttrue(iRegINoSp dst, vReg src, pReg ptmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
+  match(Set dst (VectorMaskLastTrue src));
+  effect(TEMP ptmp, KILL cr);
+  ins_cost(4 * SVE_COST);
+  format %{ "vmask_lasttrue $dst, $src\t# vector mask lasttrue (sve)" %}
+  ins_encode %{
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, __ B,
+                           as_FloatRegister($src$$reg), ptrue, as_PRegister($ptmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vmask_truecount_partial(iRegINoSp dst, vReg src, pRegGov ptmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->bottom_type()->is_vect()->length_in_bytes() < MaxVectorSize);
+  match(Set dst (VectorMaskTrueCount src));
+  effect(TEMP ptmp, KILL cr);
+  ins_cost(3 * SVE_COST);
+  format %{ "vmask_truecount $dst, $src\t# vector mask truecount partial (sve)" %}
+  ins_encode %{
+    __ mov(rscratch1, vector_length(this, $src));
+    __ sve_whilelo(as_PRegister($ptmp$$reg), __ B, zr, rscratch1);
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, __ B, as_FloatRegister($src$$reg),
+                           as_PRegister($ptmp$$reg), as_PRegister($ptmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vmask_firsttrue_partial(iRegINoSp dst, vReg src, pRegGov pgtmp, pReg ptmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->bottom_type()->is_vect()->length_in_bytes() < MaxVectorSize);
+  match(Set dst (VectorMaskFirstTrue src));
+  effect(TEMP pgtmp, TEMP ptmp, KILL cr);
+  ins_cost(4 * SVE_COST);
+  format %{ "vmask_firsttrue $dst, $src\t# vector mask firsttrue partial (sve)" %}
+  ins_encode %{
+    __ mov(rscratch1, vector_length(this, $src));
+    __ sve_whilelo(as_PRegister($pgtmp$$reg), __ B, zr, rscratch1);
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, __ B, as_FloatRegister($src$$reg),
+                           as_PRegister($pgtmp$$reg), as_PRegister($ptmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vmask_lasttrue_partial(iRegINoSp dst, vReg src, pRegGov ptmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->bottom_type()->is_vect()->length_in_bytes() < MaxVectorSize);
+  match(Set dst (VectorMaskLastTrue src));
+  effect(TEMP ptmp, KILL cr);
+  ins_cost(5 * SVE_COST);
+  format %{ "vmask_lasttrue $dst, $src\t# vector mask lasttrue partial (sve)" %}
+  ins_encode %{
+    __ mov(rscratch1, vector_length(this, $src));
+    __ sve_whilelo(as_PRegister($ptmp$$reg), __ B, zr, rscratch1);
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, __ B, as_FloatRegister($src$$reg),
+                           as_PRegister($ptmp$$reg), as_PRegister($ptmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ----------------- Vector mask reductions combined with VectorMaskStore ---------------
+
+instruct vstoremask_truecount(iRegINoSp dst, vReg src, immI esize, pReg ptmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
+  match(Set dst (VectorMaskTrueCount (VectorStoreMask src esize)));
+  effect(TEMP ptmp, KILL cr);
+  ins_cost(2 * SVE_COST);
+  format %{ "vstoremask_truecount $dst, $src\t# vector mask truecount (sve)" %}
+  ins_encode %{
+    int size = $esize$$constant;
+    assert(size == 1 || size == 2 || size == 4 || size == 8, "unsupported element size");
+    Assembler::SIMD_RegVariant variant = __ elemBytes_to_regVariant(size);
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, variant, as_FloatRegister($src$$reg),
+                           ptrue, as_PRegister($ptmp$$reg), vector_length(this, $src));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vstoremask_firsttrue(iRegINoSp dst, vReg src, immI esize, pReg ptmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
+  match(Set dst (VectorMaskFirstTrue (VectorStoreMask src esize)));
+  effect(TEMP ptmp, KILL cr);
+  ins_cost(3 * SVE_COST);
+  format %{ "vstoremask_firsttrue $dst, $src\t# vector mask firsttrue (sve)" %}
+  ins_encode %{
+    int size = $esize$$constant;
+    assert(size == 1 || size == 2 || size == 4 || size == 8, "unsupported element size");
+    Assembler::SIMD_RegVariant variant = __ elemBytes_to_regVariant(size);
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, variant, as_FloatRegister($src$$reg),
+                           ptrue, as_PRegister($ptmp$$reg), vector_length(this, $src));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vstoremask_lasttrue(iRegINoSp dst, vReg src, immI esize, pReg ptmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize);
+  match(Set dst (VectorMaskLastTrue (VectorStoreMask src esize)));
+  effect(TEMP ptmp, KILL cr);
+  ins_cost(4 * SVE_COST);
+  format %{ "vstoremask_lasttrue $dst, $src\t# vector mask lasttrue (sve)" %}
+  ins_encode %{
+    int size = $esize$$constant;
+    assert(size == 1 || size == 2 || size == 4 || size == 8, "unsupported element size");
+    Assembler::SIMD_RegVariant variant = __ elemBytes_to_regVariant(size);
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, variant, as_FloatRegister($src$$reg),
+                           ptrue, as_PRegister($ptmp$$reg), vector_length(this, $src));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vstoremask_truecount_partial(iRegINoSp dst, vReg src, immI esize, pRegGov ptmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() < MaxVectorSize);
+  match(Set dst (VectorMaskTrueCount (VectorStoreMask src esize)));
+  effect(TEMP ptmp, KILL cr);
+  ins_cost(3 * SVE_COST);
+  format %{ "vstoremask_truecount $dst, $src\t# vector mask truecount partial (sve)" %}
+  ins_encode %{
+    int size = $esize$$constant;
+    assert(size == 1 || size == 2 || size == 4 || size == 8, "unsupported element size");
+    Assembler::SIMD_RegVariant variant = __ elemBytes_to_regVariant(size);
+    __ mov(rscratch1, vector_length(this, $src));
+    __ sve_whilelo(as_PRegister($ptmp$$reg), variant, zr, rscratch1);
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, variant, as_FloatRegister($src$$reg),
+                           as_PRegister($ptmp$$reg), as_PRegister($ptmp$$reg), MaxVectorSize / size);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vstoremask_firsttrue_partial(iRegINoSp dst, vReg src, immI esize, pRegGov pgtmp, pReg ptmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() < MaxVectorSize);
+  match(Set dst (VectorMaskFirstTrue (VectorStoreMask src esize)));
+  effect(TEMP pgtmp, TEMP ptmp, KILL cr);
+  ins_cost(4 * SVE_COST);
+  format %{ "vstoremask_firsttrue $dst, $src\t# vector mask firsttrue partial (sve)" %}
+  ins_encode %{
+    int size = $esize$$constant;
+    assert(size == 1 || size == 2 || size == 4 || size == 8, "unsupported element size");
+    Assembler::SIMD_RegVariant variant = __ elemBytes_to_regVariant(size);
+    __ mov(rscratch1, vector_length(this, $src));
+    __ sve_whilelo(as_PRegister($pgtmp$$reg), variant, zr, rscratch1);
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, variant, as_FloatRegister($src$$reg),
+                           as_PRegister($pgtmp$$reg), as_PRegister($ptmp$$reg), MaxVectorSize / size);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vstoremask_lasttrue_partial(iRegINoSp dst, vReg src, immI esize, pRegGov ptmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->in(1)->in(1)->bottom_type()->is_vect()->length_in_bytes() < MaxVectorSize);
+  match(Set dst (VectorMaskLastTrue (VectorStoreMask src esize)));
+  effect(TEMP ptmp, KILL cr);
+  ins_cost(5 * SVE_COST);
+  format %{ "vstoremask_lasttrue $dst, $src\t# vector mask lasttrue partial (sve)" %}
+  ins_encode %{
+    int size = $esize$$constant;
+    assert(size == 1 || size == 2 || size == 4 || size == 8, "unsupported element size");
+    Assembler::SIMD_RegVariant variant = __ elemBytes_to_regVariant(size);
+    __ mov(rscratch1, vector_length(this, $src));
+    __ sve_whilelo(as_PRegister($ptmp$$reg), variant, zr, rscratch1);
+    __ sve_vmask_reduction(this->ideal_Opcode(), $dst$$Register, variant, as_FloatRegister($src$$reg),
+                           as_PRegister($ptmp$$reg), as_PRegister($ptmp$$reg), MaxVectorSize / size);
+  %}
+  ins_pipe(pipe_slow);
+%}
