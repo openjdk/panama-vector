@@ -61,6 +61,9 @@
   void sve_compare(PRegister pd, BasicType bt, PRegister pg,
                    FloatRegister zn, FloatRegister zm, int cond);
 
+  void sve_vmask_reduction(int opc, Register dst, SIMD_RegVariant size, FloatRegister src,
+                           PRegister pg, PRegister pn, int length = MaxVectorSize);
+
   // Generate predicate through whilelo, by comparing ZR with an unsigned
   // immediate. rscratch1 will be clobbered.
   inline void sve_whilelo_zr_imm(PRegister pd, SIMD_RegVariant size, uint imm) {
