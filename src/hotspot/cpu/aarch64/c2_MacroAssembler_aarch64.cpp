@@ -974,3 +974,29 @@ void C2_MacroAssembler::sve_compare(PRegister pd, BasicType bt, PRegister pg,
     }
   }
 }
+
+void C2_MacroAssembler::sve_vmask_reduction(int opc, Register dst, SIMD_RegVariant size, FloatRegister src,
+                                            PRegister pg, PRegister pn, int length) {
+  assert(pg->is_governing(), "This register has to be a governing predicate register");
+  // The conditional flags will be clobbered by this function
+  sve_cmpne(pn, size, pg, src, 0);
+  switch (opc) {
+    case Op_VectorMaskTrueCount:
+      sve_cntp(dst, size, ptrue, pn);
+      break;
+    case Op_VectorMaskFirstTrue:
+      sve_brkb(pn, pg, pn, false);
+      sve_cntp(dst, size, ptrue, pn);
+      break;
+    case Op_VectorMaskLastTrue:
+      sve_rev(pn, size, pn);
+      sve_brkb(pn, ptrue, pn, false);
+      sve_cntp(dst, size, ptrue, pn);
+      movw(rscratch1, length - 1);
+      subw(dst, rscratch1, dst);
+      break;
+    default:
+      assert(false, "unsupported");
+      ShouldNotReachHere();
+  }
+}

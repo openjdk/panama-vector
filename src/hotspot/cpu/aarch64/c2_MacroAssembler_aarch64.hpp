@@ -61,4 +61,7 @@
   void sve_compare(PRegister pd, BasicType bt, PRegister pg,
                    FloatRegister zn, FloatRegister zm, int cond);
 
+  void sve_vmask_reduction(int opc, Register dst, SIMD_RegVariant size, FloatRegister src,
+                           PRegister pg, PRegister pn, int length = MaxVectorSize);
+
 #endif // CPU_AARCH64_C2_MACROASSEMBLER_AARCH64_HPP
