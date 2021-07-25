@@ -1885,7 +1885,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
     @ForceInline
     final
     <M extends VectorMask<Short>>
-    M compareTemplate(Class<M> maskType, Comparison op, Vector<Short> v) {
+    M compareTemplate(Class<M> maskType, Comparison op, Vector<Short> v, M m) {
         Objects.requireNonNull(v);
         ShortSpecies vsp = vspecies();
         ShortVector that = (ShortVector) v;
@@ -1893,13 +1893,13 @@ public abstract class ShortVector extends AbstractVector<Short> {
         int opc = opCode(op);
         return VectorSupport.compare(
             opc, getClass(), maskType, short.class, length(),
-            this, that,
-            (cond, v0, v1) -> {
-                AbstractMask<Short> m
+            this, that, m,
+            (cond, v0, v1, m1) -> {
+                AbstractMask<Short> cmpM
                     = v0.bTest(cond, v1, (cond_, i, a, b)
                                -> compareWithOp(cond, a, b));
                 @SuppressWarnings("unchecked")
-                M m2 = (M) m;
+                M m2 = (M)((m1 != null) ? cmpM.and(m1) : cmpM);
                 return m2;
             });
     }
@@ -1919,18 +1919,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
             case BT_uge -> Short.compareUnsigned(a, b) >= 0;
             default -> throw new AssertionError();
         };
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    VectorMask<Short> compare(VectorOperators.Comparison op,
-                                  Vector<Short> v,
-                                  VectorMask<Short> m) {
-        return compare(op, v).and(m);
     }
 
     /**
@@ -1958,14 +1946,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
      */
     public abstract
     VectorMask<Short> compare(Comparison op, short e);
-
-    /*package-private*/
-    @ForceInline
-    final
-    <M extends VectorMask<Short>>
-    M compareTemplate(Class<M> maskType, Comparison op, short e) {
-        return compareTemplate(maskType, op, broadcast(e));
-    }
 
     /**
      * Tests this vector by comparing it with an input scalar,
@@ -2000,14 +1980,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
     @Override
     public abstract
     VectorMask<Short> compare(Comparison op, long e);
-
-    /*package-private*/
-    @ForceInline
-    final
-    <M extends VectorMask<Short>>
-    M compareTemplate(Class<M> maskType, Comparison op, long e) {
-        return compareTemplate(maskType, op, broadcast(e));
-    }
 
     /**
      * {@inheritDoc} <!--workaround-->

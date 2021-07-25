@@ -375,20 +375,27 @@ final class Byte64Vector extends ByteVector {
     @Override
     @ForceInline
     public final Byte64Mask compare(Comparison op, Vector<Byte> v) {
-        return super.compareTemplate(Byte64Mask.class, op, v);  // specialize
+        return super.compareTemplate(Byte64Mask.class, op, v, null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Byte64Mask compare(Comparison op, byte s) {
-        return super.compareTemplate(Byte64Mask.class, op, s);  // specialize
+        return super.compareTemplate(Byte64Mask.class, op, broadcast(s), null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Byte64Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Byte64Mask.class, op, s);  // specialize
+        return super.compareTemplate(Byte64Mask.class, op, broadcast(s), null);  // specialize
     }
+
+    @Override
+    @ForceInline
+    public final Byte64Mask compare(Comparison op, Vector<Byte> v, VectorMask<Byte> m) {
+        return compareTemplate(Byte64Mask.class, op, v, ((Byte64Mask)m));
+    }
+
 
     @Override
     @ForceInline

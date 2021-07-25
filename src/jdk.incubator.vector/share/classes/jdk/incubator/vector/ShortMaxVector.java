@@ -375,20 +375,27 @@ final class ShortMaxVector extends ShortVector {
     @Override
     @ForceInline
     public final ShortMaxMask compare(Comparison op, Vector<Short> v) {
-        return super.compareTemplate(ShortMaxMask.class, op, v);  // specialize
+        return super.compareTemplate(ShortMaxMask.class, op, v, null);  // specialize
     }
 
     @Override
     @ForceInline
     public final ShortMaxMask compare(Comparison op, short s) {
-        return super.compareTemplate(ShortMaxMask.class, op, s);  // specialize
+        return super.compareTemplate(ShortMaxMask.class, op, broadcast(s), null);  // specialize
     }
 
     @Override
     @ForceInline
     public final ShortMaxMask compare(Comparison op, long s) {
-        return super.compareTemplate(ShortMaxMask.class, op, s);  // specialize
+        return super.compareTemplate(ShortMaxMask.class, op, broadcast(s), null);  // specialize
     }
+
+    @Override
+    @ForceInline
+    public final ShortMaxMask compare(Comparison op, Vector<Short> v, VectorMask<Short> m) {
+        return compareTemplate(ShortMaxMask.class, op, v, ((ShortMaxMask)m));
+    }
+
 
     @Override
     @ForceInline

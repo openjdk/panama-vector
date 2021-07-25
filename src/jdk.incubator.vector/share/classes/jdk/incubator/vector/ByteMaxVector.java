@@ -375,20 +375,27 @@ final class ByteMaxVector extends ByteVector {
     @Override
     @ForceInline
     public final ByteMaxMask compare(Comparison op, Vector<Byte> v) {
-        return super.compareTemplate(ByteMaxMask.class, op, v);  // specialize
+        return super.compareTemplate(ByteMaxMask.class, op, v, null);  // specialize
     }
 
     @Override
     @ForceInline
     public final ByteMaxMask compare(Comparison op, byte s) {
-        return super.compareTemplate(ByteMaxMask.class, op, s);  // specialize
+        return super.compareTemplate(ByteMaxMask.class, op, broadcast(s), null);  // specialize
     }
 
     @Override
     @ForceInline
     public final ByteMaxMask compare(Comparison op, long s) {
-        return super.compareTemplate(ByteMaxMask.class, op, s);  // specialize
+        return super.compareTemplate(ByteMaxMask.class, op, broadcast(s), null);  // specialize
     }
+
+    @Override
+    @ForceInline
+    public final ByteMaxMask compare(Comparison op, Vector<Byte> v, VectorMask<Byte> m) {
+        return compareTemplate(ByteMaxMask.class, op, v, ((ByteMaxMask)m));
+    }
+
 
     @Override
     @ForceInline

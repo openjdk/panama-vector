@@ -375,20 +375,27 @@ final class Short64Vector extends ShortVector {
     @Override
     @ForceInline
     public final Short64Mask compare(Comparison op, Vector<Short> v) {
-        return super.compareTemplate(Short64Mask.class, op, v);  // specialize
+        return super.compareTemplate(Short64Mask.class, op, v, null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Short64Mask compare(Comparison op, short s) {
-        return super.compareTemplate(Short64Mask.class, op, s);  // specialize
+        return super.compareTemplate(Short64Mask.class, op, broadcast(s), null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Short64Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Short64Mask.class, op, s);  // specialize
+        return super.compareTemplate(Short64Mask.class, op, broadcast(s), null);  // specialize
     }
+
+    @Override
+    @ForceInline
+    public final Short64Mask compare(Comparison op, Vector<Short> v, VectorMask<Short> m) {
+        return compareTemplate(Short64Mask.class, op, v, ((Short64Mask)m));
+    }
+
 
     @Override
     @ForceInline

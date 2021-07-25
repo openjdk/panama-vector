@@ -375,20 +375,27 @@ final class Short512Vector extends ShortVector {
     @Override
     @ForceInline
     public final Short512Mask compare(Comparison op, Vector<Short> v) {
-        return super.compareTemplate(Short512Mask.class, op, v);  // specialize
+        return super.compareTemplate(Short512Mask.class, op, v, null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Short512Mask compare(Comparison op, short s) {
-        return super.compareTemplate(Short512Mask.class, op, s);  // specialize
+        return super.compareTemplate(Short512Mask.class, op, broadcast(s), null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Short512Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Short512Mask.class, op, s);  // specialize
+        return super.compareTemplate(Short512Mask.class, op, broadcast(s), null);  // specialize
     }
+
+    @Override
+    @ForceInline
+    public final Short512Mask compare(Comparison op, Vector<Short> v, VectorMask<Short> m) {
+        return compareTemplate(Short512Mask.class, op, v, ((Short512Mask)m));
+    }
+
 
     @Override
     @ForceInline

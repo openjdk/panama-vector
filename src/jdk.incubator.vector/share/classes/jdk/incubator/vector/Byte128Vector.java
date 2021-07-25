@@ -375,20 +375,27 @@ final class Byte128Vector extends ByteVector {
     @Override
     @ForceInline
     public final Byte128Mask compare(Comparison op, Vector<Byte> v) {
-        return super.compareTemplate(Byte128Mask.class, op, v);  // specialize
+        return super.compareTemplate(Byte128Mask.class, op, v, null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Byte128Mask compare(Comparison op, byte s) {
-        return super.compareTemplate(Byte128Mask.class, op, s);  // specialize
+        return super.compareTemplate(Byte128Mask.class, op, broadcast(s), null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Byte128Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Byte128Mask.class, op, s);  // specialize
+        return super.compareTemplate(Byte128Mask.class, op, broadcast(s), null);  // specialize
     }
+
+    @Override
+    @ForceInline
+    public final Byte128Mask compare(Comparison op, Vector<Byte> v, VectorMask<Byte> m) {
+        return compareTemplate(Byte128Mask.class, op, v, ((Byte128Mask)m));
+    }
+
 
     @Override
     @ForceInline

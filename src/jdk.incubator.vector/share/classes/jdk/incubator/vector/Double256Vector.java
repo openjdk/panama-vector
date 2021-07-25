@@ -362,20 +362,27 @@ final class Double256Vector extends DoubleVector {
     @Override
     @ForceInline
     public final Double256Mask compare(Comparison op, Vector<Double> v) {
-        return super.compareTemplate(Double256Mask.class, op, v);  // specialize
+        return super.compareTemplate(Double256Mask.class, op, v, null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Double256Mask compare(Comparison op, double s) {
-        return super.compareTemplate(Double256Mask.class, op, s);  // specialize
+        return super.compareTemplate(Double256Mask.class, op, broadcast(s), null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Double256Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Double256Mask.class, op, s);  // specialize
+        return super.compareTemplate(Double256Mask.class, op, broadcast(s), null);  // specialize
     }
+
+    @Override
+    @ForceInline
+    public final Double256Mask compare(Comparison op, Vector<Double> v, VectorMask<Double> m) {
+        return compareTemplate(Double256Mask.class, op, v, ((Double256Mask)m));
+    }
+
 
     @Override
     @ForceInline

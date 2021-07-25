@@ -1741,7 +1741,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     @ForceInline
     final
     <M extends VectorMask<Double>>
-    M compareTemplate(Class<M> maskType, Comparison op, Vector<Double> v) {
+    M compareTemplate(Class<M> maskType, Comparison op, Vector<Double> v, M m) {
         Objects.requireNonNull(v);
         DoubleSpecies vsp = vspecies();
         DoubleVector that = (DoubleVector) v;
@@ -1749,13 +1749,13 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         int opc = opCode(op);
         return VectorSupport.compare(
             opc, getClass(), maskType, double.class, length(),
-            this, that,
-            (cond, v0, v1) -> {
-                AbstractMask<Double> m
+            this, that, m,
+            (cond, v0, v1, m1) -> {
+                AbstractMask<Double> cmpM
                     = v0.bTest(cond, v1, (cond_, i, a, b)
                                -> compareWithOp(cond, a, b));
                 @SuppressWarnings("unchecked")
-                M m2 = (M) m;
+                M m2 = (M)((m1 != null) ? cmpM.and(m1) : cmpM);
                 return m2;
             });
     }
@@ -1771,18 +1771,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             case BT_ge -> a >= b;
             default -> throw new AssertionError();
         };
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    VectorMask<Double> compare(VectorOperators.Comparison op,
-                                  Vector<Double> v,
-                                  VectorMask<Double> m) {
-        return compare(op, v).and(m);
     }
 
     /**
@@ -1810,14 +1798,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
      */
     public abstract
     VectorMask<Double> compare(Comparison op, double e);
-
-    /*package-private*/
-    @ForceInline
-    final
-    <M extends VectorMask<Double>>
-    M compareTemplate(Class<M> maskType, Comparison op, double e) {
-        return compareTemplate(maskType, op, broadcast(e));
-    }
 
     /**
      * Tests this vector by comparing it with an input scalar,
@@ -1852,14 +1832,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     @Override
     public abstract
     VectorMask<Double> compare(Comparison op, long e);
-
-    /*package-private*/
-    @ForceInline
-    final
-    <M extends VectorMask<Double>>
-    M compareTemplate(Class<M> maskType, Comparison op, long e) {
-        return compareTemplate(maskType, op, broadcast(e));
-    }
 
     /**
      * {@inheritDoc} <!--workaround-->

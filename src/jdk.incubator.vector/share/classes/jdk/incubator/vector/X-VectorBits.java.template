@@ -379,22 +379,29 @@ final class $vectortype$ extends $abstractvectortype$ {
     @Override
     @ForceInline
     public final $masktype$ compare(Comparison op, Vector<$Boxtype$> v) {
-        return super.compareTemplate($masktype$.class, op, v);  // specialize
+        return super.compareTemplate($masktype$.class, op, v, null);  // specialize
     }
 
     @Override
     @ForceInline
     public final $masktype$ compare(Comparison op, $type$ s) {
-        return super.compareTemplate($masktype$.class, op, s);  // specialize
+        return super.compareTemplate($masktype$.class, op, broadcast(s), null);  // specialize
     }
 
 #if[!long]
     @Override
     @ForceInline
     public final $masktype$ compare(Comparison op, long s) {
-        return super.compareTemplate($masktype$.class, op, s);  // specialize
+        return super.compareTemplate($masktype$.class, op, broadcast(s), null);  // specialize
     }
 #end[!long]
+
+    @Override
+    @ForceInline
+    public final $masktype$ compare(Comparison op, Vector<$Boxtype$> v, VectorMask<$Boxtype$> m) {
+        return compareTemplate($masktype$.class, op, v, (($masktype$)m));
+    }
+
 
     @Override
     @ForceInline

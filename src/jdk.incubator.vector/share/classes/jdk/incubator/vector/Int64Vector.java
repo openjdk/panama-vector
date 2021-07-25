@@ -375,20 +375,27 @@ final class Int64Vector extends IntVector {
     @Override
     @ForceInline
     public final Int64Mask compare(Comparison op, Vector<Integer> v) {
-        return super.compareTemplate(Int64Mask.class, op, v);  // specialize
+        return super.compareTemplate(Int64Mask.class, op, v, null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Int64Mask compare(Comparison op, int s) {
-        return super.compareTemplate(Int64Mask.class, op, s);  // specialize
+        return super.compareTemplate(Int64Mask.class, op, broadcast(s), null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Int64Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Int64Mask.class, op, s);  // specialize
+        return super.compareTemplate(Int64Mask.class, op, broadcast(s), null);  // specialize
     }
+
+    @Override
+    @ForceInline
+    public final Int64Mask compare(Comparison op, Vector<Integer> v, VectorMask<Integer> m) {
+        return compareTemplate(Int64Mask.class, op, v, ((Int64Mask)m));
+    }
+
 
     @Override
     @ForceInline

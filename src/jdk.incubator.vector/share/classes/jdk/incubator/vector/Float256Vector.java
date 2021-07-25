@@ -362,20 +362,27 @@ final class Float256Vector extends FloatVector {
     @Override
     @ForceInline
     public final Float256Mask compare(Comparison op, Vector<Float> v) {
-        return super.compareTemplate(Float256Mask.class, op, v);  // specialize
+        return super.compareTemplate(Float256Mask.class, op, v, null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Float256Mask compare(Comparison op, float s) {
-        return super.compareTemplate(Float256Mask.class, op, s);  // specialize
+        return super.compareTemplate(Float256Mask.class, op, broadcast(s), null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Float256Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Float256Mask.class, op, s);  // specialize
+        return super.compareTemplate(Float256Mask.class, op, broadcast(s), null);  // specialize
     }
+
+    @Override
+    @ForceInline
+    public final Float256Mask compare(Comparison op, Vector<Float> v, VectorMask<Float> m) {
+        return compareTemplate(Float256Mask.class, op, v, ((Float256Mask)m));
+    }
+
 
     @Override
     @ForceInline

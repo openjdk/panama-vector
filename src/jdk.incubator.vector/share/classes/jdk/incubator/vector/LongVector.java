@@ -1797,7 +1797,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     @ForceInline
     final
     <M extends VectorMask<Long>>
-    M compareTemplate(Class<M> maskType, Comparison op, Vector<Long> v) {
+    M compareTemplate(Class<M> maskType, Comparison op, Vector<Long> v, M m) {
         Objects.requireNonNull(v);
         LongSpecies vsp = vspecies();
         LongVector that = (LongVector) v;
@@ -1805,13 +1805,13 @@ public abstract class LongVector extends AbstractVector<Long> {
         int opc = opCode(op);
         return VectorSupport.compare(
             opc, getClass(), maskType, long.class, length(),
-            this, that,
-            (cond, v0, v1) -> {
-                AbstractMask<Long> m
+            this, that, m,
+            (cond, v0, v1, m1) -> {
+                AbstractMask<Long> cmpM
                     = v0.bTest(cond, v1, (cond_, i, a, b)
                                -> compareWithOp(cond, a, b));
                 @SuppressWarnings("unchecked")
-                M m2 = (M) m;
+                M m2 = (M)((m1 != null) ? cmpM.and(m1) : cmpM);
                 return m2;
             });
     }
@@ -1831,18 +1831,6 @@ public abstract class LongVector extends AbstractVector<Long> {
             case BT_uge -> Long.compareUnsigned(a, b) >= 0;
             default -> throw new AssertionError();
         };
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    VectorMask<Long> compare(VectorOperators.Comparison op,
-                                  Vector<Long> v,
-                                  VectorMask<Long> m) {
-        return compare(op, v).and(m);
     }
 
     /**
@@ -1870,14 +1858,6 @@ public abstract class LongVector extends AbstractVector<Long> {
      */
     public abstract
     VectorMask<Long> compare(Comparison op, long e);
-
-    /*package-private*/
-    @ForceInline
-    final
-    <M extends VectorMask<Long>>
-    M compareTemplate(Class<M> maskType, Comparison op, long e) {
-        return compareTemplate(maskType, op, broadcast(e));
-    }
 
     /**
      * Tests this vector by comparing it with an input scalar,

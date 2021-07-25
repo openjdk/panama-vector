@@ -370,13 +370,20 @@ final class Long64Vector extends LongVector {
     @Override
     @ForceInline
     public final Long64Mask compare(Comparison op, Vector<Long> v) {
-        return super.compareTemplate(Long64Mask.class, op, v);  // specialize
+        return super.compareTemplate(Long64Mask.class, op, v, null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Long64Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Long64Mask.class, op, s);  // specialize
+        return super.compareTemplate(Long64Mask.class, op, broadcast(s), null);  // specialize
+    }
+
+
+    @Override
+    @ForceInline
+    public final Long64Mask compare(Comparison op, Vector<Long> v, VectorMask<Long> m) {
+        return compareTemplate(Long64Mask.class, op, v, ((Long64Mask)m));
     }
 
 

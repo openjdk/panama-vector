@@ -370,13 +370,20 @@ final class Long512Vector extends LongVector {
     @Override
     @ForceInline
     public final Long512Mask compare(Comparison op, Vector<Long> v) {
-        return super.compareTemplate(Long512Mask.class, op, v);  // specialize
+        return super.compareTemplate(Long512Mask.class, op, v, null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Long512Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Long512Mask.class, op, s);  // specialize
+        return super.compareTemplate(Long512Mask.class, op, broadcast(s), null);  // specialize
+    }
+
+
+    @Override
+    @ForceInline
+    public final Long512Mask compare(Comparison op, Vector<Long> v, VectorMask<Long> m) {
+        return compareTemplate(Long512Mask.class, op, v, ((Long512Mask)m));
     }
 
 

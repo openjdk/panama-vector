@@ -431,7 +431,7 @@ public class VectorSupport {
     /* ============================================================================ */
 
     public interface VectorCompareOp<V,M> {
-        M apply(int cond, V v1, V v2);
+        M apply(int cond, V v1, V v2, M m);
     }
 
     @IntrinsicCandidate
@@ -439,10 +439,10 @@ public class VectorSupport {
                    M extends VectorMask<E>,
                    E>
     M compare(int cond, Class<? extends V> vectorClass, Class<M> maskClass, Class<?> elementType, int length,
-              V v1, V v2,
+              V v1, V v2, M m,
               VectorCompareOp<V,M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(cond, v1, v2);
+        return defaultImpl.apply(cond, v1, v2, m);
     }
 
     /* ============================================================================ */

@@ -362,20 +362,27 @@ final class DoubleMaxVector extends DoubleVector {
     @Override
     @ForceInline
     public final DoubleMaxMask compare(Comparison op, Vector<Double> v) {
-        return super.compareTemplate(DoubleMaxMask.class, op, v);  // specialize
+        return super.compareTemplate(DoubleMaxMask.class, op, v, null);  // specialize
     }
 
     @Override
     @ForceInline
     public final DoubleMaxMask compare(Comparison op, double s) {
-        return super.compareTemplate(DoubleMaxMask.class, op, s);  // specialize
+        return super.compareTemplate(DoubleMaxMask.class, op, broadcast(s), null);  // specialize
     }
 
     @Override
     @ForceInline
     public final DoubleMaxMask compare(Comparison op, long s) {
-        return super.compareTemplate(DoubleMaxMask.class, op, s);  // specialize
+        return super.compareTemplate(DoubleMaxMask.class, op, broadcast(s), null);  // specialize
     }
+
+    @Override
+    @ForceInline
+    public final DoubleMaxMask compare(Comparison op, Vector<Double> v, VectorMask<Double> m) {
+        return compareTemplate(DoubleMaxMask.class, op, v, ((DoubleMaxMask)m));
+    }
+
 
     @Override
     @ForceInline

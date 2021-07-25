@@ -1753,7 +1753,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
     @ForceInline
     final
     <M extends VectorMask<Float>>
-    M compareTemplate(Class<M> maskType, Comparison op, Vector<Float> v) {
+    M compareTemplate(Class<M> maskType, Comparison op, Vector<Float> v, M m) {
         Objects.requireNonNull(v);
         FloatSpecies vsp = vspecies();
         FloatVector that = (FloatVector) v;
@@ -1761,13 +1761,13 @@ public abstract class FloatVector extends AbstractVector<Float> {
         int opc = opCode(op);
         return VectorSupport.compare(
             opc, getClass(), maskType, float.class, length(),
-            this, that,
-            (cond, v0, v1) -> {
-                AbstractMask<Float> m
+            this, that, m,
+            (cond, v0, v1, m1) -> {
+                AbstractMask<Float> cmpM
                     = v0.bTest(cond, v1, (cond_, i, a, b)
                                -> compareWithOp(cond, a, b));
                 @SuppressWarnings("unchecked")
-                M m2 = (M) m;
+                M m2 = (M)((m1 != null) ? cmpM.and(m1) : cmpM);
                 return m2;
             });
     }
@@ -1783,18 +1783,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
             case BT_ge -> a >= b;
             default -> throw new AssertionError();
         };
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    VectorMask<Float> compare(VectorOperators.Comparison op,
-                                  Vector<Float> v,
-                                  VectorMask<Float> m) {
-        return compare(op, v).and(m);
     }
 
     /**
@@ -1822,14 +1810,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
      */
     public abstract
     VectorMask<Float> compare(Comparison op, float e);
-
-    /*package-private*/
-    @ForceInline
-    final
-    <M extends VectorMask<Float>>
-    M compareTemplate(Class<M> maskType, Comparison op, float e) {
-        return compareTemplate(maskType, op, broadcast(e));
-    }
 
     /**
      * Tests this vector by comparing it with an input scalar,
@@ -1864,14 +1844,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
     @Override
     public abstract
     VectorMask<Float> compare(Comparison op, long e);
-
-    /*package-private*/
-    @ForceInline
-    final
-    <M extends VectorMask<Float>>
-    M compareTemplate(Class<M> maskType, Comparison op, long e) {
-        return compareTemplate(maskType, op, broadcast(e));
-    }
 
     /**
      * {@inheritDoc} <!--workaround-->

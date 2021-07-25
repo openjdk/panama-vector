@@ -370,13 +370,20 @@ final class LongMaxVector extends LongVector {
     @Override
     @ForceInline
     public final LongMaxMask compare(Comparison op, Vector<Long> v) {
-        return super.compareTemplate(LongMaxMask.class, op, v);  // specialize
+        return super.compareTemplate(LongMaxMask.class, op, v, null);  // specialize
     }
 
     @Override
     @ForceInline
     public final LongMaxMask compare(Comparison op, long s) {
-        return super.compareTemplate(LongMaxMask.class, op, s);  // specialize
+        return super.compareTemplate(LongMaxMask.class, op, broadcast(s), null);  // specialize
+    }
+
+
+    @Override
+    @ForceInline
+    public final LongMaxMask compare(Comparison op, Vector<Long> v, VectorMask<Long> m) {
+        return compareTemplate(LongMaxMask.class, op, v, ((LongMaxMask)m));
     }
 
 

@@ -375,20 +375,27 @@ final class Int256Vector extends IntVector {
     @Override
     @ForceInline
     public final Int256Mask compare(Comparison op, Vector<Integer> v) {
-        return super.compareTemplate(Int256Mask.class, op, v);  // specialize
+        return super.compareTemplate(Int256Mask.class, op, v, null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Int256Mask compare(Comparison op, int s) {
-        return super.compareTemplate(Int256Mask.class, op, s);  // specialize
+        return super.compareTemplate(Int256Mask.class, op, broadcast(s), null);  // specialize
     }
 
     @Override
     @ForceInline
     public final Int256Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Int256Mask.class, op, s);  // specialize
+        return super.compareTemplate(Int256Mask.class, op, broadcast(s), null);  // specialize
     }
+
+    @Override
+    @ForceInline
+    public final Int256Mask compare(Comparison op, Vector<Integer> v, VectorMask<Integer> m) {
+        return compareTemplate(Int256Mask.class, op, v, ((Int256Mask)m));
+    }
+
 
     @Override
     @ForceInline
