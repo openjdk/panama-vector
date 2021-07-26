@@ -3162,18 +3162,15 @@ public abstract class FloatVector extends AbstractVector<Float> {
     final
     FloatVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         FloatSpecies vsp = vspecies();
-        if (!bb.isDirect()) {
-          return fromByteArray0(bb.array(), offset);
-        } else {
-          return ScopedMemoryAccess.loadFromByteBuffer(
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  bb, offset, vsp,
-                  (buf, off, s) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      return s.ldOp(wb, off,
-                              (wb_, o, i) -> wb_.getFloat(o + i * 4));
-                  });
-        }
+
+        return ScopedMemoryAccess.loadFromByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                bb, offset, vsp,
+                (buf, off, s) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    return s.ldOp(wb, off,
+                            (wb_, o, i) -> wb_.getFloat(o + i * 4));
+                });
     }
 
     // Unchecked storing operations in native byte order.
@@ -3216,9 +3213,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
     @ForceInline
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
-        if (!bb.isDirect()) {
-          intoByteArray0(bb.array(), offset);
-        } else {
           FloatSpecies vsp = vspecies();
           ScopedMemoryAccess.storeIntoByteBuffer(
                   vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
@@ -3228,7 +3222,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
                       v.stOp(wb, off,
                               (wb_, o, i, e) -> wb_.putFloat(o + i * 4, e));
                   });
-        }
     }
 
     // End of low-level memory operations.

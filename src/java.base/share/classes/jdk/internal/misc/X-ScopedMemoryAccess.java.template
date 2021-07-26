@@ -33,6 +33,7 @@ import java.lang.ref.Reference;
 import java.io.FileDescriptor;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import jdk.internal.access.JavaNioAccess;
 import jdk.internal.access.SharedSecrets;
@@ -412,8 +413,14 @@ public class ScopedMemoryAccess {
                       null, BufferAccess.bufferAddress(bb, offset),
                       bb, offset, s,
                       defaultImpl);
+            } else if (base instanceof byte[]) {
+              Objects.requireNonNull(base); // Redundant TODO
+              return VectorSupport.load(vmClass, e, length,
+                      (byte[]) base, BufferAccess.bufferAddress(bb, offset),
+                      bb, offset, s,
+                      defaultImpl);
             } else {
-              throw new IllegalStateException("Only off-heap segments are supported");
+              throw new IllegalStateException("Only off-heap and byte[] segments are supported");
             }
         } finally {
             Reference.reachabilityFence(scope);
@@ -461,6 +468,13 @@ public class ScopedMemoryAccess {
                                   v,
                                   bb, offset,
                                   defaultImpl);
+            } else if (base instanceof byte[]) {
+              Objects.requireNonNull(base); // Redundant TODO
+              VectorSupport.store(vmClass, e, length,
+                                                (byte[]) base, BufferAccess.bufferAddress(bb, offset),
+                                                v,
+                                                bb, offset,
+                                                defaultImpl);
             } else {
               throw new IllegalStateException("Only off-heap segments are supported");
             }

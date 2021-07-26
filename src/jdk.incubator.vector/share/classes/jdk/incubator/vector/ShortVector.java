@@ -3551,18 +3551,15 @@ public abstract class ShortVector extends AbstractVector<Short> {
     final
     ShortVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         ShortSpecies vsp = vspecies();
-        if (!bb.isDirect()) {
-          return fromByteArray0(bb.array(), offset);
-        } else {
-          return ScopedMemoryAccess.loadFromByteBuffer(
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  bb, offset, vsp,
-                  (buf, off, s) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      return s.ldOp(wb, off,
-                              (wb_, o, i) -> wb_.getShort(o + i * 2));
-                  });
-        }
+
+        return ScopedMemoryAccess.loadFromByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                bb, offset, vsp,
+                (buf, off, s) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    return s.ldOp(wb, off,
+                            (wb_, o, i) -> wb_.getShort(o + i * 2));
+                });
     }
 
     // Unchecked storing operations in native byte order.
@@ -3605,9 +3602,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
     @ForceInline
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
-        if (!bb.isDirect()) {
-          intoByteArray0(bb.array(), offset);
-        } else {
           ShortSpecies vsp = vspecies();
           ScopedMemoryAccess.storeIntoByteBuffer(
                   vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
@@ -3617,7 +3611,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
                       v.stOp(wb, off,
                               (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
                   });
-        }
     }
 
     // End of low-level memory operations.

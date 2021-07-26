@@ -3271,18 +3271,15 @@ public abstract class IntVector extends AbstractVector<Integer> {
     final
     IntVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         IntSpecies vsp = vspecies();
-        if (!bb.isDirect()) {
-          return fromByteArray0(bb.array(), offset);
-        } else {
-          return ScopedMemoryAccess.loadFromByteBuffer(
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  bb, offset, vsp,
-                  (buf, off, s) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      return s.ldOp(wb, off,
-                              (wb_, o, i) -> wb_.getInt(o + i * 4));
-                  });
-        }
+
+        return ScopedMemoryAccess.loadFromByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                bb, offset, vsp,
+                (buf, off, s) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    return s.ldOp(wb, off,
+                            (wb_, o, i) -> wb_.getInt(o + i * 4));
+                });
     }
 
     // Unchecked storing operations in native byte order.
@@ -3325,9 +3322,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
     @ForceInline
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
-        if (!bb.isDirect()) {
-          intoByteArray0(bb.array(), offset);
-        } else {
           IntSpecies vsp = vspecies();
           ScopedMemoryAccess.storeIntoByteBuffer(
                   vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
@@ -3337,7 +3331,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
                       v.stOp(wb, off,
                               (wb_, o, i, e) -> wb_.putInt(o + i * 4, e));
                   });
-        }
     }
 
     // End of low-level memory operations.

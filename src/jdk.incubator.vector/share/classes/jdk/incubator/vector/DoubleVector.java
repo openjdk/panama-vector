@@ -3175,18 +3175,15 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     final
     DoubleVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         DoubleSpecies vsp = vspecies();
-        if (!bb.isDirect()) {
-          return fromByteArray0(bb.array(), offset);
-        } else {
-          return ScopedMemoryAccess.loadFromByteBuffer(
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  bb, offset, vsp,
-                  (buf, off, s) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      return s.ldOp(wb, off,
-                              (wb_, o, i) -> wb_.getDouble(o + i * 8));
-                  });
-        }
+
+        return ScopedMemoryAccess.loadFromByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                bb, offset, vsp,
+                (buf, off, s) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    return s.ldOp(wb, off,
+                            (wb_, o, i) -> wb_.getDouble(o + i * 8));
+                });
     }
 
     // Unchecked storing operations in native byte order.
@@ -3229,9 +3226,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     @ForceInline
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
-        if (!bb.isDirect()) {
-          intoByteArray0(bb.array(), offset);
-        } else {
           DoubleSpecies vsp = vspecies();
           ScopedMemoryAccess.storeIntoByteBuffer(
                   vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
@@ -3241,7 +3235,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                       v.stOp(wb, off,
                               (wb_, o, i, e) -> wb_.putDouble(o + i * 8, e));
                   });
-        }
     }
 
     // End of low-level memory operations.

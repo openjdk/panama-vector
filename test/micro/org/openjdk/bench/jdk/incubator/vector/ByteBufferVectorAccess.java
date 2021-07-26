@@ -50,8 +50,7 @@ import org.openjdk.jmh.annotations.Warmup;
 @Fork(value = 1, jvmArgsAppend = {
     "--add-modules=jdk.incubator.foreign,jdk.incubator.vector",
     "-Dforeign.restricted=permit",
-    "--enable-native-access", "ALL-UNNAMED",
-    "-Djdk.incubator.vector.VECTOR_ACCESS_OOB_CHECK=1"})
+    "--enable-native-access", "ALL-UNNAMED"})
 public class ByteBufferVectorAccess {
   private static final VectorSpecies<Byte> SPECIES = VectorSpecies.ofLargestShape(byte.class);
 
