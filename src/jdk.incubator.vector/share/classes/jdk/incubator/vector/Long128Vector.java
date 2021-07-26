@@ -370,20 +370,20 @@ final class Long128Vector extends LongVector {
     @Override
     @ForceInline
     public final Long128Mask compare(Comparison op, Vector<Long> v) {
-        return super.compareTemplate(Long128Mask.class, op, v, null);  // specialize
+        return super.compareTemplate(Long128Mask.class, op, v);  // specialize
     }
 
     @Override
     @ForceInline
     public final Long128Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Long128Mask.class, op, broadcast(s), null);  // specialize
+        return super.compareTemplate(Long128Mask.class, op, s);  // specialize
     }
 
 
     @Override
     @ForceInline
     public final Long128Mask compare(Comparison op, Vector<Long> v, VectorMask<Long> m) {
-        return compareTemplate(Long128Mask.class, op, v, ((Long128Mask)m));
+        return super.compareTemplate(Long128Mask.class, op, v, (Long128Mask) m);
     }
 
 

@@ -1885,8 +1885,32 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     @ForceInline
     final
     <M extends VectorMask<Byte>>
+    M compareTemplate(Class<M> maskType, Comparison op, Vector<Byte> v) {
+        Objects.requireNonNull(v);
+        ByteSpecies vsp = vspecies();
+        ByteVector that = (ByteVector) v;
+        that.check(this);
+        int opc = opCode(op);
+        return VectorSupport.compare(
+            opc, getClass(), maskType, byte.class, length(),
+            this, that, null,
+            (cond, v0, v1, m1) -> {
+                AbstractMask<Byte> m
+                    = v0.bTest(cond, v1, (cond_, i, a, b)
+                               -> compareWithOp(cond, a, b));
+                @SuppressWarnings("unchecked")
+                M m2 = (M) m;
+                return m2;
+            });
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Byte>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<Byte> v, M m) {
         Objects.requireNonNull(v);
+        Objects.requireNonNull(m);
         ByteSpecies vsp = vspecies();
         ByteVector that = (ByteVector) v;
         that.check(this);
@@ -1899,7 +1923,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                     = v0.bTest(cond, v1, (cond_, i, a, b)
                                -> compareWithOp(cond, a, b));
                 @SuppressWarnings("unchecked")
-                M m2 = (M)((m1 != null) ? cmpM.and(m1) : cmpM);
+                M m2 = (M) cmpM.and(m1);
                 return m2;
             });
     }
@@ -1947,6 +1971,14 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     public abstract
     VectorMask<Byte> compare(Comparison op, byte e);
 
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Byte>>
+    M compareTemplate(Class<M> maskType, Comparison op, byte e) {
+        return compareTemplate(maskType, op, broadcast(e));
+    }
+
     /**
      * Tests this vector by comparing it with an input scalar,
      * according to the given comparison operation,
@@ -1980,6 +2012,14 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     @Override
     public abstract
     VectorMask<Byte> compare(Comparison op, long e);
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Byte>>
+    M compareTemplate(Class<M> maskType, Comparison op, long e) {
+        return compareTemplate(maskType, op, broadcast(e));
+    }
 
     /**
      * {@inheritDoc} <!--workaround-->

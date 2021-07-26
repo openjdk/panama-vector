@@ -375,25 +375,25 @@ final class Short128Vector extends ShortVector {
     @Override
     @ForceInline
     public final Short128Mask compare(Comparison op, Vector<Short> v) {
-        return super.compareTemplate(Short128Mask.class, op, v, null);  // specialize
+        return super.compareTemplate(Short128Mask.class, op, v);  // specialize
     }
 
     @Override
     @ForceInline
     public final Short128Mask compare(Comparison op, short s) {
-        return super.compareTemplate(Short128Mask.class, op, broadcast(s), null);  // specialize
+        return super.compareTemplate(Short128Mask.class, op, s);  // specialize
     }
 
     @Override
     @ForceInline
     public final Short128Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Short128Mask.class, op, broadcast(s), null);  // specialize
+        return super.compareTemplate(Short128Mask.class, op, s);  // specialize
     }
 
     @Override
     @ForceInline
     public final Short128Mask compare(Comparison op, Vector<Short> v, VectorMask<Short> m) {
-        return compareTemplate(Short128Mask.class, op, v, ((Short128Mask)m));
+        return super.compareTemplate(Short128Mask.class, op, v, (Short128Mask) m);
     }
 
 

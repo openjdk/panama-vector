@@ -362,25 +362,25 @@ final class Double128Vector extends DoubleVector {
     @Override
     @ForceInline
     public final Double128Mask compare(Comparison op, Vector<Double> v) {
-        return super.compareTemplate(Double128Mask.class, op, v, null);  // specialize
+        return super.compareTemplate(Double128Mask.class, op, v);  // specialize
     }
 
     @Override
     @ForceInline
     public final Double128Mask compare(Comparison op, double s) {
-        return super.compareTemplate(Double128Mask.class, op, broadcast(s), null);  // specialize
+        return super.compareTemplate(Double128Mask.class, op, s);  // specialize
     }
 
     @Override
     @ForceInline
     public final Double128Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Double128Mask.class, op, broadcast(s), null);  // specialize
+        return super.compareTemplate(Double128Mask.class, op, s);  // specialize
     }
 
     @Override
     @ForceInline
     public final Double128Mask compare(Comparison op, Vector<Double> v, VectorMask<Double> m) {
-        return compareTemplate(Double128Mask.class, op, v, ((Double128Mask)m));
+        return super.compareTemplate(Double128Mask.class, op, v, (Double128Mask) m);
     }
 
 

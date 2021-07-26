@@ -1884,8 +1884,32 @@ public abstract class IntVector extends AbstractVector<Integer> {
     @ForceInline
     final
     <M extends VectorMask<Integer>>
+    M compareTemplate(Class<M> maskType, Comparison op, Vector<Integer> v) {
+        Objects.requireNonNull(v);
+        IntSpecies vsp = vspecies();
+        IntVector that = (IntVector) v;
+        that.check(this);
+        int opc = opCode(op);
+        return VectorSupport.compare(
+            opc, getClass(), maskType, int.class, length(),
+            this, that, null,
+            (cond, v0, v1, m1) -> {
+                AbstractMask<Integer> m
+                    = v0.bTest(cond, v1, (cond_, i, a, b)
+                               -> compareWithOp(cond, a, b));
+                @SuppressWarnings("unchecked")
+                M m2 = (M) m;
+                return m2;
+            });
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Integer>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<Integer> v, M m) {
         Objects.requireNonNull(v);
+        Objects.requireNonNull(m);
         IntSpecies vsp = vspecies();
         IntVector that = (IntVector) v;
         that.check(this);
@@ -1898,7 +1922,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                     = v0.bTest(cond, v1, (cond_, i, a, b)
                                -> compareWithOp(cond, a, b));
                 @SuppressWarnings("unchecked")
-                M m2 = (M)((m1 != null) ? cmpM.and(m1) : cmpM);
+                M m2 = (M) cmpM.and(m1);
                 return m2;
             });
     }
@@ -1946,6 +1970,14 @@ public abstract class IntVector extends AbstractVector<Integer> {
     public abstract
     VectorMask<Integer> compare(Comparison op, int e);
 
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Integer>>
+    M compareTemplate(Class<M> maskType, Comparison op, int e) {
+        return compareTemplate(maskType, op, broadcast(e));
+    }
+
     /**
      * Tests this vector by comparing it with an input scalar,
      * according to the given comparison operation,
@@ -1979,6 +2011,14 @@ public abstract class IntVector extends AbstractVector<Integer> {
     @Override
     public abstract
     VectorMask<Integer> compare(Comparison op, long e);
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Integer>>
+    M compareTemplate(Class<M> maskType, Comparison op, long e) {
+        return compareTemplate(maskType, op, broadcast(e));
+    }
 
     /**
      * {@inheritDoc} <!--workaround-->

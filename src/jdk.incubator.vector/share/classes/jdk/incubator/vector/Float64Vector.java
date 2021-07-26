@@ -362,25 +362,25 @@ final class Float64Vector extends FloatVector {
     @Override
     @ForceInline
     public final Float64Mask compare(Comparison op, Vector<Float> v) {
-        return super.compareTemplate(Float64Mask.class, op, v, null);  // specialize
+        return super.compareTemplate(Float64Mask.class, op, v);  // specialize
     }
 
     @Override
     @ForceInline
     public final Float64Mask compare(Comparison op, float s) {
-        return super.compareTemplate(Float64Mask.class, op, broadcast(s), null);  // specialize
+        return super.compareTemplate(Float64Mask.class, op, s);  // specialize
     }
 
     @Override
     @ForceInline
     public final Float64Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Float64Mask.class, op, broadcast(s), null);  // specialize
+        return super.compareTemplate(Float64Mask.class, op, s);  // specialize
     }
 
     @Override
     @ForceInline
     public final Float64Mask compare(Comparison op, Vector<Float> v, VectorMask<Float> m) {
-        return compareTemplate(Float64Mask.class, op, v, ((Float64Mask)m));
+        return super.compareTemplate(Float64Mask.class, op, v, (Float64Mask) m);
     }
 
 

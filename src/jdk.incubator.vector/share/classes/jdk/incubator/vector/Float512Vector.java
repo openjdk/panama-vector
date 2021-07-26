@@ -362,25 +362,25 @@ final class Float512Vector extends FloatVector {
     @Override
     @ForceInline
     public final Float512Mask compare(Comparison op, Vector<Float> v) {
-        return super.compareTemplate(Float512Mask.class, op, v, null);  // specialize
+        return super.compareTemplate(Float512Mask.class, op, v);  // specialize
     }
 
     @Override
     @ForceInline
     public final Float512Mask compare(Comparison op, float s) {
-        return super.compareTemplate(Float512Mask.class, op, broadcast(s), null);  // specialize
+        return super.compareTemplate(Float512Mask.class, op, s);  // specialize
     }
 
     @Override
     @ForceInline
     public final Float512Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Float512Mask.class, op, broadcast(s), null);  // specialize
+        return super.compareTemplate(Float512Mask.class, op, s);  // specialize
     }
 
     @Override
     @ForceInline
     public final Float512Mask compare(Comparison op, Vector<Float> v, VectorMask<Float> m) {
-        return compareTemplate(Float512Mask.class, op, v, ((Float512Mask)m));
+        return super.compareTemplate(Float512Mask.class, op, v, (Float512Mask) m);
     }
 
 

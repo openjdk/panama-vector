@@ -375,25 +375,25 @@ final class Byte512Vector extends ByteVector {
     @Override
     @ForceInline
     public final Byte512Mask compare(Comparison op, Vector<Byte> v) {
-        return super.compareTemplate(Byte512Mask.class, op, v, null);  // specialize
+        return super.compareTemplate(Byte512Mask.class, op, v);  // specialize
     }
 
     @Override
     @ForceInline
     public final Byte512Mask compare(Comparison op, byte s) {
-        return super.compareTemplate(Byte512Mask.class, op, broadcast(s), null);  // specialize
+        return super.compareTemplate(Byte512Mask.class, op, s);  // specialize
     }
 
     @Override
     @ForceInline
     public final Byte512Mask compare(Comparison op, long s) {
-        return super.compareTemplate(Byte512Mask.class, op, broadcast(s), null);  // specialize
+        return super.compareTemplate(Byte512Mask.class, op, s);  // specialize
     }
 
     @Override
     @ForceInline
     public final Byte512Mask compare(Comparison op, Vector<Byte> v, VectorMask<Byte> m) {
-        return compareTemplate(Byte512Mask.class, op, v, ((Byte512Mask)m));
+        return super.compareTemplate(Byte512Mask.class, op, v, (Byte512Mask) m);
     }
 
 

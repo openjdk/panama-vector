@@ -1324,7 +1324,6 @@ class VectorMaskCmpNode : public VectorNode {
 #endif // !PRODUCT
 };
 
-
 // Used to wrap other vector nodes in order to add masking functionality.
 class VectorMaskWrapperNode : public VectorNode {
  public:

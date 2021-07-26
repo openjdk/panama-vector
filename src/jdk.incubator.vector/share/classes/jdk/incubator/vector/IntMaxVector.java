@@ -375,25 +375,25 @@ final class IntMaxVector extends IntVector {
     @Override
     @ForceInline
     public final IntMaxMask compare(Comparison op, Vector<Integer> v) {
-        return super.compareTemplate(IntMaxMask.class, op, v, null);  // specialize
+        return super.compareTemplate(IntMaxMask.class, op, v);  // specialize
     }
 
     @Override
     @ForceInline
     public final IntMaxMask compare(Comparison op, int s) {
-        return super.compareTemplate(IntMaxMask.class, op, broadcast(s), null);  // specialize
+        return super.compareTemplate(IntMaxMask.class, op, s);  // specialize
     }
 
     @Override
     @ForceInline
     public final IntMaxMask compare(Comparison op, long s) {
-        return super.compareTemplate(IntMaxMask.class, op, broadcast(s), null);  // specialize
+        return super.compareTemplate(IntMaxMask.class, op, s);  // specialize
     }
 
     @Override
     @ForceInline
     public final IntMaxMask compare(Comparison op, Vector<Integer> v, VectorMask<Integer> m) {
-        return compareTemplate(IntMaxMask.class, op, v, ((IntMaxMask)m));
+        return super.compareTemplate(IntMaxMask.class, op, v, (IntMaxMask) m);
     }
 
 

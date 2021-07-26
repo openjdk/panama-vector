@@ -362,25 +362,25 @@ final class FloatMaxVector extends FloatVector {
     @Override
     @ForceInline
     public final FloatMaxMask compare(Comparison op, Vector<Float> v) {
-        return super.compareTemplate(FloatMaxMask.class, op, v, null);  // specialize
+        return super.compareTemplate(FloatMaxMask.class, op, v);  // specialize
     }
 
     @Override
     @ForceInline
     public final FloatMaxMask compare(Comparison op, float s) {
-        return super.compareTemplate(FloatMaxMask.class, op, broadcast(s), null);  // specialize
+        return super.compareTemplate(FloatMaxMask.class, op, s);  // specialize
     }
 
     @Override
     @ForceInline
     public final FloatMaxMask compare(Comparison op, long s) {
-        return super.compareTemplate(FloatMaxMask.class, op, broadcast(s), null);  // specialize
+        return super.compareTemplate(FloatMaxMask.class, op, s);  // specialize
     }
 
     @Override
     @ForceInline
     public final FloatMaxMask compare(Comparison op, Vector<Float> v, VectorMask<Float> m) {
-        return compareTemplate(FloatMaxMask.class, op, v, ((FloatMaxMask)m));
+        return super.compareTemplate(FloatMaxMask.class, op, v, (FloatMaxMask) m);
     }
 
 
