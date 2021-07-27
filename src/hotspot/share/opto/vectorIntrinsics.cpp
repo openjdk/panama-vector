@@ -772,7 +772,7 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
   const bool can_access_non_heap = TypePtr::NULL_PTR->higher_equal(base_type);
 
   // Not determined access base can and can not be null.
-  const bool mixed_access = !(off_heap_access == can_access_non_heap);
+  const bool mixed_access = !off_heap_access && can_access_non_heap;
 
   const TypePtr *addr_type = gvn().type(addr)->isa_ptr();
   const TypeAryPtr* arr_type = addr_type->isa_aryptr();
