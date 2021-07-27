@@ -1,7 +1,10 @@
 /build/
 /dist/
 /.idea/
+/**/.idea
+/**/*.iml
 /.vscode/
+/**/.vscode
 /nbproject/
 nbproject/private/
 /webrev
@@ -18,3 +21,7 @@ NashornProfile.txt
 /src/utils/LogCompilation/target/
 /.project/
 /.settings/
+
+# Downloaded binaries
+/src/utils/hsdis/binutils*
+/src/utils/hsdis/build/
