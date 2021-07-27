@@ -60,6 +60,9 @@ public class ByteBufferVectorAccess {
   ByteBuffer directIn, directOut;
   ByteBuffer heapIn, heapOut;
 
+  ByteBuffer directInRo, directOutRo;
+  ByteBuffer heapInRo, heapOutRo;
+
   @Setup
   public void setup() {
     directIn = ByteBuffer.allocateDirect(size);
@@ -67,6 +70,12 @@ public class ByteBufferVectorAccess {
 
     heapIn = ByteBuffer.wrap(new byte[size]);
     heapOut = ByteBuffer.wrap(new byte[size]);
+
+    directInRo = directIn.asReadOnlyBuffer();
+    directOutRo = directOut.asReadOnlyBuffer();
+
+    heapInRo = heapIn.asReadOnlyBuffer();
+    heapOutRo = heapOut.asReadOnlyBuffer();
   }
 
   @Benchmark
@@ -80,9 +89,18 @@ public class ByteBufferVectorAccess {
   }
 
   @Benchmark
-  public void pollutedBuffers() {
+  public void pollutedBuffers2() {
     copyMemory(directIn, directOut);
     copyMemory(heapIn, heapOut);
+  }
+
+  @Benchmark
+  public void pollutedBuffers3() {
+    copyMemory(directIn, directOut);
+    copyMemory(heapIn, heapOut);
+
+    copyMemory(directInRo, directOut);
+    copyMemory(heapInRo, heapOut);
   }
 
   @CompilerControl(CompilerControl.Mode.DONT_INLINE)
