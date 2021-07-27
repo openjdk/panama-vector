@@ -3143,7 +3143,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
     @ForceInline
     final
     FloatVector fromByteArray0Template(byte[] a, int offset) {
-        Objects.requireNonNull(a);
         FloatSpecies vsp = vspecies();
         return VectorSupport.load(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
@@ -3162,7 +3161,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
     final
     FloatVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         FloatSpecies vsp = vspecies();
-
         return ScopedMemoryAccess.loadFromByteBuffer(
                 vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
                 bb, offset, vsp,
@@ -3197,7 +3195,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
     @ForceInline
     final
     void intoByteArray0Template(byte[] a, int offset) {
-        Objects.requireNonNull(a);
         FloatSpecies vsp = vspecies();
         VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
@@ -3213,15 +3210,15 @@ public abstract class FloatVector extends AbstractVector<Float> {
     @ForceInline
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
-          FloatSpecies vsp = vspecies();
-          ScopedMemoryAccess.storeIntoByteBuffer(
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  this, bb, offset,
-                  (buf, off, v) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      v.stOp(wb, off,
-                              (wb_, o, i, e) -> wb_.putFloat(o + i * 4, e));
-                  });
+        FloatSpecies vsp = vspecies();
+        ScopedMemoryAccess.storeIntoByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                this, bb, offset,
+                (buf, off, v) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    v.stOp(wb, off,
+                            (wb_, o, i, e) -> wb_.putFloat(o + i * 4, e));
+                });
     }
 
     // End of low-level memory operations.

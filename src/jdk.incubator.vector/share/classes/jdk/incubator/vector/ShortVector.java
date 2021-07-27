@@ -3532,7 +3532,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
     @ForceInline
     final
     ShortVector fromByteArray0Template(byte[] a, int offset) {
-        Objects.requireNonNull(a);
         ShortSpecies vsp = vspecies();
         return VectorSupport.load(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
@@ -3551,7 +3550,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
     final
     ShortVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         ShortSpecies vsp = vspecies();
-
         return ScopedMemoryAccess.loadFromByteBuffer(
                 vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
                 bb, offset, vsp,
@@ -3586,7 +3584,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
     @ForceInline
     final
     void intoByteArray0Template(byte[] a, int offset) {
-        Objects.requireNonNull(a);
         ShortSpecies vsp = vspecies();
         VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
@@ -3602,15 +3599,15 @@ public abstract class ShortVector extends AbstractVector<Short> {
     @ForceInline
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
-          ShortSpecies vsp = vspecies();
-          ScopedMemoryAccess.storeIntoByteBuffer(
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  this, bb, offset,
-                  (buf, off, v) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      v.stOp(wb, off,
-                              (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
-                  });
+        ShortSpecies vsp = vspecies();
+        ScopedMemoryAccess.storeIntoByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                this, bb, offset,
+                (buf, off, v) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    v.stOp(wb, off,
+                            (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
+                });
     }
 
     // End of low-level memory operations.

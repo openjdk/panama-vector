@@ -3545,7 +3545,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     @ForceInline
     final
     ByteVector fromByteArray0Template(byte[] a, int offset) {
-        Objects.requireNonNull(a);
         ByteSpecies vsp = vspecies();
         return VectorSupport.load(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
@@ -3564,7 +3563,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     final
     ByteVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         ByteSpecies vsp = vspecies();
-
         return ScopedMemoryAccess.loadFromByteBuffer(
                 vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
                 bb, offset, vsp,
@@ -3599,7 +3597,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     @ForceInline
     final
     void intoByteArray0Template(byte[] a, int offset) {
-        Objects.requireNonNull(a);
         ByteSpecies vsp = vspecies();
         VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
@@ -3615,15 +3612,15 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     @ForceInline
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
-          ByteSpecies vsp = vspecies();
-          ScopedMemoryAccess.storeIntoByteBuffer(
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  this, bb, offset,
-                  (buf, off, v) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      v.stOp(wb, off,
-                              (wb_, o, i, e) -> wb_.put(o + i * 1, e));
-                  });
+        ByteSpecies vsp = vspecies();
+        ScopedMemoryAccess.storeIntoByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                this, bb, offset,
+                (buf, off, v) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    v.stOp(wb, off,
+                            (wb_, o, i, e) -> wb_.put(o + i * 1, e));
+                });
     }
 
     // End of low-level memory operations.

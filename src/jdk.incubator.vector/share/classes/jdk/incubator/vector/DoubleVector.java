@@ -3156,7 +3156,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     @ForceInline
     final
     DoubleVector fromByteArray0Template(byte[] a, int offset) {
-        Objects.requireNonNull(a);
         DoubleSpecies vsp = vspecies();
         return VectorSupport.load(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
@@ -3175,7 +3174,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     final
     DoubleVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         DoubleSpecies vsp = vspecies();
-
         return ScopedMemoryAccess.loadFromByteBuffer(
                 vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
                 bb, offset, vsp,
@@ -3210,7 +3208,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     @ForceInline
     final
     void intoByteArray0Template(byte[] a, int offset) {
-        Objects.requireNonNull(a);
         DoubleSpecies vsp = vspecies();
         VectorSupport.store(
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
@@ -3226,15 +3223,15 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     @ForceInline
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
-          DoubleSpecies vsp = vspecies();
-          ScopedMemoryAccess.storeIntoByteBuffer(
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  this, bb, offset,
-                  (buf, off, v) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      v.stOp(wb, off,
-                              (wb_, o, i, e) -> wb_.putDouble(o + i * 8, e));
-                  });
+        DoubleSpecies vsp = vspecies();
+        ScopedMemoryAccess.storeIntoByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                this, bb, offset,
+                (buf, off, v) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    v.stOp(wb, off,
+                            (wb_, o, i, e) -> wb_.putDouble(o + i * 8, e));
+                });
     }
 
     // End of low-level memory operations.
