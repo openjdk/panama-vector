@@ -816,8 +816,22 @@ final class Long64Vector extends LongVector {
     @ForceInline
     @Override
     final
+    LongVector fromByteArray0(byte[] a, int offset, VectorMask<Long> m) {
+        return super.fromByteArray0Template(Long64Mask.class, a, offset, (Long64Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
     LongVector fromByteBuffer0(ByteBuffer bb, int offset) {
         return super.fromByteBuffer0Template(bb, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    LongVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Long> m) {
+        return super.fromByteBuffer0Template(Long64Mask.class, bb, offset, (Long64Mask) m);  // specialize
     }
 
     @ForceInline
@@ -847,6 +861,20 @@ final class Long64Vector extends LongVector {
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteArray0(byte[] a, int offset, VectorMask<Long> m) {
+        super.intoByteArray0Template(Long64Mask.class, a, offset, (Long64Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Long> m) {
+        super.intoByteBuffer0Template(Long64Mask.class, bb, offset, (Long64Mask) m);
     }
 
 

@@ -2854,9 +2854,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                                        VectorMask<Short> m) {
         ShortSpecies vsp = (ShortSpecies) species;
         if (offset >= 0 && offset <= (a.length - species.vectorByteSize())) {
-            ShortVector zero = vsp.zero();
-            ShortVector v = zero.fromByteArray0(a, offset);
-            return zero.blend(v.maybeSwap(bo), m);
+            return vsp.dummyVector().fromByteArray0(a, offset, m).maybeSwap(bo);
         }
 
         // FIXME: optimize
@@ -3252,9 +3250,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                                         VectorMask<Short> m) {
         ShortSpecies vsp = (ShortSpecies) species;
         if (offset >= 0 && offset <= (bb.limit() - species.vectorByteSize())) {
-            ShortVector zero = vsp.zero();
-            ShortVector v = zero.fromByteBuffer0(bb, offset);
-            return zero.blend(v.maybeSwap(bo), m);
+            return vsp.dummyVector().fromByteBuffer0(bb, offset, m).maybeSwap(bo);
         }
 
         // FIXME: optimize
@@ -3589,12 +3585,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
         if (m.allTrue()) {
             intoByteArray(a, offset, bo);
         } else {
-            // FIXME: optimize
             ShortSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 2, a.length);
-            ByteBuffer wb = wrapper(a, bo);
-            this.stOp(wb, offset, m,
-                    (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
+            maybeSwap(bo).intoByteArray0(a, offset, m);
         }
     }
 
@@ -3625,15 +3618,12 @@ public abstract class ShortVector extends AbstractVector<Short> {
         if (m.allTrue()) {
             intoByteBuffer(bb, offset, bo);
         } else {
-            // FIXME: optimize
             if (bb.isReadOnly()) {
                 throw new ReadOnlyBufferException();
             }
             ShortSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 2, bb.limit());
-            ByteBuffer wb = wrapper(bb, bo);
-            this.stOp(wb, offset, m,
-                    (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
+            maybeSwap(bo).intoByteBuffer0(bb, offset, m);
         }
     }
 
@@ -3741,6 +3731,25 @@ public abstract class ShortVector extends AbstractVector<Short> {
     }
 
     abstract
+    ShortVector fromByteArray0(byte[] a, int offset, VectorMask<Short> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Short>>
+    ShortVector fromByteArray0Template(Class<M> maskClass, byte[] a, int offset, M m) {
+        ShortSpecies vsp = vspecies();
+        m.check(vsp);
+        return VectorSupport.loadMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, byteArrayAddress(a, offset), m,
+            a, offset, vsp,
+            (arr, off, s, vm) -> {
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                return s.ldOp(wb, off, vm,
+                        (wb_, o, i) -> wb_.getShort(o + i * 2));
+            });
+    }
+
+    abstract
     ShortVector fromByteBuffer0(ByteBuffer bb, int offset);
     @ForceInline
     final
@@ -3752,6 +3761,24 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 (buf, off, s) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     return s.ldOp(wb, off,
+                            (wb_, o, i) -> wb_.getShort(o + i * 2));
+                });
+    }
+
+    abstract
+    ShortVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Short> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Short>>
+    ShortVector fromByteBuffer0Template(Class<M> maskClass, ByteBuffer bb, int offset, M m) {
+        ShortSpecies vsp = vspecies();
+        m.check(vsp);
+        return ScopedMemoryAccess.loadFromByteBufferMasked(
+                vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+                bb, offset, m, vsp,
+                (buf, off, s, vm) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    return s.ldOp(wb, off, vm,
                             (wb_, o, i) -> wb_.getShort(o + i * 2));
                 });
     }
@@ -3811,6 +3838,25 @@ public abstract class ShortVector extends AbstractVector<Short> {
             });
     }
 
+    abstract
+    void intoByteArray0(byte[] a, int offset, VectorMask<Short> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Short>>
+    void intoByteArray0Template(Class<M> maskClass, byte[] a, int offset, M m) {
+        ShortSpecies vsp = vspecies();
+        m.check(vsp);
+        VectorSupport.storeMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, byteArrayAddress(a, offset),
+            this, m, a, offset,
+            (arr, off, v, vm) -> {
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                v.stOp(wb, off, vm,
+                        (tb_, o, i, e) -> tb_.putShort(o + i * 2, e));
+            });
+    }
+
     @ForceInline
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
@@ -3821,6 +3867,24 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 (buf, off, v) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     v.stOp(wb, off,
+                            (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
+                });
+    }
+
+    abstract
+    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Short> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Short>>
+    void intoByteBuffer0Template(Class<M> maskClass, ByteBuffer bb, int offset, M m) {
+        ShortSpecies vsp = vspecies();
+        m.check(vsp);
+        ScopedMemoryAccess.storeIntoByteBufferMasked(
+                vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+                this, m, bb, offset,
+                (buf, off, v, vm) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    v.stOp(wb, off, vm,
                             (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
                 });
     }

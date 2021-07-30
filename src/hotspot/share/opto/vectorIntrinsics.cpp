@@ -976,9 +976,6 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
 //                     C container, int index,  // Arguments for default implementation
 //                     StoreVectorMaskedOperation<C, V, M> defaultImpl) {
 //
-//    TODO: Handle special cases where load/store happens from/to byte array but element type
-//    is not byte.
-//
 bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
   const TypeInstPtr* vector_klass = gvn().type(argument(0))->isa_instptr();
   const TypeInstPtr* mask_klass   = gvn().type(argument(1))->isa_instptr();
@@ -1018,31 +1015,9 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
     }
     return false; // should be primitive type
   }
+
   BasicType elem_bt = elem_type->basic_type();
   int num_elem = vlen->get_con();
-
-  bool use_predicate = arch_supports_vector(is_store ? Op_StoreVectorMasked : Op_LoadVectorMasked,
-                                            num_elem, elem_bt, (VectorMaskUseType) (VecMaskUseLoad | VecMaskUsePred));
-  // Masked vector store operation needs the architecture predicate feature. We need to check
-  // whether the predicated vector operation is supported by backend.
-  if (is_store && !use_predicate) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** not supported: op=storeMasked vlen=%d etype=%s",
-                    num_elem, type2name(elem_bt));
-    }
-    return false;
-  }
-
-  // This only happens for masked vector load. If predicate is not supported, then check whether
-  // the normal vector load and blend operations are supported by backend.
-  if (!use_predicate && (!arch_supports_vector(Op_LoadVector, num_elem, elem_bt, VecMaskNotUsed) ||
-      !arch_supports_vector(Op_VectorBlend, num_elem, elem_bt, VecMaskUseLoad))) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** not supported: op=loadMasked vlen=%d etype=%s",
-                    num_elem, type2name(elem_bt));
-    }
-    return false;
-  }
 
   Node* base = argument(4);
   Node* offset = ConvL2X(argument(5));
@@ -1054,11 +1029,73 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
   Node* addr = make_unsafe_address(base, offset, elem_bt, true);
   const TypePtr *addr_type = gvn().type(addr)->isa_ptr();
   const TypeAryPtr* arr_type = addr_type->isa_aryptr();
-  if (arr_type != NULL && !elem_consistent_with_arr(elem_bt, arr_type)) {
+
+  // Now handle special case where load/store happens from/to byte array but element type is not byte.
+  bool using_byte_array = arr_type != NULL && arr_type->elem()->array_element_basic_type() == T_BYTE && elem_bt != T_BYTE;
+  // If there is no consistency between array and vector element types, it must be special byte array case
+  if (arr_type != NULL && !using_byte_array && !elem_consistent_with_arr(elem_bt, arr_type)) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** not supported: arity=%d op=%s vlen=%d etype=%s atype=%s",
                     is_store, is_store ? "storeMasked" : "loadMasked",
                     num_elem, type2name(elem_bt), type2name(arr_type->elem()->array_element_basic_type()));
+    }
+    set_map(old_map);
+    set_sp(old_sp);
+    return false;
+  }
+
+  int mem_num_elem = using_byte_array ? num_elem * type2aelembytes(elem_bt) : num_elem;
+  BasicType mem_elem_bt = using_byte_array ? T_BYTE : elem_bt;
+  bool use_predicate = arch_supports_vector(is_store ? Op_StoreVectorMasked : Op_LoadVectorMasked,
+                                            mem_num_elem, mem_elem_bt,
+                                            (VectorMaskUseType) (VecMaskUseLoad | VecMaskUsePred));
+  // Masked vector store operation needs the architecture predicate feature. We need to check
+  // whether the predicated vector operation is supported by backend.
+  if (is_store && !use_predicate) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not supported: op=storeMasked vlen=%d etype=%s using_byte_array=%d",
+                    num_elem, type2name(elem_bt), using_byte_array ? 1 : 0);
+    }
+    set_map(old_map);
+    set_sp(old_sp);
+    return false;
+  }
+
+  // This only happens for masked vector load. If predicate is not supported, then check whether
+  // the normal vector load and blend operations are supported by backend.
+  if (!use_predicate && (!arch_supports_vector(Op_LoadVector, mem_num_elem, mem_elem_bt, VecMaskNotUsed) ||
+      !arch_supports_vector(Op_VectorBlend, mem_num_elem, mem_elem_bt, VecMaskUseLoad))) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not supported: op=loadMasked vlen=%d etype=%s using_byte_array=%d",
+                    num_elem, type2name(elem_bt), using_byte_array ? 1 : 0);
+    }
+    set_map(old_map);
+    set_sp(old_sp);
+    return false;
+  }
+
+  // Since we are using byte array, we need to double check that the vector reinterpret operation
+  // with byte type is supported by backend.
+  if (using_byte_array) {
+    if (!arch_supports_vector(Op_VectorReinterpret, mem_num_elem, T_BYTE, VecMaskNotUsed)) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** not supported: arity=%d op=%s vlen=%d etype=%s using_byte_array=1",
+                      is_store, is_store ? "storeMasked" : "loadMasked",
+                      num_elem, type2name(elem_bt));
+      }
+      set_map(old_map);
+      set_sp(old_sp);
+      return false;
+    }
+  }
+
+  // Since it needs to unbox the mask, we need to double check that the related load operations
+  // for mask are supported by backend.
+  if (!arch_supports_vector(Op_LoadVector, num_elem, elem_bt, VecMaskUseLoad)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not supported: arity=%d op=%s vlen=%d etype=%s",
+                      is_store, is_store ? "storeMasked" : "loadMasked",
+                      num_elem, type2name(elem_bt));
     }
     set_map(old_map);
     set_sp(old_sp);
@@ -1101,21 +1138,45 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
       return false; // operand unboxing failed
     }
     set_all_memory(reset_memory());
+
+    if (using_byte_array) {
+      // Reinterpret the incoming vector to byte vector.
+      const TypeVect* to_vect_type = TypeVect::make(mem_elem_bt, mem_num_elem);
+      val = gvn().transform(new VectorReinterpretNode(val, val->bottom_type()->is_vect(), to_vect_type));
+      // Reinterpret the vector mask to byte type.
+      const TypeVect* from_mask_type = TypeVect::makemask(elem_bt, num_elem);
+      const TypeVect* to_mask_type = TypeVect::makemask(mem_elem_bt, mem_num_elem);
+      mask = gvn().transform(new VectorReinterpretNode(mask, from_mask_type, to_mask_type));
+    }
     Node* vstore = gvn().transform(new StoreVectorMaskedNode(control(), memory(addr), addr, val, addr_type, mask));
     set_memory(vstore, addr_type);
   } else {
     Node* vload = NULL;
+
+    if (using_byte_array) {
+      // Reinterpret the vector mask to byte type.
+      const TypeVect* from_mask_type = TypeVect::makemask(elem_bt, num_elem);
+      const TypeVect* to_mask_type = TypeVect::makemask(mem_elem_bt, mem_num_elem);
+      mask = gvn().transform(new VectorReinterpretNode(mask, from_mask_type, to_mask_type));
+    }
+
     if (use_predicate) {
       // Generate masked load vector node if predicate feature is supported.
-      const TypeVect* vt = TypeVect::make(elem_bt, num_elem);
+      const TypeVect* vt = TypeVect::make(mem_elem_bt, mem_num_elem);
       vload = gvn().transform(new LoadVectorMaskedNode(control(), memory(addr), addr, addr_type, vt, mask));
     } else {
       // Use the vector blend to implement the masked load vector. The biased elements are zeros.
-      Node* zero = gvn().transform(gvn().zerocon(elem_bt));
-      zero = gvn().transform(VectorNode::scalar2vector(zero, num_elem, Type::get_const_basic_type(elem_bt)));
-      vload = gvn().transform(LoadVectorNode::make(0, control(), memory(addr), addr, addr_type, num_elem, elem_bt));
+      Node* zero = gvn().transform(gvn().zerocon(mem_elem_bt));
+      zero = gvn().transform(VectorNode::scalar2vector(zero, mem_num_elem, Type::get_const_basic_type(mem_elem_bt)));
+      vload = gvn().transform(LoadVectorNode::make(0, control(), memory(addr), addr, addr_type, mem_num_elem, mem_elem_bt));
       vload = gvn().transform(new VectorBlendNode(zero, vload, mask));
     }
+
+    if (using_byte_array) {
+      const TypeVect* to_vect_type = TypeVect::make(elem_bt, num_elem);
+      vload = gvn().transform(new VectorReinterpretNode(vload, vload->bottom_type()->is_vect(), to_vect_type));
+    }
+
     Node* box = box_vector(vload, vbox_type, elem_bt, num_elem);
     set_result(box);
   }

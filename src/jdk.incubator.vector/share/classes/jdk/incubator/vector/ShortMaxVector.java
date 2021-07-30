@@ -833,8 +833,22 @@ final class ShortMaxVector extends ShortVector {
     @ForceInline
     @Override
     final
+    ShortVector fromByteArray0(byte[] a, int offset, VectorMask<Short> m) {
+        return super.fromByteArray0Template(ShortMaxMask.class, a, offset, (ShortMaxMask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
     ShortVector fromByteBuffer0(ByteBuffer bb, int offset) {
         return super.fromByteBuffer0Template(bb, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    ShortVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Short> m) {
+        return super.fromByteBuffer0Template(ShortMaxMask.class, bb, offset, (ShortMaxMask) m);  // specialize
     }
 
     @ForceInline
@@ -858,6 +872,20 @@ final class ShortMaxVector extends ShortVector {
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteArray0(byte[] a, int offset, VectorMask<Short> m) {
+        super.intoByteArray0Template(ShortMaxMask.class, a, offset, (ShortMaxMask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Short> m) {
+        super.intoByteBuffer0Template(ShortMaxMask.class, bb, offset, (ShortMaxMask) m);
     }
 
     @ForceInline

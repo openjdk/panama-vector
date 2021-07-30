@@ -847,8 +847,22 @@ final class Byte64Vector extends ByteVector {
     @ForceInline
     @Override
     final
+    ByteVector fromByteArray0(byte[] a, int offset, VectorMask<Byte> m) {
+        return super.fromByteArray0Template(Byte64Mask.class, a, offset, (Byte64Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
     ByteVector fromByteBuffer0(ByteBuffer bb, int offset) {
         return super.fromByteBuffer0Template(bb, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    ByteVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Byte> m) {
+        return super.fromByteBuffer0Template(Byte64Mask.class, bb, offset, (Byte64Mask) m);  // specialize
     }
 
     @ForceInline
@@ -878,6 +892,20 @@ final class Byte64Vector extends ByteVector {
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteArray0(byte[] a, int offset, VectorMask<Byte> m) {
+        super.intoByteArray0Template(Byte64Mask.class, a, offset, (Byte64Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Byte> m) {
+        super.intoByteBuffer0Template(Byte64Mask.class, bb, offset, (Byte64Mask) m);
     }
 
 
