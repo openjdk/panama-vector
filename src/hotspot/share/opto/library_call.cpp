@@ -2234,7 +2234,7 @@ bool LibraryCallKit::prepare_unsafe_access(const BasicType type, const bool unal
   } else {
     heap_base_oop = base; // on-heap or mixed access
   }
- 
+
   // Can base be NULL? Otherwise, always on-heap access.
   can_access_non_heap = TypePtr::NULL_PTR->higher_equal(_gvn.type(base));
 
