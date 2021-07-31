@@ -409,17 +409,10 @@ public class ScopedMemoryAccess {
 
             byte[] base = (byte[]) BufferAccess.bufferBase(bb);
 
-            if (base == null) {
-              return VectorSupport.load(vmClass, e, length,
-                      null, BufferAccess.bufferAddress(bb, offset),
-                      bb, offset, s,
-                      defaultImpl);
-            } else {
-              return VectorSupport.load(vmClass, e, length,
+            return VectorSupport.load(vmClass, e, length,
                       base, BufferAccess.bufferAddress(bb, offset),
                       bb, offset, s,
                       defaultImpl);
-            }
         } finally {
             Reference.reachabilityFence(scope);
         }
@@ -460,19 +453,11 @@ public class ScopedMemoryAccess {
 
             final byte[] base = (byte[]) BufferAccess.bufferBase(bb);
 
-            if (base == null) {
-              VectorSupport.store(vmClass, e, length,
-                                  null, BufferAccess.bufferAddress(bb, offset),
-                                  v,
-                                  bb, offset,
-                                  defaultImpl);
-            } else {
-              VectorSupport.store(vmClass, e, length,
-                                  base, BufferAccess.bufferAddress(bb, offset),
-                                  v,
-                                  bb, offset,
-                                  defaultImpl);
-            }
+            VectorSupport.store(vmClass, e, length,
+                                base, BufferAccess.bufferAddress(bb, offset),
+                                v,
+                                bb, offset,
+                                defaultImpl);
         } finally {
             Reference.reachabilityFence(scope);
         }

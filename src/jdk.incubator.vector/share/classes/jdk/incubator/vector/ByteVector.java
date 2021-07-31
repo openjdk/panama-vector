@@ -3458,6 +3458,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     public final
     void intoByteBuffer(ByteBuffer bb, int offset,
                         ByteOrder bo) {
+        //TODO Optimize: polymorphic call can lead to lack of inlining, and strange unswitch
         if (bb.isReadOnly()) {
             throw new ReadOnlyBufferException();
         }

@@ -3070,6 +3070,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
     public final
     void intoByteBuffer(ByteBuffer bb, int offset,
                         ByteOrder bo) {
+        //TODO Optimize: polymorphic call can lead to lack of inlining, and strange unswitch
         if (bb.isReadOnly()) {
             throw new ReadOnlyBufferException();
         }
