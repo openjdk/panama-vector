@@ -2187,6 +2187,13 @@ void Compile::Optimize() {
   // Set loop opts counter
   if((_loop_opts_cnt > 0) && (has_loops() || has_split_ifs())) {
     {
+      TracePhase tp("loadOpto", &timers[_t_loadopto1]);
+      LoadOptimize::optimize(igvn);
+      igvn.optimize();
+      if (major_progress()) print_method(PHASE_LOADOPTO1, 2);
+      if (failing())  return;
+    }
+    {
       TracePhase tp("idealLoop", &timers[_t_idealLoop]);
       PhaseIdealLoop::optimize(igvn, LoopOptsDefault);
       _loop_opts_cnt--;

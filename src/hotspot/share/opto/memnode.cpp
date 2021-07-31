@@ -1834,6 +1834,8 @@ Node *LoadNode::Ideal(PhaseGVN *phase, bool can_reshape) {
     }
   }
 
+
+
   return progress ? this : NULL;
 }
 
@@ -5076,3 +5078,115 @@ bool MergeMemStream::match_memory(Node* mem, const MergeMemNode* mm, int idx) {
   return false;
 }
 #endif // !PRODUCT
+
+Node* LoadOptimize::optimize_node(Node *n) {
+  assert(n->is_Load(), "only for loads");
+  if (!n->is_Load()) {
+    return NULL;
+  }
+
+  Node *const mem = n->in(MemNode::Memory);
+  if (mem == NULL || mem->is_top()) {
+    assert(false, "memory should be used");
+    return NULL;
+  }
+  // Find alias for current operation
+  const uint alias_idx = phase->C->get_alias_index(n->adr_type());
+  if (!(alias_idx > Compile::AliasIdxBot)) {
+    assert(false, "Loads should be from some memory");
+    return NULL;
+  }
+
+  // Start traveling nodes back to find possibely unique store
+  worklist.clear();
+  visited.clear();
+  in_count = 0;
+  in_nodes = NULL;
+
+  test_push_node(mem);
+
+  while (worklist.size()) {
+    Node *m = worklist.pop();
+    // Go through merge
+    if (m->is_MergeMem()) {
+      m = m->as_MergeMem()->memory_at(alias_idx);
+      assert(m != NULL && !m->is_top(), "don't read no-mem");
+      test_push_node(m);
+    } else if (m->is_Phi()) {
+      if (!add_phi_inputs_to_worklist(m->as_Phi())) {
+        return NULL;
+      }
+    } else if (m->is_Mem()) {
+      // It's memory node, check if it our alias
+      uint other_alias = phase->C->get_alias_index(m->as_Mem()->adr_type());
+      if (other_alias == alias_idx || other_alias == Compile::AliasIdxBot) {
+        // This node operates on same alias as our, push it to result,
+        // otherwise skip as have no impact
+        add_input(m);
+      }
+    } else {
+      // Unindetified node
+      add_input(m);
+    }
+
+    if (in_count > 1) {
+      break;
+    }
+  }
+
+  // If found single unique node
+  if (in_count == 1 && in_nodes != mem) {
+    // We did find unique input for this node, replace mem with new one
+    phase->rehash_node_delayed(in_nodes);
+    phase->rehash_node_delayed(n);
+
+    tty->print("Optimizing load node in %s\n", phase->C->method()->name()->as_utf8());
+    n->dump();
+    tty->print("new memory\n");
+    in_nodes->dump();
+
+    n->set_req_X(MemNode::Memory, in_nodes, phase);
+    return n;
+  }
+
+  return NULL;
+}
+
+bool LoadOptimize::add_phi_inputs_to_worklist(PhiNode *m) {
+  for (uint i=1; i < m->req(); i++) {
+    Node *ii = m->in(i);
+    if (ii == NULL || ii->is_top()) {
+      assert(false, "should not happen before / after phase");
+      return false;
+    }
+    test_push_node(ii);
+  }
+
+  return true;
+}
+
+void LoadOptimize::optimize(PhaseIterGVN &igvn) {
+  ResourceMark rm;
+  LoadOptimize lo(&igvn);
+
+  Unique_Node_List nl;
+  Compile *C = Compile::current();
+
+  C->identify_useful_nodes(nl);
+
+  bool progress = false;
+  for (uint i=0; i < nl.size(); i++) {
+    Node *ii = nl.at(i);
+    if (ii->is_Load()) {
+      Node *n = lo.optimize_node(ii);
+      if (n != NULL) {
+        igvn._worklist.push(n);
+        progress = true;
+      }
+    }
+  }
+
+  if (progress) {
+    C->set_major_progress();
+  }
+}

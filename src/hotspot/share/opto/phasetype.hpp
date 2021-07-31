@@ -41,6 +41,7 @@ enum CompilerPhaseType {
   PHASE_ITER_GVN_BEFORE_EA,
   PHASE_ITER_GVN_AFTER_EA,
   PHASE_ITER_GVN_AFTER_ELIMINATION,
+  PHASE_LOADOPTO1,
   PHASE_PHASEIDEALLOOP1,
   PHASE_PHASEIDEALLOOP2,
   PHASE_PHASEIDEALLOOP3,
@@ -92,6 +93,7 @@ class CompilerPhaseTypeHelper {
       case PHASE_ITER_GVN_BEFORE_EA:         return "Iter GVN before EA";
       case PHASE_ITER_GVN_AFTER_EA:          return "Iter GVN after EA";
       case PHASE_ITER_GVN_AFTER_ELIMINATION: return "Iter GVN after eliminating allocations and locks";
+      case PHASE_LOADOPTO1:                  return "Optimize loads 1";
       case PHASE_PHASEIDEALLOOP1:            return "PhaseIdealLoop 1";
       case PHASE_PHASEIDEALLOOP2:            return "PhaseIdealLoop 2";
       case PHASE_PHASEIDEALLOOP3:            return "PhaseIdealLoop 3";

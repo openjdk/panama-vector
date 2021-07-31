@@ -1739,4 +1739,39 @@ public:
   virtual const Type *bottom_type() const { return ( AllocatePrefetchStyle == 3 ) ? Type::MEMORY : Type::ABIO; }
 };
 
+// Used to optimize loads. Sometimes load sees bot memory which is product of
+// mem merge and phi, even if the memory chaing does not effectively modifies this
+// memory and load can be narrowed to unique memory in.
+// Helpful for loop invariants.
+class LoadOptimize : public ResourceObj {
+private:
+  PhaseIterGVN* phase;
+  Unique_Node_List worklist;
+  VectorSet visited;
+
+  int in_count;
+  Node* in_nodes;
+
+  bool test_push_node(Node *n) {
+    if (!visited.test_set(n->_idx)) {
+      worklist.push(n);
+      return false;
+    }
+
+    return true;
+  }
+
+  inline bool add_phi_inputs_to_worklist(PhiNode *phi);
+
+  void add_input(Node *n) {
+    in_nodes = n;
+    in_count++;
+  }
+public:
+  LoadOptimize(PhaseIterGVN* phase) : phase(phase) {}
+  Node* optimize_node(Node *n);
+
+  static void optimize(PhaseIterGVN &igvn);
+};
+
 #endif // SHARE_OPTO_MEMNODE_HPP

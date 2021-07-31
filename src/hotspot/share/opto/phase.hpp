@@ -81,6 +81,7 @@ public:
           _t_vector_igvn,
           _t_vector_pru,
       _t_renumberLive,
+      _t_loadopto1,
       _t_idealLoop,
       _t_idealLoopVerify,
       _t_ccp,
