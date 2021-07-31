@@ -223,6 +223,8 @@ class LibraryCallKit : public GraphKit {
 
   typedef enum { Relaxed, Opaque, Volatile, Acquire, Release } AccessKind;
   DecoratorSet mo_decorator_for_access_kind(AccessKind kind);
+  bool prepare_unsafe_access(const BasicType type, const bool unaligned, Node* base, Node* offset, const AccessKind kind,
+    DecoratorSet& decorators, Node *&heap_base_oop, Node *&adr, bool &can_access_non_heap);
   bool inline_unsafe_access(bool is_store, BasicType type, AccessKind kind, bool is_unaligned);
   static bool klass_needs_init_guard(Node* kls);
   bool inline_unsafe_allocate();

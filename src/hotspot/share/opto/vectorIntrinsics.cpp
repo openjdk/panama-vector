@@ -759,21 +759,21 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
   uint old_sp = sp();
   SafePointNode* old_map = clone_map();
 
-  Node* addr = make_unsafe_address(base, offset, (is_mask ? T_BOOLEAN : elem_bt), true);
+  DecoratorSet decorators = DECORATORS_NONE;
+  Node* heap_base_oop;
+  Node* addr;
+  bool can_access_non_heap;
+  const BasicType access_type = is_mask ? T_BOOLEAN : elem_bt;
+  // The unaligned param does not matter "in fact"
+  // Here's a bit of "work around", actually we are not going ot load access_type, but vector of access_types
+  if (!prepare_unsafe_access(access_type, /* unaligned */ true, base, offset, Relaxed, decorators, heap_base_oop, addr, can_access_non_heap)) {
+    set_map(old_map);
+    set_sp(old_sp);
+    assert(false, "performance issue");
+    return false;
+  }
 
-  // This check is repetition of some checks from inline_unsafe_access(), used to determine if barriers are needed
-  // Not full scope of checks is performed, we check only if access can be mixed
   const Type *const base_type = gvn().type(base);
-
-  // Is off heap access (true implies can_access_non_heap = true)
-  const bool off_heap_access = TypePtr::NULL_PTR == base_type;
-
-  // Can base be NULL? Otherwise, always on-heap access.
-  const bool can_access_non_heap = TypePtr::NULL_PTR->higher_equal(base_type);
-
-  // Not determined access base can and can not be null.
-  const bool mixed_access = !off_heap_access && can_access_non_heap;
-
   const TypePtr *addr_type = gvn().type(addr)->isa_ptr();
   const TypeAryPtr* arr_type = addr_type->isa_aryptr();
 
@@ -834,11 +834,12 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
 
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
 
-  if (mixed_access) {
-    insert_mem_bar(Op_MemBarCPUOrder);
-  }
+  C2AccessValuePtr adr(addr, addr_type);
+  C2ParseAccess access(this, decorators | (is_store ? C2_WRITE_ACCESS : C2_READ_ACCESS), access_type, heap_base_oop, adr);
 
   if (is_store) {
+    // Constructor sets pre-barrier, destructor post barrier
+    C2AccessFence fence(access);
     Node* val = unbox_vector(argument(6), vbox_type, elem_bt, num_elem);
     if (val == NULL) {
       set_map(old_map);
@@ -858,6 +859,9 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
     Node* vstore = gvn().transform(StoreVectorNode::make(0, control(), memory(addr), addr, addr_type, val, store_num_elem));
     set_memory(vstore, addr_type);
   } else {
+    // Constructor sets pre-barrier, destructor post barrier
+    C2AccessFence fence(access);
+
     // When using byte array, we need to load as byte then reinterpret the value. Otherwise, do a simple vector load.
     Node* vload = NULL;
     if (using_byte_array) {
@@ -880,10 +884,6 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
   }
 
   old_map->destruct(&_gvn);
-
-  if (mixed_access) {
-    insert_mem_bar(Op_MemBarCPUOrder);
-  }
 
   C->set_max_vector_size(MAX2(C->max_vector_size(), (uint)(num_elem * type2aelembytes(elem_bt))));
   return true;
