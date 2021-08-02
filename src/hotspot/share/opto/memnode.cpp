@@ -5092,8 +5092,7 @@ Node* LoadOptimize::optimize_node(Node *n) {
   }
   // Find alias for current operation
   const uint alias_idx = phase->C->get_alias_index(n->adr_type());
-  if (!(alias_idx > Compile::AliasIdxBot)) {
-    assert(false, "Loads should be from some memory");
+  if (!(alias_idx > Compile::AliasIdxRaw)) {
     return NULL;
   }
 
@@ -5116,12 +5115,12 @@ Node* LoadOptimize::optimize_node(Node *n) {
       if (!add_phi_inputs_to_worklist(m->as_Phi())) {
         return NULL;
       }
-    } else if (m->is_Mem()) {
+    } else if (m->is_Mem()) { // TODO Do we have to check mem nodes?
       // It's memory node, check if it our alias
       uint other_alias = phase->C->get_alias_index(m->as_Mem()->adr_type());
-      if (other_alias == alias_idx || other_alias == Compile::AliasIdxBot) {
-        // This node operates on same alias as our, push it to result,
-        // otherwise skip as have no impact
+      if (other_alias == alias_idx || other_alias <= Compile::AliasIdxRaw) { // TODO Can we safely widen checks to AliasIdxBot
+        // This node operates on same alias as our, push it to result, if alias is <= raw, this can be
+        // unidentified alias from Unsafe (as well on-heap)
         add_input(m);
       }
     } else {
@@ -5139,12 +5138,12 @@ Node* LoadOptimize::optimize_node(Node *n) {
     // We did find unique input for this node, replace mem with new one
     phase->rehash_node_delayed(in_nodes);
     phase->rehash_node_delayed(n);
-
-    tty->print("Optimizing load node in %s\n", phase->C->method()->name()->as_utf8());
+#ifndef PRODUCT
+    tty->print("Optimizing load node in %s:%s\n", phase->C->method()->holder()->name()->as_utf8(), phase->C->method()->name()->as_utf8());
     n->dump();
     tty->print("new memory\n");
     in_nodes->dump();
-
+#endif
     n->set_req_X(MemNode::Memory, in_nodes, phase);
     return n;
   }
