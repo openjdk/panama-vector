@@ -2209,9 +2209,13 @@ DecoratorSet LibraryCallKit::mo_decorator_for_access_kind(AccessKind kind) {
   }
 }
 
-bool LibraryCallKit::prepare_unsafe_access(const BasicType type, const bool unaligned, Node* base, Node* offset, const AccessKind kind,
-  DecoratorSet& decorators, Node *&heap_base_oop, Node *&adr, bool &can_access_non_heap) {
-  decorators = C2_UNSAFE_ACCESS;
+bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, const AccessKind kind, const bool unaligned) {
+  if (callee()->is_static())  return false;  // caller must have the capability!
+  DecoratorSet decorators = C2_UNSAFE_ACCESS;
+  guarantee(!is_store || kind != Acquire, "Acquire accesses can be produced only for loads");
+  guarantee( is_store || kind != Release, "Release accesses can be produced only for stores");
+  assert(type != T_OBJECT || !unaligned, "unaligned access not supported with object type");
+
   if (is_reference_type(type)) {
     decorators |= ON_UNKNOWN_OOP_REF;
   }
@@ -2219,39 +2223,6 @@ bool LibraryCallKit::prepare_unsafe_access(const BasicType type, const bool unal
   if (unaligned) {
     decorators |= C2_UNALIGNED;
   }
-
-  // Build address expression.
-  heap_base_oop = top();
-
-  adr = make_unsafe_address(base, offset, type, kind == Relaxed);
-
-  if (_gvn.type(base)->isa_ptr() == TypePtr::NULL_PTR) {
-    if (type != T_OBJECT) {
-      decorators |= IN_NATIVE; // off-heap primitive access
-    } else {
-      return false; // off-heap oop accesses are not supported
-    }
-  } else {
-    heap_base_oop = base; // on-heap or mixed access
-  }
-
-  // Can base be NULL? Otherwise, always on-heap access.
-  can_access_non_heap = TypePtr::NULL_PTR->higher_equal(_gvn.type(base));
-
-  if (!can_access_non_heap) {
-    decorators |= IN_HEAP;
-  }
-
-  return true;
-}
-
-bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, const AccessKind kind, const bool unaligned) {
-  if (callee()->is_static())  return false;  // caller must have the capability!
-
-  guarantee(!is_store || kind != Acquire, "Acquire accesses can be produced only for loads");
-  guarantee( is_store || kind != Release, "Release accesses can be produced only for stores");
-  assert(type != T_OBJECT || !unaligned, "unaligned access not supported with object type");
-
 
 #ifndef PRODUCT
   {
@@ -2283,6 +2254,9 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
 
   Node* receiver = argument(0);  // type: oop
 
+  // Build address expression.
+  Node* heap_base_oop = top();
+
   // The base is either a Java object or a value produced by Unsafe.staticFieldBase
   Node* base = argument(1);  // type: oop
   // The offset is a value produced by Unsafe.staticFieldOffset or Unsafe.objectFieldOffset
@@ -2299,16 +2273,25 @@ bool LibraryCallKit::inline_unsafe_access(bool is_store, const BasicType type, c
   uint old_sp = sp();
   SafePointNode* old_map = clone_map();
 
-  DecoratorSet decorators = DECORATORS_NONE;
-  Node* heap_base_oop;
-  Node* adr;
-  bool can_access_non_heap;
+  Node* adr = make_unsafe_address(base, offset, type, kind == Relaxed);
 
-  if (!prepare_unsafe_access(type, unaligned, base, offset, kind, decorators, heap_base_oop, adr, can_access_non_heap)) {
-    set_map(old_map);
-    set_sp(old_sp);
-    assert(false, "performance issue");
-    return false;
+  if (_gvn.type(base)->isa_ptr() == TypePtr::NULL_PTR) {
+    if (type != T_OBJECT) {
+      decorators |= IN_NATIVE; // off-heap primitive access
+    } else {
+      set_map(old_map);
+      set_sp(old_sp);
+      return false; // off-heap oop accesses are not supported
+    }
+  } else {
+    heap_base_oop = base; // on-heap or mixed access
+  }
+
+  // Can base be NULL? Otherwise, always on-heap access.
+  bool can_access_non_heap = TypePtr::NULL_PTR->higher_equal(_gvn.type(base));
+
+  if (!can_access_non_heap) {
+    decorators |= IN_HEAP;
   }
 
   Node* val = is_store ? argument(4) : NULL;
