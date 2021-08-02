@@ -3551,14 +3551,27 @@ public abstract class ShortVector extends AbstractVector<Short> {
     final
     ShortVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         ShortSpecies vsp = vspecies();
-        return ScopedMemoryAccess.loadFromByteBuffer(
-                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                bb, offset, vsp,
-                (buf, off, s) -> {
-                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    return s.ldOp(wb, off,
-                            (wb_, o, i) -> wb_.getShort(o + i * 2));
-                });
+        if (ScopedMemoryAccess.isDirect(bb)) { // Flag has to be passed as constant for better loop unswitch
+          return ScopedMemoryAccess.loadFromByteBuffer(
+                  true,
+                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                  bb, offset, vsp,
+                  (buf, off, s) -> {
+                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                      return s.ldOp(wb, off,
+                              (wb_, o, i) -> wb_.getShort(o + i * 2));
+                  });
+        } else {
+          return ScopedMemoryAccess.loadFromByteBuffer(
+                  false,
+                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                  bb, offset, vsp,
+                  (buf, off, s) -> {
+                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                      return s.ldOp(wb, off,
+                              (wb_, o, i) -> wb_.getShort(o + i * 2));
+                  });
+        }
     }
 
     // Unchecked storing operations in native byte order.
@@ -3601,14 +3614,30 @@ public abstract class ShortVector extends AbstractVector<Short> {
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
         ShortSpecies vsp = vspecies();
-        ScopedMemoryAccess.storeIntoByteBuffer(
-                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                this, bb, offset,
-                (buf, off, v) -> {
-                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    v.stOp(wb, off,
-                            (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
-                });
+        if (ScopedMemoryAccess.isReadOnly(bb)) {
+          throw new ReadOnlyBufferException();
+        }
+        if (ScopedMemoryAccess.isDirect(bb)) { // Flag has to be passed as constant for better loop unswitch
+          ScopedMemoryAccess.storeIntoByteBuffer(
+                  true,
+                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                  this, bb, offset,
+                  (buf, off, v) -> {
+                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                      v.stOp(wb, off,
+                              (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
+                  });
+        } else {
+          ScopedMemoryAccess.storeIntoByteBuffer(
+                  false,
+                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                  this, bb, offset,
+                  (buf, off, v) -> {
+                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                      v.stOp(wb, off,
+                              (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
+                  });
+        }
     }
 
     // End of low-level memory operations.

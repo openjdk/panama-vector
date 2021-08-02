@@ -797,12 +797,25 @@ public abstract class Buffer {
 
                 @Override
                 public Object getBufferBase(ByteBuffer bb) {
+                    assert 1==2;
                     return bb.base();
+                }
+                @Override
+                @ForceInline
+                public byte[] getBufferBaseFiled(ByteBuffer bb) {
+                    return bb.hb;
                 }
 
                 @Override
+                @ForceInline
                 public long getBufferAddress(ByteBuffer bb) {
                     return bb.address;
+                }
+
+                @Override
+                @ForceInline
+                public boolean isDirect(ByteBuffer bb) {
+                    return !(bb instanceof HeapByteBuffer);
                 }
 
                 @Override
@@ -815,6 +828,7 @@ public abstract class Buffer {
                 }
 
                 @Override
+                @ForceInline
                 public MemorySegmentProxy bufferSegment(Buffer buffer) {
                     return buffer.segment;
                 }

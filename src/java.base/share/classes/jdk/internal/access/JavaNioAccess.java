@@ -72,9 +72,20 @@ public interface JavaNioAccess {
     Object getBufferBase(ByteBuffer bb);
 
     /**
+     * Avoids polymorphism from {@link #getBufferBase}
+     */
+    byte[] getBufferBaseFiled(ByteBuffer bb);
+
+    /**
      * Used by {@code jdk.internal.foreign.Utils}.
      */
     long getBufferAddress(ByteBuffer bb);
+
+    /**
+     * Check if {@link ByteBuffer} is direct, used by Panama. Consider moving this as Buffer API.
+     * It's better, avoids polymorphism and takes from immutable mem, easier for loop unswitch
+     */
+    boolean isDirect(ByteBuffer bb);
 
     /**
      * Used by {@code jdk.internal.foreign.Utils}.
