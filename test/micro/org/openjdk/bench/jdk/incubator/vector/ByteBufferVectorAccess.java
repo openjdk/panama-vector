@@ -103,6 +103,45 @@ public class ByteBufferVectorAccess {
     copyMemory(heapInRo, heapOut);
   }
 
+  @Benchmark
+  public void pollutedBuffers4() {
+    copyMemory(directIn, heapOut); // Pollute if unswitch on 2nd param
+    copyMemory(heapIn, heapOut);
+
+    copyMemory(heapIn, directIn); // Pollute if unswitch on 1st param
+    copyMemory(heapIn, directOut);
+  }
+
+
+  boolean readOnlyException;
+
+  @Benchmark
+  public void pollutedBuffers5() {
+    copyMemory(directIn, heapOut);
+    copyMemory(heapIn, heapOut);
+
+    copyMemory(heapIn, directIn);
+    copyMemory(heapIn, directOut);
+
+    if (readOnlyException) {
+      try {
+        copyMemory(heapIn, directOutRo);
+      } catch (Exception ignored) {}
+      readOnlyException = !readOnlyException;
+    }
+  }
+
+  @Benchmark
+  public void arrayCopy() {
+    byte[] in = heapIn.array();
+    byte[] out = heapOut.array();
+
+    for (int i=0; i < SPECIES.loopBound(in.length); i += SPECIES.length()) {
+      final var v = ByteVector.fromArray(SPECIES, in, 0);
+      v.intoArray(out, 0);
+    }
+  }
+
   @CompilerControl(CompilerControl.Mode.DONT_INLINE)
   protected void copyMemory(ByteBuffer in, ByteBuffer out) {
     for (int i=0; i < SPECIES.loopBound(in.limit()); i += SPECIES.vectorByteSize()) {

@@ -3162,14 +3162,15 @@ public abstract class FloatVector extends AbstractVector<Float> {
     final
     FloatVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         FloatSpecies vsp = vspecies();
-        return ScopedMemoryAccess.loadFromByteBuffer(
-                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                bb, offset, vsp,
-                (buf, off, s) -> {
-                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    return s.ldOp(wb, off,
-                            (wb_, o, i) -> wb_.getFloat(o + i * 4));
-                });
+          return ScopedMemoryAccess.loadFromByteBuffer(
+                  false, // TODO Fix this - just left for test
+                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                  bb, offset, vsp,
+                  (buf, off, s) -> {
+                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                      return s.ldOp(wb, off,
+                              (wb_, o, i) -> wb_.getFloat(o + i * 4));
+                  });
     }
 
     // Unchecked storing operations in native byte order.
@@ -3212,14 +3213,19 @@ public abstract class FloatVector extends AbstractVector<Float> {
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
         FloatSpecies vsp = vspecies();
-        ScopedMemoryAccess.storeIntoByteBuffer(
-                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                this, bb, offset,
-                (buf, off, v) -> {
-                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    v.stOp(wb, off,
-                            (wb_, o, i, e) -> wb_.putFloat(o + i * 4, e));
-                });
+        if (ScopedMemoryAccess.isReadOnly(bb)) {
+          throw new ReadOnlyBufferException();
+        }
+
+          ScopedMemoryAccess.storeIntoByteBuffer(
+                  false, // TODO Fix this - just left for test
+                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                  this, bb, offset,
+                  (buf, off, v) -> {
+                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                      v.stOp(wb, off,
+                              (wb_, o, i, e) -> wb_.putFloat(o + i * 4, e));
+                  });
     }
 
     // End of low-level memory operations.
