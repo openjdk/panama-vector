@@ -545,7 +545,7 @@ public abstract class LongVector extends AbstractVector<Long> {
         m.check(maskClass, this);
         if (opKind(op, VO_SPECIAL)) {
             if (op == ZOMO) {
-                return blend(broadcast(-1), compare(NE, 0).and(m));
+                return blend(broadcast(-1), compare(NE, 0, m));
             }
             if (op == NOT || op == NEG) {
                 return blend(lanewise(op), m);
@@ -1798,8 +1798,6 @@ public abstract class LongVector extends AbstractVector<Long> {
     final
     <M extends VectorMask<Long>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<Long> v) {
-        Objects.requireNonNull(v);
-        LongSpecies vsp = vspecies();
         LongVector that = (LongVector) v;
         that.check(this);
         int opc = opCode(op);
@@ -1821,11 +1819,9 @@ public abstract class LongVector extends AbstractVector<Long> {
     final
     <M extends VectorMask<Long>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<Long> v, M m) {
-        Objects.requireNonNull(v);
-        Objects.requireNonNull(m);
-        LongSpecies vsp = vspecies();
         LongVector that = (LongVector) v;
         that.check(this);
+        m.check(maskType, this);
         int opc = opCode(op);
         return VectorSupport.compare(
             opc, getClass(), maskType, long.class, length(),
@@ -1915,7 +1911,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     public final VectorMask<Long> compare(VectorOperators.Comparison op,
                                                long e,
                                                VectorMask<Long> m) {
-        return compare(op, e).and(m);
+        return compare(op, broadcast(e), m);
     }
 
 

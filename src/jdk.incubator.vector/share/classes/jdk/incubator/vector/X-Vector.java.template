@@ -601,7 +601,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         m.check(maskClass, this);
         if (opKind(op, VO_SPECIAL)) {
             if (op == ZOMO) {
-                return blend(broadcast(-1), compare(NE, 0).and(m));
+                return blend(broadcast(-1), compare(NE, 0, m));
             }
 #if[BITWISE]
             if (op == NOT || op == NEG) {
@@ -2167,8 +2167,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     final
     <M extends VectorMask<$Boxtype$>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<$Boxtype$> v) {
-        Objects.requireNonNull(v);
-        $Type$Species vsp = vspecies();
         $abstractvectortype$ that = ($abstractvectortype$) v;
         that.check(this);
         int opc = opCode(op);
@@ -2190,11 +2188,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     final
     <M extends VectorMask<$Boxtype$>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<$Boxtype$> v, M m) {
-        Objects.requireNonNull(v);
-        Objects.requireNonNull(m);
-        $Type$Species vsp = vspecies();
         $abstractvectortype$ that = ($abstractvectortype$) v;
         that.check(this);
+        m.check(maskType, this);
         int opc = opCode(op);
         return VectorSupport.compare(
             opc, getClass(), maskType, $type$.class, length(),
@@ -2286,7 +2282,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     public final VectorMask<$Boxtype$> compare(VectorOperators.Comparison op,
                                                $type$ e,
                                                VectorMask<$Boxtype$> m) {
-        return compare(op, e).and(m);
+        return compare(op, broadcast(e), m);
     }
 
 #if[!long]

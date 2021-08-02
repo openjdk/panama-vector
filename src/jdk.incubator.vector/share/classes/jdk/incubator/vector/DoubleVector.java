@@ -581,7 +581,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         m.check(maskClass, this);
         if (opKind(op, VO_SPECIAL)) {
             if (op == ZOMO) {
-                return blend(broadcast(-1), compare(NE, 0).and(m));
+                return blend(broadcast(-1), compare(NE, 0, m));
             }
         }
         int opc = opCode(op);
@@ -1742,8 +1742,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     final
     <M extends VectorMask<Double>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<Double> v) {
-        Objects.requireNonNull(v);
-        DoubleSpecies vsp = vspecies();
         DoubleVector that = (DoubleVector) v;
         that.check(this);
         int opc = opCode(op);
@@ -1765,11 +1763,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     final
     <M extends VectorMask<Double>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<Double> v, M m) {
-        Objects.requireNonNull(v);
-        Objects.requireNonNull(m);
-        DoubleSpecies vsp = vspecies();
         DoubleVector that = (DoubleVector) v;
         that.check(this);
+        m.check(maskType, this);
         int opc = opCode(op);
         return VectorSupport.compare(
             opc, getClass(), maskType, double.class, length(),
@@ -1855,7 +1851,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     public final VectorMask<Double> compare(VectorOperators.Comparison op,
                                                double e,
                                                VectorMask<Double> m) {
-        return compare(op, e).and(m);
+        return compare(op, broadcast(e), m);
     }
 
     /**

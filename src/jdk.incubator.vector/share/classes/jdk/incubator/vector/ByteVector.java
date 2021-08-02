@@ -587,7 +587,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         m.check(maskClass, this);
         if (opKind(op, VO_SPECIAL)) {
             if (op == ZOMO) {
-                return blend(broadcast(-1), compare(NE, 0).and(m));
+                return blend(broadcast(-1), compare(NE, 0, m));
             }
             if (op == NOT || op == NEG) {
                 return blend(lanewise(op), m);
@@ -1886,8 +1886,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     final
     <M extends VectorMask<Byte>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<Byte> v) {
-        Objects.requireNonNull(v);
-        ByteSpecies vsp = vspecies();
         ByteVector that = (ByteVector) v;
         that.check(this);
         int opc = opCode(op);
@@ -1909,11 +1907,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     final
     <M extends VectorMask<Byte>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<Byte> v, M m) {
-        Objects.requireNonNull(v);
-        Objects.requireNonNull(m);
-        ByteSpecies vsp = vspecies();
         ByteVector that = (ByteVector) v;
         that.check(this);
+        m.check(maskType, this);
         int opc = opCode(op);
         return VectorSupport.compare(
             opc, getClass(), maskType, byte.class, length(),
@@ -2003,7 +1999,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     public final VectorMask<Byte> compare(VectorOperators.Comparison op,
                                                byte e,
                                                VectorMask<Byte> m) {
-        return compare(op, e).and(m);
+        return compare(op, broadcast(e), m);
     }
 
     /**
