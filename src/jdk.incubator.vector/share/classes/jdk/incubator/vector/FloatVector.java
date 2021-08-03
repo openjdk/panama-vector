@@ -3070,7 +3070,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
     public final
     void intoByteBuffer(ByteBuffer bb, int offset,
                         ByteOrder bo) {
-        //TODO Optimize: polymorphic call can lead to lack of inlining, and strange unswitch
         if (bb.isReadOnly()) {
             throw new ReadOnlyBufferException();
         }
@@ -3162,27 +3161,14 @@ public abstract class FloatVector extends AbstractVector<Float> {
     final
     FloatVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         FloatSpecies vsp = vspecies();
-        if (ScopedMemoryAccess.isDirect(bb)) { // Flag has to be passed as constant for better loop unswitch
-          return ScopedMemoryAccess.loadFromByteBuffer(
-                  true,
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  bb, offset, vsp,
-                  (buf, off, s) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      return s.ldOp(wb, off,
-                              (wb_, o, i) -> wb_.getFloat(o + i * 4));
-                  });
-        } else {
-          return ScopedMemoryAccess.loadFromByteBuffer(
-                  false,
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  bb, offset, vsp,
-                  (buf, off, s) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      return s.ldOp(wb, off,
-                              (wb_, o, i) -> wb_.getFloat(o + i * 4));
-                  });
-        }
+        return ScopedMemoryAccess.loadFromByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                bb, offset, vsp,
+                (buf, off, s) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    return s.ldOp(wb, off,
+                            (wb_, o, i) -> wb_.getFloat(o + i * 4));
+                });
     }
 
     // Unchecked storing operations in native byte order.
@@ -3225,30 +3211,14 @@ public abstract class FloatVector extends AbstractVector<Float> {
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
         FloatSpecies vsp = vspecies();
-        if (ScopedMemoryAccess.isReadOnly(bb)) {
-          throw new ReadOnlyBufferException();
-        }
-        if (ScopedMemoryAccess.isDirect(bb)) { // Flag has to be passed as constant for better loop unswitch
-          ScopedMemoryAccess.storeIntoByteBuffer(
-                  true,
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  this, bb, offset,
-                  (buf, off, v) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      v.stOp(wb, off,
-                              (wb_, o, i, e) -> wb_.putFloat(o + i * 4, e));
-                  });
-        } else {
-          ScopedMemoryAccess.storeIntoByteBuffer(
-                  false,
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  this, bb, offset,
-                  (buf, off, v) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      v.stOp(wb, off,
-                              (wb_, o, i, e) -> wb_.putFloat(o + i * 4, e));
-                  });
-        }
+        ScopedMemoryAccess.storeIntoByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                this, bb, offset,
+                (buf, off, v) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    v.stOp(wb, off,
+                            (wb_, o, i, e) -> wb_.putFloat(o + i * 4, e));
+                });
     }
 
     // End of low-level memory operations.

@@ -3082,7 +3082,6 @@ public abstract class LongVector extends AbstractVector<Long> {
     public final
     void intoByteBuffer(ByteBuffer bb, int offset,
                         ByteOrder bo) {
-        //TODO Optimize: polymorphic call can lead to lack of inlining, and strange unswitch
         if (bb.isReadOnly()) {
             throw new ReadOnlyBufferException();
         }
@@ -3174,27 +3173,14 @@ public abstract class LongVector extends AbstractVector<Long> {
     final
     LongVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         LongSpecies vsp = vspecies();
-        if (ScopedMemoryAccess.isDirect(bb)) { // Flag has to be passed as constant for better loop unswitch
-          return ScopedMemoryAccess.loadFromByteBuffer(
-                  true,
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  bb, offset, vsp,
-                  (buf, off, s) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      return s.ldOp(wb, off,
-                              (wb_, o, i) -> wb_.getLong(o + i * 8));
-                  });
-        } else {
-          return ScopedMemoryAccess.loadFromByteBuffer(
-                  false,
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  bb, offset, vsp,
-                  (buf, off, s) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      return s.ldOp(wb, off,
-                              (wb_, o, i) -> wb_.getLong(o + i * 8));
-                  });
-        }
+        return ScopedMemoryAccess.loadFromByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                bb, offset, vsp,
+                (buf, off, s) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    return s.ldOp(wb, off,
+                            (wb_, o, i) -> wb_.getLong(o + i * 8));
+                });
     }
 
     // Unchecked storing operations in native byte order.
@@ -3237,30 +3223,14 @@ public abstract class LongVector extends AbstractVector<Long> {
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
         LongSpecies vsp = vspecies();
-        if (ScopedMemoryAccess.isReadOnly(bb)) {
-          throw new ReadOnlyBufferException();
-        }
-        if (ScopedMemoryAccess.isDirect(bb)) { // Flag has to be passed as constant for better loop unswitch
-          ScopedMemoryAccess.storeIntoByteBuffer(
-                  true,
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  this, bb, offset,
-                  (buf, off, v) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      v.stOp(wb, off,
-                              (wb_, o, i, e) -> wb_.putLong(o + i * 8, e));
-                  });
-        } else {
-          ScopedMemoryAccess.storeIntoByteBuffer(
-                  false,
-                  vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                  this, bb, offset,
-                  (buf, off, v) -> {
-                      ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                      v.stOp(wb, off,
-                              (wb_, o, i, e) -> wb_.putLong(o + i * 8, e));
-                  });
-        }
+        ScopedMemoryAccess.storeIntoByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                this, bb, offset,
+                (buf, off, v) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    v.stOp(wb, off,
+                            (wb_, o, i, e) -> wb_.putLong(o + i * 8, e));
+                });
     }
 
     // End of low-level memory operations.
