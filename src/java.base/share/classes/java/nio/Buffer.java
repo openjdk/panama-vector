@@ -797,7 +797,6 @@ public abstract class Buffer {
 
                 @Override
                 public Object getBufferBase(ByteBuffer bb) {
-                    assert 1==2;
                     return bb.base();
                 }
                 @Override
