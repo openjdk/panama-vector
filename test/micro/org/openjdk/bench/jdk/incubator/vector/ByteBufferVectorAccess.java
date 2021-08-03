@@ -45,7 +45,7 @@ import org.openjdk.jmh.annotations.Warmup;
 @BenchmarkMode(Mode.AverageTime)
 @Warmup(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-@State(org.openjdk.jmh.annotations.Scope.Thread)
+@State(org.openjdk.jmh.annotations.Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Fork(value = 1, jvmArgsAppend = {
     "--add-modules=jdk.incubator.foreign,jdk.incubator.vector",
@@ -136,9 +136,9 @@ public class ByteBufferVectorAccess {
     byte[] in = heapIn.array();
     byte[] out = heapOut.array();
 
-    for (int i=0; i < SPECIES.loopBound(in.length); i += SPECIES.length()) {
-      final var v = ByteVector.fromArray(SPECIES, in, 0);
-      v.intoArray(out, 0);
+    for (int i=0; i < SPECIES.loopBound(in.length); i += SPECIES.vectorByteSize()) {
+      final var v = ByteVector.fromArray(SPECIES, in, i);
+      v.intoArray(out, i);
     }
   }
 
