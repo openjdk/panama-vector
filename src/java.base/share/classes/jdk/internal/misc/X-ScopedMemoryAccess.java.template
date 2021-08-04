@@ -353,6 +353,9 @@ public class ScopedMemoryAccess {
         static final long BYTE_BUFFER_HB
                 = UNSAFE.objectFieldOffset(ByteBuffer.class, "hb");
 
+        static final long BYTE_BUFFER_IS_READ_ONLY
+                = UNSAFE.objectFieldOffset(ByteBuffer.class, "isReadOnly");
+
         @ForceInline
         static Object bufferBase(ByteBuffer bb) {
             return UNSAFE.getReference(bb, BYTE_BUFFER_HB);
@@ -371,6 +374,11 @@ public class ScopedMemoryAccess {
             return segmentProxy != null ?
                     segmentProxy.scope() : null;
         }
+    }
+
+    @ForceInline
+    public static boolean isReadOnly(ByteBuffer bb) {
+        return UNSAFE.getBoolean(bb, BufferAccess.BYTE_BUFFER_IS_READ_ONLY);
     }
 
     @ForceInline
@@ -406,19 +414,12 @@ public class ScopedMemoryAccess {
                 scope.checkValidState();
             }
 
-            byte[] base = (byte[]) BufferAccess.bufferBase(bb);
+            final byte[] base = (byte[]) BufferAccess.bufferBase(bb);
 
-            if (base == null) {
-              return VectorSupport.load(vmClass, e, length,
-                      null, BufferAccess.bufferAddress(bb, offset),
-                      bb, offset, s,
-                      defaultImpl);
-            } else {
-              return VectorSupport.load(vmClass, e, length,
+            return VectorSupport.load(vmClass, e, length,
                       base, BufferAccess.bufferAddress(bb, offset),
                       bb, offset, s,
                       defaultImpl);
-            }
         } finally {
             Reference.reachabilityFence(scope);
         }
@@ -459,19 +460,11 @@ public class ScopedMemoryAccess {
 
             final byte[] base = (byte[]) BufferAccess.bufferBase(bb);
 
-            if (base == null) {
-              VectorSupport.store(vmClass, e, length,
-                                  null, BufferAccess.bufferAddress(bb, offset),
-                                  v,
-                                  bb, offset,
-                                  defaultImpl);
-            } else {
-              VectorSupport.store(vmClass, e, length,
-                                  base, BufferAccess.bufferAddress(bb, offset),
-                                  v,
-                                  bb, offset,
-                                  defaultImpl);
-            }
+            VectorSupport.store(vmClass, e, length,
+                                base, BufferAccess.bufferAddress(bb, offset),
+                                v,
+                                bb, offset,
+                                defaultImpl);
         } finally {
             Reference.reachabilityFence(scope);
         }

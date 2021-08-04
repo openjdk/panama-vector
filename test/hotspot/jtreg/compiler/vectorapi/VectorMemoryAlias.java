@@ -42,7 +42,7 @@ import jdk.incubator.vector.ByteVector;
 import jdk.incubator.vector.VectorSpecies;
 
 public class VectorMemoryAlias {
-
+  public static final VectorSpecies<Byte> SPECIES = VectorSpecies.ofLargestShape(byte.class);
   public static void main(String[] args) {
     for (int i=0; i < 30000; i++) {
       if (test() != 1) {
@@ -54,9 +54,8 @@ public class VectorMemoryAlias {
   public static int test() {
     byte arr[] = new byte[256];
     final var bb = ByteBuffer.wrap(arr);
-    final var vs = VectorSpecies.ofLargestShape(byte.class);
-    final var ones = ByteVector.broadcast(vs, 1);
-    var res = ByteVector.zero(vs);
+    final var ones = ByteVector.broadcast(SPECIES, 1);
+    var res = ByteVector.zero(SPECIES);
 
     int result = 0;
     result += arr[2];

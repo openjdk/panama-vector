@@ -773,15 +773,9 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
 
   // Not determined access, base can and can not be null.
   const bool mixed_access = !off_heap_access && can_access_non_heap;
-  bool mismatched_array = false;
 
   const TypePtr *addr_type = gvn().type(addr)->isa_ptr();
   const TypeAryPtr* arr_type = addr_type->isa_aryptr();
-
-  if (arr_type == NULL && !off_heap_access) {
-    // Load or store to something different than array? Or just can't determine array type?
-    mismatched_array = true;
-  }
 
   // Now handle special case where load/store happens from/to byte array but element type is not byte.
   bool using_byte_array = arr_type != NULL && arr_type->elem()->array_element_basic_type() == T_BYTE && elem_bt != T_BYTE;
@@ -839,9 +833,8 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
   }
 
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
-  const bool needs_bar = mixed_access || mismatched_array;
 
-  if (needs_bar) {
+  if (mixed_access) {
     insert_mem_bar(Op_MemBarCPUOrder);
   }
 
@@ -888,7 +881,7 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
 
   old_map->destruct(&_gvn);
 
-  if (needs_bar) {
+  if (mixed_access) {
     insert_mem_bar(Op_MemBarCPUOrder);
   }
 

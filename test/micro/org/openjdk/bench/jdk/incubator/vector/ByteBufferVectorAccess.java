@@ -90,26 +90,26 @@ public class ByteBufferVectorAccess {
 
   @Benchmark
   public void pollutedBuffers2() {
-    copyMemory(directIn, directOut);
-    copyMemory(heapIn, heapOut);
+    copyIntoNotInlined(directIn, directOut);
+    copyIntoNotInlined(heapIn, heapOut);
   }
 
   @Benchmark
   public void pollutedBuffers3() {
-    copyMemory(directIn, directOut);
-    copyMemory(heapIn, heapOut);
+    copyIntoNotInlined(directIn, directOut);
+    copyIntoNotInlined(heapIn, heapOut);
 
-    copyMemory(directInRo, directOut);
-    copyMemory(heapInRo, heapOut);
+    copyIntoNotInlined(directInRo, directOut);
+    copyIntoNotInlined(heapInRo, heapOut);
   }
 
   @Benchmark
   public void pollutedBuffers4() {
-    copyMemory(directIn, heapOut); // Pollute if unswitch on 2nd param
-    copyMemory(heapIn, heapOut);
+    copyIntoNotInlined(directIn, heapOut); // Pollute if unswitch on 2nd param
+    copyIntoNotInlined(heapIn, heapOut);
 
-    copyMemory(heapIn, directIn); // Pollute if unswitch on 1st param
-    copyMemory(heapIn, directOut);
+    copyIntoNotInlined(heapIn, directIn); // Pollute if unswitch on 1st param
+    copyIntoNotInlined(heapIn, directOut);
   }
 
 
@@ -117,15 +117,15 @@ public class ByteBufferVectorAccess {
 
   @Benchmark
   public void pollutedBuffers5() {
-    copyMemory(directIn, heapOut);
-    copyMemory(heapIn, heapOut);
+    copyIntoNotInlined(directIn, heapOut);
+    copyIntoNotInlined(heapIn, heapOut);
 
-    copyMemory(heapIn, directIn);
-    copyMemory(heapIn, directOut);
+    copyIntoNotInlined(heapIn, directIn);
+    copyIntoNotInlined(heapIn, directOut);
 
     if (readOnlyException) {
       try {
-        copyMemory(heapIn, directOutRo);
+        copyIntoNotInlined(heapIn, directOutRo);
       } catch (Exception ignored) {}
       readOnlyException = !readOnlyException;
     }
@@ -143,6 +143,11 @@ public class ByteBufferVectorAccess {
   }
 
   @CompilerControl(CompilerControl.Mode.DONT_INLINE)
+  protected void copyIntoNotInlined(ByteBuffer in, ByteBuffer out) {
+    copyMemory(in, out);
+  }
+
+  @CompilerControl(CompilerControl.Mode.INLINE)
   protected void copyMemory(ByteBuffer in, ByteBuffer out) {
     for (int i=0; i < SPECIES.loopBound(in.limit()); i += SPECIES.vectorByteSize()) {
       final var v = ByteVector.fromByteBuffer(SPECIES, in, i, ByteOrder.nativeOrder());
