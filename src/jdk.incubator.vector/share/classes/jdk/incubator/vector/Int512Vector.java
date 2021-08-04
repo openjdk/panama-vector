@@ -392,6 +392,13 @@ final class Int512Vector extends IntVector {
 
     @Override
     @ForceInline
+    public final Int512Mask compare(Comparison op, Vector<Integer> v, VectorMask<Integer> m) {
+        return super.compareTemplate(Int512Mask.class, op, v, (Int512Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Int512Vector blend(Vector<Integer> v, VectorMask<Integer> m) {
         return (Int512Vector)
             super.blendTemplate(Int512Mask.class,

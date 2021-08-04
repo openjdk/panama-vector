@@ -588,7 +588,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
         m.check(maskClass, this);
         if (opKind(op, VO_SPECIAL)) {
             if (op == ZOMO) {
-                return blend(broadcast(-1), compare(NE, 0).and(m));
+                return blend(broadcast(-1), compare(NE, 0, m));
             }
             if (op == NOT || op == NEG) {
                 return blend(lanewise(op), m);
@@ -1887,20 +1887,40 @@ public abstract class ShortVector extends AbstractVector<Short> {
     final
     <M extends VectorMask<Short>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<Short> v) {
-        Objects.requireNonNull(v);
-        ShortSpecies vsp = vspecies();
         ShortVector that = (ShortVector) v;
         that.check(this);
         int opc = opCode(op);
         return VectorSupport.compare(
             opc, getClass(), maskType, short.class, length(),
-            this, that,
-            (cond, v0, v1) -> {
+            this, that, null,
+            (cond, v0, v1, m1) -> {
                 AbstractMask<Short> m
                     = v0.bTest(cond, v1, (cond_, i, a, b)
                                -> compareWithOp(cond, a, b));
                 @SuppressWarnings("unchecked")
                 M m2 = (M) m;
+                return m2;
+            });
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Short>>
+    M compareTemplate(Class<M> maskType, Comparison op, Vector<Short> v, M m) {
+        ShortVector that = (ShortVector) v;
+        that.check(this);
+        m.check(maskType, this);
+        int opc = opCode(op);
+        return VectorSupport.compare(
+            opc, getClass(), maskType, short.class, length(),
+            this, that, m,
+            (cond, v0, v1, m1) -> {
+                AbstractMask<Short> cmpM
+                    = v0.bTest(cond, v1, (cond_, i, a, b)
+                               -> compareWithOp(cond, a, b));
+                @SuppressWarnings("unchecked")
+                M m2 = (M) cmpM.and(m1);
                 return m2;
             });
     }
@@ -1920,18 +1940,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
             case BT_uge -> Short.compareUnsigned(a, b) >= 0;
             default -> throw new AssertionError();
         };
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    VectorMask<Short> compare(VectorOperators.Comparison op,
-                                  Vector<Short> v,
-                                  VectorMask<Short> m) {
-        return compare(op, v).and(m);
     }
 
     /**
@@ -1992,7 +2000,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
     public final VectorMask<Short> compare(VectorOperators.Comparison op,
                                                short e,
                                                VectorMask<Short> m) {
-        return compare(op, e).and(m);
+        return compare(op, broadcast(e), m);
     }
 
     /**

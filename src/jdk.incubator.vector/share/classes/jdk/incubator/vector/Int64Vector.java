@@ -392,6 +392,13 @@ final class Int64Vector extends IntVector {
 
     @Override
     @ForceInline
+    public final Int64Mask compare(Comparison op, Vector<Integer> v, VectorMask<Integer> m) {
+        return super.compareTemplate(Int64Mask.class, op, v, (Int64Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Int64Vector blend(Vector<Integer> v, VectorMask<Integer> m) {
         return (Int64Vector)
             super.blendTemplate(Int64Mask.class,

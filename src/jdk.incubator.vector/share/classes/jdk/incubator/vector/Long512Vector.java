@@ -382,6 +382,13 @@ final class Long512Vector extends LongVector {
 
     @Override
     @ForceInline
+    public final Long512Mask compare(Comparison op, Vector<Long> v, VectorMask<Long> m) {
+        return super.compareTemplate(Long512Mask.class, op, v, (Long512Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Long512Vector blend(Vector<Long> v, VectorMask<Long> m) {
         return (Long512Vector)
             super.blendTemplate(Long512Mask.class,

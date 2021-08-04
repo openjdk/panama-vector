@@ -392,6 +392,13 @@ final class ByteMaxVector extends ByteVector {
 
     @Override
     @ForceInline
+    public final ByteMaxMask compare(Comparison op, Vector<Byte> v, VectorMask<Byte> m) {
+        return super.compareTemplate(ByteMaxMask.class, op, v, (ByteMaxMask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public ByteMaxVector blend(Vector<Byte> v, VectorMask<Byte> m) {
         return (ByteMaxVector)
             super.blendTemplate(ByteMaxMask.class,

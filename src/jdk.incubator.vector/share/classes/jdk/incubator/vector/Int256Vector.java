@@ -392,6 +392,13 @@ final class Int256Vector extends IntVector {
 
     @Override
     @ForceInline
+    public final Int256Mask compare(Comparison op, Vector<Integer> v, VectorMask<Integer> m) {
+        return super.compareTemplate(Int256Mask.class, op, v, (Int256Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Int256Vector blend(Vector<Integer> v, VectorMask<Integer> m) {
         return (Int256Vector)
             super.blendTemplate(Int256Mask.class,

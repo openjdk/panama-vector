@@ -379,6 +379,13 @@ final class Double128Vector extends DoubleVector {
 
     @Override
     @ForceInline
+    public final Double128Mask compare(Comparison op, Vector<Double> v, VectorMask<Double> m) {
+        return super.compareTemplate(Double128Mask.class, op, v, (Double128Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Double128Vector blend(Vector<Double> v, VectorMask<Double> m) {
         return (Double128Vector)
             super.blendTemplate(Double128Mask.class,

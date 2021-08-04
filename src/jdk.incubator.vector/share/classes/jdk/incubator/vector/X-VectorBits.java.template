@@ -398,6 +398,13 @@ final class $vectortype$ extends $abstractvectortype$ {
 
     @Override
     @ForceInline
+    public final $masktype$ compare(Comparison op, Vector<$Boxtype$> v, VectorMask<$Boxtype$> m) {
+        return super.compareTemplate($masktype$.class, op, v, ($masktype$) m);
+    }
+
+
+    @Override
+    @ForceInline
     public $vectortype$ blend(Vector<$Boxtype$> v, VectorMask<$Boxtype$> m) {
         return ($vectortype$)
             super.blendTemplate($masktype$.class,

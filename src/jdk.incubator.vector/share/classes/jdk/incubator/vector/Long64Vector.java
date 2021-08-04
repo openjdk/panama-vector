@@ -382,6 +382,13 @@ final class Long64Vector extends LongVector {
 
     @Override
     @ForceInline
+    public final Long64Mask compare(Comparison op, Vector<Long> v, VectorMask<Long> m) {
+        return super.compareTemplate(Long64Mask.class, op, v, (Long64Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Long64Vector blend(Vector<Long> v, VectorMask<Long> m) {
         return (Long64Vector)
             super.blendTemplate(Long64Mask.class,

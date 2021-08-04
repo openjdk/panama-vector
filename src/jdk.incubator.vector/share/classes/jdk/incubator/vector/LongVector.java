@@ -546,7 +546,7 @@ public abstract class LongVector extends AbstractVector<Long> {
         m.check(maskClass, this);
         if (opKind(op, VO_SPECIAL)) {
             if (op == ZOMO) {
-                return blend(broadcast(-1), compare(NE, 0).and(m));
+                return blend(broadcast(-1), compare(NE, 0, m));
             }
             if (op == NOT || op == NEG) {
                 return blend(lanewise(op), m);
@@ -1799,20 +1799,40 @@ public abstract class LongVector extends AbstractVector<Long> {
     final
     <M extends VectorMask<Long>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<Long> v) {
-        Objects.requireNonNull(v);
-        LongSpecies vsp = vspecies();
         LongVector that = (LongVector) v;
         that.check(this);
         int opc = opCode(op);
         return VectorSupport.compare(
             opc, getClass(), maskType, long.class, length(),
-            this, that,
-            (cond, v0, v1) -> {
+            this, that, null,
+            (cond, v0, v1, m1) -> {
                 AbstractMask<Long> m
                     = v0.bTest(cond, v1, (cond_, i, a, b)
                                -> compareWithOp(cond, a, b));
                 @SuppressWarnings("unchecked")
                 M m2 = (M) m;
+                return m2;
+            });
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Long>>
+    M compareTemplate(Class<M> maskType, Comparison op, Vector<Long> v, M m) {
+        LongVector that = (LongVector) v;
+        that.check(this);
+        m.check(maskType, this);
+        int opc = opCode(op);
+        return VectorSupport.compare(
+            opc, getClass(), maskType, long.class, length(),
+            this, that, m,
+            (cond, v0, v1, m1) -> {
+                AbstractMask<Long> cmpM
+                    = v0.bTest(cond, v1, (cond_, i, a, b)
+                               -> compareWithOp(cond, a, b));
+                @SuppressWarnings("unchecked")
+                M m2 = (M) cmpM.and(m1);
                 return m2;
             });
     }
@@ -1832,18 +1852,6 @@ public abstract class LongVector extends AbstractVector<Long> {
             case BT_uge -> Long.compareUnsigned(a, b) >= 0;
             default -> throw new AssertionError();
         };
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    VectorMask<Long> compare(VectorOperators.Comparison op,
-                                  Vector<Long> v,
-                                  VectorMask<Long> m) {
-        return compare(op, v).and(m);
     }
 
     /**
@@ -1904,7 +1912,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     public final VectorMask<Long> compare(VectorOperators.Comparison op,
                                                long e,
                                                VectorMask<Long> m) {
-        return compare(op, e).and(m);
+        return compare(op, broadcast(e), m);
     }
 
 

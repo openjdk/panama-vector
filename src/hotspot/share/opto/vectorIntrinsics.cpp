@@ -1624,7 +1624,7 @@ bool LibraryCallKit::inline_vector_blend() {
 //          M extends Vector.Mask<E,S>,
 //          S extends Vector.Shape, E>
 //  M compare(int cond, Class<V> vectorClass, Class<M> maskClass, Class<?> elementType, int vlen,
-//            V v1, V v2,
+//            V v1, V v2, M m,
 //            VectorCompareOp<V,M> defaultImpl) { ...
 //
 bool LibraryCallKit::inline_vector_compare() {
@@ -1694,6 +1694,25 @@ bool LibraryCallKit::inline_vector_compare() {
   Node* v1 = unbox_vector(argument(5), vbox_type, elem_bt, num_elem);
   Node* v2 = unbox_vector(argument(6), vbox_type, elem_bt, num_elem);
 
+  bool is_masked_op = argument(7)->bottom_type() != TypePtr::NULL_PTR;
+  Node* mask = is_masked_op ? unbox_vector(argument(7), mbox_type, elem_bt, num_elem) : NULL;
+  if (is_masked_op && mask == NULL) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not supported: mask = null arity=2 op=comp/%d vlen=%d etype=%s ismask=usestore is_masked_op=1",
+                    cond->get_con(), num_elem, type2name(elem_bt));
+    }
+    return false;
+  }
+
+  bool use_predicate = is_masked_op && arch_supports_vector(Op_VectorMaskCmp, num_elem, elem_bt, VecMaskUsePred);
+  if (is_masked_op && !use_predicate && !arch_supports_vector(Op_AndV, num_elem, elem_bt, VecMaskUseLoad)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not supported: arity=2 op=comp/%d vlen=%d etype=%s ismask=usestore is_masked_op=1",
+                    cond->get_con(), num_elem, type2name(elem_bt));
+    }
+    return false;
+  }
+
   if (v1 == NULL || v2 == NULL) {
     return false; // operand unboxing failed
   }
@@ -1701,7 +1720,19 @@ bool LibraryCallKit::inline_vector_compare() {
   ConINode* pred_node = (ConINode*)gvn().makecon(cond);
 
   const TypeVect* vmask_type = TypeVect::makemask(mask_bt, num_elem);
-  Node* operation = gvn().transform(new VectorMaskCmpNode(pred, v1, v2, pred_node, vmask_type));
+  Node* operation = new VectorMaskCmpNode(pred, v1, v2, pred_node, vmask_type);
+
+  if (is_masked_op) {
+    if (use_predicate) {
+      operation->add_req(mask);
+      operation->add_flag(Node::Flag_is_predicated_vector);
+    } else {
+      operation = gvn().transform(operation);
+      operation = VectorNode::make(Op_AndV, operation, mask, vmask_type);
+    }
+  }
+
+  operation = gvn().transform(operation);
 
   Node* box = box_vector(operation, mbox_type, mask_bt, num_elem);
   set_result(box);

@@ -382,6 +382,13 @@ final class Long128Vector extends LongVector {
 
     @Override
     @ForceInline
+    public final Long128Mask compare(Comparison op, Vector<Long> v, VectorMask<Long> m) {
+        return super.compareTemplate(Long128Mask.class, op, v, (Long128Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Long128Vector blend(Vector<Long> v, VectorMask<Long> m) {
         return (Long128Vector)
             super.blendTemplate(Long128Mask.class,

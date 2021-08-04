@@ -582,7 +582,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         m.check(maskClass, this);
         if (opKind(op, VO_SPECIAL)) {
             if (op == ZOMO) {
-                return blend(broadcast(-1), compare(NE, 0).and(m));
+                return blend(broadcast(-1), compare(NE, 0, m));
             }
         }
         int opc = opCode(op);
@@ -1743,20 +1743,40 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     final
     <M extends VectorMask<Double>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<Double> v) {
-        Objects.requireNonNull(v);
-        DoubleSpecies vsp = vspecies();
         DoubleVector that = (DoubleVector) v;
         that.check(this);
         int opc = opCode(op);
         return VectorSupport.compare(
             opc, getClass(), maskType, double.class, length(),
-            this, that,
-            (cond, v0, v1) -> {
+            this, that, null,
+            (cond, v0, v1, m1) -> {
                 AbstractMask<Double> m
                     = v0.bTest(cond, v1, (cond_, i, a, b)
                                -> compareWithOp(cond, a, b));
                 @SuppressWarnings("unchecked")
                 M m2 = (M) m;
+                return m2;
+            });
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Double>>
+    M compareTemplate(Class<M> maskType, Comparison op, Vector<Double> v, M m) {
+        DoubleVector that = (DoubleVector) v;
+        that.check(this);
+        m.check(maskType, this);
+        int opc = opCode(op);
+        return VectorSupport.compare(
+            opc, getClass(), maskType, double.class, length(),
+            this, that, m,
+            (cond, v0, v1, m1) -> {
+                AbstractMask<Double> cmpM
+                    = v0.bTest(cond, v1, (cond_, i, a, b)
+                               -> compareWithOp(cond, a, b));
+                @SuppressWarnings("unchecked")
+                M m2 = (M) cmpM.and(m1);
                 return m2;
             });
     }
@@ -1772,18 +1792,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             case BT_ge -> a >= b;
             default -> throw new AssertionError();
         };
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    VectorMask<Double> compare(VectorOperators.Comparison op,
-                                  Vector<Double> v,
-                                  VectorMask<Double> m) {
-        return compare(op, v).and(m);
     }
 
     /**
@@ -1844,7 +1852,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     public final VectorMask<Double> compare(VectorOperators.Comparison op,
                                                double e,
                                                VectorMask<Double> m) {
-        return compare(op, e).and(m);
+        return compare(op, broadcast(e), m);
     }
 
     /**

@@ -379,6 +379,13 @@ final class DoubleMaxVector extends DoubleVector {
 
     @Override
     @ForceInline
+    public final DoubleMaxMask compare(Comparison op, Vector<Double> v, VectorMask<Double> m) {
+        return super.compareTemplate(DoubleMaxMask.class, op, v, (DoubleMaxMask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public DoubleMaxVector blend(Vector<Double> v, VectorMask<Double> m) {
         return (DoubleMaxVector)
             super.blendTemplate(DoubleMaxMask.class,
