@@ -760,11 +760,22 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
   SafePointNode* old_map = clone_map();
 
   Node* addr = make_unsafe_address(base, offset, (is_mask ? T_BOOLEAN : elem_bt), true);
-  // Can base be NULL? Otherwise, always on-heap access.
-  bool can_access_non_heap = TypePtr::NULL_PTR->higher_equal(gvn().type(base));
+
+  // The memory barrier checks are based on ones for unsafe access.
+  // This is not 1-1 implementation.
+  const Type *const base_type = gvn().type(base);
 
   const TypePtr *addr_type = gvn().type(addr)->isa_ptr();
   const TypeAryPtr* arr_type = addr_type->isa_aryptr();
+
+  const bool in_native = TypePtr::NULL_PTR == base_type; // base always null
+  const bool in_heap   = !TypePtr::NULL_PTR->higher_equal(base_type); // base never null
+
+  const bool is_mixed_access = !in_heap && !in_native;
+
+  const bool is_mismatched_access = in_heap && (addr_type->isa_aryptr() == NULL);
+
+  const bool needs_cpu_membar = is_mixed_access || is_mismatched_access;
 
   // Now handle special case where load/store happens from/to byte array but element type is not byte.
   bool using_byte_array = arr_type != NULL && arr_type->elem()->array_element_basic_type() == T_BYTE && elem_bt != T_BYTE;
@@ -823,7 +834,7 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
 
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
 
-  if (can_access_non_heap) {
+  if (needs_cpu_membar) {
     insert_mem_bar(Op_MemBarCPUOrder);
   }
 
@@ -870,7 +881,7 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
 
   old_map->destruct(&_gvn);
 
-  if (can_access_non_heap) {
+  if (needs_cpu_membar) {
     insert_mem_bar(Op_MemBarCPUOrder);
   }
 
