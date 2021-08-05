@@ -806,6 +806,12 @@ public abstract class Buffer {
                 }
 
                 @Override
+                @ForceInline
+                public boolean isDirect(ByteBuffer bb) {
+                    return !(bb instanceof HeapByteBuffer);
+                }
+
+                @Override
                 public UnmapperProxy unmapper(ByteBuffer bb) {
                     if (bb instanceof MappedByteBuffer) {
                         return ((MappedByteBuffer)bb).unmapper();
@@ -815,6 +821,7 @@ public abstract class Buffer {
                 }
 
                 @Override
+                @ForceInline
                 public MemorySegmentProxy bufferSegment(Buffer buffer) {
                     return buffer.segment;
                 }

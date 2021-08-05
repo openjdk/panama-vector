@@ -33,6 +33,7 @@ import java.lang.ref.Reference;
 import java.io.FileDescriptor;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import jdk.internal.access.JavaNioAccess;
 import jdk.internal.access.SharedSecrets;
@@ -377,6 +378,11 @@ public class ScopedMemoryAccess {
     }
 
     @ForceInline
+    public static boolean isDirect(ByteBuffer bb) {
+      return BufferAccess.NIO_ACCESS.isDirect(bb);
+    }
+
+    @ForceInline
     public static boolean isReadOnly(ByteBuffer bb) {
         return UNSAFE.getBoolean(bb, BufferAccess.BYTE_BUFFER_IS_READ_ONLY);
     }
@@ -384,12 +390,13 @@ public class ScopedMemoryAccess {
     @ForceInline
     public static
     <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>>
-    V loadFromByteBuffer(Class<? extends V> vmClass, Class<E> e, int length,
+    V loadFromByteBuffer(boolean isDirectBuff, Class<? extends V> vmClass, Class<E> e, int length,
                           ByteBuffer bb, int offset,
                           S s,
                           VectorSupport.LoadOperation<ByteBuffer, V, E, S> defaultImpl) {
         try {
             return loadFromByteBufferScoped(
+                    isDirectBuff,
                     BufferAccess.scope(bb),
                     vmClass, e, length,
                     bb, offset,
@@ -404,7 +411,7 @@ public class ScopedMemoryAccess {
     @ForceInline
     private static
     <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>>
-    V loadFromByteBufferScoped(ScopedMemoryAccess.Scope scope,
+    V loadFromByteBufferScoped(boolean isDirectBuff, ScopedMemoryAccess.Scope scope,
                           Class<? extends V> vmClass, Class<E> e, int length,
                           ByteBuffer bb, int offset,
                           S s,
@@ -414,12 +421,19 @@ public class ScopedMemoryAccess {
                 scope.checkValidState();
             }
 
-            final byte[] base = (byte[]) BufferAccess.bufferBase(bb);
-
-            return VectorSupport.load(vmClass, e, length,
-                      base, BufferAccess.bufferAddress(bb, offset),
-                      bb, offset, s,
-                      defaultImpl);
+            if (isDirectBuff) {
+              return VectorSupport.load(vmClass, e, length,
+                        null,
+                        BufferAccess.bufferAddress(bb, offset),
+                        bb, offset, s,
+                        defaultImpl);
+            } else {
+              return VectorSupport.load(vmClass, e, length,
+                        Objects.requireNonNull(BufferAccess.bufferBase(bb)),
+                        BufferAccess.bufferAddress(bb, offset),
+                        bb, offset, s,
+                        defaultImpl);
+            }
         } finally {
             Reference.reachabilityFence(scope);
         }
@@ -428,12 +442,13 @@ public class ScopedMemoryAccess {
     @ForceInline
     public static
     <V extends VectorSupport.Vector<E>, E>
-    void storeIntoByteBuffer(Class<? extends V> vmClass, Class<E> e, int length,
+    void storeIntoByteBuffer(boolean isDirectBuff, Class<? extends V> vmClass, Class<E> e, int length,
                              V v,
                              ByteBuffer bb, int offset,
                              VectorSupport.StoreVectorOperation<ByteBuffer, V> defaultImpl) {
         try {
             storeIntoByteBufferScoped(
+                    isDirectBuff,
                     BufferAccess.scope(bb),
                     vmClass, e, length,
                     v,
@@ -448,7 +463,7 @@ public class ScopedMemoryAccess {
     @ForceInline
     private static
     <V extends VectorSupport.Vector<E>, E>
-    void storeIntoByteBufferScoped(ScopedMemoryAccess.Scope scope,
+    void storeIntoByteBufferScoped(boolean isDirectBuff, ScopedMemoryAccess.Scope scope,
                                    Class<? extends V> vmClass, Class<E> e, int length,
                                    V v,
                                    ByteBuffer bb, int offset,
@@ -458,13 +473,22 @@ public class ScopedMemoryAccess {
                 scope.checkValidState();
             }
 
-            final byte[] base = (byte[]) BufferAccess.bufferBase(bb);
-
-            VectorSupport.store(vmClass, e, length,
-                                base, BufferAccess.bufferAddress(bb, offset),
-                                v,
-                                bb, offset,
-                                defaultImpl);
+            // Ternary over isDirectBuff can be compiled as phi
+            if (isDirectBuff) {
+              VectorSupport.store(vmClass, e, length,
+                                  null,
+                                  BufferAccess.bufferAddress(bb, offset),
+                                  v,
+                                  bb, offset,
+                                  defaultImpl);
+            } else {
+              VectorSupport.store(vmClass, e, length,
+                                  Objects.requireNonNull(BufferAccess.bufferBase(bb)),
+                                  BufferAccess.bufferAddress(bb, offset),
+                                  v,
+                                  bb, offset,
+                                  defaultImpl);
+            }
         } finally {
             Reference.reachabilityFence(scope);
         }

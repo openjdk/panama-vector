@@ -77,6 +77,12 @@ public interface JavaNioAccess {
     long getBufferAddress(ByteBuffer bb);
 
     /**
+     * Check if {@link ByteBuffer} is direct, used by Panama. Consider moving this as Buffer API.
+     * It's better, avoids polymorphism and takes from immutable mem, easier for loop unswitch
+     */
+    boolean isDirect(ByteBuffer bb);
+
+    /**
      * Used by {@code jdk.internal.foreign.Utils}.
      */
     UnmapperProxy unmapper(ByteBuffer bb);

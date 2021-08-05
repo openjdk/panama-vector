@@ -89,6 +89,11 @@ public class ByteBufferVectorAccess {
   }
 
   @Benchmark
+  public void heapBuffersNotInlined() {
+    copyIntoNotInlined(heapIn, heapOut);
+  }
+
+  @Benchmark
   public void pollutedBuffers2() {
     copyIntoNotInlined(directIn, directOut);
     copyIntoNotInlined(heapIn, heapOut);
