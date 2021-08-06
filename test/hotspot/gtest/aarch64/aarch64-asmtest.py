@@ -908,10 +908,17 @@ class SVEVectorOp(Instruction):
         self.numRegs = len(regs)
         if regTypes[0] != "p" and regTypes[1] == 'P':
            self._isPredicated = True
-           self._merge = "/m"
+           assert len(args) > 2, "Must specify predicate type"
+           for arg in args[2:]:
+              if arg == 'm':
+                 self._merge = "/m"
+              elif arg == 'z':
+                 self._merge = "/z"
+              else:
+                 assert arg == "dn", "Unknown predicate type"
         else:
            self._isPredicated = False
-           self._merge =""
+           self._merge = ""
 
         self._bitwiseop = False
         if name[0] == 'f':
@@ -921,10 +928,13 @@ class SVEVectorOp(Instruction):
             self._bitwiseop = True
         else:
             self._width = RegVariant(0, 3)
+
+        self._dnm = None
         if len(args) > 2:
-            self._dnm = args[2]
-        else:
-            self._dnm = None
+           for arg in args[2:]:
+             if arg == "dn":
+               self._dnm = arg
+
         Instruction.__init__(self, name)
 
     def cstr(self):
@@ -1523,6 +1533,7 @@ generate(SpecialCases, [["ccmn",   "__ ccmn(zr, zr, 3u, Assembler::LE);",       
                         ["umov",   "__ umov(r0, v1, __ S, 1);",                          "umov\tw0, v1.s[1]"],
                         ["umov",   "__ umov(r0, v1, __ H, 2);",                          "umov\tw0, v1.h[2]"],
                         ["umov",   "__ umov(r0, v1, __ B, 3);",                          "umov\tw0, v1.b[3]"],
+                        ["fmov",   "__ fmovhid(r0, v1);",                                "fmov\tx0, v1.d[1]"],
                         ["ld1",    "__ ld1(v31, v0, __ T2D, Address(__ post(r1, r0)));", "ld1\t{v31.2d, v0.2d}, [x1], x0"],
                         # SVE instructions
                         ["cpy",     "__ sve_cpy(z0, __ S, p0, v1);",                      "mov\tz0.s, p0/m, s1"],
@@ -1572,6 +1583,23 @@ generate(SpecialCases, [["ccmn",   "__ ccmn(zr, zr, 3u, Assembler::LE);",       
                         ["ldr",     "__ sve_ldr(z0, Address(sp));",                       "ldr\tz0, [sp]"],
                         ["ldr",     "__ sve_ldr(z31, Address(sp, -256));",                "ldr\tz31, [sp, #-256, MUL VL]"],
                         ["str",     "__ sve_str(z8, Address(r8, 255));",                  "str\tz8, [x8, #255, MUL VL]"],
+                        ["cntb",    "__ sve_cntb(r9);",                                   "cntb\tx9"],
+                        ["cnth",    "__ sve_cnth(r10);",                                  "cnth\tx10"],
+                        ["cntw",    "__ sve_cntw(r11);",                                  "cntw\tx11"],
+                        ["cntd",    "__ sve_cntd(r12);",                                  "cntd\tx12"],
+                        ["brka",    "__ sve_brka(p2, p0, p2, false);",                    "brka\tp2.b, p0/z, p2.b"],
+                        ["brka",    "__ sve_brka(p1, p2, p3, true);",                     "brka\tp1.b, p2/m, p3.b"],
+                        ["brkb",    "__ sve_brkb(p1, p2, p3, false);",                    "brkb\tp1.b, p2/z, p3.b"],
+                        ["brkb",    "__ sve_brkb(p2, p3, p4, true);",                     "brkb\tp2.b, p3/m, p4.b"],
+                        ["rev",     "__ sve_rev(p0, __ B, p1);",                          "rev\tp0.b, p1.b"],
+                        ["rev",     "__ sve_rev(p1, __ H, p2);",                          "rev\tp1.h, p2.h"],
+                        ["rev",     "__ sve_rev(p2, __ S, p3);",                          "rev\tp2.s, p3.s"],
+                        ["rev",     "__ sve_rev(p3, __ D, p4);",                          "rev\tp3.d, p4.d"],
+                        ["incp",    "__ sve_incp(r0, __ B, p2);",                         "incp\tx0, p2.b"],
+                        ["whilelt", "__ sve_whilelt(p0, __ B, r1, r28);",                 "whilelt\tp0.b, x1, x28"],
+                        ["whilele", "__ sve_whilele(p2, __ H, r11, r8);",                 "whilele\tp2.h, x11, x8"],
+                        ["whilelo", "__ sve_whilelo(p3, __ S, r7, r2);",                  "whilelo\tp3.s, x7, x2"],
+                        ["whilels", "__ sve_whilels(p4, __ D, r17, r10);",                "whilels\tp4.d, x17, x10"],
                         ["sel",     "__ sve_sel(z0, __ B, p0, z1, z2);",                  "sel\tz0.b, p0, z1.b, z2.b"],
                         ["sel",     "__ sve_sel(z4, __ D, p0, z5, z6);",                  "sel\tz4.d, p0, z5.d, z6.d"],
                         ["cmpeq",   "__ sve_cmpeq(p1, __ B, p0, z0, z1);",                "cmpeq\tp1.b, p0/z, z0.b, z1.b"],
@@ -1596,14 +1624,6 @@ generate(SpecialCases, [["ccmn",   "__ ccmn(zr, zr, 3u, Assembler::LE);",       
                         ["uunpklo", "__ sve_uunpklo(z4, __ S, z5);",                      "uunpklo\tz4.s, z5.h"],
                         ["sunpkhi", "__ sve_sunpkhi(z6, __ D, z7);",                      "sunpkhi\tz6.d, z7.s"],
                         ["sunpklo", "__ sve_sunpklo(z10, __ H, z11);",                    "sunpklo\tz10.h, z11.b"],
-                        ["whilelt", "__ sve_whilelt(p0, __ B, r1, r2);",                  "whilelt\tp0.b, x1, x2"],
-                        ["whilelt", "__ sve_whileltw(p1, __ H, r3, r4);",                 "whilelt\tp1.h, w3, w4"],
-                        ["whilele", "__ sve_whilele(p2, __ S, r5, r6);",                  "whilele\tp2.s, x5, x6"],
-                        ["whilele", "__ sve_whilelew(p3, __ D, r10, r11);",               "whilele\tp3.d, w10, w11"],
-                        ["whilelo", "__ sve_whilelo(p4, __ B, r1, r2);",                  "whilelo\tp4.b, x1, x2"],
-                        ["whilelo", "__ sve_whilelow(p0, __ H, r3, r4);",                 "whilelo\tp0.h, w3, w4"],
-                        ["whilels", "__ sve_whilels(p1, __ S, r5, r6);",                  "whilels\tp1.s, x5, x6"],
-                        ["whilels", "__ sve_whilelsw(p2, __ D, r10, r11);",               "whilels\tp2.d, w10, w11"],
                         ["scvtf",   "__ sve_scvtf(z1, __ D, p0, z0, __ S);",              "scvtf\tz1.d, p0/m, z0.s"],
                         ["scvtf",   "__ sve_scvtf(z3, __ D, p1, z2, __ D);",              "scvtf\tz3.d, p1/m, z2.d"],
                         ["scvtf",   "__ sve_scvtf(z6, __ S, p2, z1, __ D);",              "scvtf\tz6.s, p2/m, z1.d"],
@@ -1664,40 +1684,44 @@ generate(SVEVectorOp, [["add", "ZZZ"],
                        ["fadd", "ZZZ"],
                        ["fmul", "ZZZ"],
                        ["fsub", "ZZZ"],
-                       ["abs", "ZPZ"],
-                       ["add", "ZPZ", "dn"],
-                       ["asr", "ZPZ", "dn"],
-                       ["cnt", "ZPZ"],
-                       ["lsl", "ZPZ", "dn"],
-                       ["lsr", "ZPZ", "dn"],
-                       ["mul", "ZPZ", "dn"],
-                       ["neg", "ZPZ"],
-                       ["not", "ZPZ"],
-                       ["smax", "ZPZ", "dn"],
-                       ["smin", "ZPZ", "dn"],
-                       ["sub", "ZPZ", "dn"],
-                       ["fabs", "ZPZ"],
-                       ["fadd", "ZPZ", "dn"],
-                       ["fdiv", "ZPZ", "dn"],
-                       ["fmax", "ZPZ", "dn"],
-                       ["fmin", "ZPZ", "dn"],
-                       ["fmul", "ZPZ", "dn"],
-                       ["fneg", "ZPZ"],
-                       ["frintm", "ZPZ"],
-                       ["frintn", "ZPZ"],
-                       ["frintp", "ZPZ"],
-                       ["fsqrt", "ZPZ"],
-                       ["fsub", "ZPZ", "dn"],
-                       ["fmla", "ZPZZ"],
-                       ["fmls", "ZPZZ"],
-                       ["fnmla", "ZPZZ"],
-                       ["fnmls", "ZPZZ"],
-                       ["mla", "ZPZZ"],
-                       ["mls", "ZPZZ"],
+                       ["abs", "ZPZ", "m"],
+                       ["add", "ZPZ", "m", "dn"],
+                       ["asr", "ZPZ", "m", "dn"],
+                       ["cnt", "ZPZ", "m"],
+                       ["lsl", "ZPZ", "m", "dn"],
+                       ["lsr", "ZPZ", "m", "dn"],
+                       ["mul", "ZPZ", "m", "dn"],
+                       ["neg", "ZPZ", "m"],
+                       ["not", "ZPZ", "m"],
+                       ["smax", "ZPZ", "m", "dn"],
+                       ["smin", "ZPZ", "m", "dn"],
+                       ["sub", "ZPZ", "m", "dn"],
+                       ["fabs", "ZPZ", "m"],
+                       ["fadd", "ZPZ", "m", "dn"],
+                       ["fdiv", "ZPZ", "m", "dn"],
+                       ["fmax", "ZPZ", "m", "dn"],
+                       ["fmin", "ZPZ", "m", "dn"],
+                       ["fmul", "ZPZ", "m", "dn"],
+                       ["fneg", "ZPZ", "m"],
+                       ["frintm", "ZPZ", "m"],
+                       ["frintn", "ZPZ", "m"],
+                       ["frintp", "ZPZ", "m"],
+                       ["fsqrt", "ZPZ", "m"],
+                       ["fsub", "ZPZ", "m", "dn"],
+                       ["fmla", "ZPZZ", "m"],
+                       ["fmls", "ZPZZ", "m"],
+                       ["fnmla", "ZPZZ", "m"],
+                       ["fnmls", "ZPZZ", "m"],
+                       ["mla", "ZPZZ", "m"],
+                       ["mls", "ZPZZ", "m"],
                        ["and", "ZZZ"],
                        ["eor", "ZZZ"],
                        ["orr", "ZZZ"],
                        ["bic", "ZZZ"],
+                       ["cmpeq", "PPZZ", "z"],
+                       ["cmpge", "PPZZ", "z"],
+                       ["cmpgt", "PPZZ", "z"],
+                       ["cmpne", "PPZZ", "z"],
                        ["uzp1", "ZZZ"],
                        ["uzp2", "ZZZ"],
                       ])

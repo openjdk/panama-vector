@@ -300,6 +300,13 @@ final class Short256Vector extends ShortVector {
 
     /*package-private*/
     @Override
+    @ForceInline Short256Vector
+    lanewiseShift(VectorOperators.Binary op, int e, VectorMask<Short> m) {
+        return (Short256Vector) super.lanewiseShiftTemplate(op, Short256Mask.class, e, (Short256Mask) m);  // specialize
+    }
+
+    /*package-private*/
+    @Override
     @ForceInline
     public final
     Short256Vector
@@ -382,6 +389,13 @@ final class Short256Vector extends ShortVector {
     public final Short256Mask compare(Comparison op, long s) {
         return super.compareTemplate(Short256Mask.class, op, s);  // specialize
     }
+
+    @Override
+    @ForceInline
+    public final Short256Mask compare(Comparison op, Vector<Short> v, VectorMask<Short> m) {
+        return super.compareTemplate(Short256Mask.class, op, v, (Short256Mask) m);
+    }
+
 
     @Override
     @ForceInline
@@ -620,18 +634,10 @@ final class Short256Vector extends ShortVector {
         @ForceInline
         private final <E>
         VectorMask<E> defaultMaskCast(AbstractSpecies<E> dsp) {
-            assert(length() == dsp.laneCount());
+            if (length() != dsp.laneCount())
+                throw new IllegalArgumentException("VectorMask length and species length differ");
             boolean[] maskArray = toArray();
-            // enum-switches don't optimize properly JDK-8161245
-            return switch (dsp.laneType.switchKey) {
-                     case LaneType.SK_BYTE   -> new Byte256Vector.Byte256Mask(maskArray).check(dsp);
-                     case LaneType.SK_SHORT  -> new Short256Vector.Short256Mask(maskArray).check(dsp);
-                     case LaneType.SK_INT    -> new Int256Vector.Int256Mask(maskArray).check(dsp);
-                     case LaneType.SK_LONG   -> new Long256Vector.Long256Mask(maskArray).check(dsp);
-                     case LaneType.SK_FLOAT  -> new Float256Vector.Float256Mask(maskArray).check(dsp);
-                     case LaneType.SK_DOUBLE -> new Double256Vector.Double256Mask(maskArray).check(dsp);
-                     default                 -> throw new AssertionError(dsp);
-            };
+            return  dsp.maskFactory(maskArray).check(dsp);
         }
 
         @Override
@@ -802,24 +808,7 @@ final class Short256Vector extends ShortVector {
             if (length() != species.laneCount())
                 throw new IllegalArgumentException("VectorShuffle length and species length differ");
             int[] shuffleArray = toArray();
-            // enum-switches don't optimize properly JDK-8161245
-            switch (species.laneType.switchKey) {
-            case LaneType.SK_BYTE:
-                return new Byte256Vector.Byte256Shuffle(shuffleArray).check(species);
-            case LaneType.SK_SHORT:
-                return new Short256Vector.Short256Shuffle(shuffleArray).check(species);
-            case LaneType.SK_INT:
-                return new Int256Vector.Int256Shuffle(shuffleArray).check(species);
-            case LaneType.SK_LONG:
-                return new Long256Vector.Long256Shuffle(shuffleArray).check(species);
-            case LaneType.SK_FLOAT:
-                return new Float256Vector.Float256Shuffle(shuffleArray).check(species);
-            case LaneType.SK_DOUBLE:
-                return new Double256Vector.Double256Shuffle(shuffleArray).check(species);
-            }
-
-            // Should not reach here.
-            throw new AssertionError(species);
+            return s.shuffleFromArray(shuffleArray, 0).check(s);
         }
 
         @ForceInline

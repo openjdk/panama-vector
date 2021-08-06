@@ -495,9 +495,6 @@ bool LibraryCallKit::inline_vector_shuffle_iota() {
   int num_elem = vlen->get_con();
   BasicType elem_bt = T_BYTE;
 
-  if (num_elem < 4)
-    return false;
-
   if (!arch_supports_vector(VectorNode::replicate_opcode(elem_bt), num_elem, elem_bt, VecMaskNotUsed)) {
     return false;
   }
@@ -1627,7 +1624,7 @@ bool LibraryCallKit::inline_vector_blend() {
 //          M extends Vector.Mask<E,S>,
 //          S extends Vector.Shape, E>
 //  M compare(int cond, Class<V> vectorClass, Class<M> maskClass, Class<?> elementType, int vlen,
-//            V v1, V v2,
+//            V v1, V v2, M m,
 //            VectorCompareOp<V,M> defaultImpl) { ...
 //
 bool LibraryCallKit::inline_vector_compare() {
@@ -1697,6 +1694,25 @@ bool LibraryCallKit::inline_vector_compare() {
   Node* v1 = unbox_vector(argument(5), vbox_type, elem_bt, num_elem);
   Node* v2 = unbox_vector(argument(6), vbox_type, elem_bt, num_elem);
 
+  bool is_masked_op = argument(7)->bottom_type() != TypePtr::NULL_PTR;
+  Node* mask = is_masked_op ? unbox_vector(argument(7), mbox_type, elem_bt, num_elem) : NULL;
+  if (is_masked_op && mask == NULL) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not supported: mask = null arity=2 op=comp/%d vlen=%d etype=%s ismask=usestore is_masked_op=1",
+                    cond->get_con(), num_elem, type2name(elem_bt));
+    }
+    return false;
+  }
+
+  bool use_predicate = is_masked_op && arch_supports_vector(Op_VectorMaskCmp, num_elem, elem_bt, VecMaskUsePred);
+  if (is_masked_op && !use_predicate && !arch_supports_vector(Op_AndV, num_elem, elem_bt, VecMaskUseLoad)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not supported: arity=2 op=comp/%d vlen=%d etype=%s ismask=usestore is_masked_op=1",
+                    cond->get_con(), num_elem, type2name(elem_bt));
+    }
+    return false;
+  }
+
   if (v1 == NULL || v2 == NULL) {
     return false; // operand unboxing failed
   }
@@ -1704,7 +1720,19 @@ bool LibraryCallKit::inline_vector_compare() {
   ConINode* pred_node = (ConINode*)gvn().makecon(cond);
 
   const TypeVect* vmask_type = TypeVect::makemask(mask_bt, num_elem);
-  Node* operation = gvn().transform(new VectorMaskCmpNode(pred, v1, v2, pred_node, vmask_type));
+  Node* operation = new VectorMaskCmpNode(pred, v1, v2, pred_node, vmask_type);
+
+  if (is_masked_op) {
+    if (use_predicate) {
+      operation->add_req(mask);
+      operation->add_flag(Node::Flag_is_predicated_vector);
+    } else {
+      operation = gvn().transform(operation);
+      operation = VectorNode::make(Op_AndV, operation, mask, vmask_type);
+    }
+  }
+
+  operation = gvn().transform(operation);
 
   Node* box = box_vector(operation, mbox_type, mask_bt, num_elem);
   set_result(box);
@@ -1848,16 +1876,18 @@ Node* LibraryCallKit::gen_call_to_svml(int vector_api_op_id, BasicType bt, int n
 }
 
 //  public static
-//  <V extends Vector<?,?>>
-//  V broadcastInt(int opr, Class<V> vectorClass, Class<?> elementType, int vlen,
-//                 V v, int i,
+//  <V extends Vector<?>, M>
+//  V broadcastInt(int opr, Class<? extends V> vectorClass, Class<? extends M> maskClass,
+//                 Class<?> elementType, int length,
+//                 V v, int n, M m,
 //                 VectorBroadcastIntOp<V> defaultImpl) {
 //
 bool LibraryCallKit::inline_vector_broadcast_int() {
   const TypeInt*     opr          = gvn().type(argument(0))->isa_int();
   const TypeInstPtr* vector_klass = gvn().type(argument(1))->isa_instptr();
-  const TypeInstPtr* elem_klass   = gvn().type(argument(2))->isa_instptr();
-  const TypeInt*     vlen         = gvn().type(argument(3))->isa_int();
+  const TypeInstPtr* mask_klass   = gvn().type(argument(2))->isa_instptr();
+  const TypeInstPtr* elem_klass   = gvn().type(argument(3))->isa_instptr();
+  const TypeInt*     vlen         = gvn().type(argument(4))->isa_int();
 
   if (opr == NULL || vector_klass == NULL || elem_klass == NULL || vlen == NULL) {
     return false; // dead code
@@ -1867,8 +1897,8 @@ bool LibraryCallKit::inline_vector_broadcast_int() {
       tty->print_cr("  ** missing constant: opr=%s vclass=%s etype=%s vlen=%s",
                     NodeClassNames[argument(0)->Opcode()],
                     NodeClassNames[argument(1)->Opcode()],
-                    NodeClassNames[argument(2)->Opcode()],
-                    NodeClassNames[argument(3)->Opcode()]);
+                    NodeClassNames[argument(3)->Opcode()],
+                    NodeClassNames[argument(4)->Opcode()]);
     }
     return false; // not enough info for intrinsification
   }
@@ -1878,6 +1908,32 @@ bool LibraryCallKit::inline_vector_broadcast_int() {
     }
     return false;
   }
+
+  const Type* vmask_type = gvn().type(argument(7));
+  bool is_masked_op = vmask_type != TypePtr::NULL_PTR;
+  if (is_masked_op) {
+    if (mask_klass == NULL || mask_klass->const_oop() == NULL) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** missing constant: maskclass=%s", NodeClassNames[argument(2)->Opcode()]);
+      }
+      return false; // not enough info for intrinsification
+    }
+
+    if (!is_klass_initialized(mask_klass)) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** mask klass argument not initialized");
+      }
+      return false;
+    }
+
+    if (vmask_type->maybe_null()) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** null mask values are not allowed for masked op");
+      }
+      return false;
+    }
+  }
+
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
   if (!elem_type->is_primitive_type()) {
     if (C->print_intrinsics()) {
@@ -1904,20 +1960,54 @@ bool LibraryCallKit::inline_vector_broadcast_int() {
   ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
 
-  if (!arch_supports_vector(sopc, num_elem, elem_bt, VecMaskNotUsed, true /*has_scalar_args*/)) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** not supported: arity=0 op=int/%d vlen=%d etype=%s ismask=no",
-                    sopc, num_elem, type2name(elem_bt));
+  bool use_predicate = is_masked_op &&
+                       arch_supports_vector(sopc, num_elem, elem_bt, (VectorMaskUseType) (VecMaskUseLoad | VecMaskUsePred), true);
+  if (!use_predicate) {
+    if (!arch_supports_vector(sopc, num_elem, elem_bt, VecMaskNotUsed, true /*has_scalar_args*/)) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** not supported: arity=0 op=int/%d vlen=%d etype=%s is_masked_op=%d",
+                      sopc, num_elem, type2name(elem_bt), is_masked_op ? 1 : 0);
+      }
+      return false; // not supported
     }
-    return false; // not supported
+    if (is_masked_op && !arch_supports_vector(Op_VectorBlend, num_elem, elem_bt, VecMaskUseLoad)) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** not supported: arity=0 op=int/%d vlen=%d etype=%s is_masked_op=1",
+                      sopc, num_elem, type2name(elem_bt));
+      }
+      return false; // not supported
+    }
   }
-  Node* opd1 = unbox_vector(argument(4), vbox_type, elem_bt, num_elem);
-  Node* opd2 = vector_shift_count(argument(5), opc, elem_bt, num_elem);
+
+  Node* opd1 = unbox_vector(argument(5), vbox_type, elem_bt, num_elem);
+  Node* opd2 = vector_shift_count(argument(6), opc, elem_bt, num_elem);
   if (opd1 == NULL || opd2 == NULL) {
     return false;
   }
-  Node* operation = gvn().transform(VectorNode::make(opc, opd1, opd2, num_elem, elem_bt));
 
+  Node* mask = NULL;
+  if (is_masked_op) {
+    ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
+    const TypeInstPtr* mbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, mbox_klass);
+    mask = unbox_vector(argument(7), mbox_type, elem_bt, num_elem);
+    if (mask == NULL) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** unbox failed mask=%s", NodeClassNames[argument(7)->Opcode()]);
+      }
+      return false;
+    }
+  }
+
+  Node* operation = VectorNode::make(opc, opd1, opd2, num_elem, elem_bt);
+  if (is_masked_op && mask != NULL) {
+    if (use_predicate) {
+      operation->add_req(mask);
+      operation->add_flag(Node::Flag_is_predicated_vector);
+    } else {
+      operation = new VectorBlendNode(opd1, operation, mask);
+    }
+  }
+  operation = gvn().transform(operation);
   Node* vbox = box_vector(operation, vbox_type, elem_bt, num_elem);
   set_result(vbox);
   C->set_max_vector_size(MAX2(C->max_vector_size(), (uint)(num_elem * type2aelembytes(elem_bt))));

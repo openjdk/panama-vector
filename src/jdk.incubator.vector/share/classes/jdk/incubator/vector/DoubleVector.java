@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
+import jdk.internal.misc.ScopedMemoryAccess;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
@@ -581,7 +582,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         m.check(maskClass, this);
         if (opKind(op, VO_SPECIAL)) {
             if (op == ZOMO) {
-                return blend(broadcast(-1), compare(NE, 0).and(m));
+                return blend(broadcast(-1), compare(NE, 0, m));
             }
         }
         int opc = opCode(op);
@@ -1742,20 +1743,40 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     final
     <M extends VectorMask<Double>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<Double> v) {
-        Objects.requireNonNull(v);
-        DoubleSpecies vsp = vspecies();
         DoubleVector that = (DoubleVector) v;
         that.check(this);
         int opc = opCode(op);
         return VectorSupport.compare(
             opc, getClass(), maskType, double.class, length(),
-            this, that,
-            (cond, v0, v1) -> {
+            this, that, null,
+            (cond, v0, v1, m1) -> {
                 AbstractMask<Double> m
                     = v0.bTest(cond, v1, (cond_, i, a, b)
                                -> compareWithOp(cond, a, b));
                 @SuppressWarnings("unchecked")
                 M m2 = (M) m;
+                return m2;
+            });
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Double>>
+    M compareTemplate(Class<M> maskType, Comparison op, Vector<Double> v, M m) {
+        DoubleVector that = (DoubleVector) v;
+        that.check(this);
+        m.check(maskType, this);
+        int opc = opCode(op);
+        return VectorSupport.compare(
+            opc, getClass(), maskType, double.class, length(),
+            this, that, m,
+            (cond, v0, v1, m1) -> {
+                AbstractMask<Double> cmpM
+                    = v0.bTest(cond, v1, (cond_, i, a, b)
+                               -> compareWithOp(cond, a, b));
+                @SuppressWarnings("unchecked")
+                M m2 = (M) cmpM.and(m1);
                 return m2;
             });
     }
@@ -1771,18 +1792,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             case BT_ge -> a >= b;
             default -> throw new AssertionError();
         };
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    VectorMask<Double> compare(VectorOperators.Comparison op,
-                                  Vector<Double> v,
-                                  VectorMask<Double> m) {
-        return compare(op, v).and(m);
     }
 
     /**
@@ -1843,7 +1852,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     public final VectorMask<Double> compare(VectorOperators.Comparison op,
                                                double e,
                                                VectorMask<Double> m) {
-        return compare(op, e).and(m);
+        return compare(op, broadcast(e), m);
     }
 
     /**
@@ -3344,15 +3353,14 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     final
     DoubleVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         DoubleSpecies vsp = vspecies();
-        return VectorSupport.load(
-            vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-            bufferBase(bb), bufferAddress(bb, offset),
-            bb, offset, vsp,
-            (buf, off, s) -> {
-                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                return s.ldOp(wb, off,
-                        (wb_, o, i) -> wb_.getDouble(o + i * 8));
-           });
+        return ScopedMemoryAccess.loadFromByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                bb, offset, vsp,
+                (buf, off, s) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    return s.ldOp(wb, off,
+                            (wb_, o, i) -> wb_.getDouble(o + i * 8));
+                });
     }
 
     // Unchecked storing operations in native byte order.
@@ -3466,15 +3474,14 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
         DoubleSpecies vsp = vspecies();
-        VectorSupport.store(
-            vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-            bufferBase(bb), bufferAddress(bb, offset),
-            this, bb, offset,
-            (buf, off, v) -> {
-                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                v.stOp(wb, off,
-                        (wb_, o, i, e) -> wb_.putDouble(o + i * 8, e));
-            });
+        ScopedMemoryAccess.storeIntoByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                this, bb, offset,
+                (buf, off, v) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    v.stOp(wb, off,
+                            (wb_, o, i, e) -> wb_.putDouble(o + i * 8, e));
+                });
     }
 
 

@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
+import jdk.internal.misc.ScopedMemoryAccess;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
@@ -581,7 +582,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
         m.check(maskClass, this);
         if (opKind(op, VO_SPECIAL)) {
             if (op == ZOMO) {
-                return blend(broadcast(-1), compare(NE, 0).and(m));
+                return blend(broadcast(-1), compare(NE, 0, m));
             }
         }
         int opc = opCode(op);
@@ -1754,20 +1755,40 @@ public abstract class FloatVector extends AbstractVector<Float> {
     final
     <M extends VectorMask<Float>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<Float> v) {
-        Objects.requireNonNull(v);
-        FloatSpecies vsp = vspecies();
         FloatVector that = (FloatVector) v;
         that.check(this);
         int opc = opCode(op);
         return VectorSupport.compare(
             opc, getClass(), maskType, float.class, length(),
-            this, that,
-            (cond, v0, v1) -> {
+            this, that, null,
+            (cond, v0, v1, m1) -> {
                 AbstractMask<Float> m
                     = v0.bTest(cond, v1, (cond_, i, a, b)
                                -> compareWithOp(cond, a, b));
                 @SuppressWarnings("unchecked")
                 M m2 = (M) m;
+                return m2;
+            });
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Float>>
+    M compareTemplate(Class<M> maskType, Comparison op, Vector<Float> v, M m) {
+        FloatVector that = (FloatVector) v;
+        that.check(this);
+        m.check(maskType, this);
+        int opc = opCode(op);
+        return VectorSupport.compare(
+            opc, getClass(), maskType, float.class, length(),
+            this, that, m,
+            (cond, v0, v1, m1) -> {
+                AbstractMask<Float> cmpM
+                    = v0.bTest(cond, v1, (cond_, i, a, b)
+                               -> compareWithOp(cond, a, b));
+                @SuppressWarnings("unchecked")
+                M m2 = (M) cmpM.and(m1);
                 return m2;
             });
     }
@@ -1783,18 +1804,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
             case BT_ge -> a >= b;
             default -> throw new AssertionError();
         };
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    VectorMask<Float> compare(VectorOperators.Comparison op,
-                                  Vector<Float> v,
-                                  VectorMask<Float> m) {
-        return compare(op, v).and(m);
     }
 
     /**
@@ -1855,7 +1864,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
     public final VectorMask<Float> compare(VectorOperators.Comparison op,
                                                float e,
                                                VectorMask<Float> m) {
-        return compare(op, e).and(m);
+        return compare(op, broadcast(e), m);
     }
 
     /**
@@ -3313,15 +3322,14 @@ public abstract class FloatVector extends AbstractVector<Float> {
     final
     FloatVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
         FloatSpecies vsp = vspecies();
-        return VectorSupport.load(
-            vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-            bufferBase(bb), bufferAddress(bb, offset),
-            bb, offset, vsp,
-            (buf, off, s) -> {
-                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                return s.ldOp(wb, off,
-                        (wb_, o, i) -> wb_.getFloat(o + i * 4));
-           });
+        return ScopedMemoryAccess.loadFromByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                bb, offset, vsp,
+                (buf, off, s) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    return s.ldOp(wb, off,
+                            (wb_, o, i) -> wb_.getFloat(o + i * 4));
+                });
     }
 
     // Unchecked storing operations in native byte order.
@@ -3416,15 +3424,14 @@ public abstract class FloatVector extends AbstractVector<Float> {
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
         FloatSpecies vsp = vspecies();
-        VectorSupport.store(
-            vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-            bufferBase(bb), bufferAddress(bb, offset),
-            this, bb, offset,
-            (buf, off, v) -> {
-                ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                v.stOp(wb, off,
-                        (wb_, o, i, e) -> wb_.putFloat(o + i * 4, e));
-            });
+        ScopedMemoryAccess.storeIntoByteBuffer(
+                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+                this, bb, offset,
+                (buf, off, v) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    v.stOp(wb, off,
+                            (wb_, o, i, e) -> wb_.putFloat(o + i * 4, e));
+                });
     }
 
 

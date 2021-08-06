@@ -379,6 +379,13 @@ final class Double256Vector extends DoubleVector {
 
     @Override
     @ForceInline
+    public final Double256Mask compare(Comparison op, Vector<Double> v, VectorMask<Double> m) {
+        return super.compareTemplate(Double256Mask.class, op, v, (Double256Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Double256Vector blend(Vector<Double> v, VectorMask<Double> m) {
         return (Double256Vector)
             super.blendTemplate(Double256Mask.class,
@@ -592,18 +599,10 @@ final class Double256Vector extends DoubleVector {
         @ForceInline
         private final <E>
         VectorMask<E> defaultMaskCast(AbstractSpecies<E> dsp) {
-            assert(length() == dsp.laneCount());
+            if (length() != dsp.laneCount())
+                throw new IllegalArgumentException("VectorMask length and species length differ");
             boolean[] maskArray = toArray();
-            // enum-switches don't optimize properly JDK-8161245
-            return switch (dsp.laneType.switchKey) {
-                     case LaneType.SK_BYTE   -> new Byte256Vector.Byte256Mask(maskArray).check(dsp);
-                     case LaneType.SK_SHORT  -> new Short256Vector.Short256Mask(maskArray).check(dsp);
-                     case LaneType.SK_INT    -> new Int256Vector.Int256Mask(maskArray).check(dsp);
-                     case LaneType.SK_LONG   -> new Long256Vector.Long256Mask(maskArray).check(dsp);
-                     case LaneType.SK_FLOAT  -> new Float256Vector.Float256Mask(maskArray).check(dsp);
-                     case LaneType.SK_DOUBLE -> new Double256Vector.Double256Mask(maskArray).check(dsp);
-                     default                 -> throw new AssertionError(dsp);
-            };
+            return  dsp.maskFactory(maskArray).check(dsp);
         }
 
         @Override
@@ -774,24 +773,7 @@ final class Double256Vector extends DoubleVector {
             if (length() != species.laneCount())
                 throw new IllegalArgumentException("VectorShuffle length and species length differ");
             int[] shuffleArray = toArray();
-            // enum-switches don't optimize properly JDK-8161245
-            switch (species.laneType.switchKey) {
-            case LaneType.SK_BYTE:
-                return new Byte256Vector.Byte256Shuffle(shuffleArray).check(species);
-            case LaneType.SK_SHORT:
-                return new Short256Vector.Short256Shuffle(shuffleArray).check(species);
-            case LaneType.SK_INT:
-                return new Int256Vector.Int256Shuffle(shuffleArray).check(species);
-            case LaneType.SK_LONG:
-                return new Long256Vector.Long256Shuffle(shuffleArray).check(species);
-            case LaneType.SK_FLOAT:
-                return new Float256Vector.Float256Shuffle(shuffleArray).check(species);
-            case LaneType.SK_DOUBLE:
-                return new Double256Vector.Double256Shuffle(shuffleArray).check(species);
-            }
-
-            // Should not reach here.
-            throw new AssertionError(species);
+            return s.shuffleFromArray(shuffleArray, 0).check(s);
         }
 
         @ForceInline

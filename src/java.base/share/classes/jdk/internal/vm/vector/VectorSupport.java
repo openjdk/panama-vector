@@ -431,7 +431,7 @@ public class VectorSupport {
     /* ============================================================================ */
 
     public interface VectorCompareOp<V,M> {
-        M apply(int cond, V v1, V v2);
+        M apply(int cond, V v1, V v2, M m);
     }
 
     @IntrinsicCandidate
@@ -439,10 +439,10 @@ public class VectorSupport {
                    M extends VectorMask<E>,
                    E>
     M compare(int cond, Class<? extends V> vectorClass, Class<M> maskClass, Class<?> elementType, int length,
-              V v1, V v2,
+              V v1, V v2, M m,
               VectorCompareOp<V,M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(cond, v1, v2);
+        return defaultImpl.apply(cond, v1, v2, m);
     }
 
     /* ============================================================================ */
@@ -487,18 +487,19 @@ public class VectorSupport {
 
     /* ============================================================================ */
 
-    public interface VectorBroadcastIntOp<V extends Vector<?>> {
-        V apply(V v, int n);
+    public interface VectorBroadcastIntOp<V extends Vector<?>, M> {
+        V apply(V v, int n, M m);
     }
 
     @IntrinsicCandidate
     public static
-    <V extends Vector<?>>
-    V broadcastInt(int opr, Class<? extends V> vectorClass, Class<?> elementType, int length,
-                   V v, int n,
-                   VectorBroadcastIntOp<V> defaultImpl) {
+    <V extends Vector<?>, M>
+    V broadcastInt(int opr, Class<? extends V> vectorClass, Class<? extends M> maskClass,
+                   Class<?> elementType, int length,
+                   V v, int n, M m,
+                   VectorBroadcastIntOp<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(v, n);
+        return defaultImpl.apply(v, n, m);
     }
 
     /* ============================================================================ */
