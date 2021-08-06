@@ -590,8 +590,10 @@ public abstract class IntVector extends AbstractVector<Integer> {
             if (op == ZOMO) {
                 return blend(broadcast(-1), compare(NE, 0, m));
             }
-            if (op == NOT || op == NEG) {
-                return blend(lanewise(op), m);
+            if (op == NOT) {
+                return lanewise(XOR, broadcast(-1), m);
+            } else if (op == NEG) {
+                return lanewise(NOT, m).lanewise(ADD, broadcast(1), m);
             }
         }
         int opc = opCode(op);
