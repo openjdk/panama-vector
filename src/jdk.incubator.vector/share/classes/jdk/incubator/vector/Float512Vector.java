@@ -379,6 +379,13 @@ final class Float512Vector extends FloatVector {
 
     @Override
     @ForceInline
+    public final Float512Mask compare(Comparison op, Vector<Float> v, VectorMask<Float> m) {
+        return super.compareTemplate(Float512Mask.class, op, v, (Float512Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Float512Vector blend(Vector<Float> v, VectorMask<Float> m) {
         return (Float512Vector)
             super.blendTemplate(Float512Mask.class,

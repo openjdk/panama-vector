@@ -382,6 +382,13 @@ final class Long256Vector extends LongVector {
 
     @Override
     @ForceInline
+    public final Long256Mask compare(Comparison op, Vector<Long> v, VectorMask<Long> m) {
+        return super.compareTemplate(Long256Mask.class, op, v, (Long256Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Long256Vector blend(Vector<Long> v, VectorMask<Long> m) {
         return (Long256Vector)
             super.blendTemplate(Long256Mask.class,

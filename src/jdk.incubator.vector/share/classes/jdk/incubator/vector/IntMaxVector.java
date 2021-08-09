@@ -392,6 +392,13 @@ final class IntMaxVector extends IntVector {
 
     @Override
     @ForceInline
+    public final IntMaxMask compare(Comparison op, Vector<Integer> v, VectorMask<Integer> m) {
+        return super.compareTemplate(IntMaxMask.class, op, v, (IntMaxMask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public IntMaxVector blend(Vector<Integer> v, VectorMask<Integer> m) {
         return (IntMaxVector)
             super.blendTemplate(IntMaxMask.class,

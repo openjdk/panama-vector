@@ -392,6 +392,13 @@ final class Short256Vector extends ShortVector {
 
     @Override
     @ForceInline
+    public final Short256Mask compare(Comparison op, Vector<Short> v, VectorMask<Short> m) {
+        return super.compareTemplate(Short256Mask.class, op, v, (Short256Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Short256Vector blend(Vector<Short> v, VectorMask<Short> m) {
         return (Short256Vector)
             super.blendTemplate(Short256Mask.class,

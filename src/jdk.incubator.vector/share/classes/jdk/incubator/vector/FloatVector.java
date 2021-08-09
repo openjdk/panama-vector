@@ -582,7 +582,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
         m.check(maskClass, this);
         if (opKind(op, VO_SPECIAL)) {
             if (op == ZOMO) {
-                return blend(broadcast(-1), compare(NE, 0).and(m));
+                return blend(broadcast(-1), compare(NE, 0, m));
             }
         }
         int opc = opCode(op);
@@ -1755,20 +1755,40 @@ public abstract class FloatVector extends AbstractVector<Float> {
     final
     <M extends VectorMask<Float>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<Float> v) {
-        Objects.requireNonNull(v);
-        FloatSpecies vsp = vspecies();
         FloatVector that = (FloatVector) v;
         that.check(this);
         int opc = opCode(op);
         return VectorSupport.compare(
             opc, getClass(), maskType, float.class, length(),
-            this, that,
-            (cond, v0, v1) -> {
+            this, that, null,
+            (cond, v0, v1, m1) -> {
                 AbstractMask<Float> m
                     = v0.bTest(cond, v1, (cond_, i, a, b)
                                -> compareWithOp(cond, a, b));
                 @SuppressWarnings("unchecked")
                 M m2 = (M) m;
+                return m2;
+            });
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Float>>
+    M compareTemplate(Class<M> maskType, Comparison op, Vector<Float> v, M m) {
+        FloatVector that = (FloatVector) v;
+        that.check(this);
+        m.check(maskType, this);
+        int opc = opCode(op);
+        return VectorSupport.compare(
+            opc, getClass(), maskType, float.class, length(),
+            this, that, m,
+            (cond, v0, v1, m1) -> {
+                AbstractMask<Float> cmpM
+                    = v0.bTest(cond, v1, (cond_, i, a, b)
+                               -> compareWithOp(cond, a, b));
+                @SuppressWarnings("unchecked")
+                M m2 = (M) cmpM.and(m1);
                 return m2;
             });
     }
@@ -1784,18 +1804,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
             case BT_ge -> a >= b;
             default -> throw new AssertionError();
         };
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    VectorMask<Float> compare(VectorOperators.Comparison op,
-                                  Vector<Float> v,
-                                  VectorMask<Float> m) {
-        return compare(op, v).and(m);
     }
 
     /**
@@ -1856,7 +1864,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
     public final VectorMask<Float> compare(VectorOperators.Comparison op,
                                                float e,
                                                VectorMask<Float> m) {
-        return compare(op, e).and(m);
+        return compare(op, broadcast(e), m);
     }
 
     /**

@@ -379,6 +379,13 @@ final class Double512Vector extends DoubleVector {
 
     @Override
     @ForceInline
+    public final Double512Mask compare(Comparison op, Vector<Double> v, VectorMask<Double> m) {
+        return super.compareTemplate(Double512Mask.class, op, v, (Double512Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Double512Vector blend(Vector<Double> v, VectorMask<Double> m) {
         return (Double512Vector)
             super.blendTemplate(Double512Mask.class,

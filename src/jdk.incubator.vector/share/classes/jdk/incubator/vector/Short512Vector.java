@@ -392,6 +392,13 @@ final class Short512Vector extends ShortVector {
 
     @Override
     @ForceInline
+    public final Short512Mask compare(Comparison op, Vector<Short> v, VectorMask<Short> m) {
+        return super.compareTemplate(Short512Mask.class, op, v, (Short512Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Short512Vector blend(Vector<Short> v, VectorMask<Short> m) {
         return (Short512Vector)
             super.blendTemplate(Short512Mask.class,

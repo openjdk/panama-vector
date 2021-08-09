@@ -878,6 +878,7 @@ class methodHandle;
   do_intrinsic(_VectorCompare, jdk_internal_vm_vector_VectorSupport, vector_compare_name, vector_compare_sig, F_S)                             \
    do_signature(vector_compare_sig, "(ILjava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;I"                                                   \
                                      "Ljdk/internal/vm/vector/VectorSupport$Vector;" "Ljdk/internal/vm/vector/VectorSupport$Vector;"           \
+                                     "Ljdk/internal/vm/vector/VectorSupport$VectorMask;"                                                       \
                                      "Ljdk/internal/vm/vector/VectorSupport$VectorCompareOp;" ")" "Ljdk/internal/vm/vector/VectorSupport$VectorMask;") \
    do_name(vector_compare_name, "compare")                                                                                                     \
                                                                                                                                                \

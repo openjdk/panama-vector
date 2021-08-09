@@ -392,6 +392,13 @@ final class Int128Vector extends IntVector {
 
     @Override
     @ForceInline
+    public final Int128Mask compare(Comparison op, Vector<Integer> v, VectorMask<Integer> m) {
+        return super.compareTemplate(Int128Mask.class, op, v, (Int128Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Int128Vector blend(Vector<Integer> v, VectorMask<Integer> m) {
         return (Int128Vector)
             super.blendTemplate(Int128Mask.class,

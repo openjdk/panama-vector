@@ -392,6 +392,13 @@ final class ShortMaxVector extends ShortVector {
 
     @Override
     @ForceInline
+    public final ShortMaxMask compare(Comparison op, Vector<Short> v, VectorMask<Short> m) {
+        return super.compareTemplate(ShortMaxMask.class, op, v, (ShortMaxMask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public ShortMaxVector blend(Vector<Short> v, VectorMask<Short> m) {
         return (ShortMaxVector)
             super.blendTemplate(ShortMaxMask.class,

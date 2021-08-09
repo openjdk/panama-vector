@@ -588,7 +588,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         m.check(maskClass, this);
         if (opKind(op, VO_SPECIAL)) {
             if (op == ZOMO) {
-                return blend(broadcast(-1), compare(NE, 0).and(m));
+                return blend(broadcast(-1), compare(NE, 0, m));
             }
             if (op == NOT || op == NEG) {
                 return blend(lanewise(op), m);
@@ -1886,20 +1886,40 @@ public abstract class IntVector extends AbstractVector<Integer> {
     final
     <M extends VectorMask<Integer>>
     M compareTemplate(Class<M> maskType, Comparison op, Vector<Integer> v) {
-        Objects.requireNonNull(v);
-        IntSpecies vsp = vspecies();
         IntVector that = (IntVector) v;
         that.check(this);
         int opc = opCode(op);
         return VectorSupport.compare(
             opc, getClass(), maskType, int.class, length(),
-            this, that,
-            (cond, v0, v1) -> {
+            this, that, null,
+            (cond, v0, v1, m1) -> {
                 AbstractMask<Integer> m
                     = v0.bTest(cond, v1, (cond_, i, a, b)
                                -> compareWithOp(cond, a, b));
                 @SuppressWarnings("unchecked")
                 M m2 = (M) m;
+                return m2;
+            });
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Integer>>
+    M compareTemplate(Class<M> maskType, Comparison op, Vector<Integer> v, M m) {
+        IntVector that = (IntVector) v;
+        that.check(this);
+        m.check(maskType, this);
+        int opc = opCode(op);
+        return VectorSupport.compare(
+            opc, getClass(), maskType, int.class, length(),
+            this, that, m,
+            (cond, v0, v1, m1) -> {
+                AbstractMask<Integer> cmpM
+                    = v0.bTest(cond, v1, (cond_, i, a, b)
+                               -> compareWithOp(cond, a, b));
+                @SuppressWarnings("unchecked")
+                M m2 = (M) cmpM.and(m1);
                 return m2;
             });
     }
@@ -1919,18 +1939,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
             case BT_uge -> Integer.compareUnsigned(a, b) >= 0;
             default -> throw new AssertionError();
         };
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    VectorMask<Integer> compare(VectorOperators.Comparison op,
-                                  Vector<Integer> v,
-                                  VectorMask<Integer> m) {
-        return compare(op, v).and(m);
     }
 
     /**
@@ -1991,7 +1999,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
     public final VectorMask<Integer> compare(VectorOperators.Comparison op,
                                                int e,
                                                VectorMask<Integer> m) {
-        return compare(op, e).and(m);
+        return compare(op, broadcast(e), m);
     }
 
     /**

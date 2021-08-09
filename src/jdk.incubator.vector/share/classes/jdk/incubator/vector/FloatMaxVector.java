@@ -379,6 +379,13 @@ final class FloatMaxVector extends FloatVector {
 
     @Override
     @ForceInline
+    public final FloatMaxMask compare(Comparison op, Vector<Float> v, VectorMask<Float> m) {
+        return super.compareTemplate(FloatMaxMask.class, op, v, (FloatMaxMask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public FloatMaxVector blend(Vector<Float> v, VectorMask<Float> m) {
         return (FloatMaxVector)
             super.blendTemplate(FloatMaxMask.class,

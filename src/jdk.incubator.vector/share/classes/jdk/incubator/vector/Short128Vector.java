@@ -392,6 +392,13 @@ final class Short128Vector extends ShortVector {
 
     @Override
     @ForceInline
+    public final Short128Mask compare(Comparison op, Vector<Short> v, VectorMask<Short> m) {
+        return super.compareTemplate(Short128Mask.class, op, v, (Short128Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Short128Vector blend(Vector<Short> v, VectorMask<Short> m) {
         return (Short128Vector)
             super.blendTemplate(Short128Mask.class,

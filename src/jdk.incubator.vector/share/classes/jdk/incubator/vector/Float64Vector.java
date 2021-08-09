@@ -379,6 +379,13 @@ final class Float64Vector extends FloatVector {
 
     @Override
     @ForceInline
+    public final Float64Mask compare(Comparison op, Vector<Float> v, VectorMask<Float> m) {
+        return super.compareTemplate(Float64Mask.class, op, v, (Float64Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Float64Vector blend(Vector<Float> v, VectorMask<Float> m) {
         return (Float64Vector)
             super.blendTemplate(Float64Mask.class,

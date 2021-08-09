@@ -392,6 +392,13 @@ final class Byte64Vector extends ByteVector {
 
     @Override
     @ForceInline
+    public final Byte64Mask compare(Comparison op, Vector<Byte> v, VectorMask<Byte> m) {
+        return super.compareTemplate(Byte64Mask.class, op, v, (Byte64Mask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public Byte64Vector blend(Vector<Byte> v, VectorMask<Byte> m) {
         return (Byte64Vector)
             super.blendTemplate(Byte64Mask.class,

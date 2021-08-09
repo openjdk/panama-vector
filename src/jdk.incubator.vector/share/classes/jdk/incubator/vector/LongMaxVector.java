@@ -382,6 +382,13 @@ final class LongMaxVector extends LongVector {
 
     @Override
     @ForceInline
+    public final LongMaxMask compare(Comparison op, Vector<Long> v, VectorMask<Long> m) {
+        return super.compareTemplate(LongMaxMask.class, op, v, (LongMaxMask) m);
+    }
+
+
+    @Override
+    @ForceInline
     public LongMaxVector blend(Vector<Long> v, VectorMask<Long> m) {
         return (LongMaxVector)
             super.blendTemplate(LongMaxMask.class,
