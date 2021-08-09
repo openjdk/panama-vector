@@ -164,8 +164,7 @@ source %{
         break;
     }
     // By default, we only support vector operations with no less than 8 bytes and 2 elements.
-    // TODO: set min vector size to 8 and have a full test.
-    return 16 <= length_in_bytes && length_in_bytes <= MaxVectorSize && vlen >= 2;
+    return 8 <= length_in_bytes && length_in_bytes <= MaxVectorSize && vlen >= 2;
   }
 
   bool masked_op_sve_supported(int opcode, int vlen, BasicType bt) {
