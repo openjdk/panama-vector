@@ -366,7 +366,7 @@ instruct loadV_masked(vReg dst, vmemA mem, pRegGov pg) %{
                           as_PRegister($pg$$reg), bt, bt, $mem->opcode(),
                           as_Register($mem$$base), $mem$$index, $mem$$scale, $mem$$disp);
   %}
-  ins_pipe( pipe_slow );
+  ins_pipe(pipe_slow);
 %}
 
 instruct loadV_masked_partial(vReg dst, vmemA mem, pRegGov pg, pRegGov ptmp, rFlagsReg cr) %{
@@ -385,7 +385,7 @@ instruct loadV_masked_partial(vReg dst, vmemA mem, pRegGov pg, pRegGov ptmp, rFl
                           as_PRegister($ptmp$$reg), bt, bt, $mem->opcode(),
                           as_Register($mem$$base), $mem$$index, $mem$$scale, $mem$$disp);
   %}
-  ins_pipe( pipe_slow );
+  ins_pipe(pipe_slow);
 %}
 
 instruct storeV_masked(vReg src, vmemA mem, pRegGov pg) %{
@@ -594,9 +594,10 @@ instruct reinterpretResize(vReg dst, vReg src, pRegGov pTmp, rFlagsReg cr) %{
 
 // vector mask reinterpret
 
-instruct vmask_reinterpret(pRegGov dst_src) %{
-  predicate(UseSVE > 0 && n->as_Vector()->length_in_bytes() ==
-                          n->in(1)->bottom_type()->is_vect()->length_in_bytes());
+instruct vmask_reinterpret_same_esize(pRegGov dst_src) %{
+  predicate(UseSVE > 0 &&
+            n->as_Vector()->length() == n->in(1)->bottom_type()->is_vect()->length() &&
+            n->as_Vector()->length_in_bytes() == n->in(1)->bottom_type()->is_vect()->length_in_bytes());
   match(Set dst_src (VectorReinterpret dst_src));
   ins_cost(0);
   format %{ "# vmask_reinterpret $dst_src\t# do nothing" %}
@@ -604,6 +605,25 @@ instruct vmask_reinterpret(pRegGov dst_src) %{
     // empty
   %}
   ins_pipe(pipe_class_empty);
+%}
+
+instruct vmask_reinterpret_diff_esize(pRegGov dst, pRegGov src, vReg tmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->as_Vector()->length() != n->in(1)->bottom_type()->is_vect()->length() &&
+            n->as_Vector()->length_in_bytes() == n->in(1)->bottom_type()->is_vect()->length_in_bytes());
+  match(Set dst (VectorReinterpret src));
+  effect(TEMP tmp, KILL cr);
+  ins_cost(2 * SVE_COST);
+  format %{ "# vmask_reinterpret $dst, $src\t# vector (sve)" %}
+  ins_encode %{
+    BasicType from_bt = vector_element_basic_type(this, $src);
+    Assembler::SIMD_RegVariant from_size = __ elemType_to_regVariant(from_bt);
+    BasicType to_bt = vector_element_basic_type(this);
+    Assembler::SIMD_RegVariant to_size = __ elemType_to_regVariant(to_bt);
+    __ sve_cpy(as_FloatRegister($tmp$$reg), from_size, as_PRegister($src$$reg), -1, false);
+    __ sve_cmpeq(as_PRegister($dst$$reg), to_size, ptrue, as_FloatRegister($tmp$$reg), -1);
+  %}
+  ins_pipe(pipe_slow);
 %}
 
 // vector abs
@@ -1717,6 +1737,20 @@ instruct vmaskcmp(pRegGov dst, vReg src1, vReg src2, immI cond, rFlagsReg cr) %{
   ins_encode %{
     BasicType bt = vector_element_basic_type(this);
     __ sve_compare(as_PRegister($dst$$reg), bt, ptrue, as_FloatRegister($src1$$reg),
+                   as_FloatRegister($src2$$reg), (int)$cond$$constant);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vmaskcmp_masked(pRegGov dst, vReg src1, vReg src2, immI cond, pRegGov pg, rFlagsReg cr) %{
+  predicate(UseSVE > 0);
+  match(Set dst (VectorMaskCmp (Binary src1 src2) (Binary cond pg)));
+  effect(KILL cr);
+  ins_cost(SVE_COST);
+  format %{ "sve_cmp $dst, $pg, $src1, $src2\t# vector mask cmp (sve)" %}
+  ins_encode %{
+    BasicType bt = vector_element_basic_type(this);
+    __ sve_compare(as_PRegister($dst$$reg), bt, as_PRegister($pg$$reg), as_FloatRegister($src1$$reg),
                    as_FloatRegister($src2$$reg), (int)$cond$$constant);
   %}
   ins_pipe(pipe_slow);
