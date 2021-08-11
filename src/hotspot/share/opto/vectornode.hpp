@@ -1297,7 +1297,7 @@ class VectorMaskCmpNode : public VectorNode {
   BoolTest::mask _predicate;
 
  protected:
-  virtual  uint  size_of() const { return sizeof(VectorMaskCmpNode); }
+  virtual  uint size_of() const { return sizeof(VectorMaskCmpNode); }
 
  public:
   VectorMaskCmpNode(BoolTest::mask predicate, Node* in1, Node* in2, ConINode* predicate_node, const TypeVect* vt) :

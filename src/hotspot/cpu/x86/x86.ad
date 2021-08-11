@@ -1858,6 +1858,9 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
   if (!VM_Version::supports_avx512bw()) {
     return false;
   }
+  if (!match_rule_supported_vector(opcode, vlen, bt)) {
+    return false;
+  }
   int size_in_bits = vlen * type2aelembytes(bt) * BitsPerByte;
   if ((size_in_bits != 512) && !VM_Version::supports_avx512vl()) {
      return false; // Implementation limitation

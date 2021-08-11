@@ -3856,11 +3856,11 @@ void C2_MacroAssembler::evmasked_op(int ideal_opc, BasicType eType, KRegister ma
     case Op_SubVD:
       evsubpd(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_MulVS:
-      evpmulw(dst, mask, src1, src2, merge, vlen_enc); break;
+      evpmullw(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_MulVI:
-      evpmuld(dst, mask, src1, src2, merge, vlen_enc); break;
+      evpmulld(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_MulVL:
-      evpmulq(dst, mask, src1, src2, merge, vlen_enc); break;
+      evpmullq(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_MulVF:
       evmulps(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_MulVD:
@@ -3878,9 +3878,9 @@ void C2_MacroAssembler::evmasked_op(int ideal_opc, BasicType eType, KRegister ma
     case Op_AbsVL:
       evpabsq(dst, mask, src2, merge, vlen_enc); break;
     case Op_FmaVF:
-      evfmaps(dst, mask, src1, src2, merge, vlen_enc); break;
+      evpfma213ps(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_FmaVD:
-      evfmapd(dst, mask, src1, src2, merge, vlen_enc); break;
+      evpfma213pd(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_VectorRearrange:
       evpperm(eType, dst, mask, src2, src1, merge, vlen_enc); break;
     case Op_LShiftVS:
@@ -3946,11 +3946,11 @@ void C2_MacroAssembler::evmasked_op(int ideal_opc, BasicType eType, KRegister ma
     case Op_SubVD:
       evsubpd(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_MulVS:
-      evpmulw(dst, mask, src1, src2, merge, vlen_enc); break;
+      evpmullw(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_MulVI:
-      evpmuld(dst, mask, src1, src2, merge, vlen_enc); break;
+      evpmulld(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_MulVL:
-      evpmulq(dst, mask, src1, src2, merge, vlen_enc); break;
+      evpmullq(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_MulVF:
       evmulps(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_MulVD:
@@ -3968,9 +3968,9 @@ void C2_MacroAssembler::evmasked_op(int ideal_opc, BasicType eType, KRegister ma
     case Op_AbsVL:
       evpabsq(dst, mask, src2, merge, vlen_enc); break;
     case Op_FmaVF:
-      evfmaps(dst, mask, src1, src2, merge, vlen_enc); break;
+      evpfma213ps(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_FmaVD:
-      evfmapd(dst, mask, src1, src2, merge, vlen_enc); break;
+      evpfma213pd(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_MaxV:
       evpmaxs(eType, dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_MinV:
