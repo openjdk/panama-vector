@@ -273,8 +273,10 @@ void RegisterSaver::restore_live_registers(MacroAssembler* masm) {
 
 // Is vector's size (in bytes) bigger than a size saved by default?
 // 8 bytes vector registers are saved by default on AArch64.
+// The SVE supported min vector size is 8 bytes and we need to save
+// predicate registers when the vector size is 8 bytes as well.
 bool SharedRuntime::is_wide_vector(int size) {
-  return size > 8;
+  return size > 8 || (UseSVE > 0 && size >= 8);
 }
 
 // The java_calling_convention describes stack locations as ideal slots on

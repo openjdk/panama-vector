@@ -976,27 +976,132 @@ void C2_MacroAssembler::sve_compare(PRegister pd, BasicType bt, PRegister pg,
 }
 
 void C2_MacroAssembler::sve_vmask_reduction(int opc, Register dst, SIMD_RegVariant size, FloatRegister src,
-                                            PRegister pg, PRegister pn, int length) {
-  assert(pg->is_governing(), "This register has to be a governing predicate register");
-  // The conditional flags will be clobbered by this function
-  sve_cmpne(pn, size, pg, src, 0);
+                                            PRegister pgtmp, PRegister ptmp) {
+  assert(pgtmp->is_governing(), "This register has to be a governing predicate register");
+  // The condition flags will be clobbered by this function
+  sve_cmpne(ptmp, size, pgtmp, src, 0);
+  sve_vmask_reduction(opc, dst, size, ptmp, pgtmp, ptmp, MaxVectorSize);
+}
+
+void C2_MacroAssembler::sve_vmask_reduction(int opc, Register dst, SIMD_RegVariant size, PRegister src,
+                                            PRegister pgtmp, PRegister ptmp, int length) {
+  assert(pgtmp->is_governing(), "This register has to be a governing predicate register");
   switch (opc) {
     case Op_VectorMaskTrueCount:
-      sve_cntp(dst, size, ptrue, pn);
+      sve_cntp(dst, size, pgtmp, src);
       break;
     case Op_VectorMaskFirstTrue:
-      sve_brkb(pn, pg, pn, false);
-      sve_cntp(dst, size, ptrue, pn);
+      sve_brkb(ptmp, pgtmp, src, false);
+      sve_cntp(dst, size, pgtmp, ptmp);
       break;
     case Op_VectorMaskLastTrue:
-      sve_rev(pn, size, pn);
-      sve_brkb(pn, ptrue, pn, false);
-      sve_cntp(dst, size, ptrue, pn);
+      sve_rev(ptmp, size, src);
+      sve_brkb(ptmp, ptrue, ptmp, false);
+      sve_cntp(dst, size, ptrue, ptmp);
       movw(rscratch1, length - 1);
       subw(dst, rscratch1, dst);
       break;
     default:
       assert(false, "unsupported");
       ShouldNotReachHere();
+  }
+}
+
+void C2_MacroAssembler::sve_reduce_integral(int opc, Register dst, BasicType bt, Register src1,
+                                            FloatRegister src2, PRegister pg, FloatRegister tmp) {
+  assert(bt == T_BYTE || bt == T_SHORT || bt == T_INT || bt == T_LONG, "unsupported element type");
+  assert(pg->is_governing(), "This register has to be a governing predicate register");
+  assert_different_registers(src1, dst);
+  // Register "dst" and "tmp" are to be clobbered, and "src1" and "src2" should be preserved.
+  Assembler::SIMD_RegVariant size = elemType_to_regVariant(bt);
+  switch (opc) {
+    case Op_AddReductionVI: {
+      sve_uaddv(tmp, size, pg, src2);
+      smov(dst, tmp, size, 0);
+      if (bt == T_BYTE) {
+        addw(dst, src1, dst, ext::sxtb);
+      } else if (bt == T_SHORT) {
+        addw(dst, src1, dst, ext::sxth);
+      } else {
+        addw(dst, dst, src1);
+      }
+      break;
+    }
+    case Op_AddReductionVL: {
+      sve_uaddv(tmp, size, pg, src2);
+      umov(dst, tmp, size, 0);
+      add(dst, dst, src1);
+      break;
+    }
+    case Op_AndReductionV: {
+      sve_andv(tmp, size, pg, src2);
+      if (bt == T_LONG) {
+        umov(dst, tmp, size, 0);
+        andr(dst, dst, src1);
+      } else {
+        smov(dst, tmp, size, 0);
+        andw(dst, dst, src1);
+      }
+      break;
+    }
+    case Op_OrReductionV: {
+      sve_orv(tmp, size, pg, src2);
+      if (bt == T_LONG) {
+        umov(dst, tmp, size, 0);
+        orr(dst, dst, src1);
+      } else {
+        smov(dst, tmp, size, 0);
+        orrw(dst, dst, src1);
+      }
+      break;
+    }
+    case Op_XorReductionV: {
+      sve_eorv(tmp, size, pg, src2);
+      if (bt == T_LONG) {
+        umov(dst, tmp, size, 0);
+        eor(dst, dst, src1);
+      } else {
+        smov(dst, tmp, size, 0);
+        eorw(dst, dst, src1);
+      }
+      break;
+    }
+    case Op_MaxReductionV: {
+      sve_smaxv(tmp, size, pg, src2);
+      if (bt == T_LONG) {
+        umov(dst, tmp, size, 0);
+        cmp(dst, src1);
+        csel(dst, dst, src1, Assembler::GT);
+      } else {
+        smov(dst, tmp, size, 0);
+        cmpw(dst, src1);
+        cselw(dst, dst, src1, Assembler::GT);
+      }
+      break;
+    }
+    case Op_MinReductionV: {
+      sve_sminv(tmp, size, pg, src2);
+      if (bt == T_LONG) {
+        umov(dst, tmp, size, 0);
+        cmp(dst, src1);
+        csel(dst, dst, src1, Assembler::LT);
+      } else {
+        smov(dst, tmp, size, 0);
+        cmpw(dst, src1);
+        cselw(dst, dst, src1, Assembler::LT);
+      }
+      break;
+    }
+    default:
+      assert(false, "unsupported");
+      ShouldNotReachHere();
+  }
+
+  if (opc == Op_AndReductionV || opc == Op_OrReductionV || opc == Op_XorReductionV) {
+    if (bt == T_BYTE) {
+      sxtb(dst, dst);
+    } else if (bt == T_SHORT) {
+      sxth(dst, dst);
+    }
   }
 }
