@@ -282,6 +282,6 @@ public:
                    XMMRegister dst, XMMRegister src1, Address src2,
                    bool merge, int vlen_enc);
 
-  void masked_op(int ideal_opc, BasicType eType, KRegister dst,
+  void masked_op(int ideal_opc, int mask_len, KRegister dst,
                  KRegister src1, KRegister src2);
 #endif // CPU_X86_C2_MACROASSEMBLER_X86_HPP

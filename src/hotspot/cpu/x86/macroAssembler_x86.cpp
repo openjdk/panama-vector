@@ -8296,6 +8296,25 @@ void MacroAssembler::evpperm(BasicType type, XMMRegister dst, KRegister mask, XM
   }
 }
 
+void MacroAssembler::evpperm(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
+  switch(type) {
+    case T_BOOLEAN:
+    case T_BYTE:
+      evppermb(dst, mask, nds, src, merge, vector_len); break;
+    case T_CHAR:
+    case T_SHORT:
+      evppermw(dst, mask, nds, src, merge, vector_len); break;
+    case T_INT:
+    case T_FLOAT:
+      evppermd(dst, mask, nds, src, merge, vector_len); break;
+    case T_LONG:
+    case T_DOUBLE:
+      evppermq(dst, mask, nds, src, merge, vector_len); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+  }
+}
+
 void MacroAssembler::evpmins(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   switch(type) {
     case T_BYTE:
@@ -8422,31 +8441,11 @@ void MacroAssembler::evand(BasicType type, XMMRegister dst, KRegister mask, XMMR
   }
 }
 
-void MacroAssembler::evpperm(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
-  switch(type) {
-    case T_BOOLEAN:
-    case T_BYTE:
-      evppermb(dst, mask, nds, src, merge, vector_len); break;
-    case T_CHAR:
-    case T_SHORT:
-      evppermw(dst, mask, nds, src, merge, vector_len); break;
-    case T_INT:
-    case T_FLOAT:
-      evppermd(dst, mask, nds, src, merge, vector_len); break;
-    case T_LONG:
-    case T_DOUBLE:
-      evppermq(dst, mask, nds, src, merge, vector_len); break;
-    default:
-      fatal("Unexpected type argument %s", type2name(type)); break;
-  }
-}
-
 void MacroAssembler::anytrue(Register dst, uint masklen, KRegister src, KRegister kscratch) {
   if (masklen < 8) {
     kxnorbl(kscratch, kscratch, kscratch);
     kshiftrbl(kscratch, kscratch, 8-masklen);
-    kandbl(kscratch, kscratch, src);
-    ktestbl(kscratch, kscratch);
+    ktestbl(kscratch, src);
     setb(Assembler::notZero, dst);
     movzbl(dst, dst);
   } else {
@@ -8460,8 +8459,7 @@ void MacroAssembler::alltrue(Register dst, uint masklen, KRegister src, KRegiste
   if (masklen < 8) {
     kxnorbl(kscratch, kscratch, kscratch);
     kshiftlbl(kscratch, kscratch, masklen);
-    korbl(kscratch, kscratch, src);
-    kortestbl(kscratch, kscratch);
+    kortestbl(kscratch, src);
     setb(Assembler::carrySet, dst);
     movzbl(dst, dst);
   } else {

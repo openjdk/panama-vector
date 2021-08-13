@@ -3911,8 +3911,6 @@ void C2_MacroAssembler::evmasked_op(int ideal_opc, BasicType eType, KRegister ma
       evor(eType, dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_AndV:
       evand(eType, dst, mask, src1, src2, merge, vlen_enc); break;
-    case Op_AbsVD:
-    case Op_MulVB:
     default:
       fatal("Unsupported masked operation"); break;
   }
@@ -3981,15 +3979,24 @@ void C2_MacroAssembler::evmasked_op(int ideal_opc, BasicType eType, KRegister ma
       evor(eType, dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_AndV:
       evand(eType, dst, mask, src1, src2, merge, vlen_enc); break;
-    case Op_AbsVD:
-    case Op_MulVB:
     default:
       fatal("Unsupported masked operation"); break;
   }
 }
 
-void C2_MacroAssembler::masked_op(int ideal_opc, BasicType etype, KRegister dst,
+void C2_MacroAssembler::masked_op(int ideal_opc, int mask_len, KRegister dst,
                                   KRegister src1, KRegister src2) {
+  BasicType etype = T_ILLEGAL;
+  switch(mask_len) {
+    case 2:
+    case 4:
+    case 8:  etype = T_BYTE; break;
+    case 16: etype = T_SHORT; break;
+    case 32: etype = T_INT; break;
+    case 64: etype = T_LONG; break;
+    default: fatal("Unsupported type"); break;
+  }
+  assert(etype != T_ILLEGAL, "");
   switch(ideal_opc) {
     case Op_AndVMask:
       kand(etype, dst, src1, src2); break;
