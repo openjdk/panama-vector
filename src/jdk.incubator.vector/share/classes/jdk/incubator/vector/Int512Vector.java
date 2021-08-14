@@ -453,6 +453,7 @@ final class Int512Vector extends IntVector {
                                   VectorMask<Integer> m) {
         return (Int512Vector)
             super.rearrangeTemplate(Int512Shuffle.class,
+                                    Int512Mask.class,
                                     (Int512Shuffle) shuffle,
                                     (Int512Mask) m);  // specialize
     }

@@ -459,6 +459,7 @@ final class $vectortype$ extends $abstractvectortype$ {
                                   VectorMask<$Boxtype$> m) {
         return ($vectortype$)
             super.rearrangeTemplate($shuffletype$.class,
+                                    $masktype$.class,
                                     ($shuffletype$) shuffle,
                                     ($masktype$) m);  // specialize
     }

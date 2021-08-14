@@ -440,6 +440,7 @@ final class Double256Vector extends DoubleVector {
                                   VectorMask<Double> m) {
         return (Double256Vector)
             super.rearrangeTemplate(Double256Shuffle.class,
+                                    Double256Mask.class,
                                     (Double256Shuffle) shuffle,
                                     (Double256Mask) m);  // specialize
     }

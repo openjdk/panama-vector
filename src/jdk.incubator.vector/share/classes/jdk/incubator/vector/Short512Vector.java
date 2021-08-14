@@ -453,6 +453,7 @@ final class Short512Vector extends ShortVector {
                                   VectorMask<Short> m) {
         return (Short512Vector)
             super.rearrangeTemplate(Short512Shuffle.class,
+                                    Short512Mask.class,
                                     (Short512Shuffle) shuffle,
                                     (Short512Mask) m);  // specialize
     }

@@ -443,6 +443,7 @@ final class Long128Vector extends LongVector {
                                   VectorMask<Long> m) {
         return (Long128Vector)
             super.rearrangeTemplate(Long128Shuffle.class,
+                                    Long128Mask.class,
                                     (Long128Shuffle) shuffle,
                                     (Long128Mask) m);  // specialize
     }

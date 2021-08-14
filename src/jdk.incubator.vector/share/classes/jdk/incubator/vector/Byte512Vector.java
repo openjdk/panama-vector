@@ -453,6 +453,7 @@ final class Byte512Vector extends ByteVector {
                                   VectorMask<Byte> m) {
         return (Byte512Vector)
             super.rearrangeTemplate(Byte512Shuffle.class,
+                                    Byte512Mask.class,
                                     (Byte512Shuffle) shuffle,
                                     (Byte512Mask) m);  // specialize
     }

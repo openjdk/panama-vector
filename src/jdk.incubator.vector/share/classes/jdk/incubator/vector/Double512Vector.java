@@ -440,6 +440,7 @@ final class Double512Vector extends DoubleVector {
                                   VectorMask<Double> m) {
         return (Double512Vector)
             super.rearrangeTemplate(Double512Shuffle.class,
+                                    Double512Mask.class,
                                     (Double512Shuffle) shuffle,
                                     (Double512Mask) m);  // specialize
     }

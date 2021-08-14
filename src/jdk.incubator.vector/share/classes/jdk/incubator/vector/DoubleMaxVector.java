@@ -440,6 +440,7 @@ final class DoubleMaxVector extends DoubleVector {
                                   VectorMask<Double> m) {
         return (DoubleMaxVector)
             super.rearrangeTemplate(DoubleMaxShuffle.class,
+                                    DoubleMaxMask.class,
                                     (DoubleMaxShuffle) shuffle,
                                     (DoubleMaxMask) m);  // specialize
     }

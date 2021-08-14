@@ -440,6 +440,7 @@ final class Float64Vector extends FloatVector {
                                   VectorMask<Float> m) {
         return (Float64Vector)
             super.rearrangeTemplate(Float64Shuffle.class,
+                                    Float64Mask.class,
                                     (Float64Shuffle) shuffle,
                                     (Float64Mask) m);  // specialize
     }

@@ -453,6 +453,7 @@ final class IntMaxVector extends IntVector {
                                   VectorMask<Integer> m) {
         return (IntMaxVector)
             super.rearrangeTemplate(IntMaxShuffle.class,
+                                    IntMaxMask.class,
                                     (IntMaxShuffle) shuffle,
                                     (IntMaxMask) m);  // specialize
     }

@@ -443,6 +443,7 @@ final class Long512Vector extends LongVector {
                                   VectorMask<Long> m) {
         return (Long512Vector)
             super.rearrangeTemplate(Long512Shuffle.class,
+                                    Long512Mask.class,
                                     (Long512Shuffle) shuffle,
                                     (Long512Mask) m);  // specialize
     }

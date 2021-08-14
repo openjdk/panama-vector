@@ -453,6 +453,7 @@ final class ByteMaxVector extends ByteVector {
                                   VectorMask<Byte> m) {
         return (ByteMaxVector)
             super.rearrangeTemplate(ByteMaxShuffle.class,
+                                    ByteMaxMask.class,
                                     (ByteMaxShuffle) shuffle,
                                     (ByteMaxMask) m);  // specialize
     }

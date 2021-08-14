@@ -440,6 +440,7 @@ final class FloatMaxVector extends FloatVector {
                                   VectorMask<Float> m) {
         return (FloatMaxVector)
             super.rearrangeTemplate(FloatMaxShuffle.class,
+                                    FloatMaxMask.class,
                                     (FloatMaxShuffle) shuffle,
                                     (FloatMaxMask) m);  // specialize
     }
