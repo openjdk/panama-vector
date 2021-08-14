@@ -8277,39 +8277,39 @@ void MacroAssembler::kxor(BasicType type, KRegister dst, KRegister src1, KRegist
   }
 }
 
-void MacroAssembler::evpperm(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+void MacroAssembler::evperm(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
   switch(type) {
     case T_BOOLEAN:
     case T_BYTE:
-      evppermb(dst, mask, nds, src, merge, vector_len); break;
+      evpermb(dst, mask, nds, src, merge, vector_len); break;
     case T_CHAR:
     case T_SHORT:
-      evppermw(dst, mask, nds, src, merge, vector_len); break;
+      evpermw(dst, mask, nds, src, merge, vector_len); break;
     case T_INT:
     case T_FLOAT:
-      evppermd(dst, mask, nds, src, merge, vector_len); break;
+      evpermd(dst, mask, nds, src, merge, vector_len); break;
     case T_LONG:
     case T_DOUBLE:
-      evppermq(dst, mask, nds, src, merge, vector_len); break;
+      evpermq(dst, mask, nds, src, merge, vector_len); break;
     default:
       fatal("Unexpected type argument %s", type2name(type)); break;
   }
 }
 
-void MacroAssembler::evpperm(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
+void MacroAssembler::evperm(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   switch(type) {
     case T_BOOLEAN:
     case T_BYTE:
-      evppermb(dst, mask, nds, src, merge, vector_len); break;
+      evpermb(dst, mask, nds, src, merge, vector_len); break;
     case T_CHAR:
     case T_SHORT:
-      evppermw(dst, mask, nds, src, merge, vector_len); break;
+      evpermw(dst, mask, nds, src, merge, vector_len); break;
     case T_INT:
     case T_FLOAT:
-      evppermd(dst, mask, nds, src, merge, vector_len); break;
+      evpermd(dst, mask, nds, src, merge, vector_len); break;
     case T_LONG:
     case T_DOUBLE:
-      evppermq(dst, mask, nds, src, merge, vector_len); break;
+      evpermq(dst, mask, nds, src, merge, vector_len); break;
     default:
       fatal("Unexpected type argument %s", type2name(type)); break;
   }

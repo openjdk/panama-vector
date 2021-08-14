@@ -3882,7 +3882,7 @@ void C2_MacroAssembler::evmasked_op(int ideal_opc, BasicType eType, KRegister ma
     case Op_FmaVD:
       evpfma213pd(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_VectorRearrange:
-      evpperm(eType, dst, mask, src2, src1, merge, vlen_enc); break;
+      evperm(eType, dst, mask, src2, src1, merge, vlen_enc); break;
     case Op_LShiftVS:
       evpsllw(dst, mask, src1, src2, merge, vlen_enc, is_varshift); break;
     case Op_LShiftVI:

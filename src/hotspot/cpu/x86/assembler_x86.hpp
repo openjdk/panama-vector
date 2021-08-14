@@ -2318,14 +2318,14 @@ private:
   void evpfma213ps(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
   void evpfma213pd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
   void evpfma213pd(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
-  void evppermb(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
-  void evppermb(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
-  void evppermw(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
-  void evppermw(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
-  void evppermd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
-  void evppermd(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
-  void evppermq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
-  void evppermq(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
+  void evpermb(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
+  void evpermb(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
+  void evpermw(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
+  void evpermw(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
+  void evpermd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
+  void evpermd(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
+  void evpermq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
+  void evpermq(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
   void evpsllw(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
   void evpslld(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
   void evpsllq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
@@ -2650,6 +2650,7 @@ private:
                int comparison, bool is_signed, int vector_len);
 
   void evpmovb2m(KRegister dst, XMMRegister src, int vector_len);
+  void evpmovm2b(XMMRegister dst, KRegister src, int vector_len);
 
   // Vector blends
   void blendvps(XMMRegister dst, XMMRegister src);
