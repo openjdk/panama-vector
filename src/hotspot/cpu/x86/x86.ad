@@ -1946,7 +1946,7 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
 
     case Op_VectorRearrange:
       assert(bt != T_SHORT || VM_Version::supports_avx512bw(), "");
-      if (bt == T_BYTE && VM_Version::supports_avx512_vbmi()) {
+      if (bt == T_BYTE && !VM_Version::supports_avx512_vbmi()) {
         return false; // Implementation limitation
       }
       return true;
