@@ -1755,27 +1755,27 @@ bool LibraryCallKit::inline_vector_rearrange() {
   const TypeInstPtr* elem_klass    = gvn().type(argument(3))->isa_instptr();
   const TypeInt*     vlen          = gvn().type(argument(4))->isa_int();
 
-  if (vector_klass == NULL || shuffle_klass == NULL || elem_klass == NULL || mask_klass == NULL || vlen == NULL) {
+  if (vector_klass == NULL  ||
+      shuffle_klass == NULL ||
+      elem_klass == NULL    ||
+      vlen == NULL) {
     return false; // dead code
   }
   if (shuffle_klass->const_oop() == NULL ||
-      mask_klass->const_oop()    == NULL ||
       vector_klass->const_oop()  == NULL ||
       elem_klass->const_oop()    == NULL ||
       !vlen->is_con()) {
     if (C->print_intrinsics()) {
-      tty->print_cr("  ** missing constant: vclass=%s sclass=%s mclass=%s etype=%s vlen=%s",
+      tty->print_cr("  ** missing constant: vclass=%s sclass=%s etype=%s vlen=%s",
                     NodeClassNames[argument(0)->Opcode()],
                     NodeClassNames[argument(1)->Opcode()],
-                    NodeClassNames[argument(2)->Opcode()],
                     NodeClassNames[argument(3)->Opcode()],
                     NodeClassNames[argument(4)->Opcode()]);
     }
     return false; // not enough info for intrinsification
   }
   if (!is_klass_initialized(vector_klass)  ||
-      !is_klass_initialized(shuffle_klass) ||
-      !is_klass_initialized(mask_klass)) {
+      !is_klass_initialized(shuffle_klass)) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** klass argument not initialized");
     }
@@ -1799,12 +1799,28 @@ bool LibraryCallKit::inline_vector_rearrange() {
     }
     return false; // not supported
   }
-  if (!arch_supports_vector(Op_VectorRearrange, num_elem, elem_bt, VecMaskNotUsed)) {
+
+  bool is_masked_op = argument(7)->bottom_type() != TypePtr::NULL_PTR;
+  bool use_predicate = is_masked_op;
+  if (is_masked_op &&
+      (mask_klass == NULL ||
+       mask_klass->const_oop() == NULL ||
+       !is_klass_initialized(mask_klass))) {
     if (C->print_intrinsics()) {
-      tty->print_cr("  ** not supported: arity=2 op=shuffle/rearrange vlen=%d etype=%s ismask=no",
-                    num_elem, type2name(elem_bt));
+      tty->print_cr("  ** mask_klass argument not initialized");
     }
-    return false; // not supported
+  }
+  if (!arch_supports_vector(Op_VectorRearrange, num_elem, elem_bt, is_masked_op ? VecMaskUsePred : VecMaskNotUsed)) {
+    use_predicate = false;
+    if(!is_masked_op ||
+       (!arch_supports_vector(Op_VectorBlend, num_elem, elem_bt, VecMaskUseLoad) ||
+        !arch_supports_vector(VectorNode::replicate_opcode(elem_bt), num_elem, elem_bt, VecMaskNotUsed))) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** not supported: arity=2 op=shuffle/rearrange vlen=%d etype=%s ismask=no",
+                      num_elem, type2name(elem_bt));
+      }
+      return false; // not supported
+    }
   }
   ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
@@ -1812,35 +1828,25 @@ bool LibraryCallKit::inline_vector_rearrange() {
   ciKlass* shbox_klass = shuffle_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* shbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, shbox_klass);
 
-  ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
-  const TypeInstPtr* mbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, mbox_klass);
-
   Node* v1 = unbox_vector(argument(5), vbox_type, elem_bt, num_elem);
   Node* shuffle = unbox_vector(argument(6), shbox_type, shuffle_bt, num_elem);
 
-  bool is_masked_op = argument(7)->bottom_type() != TypePtr::NULL_PTR;
-  Node* mask = is_masked_op ? unbox_vector(argument(7), mbox_type, elem_bt, num_elem) : NULL;
-  if (is_masked_op && mask == NULL) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** not supported: arity=3 op=shuffle/rearrange vlen=%d etype=%s ismask=useload is_masked_op=1",
-                    num_elem, type2name(elem_bt));
-    }
-    return false;
-  }
-
-  bool use_predicate = is_masked_op && arch_supports_vector(Op_VectorRearrange, num_elem, elem_bt, VecMaskUsePred);
-  if (is_masked_op && !use_predicate &&
-       (!arch_supports_vector(Op_VectorBlend, num_elem, elem_bt, VecMaskUseLoad) ||
-        !arch_supports_vector(VectorNode::replicate_opcode(elem_bt), num_elem, elem_bt, VecMaskNotUsed))) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** not supported: arity=3 op=shuffle/rearrange vlen=%d etype=%s ismask=useload is_masked_op=1",
-                    num_elem, type2name(elem_bt));
-    }
-    return false;
-  }
-
-  if (v1 == NULL || shuffle == NULL || mask == NULL) {
+  if (v1 == NULL || shuffle == NULL) {
     return false; // operand unboxing failed
+  }
+
+  Node* mask = NULL;
+  if (is_masked_op) {
+    ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
+    const TypeInstPtr* mbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, mbox_klass);
+    mask = unbox_vector(argument(7), mbox_type, elem_bt, num_elem);
+    if (mask == NULL) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** not supported: arity=3 op=shuffle/rearrange vlen=%d etype=%s ismask=useload is_masked_op=1",
+                      num_elem, type2name(elem_bt));
+      }
+      return false;
+    }
   }
 
   Node* rearrange = new VectorRearrangeNode(v1, shuffle);
