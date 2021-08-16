@@ -1755,10 +1755,7 @@ bool LibraryCallKit::inline_vector_rearrange() {
   const TypeInstPtr* elem_klass    = gvn().type(argument(3))->isa_instptr();
   const TypeInt*     vlen          = gvn().type(argument(4))->isa_int();
 
-  if (vector_klass == NULL  ||
-      shuffle_klass == NULL ||
-      elem_klass == NULL    ||
-      vlen == NULL) {
+  if (vector_klass == NULL  || shuffle_klass == NULL ||  elem_klass == NULL || vlen == NULL) {
     return false; // dead code
   }
   if (shuffle_klass->const_oop() == NULL ||
