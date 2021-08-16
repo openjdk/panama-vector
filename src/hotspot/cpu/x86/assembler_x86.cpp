@@ -2578,6 +2578,13 @@ void Assembler::knotwl(KRegister dst, KRegister src) {
   emit_int16(0x44, (0xC0 | encode));
 }
 
+void Assembler::knotbl(KRegister dst, KRegister src) {
+  assert(VM_Version::supports_evex(), "");
+  InstructionAttr attributes(AVX_128bit, /* rex_w */ false, /* legacy_mode */ true, /* no_mask_reg */ true, /* uses_vl */ false);
+  int encode = vex_prefix_and_encode(dst->encoding(), 0, src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F, &attributes);
+  emit_int16(0x44, (0xC0 | encode));
+}
+
 void Assembler::korbl(KRegister dst, KRegister src1, KRegister src2) {
   assert(VM_Version::supports_avx512dq(), "");
   InstructionAttr attributes(AVX_256bit, /* rex_w */ false, /* legacy_mode */ true, /* no_mask_reg */ true, /* uses_vl */ false);
@@ -2764,6 +2771,21 @@ void Assembler::kshiftrbl(KRegister dst, KRegister src, int imm8) {
   InstructionAttr attributes(AVX_128bit, /* rex_w */ false, /* legacy_mode */ true, /* no_mask_reg */ true, /* uses_vl */ false);
   int encode = vex_prefix_and_encode(dst->encoding(), 0 , src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_3A, &attributes);
   emit_int16(0x30, (0xC0 | encode));
+}
+
+void Assembler::kshiftrdl(KRegister dst, KRegister src, int imm8) {
+  assert(VM_Version::supports_avx512bw(), "");
+  InstructionAttr attributes(AVX_128bit, /* rex_w */ false, /* legacy_mode */ true, /* no_mask_reg */ true, /* uses_vl */ false);
+  int encode = vex_prefix_and_encode(dst->encoding(), 0 , src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_3A, &attributes);
+  emit_int16(0x31, (0xC0 | encode));
+  emit_int8(imm8);
+}
+
+void Assembler::kshiftrql(KRegister dst, KRegister src, int imm8) {
+  assert(VM_Version::supports_avx512bw(), "");
+  InstructionAttr attributes(AVX_128bit, /* rex_w */ true, /* legacy_mode */ true, /* no_mask_reg */ true, /* uses_vl */ false);
+  int encode = vex_prefix_and_encode(dst->encoding(), 0 , src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_3A, &attributes);
+  emit_int16(0x31, (0xC0 | encode));
   emit_int8(imm8);
 }
 

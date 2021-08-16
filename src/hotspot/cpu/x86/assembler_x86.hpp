@@ -1492,6 +1492,7 @@ private:
   void kmovql(KRegister dst, Register src);
   void kmovql(Register dst, KRegister src);
 
+  void knotbl(KRegister dst, KRegister src);
   void knotwl(KRegister dst, KRegister src);
   void knotql(KRegister dst, KRegister src);
 
@@ -1503,6 +1504,8 @@ private:
   void kxnorbl(KRegister dst, KRegister src1, KRegister src2);
   void kshiftlbl(KRegister dst, KRegister src, int imm8);
   void kshiftrbl(KRegister dst, KRegister src, int imm8);
+  void kshiftrdl(KRegister dst, KRegister src, int imm8);
+  void kshiftrql(KRegister dst, KRegister src, int imm8);
   void ktestq(KRegister src1, KRegister src2);
   void ktestd(KRegister src1, KRegister src2);
 

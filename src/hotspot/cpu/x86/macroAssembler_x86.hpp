@@ -1705,7 +1705,7 @@ public:
   void evxor(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
   void evxor(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
 
-  void alltrue(Register dst, uint masklen, KRegister src, KRegister kscratch);
+  void alltrue(Register dst, uint masklen, KRegister src1, KRegister src2, KRegister kscratch);
   void anytrue(Register dst, uint masklen, KRegister src, KRegister kscratch);
 
   void cmov32( Condition cc, Register dst, Address  src);

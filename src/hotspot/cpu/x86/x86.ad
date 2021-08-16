@@ -1839,7 +1839,7 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       }
       break;
     case Op_MaskAll:
-      if(!VM_Version::supports_avx512vlbw()) {
+      if(!is_LP64 || !VM_Version::supports_avx512vlbw()) {
         return false;
       }
       break;
@@ -1853,18 +1853,22 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
 }
 
 const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, BasicType bt) {
-  // Needed for loadmask pattern which populates opmask register
-  // consumed by masked instructions.
-  if (!VM_Version::supports_avx512bw()) {
-    return false;
-  }
+  // ADLC based match_rule_supported routine checks for the existence of pattern based
+  // on IR opcode. Most of the unary/binary/ternary masked operation share the IR nodes
+  // of their non-masked counterpart with mask edge being the differentiator.
+  // This routine does a strict check on the existence of masked operation patterns
+  // by returning a default false value for all the other opcodes apart from the
+  // ones whose masked instruction patterns are defined in this file.
   if (!match_rule_supported_vector(opcode, vlen, bt)) {
     return false;
   }
-  int size_in_bits = vlen * type2aelembytes(bt) * BitsPerByte;
-  if ((size_in_bits != 512) && !VM_Version::supports_avx512vl()) {
-     return false; // Implementation limitation
+  // Needed for loadmask pattern which populates opmask register
+  // consumed by masked instructions.
+  if (!VM_Version::supports_avx512vlbw()) {
+    return false;
   }
+  const bool is_LP64 = LP64_ONLY(true) NOT_LP64(false);
+  int size_in_bits = vlen * type2aelembytes(bt) * BitsPerByte;
   switch(opcode) {
     // Unary masked operations
     case Op_AbsVB:
@@ -1939,10 +1943,8 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
       return true;
 
     case Op_VectorMaskCmp:
-     if (is_subword_type(bt) && !VM_Version::supports_avx512bw()) {
-        return false;
-     }
-     return true;
+      assert(!is_subword_type(bt) || VM_Version::supports_avx512bw(), "");
+      return true;
 
     case Op_VectorRearrange:
       assert(bt != T_SHORT || VM_Version::supports_avx512bw(), "");
@@ -1955,8 +1957,14 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
     case Op_AndVMask:
     case Op_OrVMask:
     case Op_XorVMask:
+      assert(bt != T_INT  || VM_Version::supports_avx512bw(), "");
+      assert(bt != T_LONG || VM_Version::supports_avx512bw(), "");
+      if (bt == T_BYTE && VM_Version::supports_avx512dq()) {
+        return false; // Implementation limitation
+      }
     case Op_MaskAll:
-     return true;
+      assert(VM_Version::supports_avx512bw(), "");
+      return true;
 
     default:
       return false;
@@ -7602,7 +7610,7 @@ instruct vptest_alltrue_lt8_evex(rRegI dst, kReg src1, kReg src2, kReg kscratch,
     const MachNode* mask2 = static_cast<const MachNode*>(this->in(this->operand_index($src2)));
     assert(0 == Type::cmp(mask1->bottom_type(), mask2->bottom_type()), "");
     uint masklen = vector_length(this, $src1);
-    __ alltrue($dst$$Register, masklen, $src1$$KRegister, $kscratch$$KRegister);
+    __ alltrue($dst$$Register, masklen, $src1$$KRegister, $src2$$KRegister, $kscratch$$KRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -7620,7 +7628,7 @@ instruct vptest_alltrue_ge8_evex(rRegI dst, kReg src1, kReg src2, rFlagsReg cr) 
     const MachNode* mask2 = static_cast<const MachNode*>(this->in(this->operand_index($src2)));
     assert(0 == Type::cmp(mask1->bottom_type(), mask2->bottom_type()), "");
     uint masklen = vector_length(this, $src1);
-    __ alltrue($dst$$Register, masklen, $src1$$KRegister, knoreg);
+    __ alltrue($dst$$Register, masklen, $src1$$KRegister, $src2$$KRegister, knoreg);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -7660,36 +7668,18 @@ instruct vptest_anytrue_ge16(rRegI dst, legVec src1, legVec src2, rFlagsReg cr) 
   ins_pipe( pipe_slow );
 %}
 
-instruct vptest_anytrue_lt8_evex(rRegI dst, kReg src1, kReg src2, kReg kscratch, rFlagsReg cr) %{
+instruct vptest_anytrue_evex(rRegI dst, kReg src1, kReg src2, rFlagsReg cr) %{
   predicate(VM_Version::supports_avx512bwdq() &&
-            static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::ne &&
-            vector_length(n->in(1)) < 8);
+            static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::ne);
   match(Set dst (VectorTest src1 src2));
-  effect(KILL cr, TEMP kscratch);
+  effect(KILL cr);
   format %{ "vptest_anytrue_lt8_evex $dst,$src1,$src2\t! using $cr as TEMP" %}
   ins_encode %{
     const MachNode* mask1 = static_cast<const MachNode*>(this->in(this->operand_index($src1)));
     const MachNode* mask2 = static_cast<const MachNode*>(this->in(this->operand_index($src2)));
     assert(0 == Type::cmp(mask1->bottom_type(), mask2->bottom_type()), "");
     uint  masklen = vector_length(this, $src1);
-    __ anytrue($dst$$Register, masklen, $src1$$KRegister, $kscratch$$KRegister);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vptest_anytrue_ge8_evex(rRegI dst, kReg src1, kReg src2, rFlagsReg cr) %{
-  predicate(VM_Version::supports_avx512bwdq() &&
-            static_cast<const VectorTestNode*>(n)->get_predicate() == BoolTest::ne &&
-            vector_length(n->in(1)) >= 8);
-  match(Set dst (VectorTest src1 src2));
-  effect(KILL cr);
-  format %{ "vptest_anytrue_ge8_evex $dst,$src1,$src2\t! using $cr as TEMP" %}
-  ins_encode %{
-    const MachNode* mask1 = static_cast<const MachNode*>(this->in(this->operand_index($src1)));
-    const MachNode* mask2 = static_cast<const MachNode*>(this->in(this->operand_index($src2)));
-    assert(0 == Type::cmp(mask1->bottom_type(), mask2->bottom_type()), "");
-    uint  masklen = vector_length(this, $src1);
-    __ anytrue($dst$$Register, masklen, $src1$$KRegister, knoreg);
+    __ anytrue($dst$$Register, masklen, $src1$$KRegister, $src2$$KRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -7723,37 +7713,18 @@ instruct cmpvptest_anytrue_ge16(rFlagsReg cr, legVec src1, legVec src2, immI_0 z
   ins_pipe( pipe_slow );
 %}
 
-instruct cmpvptest_anytrue_lt8_evex(rFlagsReg cr, kReg src1, kReg src2, immI_0 zero, kReg ktmp) %{
+instruct cmpvptest_anytrue_evex(rFlagsReg cr, kReg src1, kReg src2, immI_0 zero) %{
   predicate(VM_Version::supports_avx512bwdq() &&
-            static_cast<const VectorTestNode*>(n->in(1))->get_predicate() == BoolTest::ne &&
-            vector_length(n->in(1)->in(1)) < 8);
+            static_cast<const VectorTestNode*>(n->in(1))->get_predicate() == BoolTest::ne);
   match(Set cr (CmpI (VectorTest src1 src2) zero));
-  effect(TEMP ktmp);
-  format %{ "cmpvptest_anytrue_lt8_evex $src1,$src2\t!" %}
-  ins_encode %{
-    const MachNode* mask1 = static_cast<const MachNode*>(this->in(this->operand_index($src1)));
-    const MachNode* mask2 = static_cast<const MachNode*>(this->in(this->operand_index($src2)));
-    assert(0 == Type::cmp(mask1->bottom_type(), mask2->bottom_type()), "");
-    uint masklen = vector_length(this, $src1);
-    __ kxnorbl($ktmp$$KRegister, $ktmp$$KRegister, $ktmp$$KRegister);
-    __ kshiftrbl($ktmp$$KRegister, $ktmp$$KRegister, 8-masklen);
-    __ ktestbl($ktmp$$KRegister, $src1$$KRegister);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct cmpvptest_anytrue_ge8_evex(rFlagsReg cr, kReg src1, kReg src2, immI_0 zero) %{
-  predicate(VM_Version::supports_avx512bwdq() &&
-            static_cast<const VectorTestNode*>(n->in(1))->get_predicate() == BoolTest::ne &&
-            vector_length(n->in(1)->in(1)) >= 8);
-  match(Set cr (CmpI (VectorTest src1 src2) zero));
-  format %{ "cmpvptest_anytrue_ge8_evex $src1,$src2\t!" %}
+  format %{ "cmpvptest_anytrue_evex $src1,$src2\t!" %}
   ins_encode %{
     uint masklen = vector_length(this, $src1);
     const MachNode* mask1 = static_cast<const MachNode*>(this->in(this->operand_index($src1)));
     const MachNode* mask2 = static_cast<const MachNode*>(this->in(this->operand_index($src2)));
     assert(0 == Type::cmp(mask1->bottom_type(), mask2->bottom_type()), "");
-    __ ktest(masklen, $src1$$KRegister, $src1$$KRegister);
+    masklen = masklen < 8 ? 8 : masklen;
+    __ ktest(masklen, $src1$$KRegister, $src2$$KRegister);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -9065,34 +9036,47 @@ instruct evcmp_masked(kReg dst, vec src1, vec src2, immI8 cond, kReg mask, rRegP
   ins_pipe( pipe_slow );
 %}
 
-instruct mask_all_evexI(kReg dst, rRegI src, vec xtmp) %{
-  match(Set dst (MaskAll src));
-  effect(TEMP xtmp);
-  format %{ "mask_all_evexI $dst, $src \t! mask all operation" %}
+#ifdef _LP64
+instruct mask_all_evexI_imm(kReg dst, immI cnt, rRegL tmp) %{
+  match(Set dst (MaskAll cnt));
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "mask_all_evexI $dst, $cnt \t! mask all operation" %}
   ins_encode %{
-    int vlen_enc = vector_length_encoding(vector_length(this));
-    __ evpbroadcastb($xtmp$$XMMRegister, $src$$Register, vlen_enc);
-    __ evpmovb2m($dst$$KRegister, $xtmp$$XMMRegister, vlen_enc);
+    int vec_len = vector_length(this);
+    __ movq($tmp$$Register, $cnt$$constant);
+    __ kmovql($dst$$KRegister, $tmp$$Register);
+    __ kshiftrql($dst$$KRegister, $dst$$KRegister, 64 - vec_len);
   %}
   ins_pipe( pipe_slow );
 %}
 
-#ifdef _LP64
-instruct mask_all_evexL(kReg dst, rRegL src, vec xtmp) %{
+instruct mask_all_evexI(kReg dst, rRegI src, rRegL tmp) %{
   match(Set dst (MaskAll src));
-  effect(TEMP xtmp);
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "mask_all_evexI $dst, $src \t! mask all operation" %}
+  ins_encode %{
+    int vec_len = vector_length(this);
+    __ movslq($tmp$$Register, $src$$Register);
+    __ kmovql($dst$$KRegister, $tmp$$Register);
+    __ kshiftrql($dst$$KRegister, $dst$$KRegister, 64 - vec_len);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct mask_all_evexL(kReg dst, rRegL src) %{
+  match(Set dst (MaskAll src));
+  effect(TEMP_DEF dst);
   format %{ "mask_all_evexL $dst, $src \t! mask all operation" %}
   ins_encode %{
-    int vlen_enc = vector_length_encoding(vector_length(this));
-    __ evpbroadcastb($xtmp$$XMMRegister, $src$$Register, vlen_enc);
-    __ evpmovb2m($dst$$KRegister, $xtmp$$XMMRegister, vlen_enc);
+    int vec_len = vector_length(this);
+    __ kmovql($dst$$KRegister, $src$$Register);
+    __ kshiftrql($dst$$KRegister, $dst$$KRegister, 64 - vec_len);
   %}
   ins_pipe( pipe_slow );
 %}
 #endif
 
 instruct mask_opers_evex(kReg dst, kReg src1, kReg src2, kReg kscratch) %{
-  predicate(VM_Version::supports_avx512vlbwdq());
   match(Set dst (AndVMask src1 src2));
   match(Set dst (OrVMask src1 src2));
   match(Set dst (XorVMask src1 src2));

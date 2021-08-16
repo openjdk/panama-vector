@@ -8441,29 +8441,21 @@ void MacroAssembler::evand(BasicType type, XMMRegister dst, KRegister mask, XMMR
   }
 }
 
-void MacroAssembler::anytrue(Register dst, uint masklen, KRegister src, KRegister kscratch) {
-  if (masklen < 8) {
-    kxnorbl(kscratch, kscratch, kscratch);
-    kshiftrbl(kscratch, kscratch, 8-masklen);
-    ktestbl(kscratch, src);
-    setb(Assembler::notZero, dst);
-    movzbl(dst, dst);
-  } else {
-    ktest(masklen, src, src);
-    setb(Assembler::notZero, dst);
-    movzbl(dst, dst);
-  }
+void MacroAssembler::anytrue(Register dst, uint masklen, KRegister src1, KRegister src2) {
+   masklen = masklen < 8 ? 8 : masklen;
+   ktest(masklen, src1, src2);
+   setb(Assembler::notZero, dst);
+   movzbl(dst, dst);
 }
 
-void MacroAssembler::alltrue(Register dst, uint masklen, KRegister src, KRegister kscratch) {
+void MacroAssembler::alltrue(Register dst, uint masklen, KRegister src1, KRegister src2, KRegister kscratch) {
   if (masklen < 8) {
-    kxnorbl(kscratch, kscratch, kscratch);
-    kshiftlbl(kscratch, kscratch, masklen);
-    kortestbl(kscratch, src);
+    knotbl(kscratch, src2);
+    kortestbl(src1, kscratch);
     setb(Assembler::carrySet, dst);
     movzbl(dst, dst);
   } else {
-    kortest(masklen, src, src);
+    ktest(masklen, src1, src2);
     setb(Assembler::carrySet, dst);
     movzbl(dst, dst);
   }
