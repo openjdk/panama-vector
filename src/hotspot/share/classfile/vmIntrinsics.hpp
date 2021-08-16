@@ -809,18 +809,21 @@ class methodHandle;
   /* Vector API intrinsification support */                                                                                                    \
                                                                                                                                                \
   do_intrinsic(_VectorUnaryOp, jdk_internal_vm_vector_VectorSupport, vector_unary_op_name, vector_unary_op_sig, F_S)                           \
-   do_signature(vector_unary_op_sig, "(ILjava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Object;Ljava/lang/Object;"              \
-                                      "Ljdk/internal/vm/vector/VectorSupport$UnaryOperation;)Ljava/lang/Object;")                              \
+   do_signature(vector_unary_op_sig, "(ILjava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjdk/internal/vm/vector/VectorSupport$Vector;"     \
+                                      "Ljdk/internal/vm/vector/VectorSupport$VectorMask;Ljdk/internal/vm/vector/VectorSupport$UnaryOperation;)"\
+                                      "Ljdk/internal/vm/vector/VectorSupport$Vector;")                                                         \
    do_name(vector_unary_op_name,     "unaryOp")                                                                                                \
                                                                                                                                                \
   do_intrinsic(_VectorBinaryOp, jdk_internal_vm_vector_VectorSupport, vector_binary_op_name, vector_binary_op_sig, F_S)                        \
    do_signature(vector_binary_op_sig, "(ILjava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Object;Ljava/lang/Object;"             \
-                                       "Ljava/lang/Object;Ljdk/internal/vm/vector/VectorSupport$BinaryOperation;)Ljava/lang/Object;")          \
+                                       "Ljdk/internal/vm/vector/VectorSupport$VectorMask;Ljdk/internal/vm/vector/VectorSupport$BinaryOperation;)Ljava/lang/Object;") \
    do_name(vector_binary_op_name,     "binaryOp")                                                                                              \
                                                                                                                                                \
   do_intrinsic(_VectorTernaryOp, jdk_internal_vm_vector_VectorSupport, vector_ternary_op_name, vector_ternary_op_sig, F_S)                     \
-   do_signature(vector_ternary_op_sig, "(ILjava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;" \
-                                        "Ljava/lang/Object;Ljdk/internal/vm/vector/VectorSupport$TernaryOperation;)Ljava/lang/Object;")        \
+   do_signature(vector_ternary_op_sig, "(ILjava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjdk/internal/vm/vector/VectorSupport$Vector;"   \
+                                        "Ljdk/internal/vm/vector/VectorSupport$Vector;Ljdk/internal/vm/vector/VectorSupport$Vector;"           \
+                                        "Ljdk/internal/vm/vector/VectorSupport$VectorMask;Ljdk/internal/vm/vector/VectorSupport$TernaryOperation;)" \
+                                        "Ljdk/internal/vm/vector/VectorSupport$Vector;")                                                       \
    do_name(vector_ternary_op_name,     "ternaryOp")                                                                                            \
                                                                                                                                                \
   do_intrinsic(_VectorBroadcastCoerced, jdk_internal_vm_vector_VectorSupport, vector_broadcast_coerced_name, vector_broadcast_coerced_sig, F_S)\
@@ -846,7 +849,7 @@ class methodHandle;
   do_intrinsic(_VectorLoadMaskedOp, jdk_internal_vm_vector_VectorSupport, vector_load_masked_op_name, vector_load_masked_op_sig, F_S)          \
    do_signature(vector_load_masked_op_sig, "(Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Object;JLjdk/internal/vm/vector/VectorSupport$VectorMask;" \
                                             "Ljava/lang/Object;ILjdk/internal/vm/vector/VectorSupport$VectorSpecies;"                          \
-                                            "Ljdk/internal/vm/vector/VectorSupport$LoadVectorMaskedOperation;)Ljava/lang/Object;")             \
+                                            "Ljdk/internal/vm/vector/VectorSupport$LoadVectorMaskedOperation;)Ljdk/internal/vm/vector/VectorSupport$Vector;")         \
    do_name(vector_load_masked_op_name,     "loadMasked")                                                                                       \
                                                                                                                                                \
   do_intrinsic(_VectorStoreOp, jdk_internal_vm_vector_VectorSupport, vector_store_op_name, vector_store_op_sig, F_S)                           \
@@ -861,8 +864,8 @@ class methodHandle;
    do_name(vector_store_masked_op_name,     "storeMasked")                                                                                     \
                                                                                                                                                \
   do_intrinsic(_VectorReductionCoerced, jdk_internal_vm_vector_VectorSupport, vector_reduction_coerced_name, vector_reduction_coerced_sig, F_S)\
-   do_signature(vector_reduction_coerced_sig, "(ILjava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Object;Ljava/lang/Object;"     \
-                                               "Ljdk/internal/vm/vector/VectorSupport$ReductionOperation;)J")                                  \
+   do_signature(vector_reduction_coerced_sig, "(ILjava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjdk/internal/vm/vector/VectorSupport$Vector;" \
+                                               "Ljdk/internal/vm/vector/VectorSupport$VectorMask;Ljdk/internal/vm/vector/VectorSupport$ReductionOperation;)J") \
    do_name(vector_reduction_coerced_name, "reductionCoerced")                                                                                  \
                                                                                                                                                \
   do_intrinsic(_VectorTest, jdk_internal_vm_vector_VectorSupport, vector_test_name, vector_test_sig, F_S)                                      \
@@ -903,7 +906,7 @@ class methodHandle;
                                                                                                                                                \
   do_intrinsic(_VectorBroadcastInt, jdk_internal_vm_vector_VectorSupport, vector_broadcast_int_name, vector_broadcast_int_sig, F_S)            \
    do_signature(vector_broadcast_int_sig, "(ILjava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;I"                                             \
-                                           "Ljdk/internal/vm/vector/VectorSupport$Vector;ILjava/lang/Object;"                                  \
+                                           "Ljdk/internal/vm/vector/VectorSupport$Vector;ILjdk/internal/vm/vector/VectorSupport$VectorMask;"   \
                                            "Ljdk/internal/vm/vector/VectorSupport$VectorBroadcastIntOp;)Ljdk/internal/vm/vector/VectorSupport$Vector;") \
    do_name(vector_broadcast_int_name, "broadcastInt")                                                                                          \
                                                                                                                                                \

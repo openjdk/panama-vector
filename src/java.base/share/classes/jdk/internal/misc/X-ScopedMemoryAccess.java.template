@@ -519,7 +519,7 @@ public class ScopedMemoryAccess {
     void storeIntoByteBufferMasked(Class<? extends V> vmClass, Class<M> maskClass, Class<E> e,
                                    int length, V v, M m,
                                    ByteBuffer bb, int offset,
-                                   VectorSupport.StoreVectorMaskedOperation<ByteBuffer, V, M> defaultImpl) {
+                                   VectorSupport.StoreVectorMaskedOperation<ByteBuffer, V, M, E> defaultImpl) {
         try {
             storeIntoByteBufferMaskedScoped(
                     BufferAccess.scope(bb),
@@ -540,7 +540,7 @@ public class ScopedMemoryAccess {
                                          Class<? extends V> vmClass, Class<M> maskClass,
                                          Class<E> e, int length, V v, M m,
                                          ByteBuffer bb, int offset,
-                                         VectorSupport.StoreVectorMaskedOperation<ByteBuffer, V, M> defaultImpl) {
+                                         VectorSupport.StoreVectorMaskedOperation<ByteBuffer, V, M, E> defaultImpl) {
         try {
             if (scope != null) {
                 scope.checkValidState();
