@@ -453,6 +453,7 @@ final class Int128Vector extends IntVector {
                                   VectorMask<Integer> m) {
         return (Int128Vector)
             super.rearrangeTemplate(Int128Shuffle.class,
+                                    Int128Mask.class,
                                     (Int128Shuffle) shuffle,
                                     (Int128Mask) m);  // specialize
     }

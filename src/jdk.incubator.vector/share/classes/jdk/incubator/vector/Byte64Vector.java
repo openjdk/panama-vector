@@ -453,6 +453,7 @@ final class Byte64Vector extends ByteVector {
                                   VectorMask<Byte> m) {
         return (Byte64Vector)
             super.rearrangeTemplate(Byte64Shuffle.class,
+                                    Byte64Mask.class,
                                     (Byte64Shuffle) shuffle,
                                     (Byte64Mask) m);  // specialize
     }

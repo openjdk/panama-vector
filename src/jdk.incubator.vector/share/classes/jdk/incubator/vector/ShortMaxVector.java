@@ -453,6 +453,7 @@ final class ShortMaxVector extends ShortVector {
                                   VectorMask<Short> m) {
         return (ShortMaxVector)
             super.rearrangeTemplate(ShortMaxShuffle.class,
+                                    ShortMaxMask.class,
                                     (ShortMaxShuffle) shuffle,
                                     (ShortMaxMask) m);  // specialize
     }

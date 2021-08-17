@@ -443,6 +443,7 @@ final class LongMaxVector extends LongVector {
                                   VectorMask<Long> m) {
         return (LongMaxVector)
             super.rearrangeTemplate(LongMaxShuffle.class,
+                                    LongMaxMask.class,
                                     (LongMaxShuffle) shuffle,
                                     (LongMaxMask) m);  // specialize
     }

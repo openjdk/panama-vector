@@ -453,6 +453,7 @@ final class Short256Vector extends ShortVector {
                                   VectorMask<Short> m) {
         return (Short256Vector)
             super.rearrangeTemplate(Short256Shuffle.class,
+                                    Short256Mask.class,
                                     (Short256Shuffle) shuffle,
                                     (Short256Mask) m);  // specialize
     }

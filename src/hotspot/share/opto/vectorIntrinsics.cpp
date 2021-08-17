@@ -221,19 +221,19 @@ static bool is_klass_initialized(const TypeInstPtr* vec_klass) {
 // <V, M>
 // V unaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
 //           int length, V v, M m,
-//           UnaryOperation<V, M> defaultImpl) {
+//           UnaryOperation<V, M> defaultImpl)
 //
 // public static
 // <V, M>
 // V binaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
 //            int length, V v1, V v2, M m,
-//            BinaryOperation<V, M> defaultImpl) {
+//            BinaryOperation<V, M> defaultImpl)
 //
 // public static
 // <V, M>
 // V ternaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<?> elementType,
 //             int length, V v1, V v2, V v3, M m,
-//             TernaryOperation<V, M> defaultImpl) {
+//             TernaryOperation<V, M> defaultImpl)
 //
 bool LibraryCallKit::inline_vector_nary_operation(int n) {
   const TypeInt*     opr          = gvn().type(argument(0))->isa_int();
@@ -789,7 +789,7 @@ static bool elem_consistent_with_arr(BasicType elem_bt, const TypeAryPtr* arr_ty
 //               Object base, long offset,
 //               V v, /*Vector.Mask<E,S> m*/
 //               Object container, int index,
-//               StoreVectorOperation<C, V> defaultImpl) {
+//               StoreVectorOperation<C, V> defaultImpl)
 
 bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
   const TypeInstPtr* vector_klass = gvn().type(argument(0))->isa_instptr();
@@ -1395,7 +1395,7 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
 // <V, M>
 // long reductionCoerced(int oprId, Class<? extends V> vectorClass, Class<? extends M> maskClass,
 //                       Class<?> elementType, int length, V v, M m,
-//                       ReductionOperation<V, M> defaultImpl) {
+//                       ReductionOperation<V, M> defaultImpl)
 //
 bool LibraryCallKit::inline_vector_reduction() {
   const TypeInt*     opr          = gvn().type(argument(0))->isa_int();
@@ -1549,7 +1549,7 @@ bool LibraryCallKit::inline_vector_reduction() {
 
 // public static <V> boolean test(int cond, Class<?> vectorClass, Class<?> elementType, int vlen,
 //                                V v1, V v2,
-//                                BiFunction<V, V, Boolean> defaultImpl) {
+//                                BiFunction<V, V, Boolean> defaultImpl)
 //
 bool LibraryCallKit::inline_vector_test() {
   const TypeInt*     cond         = gvn().type(argument(0))->isa_int();
@@ -1613,7 +1613,7 @@ bool LibraryCallKit::inline_vector_test() {
 // <V extends Vector, M extends Mask>
 // V blend(Class<V> vectorClass, Class<M> maskClass, Class<?> elementType, int vlen,
 //         V v1, V v2, M m,
-//         VectorBlendOp<V,M> defaultImpl) { ...
+//         VectorBlendOp<V,M> defaultImpl)
 //
 bool LibraryCallKit::inline_vector_blend() {
   const TypeInstPtr* vector_klass = gvn().type(argument(0))->isa_instptr();
@@ -1686,7 +1686,7 @@ bool LibraryCallKit::inline_vector_blend() {
 //          S extends Vector.Shape, E>
 //  M compare(int cond, Class<V> vectorClass, Class<M> maskClass, Class<?> elementType, int vlen,
 //            V v1, V v2, M m,
-//            VectorCompareOp<V,M> defaultImpl) { ...
+//            VectorCompareOp<V,M> defaultImpl)
 //
 bool LibraryCallKit::inline_vector_compare() {
   const TypeInt*     cond         = gvn().type(argument(0))->isa_int();
@@ -1802,32 +1802,38 @@ bool LibraryCallKit::inline_vector_compare() {
 }
 
 // public static
-// <V extends Vector, Sh extends Shuffle>
-//  V rearrangeOp(Class<V> vectorClass, Class<Sh> shuffleClass, Class< ? > elementType, int vlen,
-//    V v1, Sh sh,
-//    VectorSwizzleOp<V, Sh, S, E> defaultImpl) { ...
-
+// <V extends Vector<E>,
+//     Sh extends VectorShuffle<E>,
+//     M extends VectorMask<E>,
+//     E>
+// V rearrangeOp(Class<? extends V> vectorClass, Class<Sh> shuffleClass, Class<M> maskClass, Class<?> elementType, int vlen,
+//               V v1, Sh sh, M m,
+//               VectorRearrangeOp<V,Sh,M,E> defaultImpl)
 bool LibraryCallKit::inline_vector_rearrange() {
   const TypeInstPtr* vector_klass  = gvn().type(argument(0))->isa_instptr();
   const TypeInstPtr* shuffle_klass = gvn().type(argument(1))->isa_instptr();
-  const TypeInstPtr* elem_klass    = gvn().type(argument(2))->isa_instptr();
-  const TypeInt*     vlen          = gvn().type(argument(3))->isa_int();
+  const TypeInstPtr* mask_klass    = gvn().type(argument(2))->isa_instptr();
+  const TypeInstPtr* elem_klass    = gvn().type(argument(3))->isa_instptr();
+  const TypeInt*     vlen          = gvn().type(argument(4))->isa_int();
 
-  if (vector_klass == NULL || shuffle_klass == NULL || elem_klass == NULL || vlen == NULL) {
+  if (vector_klass == NULL  || shuffle_klass == NULL ||  elem_klass == NULL || vlen == NULL) {
     return false; // dead code
   }
-  if (shuffle_klass->const_oop() == NULL || vector_klass->const_oop() == NULL ||
-    elem_klass->const_oop() == NULL || !vlen->is_con()) {
+  if (shuffle_klass->const_oop() == NULL ||
+      vector_klass->const_oop()  == NULL ||
+      elem_klass->const_oop()    == NULL ||
+      !vlen->is_con()) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** missing constant: vclass=%s sclass=%s etype=%s vlen=%s",
                     NodeClassNames[argument(0)->Opcode()],
                     NodeClassNames[argument(1)->Opcode()],
-                    NodeClassNames[argument(2)->Opcode()],
-                    NodeClassNames[argument(3)->Opcode()]);
+                    NodeClassNames[argument(3)->Opcode()],
+                    NodeClassNames[argument(4)->Opcode()]);
     }
     return false; // not enough info for intrinsification
   }
-  if (!is_klass_initialized(vector_klass) || !is_klass_initialized(shuffle_klass)) {
+  if (!is_klass_initialized(vector_klass)  ||
+      !is_klass_initialized(shuffle_klass)) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** klass argument not initialized");
     }
@@ -1851,12 +1857,28 @@ bool LibraryCallKit::inline_vector_rearrange() {
     }
     return false; // not supported
   }
-  if (!arch_supports_vector(Op_VectorRearrange, num_elem, elem_bt, VecMaskNotUsed)) {
+
+  bool is_masked_op = argument(7)->bottom_type() != TypePtr::NULL_PTR;
+  bool use_predicate = is_masked_op;
+  if (is_masked_op &&
+      (mask_klass == NULL ||
+       mask_klass->const_oop() == NULL ||
+       !is_klass_initialized(mask_klass))) {
     if (C->print_intrinsics()) {
-      tty->print_cr("  ** not supported: arity=2 op=shuffle/rearrange vlen=%d etype=%s ismask=no",
-                    num_elem, type2name(elem_bt));
+      tty->print_cr("  ** mask_klass argument not initialized");
     }
-    return false; // not supported
+  }
+  if (!arch_supports_vector(Op_VectorRearrange, num_elem, elem_bt, is_masked_op ? VecMaskUsePred : VecMaskNotUsed)) {
+    use_predicate = false;
+    if(!is_masked_op ||
+       (!arch_supports_vector(Op_VectorBlend, num_elem, elem_bt, VecMaskUseLoad) ||
+        !arch_supports_vector(VectorNode::replicate_opcode(elem_bt), num_elem, elem_bt, VecMaskNotUsed))) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** not supported: arity=2 op=shuffle/rearrange vlen=%d etype=%s ismask=no",
+                      num_elem, type2name(elem_bt));
+      }
+      return false; // not supported
+    }
   }
   ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
@@ -1864,14 +1886,41 @@ bool LibraryCallKit::inline_vector_rearrange() {
   ciKlass* shbox_klass = shuffle_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* shbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, shbox_klass);
 
-  Node* v1 = unbox_vector(argument(4), vbox_type, elem_bt, num_elem);
-  Node* shuffle = unbox_vector(argument(5), shbox_type, shuffle_bt, num_elem);
+  Node* v1 = unbox_vector(argument(5), vbox_type, elem_bt, num_elem);
+  Node* shuffle = unbox_vector(argument(6), shbox_type, shuffle_bt, num_elem);
 
   if (v1 == NULL || shuffle == NULL) {
     return false; // operand unboxing failed
   }
 
-  Node* rearrange = gvn().transform(new VectorRearrangeNode(v1, shuffle));
+  Node* mask = NULL;
+  if (is_masked_op) {
+    ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
+    const TypeInstPtr* mbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, mbox_klass);
+    mask = unbox_vector(argument(7), mbox_type, elem_bt, num_elem);
+    if (mask == NULL) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** not supported: arity=3 op=shuffle/rearrange vlen=%d etype=%s ismask=useload is_masked_op=1",
+                      num_elem, type2name(elem_bt));
+      }
+      return false;
+    }
+  }
+
+  Node* rearrange = new VectorRearrangeNode(v1, shuffle);
+  if (is_masked_op) {
+    if (use_predicate) {
+      rearrange->add_req(mask);
+      rearrange->add_flag(Node::Flag_is_predicated_vector);
+    } else {
+      const TypeVect* vt = v1->bottom_type()->is_vect();
+      rearrange = gvn().transform(rearrange);
+      Node* zero = gvn().makecon(TypeInt::ZERO);
+      Node* zerovec = gvn().transform(VectorNode::scalar2vector(zero, num_elem, Type::get_const_basic_type(elem_bt)));
+      rearrange = new VectorBlendNode(zerovec, rearrange, mask);
+    }
+  }
+  rearrange = gvn().transform(rearrange);
 
   Node* box = box_vector(rearrange, vbox_type, elem_bt, num_elem);
   set_result(box);
@@ -1941,7 +1990,7 @@ Node* LibraryCallKit::gen_call_to_svml(int vector_api_op_id, BasicType bt, int n
 //  V broadcastInt(int opr, Class<? extends V> vectorClass, Class<? extends M> maskClass,
 //                 Class<?> elementType, int length,
 //                 V v, int n, M m,
-//                 VectorBroadcastIntOp<V> defaultImpl) {
+//                 VectorBroadcastIntOp<V> defaultImpl)
 //
 bool LibraryCallKit::inline_vector_broadcast_int() {
   const TypeInt*     opr          = gvn().type(argument(0))->isa_int();
@@ -2082,7 +2131,7 @@ bool LibraryCallKit::inline_vector_broadcast_int() {
 //           Class<?> fromVectorClass, Class<?> fromElementType, int fromVLen,
 //           Class<?>   toVectorClass, Class<?>   toElementType, int   toVLen,
 //           VIN v, S s,
-//           VectorConvertOp<VOUT, VIN, S> defaultImpl) {
+//           VectorConvertOp<VOUT, VIN, S> defaultImpl)
 //
 bool LibraryCallKit::inline_vector_convert() {
   const TypeInt*     opr               = gvn().type(argument(0))->isa_int();
@@ -2272,7 +2321,7 @@ bool LibraryCallKit::inline_vector_convert() {
 //  <V extends Vector<?>>
 //  V insert(Class<? extends V> vectorClass, Class<?> elementType, int vlen,
 //           V vec, int ix, long val,
-//           VecInsertOp<V> defaultImpl) {
+//           VecInsertOp<V> defaultImpl)
 //
 bool LibraryCallKit::inline_vector_insert() {
   const TypeInstPtr* vector_klass = gvn().type(argument(0))->isa_instptr();
@@ -2365,7 +2414,7 @@ bool LibraryCallKit::inline_vector_insert() {
 //  <V extends Vector<?>>
 //  long extract(Class<?> vectorClass, Class<?> elementType, int vlen,
 //               V vec, int ix,
-//               VecExtractOp<V> defaultImpl) {
+//               VecExtractOp<V> defaultImpl)
 //
 bool LibraryCallKit::inline_vector_extract() {
   const TypeInstPtr* vector_klass = gvn().type(argument(0))->isa_instptr();

@@ -883,8 +883,9 @@ class methodHandle;
    do_name(vector_compare_name, "compare")                                                                                                     \
                                                                                                                                                \
   do_intrinsic(_VectorRearrange, jdk_internal_vm_vector_VectorSupport, vector_rearrange_name, vector_rearrange_sig, F_S)                       \
-   do_signature(vector_rearrange_sig, "(Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;I"                                                  \
+   do_signature(vector_rearrange_sig, "(Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;I"                                 \
                                        "Ljdk/internal/vm/vector/VectorSupport$Vector;Ljdk/internal/vm/vector/VectorSupport$VectorShuffle;"     \
+                                       "Ljdk/internal/vm/vector/VectorSupport$VectorMask;"                                                     \
                                        "Ljdk/internal/vm/vector/VectorSupport$VectorRearrangeOp;)Ljdk/internal/vm/vector/VectorSupport$Vector;") \
    do_name(vector_rearrange_name, "rearrangeOp")                                                                                               \
                                                                                                                                                \

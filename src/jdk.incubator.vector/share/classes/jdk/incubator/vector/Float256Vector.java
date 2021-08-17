@@ -440,6 +440,7 @@ final class Float256Vector extends FloatVector {
                                   VectorMask<Float> m) {
         return (Float256Vector)
             super.rearrangeTemplate(Float256Shuffle.class,
+                                    Float256Mask.class,
                                     (Float256Shuffle) shuffle,
                                     (Float256Mask) m);  // specialize
     }
