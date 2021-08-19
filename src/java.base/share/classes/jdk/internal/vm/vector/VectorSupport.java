@@ -70,6 +70,10 @@ public class VectorSupport {
     public static final int VECTOR_OP_MASK_FIRSTTRUE = 20;
     public static final int VECTOR_OP_MASK_LASTTRUE  = 21;
 
+    // Rotate operations
+    public static final int VECTOR_OP_LROTATE = 22;
+    public static final int VECTOR_OP_RROTATE = 23;
+
     // Math routines
     public static final int VECTOR_OP_TAN = 101;
     public static final int VECTOR_OP_TANH = 102;
@@ -446,23 +450,24 @@ public class VectorSupport {
     }
 
     /* ============================================================================ */
-
     public interface VectorRearrangeOp<V extends Vector<E>,
             Sh extends VectorShuffle<E>,
+            M  extends VectorMask<E>,
             E> {
-        V apply(V v1, Sh shuffle);
+        V apply(V v1, Sh shuffle, M mask);
     }
 
     @IntrinsicCandidate
     public static
     <V extends Vector<E>,
             Sh extends VectorShuffle<E>,
+            M  extends VectorMask<E>,
             E>
-    V rearrangeOp(Class<? extends V> vectorClass, Class<Sh> shuffleClass, Class<?> elementType, int vlen,
-                  V v1, Sh sh,
-                  VectorRearrangeOp<V,Sh, E> defaultImpl) {
+    V rearrangeOp(Class<? extends V> vectorClass, Class<Sh> shuffleClass, Class<M> maskClass, Class<?> elementType, int vlen,
+                  V v1, Sh sh, M m,
+                  VectorRearrangeOp<V,Sh,M,E> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(v1, sh);
+        return defaultImpl.apply(v1, sh, m);
     }
 
     /* ============================================================================ */

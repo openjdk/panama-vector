@@ -453,6 +453,7 @@ final class Short512Vector extends ShortVector {
                                   VectorMask<Short> m) {
         return (Short512Vector)
             super.rearrangeTemplate(Short512Shuffle.class,
+                                    Short512Mask.class,
                                     (Short512Shuffle) shuffle,
                                     (Short512Mask) m);  // specialize
     }
@@ -902,8 +903,22 @@ final class Short512Vector extends ShortVector {
     @ForceInline
     @Override
     final
+    ShortVector fromByteArray0(byte[] a, int offset, VectorMask<Short> m) {
+        return super.fromByteArray0Template(Short512Mask.class, a, offset, (Short512Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
     ShortVector fromByteBuffer0(ByteBuffer bb, int offset) {
         return super.fromByteBuffer0Template(bb, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    ShortVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Short> m) {
+        return super.fromByteBuffer0Template(Short512Mask.class, bb, offset, (Short512Mask) m);  // specialize
     }
 
     @ForceInline
@@ -927,6 +942,20 @@ final class Short512Vector extends ShortVector {
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteArray0(byte[] a, int offset, VectorMask<Short> m) {
+        super.intoByteArray0Template(Short512Mask.class, a, offset, (Short512Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Short> m) {
+        super.intoByteBuffer0Template(Short512Mask.class, bb, offset, (Short512Mask) m);
     }
 
     @ForceInline

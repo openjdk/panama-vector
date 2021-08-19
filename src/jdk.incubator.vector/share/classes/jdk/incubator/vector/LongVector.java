@@ -404,6 +404,18 @@ public abstract class LongVector extends AbstractVector<Long> {
     }
 
     /*package-private*/
+    @ForceInline
+    static long rotateLeft(long a, int n) {
+        return Long.rotateLeft(a, n);
+    }
+
+    /*package-private*/
+    @ForceInline
+    static long rotateRight(long a, int n) {
+        return Long.rotateRight(a, n);
+    }
+
+    /*package-private*/
     @Override
     abstract LongSpecies vspecies();
 
@@ -548,8 +560,10 @@ public abstract class LongVector extends AbstractVector<Long> {
             if (op == ZOMO) {
                 return blend(broadcast(-1), compare(NE, 0, m));
             }
-            if (op == NOT || op == NEG) {
-                return blend(lanewise(op), m);
+            if (op == NOT) {
+                return lanewise(XOR, broadcast(-1), m);
+            } else if (op == NEG) {
+                return lanewise(NOT, m).lanewise(ADD, broadcast(1), m);
             }
         }
         int opc = opCode(op);
@@ -604,12 +618,7 @@ public abstract class LongVector extends AbstractVector<Long> {
                 // This allows the JIT to ignore some ISA details.
                 that = that.lanewise(AND, SHIFT_MASK);
             }
-            if (op == ROR || op == ROL) {  // FIXME: JIT should do this
-                LongVector neg = that.lanewise(NEG);
-                LongVector hi = this.lanewise(LSHL, (op == ROR) ? neg : that);
-                LongVector lo = this.lanewise(LSHR, (op == ROR) ? that : neg);
-                return hi.lanewise(OR, lo);
-            } else if (op == AND_NOT) {
+            if (op == AND_NOT) {
                 // FIXME: Support this in the JIT.
                 that = that.lanewise(NOT);
                 op = AND;
@@ -659,9 +668,7 @@ public abstract class LongVector extends AbstractVector<Long> {
                 // This allows the JIT to ignore some ISA details.
                 that = that.lanewise(AND, SHIFT_MASK);
             }
-            if (op == ROR || op == ROL) {
-                return blend(lanewise(op, v), m);
-            } else if (op == AND_NOT) {
+            if (op == AND_NOT) {
                 // FIXME: Support this in the JIT.
                 that = that.lanewise(NOT);
                 op = AND;
@@ -712,6 +719,10 @@ public abstract class LongVector extends AbstractVector<Long> {
                     v0.bOp(v1, vm, (i, a, n) -> (long)(a >> n));
             case VECTOR_OP_URSHIFT: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, n) -> (long)((a & LSHR_SETUP_MASK) >>> n));
+            case VECTOR_OP_LROTATE: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, n) -> rotateLeft(a, (int)n));
+            case VECTOR_OP_RROTATE: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, n) -> rotateRight(a, (int)n));
             default: return null;
         }
     }
@@ -800,11 +811,6 @@ public abstract class LongVector extends AbstractVector<Long> {
         assert(opKind(op, VO_SHIFT));
         // As per shift specification for Java, mask the shift count.
         e &= SHIFT_MASK;
-        if (op == ROR || op == ROL) {  // FIXME: JIT should do this
-            LongVector hi = this.lanewise(LSHL, (op == ROR) ? -e : e);
-            LongVector lo = this.lanewise(LSHR, (op == ROR) ? e : -e);
-            return hi.lanewise(OR, lo);
-        }
         int opc = opCode(op);
         return VectorSupport.broadcastInt(
             opc, getClass(), null, long.class, length(),
@@ -826,9 +832,6 @@ public abstract class LongVector extends AbstractVector<Long> {
         assert(opKind(op, VO_SHIFT));
         // As per shift specification for Java, mask the shift count.
         e &= SHIFT_MASK;
-        if (op == ROR || op == ROL) {
-            return blend(lanewiseShift(op, e), m);
-        }
         int opc = opCode(op);
         return VectorSupport.broadcastInt(
             opc, getClass(), maskClass, long.class, length(),
@@ -848,6 +851,10 @@ public abstract class LongVector extends AbstractVector<Long> {
                     v.uOp(m, (i, a) -> (long)(a >> n));
             case VECTOR_OP_URSHIFT: return (v, n, m) ->
                     v.uOp(m, (i, a) -> (long)((a & LSHR_SETUP_MASK) >>> n));
+            case VECTOR_OP_LROTATE: return (v, n, m) ->
+                    v.uOp(m, (i, a) -> rotateLeft(a, (int)n));
+            case VECTOR_OP_RROTATE: return (v, n, m) ->
+                    v.uOp(m, (i, a) -> rotateRight(a, (int)n));
             default: return null;
         }
     }
@@ -2116,9 +2123,9 @@ public abstract class LongVector extends AbstractVector<Long> {
     LongVector rearrangeTemplate(Class<S> shuffletype, S shuffle) {
         shuffle.checkIndexes();
         return VectorSupport.rearrangeOp(
-            getClass(), shuffletype, long.class, length(),
-            this, shuffle,
-            (v1, s_) -> v1.uOp((i, a) -> {
+            getClass(), shuffletype, null, long.class, length(),
+            this, shuffle, null,
+            (v1, s_, m_) -> v1.uOp((i, a) -> {
                 int ei = s_.laneSource(i);
                 return v1.lane(ei);
             }));
@@ -2135,24 +2142,25 @@ public abstract class LongVector extends AbstractVector<Long> {
     /*package-private*/
     @ForceInline
     final
-    <S extends VectorShuffle<Long>>
+    <S extends VectorShuffle<Long>, M extends VectorMask<Long>>
     LongVector rearrangeTemplate(Class<S> shuffletype,
+                                           Class<M> masktype,
                                            S shuffle,
-                                           VectorMask<Long> m) {
-        LongVector unmasked =
-            VectorSupport.rearrangeOp(
-                getClass(), shuffletype, long.class, length(),
-                this, shuffle,
-                (v1, s_) -> v1.uOp((i, a) -> {
-                    int ei = s_.laneSource(i);
-                    return ei < 0 ? 0 : v1.lane(ei);
-                }));
+                                           M m) {
+
+        m.check(masktype, this);
         VectorMask<Long> valid = shuffle.laneIsValid();
         if (m.andNot(valid).anyTrue()) {
             shuffle.checkIndexes();
             throw new AssertionError();
         }
-        return broadcast((long)0).blend(unmasked, m);
+        return VectorSupport.rearrangeOp(
+                   getClass(), shuffletype, masktype, long.class, length(),
+                   this, shuffle, m,
+                   (v1, s_, m_) -> v1.uOp((i, a) -> {
+                        int ei = s_.laneSource(i);
+                        return ei < 0  || !m_.laneIsSet(i) ? 0 : v1.lane(ei);
+                   }));
     }
 
     /**
@@ -2175,17 +2183,17 @@ public abstract class LongVector extends AbstractVector<Long> {
         S ws = (S) shuffle.wrapIndexes();
         LongVector r0 =
             VectorSupport.rearrangeOp(
-                getClass(), shuffletype, long.class, length(),
-                this, ws,
-                (v0, s_) -> v0.uOp((i, a) -> {
+                getClass(), shuffletype, null, long.class, length(),
+                this, ws, null,
+                (v0, s_, m_) -> v0.uOp((i, a) -> {
                     int ei = s_.laneSource(i);
                     return v0.lane(ei);
                 }));
         LongVector r1 =
             VectorSupport.rearrangeOp(
-                getClass(), shuffletype, long.class, length(),
-                v, ws,
-                (v1, s_) -> v1.uOp((i, a) -> {
+                getClass(), shuffletype, null, long.class, length(),
+                v, ws, null,
+                (v1, s_, m_) -> v1.uOp((i, a) -> {
                     int ei = s_.laneSource(i);
                     return v1.lane(ei);
                 }));
@@ -2715,9 +2723,7 @@ public abstract class LongVector extends AbstractVector<Long> {
                                        VectorMask<Long> m) {
         LongSpecies vsp = (LongSpecies) species;
         if (offset >= 0 && offset <= (a.length - species.vectorByteSize())) {
-            LongVector zero = vsp.zero();
-            LongVector v = zero.fromByteArray0(a, offset);
-            return zero.blend(v.maybeSwap(bo), m);
+            return vsp.dummyVector().fromByteArray0(a, offset, m).maybeSwap(bo);
         }
 
         // FIXME: optimize
@@ -3004,9 +3010,7 @@ public abstract class LongVector extends AbstractVector<Long> {
                                         VectorMask<Long> m) {
         LongSpecies vsp = (LongSpecies) species;
         if (offset >= 0 && offset <= (bb.limit() - species.vectorByteSize())) {
-            LongVector zero = vsp.zero();
-            LongVector v = zero.fromByteBuffer0(bb, offset);
-            return zero.blend(v.maybeSwap(bo), m);
+            return vsp.dummyVector().fromByteBuffer0(bb, offset, m).maybeSwap(bo);
         }
 
         // FIXME: optimize
@@ -3225,12 +3229,9 @@ public abstract class LongVector extends AbstractVector<Long> {
         if (m.allTrue()) {
             intoByteArray(a, offset, bo);
         } else {
-            // FIXME: optimize
             LongSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 8, a.length);
-            ByteBuffer wb = wrapper(a, bo);
-            this.stOp(wb, offset, m,
-                    (wb_, o, i, e) -> wb_.putLong(o + i * 8, e));
+            maybeSwap(bo).intoByteArray0(a, offset, m);
         }
     }
 
@@ -3242,7 +3243,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     public final
     void intoByteBuffer(ByteBuffer bb, int offset,
                         ByteOrder bo) {
-        if (bb.isReadOnly()) {
+        if (ScopedMemoryAccess.isReadOnly(bb)) {
             throw new ReadOnlyBufferException();
         }
         offset = checkFromIndexSize(offset, byteSize(), bb.limit());
@@ -3261,15 +3262,12 @@ public abstract class LongVector extends AbstractVector<Long> {
         if (m.allTrue()) {
             intoByteBuffer(bb, offset, bo);
         } else {
-            // FIXME: optimize
             if (bb.isReadOnly()) {
                 throw new ReadOnlyBufferException();
             }
             LongSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 8, bb.limit());
-            ByteBuffer wb = wrapper(bb, bo);
-            this.stOp(wb, offset, m,
-                    (wb_, o, i, e) -> wb_.putLong(o + i * 8, e));
+            maybeSwap(bo).intoByteBuffer0(bb, offset, m);
         }
     }
 
@@ -3397,6 +3395,25 @@ public abstract class LongVector extends AbstractVector<Long> {
     }
 
     abstract
+    LongVector fromByteArray0(byte[] a, int offset, VectorMask<Long> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Long>>
+    LongVector fromByteArray0Template(Class<M> maskClass, byte[] a, int offset, M m) {
+        LongSpecies vsp = vspecies();
+        m.check(vsp);
+        return VectorSupport.loadMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, byteArrayAddress(a, offset), m,
+            a, offset, vsp,
+            (arr, off, s, vm) -> {
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                return s.ldOp(wb, off, vm,
+                        (wb_, o, i) -> wb_.getLong(o + i * 8));
+            });
+    }
+
+    abstract
     LongVector fromByteBuffer0(ByteBuffer bb, int offset);
     @ForceInline
     final
@@ -3408,6 +3425,24 @@ public abstract class LongVector extends AbstractVector<Long> {
                 (buf, off, s) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     return s.ldOp(wb, off,
+                            (wb_, o, i) -> wb_.getLong(o + i * 8));
+                });
+    }
+
+    abstract
+    LongVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Long> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Long>>
+    LongVector fromByteBuffer0Template(Class<M> maskClass, ByteBuffer bb, int offset, M m) {
+        LongSpecies vsp = vspecies();
+        m.check(vsp);
+        return ScopedMemoryAccess.loadFromByteBufferMasked(
+                vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+                bb, offset, m, vsp,
+                (buf, off, s, vm) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    return s.ldOp(wb, off, vm,
                             (wb_, o, i) -> wb_.getLong(o + i * 8));
                 });
     }
@@ -3519,6 +3554,25 @@ public abstract class LongVector extends AbstractVector<Long> {
             });
     }
 
+    abstract
+    void intoByteArray0(byte[] a, int offset, VectorMask<Long> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Long>>
+    void intoByteArray0Template(Class<M> maskClass, byte[] a, int offset, M m) {
+        LongSpecies vsp = vspecies();
+        m.check(vsp);
+        VectorSupport.storeMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, byteArrayAddress(a, offset),
+            this, m, a, offset,
+            (arr, off, v, vm) -> {
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                v.stOp(wb, off, vm,
+                        (tb_, o, i, e) -> tb_.putLong(o + i * 8, e));
+            });
+    }
+
     @ForceInline
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
@@ -3529,6 +3583,24 @@ public abstract class LongVector extends AbstractVector<Long> {
                 (buf, off, v) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     v.stOp(wb, off,
+                            (wb_, o, i, e) -> wb_.putLong(o + i * 8, e));
+                });
+    }
+
+    abstract
+    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Long> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Long>>
+    void intoByteBuffer0Template(Class<M> maskClass, ByteBuffer bb, int offset, M m) {
+        LongSpecies vsp = vspecies();
+        m.check(vsp);
+        ScopedMemoryAccess.storeIntoByteBufferMasked(
+                vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+                this, m, bb, offset,
+                (buf, off, v, vm) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    v.stOp(wb, off, vm,
                             (wb_, o, i, e) -> wb_.putLong(o + i * 8, e));
                 });
     }

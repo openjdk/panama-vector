@@ -404,6 +404,18 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     }
 
     /*package-private*/
+    @ForceInline
+    static byte rotateLeft(byte a, int n) {
+        return (byte)(((((byte)a) & Byte.toUnsignedInt((byte)-1)) << (n & Byte.SIZE-1)) | ((((byte)a) & Byte.toUnsignedInt((byte)-1)) >>> (Byte.SIZE - (n & Byte.SIZE-1))));
+    }
+
+    /*package-private*/
+    @ForceInline
+    static byte rotateRight(byte a, int n) {
+        return (byte)(((((byte)a) & Byte.toUnsignedInt((byte)-1)) >>> (n & Byte.SIZE-1)) | ((((byte)a) & Byte.toUnsignedInt((byte)-1)) << (Byte.SIZE - (n & Byte.SIZE-1))));
+    }
+
+    /*package-private*/
     @Override
     abstract ByteSpecies vspecies();
 
@@ -590,8 +602,10 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             if (op == ZOMO) {
                 return blend(broadcast(-1), compare(NE, 0, m));
             }
-            if (op == NOT || op == NEG) {
-                return blend(lanewise(op), m);
+            if (op == NOT) {
+                return lanewise(XOR, broadcast(-1), m);
+            } else if (op == NEG) {
+                return lanewise(NOT, m).lanewise(ADD, broadcast(1), m);
             }
         }
         int opc = opCode(op);
@@ -646,12 +660,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 // This allows the JIT to ignore some ISA details.
                 that = that.lanewise(AND, SHIFT_MASK);
             }
-            if (op == ROR || op == ROL) {  // FIXME: JIT should do this
-                ByteVector neg = that.lanewise(NEG);
-                ByteVector hi = this.lanewise(LSHL, (op == ROR) ? neg : that);
-                ByteVector lo = this.lanewise(LSHR, (op == ROR) ? that : neg);
-                return hi.lanewise(OR, lo);
-            } else if (op == AND_NOT) {
+            if (op == AND_NOT) {
                 // FIXME: Support this in the JIT.
                 that = that.lanewise(NOT);
                 op = AND;
@@ -701,9 +710,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 // This allows the JIT to ignore some ISA details.
                 that = that.lanewise(AND, SHIFT_MASK);
             }
-            if (op == ROR || op == ROL) {
-                return blend(lanewise(op, v), m);
-            } else if (op == AND_NOT) {
+            if (op == AND_NOT) {
                 // FIXME: Support this in the JIT.
                 that = that.lanewise(NOT);
                 op = AND;
@@ -754,6 +761,10 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                     v0.bOp(v1, vm, (i, a, n) -> (byte)(a >> n));
             case VECTOR_OP_URSHIFT: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, n) -> (byte)((a & LSHR_SETUP_MASK) >>> n));
+            case VECTOR_OP_LROTATE: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, n) -> rotateLeft(a, (int)n));
+            case VECTOR_OP_RROTATE: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, n) -> rotateRight(a, (int)n));
             default: return null;
         }
     }
@@ -887,11 +898,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         assert(opKind(op, VO_SHIFT));
         // As per shift specification for Java, mask the shift count.
         e &= SHIFT_MASK;
-        if (op == ROR || op == ROL) {  // FIXME: JIT should do this
-            ByteVector hi = this.lanewise(LSHL, (op == ROR) ? -e : e);
-            ByteVector lo = this.lanewise(LSHR, (op == ROR) ? e : -e);
-            return hi.lanewise(OR, lo);
-        }
         int opc = opCode(op);
         return VectorSupport.broadcastInt(
             opc, getClass(), null, byte.class, length(),
@@ -913,9 +919,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         assert(opKind(op, VO_SHIFT));
         // As per shift specification for Java, mask the shift count.
         e &= SHIFT_MASK;
-        if (op == ROR || op == ROL) {
-            return blend(lanewiseShift(op, e), m);
-        }
         int opc = opCode(op);
         return VectorSupport.broadcastInt(
             opc, getClass(), maskClass, byte.class, length(),
@@ -935,6 +938,10 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                     v.uOp(m, (i, a) -> (byte)(a >> n));
             case VECTOR_OP_URSHIFT: return (v, n, m) ->
                     v.uOp(m, (i, a) -> (byte)((a & LSHR_SETUP_MASK) >>> n));
+            case VECTOR_OP_LROTATE: return (v, n, m) ->
+                    v.uOp(m, (i, a) -> rotateLeft(a, (int)n));
+            case VECTOR_OP_RROTATE: return (v, n, m) ->
+                    v.uOp(m, (i, a) -> rotateRight(a, (int)n));
             default: return null;
         }
     }
@@ -2251,9 +2258,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     ByteVector rearrangeTemplate(Class<S> shuffletype, S shuffle) {
         shuffle.checkIndexes();
         return VectorSupport.rearrangeOp(
-            getClass(), shuffletype, byte.class, length(),
-            this, shuffle,
-            (v1, s_) -> v1.uOp((i, a) -> {
+            getClass(), shuffletype, null, byte.class, length(),
+            this, shuffle, null,
+            (v1, s_, m_) -> v1.uOp((i, a) -> {
                 int ei = s_.laneSource(i);
                 return v1.lane(ei);
             }));
@@ -2270,24 +2277,25 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     /*package-private*/
     @ForceInline
     final
-    <S extends VectorShuffle<Byte>>
+    <S extends VectorShuffle<Byte>, M extends VectorMask<Byte>>
     ByteVector rearrangeTemplate(Class<S> shuffletype,
+                                           Class<M> masktype,
                                            S shuffle,
-                                           VectorMask<Byte> m) {
-        ByteVector unmasked =
-            VectorSupport.rearrangeOp(
-                getClass(), shuffletype, byte.class, length(),
-                this, shuffle,
-                (v1, s_) -> v1.uOp((i, a) -> {
-                    int ei = s_.laneSource(i);
-                    return ei < 0 ? 0 : v1.lane(ei);
-                }));
+                                           M m) {
+
+        m.check(masktype, this);
         VectorMask<Byte> valid = shuffle.laneIsValid();
         if (m.andNot(valid).anyTrue()) {
             shuffle.checkIndexes();
             throw new AssertionError();
         }
-        return broadcast((byte)0).blend(unmasked, m);
+        return VectorSupport.rearrangeOp(
+                   getClass(), shuffletype, masktype, byte.class, length(),
+                   this, shuffle, m,
+                   (v1, s_, m_) -> v1.uOp((i, a) -> {
+                        int ei = s_.laneSource(i);
+                        return ei < 0  || !m_.laneIsSet(i) ? 0 : v1.lane(ei);
+                   }));
     }
 
     /**
@@ -2310,17 +2318,17 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         S ws = (S) shuffle.wrapIndexes();
         ByteVector r0 =
             VectorSupport.rearrangeOp(
-                getClass(), shuffletype, byte.class, length(),
-                this, ws,
-                (v0, s_) -> v0.uOp((i, a) -> {
+                getClass(), shuffletype, null, byte.class, length(),
+                this, ws, null,
+                (v0, s_, m_) -> v0.uOp((i, a) -> {
                     int ei = s_.laneSource(i);
                     return v0.lane(ei);
                 }));
         ByteVector r1 =
             VectorSupport.rearrangeOp(
-                getClass(), shuffletype, byte.class, length(),
-                v, ws,
-                (v1, s_) -> v1.uOp((i, a) -> {
+                getClass(), shuffletype, null, byte.class, length(),
+                v, ws, null,
+                (v1, s_, m_) -> v1.uOp((i, a) -> {
                     int ei = s_.laneSource(i);
                     return v1.lane(ei);
                 }));
@@ -2862,9 +2870,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                        VectorMask<Byte> m) {
         ByteSpecies vsp = (ByteSpecies) species;
         if (offset >= 0 && offset <= (a.length - species.vectorByteSize())) {
-            ByteVector zero = vsp.zero();
-            ByteVector v = zero.fromByteArray0(a, offset);
-            return zero.blend(v.maybeSwap(bo), m);
+            return vsp.dummyVector().fromByteArray0(a, offset, m).maybeSwap(bo);
         }
 
         // FIXME: optimize
@@ -3261,9 +3267,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                         VectorMask<Byte> m) {
         ByteSpecies vsp = (ByteSpecies) species;
         if (offset >= 0 && offset <= (bb.limit() - species.vectorByteSize())) {
-            ByteVector zero = vsp.zero();
-            ByteVector v = zero.fromByteBuffer0(bb, offset);
-            return zero.blend(v.maybeSwap(bo), m);
+            return vsp.dummyVector().fromByteBuffer0(bb, offset, m).maybeSwap(bo);
         }
 
         // FIXME: optimize
@@ -3611,12 +3615,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         if (m.allTrue()) {
             intoByteArray(a, offset, bo);
         } else {
-            // FIXME: optimize
             ByteSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
-            ByteBuffer wb = wrapper(a, bo);
-            this.stOp(wb, offset, m,
-                    (wb_, o, i, e) -> wb_.put(o + i * 1, e));
+            maybeSwap(bo).intoByteArray0(a, offset, m);
         }
     }
 
@@ -3628,7 +3629,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     public final
     void intoByteBuffer(ByteBuffer bb, int offset,
                         ByteOrder bo) {
-        if (bb.isReadOnly()) {
+        if (ScopedMemoryAccess.isReadOnly(bb)) {
             throw new ReadOnlyBufferException();
         }
         offset = checkFromIndexSize(offset, byteSize(), bb.limit());
@@ -3647,15 +3648,12 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         if (m.allTrue()) {
             intoByteBuffer(bb, offset, bo);
         } else {
-            // FIXME: optimize
             if (bb.isReadOnly()) {
                 throw new ReadOnlyBufferException();
             }
             ByteSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 1, bb.limit());
-            ByteBuffer wb = wrapper(bb, bo);
-            this.stOp(wb, offset, m,
-                    (wb_, o, i, e) -> wb_.put(o + i * 1, e));
+            maybeSwap(bo).intoByteBuffer0(bb, offset, m);
         }
     }
 
@@ -3763,6 +3761,25 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     }
 
     abstract
+    ByteVector fromByteArray0(byte[] a, int offset, VectorMask<Byte> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Byte>>
+    ByteVector fromByteArray0Template(Class<M> maskClass, byte[] a, int offset, M m) {
+        ByteSpecies vsp = vspecies();
+        m.check(vsp);
+        return VectorSupport.loadMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, byteArrayAddress(a, offset), m,
+            a, offset, vsp,
+            (arr, off, s, vm) -> {
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                return s.ldOp(wb, off, vm,
+                        (wb_, o, i) -> wb_.get(o + i * 1));
+            });
+    }
+
+    abstract
     ByteVector fromByteBuffer0(ByteBuffer bb, int offset);
     @ForceInline
     final
@@ -3774,6 +3791,24 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 (buf, off, s) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     return s.ldOp(wb, off,
+                            (wb_, o, i) -> wb_.get(o + i * 1));
+                });
+    }
+
+    abstract
+    ByteVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Byte> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Byte>>
+    ByteVector fromByteBuffer0Template(Class<M> maskClass, ByteBuffer bb, int offset, M m) {
+        ByteSpecies vsp = vspecies();
+        m.check(vsp);
+        return ScopedMemoryAccess.loadFromByteBufferMasked(
+                vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+                bb, offset, m, vsp,
+                (buf, off, s, vm) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    return s.ldOp(wb, off, vm,
                             (wb_, o, i) -> wb_.get(o + i * 1));
                 });
     }
@@ -3850,6 +3885,25 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             });
     }
 
+    abstract
+    void intoByteArray0(byte[] a, int offset, VectorMask<Byte> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Byte>>
+    void intoByteArray0Template(Class<M> maskClass, byte[] a, int offset, M m) {
+        ByteSpecies vsp = vspecies();
+        m.check(vsp);
+        VectorSupport.storeMasked(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, byteArrayAddress(a, offset),
+            this, m, a, offset,
+            (arr, off, v, vm) -> {
+                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
+                v.stOp(wb, off, vm,
+                        (tb_, o, i, e) -> tb_.put(o + i * 1, e));
+            });
+    }
+
     @ForceInline
     final
     void intoByteBuffer0(ByteBuffer bb, int offset) {
@@ -3860,6 +3914,24 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 (buf, off, v) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     v.stOp(wb, off,
+                            (wb_, o, i, e) -> wb_.put(o + i * 1, e));
+                });
+    }
+
+    abstract
+    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Byte> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Byte>>
+    void intoByteBuffer0Template(Class<M> maskClass, ByteBuffer bb, int offset, M m) {
+        ByteSpecies vsp = vspecies();
+        m.check(vsp);
+        ScopedMemoryAccess.storeIntoByteBufferMasked(
+                vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+                this, m, bb, offset,
+                (buf, off, v, vm) -> {
+                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
+                    v.stOp(wb, off, vm,
                             (wb_, o, i, e) -> wb_.put(o + i * 1, e));
                 });
     }

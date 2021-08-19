@@ -233,14 +233,10 @@ abstract class AbstractMask<E> extends VectorMask<E> {
             int elemCount = Math.min(vlength, (alength - offset) / esize);
             badMask = checkIndex0(0, elemCount, iota, vlength);
         } else {
-            // This requires a split test.
             int clipOffset = Math.max(offset, -(vlength * esize));
-            int elemCount = Math.min(vlength, (alength - clipOffset) / esize);
-            badMask = checkIndex0(0, elemCount, iota, vlength);
-            clipOffset &= (esize - 1);  // power of two, so OK
-            VectorMask<E> badMask2 = checkIndex0(clipOffset / esize, vlength,
-                                                 iota, vlength);
-            badMask = badMask.or(badMask2);
+            badMask = checkIndex0(clipOffset, alength,
+                                  iota.lanewise(VectorOperators.MUL, esize),
+                                  vlength * esize);
         }
         badMask = badMask.and(this);
         if (badMask.anyTrue()) {

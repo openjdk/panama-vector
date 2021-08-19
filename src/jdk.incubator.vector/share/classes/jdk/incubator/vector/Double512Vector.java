@@ -440,6 +440,7 @@ final class Double512Vector extends DoubleVector {
                                   VectorMask<Double> m) {
         return (Double512Vector)
             super.rearrangeTemplate(Double512Shuffle.class,
+                                    Double512Mask.class,
                                     (Double512Shuffle) shuffle,
                                     (Double512Mask) m);  // specialize
     }
@@ -836,8 +837,22 @@ final class Double512Vector extends DoubleVector {
     @ForceInline
     @Override
     final
+    DoubleVector fromByteArray0(byte[] a, int offset, VectorMask<Double> m) {
+        return super.fromByteArray0Template(Double512Mask.class, a, offset, (Double512Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
     DoubleVector fromByteBuffer0(ByteBuffer bb, int offset) {
         return super.fromByteBuffer0Template(bb, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    DoubleVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Double> m) {
+        return super.fromByteBuffer0Template(Double512Mask.class, bb, offset, (Double512Mask) m);  // specialize
     }
 
     @ForceInline
@@ -867,6 +882,20 @@ final class Double512Vector extends DoubleVector {
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteArray0(byte[] a, int offset, VectorMask<Double> m) {
+        super.intoByteArray0Template(Double512Mask.class, a, offset, (Double512Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Double> m) {
+        super.intoByteBuffer0Template(Double512Mask.class, bb, offset, (Double512Mask) m);
     }
 
 

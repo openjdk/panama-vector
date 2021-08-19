@@ -453,6 +453,7 @@ final class Short128Vector extends ShortVector {
                                   VectorMask<Short> m) {
         return (Short128Vector)
             super.rearrangeTemplate(Short128Shuffle.class,
+                                    Short128Mask.class,
                                     (Short128Shuffle) shuffle,
                                     (Short128Mask) m);  // specialize
     }
@@ -854,8 +855,22 @@ final class Short128Vector extends ShortVector {
     @ForceInline
     @Override
     final
+    ShortVector fromByteArray0(byte[] a, int offset, VectorMask<Short> m) {
+        return super.fromByteArray0Template(Short128Mask.class, a, offset, (Short128Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
     ShortVector fromByteBuffer0(ByteBuffer bb, int offset) {
         return super.fromByteBuffer0Template(bb, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    ShortVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Short> m) {
+        return super.fromByteBuffer0Template(Short128Mask.class, bb, offset, (Short128Mask) m);  // specialize
     }
 
     @ForceInline
@@ -879,6 +894,20 @@ final class Short128Vector extends ShortVector {
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteArray0(byte[] a, int offset, VectorMask<Short> m) {
+        super.intoByteArray0Template(Short128Mask.class, a, offset, (Short128Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Short> m) {
+        super.intoByteBuffer0Template(Short128Mask.class, bb, offset, (Short128Mask) m);
     }
 
     @ForceInline

@@ -440,6 +440,7 @@ final class Float64Vector extends FloatVector {
                                   VectorMask<Float> m) {
         return (Float64Vector)
             super.rearrangeTemplate(Float64Shuffle.class,
+                                    Float64Mask.class,
                                     (Float64Shuffle) shuffle,
                                     (Float64Mask) m);  // specialize
     }
@@ -824,8 +825,22 @@ final class Float64Vector extends FloatVector {
     @ForceInline
     @Override
     final
+    FloatVector fromByteArray0(byte[] a, int offset, VectorMask<Float> m) {
+        return super.fromByteArray0Template(Float64Mask.class, a, offset, (Float64Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
     FloatVector fromByteBuffer0(ByteBuffer bb, int offset) {
         return super.fromByteBuffer0Template(bb, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    FloatVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Float> m) {
+        return super.fromByteBuffer0Template(Float64Mask.class, bb, offset, (Float64Mask) m);  // specialize
     }
 
     @ForceInline
@@ -855,6 +870,20 @@ final class Float64Vector extends FloatVector {
     final
     void intoByteArray0(byte[] a, int offset) {
         super.intoByteArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteArray0(byte[] a, int offset, VectorMask<Float> m) {
+        super.intoByteArray0Template(Float64Mask.class, a, offset, (Float64Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Float> m) {
+        super.intoByteBuffer0Template(Float64Mask.class, bb, offset, (Float64Mask) m);
     }
 
 

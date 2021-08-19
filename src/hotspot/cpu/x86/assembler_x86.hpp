@@ -2176,9 +2176,6 @@ private:
   void bzhiq(Register dst, Register src1, Register src2);
 
   //====================VECTOR ARITHMETIC=====================================
-  void evpmovd2m(KRegister kdst, XMMRegister src, int vector_len);
-  void evpmovq2m(KRegister kdst, XMMRegister src, int vector_len);
-
   // Add Packed Floating-Point Values
   void addpd(XMMRegister dst, XMMRegister src);
   void addpd(XMMRegister dst, Address src);
@@ -2653,7 +2650,13 @@ private:
                int comparison, bool is_signed, int vector_len);
 
   void evpmovb2m(KRegister dst, XMMRegister src, int vector_len);
+  void evpmovw2m(KRegister dst, XMMRegister src, int vector_len);
+  void evpmovd2m(KRegister dst, XMMRegister src, int vector_len);
+  void evpmovq2m(KRegister dst, XMMRegister src, int vector_len);
   void evpmovm2b(XMMRegister dst, KRegister src, int vector_len);
+  void evpmovm2w(XMMRegister dst, KRegister src, int vector_len);
+  void evpmovm2d(XMMRegister dst, KRegister src, int vector_len);
+  void evpmovm2q(XMMRegister dst, KRegister src, int vector_len);
 
   // Vector blends
   void blendvps(XMMRegister dst, XMMRegister src);

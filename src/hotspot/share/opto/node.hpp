@@ -173,6 +173,7 @@ class StoreVectorScatterNode;
 class VectorMaskCmpNode;
 class VectorUnboxNode;
 class VectorSet;
+class VectorReinterpretNode;
 
 // The type of all node counts and indexes.
 // It must hold at least 16 bits, but must also be fast to load and store.
@@ -708,6 +709,7 @@ public:
       DEFINE_CLASS_ID(Vector, Type, 7)
         DEFINE_CLASS_ID(VectorMaskCmp, Vector, 0)
         DEFINE_CLASS_ID(VectorUnbox, Vector, 1)
+        DEFINE_CLASS_ID(VectorReinterpret, Vector, 2)
 
     DEFINE_CLASS_ID(Proj,  Node, 3)
       DEFINE_CLASS_ID(CatchProj, Proj, 0)
@@ -935,6 +937,7 @@ public:
   DEFINE_CLASS_QUERY(Vector)
   DEFINE_CLASS_QUERY(VectorMaskCmp)
   DEFINE_CLASS_QUERY(VectorUnbox)
+  DEFINE_CLASS_QUERY(VectorReinterpret);
   DEFINE_CLASS_QUERY(LoadVector)
   DEFINE_CLASS_QUERY(LoadVectorGather)
   DEFINE_CLASS_QUERY(StoreVector)

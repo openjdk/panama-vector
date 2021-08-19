@@ -79,7 +79,10 @@ class VectorNode : public TypeNode {
   static VectorNode* make_mask_node(int vopc, Node* n1, Node* n2, uint vlen, BasicType bt);
 
   static bool is_shift_opcode(int opc);
+
   static bool is_vshift_cnt_opcode(int opc);
+
+  static bool is_rotate_opcode(int opc);
 
   static int  opcode(int opc, BasicType bt);
   static int replicate_opcode(BasicType bt);
@@ -91,7 +94,7 @@ class VectorNode : public TypeNode {
   static bool is_muladds2i(Node* n);
   static bool is_roundopD(Node* n);
   static bool is_scalar_rotate(Node* n);
-  static bool is_vector_rotate_supported(int vopc, uint vlen, BasicType bt);
+  static bool is_vector_rotate_supported(int opc, uint vlen, BasicType bt);
   static bool is_invariant_vector(Node* n);
   static bool is_all_ones_vector(Node* n);
   static bool is_vector_bitwise_not_pattern(Node* n);
@@ -103,6 +106,7 @@ class VectorNode : public TypeNode {
 
   static bool is_vector_shift(int opc);
   static bool is_vector_shift_count(int opc);
+  static bool is_vector_rotate(int opc);
 
   static bool is_vector_shift(Node* n) {
     return is_vector_shift(n->Opcode());
@@ -1430,12 +1434,29 @@ class VectorMaskCastNode : public VectorNode {
 class VectorReinterpretNode : public VectorNode {
  private:
   const TypeVect* _src_vt;
+  BasicType  _dst_bt;
+  BasicType  _src_bt;
+
  protected:
-  uint size_of() const { return sizeof(*this); }
+  uint size_of() const { return sizeof(VectorReinterpretNode); }
  public:
   VectorReinterpretNode(Node* in, const TypeVect* src_vt, const TypeVect* dst_vt)
-      : VectorNode(in, dst_vt), _src_vt(src_vt) { }
+      : VectorNode(in, dst_vt), _src_vt(src_vt) {
+     _src_bt = src_vt->element_basic_type();
+     _dst_bt = dst_vt->element_basic_type();
+     init_class_id(Class_VectorReinterpret);
+  }
 
+  VectorReinterpretNode(Node* in, BasicType src_bt, const TypeVect* src_vt, 
+                        BasicType dst_bt, const TypeVect* dst_vt)
+      : VectorNode(in, dst_vt), _src_vt(src_vt) {
+     _src_bt = src_bt;
+     _dst_bt = dst_bt;
+     init_class_id(Class_VectorReinterpret);
+  }
+
+  BasicType src_elem_type() { return _src_bt; }
+  BasicType dst_elem_type() { return _dst_bt; }
   virtual uint hash() const { return VectorNode::hash() + _src_vt->hash(); }
   virtual bool cmp( const Node &n ) const {
     return VectorNode::cmp(n) && !Type::cmp(_src_vt,((VectorReinterpretNode&)n)._src_vt);
