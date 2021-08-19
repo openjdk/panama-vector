@@ -1447,7 +1447,7 @@ class VectorReinterpretNode : public VectorNode {
      init_class_id(Class_VectorReinterpret);
   }
 
-  VectorReinterpretNode(Node* in, BasicType src_bt, const TypeVect* src_vt, 
+  VectorReinterpretNode(Node* in, BasicType src_bt, const TypeVect* src_vt,
                         BasicType dst_bt, const TypeVect* dst_vt)
       : VectorNode(in, dst_vt), _src_vt(src_vt) {
      _src_bt = src_bt;
