@@ -3440,7 +3440,8 @@ instruct sqrtD_reg(regD dst) %{
 
 // ---------------------------------------- VectorReinterpret ------------------------------------
 instruct reinterpret_mask(kReg dst) %{
-  predicate(UseAVX > 2 && Matcher::vector_length(n) == Matcher::vector_length(n->in(1))); // dst == src
+  predicate(n->bottom_type()->isa_vectmask() &&
+            Matcher::vector_length(n) == Matcher::vector_length(n->in(1))); // dst == src
   match(Set dst (VectorReinterpret dst));
   ins_cost(125);
   format %{ "vector_reinterpret $dst\t!" %}
@@ -3452,6 +3453,7 @@ instruct reinterpret_mask(kReg dst) %{
 
 instruct reinterpret_mask_W2B(kReg dst, kReg src, vec xtmp) %{
   predicate(UseAVX > 2 && Matcher::vector_length(n) != Matcher::vector_length(n->in(1)) &&
+            n->bottom_type()->isa_vectmask() &&
             n->as_VectorReinterpret()->src_elem_type() == T_SHORT &&
             n->as_VectorReinterpret()->dst_elem_type() == T_BYTE); // dst == src
   match(Set dst (VectorReinterpret src));
@@ -3470,6 +3472,7 @@ instruct reinterpret_mask_W2B(kReg dst, kReg src, vec xtmp) %{
 
 instruct reinterpret_mask_D2B(kReg dst, kReg src, vec xtmp) %{
   predicate(UseAVX > 2 && Matcher::vector_length(n) != Matcher::vector_length(n->in(1)) &&
+            n->bottom_type()->isa_vectmask() &&
             (n->as_VectorReinterpret()->src_elem_type() == T_INT ||
             n->as_VectorReinterpret()->src_elem_type() == T_FLOAT) &&
             n->as_VectorReinterpret()->dst_elem_type() == T_BYTE); // dst == src
@@ -3489,6 +3492,7 @@ instruct reinterpret_mask_D2B(kReg dst, kReg src, vec xtmp) %{
 
 instruct reinterpret_mask_Q2B(kReg dst, kReg src, vec xtmp) %{
   predicate(UseAVX > 2 && Matcher::vector_length(n) != Matcher::vector_length(n->in(1)) &&
+            n->bottom_type()->isa_vectmask() &&
             (n->as_VectorReinterpret()->src_elem_type() == T_LONG ||
             n->as_VectorReinterpret()->src_elem_type() == T_DOUBLE) &&
             n->as_VectorReinterpret()->dst_elem_type() == T_BYTE); // dst == src
@@ -3507,7 +3511,8 @@ instruct reinterpret_mask_Q2B(kReg dst, kReg src, vec xtmp) %{
 %}
 
 instruct reinterpret(vec dst) %{
-  predicate(Matcher::vector_length_in_bytes(n) == Matcher::vector_length_in_bytes(n->in(1))); // dst == src
+  predicate(!n->bottom_type()->isa_vectmask() &&
+            Matcher::vector_length_in_bytes(n) == Matcher::vector_length_in_bytes(n->in(1))); // dst == src
   match(Set dst (VectorReinterpret dst));
   ins_cost(125);
   format %{ "vector_reinterpret $dst\t!" %}
@@ -3542,6 +3547,7 @@ instruct reinterpret_expand(vec dst, vec src, rRegP scratch) %{
 
 instruct vreinterpret_expand4(legVec dst, vec src, rRegP scratch) %{
   predicate(UseAVX > 0 &&
+            !n->bottom_type()->isa_vectmask() &&
             (Matcher::vector_length_in_bytes(n->in(1)) == 4) && // src
             (Matcher::vector_length_in_bytes(n->in(1)) < Matcher::vector_length_in_bytes(n))); // src < dst
   match(Set dst (VectorReinterpret src));
@@ -3557,6 +3563,7 @@ instruct vreinterpret_expand4(legVec dst, vec src, rRegP scratch) %{
 
 instruct vreinterpret_expand(legVec dst, vec src) %{
   predicate(UseAVX > 0 &&
+            !n->bottom_type()->isa_vectmask() &&
             (Matcher::vector_length_in_bytes(n->in(1)) > 4) && // src
             (Matcher::vector_length_in_bytes(n->in(1)) < Matcher::vector_length_in_bytes(n))); // src < dst
   match(Set dst (VectorReinterpret src));
@@ -3574,7 +3581,8 @@ instruct vreinterpret_expand(legVec dst, vec src) %{
 %}
 
 instruct reinterpret_shrink(vec dst, legVec src) %{
-  predicate(Matcher::vector_length_in_bytes(n->in(1)) > Matcher::vector_length_in_bytes(n)); // src > dst
+  predicate(!n->bottom_type()->isa_vectmask() &&
+            Matcher::vector_length_in_bytes(n->in(1)) > Matcher::vector_length_in_bytes(n)); // src > dst
   match(Set dst (VectorReinterpret src));
   ins_cost(125);
   format %{ "vector_reinterpret_shrink $dst,$src\t!" %}
@@ -3830,7 +3838,7 @@ instruct evgather_masked(vec dst, memory mem, vec idx, kReg mask, kReg ktmp, rRe
     int vlen_enc = vector_length_encoding(this);
     BasicType elem_bt = Matcher::vector_element_basic_type(this);
     assert(!is_subword_type(elem_bt), "sanity"); // T_INT, T_LONG, T_FLOAT, T_DOUBLE
-    // Note: Since gather instruction partially updates the opmask register used 
+    // Note: Since gather instruction partially updates the opmask register used
     // for predication hense moving mask operand to a temporary.
     __ kmovwl($ktmp$$KRegister, $mask$$KRegister);
     __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vlen_enc);
@@ -3872,7 +3880,7 @@ instruct scatter_masked(memory mem, vec src, vec idx, kReg mask, kReg ktmp, rReg
     BasicType elem_bt = Matcher::vector_element_basic_type(this, $src);
     assert(Matcher::vector_length_in_bytes(this, $src) >= 16, "sanity");
     assert(!is_subword_type(elem_bt), "sanity"); // T_INT, T_LONG, T_FLOAT, T_DOUBLE
-    // Note: Since scatter instruction partially updates the opmask register used 
+    // Note: Since scatter instruction partially updates the opmask register used
     // for predication hense moving mask operand to a temporary.
     __ kmovwl($ktmp$$KRegister, $mask$$KRegister);
     __ lea($tmp$$Register, $mem$$Address);
@@ -7252,7 +7260,7 @@ instruct vcmpu32(legVec dst, legVec src1, legVec src2, immI8 cond, legVec vtmp1,
 
 instruct vcmpu64(vec dst, vec src1, vec src2, immI8 cond, rRegP scratch, kReg ktmp) %{
   predicate(UseAVX > 2 &&
-            (VM_Version::supports_avx512vl() ||
+            (!VM_Version::supports_avx512vl() &&
              Matcher::vector_length_in_bytes(n->in(1)->in(1)) == 64) && // src1
              is_integral_type(Matcher::vector_element_basic_type(n->in(1)->in(1)))); // src1
   match(Set dst (VectorMaskCmp (Binary src1 src2) cond));

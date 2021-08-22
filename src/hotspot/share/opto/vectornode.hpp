@@ -1442,6 +1442,7 @@ class VectorReinterpretNode : public VectorNode {
  public:
   VectorReinterpretNode(Node* in, const TypeVect* src_vt, const TypeVect* dst_vt)
       : VectorNode(in, dst_vt), _src_vt(src_vt) {
+     assert(!dst_vt->isa_vectmask() && !src_vt->isa_vectmask(), "");
      _src_bt = src_vt->element_basic_type();
      _dst_bt = dst_vt->element_basic_type();
      init_class_id(Class_VectorReinterpret);
@@ -1450,6 +1451,8 @@ class VectorReinterpretNode : public VectorNode {
   VectorReinterpretNode(Node* in, BasicType src_bt, const TypeVect* src_vt,
                         BasicType dst_bt, const TypeVect* dst_vt)
       : VectorNode(in, dst_vt), _src_vt(src_vt) {
+     assert(dst_vt->isa_vectmask() && src_vt->isa_vectmask() || type2aelembytes(src_bt) >= type2aelembytes(dst_bt),
+            "unsupported mask widening reinterpretation");
      _src_bt = src_bt;
      _dst_bt = dst_bt;
      init_class_id(Class_VectorReinterpret);
