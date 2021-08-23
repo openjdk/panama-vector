@@ -366,14 +366,18 @@ bool VectorNode::is_scalar_rotate(Node* n) {
   return false;
 }
 
-bool VectorNode::is_vshift_cnt(Node* n) {
-  switch (n->Opcode()) {
+bool VectorNode::is_vshift_cnt_opcode(int opc) {
+  switch (opc) {
   case Op_LShiftCntV:
   case Op_RShiftCntV:
     return true;
   default:
     return false;
   }
+}
+
+bool VectorNode::is_vshift_cnt(Node* n) {
+  return is_vshift_cnt_opcode(n->Opcode());
 }
 
 // Check if input is loop invariant vector.
@@ -447,17 +451,17 @@ VectorNode* VectorNode::make_mask_node(int vopc, Node* n1, Node* n2, uint vlen, 
   const TypeVect* vmask_type = TypeVect::makemask(bt, vlen);
   switch (vopc) {
     case Op_AndV:
-      if (Matcher::match_rule_supported_vector(Op_AndVMask, vlen, bt)) {
+      if (Matcher::match_rule_supported_vector_masked(Op_AndVMask, vlen, bt)) {
         return new AndVMaskNode(n1, n2, vmask_type);
       }
       return new AndVNode(n1, n2, vmask_type);
     case Op_OrV:
-      if (Matcher::match_rule_supported_vector(Op_OrVMask, vlen, bt)) {
+      if (Matcher::match_rule_supported_vector_masked(Op_OrVMask, vlen, bt)) {
         return new OrVMaskNode(n1, n2, vmask_type);
       }
       return new OrVNode(n1, n2, vmask_type);
     case Op_XorV:
-      if (Matcher::match_rule_supported_vector(Op_XorVMask, vlen, bt)) {
+      if (Matcher::match_rule_supported_vector_masked(Op_XorVMask, vlen, bt)) {
         return new XorVMaskNode(n1, n2, vmask_type);
       }
       return new XorVNode(n1, n2, vmask_type);
@@ -1073,9 +1077,10 @@ Node* VectorLoadMaskNode::Ideal(PhaseGVN* phase, bool can_reshape) {
 
 Node* VectorLoadMaskNode::Identity(PhaseGVN* phase) {
   BasicType out_bt = type()->is_vect()->element_basic_type();
-  if (out_bt == T_BOOLEAN) {
+  if (!Matcher::has_predicated_vectors() && out_bt == T_BOOLEAN) {
     return in(1); // redundant conversion
   }
+
   return this;
 }
 

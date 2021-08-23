@@ -8205,6 +8205,302 @@ void MacroAssembler::evmovdqu(BasicType type, KRegister kmask, Address dst, XMMR
   }
 }
 
+void MacroAssembler::kand(BasicType type, KRegister dst, KRegister src1, KRegister src2) {
+  switch(type) {
+    case T_BOOLEAN:
+    case T_BYTE:
+       kandbl(dst, src1, src2);
+       break;
+    case T_CHAR:
+    case T_SHORT:
+       kandwl(dst, src1, src2);
+       break;
+    case T_INT:
+    case T_FLOAT:
+       kanddl(dst, src1, src2);
+       break;
+    case T_LONG:
+    case T_DOUBLE:
+       kandql(dst, src1, src2);
+       break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type));
+      break;
+  }
+}
+
+void MacroAssembler::kor(BasicType type, KRegister dst, KRegister src1, KRegister src2) {
+  switch(type) {
+    case T_BOOLEAN:
+    case T_BYTE:
+       korbl(dst, src1, src2);
+       break;
+    case T_CHAR:
+    case T_SHORT:
+       korwl(dst, src1, src2);
+       break;
+    case T_INT:
+    case T_FLOAT:
+       kordl(dst, src1, src2);
+       break;
+    case T_LONG:
+    case T_DOUBLE:
+       korql(dst, src1, src2);
+       break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type));
+      break;
+  }
+}
+
+void MacroAssembler::kxor(BasicType type, KRegister dst, KRegister src1, KRegister src2) {
+  switch(type) {
+    case T_BOOLEAN:
+    case T_BYTE:
+       kxorbl(dst, src1, src2);
+       break;
+    case T_CHAR:
+    case T_SHORT:
+       kxorwl(dst, src1, src2);
+       break;
+    case T_INT:
+    case T_FLOAT:
+       kxordl(dst, src1, src2);
+       break;
+    case T_LONG:
+    case T_DOUBLE:
+       kxorql(dst, src1, src2);
+       break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type));
+      break;
+  }
+}
+
+void MacroAssembler::evperm(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  switch(type) {
+    case T_BOOLEAN:
+    case T_BYTE:
+      evpermb(dst, mask, nds, src, merge, vector_len); break;
+    case T_CHAR:
+    case T_SHORT:
+      evpermw(dst, mask, nds, src, merge, vector_len); break;
+    case T_INT:
+    case T_FLOAT:
+      evpermd(dst, mask, nds, src, merge, vector_len); break;
+    case T_LONG:
+    case T_DOUBLE:
+      evpermq(dst, mask, nds, src, merge, vector_len); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+  }
+}
+
+void MacroAssembler::evperm(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
+  switch(type) {
+    case T_BOOLEAN:
+    case T_BYTE:
+      evpermb(dst, mask, nds, src, merge, vector_len); break;
+    case T_CHAR:
+    case T_SHORT:
+      evpermw(dst, mask, nds, src, merge, vector_len); break;
+    case T_INT:
+    case T_FLOAT:
+      evpermd(dst, mask, nds, src, merge, vector_len); break;
+    case T_LONG:
+    case T_DOUBLE:
+      evpermq(dst, mask, nds, src, merge, vector_len); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+  }
+}
+
+void MacroAssembler::evpmins(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
+  switch(type) {
+    case T_BYTE:
+      evpminsb(dst, mask, nds, src, merge, vector_len); break;
+    case T_SHORT:
+      evpminsw(dst, mask, nds, src, merge, vector_len); break;
+    case T_INT:
+      evpminsd(dst, mask, nds, src, merge, vector_len); break;
+    case T_LONG:
+      evpminsq(dst, mask, nds, src, merge, vector_len); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+  }
+}
+
+void MacroAssembler::evpmaxs(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
+  switch(type) {
+    case T_BYTE:
+      evpmaxsb(dst, mask, nds, src, merge, vector_len); break;
+    case T_SHORT:
+      evpmaxsw(dst, mask, nds, src, merge, vector_len); break;
+    case T_INT:
+      evpmaxsd(dst, mask, nds, src, merge, vector_len); break;
+    case T_LONG:
+      evpmaxsq(dst, mask, nds, src, merge, vector_len); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+  }
+}
+
+void MacroAssembler::evpmins(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  switch(type) {
+    case T_BYTE:
+      evpminsb(dst, mask, nds, src, merge, vector_len); break;
+    case T_SHORT:
+      evpminsw(dst, mask, nds, src, merge, vector_len); break;
+    case T_INT:
+      evpminsd(dst, mask, nds, src, merge, vector_len); break;
+    case T_LONG:
+      evpminsq(dst, mask, nds, src, merge, vector_len); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+  }
+}
+
+void MacroAssembler::evpmaxs(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  switch(type) {
+    case T_BYTE:
+      evpmaxsb(dst, mask, nds, src, merge, vector_len); break;
+    case T_SHORT:
+      evpmaxsw(dst, mask, nds, src, merge, vector_len); break;
+    case T_INT:
+      evpmaxsd(dst, mask, nds, src, merge, vector_len); break;
+    case T_LONG:
+      evpmaxsq(dst, mask, nds, src, merge, vector_len); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+  }
+}
+
+void MacroAssembler::evxor(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  switch(type) {
+    case T_INT:
+      evpxord(dst, mask, nds, src, merge, vector_len); break;
+    case T_LONG:
+      evpxorq(dst, mask, nds, src, merge, vector_len); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+  }
+}
+
+void MacroAssembler::evxor(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
+  switch(type) {
+    case T_INT:
+      evpxord(dst, mask, nds, src, merge, vector_len); break;
+    case T_LONG:
+      evpxorq(dst, mask, nds, src, merge, vector_len); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+  }
+}
+
+void MacroAssembler::evor(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  switch(type) {
+    case T_INT:
+      Assembler::evpord(dst, mask, nds, src, merge, vector_len); break;
+    case T_LONG:
+      evporq(dst, mask, nds, src, merge, vector_len); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+  }
+}
+
+void MacroAssembler::evor(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
+  switch(type) {
+    case T_INT:
+      Assembler::evpord(dst, mask, nds, src, merge, vector_len); break;
+    case T_LONG:
+      evporq(dst, mask, nds, src, merge, vector_len); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+  }
+}
+
+void MacroAssembler::evand(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  switch(type) {
+    case T_INT:
+      evpandd(dst, mask, nds, src, merge, vector_len); break;
+    case T_LONG:
+      evpandq(dst, mask, nds, src, merge, vector_len); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+  }
+}
+
+void MacroAssembler::evand(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
+  switch(type) {
+    case T_INT:
+      evpandd(dst, mask, nds, src, merge, vector_len); break;
+    case T_LONG:
+      evpandq(dst, mask, nds, src, merge, vector_len); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+  }
+}
+
+void MacroAssembler::anytrue(Register dst, uint masklen, KRegister src1, KRegister src2) {
+   masklen = masklen < 8 ? 8 : masklen;
+   ktest(masklen, src1, src2);
+   setb(Assembler::notZero, dst);
+   movzbl(dst, dst);
+}
+
+void MacroAssembler::alltrue(Register dst, uint masklen, KRegister src1, KRegister src2, KRegister kscratch) {
+  if (masklen < 8) {
+    knotbl(kscratch, src2);
+    kortestbl(src1, kscratch);
+    setb(Assembler::carrySet, dst);
+    movzbl(dst, dst);
+  } else {
+    ktest(masklen, src1, src2);
+    setb(Assembler::carrySet, dst);
+    movzbl(dst, dst);
+  }
+}
+
+void MacroAssembler::kortest(uint masklen, KRegister src1, KRegister src2) {
+  switch(masklen) {
+    case 8:
+       kortestbl(src1, src2);
+       break;
+    case 16:
+       kortestwl(src1, src2);
+       break;
+    case 32:
+       kortestdl(src1, src2);
+       break;
+    case 64:
+       kortestql(src1, src2);
+       break;
+    default:
+      fatal("Unexpected mask length %d", masklen);
+      break;
+  }
+}
+
+
+void MacroAssembler::ktest(uint masklen, KRegister src1, KRegister src2) {
+  switch(masklen)  {
+    case 8:
+       ktestbl(src1, src2);
+       break;
+    case 16:
+       ktestwl(src1, src2);
+       break;
+    case 32:
+       ktestdl(src1, src2);
+       break;
+    case 64:
+       ktestql(src1, src2);
+       break;
+    default:
+      fatal("Unexpected mask length %d", masklen);
+      break;
+  }
+}
 #if COMPILER2_OR_JVMCI
 
 

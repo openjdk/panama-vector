@@ -516,7 +516,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
       return false;
      }
   } else {
-    const TypeVect* vt = TypeVect::make(elem_bt, num_elem);
+    const TypeVect* vt = TypeVect::make(elem_bt, num_elem, is_vector_mask(vbox_klass));
     switch (n) {
       case 1:
       case 2: {
@@ -1241,7 +1241,7 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
       // Reinterpret the vector mask to byte type.
       const TypeVect* from_mask_type = TypeVect::makemask(elem_bt, num_elem);
       const TypeVect* to_mask_type = TypeVect::makemask(mem_elem_bt, mem_num_elem);
-      mask = gvn().transform(new VectorReinterpretNode(mask, from_mask_type, to_mask_type));
+      mask = gvn().transform(new VectorReinterpretNode(mask, elem_bt, from_mask_type, mem_elem_bt, to_mask_type));
     }
     Node* vstore = gvn().transform(new StoreVectorMaskedNode(control(), memory(addr), addr, val, addr_type, mask));
     set_memory(vstore, addr_type);
@@ -1252,7 +1252,7 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
       // Reinterpret the vector mask to byte type.
       const TypeVect* from_mask_type = TypeVect::makemask(elem_bt, num_elem);
       const TypeVect* to_mask_type = TypeVect::makemask(mem_elem_bt, mem_num_elem);
-      mask = gvn().transform(new VectorReinterpretNode(mask, from_mask_type, to_mask_type));
+      mask = gvn().transform(new VectorReinterpretNode(mask, elem_bt, from_mask_type, mem_elem_bt, to_mask_type));
     }
 
     if (use_predicate) {
