@@ -2315,9 +2315,6 @@ bool LibraryCallKit::inline_vector_convert() {
     return false; // should be primitive type
   }
   BasicType elem_bt_to = elem_type_to->basic_type();
-  if (is_mask && (type2aelembytes(elem_bt_from) != type2aelembytes(elem_bt_to))) {
-    return false; // elem size mismatch
-  }
 
   int num_elem_from = vlen_from->get_con();
   int num_elem_to = vlen_to->get_con();
@@ -2368,7 +2365,6 @@ bool LibraryCallKit::inline_vector_convert() {
 
   Node* op = opd1;
   if (is_cast) {
-    assert(!is_mask, "masks cannot be casted");
     int cast_vopc = VectorCastNode::opcode(elem_bt_from);
     // Make sure that cast is implemented to particular type/size combination.
     if (!arch_supports_vector(cast_vopc, num_elem_to, elem_bt_to, VecMaskNotUsed)) {
@@ -2424,9 +2420,19 @@ bool LibraryCallKit::inline_vector_convert() {
                                                                     num_elem_for_resize)));
       op = gvn().transform(VectorCastNode::make(cast_vopc, op, elem_bt_to, num_elem_to));
     } else {
-      // Since input and output number of elements match, and since we know this vector size is
-      // supported, simply do a cast with no resize needed.
-      op = gvn().transform(VectorCastNode::make(cast_vopc, op, elem_bt_to, num_elem_to));
+      if (is_mask) {
+        if((dst_type->isa_vectmask() && src_type->isa_vectmask()) ||
+           (type2aelembytes(elem_bt_from) == type2aelembytes(elem_bt_to))) {
+          op = gvn().transform(new VectorMaskCastNode(op, dst_type));
+        } else {
+          op = gvn().transform(VectorStoreMaskNode::make(gvn(), op, elem_bt_from, num_elem_from));
+          op = gvn().transform(new VectorLoadMaskNode(op, dst_type));
+        }
+      } else {
+        // Since input and output number of elements match, and since we know this vector size is
+        // supported, simply do a cast with no resize needed.
+        op = gvn().transform(VectorCastNode::make(cast_vopc, op, elem_bt_to, num_elem_to));
+      }
     }
   } else if (Type::cmp(src_type, dst_type) != 0) {
     assert(!is_cast, "must be reinterpret");
