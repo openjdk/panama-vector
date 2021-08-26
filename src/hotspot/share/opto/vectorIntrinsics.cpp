@@ -2365,7 +2365,12 @@ bool LibraryCallKit::inline_vector_convert() {
 
   Node* op = opd1;
   if (is_cast) {
-    int cast_vopc = VectorCastNode::opcode(elem_bt_from);
+    BasicType new_elem_bt_to = elem_bt_to;
+    BasicType new_elem_bt_from = elem_bt_from;
+    if (is_mask && is_floating_point_type(elem_bt_from)) {
+      new_elem_bt_from = elem_bt_from == T_FLOAT ? T_INT : T_LONG;
+    }
+    int cast_vopc = VectorCastNode::opcode(new_elem_bt_from);
     // Make sure that cast is implemented to particular type/size combination.
     if (!arch_supports_vector(cast_vopc, num_elem_to, elem_bt_to, VecMaskNotUsed)) {
       if (C->print_intrinsics()) {
@@ -2425,8 +2430,21 @@ bool LibraryCallKit::inline_vector_convert() {
            (type2aelembytes(elem_bt_from) == type2aelembytes(elem_bt_to))) {
           op = gvn().transform(new VectorMaskCastNode(op, dst_type));
         } else {
-          op = gvn().transform(VectorStoreMaskNode::make(gvn(), op, elem_bt_from, num_elem_from));
-          op = gvn().transform(new VectorLoadMaskNode(op, dst_type));
+          // Special handling for casting operation involving floating point types.
+          // Case A) F -> X :=  F -> VectorMaskCast (F->I/L [NOP]) -> VectorCast[I/L]2X
+          // Case B) X -> F :=  X -> VectorCastX2[I/L] -> VectorMaskCast ([I/L]->F [NOP])
+          // Case C) F -> F :=  VectorMaskCast (F->I/L [NOP]) -> VectorCast[I/L]2[L/I] -> VectotMaskCast (L/I->F [NOP])
+          if (is_floating_point_type(elem_bt_from)) {
+            const TypeVect* new_src_type = TypeVect::make(new_elem_bt_from, num_elem_to, is_mask);
+            op = gvn().transform(new VectorMaskCastNode(op, new_src_type));
+          }
+          if (is_floating_point_type(elem_bt_to)) {
+            new_elem_bt_to = elem_bt_to == T_FLOAT ? T_INT : T_LONG;
+          }
+          op = gvn().transform(VectorCastNode::make(cast_vopc, op, new_elem_bt_to, num_elem_to));
+          if (new_elem_bt_to != elem_bt_to) {
+            op = gvn().transform(new VectorMaskCastNode(op, dst_type));
+          }
         }
       } else {
         // Since input and output number of elements match, and since we know this vector size is
