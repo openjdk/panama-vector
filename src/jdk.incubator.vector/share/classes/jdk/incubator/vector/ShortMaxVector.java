@@ -903,6 +903,7 @@ final class ShortMaxVector extends ShortVector {
         super.intoCharArray0Template(ShortMaxMask.class, a, offset, (ShortMaxMask) m);
     }
 
+
     // End of specialized low-level memory operations.
 
     // ================================================

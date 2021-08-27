@@ -887,6 +887,7 @@ final class Float64Vector extends FloatVector {
     }
 
 
+
     // End of specialized low-level memory operations.
 
     // ================================================

@@ -381,6 +381,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
         }
     }
 
+
     // Binary test
 
     /*package-private*/
@@ -3203,6 +3204,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
         }
     }
 
+
     // ================================================
 
     // Low-level memory operations.
@@ -3499,6 +3501,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
                             (wb_, o, i, e) -> wb_.putFloat(o + i * 4, e));
                 });
     }
+
 
 
     // End of low-level memory operations.

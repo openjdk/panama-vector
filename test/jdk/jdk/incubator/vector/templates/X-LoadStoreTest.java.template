@@ -93,6 +93,33 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
         }
     }
 
+#if[intOrLong]
+    static void assertArraysEquals($type$[] r, $type$[] a, boolean[] mask, int trueCount) {
+        int i = 0, j = 0;
+        try {
+            for (; i < a.length; i++) {
+                if (mask[i % SPECIES.length()]) {
+                    Assert.assertEquals(r[j], a[i]);
+                    j++;
+                }
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[j], a[i], "at r's index #" + j + ", at a's index #" + i);
+        }
+
+        Assert.assertEquals(j, trueCount, "trueCount is not correct");
+
+        try {
+            // Verify the remaining elements are left unchanged
+            for (; j < r.length; j++) {
+                Assert.assertEquals(r[j], ($type$) 0);
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[j], ($type$) 0, "Remaining part should be left unchanged");
+        }
+    }
+#end[intOrLong]
+
 #if[!byte]
     static void assertArraysEquals(byte[] r, byte[] a, boolean[] mask) {
         int i = 0;
@@ -338,6 +365,13 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
         v.intoArray(a, i, m);
     }
 
+#if[intOrLong]
+    @DontInline
+    static int selectiveIntoArray($abstractvectortype$ v, $type$[] a, int i, VectorMask<$Boxtype$> m) {
+        return v.selectiveIntoArray(a, i, m);
+    }
+#end[intOrLong]
+
     @DontInline
     static $abstractvectortype$ fromByteArray(byte[] a, int i, ByteOrder bo) {
         return $abstractvectortype$.fromByteArray(SPECIES, a, i, bo);
@@ -532,6 +566,26 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
         }
     }
 
+#if[intOrLong]
+    @Test(dataProvider = "$type$MaskProvider")
+    static void selectiveStoreMaskArray(IntFunction<$type$[]> fa,
+                                        IntFunction<boolean[]> fm) {
+        $type$[] a = fa.apply(SPECIES.length());
+        $type$[] r = new $type$[a.length];
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<$Boxtype$> vmask = VectorMask.fromValues(SPECIES, mask);
+
+        int trueCount = 0;
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            trueCount = 0;
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
+                trueCount += av.selectiveIntoArray(r, trueCount, vmask);
+            }
+        }
+        assertArraysEquals(r, a, mask, trueCount);
+    }
+#end[intOrLong]
 
     @Test(dataProvider = "$type$MaskProvider")
     static void loadStoreMask(IntFunction<$type$[]> fa,

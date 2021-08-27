@@ -884,6 +884,7 @@ final class DoubleMaxVector extends DoubleVector {
     }
 
 
+
     // End of specialized low-level memory operations.
 
     // ================================================

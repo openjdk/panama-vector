@@ -3434,6 +3434,7 @@ void Compile::final_graph_reshaping_main_switch(Node* n, Final_Reshape_Counts& f
   case Op_StoreVectorMask:
   case Op_LoadVectorMasked:
   case Op_StoreVectorMasked:
+  case Op_StoreVectorSelective:
     break;
 
   case Op_AddReductionVI:

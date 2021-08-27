@@ -933,6 +933,7 @@ final class Short256Vector extends ShortVector {
         super.intoCharArray0Template(Short256Mask.class, a, offset, (Short256Mask) m);
     }
 
+
     // End of specialized low-level memory operations.
 
     // ================================================

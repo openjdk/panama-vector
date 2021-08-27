@@ -965,6 +965,7 @@ final class Byte256Vector extends ByteVector {
     }
 
 
+
     // End of specialized low-level memory operations.
 
     // ================================================

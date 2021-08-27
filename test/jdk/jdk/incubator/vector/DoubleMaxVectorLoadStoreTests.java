@@ -76,6 +76,7 @@ public class DoubleMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         }
     }
 
+
     static void assertArraysEquals(byte[] r, byte[] a, boolean[] mask) {
         int i = 0;
         try {
@@ -314,6 +315,7 @@ public class DoubleMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     static void intoArray(DoubleVector v, double[] a, int i, VectorMask<Double> m) {
         v.intoArray(a, i, m);
     }
+
 
     @DontInline
     static DoubleVector fromByteArray(byte[] a, int i, ByteOrder bo) {

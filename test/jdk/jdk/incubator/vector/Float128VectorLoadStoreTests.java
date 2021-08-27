@@ -67,6 +67,7 @@ public class Float128VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         }
     }
 
+
     static void assertArraysEquals(byte[] r, byte[] a, boolean[] mask) {
         int i = 0;
         try {
@@ -305,6 +306,7 @@ public class Float128VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     static void intoArray(FloatVector v, float[] a, int i, VectorMask<Float> m) {
         v.intoArray(a, i, m);
     }
+
 
     @DontInline
     static FloatVector fromByteArray(byte[] a, int i, ByteOrder bo) {

@@ -1172,6 +1172,10 @@ private:
   void evcvtqq2ps(XMMRegister dst, XMMRegister src, int vector_len);
   void evcvtqq2pd(XMMRegister dst, XMMRegister src, int vector_len);
 
+  // Vector selective store
+  void evpcompressd(Address dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpcompressq(Address dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+
   // Evex casts with truncation
   void evpmovwb(XMMRegister dst, XMMRegister src, int vector_len);
   void evpmovdw(XMMRegister dst, XMMRegister src, int vector_len);

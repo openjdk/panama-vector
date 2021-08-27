@@ -8601,6 +8601,30 @@ instruct vmasked_store64(memory mem, vec src, kReg mask) %{
   ins_pipe( pipe_slow );
 %}
 
+instruct vselective_store(memory mem, vec src, kReg mask) %{
+  match(Set mem (StoreVectorSelective mem (Binary src mask)));
+  format %{ "vector_selective_store $mem, $src, $mask \t! vector selective store" %}
+  ins_encode %{
+    const MachNode* src_node = static_cast<const MachNode*>(this->in(this->operand_index($src)));
+    BasicType elmType =  src_node->bottom_type()->is_vect()->element_basic_type();
+    int vector_len = vector_length_encoding(src_node);
+    __ evcompress(elmType, $mem$$Address, $mask$$KRegister, $src$$XMMRegister, true, vector_len);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct kmask_truecount(rRegI dst, kReg mask, rRegL tmp) %{
+  predicate(VM_Version::supports_avx512vlbw());
+  match(Set dst (VectorMaskTrueCount mask));
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "kmask_truecount_evex $mask \t! kmask true count" %}
+  ins_encode %{
+    __ kmovql($tmp$$Register, $mask$$KRegister);
+    __ popcntq($dst$$Register, $tmp$$Register);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 instruct vmask_truecount_evex(rRegI dst, vec mask, rRegL tmp, kReg ktmp, vec xtmp) %{
   predicate(VM_Version::supports_avx512vlbw());
   match(Set dst (VectorMaskTrueCount mask));

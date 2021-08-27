@@ -381,6 +381,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         }
     }
 
+
     // Binary test
 
     /*package-private*/
@@ -3657,6 +3658,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         }
     }
 
+
     // ================================================
 
     // Low-level memory operations.
@@ -3935,6 +3937,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                             (wb_, o, i, e) -> wb_.put(o + i * 1, e));
                 });
     }
+
 
 
     // End of low-level memory operations.

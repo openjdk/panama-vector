@@ -886,6 +886,13 @@ final class Long64Vector extends LongVector {
     }
 
 
+    @ForceInline
+    @Override
+    final
+    int selectiveIntoArray0(long[] a, int offset, VectorMask<Long> m) {
+        return super.selectiveIntoArray0Template(Long64Mask.class, a, offset, (Long64Mask) m);  // specialize
+    }
+
     // End of specialized low-level memory operations.
 
     // ================================================

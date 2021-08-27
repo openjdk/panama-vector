@@ -1071,7 +1071,7 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
 //                     C container, int index,  // Arguments for default implementation
 //                     StoreVectorMaskedOperation<C, V, M> defaultImpl) {
 //
-bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
+bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store, bool is_selective) {
   const TypeInstPtr* vector_klass = gvn().type(argument(0))->isa_instptr();
   const TypeInstPtr* mask_klass   = gvn().type(argument(1))->isa_instptr();
   const TypeInstPtr* elem_klass   = gvn().type(argument(2))->isa_instptr();
@@ -1243,8 +1243,15 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
       const TypeVect* to_mask_type = TypeVect::makemask(mem_elem_bt, mem_num_elem);
       mask = gvn().transform(new VectorReinterpretNode(mask, elem_bt, from_mask_type, mem_elem_bt, to_mask_type));
     }
-    Node* vstore = gvn().transform(new StoreVectorMaskedNode(control(), memory(addr), addr, val, addr_type, mask));
-    set_memory(vstore, addr_type);
+    if (is_selective) {
+      Node* vstore = gvn().transform(new StoreVectorSelectiveNode(control(), memory(addr), addr, val, addr_type, mask));
+      Node* true_cnt = gvn().transform(new VectorMaskTrueCountNode(mask, TypeInt::INT));
+      set_memory(vstore, addr_type);
+      set_result(true_cnt);
+    } else {
+      Node* vstore = gvn().transform(new StoreVectorMaskedNode(control(), memory(addr), addr, val, addr_type, mask));
+      set_memory(vstore, addr_type);
+    }
   } else {
     Node* vload = NULL;
 

@@ -67,6 +67,7 @@ public class Byte64VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     }
 
 
+
     static final List<IntFunction<byte[]>> BYTE_GENERATORS = List.of(
             withToString("byte[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -294,6 +295,7 @@ public class Byte64VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     static void intoArray(ByteVector v, byte[] a, int i, VectorMask<Byte> m) {
         v.intoArray(a, i, m);
     }
+
 
     @DontInline
     static ByteVector fromByteArray(byte[] a, int i, ByteOrder bo) {

@@ -898,6 +898,13 @@ final class Int64Vector extends IntVector {
     }
 
 
+    @ForceInline
+    @Override
+    final
+    int selectiveIntoArray0(int[] a, int offset, VectorMask<Integer> m) {
+        return super.selectiveIntoArray0Template(Int64Mask.class, a, offset, (Int64Mask) m);  // specialize
+    }
+
     // End of specialized low-level memory operations.
 
     // ================================================

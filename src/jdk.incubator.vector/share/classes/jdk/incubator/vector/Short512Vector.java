@@ -965,6 +965,7 @@ final class Short512Vector extends ShortVector {
         super.intoCharArray0Template(Short512Mask.class, a, offset, (Short512Mask) m);
     }
 
+
     // End of specialized low-level memory operations.
 
     // ================================================

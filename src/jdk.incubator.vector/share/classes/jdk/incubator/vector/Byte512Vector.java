@@ -1029,6 +1029,7 @@ final class Byte512Vector extends ByteVector {
     }
 
 
+
     // End of specialized low-level memory operations.
 
     // ================================================

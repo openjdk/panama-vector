@@ -67,6 +67,7 @@ public class Short256VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         }
     }
 
+
     static void assertArraysEquals(byte[] r, byte[] a, boolean[] mask) {
         int i = 0;
         try {
@@ -305,6 +306,7 @@ public class Short256VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     static void intoArray(ShortVector v, short[] a, int i, VectorMask<Short> m) {
         v.intoArray(a, i, m);
     }
+
 
     @DontInline
     static ShortVector fromByteArray(byte[] a, int i, ByteOrder bo) {

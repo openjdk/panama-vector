@@ -76,6 +76,31 @@ public class LongMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         }
     }
 
+    static void assertArraysEquals(long[] r, long[] a, boolean[] mask, int trueCount) {
+        int i = 0, j = 0;
+        try {
+            for (; i < a.length; i++) {
+                if (mask[i % SPECIES.length()]) {
+                    Assert.assertEquals(r[j], a[i]);
+                    j++;
+                }
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[j], a[i], "at r's index #" + j + ", at a's index #" + i);
+        }
+
+        Assert.assertEquals(j, trueCount, "trueCount is not correct");
+
+        try {
+            // Verify the remaining elements are left unchanged
+            for (; j < r.length; j++) {
+                Assert.assertEquals(r[j], (long) 0);
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[j], (long) 0, "Remaining part should be left unchanged");
+        }
+    }
+
     static void assertArraysEquals(byte[] r, byte[] a, boolean[] mask) {
         int i = 0;
         try {
@@ -316,6 +341,11 @@ public class LongMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     }
 
     @DontInline
+    static int selectiveIntoArray(LongVector v, long[] a, int i, VectorMask<Long> m) {
+        return v.selectiveIntoArray(a, i, m);
+    }
+
+    @DontInline
     static LongVector fromByteArray(byte[] a, int i, ByteOrder bo) {
         return LongVector.fromByteArray(SPECIES, a, i, bo);
     }
@@ -509,6 +539,24 @@ public class LongMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         }
     }
 
+    @Test(dataProvider = "longMaskProvider")
+    static void selectiveStoreMaskArray(IntFunction<long[]> fa,
+                                        IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = new long[a.length];
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromValues(SPECIES, mask);
+
+        int trueCount = 0;
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            trueCount = 0;
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                trueCount += av.selectiveIntoArray(r, trueCount, vmask);
+            }
+        }
+        assertArraysEquals(r, a, mask, trueCount);
+    }
 
     @Test(dataProvider = "longMaskProvider")
     static void loadStoreMask(IntFunction<long[]> fa,

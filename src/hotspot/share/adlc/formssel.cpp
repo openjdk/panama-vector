@@ -3515,7 +3515,7 @@ int MatchNode::needs_ideal_memory_edge(FormDict &globals) const {
     "StoreB","StoreC","Store" ,"StoreFP",
     "LoadI", "LoadL", "LoadP" ,"LoadN", "LoadD" ,"LoadF"  ,
     "LoadB" , "LoadUB", "LoadUS" ,"LoadS" ,"Load" ,
-    "StoreVector", "LoadVector", "LoadVectorMasked", "StoreVectorMasked",
+    "StoreVector", "LoadVector", "LoadVectorMasked", "StoreVectorMasked", "StoreVectorSelective",
     "LoadVectorGather", "StoreVectorScatter", "LoadVectorGatherMasked", "StoreVectorScatterMasked",
     "LoadVectorMask", "StoreVectorMask",
     "LoadRange", "LoadKlass", "LoadNKlass", "LoadL_unaligned", "LoadD_unaligned",
@@ -4234,7 +4234,8 @@ bool MatchRule::is_vector() const {
     "VectorRearrange","VectorLoadShuffle", "VectorLoadConst",
     "VectorCastB2X", "VectorCastS2X", "VectorCastI2X",
     "VectorCastL2X", "VectorCastF2X", "VectorCastD2X",
-    "VectorMaskWrapper", "VectorMaskCmp", "VectorReinterpret","LoadVectorMasked","StoreVectorMasked",
+    "VectorMaskWrapper", "VectorMaskCmp", "VectorReinterpret",
+    "LoadVectorMasked", "StoreVectorMasked", "StoreVectorSelective",
     "FmaVD", "FmaVF","PopCountVI",
     "LoadVectorMask", "StoreVectorMask",
     // Next are vector mask ops.

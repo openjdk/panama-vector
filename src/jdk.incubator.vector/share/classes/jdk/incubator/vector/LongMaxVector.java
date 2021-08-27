@@ -886,6 +886,13 @@ final class LongMaxVector extends LongVector {
     }
 
 
+    @ForceInline
+    @Override
+    final
+    int selectiveIntoArray0(long[] a, int offset, VectorMask<Long> m) {
+        return super.selectiveIntoArray0Template(LongMaxMask.class, a, offset, (LongMaxMask) m);  // specialize
+    }
+
     // End of specialized low-level memory operations.
 
     // ================================================

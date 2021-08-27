@@ -900,6 +900,13 @@ final class Long512Vector extends LongVector {
     }
 
 
+    @ForceInline
+    @Override
+    final
+    int selectiveIntoArray0(long[] a, int offset, VectorMask<Long> m) {
+        return super.selectiveIntoArray0Template(Long512Mask.class, a, offset, (Long512Mask) m);  // specialize
+    }
+
     // End of specialized low-level memory operations.
 
     // ================================================

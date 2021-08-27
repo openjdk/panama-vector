@@ -891,6 +891,7 @@ final class Double256Vector extends DoubleVector {
     }
 
 
+
     // End of specialized low-level memory operations.
 
     // ================================================

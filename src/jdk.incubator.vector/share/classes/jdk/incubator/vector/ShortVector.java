@@ -381,6 +381,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
         }
     }
 
+
     // Binary test
 
     /*package-private*/
@@ -3643,6 +3644,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
         }
     }
 
+
     // ================================================
 
     // Low-level memory operations.
@@ -3922,6 +3924,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             -> v.stOp(arr, off, vm,
                       (arr_, off_, i, e) -> arr_[off_ + i] = (char) e));
     }
+
 
     // End of low-level memory operations.
 

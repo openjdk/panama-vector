@@ -907,6 +907,13 @@ final class IntMaxVector extends IntVector {
     }
 
 
+    @ForceInline
+    @Override
+    final
+    int selectiveIntoArray0(int[] a, int offset, VectorMask<Integer> m) {
+        return super.selectiveIntoArray0Template(IntMaxMask.class, a, offset, (IntMaxMask) m);  // specialize
+    }
+
     // End of specialized low-level memory operations.
 
     // ================================================

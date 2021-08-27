@@ -381,6 +381,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         }
     }
 
+
     // Binary test
 
     /*package-private*/
@@ -3216,6 +3217,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         }
     }
 
+
     // ================================================
 
     // Low-level memory operations.
@@ -3549,6 +3551,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                             (wb_, o, i, e) -> wb_.putDouble(o + i * 8, e));
                 });
     }
+
 
 
     // End of low-level memory operations.

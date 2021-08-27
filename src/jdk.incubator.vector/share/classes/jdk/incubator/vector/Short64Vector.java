@@ -909,6 +909,7 @@ final class Short64Vector extends ShortVector {
         super.intoCharArray0Template(Short64Mask.class, a, offset, (Short64Mask) m);
     }
 
+
     // End of specialized low-level memory operations.
 
     // ================================================

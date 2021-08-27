@@ -849,6 +849,12 @@ class methodHandle;
                                             "Ljdk/internal/vm/vector/VectorSupport$LoadVectorMaskedOperation;)Ljava/lang/Object;")             \
    do_name(vector_load_masked_op_name,     "loadMasked")                                                                                       \
                                                                                                                                                \
+  do_intrinsic(_VectorSelectiveStoreOp, jdk_internal_vm_vector_VectorSupport, vector_selective_store_op_name, vector_selective_store_op_sig, F_S) \
+   do_signature(vector_selective_store_op_sig, "(Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Object;JLjdk/internal/vm/vector/VectorSupport$Vector;" \
+                                                "Ljdk/internal/vm/vector/VectorSupport$VectorMask;Ljava/lang/Object;I"                         \
+                                                "Ljdk/internal/vm/vector/VectorSupport$SelectiveStoreVectorOperation;)I")                      \
+   do_name(vector_selective_store_op_name,     "selectiveStore")                                                                               \
+                                                                                                                                               \
   do_intrinsic(_VectorStoreOp, jdk_internal_vm_vector_VectorSupport, vector_store_op_name, vector_store_op_sig, F_S)                           \
    do_signature(vector_store_op_sig, "(Ljava/lang/Class;Ljava/lang/Class;ILjava/lang/Object;JLjdk/internal/vm/vector/VectorSupport$Vector;"    \
                                       "Ljava/lang/Object;ILjdk/internal/vm/vector/VectorSupport$StoreVectorOperation;)V")                      \

@@ -381,6 +381,24 @@ public abstract class LongVector extends AbstractVector<Long> {
         }
     }
 
+    /*package-private*/
+    @ForceInline
+    final
+    <M> int selectiveStOp(M memory, int offset,
+                          VectorMask<Long> m,
+                          FStOp<M> f) {
+        // mask true count
+        int mcnt = 0;
+        long[] vec = vec();
+        boolean[] mbits = ((AbstractMask<Long>)m).getBits();
+        for (int i = 0; i < vec.length; i++) {
+            if (mbits[i]) {
+                f.apply(memory, offset, mcnt++, vec[i]);
+            }
+        }
+        return mcnt;
+    }
+
     // Binary test
 
     /*package-private*/
@@ -3271,6 +3289,40 @@ public abstract class LongVector extends AbstractVector<Long> {
         }
     }
 
+    /**
+     * Selective stores this vector into an array of type
+     * {@code long[]} starting at offset and using a mask.
+     * <p>
+     * The active elements (with their respective bit set in mask)
+     * are contiguously stored into the array {@code a}.
+     * Assume {@code N} is the true count of mask, the elements
+     * starting from {@code a[offset+N]} till {@code a[offset+laneCount]}
+     * are left unchanged.
+     * <p>
+     * Array range checking is done for lanes where the mask is set.
+     * Lanes where the mask is unset are not stored and do not need
+     * to correspond to legitimate elements of {@code a}.
+     * That is, unset lanes may correspond to array indexes less than
+     * zero or beyond the end of the array.
+     *
+     * @param a the array, of type {@code long[]}
+     * @param offset the offset into the array
+     * @param m the mask controlling lane storage
+     * @return the number of elements store into the array
+     * @throws IndexOutOfBoundsException
+     *         if {@code offset+N < 0} or {@code offset+N >= a.length}
+     *         for any lane {@code N} in the vector
+     *         where the mask is set
+     */
+    @ForceInline
+    public final
+    int selectiveIntoArray(long[] a, int offset,
+                           VectorMask<Long> m) {
+        LongSpecies vsp = vspecies();
+        checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
+        return selectiveIntoArray0(a, offset, m);
+    }
+
     // ================================================
 
     // Low-level memory operations.
@@ -3605,6 +3657,23 @@ public abstract class LongVector extends AbstractVector<Long> {
                 });
     }
 
+
+    abstract
+    int selectiveIntoArray0(long[] a, int offset, VectorMask<Long> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Long>>
+    int selectiveIntoArray0Template(Class<M> maskClass, long[] a, int offset, M m) {
+        m.check(species());
+        LongSpecies vsp = vspecies();
+        return VectorSupport.selectiveStore(
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, arrayAddress(a, offset),
+            this, m, a, offset,
+            (arr, off, v, vm)
+            -> v.selectiveStOp(arr, off, vm,
+                               (arr_, off_, mc, e) -> arr_[off_ + mc] = e));
+    }
 
     // End of low-level memory operations.
 

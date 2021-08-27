@@ -829,6 +829,25 @@ class StoreVectorMaskedNode : public StoreVectorNode {
   Node* Ideal(PhaseGVN* phase, bool can_reshape);
 };
 
+//------------------------------StoreVectorSelectiveNode--------------------------------
+// Selective Store Vector to memory under the influence of a predicate register(mask).
+class StoreVectorSelectiveNode : public StoreVectorNode {
+ public:
+  StoreVectorSelectiveNode(Node* c, Node* mem, Node* dst, Node* src, const TypePtr* at, Node* mask)
+   : StoreVectorNode(c, mem, dst, at, src) {
+    assert(mask->bottom_type()->is_vectmask(), "sanity");
+    init_class_id(Class_StoreVector);
+    set_mismatched_access();
+    add_req(mask);
+  }
+
+  virtual int Opcode() const;
+
+  virtual uint match_edge(uint idx) const {
+    return idx > 1;
+  }
+};
+
 //------------------------------LoadVectorMaskedNode--------------------------------
 // Load Vector from memory under the influence of a predicate register(mask).
 class LoadVectorMaskedNode : public LoadVectorNode {

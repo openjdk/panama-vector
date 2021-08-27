@@ -1427,6 +1427,20 @@ void C2_MacroAssembler::evscatter(BasicType typ, Register base, XMMRegister idx,
   }
 }
 
+void C2_MacroAssembler::evcompress(BasicType type, Address dst, KRegister kmask, XMMRegister src, bool merge, int vector_len) {
+  switch(type) {
+  case T_INT:
+    evpcompressd(dst, kmask, src, merge, vector_len);
+    break;
+  case T_LONG:
+    evpcompressq(dst, kmask, src, merge, vector_len);
+    break;
+  default:
+    assert(false,"Should not reach here.");
+    break;
+  }
+}
+
 void C2_MacroAssembler::load_vector_mask(XMMRegister dst, XMMRegister src, int vlen_in_bytes, BasicType elem_bt, bool is_legacy) {
   if (vlen_in_bytes <= 16) {
     pxor (dst, dst);

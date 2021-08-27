@@ -1234,6 +1234,15 @@ final class $vectortype$ extends $abstractvectortype$ {
     }
 #end[short]
 
+#if[intOrLong]
+    @ForceInline
+    @Override
+    final
+    int selectiveIntoArray0($type$[] a, int offset, VectorMask<$Boxtype$> m) {
+        return super.selectiveIntoArray0Template($masktype$.class, a, offset, ($masktype$) m);  // specialize
+    }
+#end[intOrLong]
+
     // End of specialized low-level memory operations.
 
     // ================================================

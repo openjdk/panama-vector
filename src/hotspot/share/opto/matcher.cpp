@@ -2383,7 +2383,8 @@ void Matcher::find_shared_post_visit(Node* n, uint opcode) {
       n->del_req(3);
       break;
     }
-    case Op_StoreVectorMasked: {
+    case Op_StoreVectorMasked:
+    case Op_StoreVectorSelective: {
       Node* pair = new BinaryNode(n->in(3), n->in(4));
       n->set_req(3, pair);
       n->del_req(4);

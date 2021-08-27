@@ -888,6 +888,13 @@ final class Long128Vector extends LongVector {
     }
 
 
+    @ForceInline
+    @Override
+    final
+    int selectiveIntoArray0(long[] a, int offset, VectorMask<Long> m) {
+        return super.selectiveIntoArray0Template(Long128Mask.class, a, offset, (Long128Mask) m);  // specialize
+    }
+
     // End of specialized low-level memory operations.
 
     // ================================================

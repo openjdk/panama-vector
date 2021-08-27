@@ -917,6 +917,7 @@ final class Byte64Vector extends ByteVector {
     }
 
 
+
     // End of specialized low-level memory operations.
 
     // ================================================

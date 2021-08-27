@@ -136,6 +136,9 @@ public:
   void vectortest(int bt, int vlen, XMMRegister src1, XMMRegister src2,
                   XMMRegister vtmp1 = xnoreg, XMMRegister vtmp2 = xnoreg, KRegister mask = knoreg);
 
+  // selective store
+  void evcompress(BasicType type, Address dst, KRegister kmask, XMMRegister src, bool merge, int vector_len);
+
   // blend
   void evpcmp(BasicType typ, KRegister kdmask, KRegister ksmask, XMMRegister src1, AddressLiteral adr, int comparison, int vector_len, Register scratch = rscratch1);
   void evpcmp(BasicType typ, KRegister kdmask, KRegister ksmask, XMMRegister src1, XMMRegister src2, int comparison, int vector_len);

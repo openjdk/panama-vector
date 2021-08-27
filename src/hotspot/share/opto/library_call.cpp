@@ -648,11 +648,13 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_VectorLoadOp:
     return inline_vector_mem_operation(/*is_store=*/false);
   case vmIntrinsics::_VectorLoadMaskedOp:
-    return inline_vector_mem_masked_operation(/*is_store*/false);
+    return inline_vector_mem_masked_operation(/*is_store*/false, /*is_selective=*/false);
   case vmIntrinsics::_VectorStoreOp:
     return inline_vector_mem_operation(/*is_store=*/true);
   case vmIntrinsics::_VectorStoreMaskedOp:
-    return inline_vector_mem_masked_operation(/*is_store=*/true);
+    return inline_vector_mem_masked_operation(/*is_store=*/true, /*is_selective=*/false);
+  case vmIntrinsics::_VectorSelectiveStoreOp:
+    return inline_vector_mem_masked_operation(/*is_store=*/true, /*is_selective=*/true);
   case vmIntrinsics::_VectorGatherOp:
     return inline_vector_gather_scatter(/*is_scatter*/ false);
   case vmIntrinsics::_VectorScatterOp:

@@ -926,6 +926,13 @@ final class Int512Vector extends IntVector {
     }
 
 
+    @ForceInline
+    @Override
+    final
+    int selectiveIntoArray0(int[] a, int offset, VectorMask<Integer> m) {
+        return super.selectiveIntoArray0Template(Int512Mask.class, a, offset, (Int512Mask) m);  // specialize
+    }
+
     // End of specialized low-level memory operations.
 
     // ================================================

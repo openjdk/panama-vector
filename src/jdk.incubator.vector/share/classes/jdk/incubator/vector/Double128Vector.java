@@ -887,6 +887,7 @@ final class Double128Vector extends DoubleVector {
     }
 
 
+
     // End of specialized low-level memory operations.
 
     // ================================================

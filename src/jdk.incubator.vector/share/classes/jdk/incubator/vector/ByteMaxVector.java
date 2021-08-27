@@ -903,6 +903,7 @@ final class ByteMaxVector extends ByteVector {
     }
 
 
+
     // End of specialized low-level memory operations.
 
     // ================================================
