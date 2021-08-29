@@ -612,7 +612,7 @@ final class LongMaxVector extends LongVector {
                 this.getClass(), ETYPE, VLENGTH,
                 species.maskType(), species.elementType(), VLENGTH,
                 this, species,
-                LongMaxMask::defaultMaskCast);
+                (m, s) -> s.maskFactory(m.toArray()).check(s));
         }
 
         @Override

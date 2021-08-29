@@ -628,7 +628,7 @@ final class Short64Vector extends ShortVector {
                 this.getClass(), ETYPE, VLENGTH,
                 species.maskType(), species.elementType(), VLENGTH,
                 this, species,
-                Short64Mask::defaultMaskCast);
+                (m, s) -> s.maskFactory(m.toArray()).check(s));
         }
 
         @Override

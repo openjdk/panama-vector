@@ -622,7 +622,7 @@ final class IntMaxVector extends IntVector {
                 this.getClass(), ETYPE, VLENGTH,
                 species.maskType(), species.elementType(), VLENGTH,
                 this, species,
-                IntMaxMask::defaultMaskCast);
+                (m, s) -> s.maskFactory(m.toArray()).check(s));
         }
 
         @Override

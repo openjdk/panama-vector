@@ -652,7 +652,7 @@ final class Byte128Vector extends ByteVector {
                 this.getClass(), ETYPE, VLENGTH,
                 species.maskType(), species.elementType(), VLENGTH,
                 this, species,
-                Byte128Mask::defaultMaskCast);
+                (m, s) -> s.maskFactory(m.toArray()).check(s));
         }
 
         @Override

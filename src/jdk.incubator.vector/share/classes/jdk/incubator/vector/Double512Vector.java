@@ -625,7 +625,7 @@ final class Double512Vector extends DoubleVector {
                 this.getClass(), ETYPE, VLENGTH,
                 species.maskType(), species.elementType(), VLENGTH,
                 this, species,
-                Double512Mask::defaultMaskCast);
+                (m, s) -> s.maskFactory(m.toArray()).check(s));
         }
 
         @Override
