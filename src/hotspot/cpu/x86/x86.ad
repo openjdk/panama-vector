@@ -8021,8 +8021,7 @@ instruct vstoreMask_evex(vec dst, kReg mask, immI size) %{
 %}
 
 instruct vmaskcast_evex(kReg dst) %{
-  predicate((Matcher::vector_length(n) == Matcher::vector_length(n->in(1))) &&
-            (Matcher::vector_length_in_bytes(n) == Matcher::vector_length_in_bytes(n->in(1))));
+  predicate(Matcher::vector_length(n) == Matcher::vector_length(n->in(1)));
   match(Set dst (VectorMaskCast dst));
   ins_cost(0);
   format %{ "vector_mask_cast $dst" %}

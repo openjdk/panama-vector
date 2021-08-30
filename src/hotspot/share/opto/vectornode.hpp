@@ -1424,7 +1424,6 @@ class VectorMaskCastNode : public VectorNode {
   VectorMaskCastNode(Node* in, const TypeVect* vt) : VectorNode(in, vt) {
     const TypeVect* in_vt = in->bottom_type()->is_vect();
     assert(in_vt->length() == vt->length(), "vector length must match");
-    assert(type2aelembytes(in_vt->element_basic_type()) == type2aelembytes(vt->element_basic_type()), "element size must match");
   }
 
   virtual int Opcode() const;
