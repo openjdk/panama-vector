@@ -140,11 +140,7 @@ source %{
       // Vector API specific
       case Op_VectorLoadShuffle:
       case Op_VectorRearrange:
-        if (vlen < 4 || length_in_bytes > MaxVectorSize) {
-          return false;
-        } else {
-          return true;
-        }
+        return vlen >= 4 && length_in_bytes <= MaxVectorSize;
       case Op_LoadVector:
       case Op_StoreVector:
         return Matcher::vector_size_supported(bt, vlen);
@@ -156,7 +152,9 @@ source %{
   }
 
   bool masked_op_sve_supported(int opcode, int vlen, BasicType bt) {
-    // Currently we support all masked vector opcodes.
+    if (opcode == Op_VectorRearrange) {
+      return false;
+    }
     return op_sve_supported(opcode, vlen, bt);
   }
 
