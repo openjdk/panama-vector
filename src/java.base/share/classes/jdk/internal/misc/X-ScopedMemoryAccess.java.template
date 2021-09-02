@@ -387,7 +387,7 @@ public class ScopedMemoryAccess {
     V loadFromByteBuffer(Class<? extends V> vmClass, Class<E> e, int length,
                           ByteBuffer bb, int offset,
                           S s,
-                          VectorSupport.LoadOperation<ByteBuffer, V, E, S> defaultImpl) {
+                          VectorSupport.LoadOperation<ByteBuffer, V, S> defaultImpl) {
         try {
             return loadFromByteBufferScoped(
                     BufferAccess.scope(bb),
@@ -408,7 +408,7 @@ public class ScopedMemoryAccess {
                           Class<? extends V> vmClass, Class<E> e, int length,
                           ByteBuffer bb, int offset,
                           S s,
-                          VectorSupport.LoadOperation<ByteBuffer, V, E, S> defaultImpl) {
+                          VectorSupport.LoadOperation<ByteBuffer, V, S> defaultImpl) {
         try {
             if (scope != null) {
                 scope.checkValidState();
@@ -431,7 +431,7 @@ public class ScopedMemoryAccess {
      M extends VectorSupport.VectorMask<E>>
     V loadFromByteBufferMasked(Class<? extends V> vmClass, Class<M> maskClass, Class<E> e,
                                int length, ByteBuffer bb, int offset, M m, S s,
-                               VectorSupport.LoadVectorMaskedOperation<ByteBuffer, V, E, S, M> defaultImpl) {
+                               VectorSupport.LoadVectorMaskedOperation<ByteBuffer, V, S, M> defaultImpl) {
         try {
             return loadFromByteBufferMaskedScoped(
                     BufferAccess.scope(bb),
@@ -453,7 +453,7 @@ public class ScopedMemoryAccess {
                                      Class<M> maskClass, Class<E> e, int length,
                                      ByteBuffer bb, int offset, M m,
                                      S s,
-                                     VectorSupport.LoadVectorMaskedOperation<ByteBuffer, V, E, S, M> defaultImpl) {
+                                     VectorSupport.LoadVectorMaskedOperation<ByteBuffer, V, S, M> defaultImpl) {
         try {
             if (scope != null) {
                 scope.checkValidState();
