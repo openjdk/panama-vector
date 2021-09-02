@@ -156,73 +156,84 @@ public class VectorSupport {
     }
 
     /* ============================================================================ */
-    public interface BroadcastOperation<M, E, S extends VectorSpecies<E>> {
-        M broadcast(long l, S s);
+    public interface BroadcastOperation<VM extends VectorPayload,
+                                        S extends VectorSpecies<?>> {
+        VM broadcast(long l, S s);
     }
 
     @IntrinsicCandidate
     public static
-    <M,
+    <VM extends VectorPayload,
      S extends VectorSpecies<E>,
      E>
-    M broadcastCoerced(Class<? extends M> vmClass, Class<E> elementType, int length,
-                       long bits, S s,
-                       BroadcastOperation<M, E, S> defaultImpl) {
+    VM broadcastCoerced(Class<? extends VM> vmClass, Class<E> eClass,
+                        int length,
+                        long bits, S s,
+                        BroadcastOperation<VM, S> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.broadcast(bits, s);
     }
 
     /* ============================================================================ */
-    public interface ShuffleIotaOperation<E, S extends VectorSpecies<E>> {
-        VectorShuffle<E> apply(int length, int start, int step, S s);
+    public interface ShuffleIotaOperation<S extends VectorSpecies<?>,
+                                          SH extends VectorShuffle<?>> {
+        SH apply(int length, int start, int step, S s);
     }
 
     @IntrinsicCandidate
     public static
     <E,
      S extends VectorSpecies<E>,
-     Sh extends VectorShuffle<E>>
-    VectorShuffle<E> shuffleIota(Class<E> elementType, Class<? extends Sh> shuffleClass, S s, int length,
-                     int start, int step, int wrap, ShuffleIotaOperation<E, S> defaultImpl) {
+     SH extends VectorShuffle<E>>
+    SH shuffleIota(Class<E> eClass, Class<? extends SH> shClass, S s,
+                   int length,
+                   int start, int step, int wrap,
+                   ShuffleIotaOperation<S, SH> defaultImpl) {
        assert isNonCapturingLambda(defaultImpl) : defaultImpl;
        return defaultImpl.apply(length, start, step, s);
     }
 
-    public interface ShuffleToVectorOperation<V, Sh extends VectorShuffle<E>, E> {
-       V apply(Sh s);
+    public interface ShuffleToVectorOperation<V extends Vector<?>,
+                                              SH extends VectorShuffle<?>> {
+       V apply(SH sh);
     }
 
     @IntrinsicCandidate
     public static
-    <V,
-     Sh extends VectorShuffle<E>,
+    <V extends Vector<E>,
+     SH extends VectorShuffle<E>,
      E>
-    V shuffleToVector(Class<? extends Vector<E>> vclass, Class<E> elementType,
-                      Class<? extends Sh> shuffleClass, Sh s, int length,
-                      ShuffleToVectorOperation<V, Sh, E> defaultImpl) {
+    V shuffleToVector(Class<? extends Vector<E>> vClass, Class<E> eClass, Class<? extends SH> shClass, SH sh,
+                      int length,
+                      ShuffleToVectorOperation<V, SH> defaultImpl) {
       assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-      return defaultImpl.apply(s);
+      return defaultImpl.apply(sh);
     }
 
     /* ============================================================================ */
-    public interface IndexOperation<V extends Vector<E>, E, S extends VectorSpecies<E>> {
+    public interface IndexOperation<V extends Vector<?>,
+                                    S extends VectorSpecies<?>> {
         V index(V v, int step, S s);
     }
 
     //FIXME @IntrinsicCandidate
     public static
-    <V extends Vector<E>, E, S extends VectorSpecies<E>>
-    V indexVector(Class<? extends V> vClass, Class<E> E, int length,
+    <V extends Vector<E>,
+     E,
+     S extends VectorSpecies<E>>
+    V indexVector(Class<? extends V> vClass, Class<E> eClass,
+                  int length,
                   V v, int step, S s,
-                  IndexOperation<V, E, S> defaultImpl) {
+                  IndexOperation<V, S> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.index(v, step, s);
     }
 
     /* ============================================================================ */
 
-    public interface ReductionOperation<V extends Vector<?>, M extends VectorMask<?>> {
-        long apply(V v, M mask);
+    public interface ReductionOperation<V extends Vector<?>,
+                                        M extends VectorMask<?>> {
+        long apply(V v, M m);
     }
 
     @IntrinsicCandidate
@@ -230,8 +241,10 @@ public class VectorSupport {
     <V extends Vector<E>,
      M extends VectorMask<E>,
      E>
-    long reductionCoerced(int oprId, Class<? extends V> vectorClass, Class<? extends M> maskClass,
-                          Class<E> elementType, int length, V v, M m,
+    long reductionCoerced(int oprId,
+                          Class<? extends V> vClass, Class<? extends M> mClass, Class<E> eClass,
+                          int length,
+                          V v, M m,
                           ReductionOperation<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.apply(v, m);
@@ -240,119 +253,134 @@ public class VectorSupport {
 
     /* ============================================================================ */
 
-    public interface VecExtractOp<V> {
-        long apply(V v1, int idx);
+    public interface VecExtractOp<V extends Vector<?>> {
+        long apply(V v, int i);
     }
 
     @IntrinsicCandidate
     public static
     <V extends Vector<E>,
      E>
-    long extract(Class<? extends V> vectorClass, Class<E> elementType, int vlen,
-                 V vec, int ix,
+    long extract(Class<? extends V> vClass, Class<E> eClass,
+                 int length,
+                 V v, int i,
                  VecExtractOp<V> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(vec, ix);
+        return defaultImpl.apply(v, i);
     }
 
     /* ============================================================================ */
 
-    public interface VecInsertOp<V> {
-        V apply(V v1, int idx, long val);
+    public interface VecInsertOp<V extends Vector<?>> {
+        V apply(V v, int i, long val);
     }
 
     @IntrinsicCandidate
     public static
     <V extends Vector<E>,
      E>
-    V insert(Class<? extends V> vectorClass, Class<E> elementType, int vlen,
-             V vec, int ix, long val,
+    V insert(Class<? extends V> vClass, Class<E> eClass,
+             int length,
+             V v, int i, long val,
              VecInsertOp<V> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(vec, ix, val);
+        return defaultImpl.apply(v, i, val);
     }
 
     /* ============================================================================ */
+
+    public interface UnaryOperation<V extends Vector<?>,
+                                    M extends VectorMask<?>> {
+        V apply(V v, M m);
+    }
 
     @IntrinsicCandidate
     public static
     <V extends Vector<E>,
      M extends VectorMask<E>,
      E>
-    V unaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass,
-              Class<E> elementType, int length, V v, M m,
+    V unaryOp(int oprId,
+              Class<? extends V> vClass, Class<? extends M> mClass, Class<E> eClass,
+              int length,
+              V v, M m,
               UnaryOperation<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.apply(v, m);
     }
 
-    public interface UnaryOperation<V extends Vector<?>, M extends VectorMask<?>> {
-        V apply(V v, M mask);
-    }
-
     /* ============================================================================ */
+
+    public interface BinaryOperation<VM extends VectorPayload,
+                                     M extends VectorMask<?>> {
+        VM apply(VM v1, VM v2, M m);
+    }
 
     @IntrinsicCandidate
     public static
-    <V,
+    <VM extends VectorPayload,
      M extends VectorMask<E>,
      E>
-    V binaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass,
-               Class<E> elementType, int length, V v1, V v2, M m,
-               BinaryOperation<V, M> defaultImpl) {
+    VM binaryOp(int oprId,
+                Class<? extends VM> vmClass, Class<? extends M> mClass, Class<E> eClass,
+                int length,
+                VM v1, VM v2, M m,
+                BinaryOperation<VM, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.apply(v1, v2, m);
     }
 
-    public interface BinaryOperation<V, M extends VectorMask<?>> {
-        V apply(V v1, V v2, M mask);
-    }
-
     /* ============================================================================ */
+
+    public interface TernaryOperation<V extends Vector<?>,
+                                      M extends VectorMask<?>> {
+        V apply(V v1, V v2, V v3, M m);
+    }
 
     @IntrinsicCandidate
     public static
     <V extends Vector<E>,
      M extends VectorMask<E>,
      E>
-    V ternaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass,
-                Class<E> elementType, int length, V v1, V v2, V v3, M m,
+    V ternaryOp(int oprId,
+                Class<? extends V> vClass, Class<? extends M> mClass, Class<E> eClass,
+                int length,
+                V v1, V v2, V v3, M m,
                 TernaryOperation<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.apply(v1, v2, v3, m);
-    }
-
-    public interface TernaryOperation<V extends Vector<?>, M extends VectorMask<?>> {
-        V apply(V v1, V v2, V v3, M mask);
     }
 
     /* ============================================================================ */
 
     // Memory operations
 
-    public interface LoadOperation<C, V, E, S extends VectorSpecies<E>> {
-        V load(C container, int index, S s);
+    public interface LoadOperation<C,
+                                   VM extends VectorPayload,
+                                   S extends VectorSpecies<?>> {
+        VM load(C container, int index, S s);
     }
 
     @IntrinsicCandidate
     public static
     <C,
-     V,
+     VM extends VectorPayload,
      E,
      S extends VectorSpecies<E>>
-    V load(Class<? extends V> vClass, Class<E> elementType, int length,
-           Object base, long offset,    // Unsafe addressing
-           C container, int index, S s,     // Arguments for default implementation
-           LoadOperation<C, V, E, S> defaultImpl) {
+    VM load(Class<? extends VM> vmClass, Class<E> eClass,
+            int length,
+            Object base, long offset,
+            C container, int index, S s,
+            LoadOperation<C, VM, S> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.load(container, index, s);
     }
 
     /* ============================================================================ */
 
-    public interface LoadVectorMaskedOperation<C, V extends Vector<?>, E,
-                                               S extends VectorSpecies<E>,
-                                               M extends VectorMask<E>> {
+    public interface LoadVectorMaskedOperation<C,
+                                               V extends Vector<?>,
+                                               S extends VectorSpecies<?>,
+                                               M extends VectorMask<?>> {
         V load(C container, int index, S s, M m);
     }
 
@@ -363,18 +391,21 @@ public class VectorSupport {
      E,
      S extends VectorSpecies<E>,
      M extends VectorMask<E>>
-    V loadMasked(Class<? extends V> vectorClass, Class<M> maskClass, Class<E> elementType,
-                 int length, Object base, long offset, M m,
-                 C container, int index, S s,  // Arguments for default implementation
-                 LoadVectorMaskedOperation<C, V, E, S, M> defaultImpl) {
+    V loadMasked(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
+                 int length,
+                 Object base, long offset,
+                 M m, C container, int index, S s,
+                 LoadVectorMaskedOperation<C, V, S, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.load(container, index, s, m);
     }
 
     /* ============================================================================ */
 
-    public interface LoadVectorOperationWithMap<C, V extends Vector<?>, E, S extends VectorSpecies<E>,
-                                                M extends VectorMask<E>> {
+    public interface LoadVectorOperationWithMap<C,
+                                                V extends Vector<?>,
+                                                S extends VectorSpecies<?>,
+                                                M extends VectorMask<?>> {
         V loadWithMap(C container, int index, int[] indexMap, int indexM, S s, M m);
     }
 
@@ -386,19 +417,21 @@ public class VectorSupport {
      S extends VectorSpecies<E>,
      M extends VectorMask<E>,
      E>
-    V loadWithMap(Class<? extends V> vectorClass, Class<M> maskClass, Class<E> elementType, int length,
+    V loadWithMap(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
+                  int length,
                   Class<? extends Vector<Integer>> vectorIndexClass,
-                  Object base, long offset, // Unsafe addressing
-                  W index_vector, M m,
-                  C container, int index, int[] indexMap, int indexM, S s, // Arguments for default implementation
-                  LoadVectorOperationWithMap<C, V, E, S, M> defaultImpl) {
+                  Object base, long offset,
+                  W index_vector,
+                  M m, C container, int index, int[] indexMap, int indexM, S s,
+                  LoadVectorOperationWithMap<C, V, S, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.loadWithMap(container, index, indexMap, indexM, s, m);
     }
 
     /* ============================================================================ */
 
-    public interface StoreVectorOperation<C, V extends Vector<?>> {
+    public interface StoreVectorOperation<C,
+                                          V extends Vector<?>> {
         void store(C container, int index, V v);
     }
 
@@ -406,16 +439,18 @@ public class VectorSupport {
     public static
     <C,
      V extends Vector<?>>
-    void store(Class<?> vectorClass, Class<?> elementType, int length,
-               Object base, long offset,    // Unsafe addressing
-               V v,
-               C container, int index,      // Arguments for default implementation
+    void store(Class<?> vClass, Class<?> eClass,
+               int length,
+               Object base, long offset,
+               V v, C container, int index,
                StoreVectorOperation<C, V> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         defaultImpl.store(container, index, v);
     }
 
-    public interface StoreVectorMaskedOperation<C, V extends Vector<E>, M extends VectorMask<E>, E> {
+    public interface StoreVectorMaskedOperation<C,
+                                                V extends Vector<?>,
+                                                M extends VectorMask<?>> {
         void store(C container, int index, V v, M m);
     }
 
@@ -425,18 +460,20 @@ public class VectorSupport {
      V extends Vector<E>,
      M extends VectorMask<E>,
      E>
-    void storeMasked(Class<? extends V> vectorClass, Class<M> maskClass, Class<E> elementType,
-                     int length, Object base, long offset,   // Unsafe addressing
-                     V v, M m,
-                     C container, int index,      // Arguments for default implementation
-                     StoreVectorMaskedOperation<C, V, M, E> defaultImpl) {
+    void storeMasked(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
+                     int length,
+                     Object base, long offset,
+                     V v, M m, C container, int index,
+                     StoreVectorMaskedOperation<C, V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         defaultImpl.store(container, index, v, m);
     }
 
     /* ============================================================================ */
 
-    public interface StoreVectorOperationWithMap<C, V extends Vector<E>, M extends VectorMask<E>, E> {
+    public interface StoreVectorOperationWithMap<C,
+                                                 V extends Vector<?>,
+                                                 M extends VectorMask<?>> {
         void storeWithMap(C container, int index, V v, int[] indexMap, int indexM, M m);
     }
 
@@ -447,11 +484,13 @@ public class VectorSupport {
      W extends Vector<Integer>,
      M extends VectorMask<E>,
      E>
-    void storeWithMap(Class<? extends V> vectorClass, Class<M> maskClass, Class<E> elementType,
-                      int length, Class<? extends Vector<Integer>> vectorIndexClass, Object base, long offset,    // Unsafe addressing
-                      W index_vector, V v, M m,
-                      C container, int index, int[] indexMap, int indexM, // Arguments for default implementation
-                      StoreVectorOperationWithMap<C, V, M, E> defaultImpl) {
+    void storeWithMap(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
+                      int length,
+                      Class<? extends Vector<Integer>> vectorIndexClass,
+                      Object base, long offset,
+                      W index_vector,
+                      V v, M m, C container, int index, int[] indexMap, int indexM,
+                      StoreVectorOperationWithMap<C, V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         defaultImpl.storeWithMap(container, index, v, indexMap, indexM, m);
     }
@@ -460,17 +499,21 @@ public class VectorSupport {
 
     @IntrinsicCandidate
     public static
-    <VM>
-    boolean test(int cond, Class<?> vmClass, Class<?> elementType, int length,
-                 VM vm1, VM vm2,
-                 BiFunction<VM, VM, Boolean> defaultImpl) {
+    <M extends VectorMask<E>,
+     E>
+    boolean test(int cond,
+                 Class<?> mClass, Class<?> eClass,
+                 int length,
+                 M m1, M m2,
+                 BiFunction<M, M, Boolean> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(vm1, vm2);
+        return defaultImpl.apply(m1, m2);
     }
 
     /* ============================================================================ */
 
-    public interface VectorCompareOp<V,M> {
+    public interface VectorCompareOp<V extends Vector<?>,
+                                     M extends VectorMask<?>> {
         M apply(int cond, V v1, V v2, M m);
     }
 
@@ -479,38 +522,41 @@ public class VectorSupport {
     <V extends Vector<E>,
      M extends VectorMask<E>,
      E>
-    M compare(int cond, Class<? extends V> vectorClass, Class<M> maskClass, Class<E> elementType, int length,
+    M compare(int cond,
+              Class<? extends V> vectorClass, Class<M> mClass, Class<E> eClass,
+              int length,
               V v1, V v2, M m,
-              VectorCompareOp<V,M> defaultImpl) {
+              VectorCompareOp<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.apply(cond, v1, v2, m);
     }
 
     /* ============================================================================ */
-    public interface VectorRearrangeOp<V extends Vector<E>, Sh extends VectorShuffle<E>,
-                                       M  extends VectorMask<E>, E> {
-        V apply(V v1, Sh shuffle, M mask);
+    public interface VectorRearrangeOp<V extends Vector<?>,
+                                       SH extends VectorShuffle<?>,
+                                       M extends VectorMask<?>> {
+        V apply(V v, SH sh, M m);
     }
 
     @IntrinsicCandidate
     public static
     <V extends Vector<E>,
-     Sh extends VectorShuffle<E>,
+     SH extends VectorShuffle<E>,
      M  extends VectorMask<E>,
      E>
-    V rearrangeOp(Class<? extends V> vectorClass, Class<Sh> shuffleClass, Class<M> maskClass, Class<E> elementType, int vlen,
-                  V v1, Sh sh, M m,
-                  VectorRearrangeOp<V, Sh, M, E> defaultImpl) {
+    V rearrangeOp(Class<? extends V> vClass, Class<SH> shClass, Class<M> mClass, Class<E> eClass,
+                  int length,
+                  V v, SH sh, M m,
+                  VectorRearrangeOp<V, SH, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(v1, sh, m);
+        return defaultImpl.apply(v, sh, m);
     }
 
     /* ============================================================================ */
 
-    public interface VectorBlendOp<V extends Vector<E>,
-            M extends VectorMask<E>,
-            E> {
-        V apply(V v1, V v2, M mask);
+    public interface VectorBlendOp<V extends Vector<?>,
+                                   M extends VectorMask<?>> {
+        V apply(V v1, V v2, M m);
     }
 
     @IntrinsicCandidate
@@ -518,16 +564,18 @@ public class VectorSupport {
     <V extends Vector<E>,
      M extends VectorMask<E>,
      E>
-    V blend(Class<? extends V> vectorClass, Class<M> maskClass, Class<E> elementType, int length,
+    V blend(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
+            int length,
             V v1, V v2, M m,
-            VectorBlendOp<V, M, E> defaultImpl) {
+            VectorBlendOp<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.apply(v1, v2, m);
     }
 
     /* ============================================================================ */
 
-    public interface VectorBroadcastIntOp<V extends Vector<?>, M extends VectorMask<?>> {
+    public interface VectorBroadcastIntOp<V extends Vector<?>,
+                                          M extends VectorMask<?>> {
         V apply(V v, int n, M m);
     }
 
@@ -536,8 +584,9 @@ public class VectorSupport {
     <V extends Vector<E>,
      M extends VectorMask<E>,
      E>
-    V broadcastInt(int opr, Class<? extends V> vectorClass, Class<? extends M> maskClass,
-                   Class<E> elementType, int length,
+    V broadcastInt(int opr,
+                   Class<? extends V> vClass, Class<? extends M> mClass, Class<E> eClass,
+                   int length,
                    V v, int n, M m,
                    VectorBroadcastIntOp<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
@@ -546,8 +595,10 @@ public class VectorSupport {
 
     /* ============================================================================ */
 
-    public interface VectorConvertOp<VOUT, VIN, S> {
-        VOUT apply(VIN v, S species);
+    public interface VectorConvertOp<VOUT extends VectorPayload,
+                                     VIN extends VectorPayload,
+                                     S extends VectorSpecies<?>> {
+        VOUT apply(VIN v, S s);
     }
 
     // Users of this intrinsic assume that it respects
@@ -559,8 +610,8 @@ public class VectorSupport {
                     VIN extends VectorPayload,
                       S extends VectorSpecies<?>>
     VOUT convert(int oprId,
-              Class<?> fromVectorClass, Class<?> fromElementType, int fromVLen,
-              Class<?>   toVectorClass, Class<?>   toElementType, int   toVLen,
+              Class<?> fromVectorClass, Class<?> fromeClass, int fromVLen,
+              Class<?>   toVectorClass, Class<?>   toeClass, int   toVLen,
               VIN v, S s,
               VectorConvertOp<VOUT, VIN, S> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
@@ -570,7 +621,9 @@ public class VectorSupport {
     /* ============================================================================ */
 
     @IntrinsicCandidate
-    public static <V> V maybeRebox(V v) {
+    public static
+    <VP extends VectorPayload>
+    VP maybeRebox(VP v) {
         // The fence is added here to avoid memory aliasing problems in C2 between scalar & vector accesses.
         // TODO: move the fence generation into C2. Generate only when reboxing is taking place.
         U.loadFence();
@@ -578,14 +631,18 @@ public class VectorSupport {
     }
 
     /* ============================================================================ */
-    public interface VectorMaskOp<M> {
+    public interface VectorMaskOp<M extends VectorMask<?>> {
         int apply(M m);
     }
 
     @IntrinsicCandidate
     public static
-    <E, M>
-    int maskReductionCoerced(int oper, Class<? extends M> maskClass, Class<?> elemClass, int length, M m,
+    <M extends VectorMask<E>,
+     E>
+    int maskReductionCoerced(int oper,
+                             Class<? extends M> mClass, Class<?> eClass,
+                             int length,
+                             M m,
                VectorMaskOp<M> defaultImpl) {
        assert isNonCapturingLambda(defaultImpl) : defaultImpl;
        return defaultImpl.apply(m);
