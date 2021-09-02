@@ -2403,8 +2403,6 @@ const bool Matcher::match_rule_supported(int opcode) {
         ret_value = false;
       }
       break;
-    case Op_LoadVectorMask:
-    case Op_StoreVectorMask:
     case Op_LoadVectorMasked:
     case Op_StoreVectorMasked:
     case Op_LoadVectorGatherMasked:
@@ -2700,10 +2698,14 @@ bool size_fits_all_mem_uses(AddPNode* addp, int shift) {
 
 // Should the matcher clone input 'm' of node 'n'?
 bool Matcher::pd_clone_node(Node* n, Node* m, Matcher::MStack& mstack) {
-  if (is_vshift_con_pattern(n, m)) { // ShiftV src (ShiftCntV con)
-    mstack.push(m, Visit);           // m = ShiftCntV
+  // ShiftV src (ShiftCntV con)
+  // * (VectorStoreMask src)
+  if (is_vshift_con_pattern(n, m) ||
+      (UseSVE > 0 && m->Opcode() == Op_VectorStoreMask)) {
+    mstack.push(m, Visit);
     return true;
   }
+
   return false;
 }
 

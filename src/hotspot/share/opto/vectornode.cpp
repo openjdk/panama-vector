@@ -788,23 +788,6 @@ StoreVectorNode* StoreVectorNode::make(int opc, Node* ctl, Node* mem,
   return new StoreVectorNode(ctl, mem, adr, atyp, val);
 }
 
-Node* StoreVectorNode::Ideal(PhaseGVN* phase, bool can_reshape) {
-  // StoreVector (VectorStoreMask src)  ==>  (StoreVectorMask src).
-  Node* value = in(MemNode::ValueIn);
-  if (value->Opcode() == Op_VectorStoreMask) {
-    assert(vect_type()->element_basic_type() == T_BOOLEAN, "Invalid basic type to store mask");
-    const TypeVect* type = value->in(1)->bottom_type()->is_vect();
-    if (Matcher::match_rule_supported_vector(Op_StoreVectorMask, type->length(), type->element_basic_type())) {
-      const TypeVect* mem_type = TypeVect::make(T_BOOLEAN, type->length());
-      return new StoreVectorMaskNode(in(MemNode::Control),
-                                     in(MemNode::Memory),
-                                     in(MemNode::Address),
-                                     adr_type(), value->in(1), mem_type);
-    }
-  }
-  return StoreNode::Ideal(phase, can_reshape);
-}
-
 Node* LoadVectorMaskedNode::Ideal(PhaseGVN* phase, bool can_reshape) {
   if (!in(3)->is_top() && in(3)->Opcode() == Op_VectorMaskGen) {
     Node* mask_len = in(3)->in(1);
@@ -1058,21 +1041,6 @@ ReductionNode* ReductionNode::make(int opc, Node *ctrl, Node* n1, Node* n2, Basi
     assert(false, "unknown node: %s", NodeClassNames[vopc]);
     return NULL;
   }
-}
-
-Node* VectorLoadMaskNode::Ideal(PhaseGVN* phase, bool can_reshape) {
-  // (VectorLoadMask (LoadVector mem))  ==> (LoadVectorMask mem)
-  LoadVectorNode* load = this->in(1)->isa_LoadVector();
-  BasicType out_bt = vect_type()->element_basic_type();
-  if (load != NULL &&
-      Matcher::match_rule_supported_vector(Op_LoadVectorMask, length(), out_bt)) {
-    const TypeVect* mem_type = TypeVect::make(T_BOOLEAN, length());
-    return new LoadVectorMaskNode(load->in(MemNode::Control),
-                                  load->in(MemNode::Memory),
-                                  load->in(MemNode::Address),
-                                  load->adr_type(), vect_type(), mem_type);
-  }
-  return NULL;
 }
 
 Node* VectorLoadMaskNode::Identity(PhaseGVN* phase) {

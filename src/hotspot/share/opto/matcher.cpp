@@ -2260,6 +2260,7 @@ bool Matcher::find_shared_visit(MStack& mstack, Node* n, uint opcode, bool& mem_
     case Op_MacroLogicV:
     case Op_LoadVectorMasked:
     case Op_VectorCmpMasked:
+    case Op_VectorLoadMask:
       set_shared(n); // Force result into register (it will be anyways)
       break;
     case Op_ConP: {  // Convert pointers above the centerline to NUL

@@ -779,7 +779,6 @@ class StoreVectorNode : public StoreNode {
   virtual uint ideal_reg() const  { return Matcher::vector_ideal_reg(memory_size()); }
   virtual BasicType memory_type() const { return T_VOID; }
   virtual int memory_size() const { return vect_type()->length_in_bytes(); }
-  virtual Node* Ideal(PhaseGVN* phase, bool can_reshape);
 
   static StoreVectorNode* make(int opc, Node* ctl, Node* mem,
                                Node* adr, const TypePtr* atyp, Node* val,
@@ -956,50 +955,6 @@ class VectorMaskLastTrueNode : public VectorMaskOpNode {
   VectorMaskLastTrueNode(Node* mask, const Type* ty):
     VectorMaskOpNode(mask, ty, Op_VectorMaskLastTrue) {}
   virtual int Opcode() const;
-};
-
-class LoadVectorMaskNode : public LoadVectorNode {
- private:
-  /**
-   * The type of the accessed memory, whose basic element type is T_BOOLEAN for mask vector.
-   * It is different with the basic element type of the node, which can be T_BYTE, T_SHORT,
-   * T_INT, T_LONG, T_FLOAT or T_DOUBLE.
-   **/
-  const TypeVect* _mem_type;
-
- public:
-  LoadVectorMaskNode(Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, const TypeVect* mt)
-   : LoadVectorNode(c, mem, adr, at, vt), _mem_type(mt) {
-    assert(_mem_type->element_basic_type() == T_BOOLEAN, "Memory type must be T_BOOLEAN");
-    init_class_id(Class_LoadVector);
-  }
-
-  virtual int Opcode() const;
-  virtual int memory_size() const { return _mem_type->length_in_bytes(); }
-  virtual int store_Opcode() const { return Op_StoreVectorMask; }
-  virtual uint ideal_reg() const  { return vect_type()->ideal_reg(); }
-  virtual uint size_of() const { return sizeof(LoadVectorMaskNode); }
-};
-
-class StoreVectorMaskNode : public StoreVectorNode {
- private:
-  /**
-   * The type of the accessed memory, whose basic element type is T_BOOLEAN for mask vector.
-   * It is different with the basic element type of the src value, which can be T_BYTE, T_SHORT,
-   * T_INT, T_LONG, T_FLOAT or T_DOUBLE.
-   **/
-  const TypeVect* _mem_type;
-
- public:
-  StoreVectorMaskNode(Node* c, Node* mem, Node* adr, const TypePtr* at, Node* src, const TypeVect* mt)
-   : StoreVectorNode(c, mem, adr, at, src), _mem_type(mt) {
-    assert(_mem_type->element_basic_type() == T_BOOLEAN, "Memory type must be T_BOOLEAN");
-    init_class_id(Class_StoreVector);
-  }
-
-  virtual int Opcode() const;
-  virtual int memory_size() const { return _mem_type->length_in_bytes(); }
-  virtual uint size_of() const { return sizeof(StoreVectorMaskNode); }
 };
 
 //-------------------------- Vector mask broadcast -----------------------------------
@@ -1404,7 +1359,6 @@ class VectorLoadMaskNode : public VectorNode {
   }
 
   virtual int Opcode() const;
-  virtual Node* Ideal(PhaseGVN* phase, bool can_reshape);
   virtual Node* Identity(PhaseGVN* phase);
 };
 

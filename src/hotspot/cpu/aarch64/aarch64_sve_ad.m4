@@ -1167,19 +1167,18 @@ instruct vstoremaskL(vReg dst, pRegGov src, vReg tmp, immI_8 size) %{
   %}
   ins_pipe(pipe_slow);
 %}
-dnl
-dnl LOADVMASK($1,    $2  )
-dnl LOADVMASK(esize, cond)
-define(`LOADVMASK', `
-instruct loadVMask_$1(pRegGov dst, ifelse($1, `byte', vmemA, indirect) mem, vReg tmp, rFlagsReg cr) %{
+
+// Combine LoadVector+VectorLoadMask when the vector element type is not T_BYTE
+
+instruct vloadmask_loadV(pRegGov dst, indirect mem, vReg tmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 &&
-            n->bottom_type()->is_vect()->length_in_bytes() == MaxVectorSize &&
-            type2aelembytes(n->bottom_type()->is_vect()->element_basic_type()) $2);
-  match(Set dst (LoadVectorMask mem));
+            n->as_Vector()->length_in_bytes() == MaxVectorSize &&
+            type2aelembytes(n->bottom_type()->is_vect()->element_basic_type()) > 1);
+  match(Set dst (VectorLoadMask (LoadVector mem)));
   effect(TEMP tmp, KILL cr);
-  ins_cost(5 * SVE_COST);
+  ins_cost(3 * SVE_COST);
   format %{ "sve_ld1b $tmp, $mem\n\t"
-            "sve_cmpne $dst, $tmp, 0\t# load vector mask (sve) ($3)" %}
+            "sve_cmpne $dst, $tmp, 0\t# load vector mask (sve) (H/S/D)" %}
   ins_encode %{
     // Load mask values which are boolean type, and extend them to the
     // expected vector element type. Convert the vector to predicate.
@@ -1191,49 +1190,17 @@ instruct loadVMask_$1(pRegGov dst, ifelse($1, `byte', vmemA, indirect) mem, vReg
                  ptrue, as_FloatRegister($tmp$$reg), 0);
   %}
   ins_pipe(pipe_slow);
-%}')dnl
-dnl
-define(`ARGLIST',
-`ifelse($1, `byte', vmemA, indirect) mem, pRegGov src, vReg tmp')
-dnl
-dnl STOREVMASK($1,    $2  )
-dnl STOREVMASK(esize, cond)
-define(`STOREVMASK', `
-instruct storeVMask_$1(ARGLIST($1)) %{
+%}
+
+instruct vloadmask_loadV_partial(pRegGov dst, indirect mem, vReg vtmp, pRegGov ptmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 &&
-            n->as_StoreVector()->vect_type()->length_in_bytes() == MaxVectorSize &&
-            type2aelembytes(n->as_StoreVector()->vect_type()->element_basic_type()) $2);
-  match(Set mem (StoreVectorMask mem src));
-  effect(TEMP tmp);
-  format %{ "sve_cpy $tmp, $src, 1\n\t"
-            "sve_st1b $tmp, $mem\t# store vector mask (sve) ($3)" %}
-  ins_cost(5 * SVE_COST);
-  ins_encode %{
-    // Convert the src predicate to vector. And store the vector elements
-    // as boolean values.
-    BasicType from_vect_bt = Matcher::vector_element_basic_type(this, $src);
-    __ sve_cpy(as_FloatRegister($tmp$$reg), __ elemType_to_regVariant(from_vect_bt),
-               as_PRegister($src$$reg), 1, false);
-    loadStoreA_predicated(C2_MacroAssembler(&cbuf), true, as_FloatRegister($tmp$$reg),
-                          ptrue, T_BOOLEAN, from_vect_bt, $mem->opcode(),
-                          as_Register($mem$$base), $mem$$index, $mem$$scale, $mem$$disp);
-  %}
-  ins_pipe(pipe_slow);
-%}')dnl
-undefine(ARGLIST)dnl
-dnl
-dnl LOADVMASK_PARTIAL($1,    $2  )
-dnl LOADVMASK_PARTIAL(esize, cond)
-define(`LOADVMASK_PARTIAL', `
-instruct loadVMask_$1_partial(pRegGov dst, ifelse($1, `byte', vmemA, indirect) mem, vReg vtmp,
-                              pRegGov ptmp, rFlagsReg cr) %{
-  predicate(UseSVE > 0 &&
-            n->bottom_type()->is_vect()->length_in_bytes() < MaxVectorSize &&
-            type2aelembytes(n->bottom_type()->is_vect()->element_basic_type()) $2);
-  match(Set dst (LoadVectorMask mem));
+            n->as_Vector()->length_in_bytes() > 16 &&
+            n->as_Vector()->length_in_bytes() < MaxVectorSize &&
+            type2aelembytes(n->bottom_type()->is_vect()->element_basic_type()) > 1);
+  match(Set dst (VectorLoadMask (LoadVector mem)));
   effect(TEMP vtmp, TEMP ptmp, KILL cr);
   ins_cost(6 * SVE_COST);
-  format %{ "loadVMask $dst, $mem\t# load vector mask partial (sve) ($3)" %}
+  format %{ "vloadmask_loadV $dst, $mem\t# load vector mask partial (sve) (H/S/D)" %}
   ins_encode %{
     // Load valid mask values which are boolean type, and extend them to the
     // expected vector element type. Convert the vector to predicate.
@@ -1246,19 +1213,39 @@ instruct loadVMask_$1_partial(pRegGov dst, ifelse($1, `byte', vmemA, indirect) m
     __ sve_cmpne(as_PRegister($dst$$reg), size, ptrue, as_FloatRegister($vtmp$$reg), 0);
   %}
   ins_pipe(pipe_slow);
-%}')dnl
-dnl
-dnl STOREVMASK_PARTIAL($1,    $2  )
-dnl STOREVMASK_PARTIAL(esize, cond)
-define(`STOREVMASK_PARTIAL', `
-instruct storeVMask_$1_partial(ifelse($1, `byte', vmemA, indirect) mem, pRegGov src, vReg vtmp,
-                               pRegGov ptmp, rFlagsReg cr) %{
+%}
+
+// Combine VectorStoreMask+StoreVector when the vector element type is not T_BYTE
+
+instruct storeV_vstoremask(indirect mem, pRegGov src, vReg tmp, immI_gt_1 esize) %{
   predicate(UseSVE > 0 &&
-            n->as_StoreVector()->vect_type()->length_in_bytes() < MaxVectorSize &&
-            type2aelembytes(n->as_StoreVector()->vect_type()->element_basic_type()) $2);
-  match(Set mem (StoreVectorMask mem src));
+            Matcher::vector_length_in_bytes(n->as_StoreVector()->in(MemNode::ValueIn)->in(1)) == MaxVectorSize);
+  match(Set mem (StoreVector mem (VectorStoreMask src esize)));
+  effect(TEMP tmp);
+  ins_cost(3 * SVE_COST);
+  format %{ "sve_cpy $tmp, $src, 1\n\t"
+            "sve_st1b $tmp, $mem\t# store vector mask (sve) (H/S/D)" %}
+  ins_encode %{
+    BasicType from_vect_bt = Matcher::vector_element_basic_type(this, $src);
+    assert(type2aelembytes(from_vect_bt) == (int)$esize$$constant, "unsupported type.");
+    Assembler::SIMD_RegVariant size = __ elemBytes_to_regVariant($esize$$constant);
+    __ sve_cpy(as_FloatRegister($tmp$$reg), size, as_PRegister($src$$reg), 1, false);
+    loadStoreA_predicated(C2_MacroAssembler(&cbuf), true, as_FloatRegister($tmp$$reg),
+                          ptrue, T_BOOLEAN, from_vect_bt, $mem->opcode(),
+                          as_Register($mem$$base), $mem$$index, $mem$$scale, $mem$$disp);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct storeV_vstoremask_partial(indirect mem, pRegGov src, vReg vtmp,
+                                   immI_gt_1 esize, pRegGov ptmp, rFlagsReg cr) %{
+  predicate(UseSVE > 0 &&
+            n->as_StoreVector()->memory_size() > 16 &&
+            type2aelembytes(n->as_StoreVector()->vect_type()->element_basic_type()) > 1 &&
+            Matcher::vector_length_in_bytes(n->as_StoreVector()->in(MemNode::ValueIn)->in(1)) < MaxVectorSize);
+  match(Set mem (StoreVector mem (VectorStoreMask src esize)));
   effect(TEMP vtmp, TEMP ptmp, KILL cr);
-  format %{ "storeVMask $src, $mem\t# store vector mask partial (sve) ($3)" %}
+  format %{ "storeV_vstoremask $src, $mem\t# store vector mask partial (sve) (H/S/D)" %}
   ins_cost(6 * SVE_COST);
   ins_encode %{
     // Convert the valid src predicate to vector, and store the vector
@@ -1272,17 +1259,7 @@ instruct storeVMask_$1_partial(ifelse($1, `byte', vmemA, indirect) mem, pRegGov 
                           as_Register($mem$$base), $mem$$index, $mem$$scale, $mem$$disp);
   %}
   ins_pipe(pipe_slow);
-%}')dnl
-dnl
-// load/store mask vector
-LOADVMASK(byte, == 1, B)
-LOADVMASK(non_byte, > 1, H/S/D)
-LOADVMASK_PARTIAL(byte, == 1, B)
-LOADVMASK_PARTIAL(non_byte, > 1, H/S/D)
-STOREVMASK(byte, == 1, B)
-STOREVMASK(non_byte, > 1, H/S/D)
-STOREVMASK_PARTIAL(byte, == 1, B)
-STOREVMASK_PARTIAL(non_byte, > 1, H/S/D)
+%}
 dnl
 dnl REDUCE_I($1,        $2     )
 dnl REDUCE_I(insn_name, op_name)
