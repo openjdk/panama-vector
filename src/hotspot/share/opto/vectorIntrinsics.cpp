@@ -445,6 +445,11 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
     return false; // not supported
   }
 
+  bool is_rotate = VectorNode::is_vector_rotate(sopc);
+  if (is_rotate && !Matcher::match_rule_supported_vector(sopc, num_elem, elem_bt)) {
+    return false;
+  }
+
   // Return true if current platform has implemented the masked operation with predicate feature.
   bool use_predicate = is_masked_op && sopc != 0 && arch_supports_vector(sopc, num_elem, elem_bt, VecMaskUsePred);
   if (is_masked_op && !use_predicate && !arch_supports_vector(Op_VectorBlend, num_elem, elem_bt, VecMaskUseLoad)) {
@@ -2233,6 +2238,10 @@ bool LibraryCallKit::inline_vector_broadcast_int() {
       }
       return false; // not supported
     }
+  }
+
+  if (is_rotate && !Matcher::match_rule_supported_vector(sopc, num_elem, elem_bt)) {
+    return false;
   }
 
   Node* opd1 = unbox_vector(argument(5), vbox_type, elem_bt, num_elem);
