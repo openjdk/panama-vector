@@ -2048,7 +2048,7 @@ bool LibraryCallKit::inline_vector_rearrange() {
     } else {
       const TypeVect* vt = v1->bottom_type()->is_vect();
       rearrange = gvn().transform(rearrange);
-      Node* zero = gvn().makecon(TypeInt::ZERO);
+      Node* zero = gvn().makecon(Type::get_zero_type(elem_bt));
       Node* zerovec = gvn().transform(VectorNode::scalar2vector(zero, num_elem, Type::get_const_basic_type(elem_bt)));
       rearrange = new VectorBlendNode(zerovec, rearrange, mask);
     }
