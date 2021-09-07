@@ -542,6 +542,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
       operation->add_req(mask);
       operation->add_flag(Node::Flag_is_predicated_vector);
     } else {
+      operation = gvn().transform(operation);
       operation = new VectorBlendNode(opd1, operation, mask);
     }
   }
@@ -2274,6 +2275,7 @@ bool LibraryCallKit::inline_vector_broadcast_int() {
       operation->add_req(mask);
       operation->add_flag(Node::Flag_is_predicated_vector);
     } else {
+      operation = gvn().transform(operation);
       operation = new VectorBlendNode(opd1, operation, mask);
     }
   }
