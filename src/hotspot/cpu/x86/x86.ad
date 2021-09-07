@@ -1929,6 +1929,8 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
       assert(bt != T_SHORT || VM_Version::supports_avx512bw(), "");
       if (bt == T_BYTE && !VM_Version::supports_avx512_vbmi()) {
         return false; // Implementation limitation
+      } else if ((bt == T_INT || bt == T_FLOAT) && size_in_bits < 256) {
+        return false; // Implementation limitation
       }
       return true;
 
