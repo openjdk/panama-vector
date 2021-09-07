@@ -8205,6 +8205,38 @@ void MacroAssembler::evmovdqu(BasicType type, KRegister kmask, Address dst, XMMR
   }
 }
 
+void MacroAssembler::knot(uint masklen, KRegister dst, KRegister src, KRegister ktmp, Register rtmp) {
+  switch(masklen) {
+    case 2:
+       knotbl(dst, src);
+       movl(rtmp, 3);
+       kmovbl(ktmp, rtmp);
+       kandbl(dst, ktmp, dst);
+       break;
+    case 4:
+       knotbl(dst, src);
+       movl(rtmp, 15);
+       kmovbl(ktmp, rtmp);
+       kandbl(dst, ktmp, dst);
+       break;
+    case 8:
+       knotbl(dst, src);
+       break;
+    case 16:
+       knotwl(dst, src);
+       break;
+    case 32:
+       knotdl(dst, src);
+       break;
+    case 64:
+       knotql(dst, src);
+       break;
+    default:
+      fatal("Unexpected vector length %d", masklen);
+      break;
+  }
+}
+
 void MacroAssembler::kand(BasicType type, KRegister dst, KRegister src1, KRegister src2) {
   switch(type) {
     case T_BOOLEAN:
@@ -8499,6 +8531,51 @@ void MacroAssembler::ktest(uint masklen, KRegister src1, KRegister src2) {
     default:
       fatal("Unexpected mask length %d", masklen);
       break;
+  }
+}
+
+void MacroAssembler::evrold(BasicType type, XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vlen_enc) {
+  switch(type) {
+    case T_INT:
+      evprold(dst, mask, shift, src, merge, vlen_enc); break;
+    case T_LONG:
+      evprolq(dst, mask, shift, src, merge, vlen_enc); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+      break;
+  }
+}
+
+void MacroAssembler::evrord(BasicType type, XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vlen_enc) {
+  switch(type) {
+    case T_INT:
+      evprord(dst, mask, shift, src, merge, vlen_enc); break;
+    case T_LONG:
+      evprorq(dst, mask, shift, src, merge, vlen_enc); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+  }
+}
+
+void MacroAssembler::evrold(BasicType type, XMMRegister dst, KRegister mask, XMMRegister src1, XMMRegister src2, bool merge, int vlen_enc) {
+  switch(type) {
+    case T_INT:
+      evprolvd(dst, mask, src1, src2, merge, vlen_enc); break;
+    case T_LONG:
+      evprolvq(dst, mask, src1, src2, merge, vlen_enc); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
+  }
+}
+
+void MacroAssembler::evrord(BasicType type, XMMRegister dst, KRegister mask, XMMRegister src1, XMMRegister src2, bool merge, int vlen_enc) {
+  switch(type) {
+    case T_INT:
+      evprorvd(dst, mask, src1, src2, merge, vlen_enc); break;
+    case T_LONG:
+      evprorvq(dst, mask, src1, src2, merge, vlen_enc); break;
+    default:
+      fatal("Unexpected type argument %s", type2name(type)); break;
   }
 }
 #if COMPILER2_OR_JVMCI

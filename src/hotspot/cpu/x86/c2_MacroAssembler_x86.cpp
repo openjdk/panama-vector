@@ -1461,6 +1461,12 @@ void C2_MacroAssembler::load_vector_mask(XMMRegister dst, XMMRegister src, int v
   }
 }
 
+void C2_MacroAssembler::load_vector_mask64(KRegister dst, XMMRegister src, XMMRegister xtmp, Register scratch) {
+  vpmovsxbd(xtmp, src, Assembler::AVX_512bit);
+  evpcmpd(dst, k0, xtmp, ExternalAddress(StubRoutines::x86::vector_int_mask_cmp_bits()),
+          Assembler::eq, true, Assembler::AVX_512bit, scratch);
+}
+
 void C2_MacroAssembler::load_iota_indices(XMMRegister dst, Register scratch, int vlen_in_bytes) {
   ExternalAddress addr(StubRoutines::x86::vector_iota_indices());
   if (vlen_in_bytes == 4) {
@@ -3828,6 +3834,36 @@ void C2_MacroAssembler::arrays_equals(bool is_array_equ, Register ary1, Register
 }
 
 void C2_MacroAssembler::evmasked_op(int ideal_opc, BasicType eType, KRegister mask, XMMRegister dst,
+                                    XMMRegister src1, int imm8, bool merge, int vlen_enc) {
+  switch(ideal_opc) {
+    case Op_LShiftVS:
+      Assembler::evpsllw(dst, mask, imm8, src1, merge, vlen_enc); break;
+    case Op_LShiftVI:
+      Assembler::evpslld(dst, mask, imm8, src1, merge, vlen_enc); break;
+    case Op_LShiftVL:
+      Assembler::evpsllq(dst, mask, imm8, src1, merge, vlen_enc); break;
+    case Op_RShiftVS:
+      Assembler::evpsrlw(dst, mask, imm8, src1, merge, vlen_enc); break;
+    case Op_RShiftVI:
+      Assembler::evpsrld(dst, mask, imm8, src1, merge, vlen_enc); break;
+    case Op_RShiftVL:
+      Assembler::evpsrlq(dst, mask, imm8, src1, merge, vlen_enc); break;
+    case Op_URShiftVS:
+      Assembler::evpsraw(dst, mask, imm8, src1, merge, vlen_enc); break;
+    case Op_URShiftVI:
+      Assembler::evpsrad(dst, mask, imm8, src1, merge, vlen_enc); break;
+    case Op_URShiftVL:
+      Assembler::evpsraq(dst, mask, imm8, src1, merge, vlen_enc); break;
+    case Op_RotateRightV:
+      evrord(eType, dst, mask, imm8, src1, merge, vlen_enc); break;
+    case Op_RotateLeftV:
+      evrold(eType, dst, mask, imm8, src1, merge, vlen_enc); break;
+    default:
+      fatal("Unsupported masked operation"); break;
+  }
+}
+
+void C2_MacroAssembler::evmasked_op(int ideal_opc, BasicType eType, KRegister mask, XMMRegister dst,
                                     XMMRegister src1, XMMRegister src2, bool merge, int vlen_enc,
                                     bool is_varshift) {
   switch (ideal_opc) {
@@ -3869,6 +3905,10 @@ void C2_MacroAssembler::evmasked_op(int ideal_opc, BasicType eType, KRegister ma
       evdivps(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_DivVD:
       evdivpd(dst, mask, src1, src2, merge, vlen_enc); break;
+    case Op_SqrtVF:
+      evsqrtps(dst, mask, src1, src2, merge, vlen_enc); break;
+    case Op_SqrtVD:
+      evsqrtpd(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_AbsVB:
       evpabsb(dst, mask, src2, merge, vlen_enc); break;
     case Op_AbsVS:
@@ -3901,6 +3941,10 @@ void C2_MacroAssembler::evmasked_op(int ideal_opc, BasicType eType, KRegister ma
       evpsrld(dst, mask, src1, src2, merge, vlen_enc, is_varshift); break;
     case Op_URShiftVL:
       evpsrlq(dst, mask, src1, src2, merge, vlen_enc, is_varshift); break;
+    case Op_RotateLeftV:
+      evrold(eType, dst, mask, src1, src2, merge, vlen_enc); break;
+    case Op_RotateRightV:
+      evrord(eType, dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_MaxV:
       evpmaxs(eType, dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_MinV:
@@ -3957,6 +4001,10 @@ void C2_MacroAssembler::evmasked_op(int ideal_opc, BasicType eType, KRegister ma
       evdivps(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_DivVD:
       evdivpd(dst, mask, src1, src2, merge, vlen_enc); break;
+    case Op_SqrtVF:
+      evsqrtps(dst, mask, src1, src2, merge, vlen_enc); break;
+    case Op_SqrtVD:
+      evsqrtpd(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_AbsVB:
       evpabsb(dst, mask, src2, merge, vlen_enc); break;
     case Op_AbsVS:
