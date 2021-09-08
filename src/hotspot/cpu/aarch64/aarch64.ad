@@ -2701,7 +2701,11 @@ bool Matcher::pd_clone_node(Node* n, Node* m, Matcher::MStack& mstack) {
   // ShiftV src (ShiftCntV con)
   // * (VectorStoreMask src)
   if (is_vshift_con_pattern(n, m) ||
-      (UseSVE > 0 && m->Opcode() == Op_VectorStoreMask)) {
+      (UseSVE > 0 && m->Opcode() == Op_VectorStoreMask &&
+       (n->Opcode() == Op_StoreVector ||
+        n->Opcode() == Op_VectorMaskTrueCount ||
+        n->Opcode() == Op_VectorMaskFirstTrue ||
+        n->Opcode() == Op_VectorMaskLastTrue))) {
     mstack.push(m, Visit);
     return true;
   }

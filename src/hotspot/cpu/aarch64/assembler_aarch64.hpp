@@ -3391,6 +3391,18 @@ public:
   INSN(sve_sunpklo, 0b00);
 #undef INSN
 
+// SVE unpack predicate elements
+#define INSN(NAME, op) \
+  void NAME(PRegister Pd, PRegister Pn) { \
+    starti;                                                          \
+    f(0b000001010011000, 31, 17), f(op, 16), f(0b0100000, 15, 9);    \
+    prf(Pn, 5), f(0b0, 4), prf(Pd, 0);                               \
+  }
+
+  INSN(sve_punpkhi, 0b1); // Unpack and widen high half of predicate
+  INSN(sve_punpklo, 0b0); // Unpack and widen low half of predicate
+#undef INSN
+
 // SVE uzp1/uzp2 (vectors)
 #define INSN(NAME, op) \
   void NAME(FloatRegister Zd, SIMD_RegVariant T, FloatRegister Zn, FloatRegister Zm) { \
@@ -3402,6 +3414,19 @@ public:
 
   INSN(sve_uzp1, 0b0);
   INSN(sve_uzp2, 0b1);
+#undef INSN
+
+// SVE permute predicate elements
+#define INSN(NAME, op) \
+  void NAME(PRegister Pd, SIMD_RegVariant T, PRegister Pn, PRegister Pm) {             \
+    starti;                                                                            \
+    assert(T != Q, "invalid size");                                                    \
+    f(0b00000101, 31, 24), f(T, 23, 22), f(0b10, 21, 20), prf(Pm, 16);                 \
+    f(0b01001, 15, 11), f(op, 10), f(0b0, 9), prf(Pn, 5), f(0b0, 4), prf(Pd, 0);       \
+  }
+
+  INSN(sve_uzp1, 0b0); // Concatenate even elements from two predicates
+  INSN(sve_uzp2, 0b1); // Concatenate odd elements from two predicates
 #undef INSN
 
 // Predicate counted loop (SVE) (32-bit variants are not included)

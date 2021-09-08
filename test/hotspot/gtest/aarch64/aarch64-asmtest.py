@@ -1679,6 +1679,16 @@ generate(SpecialCases, [["ccmn",   "__ ccmn(zr, zr, 3u, Assembler::LE);",       
                         ["ptrue",   "__ sve_ptrue(p3, __ S);",                            "ptrue\tp3.s"],
                         ["ptrue",   "__ sve_ptrue(p4, __ D);",                            "ptrue\tp4.d"],
                         ["pfalse",  "__ sve_pfalse(p7);",                                 "pfalse\tp7.b"],
+                        ["uzp1",    "__ sve_uzp1(p0, __ B, p0, p1);",                     "uzp1\tp0.b, p0.b, p1.b"],
+                        ["uzp1",    "__ sve_uzp1(p0, __ H, p0, p1);",                     "uzp1\tp0.h, p0.h, p1.h"],
+                        ["uzp1",    "__ sve_uzp1(p0, __ S, p0, p1);",                     "uzp1\tp0.s, p0.s, p1.s"],
+                        ["uzp1",    "__ sve_uzp1(p0, __ D, p0, p1);",                     "uzp1\tp0.d, p0.d, p1.d"],
+                        ["uzp2",    "__ sve_uzp2(p0, __ B, p0, p1);",                     "uzp2\tp0.b, p0.b, p1.b"],
+                        ["uzp2",    "__ sve_uzp2(p0, __ H, p0, p1);",                     "uzp2\tp0.h, p0.h, p1.h"],
+                        ["uzp2",    "__ sve_uzp2(p0, __ S, p0, p1);",                     "uzp2\tp0.s, p0.s, p1.s"],
+                        ["uzp2",    "__ sve_uzp2(p0, __ D, p0, p1);",                     "uzp2\tp0.d, p0.d, p1.d"],
+                        ["punpklo", "__ sve_punpklo(p1, p0);",                            "punpklo\tp1.h, p0.b"],
+                        ["punpkhi", "__ sve_punpkhi(p1, p0);",                            "punpkhi\tp1.h, p0.b"],
 ])
 
 print "\n// FloatImmediateOp"
