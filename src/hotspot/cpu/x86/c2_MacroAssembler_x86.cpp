@@ -3837,27 +3837,27 @@ void C2_MacroAssembler::evmasked_op(int ideal_opc, BasicType eType, KRegister ma
                                     XMMRegister src1, int imm8, bool merge, int vlen_enc) {
   switch(ideal_opc) {
     case Op_LShiftVS:
-      Assembler::evpsllw(dst, mask, imm8, src1, merge, vlen_enc); break;
+      Assembler::evpsllw(dst, mask, src1, imm8, merge, vlen_enc); break;
     case Op_LShiftVI:
-      Assembler::evpslld(dst, mask, imm8, src1, merge, vlen_enc); break;
+      Assembler::evpslld(dst, mask, src1, imm8, merge, vlen_enc); break;
     case Op_LShiftVL:
-      Assembler::evpsllq(dst, mask, imm8, src1, merge, vlen_enc); break;
+      Assembler::evpsllq(dst, mask, src1, imm8, merge, vlen_enc); break;
     case Op_RShiftVS:
-      Assembler::evpsrlw(dst, mask, imm8, src1, merge, vlen_enc); break;
+      Assembler::evpsraw(dst, mask, src1, imm8, merge, vlen_enc); break;
     case Op_RShiftVI:
-      Assembler::evpsrld(dst, mask, imm8, src1, merge, vlen_enc); break;
+      Assembler::evpsrad(dst, mask, src1, imm8, merge, vlen_enc); break;
     case Op_RShiftVL:
-      Assembler::evpsrlq(dst, mask, imm8, src1, merge, vlen_enc); break;
+      Assembler::evpsraq(dst, mask, src1, imm8, merge, vlen_enc); break;
     case Op_URShiftVS:
-      Assembler::evpsraw(dst, mask, imm8, src1, merge, vlen_enc); break;
+      Assembler::evpsrlw(dst, mask, src1, imm8, merge, vlen_enc); break;
     case Op_URShiftVI:
-      Assembler::evpsrad(dst, mask, imm8, src1, merge, vlen_enc); break;
+      Assembler::evpsrld(dst, mask, src1, imm8, merge, vlen_enc); break;
     case Op_URShiftVL:
-      Assembler::evpsraq(dst, mask, imm8, src1, merge, vlen_enc); break;
+      Assembler::evpsrlq(dst, mask, src1, imm8, merge, vlen_enc); break;
     case Op_RotateRightV:
-      evrord(eType, dst, mask, imm8, src1, merge, vlen_enc); break;
+      evrord(eType, dst, mask, src1, imm8, merge, vlen_enc); break;
     case Op_RotateLeftV:
-      evrold(eType, dst, mask, imm8, src1, merge, vlen_enc); break;
+      evrold(eType, dst, mask, src1, imm8, merge, vlen_enc); break;
     default:
       fatal("Unsupported masked operation"); break;
   }

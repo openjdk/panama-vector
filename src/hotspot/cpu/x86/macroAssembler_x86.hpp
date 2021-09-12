@@ -1706,9 +1706,9 @@ public:
   void evxor(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
   void evxor(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
 
-  void evrold(BasicType type, XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vlen_enc);
+  void evrold(BasicType type, XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vlen_enc);
   void evrold(BasicType type, XMMRegister dst, KRegister mask, XMMRegister src1, XMMRegister src2, bool merge, int vlen_enc);
-  void evrord(BasicType type, XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vlen_enc);
+  void evrord(BasicType type, XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vlen_enc);
   void evrord(BasicType type, XMMRegister dst, KRegister mask, XMMRegister src1, XMMRegister src2, bool merge, int vlen_enc);
 
   void alltrue(Register dst, uint masklen, KRegister src1, KRegister src2, KRegister kscratch);

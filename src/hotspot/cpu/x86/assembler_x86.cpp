@@ -8296,6 +8296,7 @@ void Assembler::evpaddw(XMMRegister dst, KRegister mask, XMMRegister nds, Addres
 }
 
 void Assembler::evpaddd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8309,6 +8310,7 @@ void Assembler::evpaddd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 
 void Assembler::evpaddd(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8323,6 +8325,7 @@ void Assembler::evpaddd(XMMRegister dst, KRegister mask, XMMRegister nds, Addres
 }
 
 void Assembler::evpaddq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8336,6 +8339,7 @@ void Assembler::evpaddq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 
 void Assembler::evpaddq(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8350,6 +8354,7 @@ void Assembler::evpaddq(XMMRegister dst, KRegister mask, XMMRegister nds, Addres
 }
 
 void Assembler::evaddps(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8363,6 +8368,7 @@ void Assembler::evaddps(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 
 void Assembler::evaddps(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8377,6 +8383,7 @@ void Assembler::evaddps(XMMRegister dst, KRegister mask, XMMRegister nds, Addres
 }
 
 void Assembler::evaddpd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8390,6 +8397,7 @@ void Assembler::evaddpd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 
 void Assembler::evaddpd(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8458,6 +8466,7 @@ void Assembler::evpsubw(XMMRegister dst, KRegister mask, XMMRegister nds, Addres
 }
 
 void Assembler::evpsubd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8471,6 +8480,7 @@ void Assembler::evpsubd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 
 void Assembler::evpsubd(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8485,6 +8495,7 @@ void Assembler::evpsubd(XMMRegister dst, KRegister mask, XMMRegister nds, Addres
 }
 
 void Assembler::evpsubq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8498,6 +8509,7 @@ void Assembler::evpsubq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 
 void Assembler::evpsubq(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8512,6 +8524,7 @@ void Assembler::evpsubq(XMMRegister dst, KRegister mask, XMMRegister nds, Addres
 }
 
 void Assembler::evsubps(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8525,6 +8538,7 @@ void Assembler::evsubps(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 
 void Assembler::evsubps(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8539,6 +8553,7 @@ void Assembler::evsubps(XMMRegister dst, KRegister mask, XMMRegister nds, Addres
 }
 
 void Assembler::evsubpd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8552,6 +8567,7 @@ void Assembler::evsubpd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 
 void Assembler::evsubpd(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8593,6 +8609,7 @@ void Assembler::evpmullw(XMMRegister dst, KRegister mask, XMMRegister nds, Addre
 }
 
 void Assembler::evpmulld(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8606,6 +8623,7 @@ void Assembler::evpmulld(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRe
 
 void Assembler::evpmulld(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8647,6 +8665,7 @@ void Assembler::evpmullq(XMMRegister dst, KRegister mask, XMMRegister nds, Addre
 }
 
 void Assembler::evmulps(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8660,6 +8679,7 @@ void Assembler::evmulps(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 
 void Assembler::evmulps(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8674,6 +8694,7 @@ void Assembler::evmulps(XMMRegister dst, KRegister mask, XMMRegister nds, Addres
 }
 
 void Assembler::evmulpd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8687,6 +8708,7 @@ void Assembler::evmulpd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 
 void Assembler::evmulpd(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8701,6 +8723,7 @@ void Assembler::evmulpd(XMMRegister dst, KRegister mask, XMMRegister nds, Addres
 }
 
 void Assembler::evsqrtps(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len,/* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8714,6 +8737,7 @@ void Assembler::evsqrtps(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRe
 
 void Assembler::evsqrtps(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8728,6 +8752,7 @@ void Assembler::evsqrtps(XMMRegister dst, KRegister mask, XMMRegister nds, Addre
 }
 
 void Assembler::evsqrtpd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len,/* vex_w */ true,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8741,6 +8766,7 @@ void Assembler::evsqrtpd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRe
 
 void Assembler::evsqrtpd(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8756,6 +8782,7 @@ void Assembler::evsqrtpd(XMMRegister dst, KRegister mask, XMMRegister nds, Addre
 
 
 void Assembler::evdivps(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len,/* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8769,6 +8796,7 @@ void Assembler::evdivps(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 
 void Assembler::evdivps(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8783,6 +8811,7 @@ void Assembler::evdivps(XMMRegister dst, KRegister mask, XMMRegister nds, Addres
 }
 
 void Assembler::evdivpd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len,/* vex_w */ true,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8796,6 +8825,7 @@ void Assembler::evdivpd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 
 void Assembler::evdivpd(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8868,6 +8898,7 @@ void Assembler::evpabsw(XMMRegister dst, KRegister mask, Address src, bool merge
 }
 
 void Assembler::evpabsd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8883,6 +8914,7 @@ void Assembler::evpabsd(XMMRegister dst, KRegister mask, XMMRegister src, bool m
 
 void Assembler::evpabsd(XMMRegister dst, KRegister mask, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8897,6 +8929,7 @@ void Assembler::evpabsd(XMMRegister dst, KRegister mask, Address src, bool merge
 }
 
 void Assembler::evpabsq(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8912,6 +8945,7 @@ void Assembler::evpabsq(XMMRegister dst, KRegister mask, XMMRegister src, bool m
 
 void Assembler::evpabsq(XMMRegister dst, KRegister mask, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8926,6 +8960,7 @@ void Assembler::evpabsq(XMMRegister dst, KRegister mask, Address src, bool merge
 }
 
 void Assembler::evpfma213ps(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8939,6 +8974,7 @@ void Assembler::evpfma213ps(XMMRegister dst, KRegister mask, XMMRegister nds, XM
 
 void Assembler::evpfma213ps(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -8953,6 +8989,7 @@ void Assembler::evpfma213ps(XMMRegister dst, KRegister mask, XMMRegister nds, Ad
 }
 
 void Assembler::evpfma213pd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -8966,6 +9003,7 @@ void Assembler::evpfma213pd(XMMRegister dst, KRegister mask, XMMRegister nds, XM
 
 void Assembler::evpfma213pd(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
   InstructionMark im(this);
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true,/* legacy_mode */ false, /* no_mask_reg */ false,/* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_FV,/* input_size_in_bits */ EVEX_32bit);
@@ -9083,7 +9121,7 @@ void Assembler::evpermq(XMMRegister dst, KRegister mask, XMMRegister nds, Addres
   emit_operand(dst, src);
 }
 
-void Assembler::evpsllw(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len) {
+void Assembler::evpsllw(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len) {
   assert(VM_Version::supports_avx512bw() && (vector_len == AVX_512bit || VM_Version::supports_avx512vl()), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9095,7 +9133,8 @@ void Assembler::evpsllw(XMMRegister dst, KRegister mask, int shift, XMMRegister 
   emit_int24(0x71, (0xC0 | encode), shift & 0xFF);
 }
 
-void Assembler::evpslld(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len) {
+void Assembler::evpslld(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9107,9 +9146,10 @@ void Assembler::evpslld(XMMRegister dst, KRegister mask, int shift, XMMRegister 
   emit_int24(0x72, (0xC0 | encode), shift & 0xFF);
 }
 
-void Assembler::evpsllq(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len) {
+void Assembler::evpsllq(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
-  InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
+  InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
   attributes.set_embedded_opmask_register_specifier(mask);
   if (merge) {
@@ -9119,7 +9159,7 @@ void Assembler::evpsllq(XMMRegister dst, KRegister mask, int shift, XMMRegister 
   emit_int24(0x73, (0xC0 | encode), shift & 0xFF);
 }
 
-void Assembler::evpsrlw(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len) {
+void Assembler::evpsrlw(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len) {
   assert(VM_Version::supports_avx512bw() && (vector_len == AVX_512bit || VM_Version::supports_avx512vl()), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9131,7 +9171,8 @@ void Assembler::evpsrlw(XMMRegister dst, KRegister mask, int shift, XMMRegister 
   emit_int24(0x71, (0xC0 | encode), shift & 0xFF);
 }
 
-void Assembler::evpsrld(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len) {
+void Assembler::evpsrld(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9143,9 +9184,10 @@ void Assembler::evpsrld(XMMRegister dst, KRegister mask, int shift, XMMRegister 
   emit_int24(0x72, (0xC0 | encode), shift & 0xFF);
 }
 
-void Assembler::evpsrlq(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len) {
+void Assembler::evpsrlq(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
-  InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
+  InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
   attributes.set_embedded_opmask_register_specifier(mask);
   if (merge) {
@@ -9155,7 +9197,7 @@ void Assembler::evpsrlq(XMMRegister dst, KRegister mask, int shift, XMMRegister 
   emit_int24(0x73, (0xC0 | encode), shift & 0xFF);
 }
 
-void Assembler::evpsraw(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len) {
+void Assembler::evpsraw(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len) {
   assert(VM_Version::supports_avx512bw() && (vector_len == AVX_512bit || VM_Version::supports_avx512vl()), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9167,7 +9209,8 @@ void Assembler::evpsraw(XMMRegister dst, KRegister mask, int shift, XMMRegister 
   emit_int24(0x71, (0xC0 | encode), shift & 0xFF);
 }
 
-void Assembler::evpsrad(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len) {
+void Assembler::evpsrad(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9179,9 +9222,10 @@ void Assembler::evpsrad(XMMRegister dst, KRegister mask, int shift, XMMRegister 
   emit_int24(0x72, (0xC0 | encode), shift & 0xFF);
 }
 
-void Assembler::evpsraq(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len) {
+void Assembler::evpsraq(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
-  InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
+  InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
   attributes.set_embedded_opmask_register_specifier(mask);
   if (merge) {
@@ -9204,6 +9248,7 @@ void Assembler::evpsllw(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 }
 
 void Assembler::evpslld(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9216,6 +9261,7 @@ void Assembler::evpslld(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 }
 
 void Assembler::evpsllq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9240,6 +9286,7 @@ void Assembler::evpsrlw(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 }
 
 void Assembler::evpsrld(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9252,6 +9299,7 @@ void Assembler::evpsrld(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 }
 
 void Assembler::evpsrlq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9276,6 +9324,7 @@ void Assembler::evpsraw(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 }
 
 void Assembler::evpsrad(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9288,6 +9337,7 @@ void Assembler::evpsrad(XMMRegister dst, KRegister mask, XMMRegister nds, XMMReg
 }
 
 void Assembler::evpsraq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9312,6 +9362,7 @@ void Assembler::evpsllvw(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRe
 }
 
 void Assembler::evpsllvd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9324,6 +9375,7 @@ void Assembler::evpsllvd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRe
 }
 
 void Assembler::evpsllvq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9348,6 +9400,7 @@ void Assembler::evpsrlvw(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRe
 }
 
 void Assembler::evpsrlvd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9360,6 +9413,7 @@ void Assembler::evpsrlvd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRe
 }
 
 void Assembler::evpsrlvq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9384,6 +9438,7 @@ void Assembler::evpsravw(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRe
 }
 
 void Assembler::evpsravd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9396,6 +9451,7 @@ void Assembler::evpsravd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRe
 }
 
 void Assembler::evpsravq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9460,6 +9516,7 @@ void Assembler::evpminsw(XMMRegister dst, KRegister mask, XMMRegister nds, Addre
 }
 
 void Assembler::evpminsd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9472,6 +9529,7 @@ void Assembler::evpminsd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRe
 }
 
 void Assembler::evpminsd(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionMark im(this);
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
@@ -9486,6 +9544,7 @@ void Assembler::evpminsd(XMMRegister dst, KRegister mask, XMMRegister nds, Addre
 }
 
 void Assembler::evpminsq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9498,6 +9557,7 @@ void Assembler::evpminsq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRe
 }
 
 void Assembler::evpminsq(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionMark im(this);
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
@@ -9565,6 +9625,7 @@ void Assembler::evpmaxsw(XMMRegister dst, KRegister mask, XMMRegister nds, Addre
 }
 
 void Assembler::evpmaxsd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9577,6 +9638,7 @@ void Assembler::evpmaxsd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRe
 }
 
 void Assembler::evpmaxsd(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionMark im(this);
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
@@ -9591,6 +9653,7 @@ void Assembler::evpmaxsd(XMMRegister dst, KRegister mask, XMMRegister nds, Addre
 }
 
 void Assembler::evpmaxsq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -9603,6 +9666,7 @@ void Assembler::evpmaxsq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRe
 }
 
 void Assembler::evpmaxsq(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionMark im(this);
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
@@ -11008,7 +11072,7 @@ void Assembler::evpcmpw(KRegister kdst, KRegister mask, XMMRegister nds, Address
   emit_int8((unsigned char)comparison);
 }
 
-void Assembler::evprord(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len) {
+void Assembler::evprord(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len) {
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -11020,7 +11084,7 @@ void Assembler::evprord(XMMRegister dst, KRegister mask, int shift, XMMRegister 
   emit_int24(0x72, (0xC0 | encode), shift & 0xFF);
 }
 
-void Assembler::evprorq(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len) {
+void Assembler::evprorq(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len) {
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -11056,7 +11120,7 @@ void Assembler::evprorvq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRe
   emit_int16(0x14, (0xC0 | encode));
 }
 
-void Assembler::evprold(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len) {
+void Assembler::evprold(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len) {
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();
@@ -11068,7 +11132,7 @@ void Assembler::evprold(XMMRegister dst, KRegister mask, int shift, XMMRegister 
   emit_int24(0x72, (0xC0 | encode), shift & 0xFF);
 }
 
-void Assembler::evprolq(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len) {
+void Assembler::evprolq(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len) {
   assert(vector_len == AVX_512bit || VM_Version::supports_avx512vl(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_is_evex_instruction();

@@ -2342,15 +2342,15 @@ private:
   void evsqrtpd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
   void evsqrtpd(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
 
-  void evpsllw(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len);
-  void evpslld(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len);
-  void evpsllq(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len);
-  void evpsrlw(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len);
-  void evpsrld(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len);
-  void evpsrlq(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len);
-  void evpsraw(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len);
-  void evpsrad(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len);
-  void evpsraq(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len);
+  void evpsllw(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len);
+  void evpslld(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len);
+  void evpsllq(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len);
+  void evpsrlw(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len);
+  void evpsrld(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len);
+  void evpsrlq(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len);
+  void evpsraw(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len);
+  void evpsrad(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len);
+  void evpsraq(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len);
 
   void evpsllvw(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
   void evpsllvd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
@@ -2390,12 +2390,12 @@ private:
   void evpxorq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
   void evpxorq(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
 
-  void evprold(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len);
-  void evprolq(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len);
+  void evprold(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len);
+  void evprolq(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len);
   void evprolvd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
   void evprolvq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
-  void evprord(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len);
-  void evprorq(XMMRegister dst, KRegister mask, int shift, XMMRegister src, bool merge, int vector_len);
+  void evprord(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len);
+  void evprorq(XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vector_len);
   void evprorvd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
   void evprorvq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
 
