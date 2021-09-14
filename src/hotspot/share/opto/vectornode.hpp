@@ -1387,32 +1387,19 @@ class VectorMaskCastNode : public VectorNode {
 class VectorReinterpretNode : public VectorNode {
  private:
   const TypeVect* _src_vt;
-  BasicType  _dst_bt;
-  BasicType  _src_bt;
 
  protected:
   uint size_of() const { return sizeof(VectorReinterpretNode); }
  public:
   VectorReinterpretNode(Node* in, const TypeVect* src_vt, const TypeVect* dst_vt)
-      : VectorNode(in, dst_vt), _src_vt(src_vt) {
-     assert(!dst_vt->isa_vectmask() && !src_vt->isa_vectmask(), "");
-     _src_bt = src_vt->element_basic_type();
-     _dst_bt = dst_vt->element_basic_type();
-     init_class_id(Class_VectorReinterpret);
-  }
-
-  VectorReinterpretNode(Node* in, BasicType src_bt, const TypeVect* src_vt,
-                        BasicType dst_bt, const TypeVect* dst_vt)
-      : VectorNode(in, dst_vt), _src_vt(src_vt) {
-     assert(dst_vt->isa_vectmask() && src_vt->isa_vectmask() || type2aelembytes(src_bt) >= type2aelembytes(dst_bt),
+     : VectorNode(in, dst_vt), _src_vt(src_vt) {
+     assert((!dst_vt->isa_vectmask() && !src_vt->isa_vectmask()) ||
+            (type2aelembytes(src_vt->element_basic_type()) >= type2aelembytes(dst_vt->element_basic_type())),
             "unsupported mask widening reinterpretation");
-     _src_bt = src_bt;
-     _dst_bt = dst_bt;
      init_class_id(Class_VectorReinterpret);
   }
 
-  BasicType src_elem_type() { return _src_bt; }
-  BasicType dst_elem_type() { return _dst_bt; }
+  const TypeVect* src_type() { return _src_vt; }
   virtual uint hash() const { return VectorNode::hash() + _src_vt->hash(); }
   virtual bool cmp( const Node &n ) const {
     return VectorNode::cmp(n) && !Type::cmp(_src_vt,((VectorReinterpretNode&)n)._src_vt);

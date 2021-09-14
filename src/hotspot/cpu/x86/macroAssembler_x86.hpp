@@ -1689,6 +1689,7 @@ public:
   // AVX-512 mask operations.
   void kand(BasicType etype, KRegister dst, KRegister src1, KRegister src2);
   void kor(BasicType type, KRegister dst, KRegister src1, KRegister src2);
+  void knot(uint masklen, KRegister dst, KRegister src, KRegister ktmp = knoreg, Register rtmp = noreg);
   void kxor(BasicType type, KRegister dst, KRegister src1, KRegister src2);
   void kortest(uint masklen, KRegister src1, KRegister src2);
   void ktest(uint masklen, KRegister src1, KRegister src2);
@@ -1704,6 +1705,11 @@ public:
 
   void evxor(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
   void evxor(BasicType type, XMMRegister dst, KRegister mask, XMMRegister nds, Address src, bool merge, int vector_len);
+
+  void evrold(BasicType type, XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vlen_enc);
+  void evrold(BasicType type, XMMRegister dst, KRegister mask, XMMRegister src1, XMMRegister src2, bool merge, int vlen_enc);
+  void evrord(BasicType type, XMMRegister dst, KRegister mask, XMMRegister src, int shift, bool merge, int vlen_enc);
+  void evrord(BasicType type, XMMRegister dst, KRegister mask, XMMRegister src1, XMMRegister src2, bool merge, int vlen_enc);
 
   void alltrue(Register dst, uint masklen, KRegister src1, KRegister src2, KRegister kscratch);
   void anytrue(Register dst, uint masklen, KRegister src, KRegister kscratch);

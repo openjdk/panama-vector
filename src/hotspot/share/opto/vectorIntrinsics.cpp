@@ -542,6 +542,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
       operation->add_req(mask);
       operation->add_flag(Node::Flag_is_predicated_vector);
     } else {
+      operation = gvn().transform(operation);
       operation = new VectorBlendNode(opd1, operation, mask);
     }
   }
@@ -1266,7 +1267,7 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
       // Reinterpret the vector mask to byte type.
       const TypeVect* from_mask_type = TypeVect::makemask(elem_bt, num_elem);
       const TypeVect* to_mask_type = TypeVect::makemask(mem_elem_bt, mem_num_elem);
-      mask = gvn().transform(new VectorReinterpretNode(mask, elem_bt, from_mask_type, mem_elem_bt, to_mask_type));
+      mask = gvn().transform(new VectorReinterpretNode(mask, from_mask_type, to_mask_type));
     }
     Node* vstore = gvn().transform(new StoreVectorMaskedNode(control(), memory(addr), addr, val, addr_type, mask));
     set_memory(vstore, addr_type);
@@ -1277,7 +1278,7 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
       // Reinterpret the vector mask to byte type.
       const TypeVect* from_mask_type = TypeVect::makemask(elem_bt, num_elem);
       const TypeVect* to_mask_type = TypeVect::makemask(mem_elem_bt, mem_num_elem);
-      mask = gvn().transform(new VectorReinterpretNode(mask, elem_bt, from_mask_type, mem_elem_bt, to_mask_type));
+      mask = gvn().transform(new VectorReinterpretNode(mask, from_mask_type, to_mask_type));
     }
 
     if (use_predicate) {
@@ -2048,7 +2049,7 @@ bool LibraryCallKit::inline_vector_rearrange() {
     } else {
       const TypeVect* vt = v1->bottom_type()->is_vect();
       rearrange = gvn().transform(rearrange);
-      Node* zero = gvn().makecon(TypeInt::ZERO);
+      Node* zero = gvn().makecon(Type::get_zero_type(elem_bt));
       Node* zerovec = gvn().transform(VectorNode::scalar2vector(zero, num_elem, Type::get_const_basic_type(elem_bt)));
       rearrange = new VectorBlendNode(zerovec, rearrange, mask);
     }
@@ -2274,6 +2275,7 @@ bool LibraryCallKit::inline_vector_broadcast_int() {
       operation->add_req(mask);
       operation->add_flag(Node::Flag_is_predicated_vector);
     } else {
+      operation = gvn().transform(operation);
       operation = new VectorBlendNode(opd1, operation, mask);
     }
   }
