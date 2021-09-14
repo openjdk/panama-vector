@@ -2373,11 +2373,9 @@ const TypeVect* TypeVect::make(const Type *elem, uint length, bool is_mask) {
 }
 
 const TypeVect *TypeVect::makemask(const Type* elem, uint length) {
+  BasicType elem_bt = elem->array_element_basic_type();
   if (Matcher::has_predicated_vectors() &&
-      // TODO: remove this condition once the backend is supported.
-      // Workround to make tests pass on AVX-512/SVE when predicate is not supported.
-      // Could be removed once the backend is supported.
-      Matcher::match_rule_supported_vector_masked(Op_StoreVectorMasked, MaxVectorSize, T_BOOLEAN)) {
+      Matcher::match_rule_supported_vector_masked(Op_VectorLoadMask, length, elem_bt)) {
     const TypeVect* mtype = Matcher::predicate_reg_type(elem, length);
     return (TypeVect*)(const_cast<TypeVect*>(mtype))->hashcons();
   } else {
