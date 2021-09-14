@@ -32,7 +32,6 @@ import jdk.incubator.vector.IntVector;
 import jdk.incubator.vector.LongVector;
 import jdk.incubator.vector.ShortVector;
 import jdk.incubator.vector.VectorMask;
-import jdk.incubator.vector.VectorSpecies;
 import jdk.test.lib.Utils;
 
 import org.testng.Assert;
@@ -45,7 +44,7 @@ import org.testng.annotations.Test;
  * @summary AArch64: [vector] Add missing rules for VectorMaskCast
  * @modules jdk.incubator.vector
  *
- * @run testng/othervm -XX:-TieredCompilation compiler.vectorapi.VectorMaskCastTest
+ * @run testng/othervm -XX:-TieredCompilation -XX:CompileThreshold=100 compiler.vectorapi.VectorMaskCastTest
  */
 
 
