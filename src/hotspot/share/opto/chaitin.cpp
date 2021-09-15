@@ -655,15 +655,19 @@ void PhaseChaitin::Register_Allocate() {
             // num_regs, which reflects the physical length of scalable registers.
             num_regs = lrg.scalable_reg_slots();
           }
-          OptoReg::Name lo = OptoReg::add(hi, (1-num_regs)); // Find lo
-          // We have to use pair [lo,lo+1] even for wide vectors/vmasks because
-          // the rest of code generation works only with pairs. It is safe
-          // since for registers encoding only 'lo' is used.
-          // Second reg from pair is used in ScheduleAndBundle on SPARC where
-          // vector max size is 8 which corresponds to registers pair.
-          // It is also used in BuildOopMaps but oop operations are not
-          // vectorized.
-          set2(i, lo);
+          if (num_regs == 1) {
+            set1(i, hi);
+          } else {
+            OptoReg::Name lo = OptoReg::add(hi, (1 - num_regs)); // Find lo
+            // We have to use pair [lo,lo+1] even for wide vectors/vmasks because
+            // the rest of code generation works only with pairs. It is safe
+            // since for registers encoding only 'lo' is used.
+            // Second reg from pair is used in ScheduleAndBundle on SPARC where
+            // vector max size is 8 which corresponds to registers pair.
+            // It is also used in BuildOopMaps but oop operations are not
+            // vectorized.
+            set2(i, lo);
+          }
         } else {                // Misaligned; extract 2 bits
           OptoReg::Name hi = lrg.reg(); // Get hi register
           lrg.Remove(hi);       // Yank from mask

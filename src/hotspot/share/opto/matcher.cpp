@@ -644,6 +644,7 @@ void Matcher::init_first_stack_mask() {
     // For RegVectMask
     scalable_stack_mask.clear_to_sets(scalable_predicate_reg_slots());
     assert(scalable_stack_mask.is_AllStack(), "should be infinite stack");
+    *idealreg2spillmask[Op_RegVectMask] = *idealreg2regmask[Op_RegVectMask];
     idealreg2spillmask[Op_RegVectMask]->OR(scalable_stack_mask);
 
     // Exclude last input arg stack slots to avoid spilling vector register there,
