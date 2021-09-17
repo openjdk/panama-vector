@@ -40,6 +40,7 @@ import org.testng.annotations.Test;
 /**
  * @test
  * @bug 8273264
+ * @key randomness
  * @library /test/lib
  * @summary AArch64: [vector] Add missing rules for VectorMaskCast
  * @modules jdk.incubator.vector
@@ -47,6 +48,13 @@ import org.testng.annotations.Test;
  * @run testng/othervm -XX:-TieredCompilation -XX:CompileThreshold=100 compiler.vectorapi.VectorMaskCastTest
  */
 
+
+// Current vector mask cast test cases at test/jdk/jdk/incubator/vector/*ConversionTests.java
+// could not be intrinsfied, hence not able to verify compiler codegen, see [1]. As a
+// supplement, we add more tests for vector mask cast operations, which could be intrinsified
+// by c2 compiler to generate vector/mask instructions on supported targets.
+//
+// [1] https://bugs.openjdk.java.net/browse/JDK-8259610
 
 public class VectorMaskCastTest{
 
@@ -455,7 +463,6 @@ public class VectorMaskCastTest{
             testDouble512ToFloat256(mask);
             testDouble512ToShort128(mask);
             testDouble512ToByte64(mask);
-
         }
     }
 }
