@@ -2706,13 +2706,9 @@ bool size_fits_all_mem_uses(AddPNode* addp, int shift) {
 // Should the matcher clone input 'm' of node 'n'?
 bool Matcher::pd_clone_node(Node* n, Node* m, Matcher::MStack& mstack) {
   // ShiftV src (ShiftCntV con)
-  // * (VectorStoreMask src)
+  // StoreVector (VectorStoreMask src)
   if (is_vshift_con_pattern(n, m) ||
-      (UseSVE > 0 && m->Opcode() == Op_VectorStoreMask &&
-       (n->Opcode() == Op_StoreVector ||
-        n->Opcode() == Op_VectorMaskTrueCount ||
-        n->Opcode() == Op_VectorMaskFirstTrue ||
-        n->Opcode() == Op_VectorMaskLastTrue))) {
+      (UseSVE > 0 && m->Opcode() == Op_VectorStoreMask && n->Opcode() == Op_StoreVector)) {
     mstack.push(m, Visit);
     return true;
   }
@@ -5575,6 +5571,7 @@ operand pReg()
 %{
   constraint(ALLOC_IN_RC(pr_reg));
   match(RegVectMask);
+  match(pRegGov);
   op_cost(0);
   format %{ %}
   interface(REG_INTER);
