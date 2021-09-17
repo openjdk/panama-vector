@@ -662,8 +662,8 @@ void PhaseChaitin::Register_Allocate() {
             // We have to use pair [lo,lo+1] even for wide vectors/vmasks because
             // the rest of code generation works only with pairs. It is safe
             // since for registers encoding only 'lo' is used.
-            // Second reg from pair is used in ScheduleAndBundle on SPARC where
-            // vector max size is 8 which corresponds to registers pair.
+            // Second reg from pair is used in ScheduleAndBundle with vector max
+            // size 8 which corresponds to registers pair.
             // It is also used in BuildOopMaps but oop operations are not
             // vectorized.
             set2(i, lo);
