@@ -63,23 +63,11 @@ abstract class AbstractMask<E> extends VectorMask<E> {
 
     @Override
     public boolean laneIsSet(int i) {
-        return getBits()[i];
-    }
-
-    @Override
-    public long toLong() {
-        // FIXME: This should be an intrinsic.
-        if (length() > Long.SIZE) {
-            throw new UnsupportedOperationException("too many lanes for one long");
+        if (length() <= Long.SIZE) {
+            return ((toLong() >>> i) & 1L) == 1;
+        } else {
+            return getBits()[i];
         }
-        long res = 0;
-        long set = 1;
-        boolean[] bits = getBits();
-        for (int i = 0; i < bits.length; i++) {
-            res = bits[i] ? res | set : res;
-            set = set << 1;
-        }
-        return res;
     }
 
     @Override
@@ -178,6 +166,17 @@ abstract class AbstractMask<E> extends VectorMask<E> {
             if (bits[i])  return i;
         }
         return -1;
+    }
+
+    /*package-private*/
+    static long toLongHelper(boolean[] bits) {
+        long res = 0;
+        long set = 1;
+        for (int i = 0; i < bits.length; i++) {
+            res = bits[i] ? res | set : res;
+            set = set << 1;
+        }
+        return res;
     }
 
     @Override
