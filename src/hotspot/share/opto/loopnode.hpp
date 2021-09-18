@@ -737,7 +737,10 @@ public:
   bool policy_range_check( PhaseIdealLoop *phase ) const;
 
   // Return TRUE if "iff" is a range check.
-  bool is_range_check_if(IfNode *iff, PhaseIdealLoop *phase, Invariance& invar) const;
+  bool is_range_check_if(IfNode *iff, PhaseIdealLoop *phase, Invariance& invar, bool& is_long_rce) const;
+
+  // Makes additionals checks to validate if RCE can be performed in case of long RCE
+  bool is_valid_for_long_rce(const CountedLoopNode* cl) const;
 
   // Estimate the number of nodes required when cloning a loop (body).
   uint est_loop_clone_sz(uint factor) const;
@@ -1273,7 +1276,16 @@ public:
   bool is_scaled_iv(Node* exp, Node* iv, int* p_scale);
 
   // Return true if exp is a scaled induction var plus (or minus) constant
-  bool is_scaled_iv_plus_offset(Node* exp, Node* iv, int* p_scale, Node** p_offset, int depth = 0);
+  bool is_scaled_iv_plus_offset(Node* exp, Node* iv, int* p_scale, Node** p_offset, int depth = 0, bool allow_long_rc = false);
+
+  // Returns expression behind I2L if `allow_uncov` true
+  inline Node *unconvI2L(Node *exp, bool allow_uncov) {
+    if (allow_uncov && exp != NULL && exp->Opcode() == Op_ConvI2L) {
+      return exp->in(1);
+    } else {
+      return exp;
+    }
+  }
 
   // Create a new if above the uncommon_trap_if_pattern for the predicate to be promoted
   ProjNode* create_new_if_for_predicate(ProjNode* cont_proj, Node* new_entry, Deoptimization::DeoptReason reason,
@@ -1292,7 +1304,7 @@ public:
   BoolNode* rc_predicate(IdealLoopTree *loop, Node* ctrl,
                          int scale, Node* offset,
                          Node* init, Node* limit, jint stride,
-                         Node* range, bool upper, bool &overflow);
+                         Node* range, bool upper, bool &overflow, bool long_rce_mode = false);
 
   // Implementation of the loop predication to promote checks outside the loop
   bool loop_predication_impl(IdealLoopTree *loop);
@@ -1309,6 +1321,7 @@ public:
                                               int scale, Node* offset,
                                               Node* init, Node* limit, jint stride,
                                               Node* rng, bool& overflow,
+                                              bool long_rce_mode,
                                               Deoptimization::DeoptReason reason);
   Node* add_range_check_predicate(IdealLoopTree* loop, CountedLoopNode* cl,
                                   Node* predicate_proj, int scale_con, Node* offset,

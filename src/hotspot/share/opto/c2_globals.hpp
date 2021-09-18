@@ -767,7 +767,10 @@
                                                                             \
   product(bool, VerifyReceiverTypes, trueInDebug, DIAGNOSTIC,               \
           "Verify receiver types at runtime")                               \
-
+                                                                            \
+  product(bool, LongRCE, true, DIAGNOSTIC,                                  \
+          "Enable elimination of long range checks in int"                  \
+          " (& stripped) loops")                                            \
 // end of C2_FLAGS
 
 DECLARE_FLAGS(C2_FLAGS)

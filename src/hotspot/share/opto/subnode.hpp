@@ -26,7 +26,9 @@
 #define SHARE_OPTO_SUBNODE_HPP
 
 #include "opto/node.hpp"
+#include "opto/movenode.hpp"
 #include "opto/opcodes.hpp"
+#include "opto/phaseX.hpp"
 #include "opto/type.hpp"
 
 // Portions of code courtesy of Clifford Click
@@ -355,6 +357,9 @@ public:
   virtual uint ideal_reg() const { return Op_RegI; }
 
   bool is_counted_loop_exit_test();
+
+  /** Converts bool to 0-1 integer value, usefull as we have no direct support for bool logic in matcher */
+  Node* to_int(Node* ctrl, PhaseGVN* gvn);
 #ifndef PRODUCT
   virtual void dump_spec(outputStream *st) const;
   virtual void related(GrowableArray<Node*> *in_rel, GrowableArray<Node*> *out_rel, bool compact) const;

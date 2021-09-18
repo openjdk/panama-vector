@@ -1792,6 +1792,9 @@ bool BoolNode::is_counted_loop_exit_test() {
   return false;
 }
 
+Node* BoolNode::to_int(Node* ctrl, PhaseGVN* gvn) {
+  return CMoveNode::make(ctrl, this, gvn->intcon(0), gvn->intcon(1), TypeInt::CC);
+}
 //=============================================================================
 //------------------------------Value------------------------------------------
 // Compute sqrt

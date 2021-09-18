@@ -76,6 +76,25 @@ Node* PhaseIdealLoop::split_thru_phi(Node* n, Node* region, int policy) {
     }
   }
 
+  // Bail out for Add & Sub, when are on ConvI2L or and goes to CmpUL, this pattern can mean it's used for long RCE, and
+  // in this case CmpUL will be anchored to Phi, instead of Add or Sub
+  if (n->is_Add() || n->is_Sub()) {
+    for (DUIterator_Fast imax, i = n->fast_outs(imax); i < imax; i++) {
+      Node* out = n->fast_out(i);
+      if (out->Opcode() == Op_CmpUL) {
+        return NULL;
+      }
+      if (out->Opcode() == Op_ConvI2L) {
+        for (DUIterator_Fast imax2, i2 = out->fast_outs(imax2); i2 < imax2; i2++) {
+          Node* out2 = out->fast_out(i2);
+          if (out2->Opcode() == Op_CmpUL) {
+            return NULL;
+          }
+        }
+      }
+    }
+  }
+
   int wins = 0;
   assert(!n->is_CFG(), "");
   assert(region->is_Region(), "");

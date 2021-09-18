@@ -2493,7 +2493,21 @@ bool PhaseIdealLoop::is_scaled_iv(Node* exp, Node* iv, int* p_scale) {
 
 //-----------------------------is_scaled_iv_plus_offset------------------------------
 // Return true if exp is a simple induction variable expression: k1*iv + (invar + k2)
-bool PhaseIdealLoop::is_scaled_iv_plus_offset(Node* exp, Node* iv, int* p_scale, Node** p_offset, int depth) {
+bool PhaseIdealLoop::is_scaled_iv_plus_offset(Node* exp, Node* iv, int* p_scale, Node** p_offset, int depth, bool long_mode_search) {
+  exp = exp->uncast();
+
+  // Pattern when int counted loop uses range checks against long ranges
+  // Happens when int loop cast to long range checks
+  // Is it too eager to check it here?
+  if (long_mode_search && exp->Opcode() == Op_ConvI2L) {
+    exp = exp->in(1);
+  }
+
+  // All subsequent checks requires 3 inputs
+  if (exp->req() != 3) {
+    return false;
+  }
+
   if (is_scaled_iv(exp, iv, p_scale)) {
     if (p_offset != NULL) {
       Node *zero = _igvn.intcon(0);
@@ -2504,14 +2518,17 @@ bool PhaseIdealLoop::is_scaled_iv_plus_offset(Node* exp, Node* iv, int* p_scale,
   }
   exp = exp->uncast();
   int opc = exp->Opcode();
-  if (opc == Op_AddI) {
-    if (is_scaled_iv(exp->in(1), iv, p_scale)) {
+  if (opc == Op_AddI || (long_mode_search && opc == Op_AddL)) {
+    auto op_1 = unconvI2L(exp->in(1), /* do uncov */ long_mode_search);
+    auto op_2 = unconvI2L(exp->in(2), /* do uncov */ long_mode_search);
+    // Here we test against unconverted expression, but we return offsets, as original ones, as we depend that offset is int
+    if (is_scaled_iv(op_1, iv, p_scale)) {
       if (p_offset != NULL) {
         *p_offset = exp->in(2);
       }
       return true;
     }
-    if (is_scaled_iv(exp->in(2), iv, p_scale)) {
+    if (is_scaled_iv(op_2, iv, p_scale)) {
       if (p_offset != NULL) {
         *p_offset = exp->in(1);
       }
@@ -2520,11 +2537,21 @@ bool PhaseIdealLoop::is_scaled_iv_plus_offset(Node* exp, Node* iv, int* p_scale,
     if (exp->in(2)->is_Con()) {
       Node* offset2 = NULL;
       if (depth < 2 &&
-          is_scaled_iv_plus_offset(exp->in(1), iv, p_scale,
-                                   p_offset != NULL ? &offset2 : NULL, depth+1)) {
+          is_scaled_iv_plus_offset(op_1, iv, p_scale,
+                                   p_offset != NULL ? &offset2 : NULL, depth+1, long_mode_search)) {
         if (p_offset != NULL) {
           Node *ctrl_off2 = get_ctrl(offset2);
-          Node* offset = new AddINode(offset2, exp->in(2));
+          Node* offset;
+          if (opc == Op_AddL) {
+            // offset2 can be an int, recursive or this is_scaled_iv_plus_offset can uncov value form i2l
+            if (offset2->bottom_type()->isa_int()) {
+              offset2 = new ConvI2LNode(offset2);
+              register_new_node(offset2, ctrl_off2);
+            }
+            offset = new AddLNode(offset2, exp->in(2));
+          } else {
+            offset = new AddINode(offset2, exp->in(2));
+          }
           register_new_node(offset, ctrl_off2);
           *p_offset = offset;
         }

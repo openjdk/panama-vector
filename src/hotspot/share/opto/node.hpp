@@ -1126,6 +1126,15 @@ public:
     guarantee(t != NULL, "must be con");
     return t->get_con();
   }
+
+  jlong get_int_or_long() const {
+    const TypeInt* t = find_int_type();
+    if (t != NULL) {
+      return t->get_con();
+    } else {
+      return get_long();
+    }
+  }
   // Here's where the work is done.  Can produce non-constant int types too.
   const TypeInt* find_int_type() const;
   const TypeInteger* find_integer_type(BasicType bt) const;
