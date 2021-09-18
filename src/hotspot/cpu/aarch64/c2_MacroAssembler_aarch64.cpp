@@ -1007,6 +1007,46 @@ void C2_MacroAssembler::sve_vmask_reduction(int opc, Register dst, SIMD_RegVaria
   }
 }
 
+// Extend src predicate to dst predicate with the same lane count but larger
+// element size, e.g. 64Byte -> 512Long
+void C2_MacroAssembler::sve_vmaskcast_extend(PRegister dst, PRegister src,
+                                             uint dst_element_length_in_bytes,
+                                             uint src_element_length_in_bytes) {
+  if (dst_element_length_in_bytes == 2 * src_element_length_in_bytes) {
+    sve_punpklo(dst, src);
+  } else if (dst_element_length_in_bytes == 4 * src_element_length_in_bytes) {
+    sve_punpklo(dst, src);
+    sve_punpklo(dst, dst);
+  } else if (dst_element_length_in_bytes == 8 * src_element_length_in_bytes) {
+    sve_punpklo(dst, src);
+    sve_punpklo(dst, dst);
+    sve_punpklo(dst, dst);
+  } else {
+    assert(false, "unsupported");
+    ShouldNotReachHere();
+  }
+}
+
+// Narrow src predicate to dst predicate with the same lane count but
+// smaller element size, e.g. 512Long -> 64Byte
+void C2_MacroAssembler::sve_vmaskcast_narrow(PRegister dst, PRegister src,
+                                             uint dst_element_length_in_bytes, uint src_element_length_in_bytes) {
+  // The insignificant bits in src predicate are expected to be zero.
+  if (dst_element_length_in_bytes * 2 == src_element_length_in_bytes) {
+    sve_uzp1(dst, B, src, src);
+  } else if (dst_element_length_in_bytes * 4 == src_element_length_in_bytes) {
+    sve_uzp1(dst, H, src, src);
+    sve_uzp1(dst, B, dst, dst);
+  } else if (dst_element_length_in_bytes * 8 == src_element_length_in_bytes) {
+    sve_uzp1(dst, S, src, src);
+    sve_uzp1(dst, H, dst, dst);
+    sve_uzp1(dst, B, dst, dst);
+  } else {
+    assert(false, "unsupported");
+    ShouldNotReachHere();
+  }
+}
+
 void C2_MacroAssembler::sve_reduce_integral(int opc, Register dst, BasicType bt, Register src1,
                                             FloatRegister src2, PRegister pg, FloatRegister tmp) {
   assert(bt == T_BYTE || bt == T_SHORT || bt == T_INT || bt == T_LONG, "unsupported element type");

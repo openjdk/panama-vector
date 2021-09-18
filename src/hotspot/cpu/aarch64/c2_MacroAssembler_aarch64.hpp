@@ -67,6 +67,12 @@
   void sve_vmask_reduction(int opc, Register dst, SIMD_RegVariant size, PRegister src,
                            PRegister pgtmp, PRegister ptmp, int length);
 
+  void sve_vmaskcast_extend(PRegister dst, PRegister src,
+                            uint dst_element_length_in_bytes, uint src_element_lenght_in_bytes);
+
+  void sve_vmaskcast_narrow(PRegister dst, PRegister src,
+                            uint dst_element_length_in_bytes, uint src_element_lenght_in_bytes);
+
   void sve_reduce_integral(int opc, Register dst, BasicType bt, Register src1,
                            FloatRegister src2, PRegister pg, FloatRegister tmp);
 

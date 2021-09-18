@@ -2135,7 +2135,7 @@ BINARY_OP_PREDICATE(vsubL, SubVL, D, sve_sub)
 BINARY_OP_PREDICATE(vsubF, SubVF, S, sve_fsub)
 BINARY_OP_PREDICATE(vsubD, SubVD, D, sve_fsub)
 
-// vector mask cast
+// ------------------------------ Vector mask cast --------------------------
 
 instruct vmaskcast(pRegGov dst_src) %{
   predicate(UseSVE > 0 &&
@@ -2149,6 +2149,39 @@ instruct vmaskcast(pRegGov dst_src) %{
   %}
   ins_pipe(pipe_class_empty);
 %}
+
+instruct vmaskcast_extend(pRegGov dst, pReg src)
+%{
+  predicate(UseSVE > 0 &&
+            (Matcher::vector_length_in_bytes(n) == 2 * Matcher::vector_length_in_bytes(n->in(1)) ||
+             Matcher::vector_length_in_bytes(n) == 4 * Matcher::vector_length_in_bytes(n->in(1)) ||
+             Matcher::vector_length_in_bytes(n) == 8 * Matcher::vector_length_in_bytes(n->in(1))));
+  match(Set dst (VectorMaskCast src));
+  ins_cost(SVE_COST * 3);
+  format %{ "sve_vmaskcast_extend  $dst, $src\t# extend predicate $src" %}
+  ins_encode %{
+    __ sve_vmaskcast_extend(as_PRegister($dst$$reg), as_PRegister($src$$reg),
+                            Matcher::vector_length_in_bytes(this), Matcher::vector_length_in_bytes(this, $src));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vmaskcast_narrow(pRegGov dst, pReg src)
+%{
+  predicate(UseSVE > 0 &&
+            (Matcher::vector_length_in_bytes(n) * 2 == Matcher::vector_length_in_bytes(n->in(1)) ||
+             Matcher::vector_length_in_bytes(n) * 4 == Matcher::vector_length_in_bytes(n->in(1)) ||
+             Matcher::vector_length_in_bytes(n) * 8 == Matcher::vector_length_in_bytes(n->in(1))));
+  match(Set dst (VectorMaskCast src));
+  ins_cost(SVE_COST * 3);
+  format %{ "sve_vmaskcast_narrow  $dst, $src\t# narrow predicate $src" %}
+  ins_encode %{
+    __ sve_vmaskcast_narrow(as_PRegister($dst$$reg), as_PRegister($src$$reg),
+                            Matcher::vector_length_in_bytes(this), Matcher::vector_length_in_bytes(this, $src));
+  %}
+  ins_pipe(pipe_slow);
+%}
+dnl
 
 // ------------------------------ Vector cast -------------------------------
 dnl

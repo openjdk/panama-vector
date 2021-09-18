@@ -154,7 +154,7 @@ int RegisterSaver::v0_offset_in_bytes() {
 }
 
 int RegisterSaver::total_sve_predicate_in_bytes() {
-#if COMPILER2
+#ifdef COMPILER2
   if (_save_vectors && Matcher::supports_scalable_vector()) {
     // The number of total predicate bytes is unlikely to be a multiple
     // of 16 bytes so we manually align it up.
