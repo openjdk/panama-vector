@@ -679,21 +679,21 @@ final class ByteMaxVector extends ByteVector {
         @ForceInline
         public int trueCount() {
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, ByteMaxMask.class, byte.class, VLENGTH, this,
-                                                      (m) -> (long)trueCountHelper(((ByteMaxMask)m).getBits()));
+                                                      (m) -> trueCountHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int firstTrue() {
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, ByteMaxMask.class, byte.class, VLENGTH, this,
-                                                      (m) -> (long)firstTrueHelper(((ByteMaxMask)m).getBits()));
+                                                      (m) -> firstTrueHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int lastTrue() {
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, ByteMaxMask.class, byte.class, VLENGTH, this,
-                                                      (m) -> (long)lastTrueHelper(((ByteMaxMask)m).getBits()));
+                                                      (m) -> lastTrueHelper(m.getBits()));
         }
 
         @Override
@@ -703,7 +703,7 @@ final class ByteMaxVector extends ByteVector {
                 throw new UnsupportedOperationException("too many lanes for one long");
             }
             return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, ByteMaxMask.class, byte.class, VLENGTH, this,
-                                                      (m) -> toLongHelper(((ByteMaxMask)m).getBits()));
+                                                      (m) -> toLongHelper(m.getBits()));
         }
 
         // Reductions

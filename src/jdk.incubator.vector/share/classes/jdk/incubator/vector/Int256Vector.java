@@ -693,21 +693,21 @@ final class Int256Vector extends IntVector {
         @ForceInline
         public int trueCount() {
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Int256Mask.class, int.class, VLENGTH, this,
-                                                      (m) -> (long)trueCountHelper(((Int256Mask)m).getBits()));
+                                                      (m) -> trueCountHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int firstTrue() {
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Int256Mask.class, int.class, VLENGTH, this,
-                                                      (m) -> (long)firstTrueHelper(((Int256Mask)m).getBits()));
+                                                      (m) -> firstTrueHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int lastTrue() {
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Int256Mask.class, int.class, VLENGTH, this,
-                                                      (m) -> (long)lastTrueHelper(((Int256Mask)m).getBits()));
+                                                      (m) -> lastTrueHelper(m.getBits()));
         }
 
         @Override
@@ -717,7 +717,7 @@ final class Int256Vector extends IntVector {
                 throw new UnsupportedOperationException("too many lanes for one long");
             }
             return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Int256Mask.class, int.class, VLENGTH, this,
-                                                      (m) -> toLongHelper(((Int256Mask)m).getBits()));
+                                                      (m) -> toLongHelper(m.getBits()));
         }
 
         // Reductions

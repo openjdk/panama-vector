@@ -952,21 +952,21 @@ final class $vectortype$ extends $abstractvectortype$ {
         @ForceInline
         public int trueCount() {
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, $masktype$.class, $bitstype$.class, VLENGTH, this,
-                                                      (m) -> (long)trueCountHelper((($masktype$)m).getBits()));
+                                                      (m) -> trueCountHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int firstTrue() {
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, $masktype$.class, $bitstype$.class, VLENGTH, this,
-                                                      (m) -> (long)firstTrueHelper((($masktype$)m).getBits()));
+                                                      (m) -> firstTrueHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int lastTrue() {
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, $masktype$.class, $bitstype$.class, VLENGTH, this,
-                                                      (m) -> (long)lastTrueHelper((($masktype$)m).getBits()));
+                                                      (m) -> lastTrueHelper(m.getBits()));
         }
 
         @Override
@@ -976,7 +976,7 @@ final class $vectortype$ extends $abstractvectortype$ {
                 throw new UnsupportedOperationException("too many lanes for one long");
             }
             return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, $masktype$.class, $bitstype$.class, VLENGTH, this,
-                                                      (m) -> toLongHelper((($masktype$)m).getBits()));
+                                                      (m) -> toLongHelper(m.getBits()));
         }
 
         // Reductions

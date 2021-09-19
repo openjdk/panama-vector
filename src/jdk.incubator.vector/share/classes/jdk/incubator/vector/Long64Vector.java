@@ -669,21 +669,21 @@ final class Long64Vector extends LongVector {
         @ForceInline
         public int trueCount() {
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Long64Mask.class, long.class, VLENGTH, this,
-                                                      (m) -> (long)trueCountHelper(((Long64Mask)m).getBits()));
+                                                      (m) -> trueCountHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int firstTrue() {
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Long64Mask.class, long.class, VLENGTH, this,
-                                                      (m) -> (long)firstTrueHelper(((Long64Mask)m).getBits()));
+                                                      (m) -> firstTrueHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int lastTrue() {
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Long64Mask.class, long.class, VLENGTH, this,
-                                                      (m) -> (long)lastTrueHelper(((Long64Mask)m).getBits()));
+                                                      (m) -> lastTrueHelper(m.getBits()));
         }
 
         @Override
@@ -693,7 +693,7 @@ final class Long64Vector extends LongVector {
                 throw new UnsupportedOperationException("too many lanes for one long");
             }
             return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Long64Mask.class, long.class, VLENGTH, this,
-                                                      (m) -> toLongHelper(((Long64Mask)m).getBits()));
+                                                      (m) -> toLongHelper(m.getBits()));
         }
 
         // Reductions

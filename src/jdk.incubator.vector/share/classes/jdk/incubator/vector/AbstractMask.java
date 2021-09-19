@@ -63,6 +63,9 @@ abstract class AbstractMask<E> extends VectorMask<E> {
 
     @Override
     public boolean laneIsSet(int i) {
+        if (i < 0 || i >= length()) {
+            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + length());
+        }
         if (length() <= Long.SIZE) {
             return ((toLong() >>> i) & 1L) == 1;
         } else {

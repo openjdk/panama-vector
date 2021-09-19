@@ -674,21 +674,21 @@ final class Float128Vector extends FloatVector {
         @ForceInline
         public int trueCount() {
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Float128Mask.class, int.class, VLENGTH, this,
-                                                      (m) -> (long)trueCountHelper(((Float128Mask)m).getBits()));
+                                                      (m) -> trueCountHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int firstTrue() {
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Float128Mask.class, int.class, VLENGTH, this,
-                                                      (m) -> (long)firstTrueHelper(((Float128Mask)m).getBits()));
+                                                      (m) -> firstTrueHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int lastTrue() {
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Float128Mask.class, int.class, VLENGTH, this,
-                                                      (m) -> (long)lastTrueHelper(((Float128Mask)m).getBits()));
+                                                      (m) -> lastTrueHelper(m.getBits()));
         }
 
         @Override
@@ -698,7 +698,7 @@ final class Float128Vector extends FloatVector {
                 throw new UnsupportedOperationException("too many lanes for one long");
             }
             return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Float128Mask.class, int.class, VLENGTH, this,
-                                                      (m) -> toLongHelper(((Float128Mask)m).getBits()));
+                                                      (m) -> toLongHelper(m.getBits()));
         }
 
         // Reductions
