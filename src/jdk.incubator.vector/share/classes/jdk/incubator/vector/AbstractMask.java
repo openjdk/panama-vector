@@ -24,6 +24,8 @@
  */
 package jdk.incubator.vector;
 
+import java.util.Objects;
+
 import jdk.internal.vm.annotation.ForceInline;
 
 import static jdk.incubator.vector.VectorOperators.*;
@@ -63,10 +65,9 @@ abstract class AbstractMask<E> extends VectorMask<E> {
 
     @Override
     public boolean laneIsSet(int i) {
-        if (i < 0 || i >= length()) {
-            throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + length());
-        }
-        if (length() <= Long.SIZE) {
+        int length = length();
+        Objects.checkIndex(i, length);
+        if (length <= Long.SIZE) {
             return ((toLong() >>> i) & 1L) == 1;
         } else {
             return getBits()[i];
