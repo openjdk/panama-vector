@@ -960,7 +960,7 @@ class VectorMaskLastTrueNode : public VectorMaskOpNode {
 class VectorMaskToLongNode : public VectorMaskOpNode {
  public:
   VectorMaskToLongNode(Node* mask, const Type* ty):
-    VectorMaskOpNode(mask, ty, Op_VectorMaskLastTrue) {}
+    VectorMaskOpNode(mask, ty, Op_VectorMaskToLong) {}
   virtual int Opcode() const;
   virtual uint  ideal_reg() const { return Op_RegL; }
 };
