@@ -438,7 +438,7 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
         case T_LONG:  // fall-through
         case T_FLOAT: // fall-through
         case T_DOUBLE: return Op_VectorMaskToLong;
-        default: fatal("MASK_TRUECOUNT: %s", type2name(bt));
+        default: fatal("MASK_TOLONG: %s", type2name(bt));
       }
       break;
     }
