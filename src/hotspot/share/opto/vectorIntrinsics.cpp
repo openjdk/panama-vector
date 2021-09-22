@@ -653,7 +653,7 @@ bool LibraryCallKit::inline_vector_shuffle_iota() {
 }
 
 // <E, M>
-// int maskReductionCoerced(int oper, Class<? extends M> maskClass, Class<?> elemClass,
+// long maskReductionCoerced(int oper, Class<? extends M> maskClass, Class<?> elemClass,
 //                          int length, M m, VectorMaskOp<M> defaultImpl)
 bool LibraryCallKit::inline_vector_mask_operation() {
   const TypeInt*     oper       = gvn().type(argument(0))->isa_int();
