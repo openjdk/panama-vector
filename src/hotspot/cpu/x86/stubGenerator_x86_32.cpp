@@ -4001,7 +4001,6 @@ class StubGenerator: public StubCodeGenerator {
     StubRoutines::x86::_vector_byte_perm_mask = generate_vector_byte_perm_mask("vector_byte_perm_mask");
     StubRoutines::x86::_vector_long_sign_mask = generate_vector_mask_long_double("vector_long_sign_mask", 0x80000000, 0x00000000);
     StubRoutines::x86::_vector_all_bits_set = generate_vector_mask("vector_all_bits_set", 0xFFFFFFFF);
-    StubRoutines::x86::_vector_mask_cmp_bits = generate_vector_mask("vector_mask_cmp_bits", 0x01010101);
     StubRoutines::x86::_vector_int_mask_cmp_bits = generate_vector_mask("vector_int_mask_cmp_bits", 0x00000001);
     StubRoutines::x86::_vector_iota_indices = generate_iota_indices("iota_indices");
 
