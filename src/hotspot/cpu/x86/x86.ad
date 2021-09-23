@@ -1495,7 +1495,7 @@ const bool Matcher::match_rule_supported(int opcode) {
     case Op_VectorLoadMask:
     case Op_VectorStoreMask:
     case Op_VectorBlend:
-      if (UseSSE < 3) {
+      if (UseSSE < 4) {
         return false;
       }
       break;
