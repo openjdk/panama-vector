@@ -1425,12 +1425,13 @@ Node* VectorMaskOpNode::make(Node* mask, const Type* ty, int mopc) {
       return new VectorMaskLastTrueNode(mask, ty);
     case Op_VectorMaskFirstTrue:
       return new VectorMaskFirstTrueNode(mask, ty);
+    case Op_VectorMaskToLong:
+      return new VectorMaskToLongNode(mask, ty);
     default:
       assert(false, "Unhandled operation");
   }
   return NULL;
 }
-
 
 #ifndef PRODUCT
 void VectorBoxAllocateNode::dump_spec(outputStream *st) const {

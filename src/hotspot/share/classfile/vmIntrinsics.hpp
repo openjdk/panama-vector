@@ -1080,7 +1080,7 @@ class methodHandle;
                                         "I"                                                                                                    \
                                         "Ljdk/internal/vm/vector/VectorSupport$VectorMask;"                                                    \
                                         "Ljdk/internal/vm/vector/VectorSupport$VectorMaskOp;)"                                                 \
-                                        "I")                                                                                                   \
+                                        "J")                                                                                                   \
     do_name(vector_mask_oper_name, "maskReductionCoerced")                                                                                     \
                                                                                                                                                \
    /* (2) Bytecode intrinsics                                                                        */                        \

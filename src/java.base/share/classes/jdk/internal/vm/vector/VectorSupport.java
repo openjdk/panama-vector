@@ -69,10 +69,11 @@ public class VectorSupport {
     public static final int VECTOR_OP_MASK_TRUECOUNT = 19;
     public static final int VECTOR_OP_MASK_FIRSTTRUE = 20;
     public static final int VECTOR_OP_MASK_LASTTRUE  = 21;
+    public static final int VECTOR_OP_MASK_TOLONG    = 22;
 
     // Rotate operations
-    public static final int VECTOR_OP_LROTATE = 22;
-    public static final int VECTOR_OP_RROTATE = 23;
+    public static final int VECTOR_OP_LROTATE = 23;
+    public static final int VECTOR_OP_RROTATE = 24;
 
     // Math routines
     public static final int VECTOR_OP_TAN = 101;
@@ -632,18 +633,18 @@ public class VectorSupport {
 
     /* ============================================================================ */
     public interface VectorMaskOp<M extends VectorMask<?>> {
-        int apply(M m);
+        long apply(M m);
     }
 
     @IntrinsicCandidate
     public static
     <M extends VectorMask<E>,
      E>
-    int maskReductionCoerced(int oper,
-                             Class<? extends M> mClass, Class<?> eClass,
-                             int length,
-                             M m,
-               VectorMaskOp<M> defaultImpl) {
+    long maskReductionCoerced(int oper,
+                              Class<? extends M> mClass, Class<?> eClass,
+                              int length,
+                              M m,
+                              VectorMaskOp<M> defaultImpl) {
        assert isNonCapturingLambda(defaultImpl) : defaultImpl;
        return defaultImpl.apply(m);
     }

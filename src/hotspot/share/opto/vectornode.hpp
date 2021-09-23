@@ -922,7 +922,7 @@ class VectorMaskOpNode : public TypeNode {
  public:
   VectorMaskOpNode(Node* mask, const Type* ty, int mopc):
     TypeNode(ty, 2), _mopc(mopc) {
-    assert(mask->bottom_type()->is_vect()->element_basic_type() == T_BOOLEAN, "");
+    assert(Matcher::has_predicated_vectors() || mask->bottom_type()->is_vect()->element_basic_type() == T_BOOLEAN, "");
     init_req(1, mask);
   }
 
@@ -955,6 +955,14 @@ class VectorMaskLastTrueNode : public VectorMaskOpNode {
   VectorMaskLastTrueNode(Node* mask, const Type* ty):
     VectorMaskOpNode(mask, ty, Op_VectorMaskLastTrue) {}
   virtual int Opcode() const;
+};
+
+class VectorMaskToLongNode : public VectorMaskOpNode {
+ public:
+  VectorMaskToLongNode(Node* mask, const Type* ty):
+    VectorMaskOpNode(mask, ty, Op_VectorMaskToLong) {}
+  virtual int Opcode() const;
+  virtual uint  ideal_reg() const { return Op_RegL; }
 };
 
 //-------------------------- Vector mask broadcast -----------------------------------

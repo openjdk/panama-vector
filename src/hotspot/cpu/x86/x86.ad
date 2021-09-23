@@ -1558,6 +1558,7 @@ const bool Matcher::match_rule_supported(int opcode) {
     case Op_VectorMaskFirstTrue:
     case Op_VectorMaskLastTrue:
     case Op_VectorMaskTrueCount:
+    case Op_VectorMaskToLong:
       if (!is_LP64 || UseAVX < 1) {
          return false;
       }
@@ -8659,42 +8660,56 @@ instruct vmasked_store64(memory mem, vec src, kReg mask) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vmask_truecount_evex(rRegI dst, vec mask, rRegL tmp, kReg ktmp, vec xtmp) %{
-  predicate(VM_Version::supports_avx512vlbw());
-  match(Set dst (VectorMaskTrueCount mask));
-  effect(TEMP_DEF dst, TEMP tmp, TEMP ktmp, TEMP xtmp);
-  format %{ "vector_truecount_evex $mask \t! vector mask true count" %}
+instruct vmask_tolong_evex(rRegL dst, kReg mask) %{
+  predicate(n->in(1)->bottom_type()->isa_vectmask());
+  match(Set dst (VectorMaskToLong mask));
+  format %{ "vector_tolong_evex $dst, $mask \t! vector mask tolong" %}
   ins_encode %{
-    int opcode = this->ideal_Opcode();
-    int vlen_enc = vector_length_encoding(this, $mask);
-    int mask_len = Matcher::vector_length(this, $mask);
-    __ vector_mask_operation(opcode, $dst$$Register, $mask$$XMMRegister, $xtmp$$XMMRegister,
-                             $tmp$$Register, $ktmp$$KRegister, mask_len, vlen_enc);
+    if (VM_Version::supports_avx512vlbw()) {
+      __ kmovql($dst$$Register, $mask$$KRegister);
+    } else {
+      int mask_len = Matcher::vector_length(this, $mask);
+      assert(mask_len <= 16, "");
+      __ kmovwl($dst$$Register, $mask$$KRegister);
+    }
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vmask_first_or_last_true_evex(rRegI dst, vec mask, rRegL tmp, kReg ktmp, vec xtmp, rFlagsReg cr) %{
-  predicate(VM_Version::supports_avx512vlbw());
-  match(Set dst (VectorMaskFirstTrue mask));
-  match(Set dst (VectorMaskLastTrue mask));
-  effect(TEMP_DEF dst, TEMP tmp, TEMP ktmp, TEMP xtmp, KILL cr);
-  format %{ "vector_mask_first_or_last_true_evex $mask \t! vector first/last true location" %}
+instruct vmask_tolong_avx(rRegL dst, vec mask, vec xtmp) %{
+  predicate(n->in(1)->bottom_type()->isa_vectmask() == NULL &&
+            n->in(1)->bottom_type()->is_vect()->element_basic_type() == T_BOOLEAN);
+  match(Set dst (VectorMaskToLong mask));
+  format %{ "vector_tolong_avx $dst, $mask \t! using $xtmp as TEMP" %}
+  effect(TEMP xtmp);
   ins_encode %{
-    int opcode = this->ideal_Opcode();
     int vlen_enc = vector_length_encoding(this, $mask);
-    int mask_len = Matcher::vector_length(this, $mask);
-    __ vector_mask_operation(opcode, $dst$$Register, $mask$$XMMRegister, $xtmp$$XMMRegister,
-                             $tmp$$Register, $ktmp$$KRegister, mask_len, vlen_enc);
+     __ vpxor($xtmp$$XMMRegister, $xtmp$$XMMRegister, $xtmp$$XMMRegister, vlen_enc);
+     __ vpsubb($xtmp$$XMMRegister, $xtmp$$XMMRegister, $mask$$XMMRegister, vlen_enc);
+     __ vpmovmskb($dst$$Register, $xtmp$$XMMRegister, vlen_enc);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vmask_truecount_avx(rRegI dst, vec mask, rRegL tmp, vec xtmp, vec xtmp1) %{
-  predicate(!VM_Version::supports_avx512vlbw());
+instruct vmask_truecount_evex(rRegI dst, kReg mask, rRegL tmp, rFlagsReg cr) %{
+  predicate(n->in(1)->bottom_type()->isa_vectmask());
   match(Set dst (VectorMaskTrueCount mask));
-  effect(TEMP_DEF dst, TEMP tmp, TEMP xtmp, TEMP xtmp1);
-  format %{ "vector_truecount_avx $mask \t! vector mask true count" %}
+  effect(TEMP_DEF dst, TEMP tmp, KILL cr);
+  format %{ "vector_truecount_evex $dst, $mask \t! using $tmp as TEMP" %}
+  ins_encode %{
+    int opcode = this->ideal_Opcode();
+    int vlen_enc = vector_length_encoding(this, $mask);
+    int mask_len = Matcher::vector_length(this, $mask);
+    __ vector_mask_operation(opcode, $dst$$Register, $mask$$KRegister, $tmp$$Register, mask_len, vlen_enc);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vmask_truecount_avx(rRegI dst, vec mask, rRegL tmp, vec xtmp, vec xtmp1, rFlagsReg cr) %{
+  predicate(n->in(1)->bottom_type()->isa_vectmask() == NULL);
+  match(Set dst (VectorMaskTrueCount mask));
+  effect(TEMP_DEF dst, TEMP tmp, TEMP xtmp, TEMP xtmp1, KILL cr);
+  format %{ "vector_truecount_avx $dst, $mask \t! using $tmp, $xtmp and $xtmp1 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen_enc = vector_length_encoding(this, $mask);
@@ -8705,12 +8720,27 @@ instruct vmask_truecount_avx(rRegI dst, vec mask, rRegL tmp, vec xtmp, vec xtmp1
   ins_pipe( pipe_slow );
 %}
 
+instruct vmask_first_or_last_true_evex(rRegI dst, kReg mask, rRegL tmp, rFlagsReg cr) %{
+  predicate(n->in(1)->bottom_type()->isa_vectmask());
+  match(Set dst (VectorMaskFirstTrue mask));
+  match(Set dst (VectorMaskLastTrue mask));
+  effect(TEMP_DEF dst, TEMP tmp, KILL cr);
+  format %{ "vector_mask_first_or_last_true_evex $dst, $mask \t! using $tmp as TEMP" %}
+  ins_encode %{
+    int opcode = this->ideal_Opcode();
+    int vlen_enc = vector_length_encoding(this, $mask);
+    int mask_len = Matcher::vector_length(this, $mask);
+    __ vector_mask_operation(opcode, $dst$$Register, $mask$$KRegister, $tmp$$Register, mask_len, vlen_enc);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 instruct vmask_first_or_last_true_avx(rRegI dst, vec mask, rRegL tmp, vec xtmp, vec xtmp1, rFlagsReg cr) %{
-  predicate(!VM_Version::supports_avx512vlbw());
+  predicate(n->in(1)->bottom_type()->isa_vectmask() == NULL);
   match(Set dst (VectorMaskFirstTrue mask));
   match(Set dst (VectorMaskLastTrue mask));
   effect(TEMP_DEF dst, TEMP tmp, TEMP xtmp, TEMP xtmp1, KILL cr);
-  format %{ "vector_mask_first_or_last_true_avx $mask \t! vector first/last true location" %}
+  format %{ "vector_mask_first_or_last_true_avx $dst, $mask \t! using $tmp, $xtmp and $xtmp1 as TEMP" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen_enc = vector_length_encoding(this, $mask);
@@ -9297,7 +9327,7 @@ instruct evcmp_masked(kReg dst, vec src1, vec src2, immI8 cond, kReg mask, rRegP
 #ifdef _LP64
 instruct mask_all_evexI_imm(kReg dst, immI cnt, rRegL tmp) %{
   match(Set dst (MaskAll cnt));
-  effect(TEMP tmp);
+  effect(TEMP_DEF dst, TEMP tmp);
   format %{ "mask_all_evexI $dst, $cnt \t! using $tmp as TEMP" %}
   ins_encode %{
     int vec_len = Matcher::vector_length(this);
@@ -9317,7 +9347,7 @@ instruct mask_all_evexI_imm(kReg dst, immI cnt, rRegL tmp) %{
 
 instruct mask_all_evexI(kReg dst, rRegI src, rRegL tmp) %{
   match(Set dst (MaskAll src));
-  effect(TEMP tmp);
+  effect(TEMP_DEF dst, TEMP tmp);
   format %{ "mask_all_evexI $dst, $src \t! using $tmp as TEMP" %}
   ins_encode %{
     int vec_len = Matcher::vector_length(this);

@@ -4058,13 +4058,14 @@ void C2_MacroAssembler::masked_op(int ideal_opc, int mask_len, KRegister dst,
 }
 
 #ifdef _LP64
-void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, XMMRegister mask, XMMRegister xtmp,
-                                              Register tmp, KRegister ktmp, int masklen, int vec_enc) {
-  assert(VM_Version::supports_avx512vlbw(), "");
-  vpxor(xtmp, xtmp, xtmp, vec_enc);
-  vpsubb(xtmp, xtmp, mask, vec_enc);
-  evpmovb2m(ktmp, xtmp, vec_enc);
-  kmovql(tmp, ktmp);
+void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, KRegister mask,
+                                              Register tmp, int masklen, int vec_enc) {
+  if(VM_Version::supports_avx512bw()) {
+    kmovql(tmp, mask);
+  } else {
+    assert(masklen <= 16, "");
+    kmovwl(tmp, mask);
+  }
   switch(opc) {
     case Op_VectorMaskTrueCount:
       popcntq(dst, tmp);
