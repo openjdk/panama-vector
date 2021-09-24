@@ -1461,10 +1461,17 @@ void C2_MacroAssembler::load_vector_mask(XMMRegister dst, XMMRegister src, int v
   }
 }
 
-void C2_MacroAssembler::load_vector_mask64(KRegister dst, XMMRegister src, XMMRegister xtmp, Register scratch) {
-  vpmovsxbd(xtmp, src, Assembler::AVX_512bit);
-  evpcmpd(dst, k0, xtmp, ExternalAddress(StubRoutines::x86::vector_int_mask_cmp_bits()),
-          Assembler::eq, true, Assembler::AVX_512bit, scratch);
+void C2_MacroAssembler::load_vector_mask(KRegister dst, XMMRegister src, XMMRegister xtmp,
+                                         Register tmp, bool novlbwdq, int vlen_enc) {
+  if (novlbwdq) {
+    vpmovsxbd(xtmp, src, vlen_enc);
+    evpcmpd(dst, k0, xtmp, ExternalAddress(StubRoutines::x86::vector_int_mask_cmp_bits()),
+            Assembler::eq, true, vlen_enc, tmp);
+  } else {
+    vpxor(xtmp, xtmp, xtmp, vlen_enc);
+    vpsubb(xtmp, xtmp, src, vlen_enc);
+    evpmovb2m(dst, xtmp, vlen_enc);
+  }
 }
 
 void C2_MacroAssembler::load_iota_indices(XMMRegister dst, Register scratch, int vlen_in_bytes) {
@@ -4001,18 +4008,6 @@ void C2_MacroAssembler::evmasked_op(int ideal_opc, BasicType eType, KRegister ma
       evdivps(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_DivVD:
       evdivpd(dst, mask, src1, src2, merge, vlen_enc); break;
-    case Op_SqrtVF:
-      evsqrtps(dst, mask, src1, src2, merge, vlen_enc); break;
-    case Op_SqrtVD:
-      evsqrtpd(dst, mask, src1, src2, merge, vlen_enc); break;
-    case Op_AbsVB:
-      evpabsb(dst, mask, src2, merge, vlen_enc); break;
-    case Op_AbsVS:
-      evpabsw(dst, mask, src2, merge, vlen_enc); break;
-    case Op_AbsVI:
-      evpabsd(dst, mask, src2, merge, vlen_enc); break;
-    case Op_AbsVL:
-      evpabsq(dst, mask, src2, merge, vlen_enc); break;
     case Op_FmaVF:
       evpfma213ps(dst, mask, src1, src2, merge, vlen_enc); break;
     case Op_FmaVD:

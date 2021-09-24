@@ -142,7 +142,7 @@ public:
   void evpblend(BasicType typ, XMMRegister dst, KRegister kmask, XMMRegister src1, XMMRegister src2, bool merge, int vector_len);
 
   void load_vector_mask(XMMRegister dst, XMMRegister src, int vlen_in_bytes, BasicType elem_bt, bool is_legacy);
-  void load_vector_mask64(KRegister dst, XMMRegister src, XMMRegister xtmp, Register scratch);
+  void load_vector_mask(KRegister dst, XMMRegister src, XMMRegister xtmp, Register tmp, bool novlbwdq, int vlen_enc);
 
   void load_iota_indices(XMMRegister dst, Register scratch, int vlen_in_bytes);
 
