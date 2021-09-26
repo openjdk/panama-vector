@@ -4215,6 +4215,7 @@ bool MatchRule::is_vector() const {
     "SqrtVD","SqrtVF",
     "AndV" ,"XorV" ,"OrV",
     "MaxV", "MinV",
+    "CompressV", /* "ExpandV" */
     "AddReductionVI", "AddReductionVL",
     "AddReductionVF", "AddReductionVD",
     "MulReductionVI", "MulReductionVL",

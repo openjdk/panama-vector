@@ -713,6 +713,18 @@ public:
   virtual int Opcode() const;
 };
 
+//------------------------------CompressVNode--------------------------------------
+// Vector compress
+class CompressVNode : public VectorNode {
+public:
+  CompressVNode(Node* vec1, Node* mask)
+    : VectorNode(vec1, mask, vec1->bottom_type()->is_vect()) {}
+
+  virtual int Opcode() const;
+  Node* vec1() const { return in(1); }
+  Node* vec_mask() const { return in(2); }
+};
+
 //================================= M E M O R Y ===============================
 
 //------------------------------LoadVectorNode---------------------------------

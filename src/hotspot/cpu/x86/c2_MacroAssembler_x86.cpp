@@ -2273,6 +2273,33 @@ void C2_MacroAssembler::evpblend(BasicType typ, XMMRegister dst, KRegister kmask
   }
 }
 
+void C2_MacroAssembler::evcompress(BasicType type, XMMRegister dst, KRegister kmask,
+                                   XMMRegister src, bool merge, int vector_len) {
+  switch(type) {
+  case T_BYTE:
+    evpcompressb(dst, kmask, src, merge, vector_len);
+    break;
+  case T_SHORT:
+    evpcompressw(dst, kmask, src, merge, vector_len);
+    break;
+  case T_INT:
+    evpcompressd(dst, kmask, src, merge, vector_len);
+    break;
+  case T_FLOAT:
+    evcompressps(dst, kmask, src, merge, vector_len);
+    break;
+  case T_LONG:
+    evpcompressq(dst, kmask, src, merge, vector_len);
+    break;
+  case T_DOUBLE:
+    evcompresspd(dst, kmask, src, merge, vector_len);
+    break;
+  default:
+    assert(false,"Should not reach here.");
+    break;
+  }
+}
+
 void C2_MacroAssembler::vectortest(int bt, int vlen, XMMRegister src1, XMMRegister src2,
                                    XMMRegister vtmp1, XMMRegister vtmp2, KRegister mask) {
   switch(vlen) {
