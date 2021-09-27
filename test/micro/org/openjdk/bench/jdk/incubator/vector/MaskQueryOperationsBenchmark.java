@@ -166,7 +166,7 @@ public class MaskQueryOperationsBenchmark {
         return smask.toLong();
     }
     @Benchmark
-    public long testToLonglong(Blackhole bh) {
+    public long testToLongInt(Blackhole bh) {
         return imask.toLong();
     }
     @Benchmark
