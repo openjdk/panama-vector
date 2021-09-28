@@ -972,35 +972,81 @@ void C2_MacroAssembler::sve_compare(PRegister pd, BasicType bt, PRegister pg,
   }
 }
 
-void C2_MacroAssembler::sve_vmask_reduction(int opc, Register dst, SIMD_RegVariant size, FloatRegister src,
-                                            PRegister pgtmp, PRegister ptmp) {
-  assert(pgtmp->is_governing(), "This register has to be a governing predicate register");
-  // The condition flags will be clobbered by this function
-  sve_cmp(Assembler::NE, ptmp, size, pgtmp, src, 0);
-  sve_vmask_reduction(opc, dst, size, ptmp, pgtmp, ptmp, MaxVectorSize);
+// Get index of the last mask lane that is set
+void C2_MacroAssembler::sve_vmask_lasttrue(Register dst, BasicType bt, PRegister src, PRegister ptmp) {
+  SIMD_RegVariant size = elemType_to_regVariant(bt);
+  sve_rev(ptmp, size, src);
+  sve_brkb(ptmp, ptrue, ptmp, false);
+  sve_cntp(dst, size, ptrue, ptmp);
+  movw(rscratch1, MaxVectorSize / type2aelembytes(bt) - 1);
+  subw(dst, rscratch1, dst);
 }
 
-void C2_MacroAssembler::sve_vmask_reduction(int opc, Register dst, SIMD_RegVariant size, PRegister src,
-                                            PRegister pgtmp, PRegister ptmp, int length) {
-  assert(pgtmp->is_governing(), "This register has to be a governing predicate register");
-  switch (opc) {
-    case Op_VectorMaskTrueCount:
-      sve_cntp(dst, size, pgtmp, src);
+void C2_MacroAssembler::sve_vector_extend(FloatRegister dst, SIMD_RegVariant dst_size,
+                                          FloatRegister src, SIMD_RegVariant src_size) {
+  assert(dst_size > src_size && dst_size <= D && src_size <= S, "invalid element size");
+  if (src_size == B) {
+    switch (dst_size) {
+    case H:
+      sve_sunpklo(dst, H, src);
       break;
-    case Op_VectorMaskFirstTrue:
-      sve_brkb(ptmp, pgtmp, src, false);
-      sve_cntp(dst, size, pgtmp, ptmp);
+    case S:
+      sve_sunpklo(dst, H, src);
+      sve_sunpklo(dst, S, dst);
       break;
-    case Op_VectorMaskLastTrue:
-      sve_rev(ptmp, size, src);
-      sve_brkb(ptmp, ptrue, ptmp, false);
-      sve_cntp(dst, size, ptrue, ptmp);
-      movw(rscratch1, length - 1);
-      subw(dst, rscratch1, dst);
+    case D:
+      sve_sunpklo(dst, H, src);
+      sve_sunpklo(dst, S, dst);
+      sve_sunpklo(dst, D, dst);
       break;
     default:
-      assert(false, "unsupported");
       ShouldNotReachHere();
+    }
+  } else if (src_size == H) {
+    if (dst_size == S) {
+      sve_sunpklo(dst, S, src);
+    } else { // D
+      sve_sunpklo(dst, S, src);
+      sve_sunpklo(dst, D, dst);
+    }
+  } else if (src_size == S) {
+    sve_sunpklo(dst, D, src);
+  }
+}
+
+// Vector narrow from src to dst with specified element sizes.
+// High part of dst vector will be filled with zero.
+void C2_MacroAssembler::sve_vector_narrow(FloatRegister dst, SIMD_RegVariant dst_size,
+                                          FloatRegister src, SIMD_RegVariant src_size,
+                                          FloatRegister tmp) {
+  assert(dst_size < src_size && dst_size <= S && src_size <= D, "invalid element size");
+  sve_dup(tmp, src_size, 0);
+  if (src_size == D) {
+    switch (dst_size) {
+    case S:
+      sve_uzp1(dst, S, src, tmp);
+      break;
+    case H:
+      sve_uzp1(dst, S, src, tmp);
+      sve_uzp1(dst, H, dst, tmp);
+      break;
+    case B:
+      sve_uzp1(dst, S, src, tmp);
+      sve_uzp1(dst, H, dst, tmp);
+      sve_uzp1(dst, B, dst, tmp);
+      break;
+    default:
+      ShouldNotReachHere();
+    }
+  } else if (src_size == S) {
+    if (dst_size == H) {
+      sve_uzp1(dst, H, src, tmp);
+    } else { // B
+      sve_uzp1(dst, H, src, tmp);
+      sve_uzp1(dst, B, dst, tmp);
+    }
+  } else if (src_size == H) {
+    sve_uzp1(dst, B, src, tmp);
   }
 }
 

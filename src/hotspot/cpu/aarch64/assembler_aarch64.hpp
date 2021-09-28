@@ -583,7 +583,7 @@ class Address {
 
   static bool offset_ok_for_immed(int64_t offset, uint shift);
 
-  static bool offset_ok_for_sve_immed(long offset, int shift, int vl /* sve vector length */) {
+  static bool offset_ok_for_sve_immed(int64_t offset, int shift, int vl /* sve vector length */) {
     if (offset % vl == 0) {
       // Convert address offset into sve imm offset (MUL VL).
       int sve_offset = offset / vl;
