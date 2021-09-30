@@ -2408,6 +2408,14 @@ bool LibraryCallKit::inline_vector_convert() {
   const TypeVect* src_type = TypeVect::make(elem_bt_from, num_elem_from, is_mask);
   const TypeVect* dst_type = TypeVect::make(elem_bt_to, num_elem_to, is_mask);
 
+  // Safety check to prevent casting if source mask is of type vector
+  // and destination mask of type predicate vector and vice-versa.
+  if (is_mask &&
+      ((src_type->isa_vect() && dst_type->isa_vectmask()) ||
+      (dst_type->isa_vect() && src_type->isa_vectmask()))) {
+    return false;
+  }
+
   Node* op = opd1;
   if (is_cast) {
     BasicType new_elem_bt_to = elem_bt_to;
