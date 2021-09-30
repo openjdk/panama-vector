@@ -8662,6 +8662,11 @@ instruct vmask_tolong_avx(rRegL dst, vec mask, vec xtmp) %{
      __ vpxor($xtmp$$XMMRegister, $xtmp$$XMMRegister, $xtmp$$XMMRegister, vlen_enc);
      __ vpsubb($xtmp$$XMMRegister, $xtmp$$XMMRegister, $mask$$XMMRegister, vlen_enc);
      __ vpmovmskb($dst$$Register, $xtmp$$XMMRegister, vlen_enc);
+
+     int mask_len = Matcher::vector_length(this, $mask);
+     if (mask_len < 64) {
+       __ andq($dst$$Register, (((jlong)1 << mask_len) - 1));
+     }
   %}
   ins_pipe( pipe_slow );
 %}
