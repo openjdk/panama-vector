@@ -460,6 +460,38 @@ final class Long128Vector extends LongVector {
 
     @Override
     @ForceInline
+    public Long128Vector compress(VectorMask<Long> m) {
+        return (Long128Vector)
+            super.compressTemplate(Long128Mask.class,
+                                   (Long128Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Long128Vector compress(VectorMask<Long> m, Vector<Long> v) {
+        return (Long128Vector)
+            super.compressTemplate(Long128Mask.class,
+                                   (Long128Mask) m, (Long128Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Long128Vector expand(VectorMask<Long> m) {
+        return (Long128Vector)
+            super.expandTemplate(Long128Mask.class,
+                                   (Long128Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Long128Vector expand(VectorMask<Long> m, Vector<Long> v) {
+        return (Long128Vector)
+            super.expandTemplate(Long128Mask.class,
+                                   (Long128Mask) m, (Long128Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public Long128Vector selectFrom(Vector<Long> v) {
         return (Long128Vector)
             super.selectFromTemplate((Long128Vector) v);  // specialize

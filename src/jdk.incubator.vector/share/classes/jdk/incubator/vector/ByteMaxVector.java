@@ -470,6 +470,38 @@ final class ByteMaxVector extends ByteVector {
 
     @Override
     @ForceInline
+    public ByteMaxVector compress(VectorMask<Byte> m) {
+        return (ByteMaxVector)
+            super.compressTemplate(ByteMaxMask.class,
+                                   (ByteMaxMask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public ByteMaxVector compress(VectorMask<Byte> m, Vector<Byte> v) {
+        return (ByteMaxVector)
+            super.compressTemplate(ByteMaxMask.class,
+                                   (ByteMaxMask) m, (ByteMaxVector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public ByteMaxVector expand(VectorMask<Byte> m) {
+        return (ByteMaxVector)
+            super.expandTemplate(ByteMaxMask.class,
+                                   (ByteMaxMask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public ByteMaxVector expand(VectorMask<Byte> m, Vector<Byte> v) {
+        return (ByteMaxVector)
+            super.expandTemplate(ByteMaxMask.class,
+                                   (ByteMaxMask) m, (ByteMaxVector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public ByteMaxVector selectFrom(Vector<Byte> v) {
         return (ByteMaxVector)
             super.selectFromTemplate((ByteMaxVector) v);  // specialize

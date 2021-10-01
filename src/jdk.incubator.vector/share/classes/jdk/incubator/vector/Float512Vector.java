@@ -457,6 +457,38 @@ final class Float512Vector extends FloatVector {
 
     @Override
     @ForceInline
+    public Float512Vector compress(VectorMask<Float> m) {
+        return (Float512Vector)
+            super.compressTemplate(Float512Mask.class,
+                                   (Float512Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Float512Vector compress(VectorMask<Float> m, Vector<Float> v) {
+        return (Float512Vector)
+            super.compressTemplate(Float512Mask.class,
+                                   (Float512Mask) m, (Float512Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Float512Vector expand(VectorMask<Float> m) {
+        return (Float512Vector)
+            super.expandTemplate(Float512Mask.class,
+                                   (Float512Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Float512Vector expand(VectorMask<Float> m, Vector<Float> v) {
+        return (Float512Vector)
+            super.expandTemplate(Float512Mask.class,
+                                   (Float512Mask) m, (Float512Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public Float512Vector selectFrom(Vector<Float> v) {
         return (Float512Vector)
             super.selectFromTemplate((Float512Vector) v);  // specialize

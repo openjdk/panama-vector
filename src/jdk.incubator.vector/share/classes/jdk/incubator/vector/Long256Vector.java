@@ -460,6 +460,38 @@ final class Long256Vector extends LongVector {
 
     @Override
     @ForceInline
+    public Long256Vector compress(VectorMask<Long> m) {
+        return (Long256Vector)
+            super.compressTemplate(Long256Mask.class,
+                                   (Long256Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Long256Vector compress(VectorMask<Long> m, Vector<Long> v) {
+        return (Long256Vector)
+            super.compressTemplate(Long256Mask.class,
+                                   (Long256Mask) m, (Long256Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Long256Vector expand(VectorMask<Long> m) {
+        return (Long256Vector)
+            super.expandTemplate(Long256Mask.class,
+                                   (Long256Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Long256Vector expand(VectorMask<Long> m, Vector<Long> v) {
+        return (Long256Vector)
+            super.expandTemplate(Long256Mask.class,
+                                   (Long256Mask) m, (Long256Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public Long256Vector selectFrom(Vector<Long> v) {
         return (Long256Vector)
             super.selectFromTemplate((Long256Vector) v);  // specialize

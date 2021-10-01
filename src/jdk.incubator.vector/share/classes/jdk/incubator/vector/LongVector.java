@@ -2228,6 +2228,96 @@ public abstract class LongVector extends AbstractVector<Long> {
      */
     @Override
     public abstract
+    LongVector compress(VectorMask<Long> m);
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Long>>
+    LongVector compressTemplate(Class<M> masktype, M m) {
+      m.check(masktype, this);
+      int j = 0;
+      LongVector v = LongVector.zero(species());
+      for (int i = 0; i < length(); i++) {
+        if (m.laneIsSet(i)) {
+           v = v.withLane(j++, lane(i));
+        }
+      }
+      return v;
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    public abstract
+    LongVector compress(VectorMask<Long> m, Vector<Long> v);
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Long>>
+    LongVector compressTemplate(Class<M> masktype, M m, LongVector v) {
+      m.check(masktype, this);
+      int j = 0;
+      for (int i = 0; i < length(); i++) {
+        if (m.laneIsSet(i)) {
+           v = v.withLane(j++, lane(i));
+        }
+      }
+      return v;
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    public abstract
+    LongVector expand(VectorMask<Long> m);
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Long>>
+    LongVector expandTemplate(Class<M> masktype, M m) {
+      m.check(masktype, this);
+      int j = 0;
+      LongVector v = LongVector.zero(species());
+      for (int i = 0; i < length(); i++) {
+        if (m.laneIsSet(i)) {
+           v = v.withLane(i, lane(j++));
+        }
+      }
+      return v;
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    public abstract
+    LongVector expand(VectorMask<Long> m, Vector<Long> v);
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Long>>
+    LongVector expandTemplate(Class<M> masktype, M m, LongVector v) {
+      m.check(masktype, this);
+      int j = 0;
+      for (int i = 0; i < length(); i++) {
+        if (m.laneIsSet(i)) {
+           v = v.withLane(i, lane(j++));
+        }
+      }
+      return v;
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    public abstract
     LongVector selectFrom(Vector<Long> v);
 
     /*package-private*/

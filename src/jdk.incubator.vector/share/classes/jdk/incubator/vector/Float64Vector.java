@@ -457,6 +457,38 @@ final class Float64Vector extends FloatVector {
 
     @Override
     @ForceInline
+    public Float64Vector compress(VectorMask<Float> m) {
+        return (Float64Vector)
+            super.compressTemplate(Float64Mask.class,
+                                   (Float64Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Float64Vector compress(VectorMask<Float> m, Vector<Float> v) {
+        return (Float64Vector)
+            super.compressTemplate(Float64Mask.class,
+                                   (Float64Mask) m, (Float64Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Float64Vector expand(VectorMask<Float> m) {
+        return (Float64Vector)
+            super.expandTemplate(Float64Mask.class,
+                                   (Float64Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Float64Vector expand(VectorMask<Float> m, Vector<Float> v) {
+        return (Float64Vector)
+            super.expandTemplate(Float64Mask.class,
+                                   (Float64Mask) m, (Float64Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public Float64Vector selectFrom(Vector<Float> v) {
         return (Float64Vector)
             super.selectFromTemplate((Float64Vector) v);  // specialize
