@@ -2410,6 +2410,9 @@ bool LibraryCallKit::inline_vector_convert() {
 
   // Safety check to prevent casting if source mask is of type vector
   // and destination mask of type predicate vector and vice-versa.
+  // From X86 standpoint, this case will only arise over KNL target,
+  // where certain masks (depending on the species) are either propagated
+  // through a vector or predicate register.
   if (is_mask &&
       ((src_type->isa_vect() && dst_type->isa_vectmask()) ||
       (dst_type->isa_vect() && src_type->isa_vectmask()))) {
