@@ -2221,6 +2221,96 @@ public abstract class FloatVector extends AbstractVector<Float> {
      */
     @Override
     public abstract
+    FloatVector compress(VectorMask<Float> m);
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Float>>
+    FloatVector compressTemplate(Class<M> masktype, M m) {
+      m.check(masktype, this);
+      int j = 0;
+      FloatVector v = FloatVector.zero(species());
+      for (int i = 0; i < length(); i++) {
+        if (m.laneIsSet(i)) {
+           v = v.withLane(j++, lane(i));
+        }
+      }
+      return v;
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    public abstract
+    FloatVector compress(VectorMask<Float> m, Vector<Float> v);
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Float>>
+    FloatVector compressTemplate(Class<M> masktype, M m, FloatVector v) {
+      m.check(masktype, this);
+      int j = 0;
+      for (int i = 0; i < length(); i++) {
+        if (m.laneIsSet(i)) {
+           v = v.withLane(j++, lane(i));
+        }
+      }
+      return v;
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    public abstract
+    FloatVector expand(VectorMask<Float> m);
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Float>>
+    FloatVector expandTemplate(Class<M> masktype, M m) {
+      m.check(masktype, this);
+      int j = 0;
+      FloatVector v = FloatVector.zero(species());
+      for (int i = 0; i < length(); i++) {
+        if (m.laneIsSet(i)) {
+           v = v.withLane(i, lane(j++));
+        }
+      }
+      return v;
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    public abstract
+    FloatVector expand(VectorMask<Float> m, Vector<Float> v);
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Float>>
+    FloatVector expandTemplate(Class<M> masktype, M m, FloatVector v) {
+      m.check(masktype, this);
+      int j = 0;
+      for (int i = 0; i < length(); i++) {
+        if (m.laneIsSet(i)) {
+           v = v.withLane(i, lane(j++));
+        }
+      }
+      return v;
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    public abstract
     FloatVector selectFrom(Vector<Float> v);
 
     /*package-private*/

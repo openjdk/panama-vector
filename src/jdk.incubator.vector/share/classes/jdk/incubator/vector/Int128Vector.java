@@ -470,6 +470,38 @@ final class Int128Vector extends IntVector {
 
     @Override
     @ForceInline
+    public Int128Vector compress(VectorMask<Integer> m) {
+        return (Int128Vector)
+            super.compressTemplate(Int128Mask.class,
+                                   (Int128Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Int128Vector compress(VectorMask<Integer> m, Vector<Integer> v) {
+        return (Int128Vector)
+            super.compressTemplate(Int128Mask.class,
+                                   (Int128Mask) m, (Int128Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Int128Vector expand(VectorMask<Integer> m) {
+        return (Int128Vector)
+            super.expandTemplate(Int128Mask.class,
+                                   (Int128Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Int128Vector expand(VectorMask<Integer> m, Vector<Integer> v) {
+        return (Int128Vector)
+            super.expandTemplate(Int128Mask.class,
+                                   (Int128Mask) m, (Int128Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public Int128Vector selectFrom(Vector<Integer> v) {
         return (Int128Vector)
             super.selectFromTemplate((Int128Vector) v);  // specialize

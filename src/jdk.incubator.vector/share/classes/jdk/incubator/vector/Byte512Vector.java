@@ -470,6 +470,38 @@ final class Byte512Vector extends ByteVector {
 
     @Override
     @ForceInline
+    public Byte512Vector compress(VectorMask<Byte> m) {
+        return (Byte512Vector)
+            super.compressTemplate(Byte512Mask.class,
+                                   (Byte512Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Byte512Vector compress(VectorMask<Byte> m, Vector<Byte> v) {
+        return (Byte512Vector)
+            super.compressTemplate(Byte512Mask.class,
+                                   (Byte512Mask) m, (Byte512Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Byte512Vector expand(VectorMask<Byte> m) {
+        return (Byte512Vector)
+            super.expandTemplate(Byte512Mask.class,
+                                   (Byte512Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Byte512Vector expand(VectorMask<Byte> m, Vector<Byte> v) {
+        return (Byte512Vector)
+            super.expandTemplate(Byte512Mask.class,
+                                   (Byte512Mask) m, (Byte512Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public Byte512Vector selectFrom(Vector<Byte> v) {
         return (Byte512Vector)
             super.selectFromTemplate((Byte512Vector) v);  // specialize

@@ -457,6 +457,38 @@ final class Double64Vector extends DoubleVector {
 
     @Override
     @ForceInline
+    public Double64Vector compress(VectorMask<Double> m) {
+        return (Double64Vector)
+            super.compressTemplate(Double64Mask.class,
+                                   (Double64Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Double64Vector compress(VectorMask<Double> m, Vector<Double> v) {
+        return (Double64Vector)
+            super.compressTemplate(Double64Mask.class,
+                                   (Double64Mask) m, (Double64Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Double64Vector expand(VectorMask<Double> m) {
+        return (Double64Vector)
+            super.expandTemplate(Double64Mask.class,
+                                   (Double64Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Double64Vector expand(VectorMask<Double> m, Vector<Double> v) {
+        return (Double64Vector)
+            super.expandTemplate(Double64Mask.class,
+                                   (Double64Mask) m, (Double64Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
     public Double64Vector selectFrom(Vector<Double> v) {
         return (Double64Vector)
             super.selectFromTemplate((Double64Vector) v);  // specialize
