@@ -1834,6 +1834,18 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
         return false;
       }
       break;
+    case Op_VectorExpand:
+    case Op_VectorCompress:
+      if (!VM_Version::supports_evex()) {
+        return false;
+      }
+      if (size_in_bits < 512 && !VM_Version::supports_avx512vl()) {
+        return false;
+      }
+      if (is_subword_type(bt) && !VM_Version::supports_avx512_vbmi2()) {
+        return false;
+      }
+      break;
   }
   return true;  // Per default match rules are supported.
 }
@@ -4564,7 +4576,7 @@ instruct insertF(vec dst, regF val, immU8 idx) %{
     assert(Matcher::vector_element_basic_type(this) == T_FLOAT, "sanity");
     assert($idx$$constant < (int)Matcher::vector_length(this), "out of bounds");
 
-    __ insertps($dst$$XMMRegister, $val$$XMMRegister, $idx$$constant);
+    __ insertps($dst$$XMMRegister, $val$$XMMRegister, $idx$$constant << 4);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -4584,13 +4596,13 @@ instruct vinsertF(vec dst, vec src, regF val, immU8 idx, vec vtmp) %{
       uint y_idx = ($idx$$constant >> 2) & 1;
       int vlen_enc = Assembler::AVX_256bit;
       __ vextracti128($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
-      __ vinsertps($vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$XMMRegister, x_idx);
+      __ vinsertps($vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$XMMRegister, x_idx << 4);
       __ vinserti128($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
     } else {
       assert(vlen == 16, "sanity");
       uint y_idx = ($idx$$constant >> 2) & 3;
       __ vextracti32x4($vtmp$$XMMRegister, $src$$XMMRegister, y_idx);
-      __ vinsertps($vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$XMMRegister, x_idx);
+      __ vinsertps($vtmp$$XMMRegister, $vtmp$$XMMRegister, $val$$XMMRegister, x_idx << 4);
       __ vinserti32x4($dst$$XMMRegister, $src$$XMMRegister, $vtmp$$XMMRegister, y_idx);
     }
   %}
@@ -8725,6 +8737,22 @@ instruct vmask_first_or_last_true_avx(rRegI dst, vec mask, rRegL tmp, vec xtmp, 
   %}
   ins_pipe( pipe_slow );
 %}
+
+// --------------------------------- Compress/Expand Operations ---------------------------
+
+instruct vcompexpr_evex(vec dst, vec src, kReg mask) %{
+  match(Set dst (VectorCompress (Binary dst src) mask));
+  match(Set dst (VectorExpand (Binary dst src) mask));
+  format %{ "vpcompress_expand $dst,$src,$mask\t! vector compress/expand operation" %}
+  ins_encode %{
+    int vector_len = vector_length_encoding(this);
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    int opcode      = this->ideal_Opcode();
+    __ vpcompress_expand(opcode, $dst$$XMMRegister, $src$$XMMRegister, $mask$$KRegister, true, bt, vector_len);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 #endif // _LP64
 
 // ---------------------------------- Vector Masked Operations ------------------------------------

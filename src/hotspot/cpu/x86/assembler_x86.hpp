@@ -2542,6 +2542,21 @@ private:
   void vpternlogd(XMMRegister dst, int imm8, XMMRegister src2, Address     src3, int vector_len);
   void vpternlogq(XMMRegister dst, int imm8, XMMRegister src2, XMMRegister src3, int vector_len);
 
+  // Vector compress/expand instructions.
+  void vpcompressb(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void vpcompressw(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void vpcompressd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void vpcompressq(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void vpcompressps(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void vpcompresspd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+
+  void vpexpandb(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void vpexpandw(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void vpexpandd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void vpexpandq(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void vpexpandps(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void vpexpandpd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+
   // Vector Rotate Left/Right instruction.
   void evprolvd(XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len);
   void evprolvq(XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len);

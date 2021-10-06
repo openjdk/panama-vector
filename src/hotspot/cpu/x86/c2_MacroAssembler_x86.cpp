@@ -4105,4 +4105,32 @@ void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, XMMRegister
     default: assert(false, "Unhandled mask operation");
   }
 }
+
+void C2_MacroAssembler::vpcompress_expand(int opcode, XMMRegister dst, XMMRegister src, KRegister mask,
+                                          bool merge, BasicType bt, int vec_enc) {
+  if (opcode == Op_VectorCompress) {
+    switch(bt) {
+      case T_BYTE: vpcompressb(dst, mask, src, merge, vec_enc); break;
+      case T_CHAR:
+      case T_SHORT: vpcompressw(dst, mask, src, merge, vec_enc); break;
+      case T_INT: vpcompressd(dst, mask, src, merge, vec_enc); break;
+      case T_FLOAT: vpcompressps(dst, mask, src, merge, vec_enc); break;
+      case T_LONG: vpcompressq(dst, mask, src, merge, vec_enc); break;
+      case T_DOUBLE: vpcompresspd(dst, mask, src, merge, vec_enc); break;
+      default: fatal("Unsupported type"); break;
+    }
+  } else {
+    assert(opcode == Op_VectorExpand, "");
+    switch(bt) {
+      case T_BYTE: vpexpandb(dst, mask, src, merge, vec_enc); break;
+      case T_CHAR:
+      case T_SHORT: vpexpandw(dst, mask, src, merge, vec_enc); break;
+      case T_INT : vpexpandd(dst, mask, src, merge, vec_enc); break;
+      case T_FLOAT: vpexpandps(dst, mask, src, merge, vec_enc); break;
+      case T_LONG: vpexpandq(dst, mask, src, merge, vec_enc); break;
+      case T_DOUBLE: vpexpandpd(dst, mask, src, merge, vec_enc); break;
+      default: fatal("Unsupported type"); break;
+    }
+  }
+}
 #endif

@@ -442,6 +442,30 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
       }
       break;
     }
+    case VECTOR_OP_EXPAND: {
+      switch (bt) {
+        case T_BYTE:  // fall-through
+        case T_SHORT: // fall-through
+        case T_INT:   // fall-through
+        case T_LONG:  // fall-through
+        case T_FLOAT: // fall-through
+        case T_DOUBLE: return Op_VectorExpand;
+        default: fatal("EXPAND: %s", type2name(bt));
+      }
+      break;
+    }
+    case VECTOR_OP_COMPRESS: {
+      switch (bt) {
+        case T_BYTE:  // fall-through
+        case T_SHORT: // fall-through
+        case T_INT:   // fall-through
+        case T_LONG:  // fall-through
+        case T_FLOAT: // fall-through
+        case T_DOUBLE: return Op_VectorCompress;
+        default: fatal("COMPRESS: %s", type2name(bt));
+      }
+      break;
+    }
     case VECTOR_OP_TAN:
     case VECTOR_OP_TANH:
     case VECTOR_OP_SIN:

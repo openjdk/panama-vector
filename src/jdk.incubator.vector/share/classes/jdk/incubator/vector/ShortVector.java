@@ -351,6 +351,30 @@ public abstract class ShortVector extends AbstractVector<Short> {
         return vectorFactory(res);
     }
 
+    static ShortVector expandHelper(Vector<Short> v1, Vector<Short> v2, VectorMask<Short> m) {
+        VectorSpecies<Short> vsp = m.vectorSpecies();
+        ShortVector r  = (ShortVector) v1;
+        ShortVector vi = (ShortVector) v2;
+        for(int i = 0,j = 0; i < vsp.length(); i++) {
+            if(m.laneIsSet(i)) {
+                r = r.withLane(i, vi.lane(j++));
+            }
+        }
+        return r;
+    }
+
+    static ShortVector compressHelper(Vector<Short> v1, Vector<Short> v2, VectorMask<Short> m) {
+        VectorSpecies<Short> vsp = m.vectorSpecies();
+        ShortVector r  = (ShortVector) v1;
+        ShortVector vi = (ShortVector) v2;
+        for(int i = 0, j = 0; i < vsp.length(); i++) {
+            if (m.laneIsSet(i)) {
+                r = r.withLane(j++, vi.lane(i));
+            }
+        }
+        return r;
+    }
+
     interface FStOp<M> {
         void apply(M memory, int offset, int i, short a);
     }
@@ -2371,14 +2395,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
     <M extends VectorMask<Short>>
     ShortVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      int j = 0;
-      ShortVector v = ShortVector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(j++, lane(i));
-        }
-      }
-      return v;
+      return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
+                                    short.class, length(), vspecies().zero(), this, m,
+                                    (v1, v2, m1) -> compressHelper(v1, v2, m1));
     }
 
     /**
@@ -2394,13 +2413,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
     <M extends VectorMask<Short>>
     ShortVector compressTemplate(Class<M> masktype, M m, ShortVector v) {
       m.check(masktype, this);
-      int j = 0;
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(j++, lane(i));
-        }
-      }
-      return v;
+      return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
+                                    short.class, length(), v, this, m,
+                                    (v1, v2, m1) -> compressHelper(v1, v2, m1));
     }
 
     /**
@@ -2416,15 +2431,11 @@ public abstract class ShortVector extends AbstractVector<Short> {
     <M extends VectorMask<Short>>
     ShortVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      int j = 0;
-      ShortVector v = ShortVector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(i, lane(j++));
-        }
-      }
-      return v;
+      return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
+                                    short.class, length(), vspecies().zero(), this, m,
+                                    (v1, v2, m1) -> expandHelper(v1, v2, m1));
     }
+
 
     /**
      * {@inheritDoc} <!--workaround-->
@@ -2439,13 +2450,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
     <M extends VectorMask<Short>>
     ShortVector expandTemplate(Class<M> masktype, M m, ShortVector v) {
       m.check(masktype, this);
-      int j = 0;
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(i, lane(j++));
-        }
-      }
-      return v;
+      return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
+                                    short.class, length(), v, this, m,
+                                    (v1, v2, m1) -> expandHelper(v1, v2, m1));
     }
 
     /**

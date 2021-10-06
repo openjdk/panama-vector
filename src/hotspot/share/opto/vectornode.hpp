@@ -1324,11 +1324,28 @@ class VectorTestNode : public Node {
   BoolTest::mask get_predicate() const { return _predicate; }
 };
 
+class VectorExpandNode: public VectorNode {
+ public:
+  VectorExpandNode(Node* vec1, Node* vec2, Node* mask, const TypeVect* vt) :
+      VectorNode(vec1, vec2, mask, vt) {
+    init_class_id(Class_VectorExpand);
+  }
+  virtual int Opcode() const;
+};
+
+class VectorCompressNode: public VectorNode {
+ public:
+  VectorCompressNode(Node* vec1, Node* vec2, Node* mask, const TypeVect* vt) :
+      VectorNode(vec1, vec2, mask, vt) {
+    init_class_id(Class_VectorCompress);
+  }
+  virtual int Opcode() const;
+};
+
 class VectorBlendNode : public VectorNode {
  public:
   VectorBlendNode(Node* vec1, Node* vec2, Node* mask)
     : VectorNode(vec1, vec2, mask, vec1->bottom_type()->is_vect()) {
-    // assert(mask->is_VectorMask(), "VectorBlendNode requires that third argument be a mask");
   }
 
   virtual int Opcode() const;
