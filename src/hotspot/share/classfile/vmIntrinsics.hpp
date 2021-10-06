@@ -1091,6 +1091,18 @@ class methodHandle;
                                         "J")                                                                                                   \
     do_name(vector_mask_oper_name, "maskReductionCoerced")                                                                                     \
                                                                                                                                                \
+  do_intrinsic(_VectorSelectiveOp, jdk_internal_vm_vector_VectorSupport, vector_selective_op_name, vector_selective_op_sig, F_S)               \
+   do_signature(vector_selective_op_sig, "(Z"                                                                                                  \
+                                      "Ljava/lang/Class;"                                                                                      \
+                                      "Ljava/lang/Class;"                                                                                      \
+                                      "Ljava/lang/Class;"                                                                                      \
+                                      "I"                                                                                                      \
+                                      "Ljdk/internal/vm/vector/VectorSupport$Vector;"                                                          \
+                                      "Ljdk/internal/vm/vector/VectorSupport$VectorMask;"                                                      \
+                                      "Ljdk/internal/vm/vector/VectorSupport$VectorSelectiveOp;)"                                              \
+                                      "Ljdk/internal/vm/vector/VectorSupport$Vector;")                                                         \
+   do_name(vector_selective_op_name, "selectiveOp")                                                                                            \
+                                                                                                                                               \
    /* (2) Bytecode intrinsics                                                                        */                        \
                                                                                                                                \
   do_intrinsic(_park,                     jdk_internal_misc_Unsafe,     park_name, park_signature,                     F_R)    \
@@ -1199,7 +1211,7 @@ enum class vmIntrinsicID : int {
                    __IGNORE_CLASS, __IGNORE_NAME, __IGNORE_SIGNATURE, __IGNORE_ALIAS)
 
   ID_LIMIT,
-  LAST_COMPILER_INLINE = _VectorMaskOp,
+  LAST_COMPILER_INLINE = _VectorSelectiveOp,
   FIRST_MH_SIG_POLY    = _invokeGeneric,
   FIRST_MH_STATIC      = _linkToVirtual,
   LAST_MH_SIG_POLY     = _linkToNative,

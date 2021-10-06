@@ -651,6 +651,27 @@ public class VectorSupport {
 
     /* ============================================================================ */
 
+    public interface VectorSelectiveOp<V extends Vector<?>,
+                                       M extends VectorMask<?>> {
+        V apply(V v, M m);
+    }
+
+    @IntrinsicCandidate
+    public static
+    <V extends Vector<E>,
+     M extends VectorMask<E>,
+     E>
+    V selectiveOp(boolean is_compress,
+                  Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
+                  int length,
+                  V v, M m,
+                  VectorSelectiveOp<V, M> defaultImpl) {
+        assert isNonCapturingLambda(defaultImpl) : defaultImpl;
+        return defaultImpl.apply(v, m);
+    }
+
+    /* ============================================================================ */
+
     // query the JVM's supported vector sizes and types
     public static native int getMaxLaneCount(Class<?> etype);
 

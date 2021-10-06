@@ -2688,3 +2688,97 @@ bool LibraryCallKit::inline_vector_extract() {
   return true;
 }
 
+// public static
+// <V extends Vector<E>,
+//  M extends VectorMask<E>,
+//  E>
+// V selectiveOp(boolean is_compress,
+//               Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
+//               int length,
+//               V v, M m,
+//               VectorSelectiveOp<V, M> defaultImpl)
+//
+bool LibraryCallKit::inline_vector_compress_expand() {
+  const TypeInt*     opr          = gvn().type(argument(0))->isa_int();
+  const TypeInstPtr* vector_klass = gvn().type(argument(1))->isa_instptr();
+  const TypeInstPtr* mask_klass   = gvn().type(argument(2))->isa_instptr();
+  const TypeInstPtr* elem_klass   = gvn().type(argument(3))->isa_instptr();
+  const TypeInt*     vlen         = gvn().type(argument(4))->isa_int();
+
+  if (vector_klass == NULL || mask_klass == NULL || elem_klass == NULL || opr == NULL || vlen == NULL ||
+      vector_klass->const_oop() == NULL || mask_klass->const_oop() == NULL || elem_klass->const_oop() == NULL ||
+      !(opr == TypeInt::ONE || opr == TypeInt::ZERO) || !vlen->is_con()) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** missing constant: opr=%s vclass=%s mclass=%s etype=%s vlen=%s",
+                    NodeClassNames[argument(0)->Opcode()],
+                    NodeClassNames[argument(1)->Opcode()],
+                    NodeClassNames[argument(2)->Opcode()],
+                    NodeClassNames[argument(3)->Opcode()],
+                    NodeClassNames[argument(4)->Opcode()]);
+    }
+    return false; // not enough info for intrinsification
+  }
+
+  if (!is_klass_initialized(vector_klass) || !is_klass_initialized(mask_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
+  }
+
+  ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
+  if (!elem_type->is_primitive_type()) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not a primitive bt=%d", elem_type->basic_type());
+    }
+    return false; // should be primitive type
+  }
+
+  const Type* vmask_type = gvn().type(argument(6));
+  if (vmask_type->maybe_null()) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** null mask values are not allowed for compress/expand");
+    }
+    return false;
+  }
+
+  bool is_compress = (opr == TypeInt::ONE);
+  assert(is_compress, "Temporary assert. Will remove after enable expand.");
+  int num_elem = vlen->get_con();
+  int sopc = Op_CompressV;
+  // int sopc = is_compress ? Op_CompressV : Op_ExpandV;
+
+  BasicType elem_bt = elem_type->basic_type();
+  BasicType mask_bt = elem_bt;
+
+  if (!arch_supports_vector(sopc, num_elem, elem_bt, VecMaskUsePred)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not supported: arity=2 op=compress vlen=%d etype=%s ismask=useload",
+                    num_elem, type2name(elem_bt));
+    }
+    return false; // not supported
+  }
+  ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
+  const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
+
+  ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
+  const TypeInstPtr* mbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, mbox_klass);
+
+  Node* vec1 = unbox_vector(argument(5), vbox_type, elem_bt, num_elem);
+  Node* mask = unbox_vector(argument(6), mbox_type, mask_bt, num_elem);
+
+  if (vec1 == NULL || mask == NULL) {
+    return false; // operand unboxing failed
+  }
+
+  Node* ret;
+  if (is_compress) {
+    ret = gvn().transform(new CompressVNode(vec1, mask));
+  }
+
+  Node* box = box_vector(ret, vbox_type, elem_bt, num_elem);
+  set_result(box);
+  C->set_max_vector_size(MAX2(C->max_vector_size(), (uint)(num_elem * type2aelembytes(elem_bt))));
+  return true;
+}
+
