@@ -1809,13 +1809,7 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
     case Op_StoreVectorScatter:
       if (is_subword_type(bt)) {
         return false;
-      }
-      // fallthrough
-    case Op_CompressV:
-      if (is_subword_type(bt) && !VM_Version::supports_avx512_vbmi2()) {
-        return false;
-      }
-      if (size_in_bits < 512 && !VM_Version::supports_avx512vl()) {
+      } else if (size_in_bits < 512 && !VM_Version::supports_avx512vl()) {
         return false;
       }
       // fallthrough
@@ -1837,6 +1831,18 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       break;
     case Op_VectorMaskCmp:
       if (vlen < 2 || size_in_bits < 32) {
+        return false;
+      }
+      break;
+    case Op_CompressV:
+    case Op_ExpandV:
+      if (is_subword_type(bt) && !VM_Version::supports_avx512_vbmi2()) {
+        return false;
+      }
+      if (size_in_bits < 128 ) {
+        return false;
+      }
+      if (size_in_bits < 512 && !VM_Version::supports_avx512vl()) {
         return false;
       }
       break;
@@ -1937,6 +1943,7 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
     case Op_URShiftVI:
     case Op_URShiftVL:
     case Op_CompressV:
+    case Op_ExpandV:
     case Op_LoadVectorMasked:
     case Op_StoreVectorMasked:
     case Op_LoadVectorGatherMasked:
@@ -9236,6 +9243,20 @@ instruct vfma_mem_masked(vec dst, vec src2, memory src3, kReg mask) %{
     int opc = this->ideal_Opcode();
     __ evmasked_op(opc, bt, $mask$$KRegister, $dst$$XMMRegister,
                    $src2$$XMMRegister, $src3$$Address, true, vlen_enc);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct evcompress_reg(vec dst, vec src, kReg mask) %{
+  predicate(UseAVX > 2);
+  match(Set dst (CompressV src mask));
+  format %{ "vcompress $dst, $src, $mask" %}
+  ins_encode %{
+    assert(Matcher::vector_length_in_bytes(this) >= 16, "sanity");
+    int vector_len = vector_length_encoding(this);
+    BasicType etype = Matcher::vector_element_basic_type(this);
+    // Zeroing-masking
+    __ evcompress(etype, $dst$$XMMRegister, $mask$$KRegister, $src$$XMMRegister, false /*merge*/, vector_len);
   %}
   ins_pipe( pipe_slow );
 %}
