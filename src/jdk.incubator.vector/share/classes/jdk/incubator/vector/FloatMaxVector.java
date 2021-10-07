@@ -465,26 +465,10 @@ final class FloatMaxVector extends FloatVector {
 
     @Override
     @ForceInline
-    public FloatMaxVector compress(VectorMask<Float> m, Vector<Float> v) {
-        return (FloatMaxVector)
-            super.compressTemplate(FloatMaxMask.class,
-                                   (FloatMaxMask) m, (FloatMaxVector) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public FloatMaxVector expand(VectorMask<Float> m) {
         return (FloatMaxVector)
             super.expandTemplate(FloatMaxMask.class,
                                    (FloatMaxMask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public FloatMaxVector expand(VectorMask<Float> m, Vector<Float> v) {
-        return (FloatMaxVector)
-            super.expandTemplate(FloatMaxMask.class,
-                                   (FloatMaxMask) m, (FloatMaxVector) v);  // specialize
     }
 
     @Override

@@ -478,26 +478,10 @@ final class Short128Vector extends ShortVector {
 
     @Override
     @ForceInline
-    public Short128Vector compress(VectorMask<Short> m, Vector<Short> v) {
-        return (Short128Vector)
-            super.compressTemplate(Short128Mask.class,
-                                   (Short128Mask) m, (Short128Vector) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public Short128Vector expand(VectorMask<Short> m) {
         return (Short128Vector)
             super.expandTemplate(Short128Mask.class,
                                    (Short128Mask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public Short128Vector expand(VectorMask<Short> m, Vector<Short> v) {
-        return (Short128Vector)
-            super.expandTemplate(Short128Mask.class,
-                                   (Short128Mask) m, (Short128Vector) v);  // specialize
     }
 
     @Override

@@ -478,26 +478,10 @@ final class Int256Vector extends IntVector {
 
     @Override
     @ForceInline
-    public Int256Vector compress(VectorMask<Integer> m, Vector<Integer> v) {
-        return (Int256Vector)
-            super.compressTemplate(Int256Mask.class,
-                                   (Int256Mask) m, (Int256Vector) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public Int256Vector expand(VectorMask<Integer> m) {
         return (Int256Vector)
             super.expandTemplate(Int256Mask.class,
                                    (Int256Mask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public Int256Vector expand(VectorMask<Integer> m, Vector<Integer> v) {
-        return (Int256Vector)
-            super.expandTemplate(Int256Mask.class,
-                                   (Int256Mask) m, (Int256Vector) v);  // specialize
     }
 
     @Override

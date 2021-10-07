@@ -484,26 +484,10 @@ final class $vectortype$ extends $abstractvectortype$ {
 
     @Override
     @ForceInline
-    public $vectortype$ compress(VectorMask<$Boxtype$> m, Vector<$Boxtype$> v) {
-        return ($vectortype$)
-            super.compressTemplate($masktype$.class,
-                                   ($masktype$) m, ($vectortype$) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public $vectortype$ expand(VectorMask<$Boxtype$> m) {
         return ($vectortype$)
             super.expandTemplate($masktype$.class,
                                    ($masktype$) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public $vectortype$ expand(VectorMask<$Boxtype$> m, Vector<$Boxtype$> v) {
-        return ($vectortype$)
-            super.expandTemplate($masktype$.class,
-                                   ($masktype$) m, ($vectortype$) v);  // specialize
     }
 
     @Override

@@ -2386,28 +2386,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
      */
     @Override
     public abstract
-    ShortVector compress(VectorMask<Short> m, Vector<Short> v);
-
-    /*package-private*/
-    @ForceInline
-    final
-    <M extends VectorMask<Short>>
-    ShortVector compressTemplate(Class<M> masktype, M m, ShortVector v) {
-      m.check(masktype, this);
-      int j = 0;
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(j++, lane(i));
-        }
-      }
-      return v;
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    public abstract
     ShortVector expand(VectorMask<Short> m);
 
     /*package-private*/
@@ -2418,28 +2396,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
       m.check(masktype, this);
       int j = 0;
       ShortVector v = ShortVector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(i, lane(j++));
-        }
-      }
-      return v;
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    public abstract
-    ShortVector expand(VectorMask<Short> m, Vector<Short> v);
-
-    /*package-private*/
-    @ForceInline
-    final
-    <M extends VectorMask<Short>>
-    ShortVector expandTemplate(Class<M> masktype, M m, ShortVector v) {
-      m.check(masktype, this);
-      int j = 0;
       for (int i = 0; i < length(); i++) {
         if (m.laneIsSet(i)) {
            v = v.withLane(i, lane(j++));

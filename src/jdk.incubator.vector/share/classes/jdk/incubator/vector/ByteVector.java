@@ -2386,28 +2386,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      */
     @Override
     public abstract
-    ByteVector compress(VectorMask<Byte> m, Vector<Byte> v);
-
-    /*package-private*/
-    @ForceInline
-    final
-    <M extends VectorMask<Byte>>
-    ByteVector compressTemplate(Class<M> masktype, M m, ByteVector v) {
-      m.check(masktype, this);
-      int j = 0;
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(j++, lane(i));
-        }
-      }
-      return v;
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    public abstract
     ByteVector expand(VectorMask<Byte> m);
 
     /*package-private*/
@@ -2418,28 +2396,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
       m.check(masktype, this);
       int j = 0;
       ByteVector v = ByteVector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(i, lane(j++));
-        }
-      }
-      return v;
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    public abstract
-    ByteVector expand(VectorMask<Byte> m, Vector<Byte> v);
-
-    /*package-private*/
-    @ForceInline
-    final
-    <M extends VectorMask<Byte>>
-    ByteVector expandTemplate(Class<M> masktype, M m, ByteVector v) {
-      m.check(masktype, this);
-      int j = 0;
       for (int i = 0; i < length(); i++) {
         if (m.laneIsSet(i)) {
            v = v.withLane(i, lane(j++));
