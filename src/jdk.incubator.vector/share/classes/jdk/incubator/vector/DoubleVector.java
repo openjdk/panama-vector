@@ -2251,24 +2251,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
      */
     @Override
     public abstract
-    DoubleVector compress(VectorMask<Double> m, Vector<Double> v);
-
-    /*package-private*/
-    @ForceInline
-    final
-    <M extends VectorMask<Double>>
-    DoubleVector compressTemplate(Class<M> masktype, M m, DoubleVector v) {
-      m.check(masktype, this);
-      return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
-                                    double.class, length(), v, this, m,
-                                    (v1, v2, m1) -> compressHelper(v1, v2, m1));
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    public abstract
     DoubleVector expand(VectorMask<Double> m);
 
     /*package-private*/
@@ -2282,24 +2264,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                     (v1, v2, m1) -> expandHelper(v1, v2, m1));
     }
 
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    public abstract
-    DoubleVector expand(VectorMask<Double> m, Vector<Double> v);
-
-    /*package-private*/
-    @ForceInline
-    final
-    <M extends VectorMask<Double>>
-    DoubleVector expandTemplate(Class<M> masktype, M m, DoubleVector v) {
-      m.check(masktype, this);
-      return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
-                                    double.class, length(), v, this, m,
-                                    (v1, v2, m1) -> expandHelper(v1, v2, m1));
-    }
 
     /**
      * {@inheritDoc} <!--workaround-->

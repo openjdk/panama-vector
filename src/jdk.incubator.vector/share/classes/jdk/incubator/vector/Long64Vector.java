@@ -468,26 +468,10 @@ final class Long64Vector extends LongVector {
 
     @Override
     @ForceInline
-    public Long64Vector compress(VectorMask<Long> m, Vector<Long> v) {
-        return (Long64Vector)
-            super.compressTemplate(Long64Mask.class,
-                                   (Long64Mask) m, (Long64Vector) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public Long64Vector expand(VectorMask<Long> m) {
         return (Long64Vector)
             super.expandTemplate(Long64Mask.class,
                                    (Long64Mask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public Long64Vector expand(VectorMask<Long> m, Vector<Long> v) {
-        return (Long64Vector)
-            super.expandTemplate(Long64Mask.class,
-                                   (Long64Mask) m, (Long64Vector) v);  // specialize
     }
 
     @Override

@@ -289,31 +289,6 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertcompressArraysEquals(int[] r, int[] a, int[] b, boolean[] m, int vector_len) {
-        int i = 0, j = 0, k = 0;
-        try {
-            for (; i < a.length; i += vector_len) {
-                k = 0;
-                for (j = 0; j < vector_len; j++) {
-                    if (m[(i + j) % SPECIES.length()]) {
-                        Assert.assertEquals(r[i + k], a[i + j]);
-                        k++;
-                    }
-                }
-                for (; k < vector_len; k++) {
-                    Assert.assertEquals(r[i + k], b[i + k]);
-                }
-            }
-        } catch (AssertionError e) {
-            int idx = i + k;
-            if (m[(i + j) % SPECIES.length()]) {
-                Assert.assertEquals(r[idx], a[i + j], "at index #" + idx);
-            } else {
-                Assert.assertEquals(r[idx], b[idx], "at index #" + idx);
-            }
-        }
-    }
-
     static void assertexpandArraysEquals(int[] r, int[] a, boolean[] m, int vector_len) {
         int i = 0, j = 0, k = 0;
         try {
@@ -334,30 +309,6 @@ public class IntMaxVectorTests extends AbstractVectorTest {
                 Assert.assertEquals(r[idx], a[i + k], "at index #" + idx);
             } else {
                 Assert.assertEquals(r[idx], (int)0, "at index #" + idx);
-            }
-        }
-    }
-
-    static void assertexpandArraysEquals(int[] r, int[] a, int[] b, boolean[] m, int vector_len) {
-        int i = 0, j = 0, k = 0;
-        try {
-            for (; i < a.length; i += vector_len) {
-                k = 0;
-                for (j = 0; j < vector_len; j++) {
-                    if (m[(i + j) % SPECIES.length()]) {
-                        Assert.assertEquals(r[i + j], a[i + k]);
-                        k++;
-                    } else {
-                        Assert.assertEquals(r[i + j], b[i + j]);
-                    }
-                }
-            }
-        } catch (AssertionError e) {
-            int idx = i + j;
-            if (m[idx % SPECIES.length()]) {
-                Assert.assertEquals(r[idx], a[i + k], "at index #" + idx);
-            } else {
-                Assert.assertEquals(r[idx], b[idx], "at index #" + idx);
             }
         }
     }
@@ -4311,24 +4262,6 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         assertcompressArraysEquals(r, a, mask, SPECIES.length());
     }
 
-    @Test(dataProvider = "intBinaryOpMaskProvider")
-    static void compressIntMaxVectorTestsMasked(IntFunction<int[]> fa, IntFunction<int[]> fb,
-                                          IntFunction<boolean[]> fm) {
-        int[] a = fa.apply(SPECIES.length());
-        int[] b = fb.apply(SPECIES.length());
-        int[] r = fr.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                IntVector av = IntVector.fromArray(SPECIES, a, i);
-                IntVector bv = IntVector.fromArray(SPECIES, b, i);
-                av.compress(vmask, bv).intoArray(r, i);
-            }
-        }
-        assertcompressArraysEquals(r, a, b, mask, SPECIES.length());
-    }
 
     @Test(dataProvider = "intUnaryOpMaskProvider")
     static void expandMaskedIntMaxVectorTests(IntFunction<int[]> fa,
@@ -4348,24 +4281,6 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         assertexpandArraysEquals(r, a, mask, SPECIES.length());
     }
 
-    @Test(dataProvider = "intBinaryOpMaskProvider")
-    static void expandIntMaxVectorTestsMasked(IntFunction<int[]> fa, IntFunction<int[]> fb,
-                                          IntFunction<boolean[]> fm) {
-        int[] a = fa.apply(SPECIES.length());
-        int[] b = fb.apply(SPECIES.length());
-        int[] r = fr.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                IntVector av = IntVector.fromArray(SPECIES, a, i);
-                IntVector bv = IntVector.fromArray(SPECIES, b, i);
-                av.expand(vmask, bv).intoArray(r, i);
-            }
-        }
-        assertexpandArraysEquals(r, a, b, mask, SPECIES.length());
-    }
     @Test(dataProvider = "intUnaryOpProvider")
     static void getIntMaxVectorTests(IntFunction<int[]> fa) {
         int[] a = fa.apply(SPECIES.length());

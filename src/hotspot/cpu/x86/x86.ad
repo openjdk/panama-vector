@@ -1807,7 +1807,7 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
     case Op_LoadVectorGatherMasked:
     case Op_StoreVectorScatterMasked:
     case Op_StoreVectorScatter:
-      if(is_subword_type(bt)) {
+      if (is_subword_type(bt)) {
         return false;
       } else if (size_in_bits < 512 && !VM_Version::supports_avx512vl()) {
         return false;
@@ -1834,15 +1834,15 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
         return false;
       }
       break;
-    case Op_VectorExpand:
-    case Op_VectorCompress:
-      if (!VM_Version::supports_evex()) {
+    case Op_CompressV:
+    case Op_ExpandV:
+      if (is_subword_type(bt) && !VM_Version::supports_avx512_vbmi2()) {
+        return false;
+      }
+      if (size_in_bits < 128 ) {
         return false;
       }
       if (size_in_bits < 512 && !VM_Version::supports_avx512vl()) {
-        return false;
-      }
-      if (is_subword_type(bt) && !VM_Version::supports_avx512_vbmi2()) {
         return false;
       }
       break;
@@ -1942,6 +1942,8 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
     case Op_RShiftVL:
     case Op_URShiftVI:
     case Op_URShiftVL:
+    case Op_CompressV:
+    case Op_ExpandV:
     case Op_LoadVectorMasked:
     case Op_StoreVectorMasked:
     case Op_LoadVectorGatherMasked:
@@ -8740,15 +8742,15 @@ instruct vmask_first_or_last_true_avx(rRegI dst, vec mask, rRegL tmp, vec xtmp, 
 
 // --------------------------------- Compress/Expand Operations ---------------------------
 
-instruct vcompexpr_evex(vec dst, vec src, kReg mask) %{
-  match(Set dst (VectorCompress (Binary dst src) mask));
-  match(Set dst (VectorExpand (Binary dst src) mask));
-  format %{ "vpcompress_expand $dst,$src,$mask\t! vector compress/expand operation" %}
+instruct evcompress_expand_reg(vec dst, vec src, kReg mask) %{
+  match(Set dst (CompressV src mask));
+  match(Set dst (ExpandV src mask));
+  format %{ "vcompress_expand $dst, $src, $mask" %}
   ins_encode %{
+    int opcode = this->ideal_Opcode();
     int vector_len = vector_length_encoding(this);
-    BasicType bt = Matcher::vector_element_basic_type(this);
-    int opcode      = this->ideal_Opcode();
-    __ vpcompress_expand(opcode, $dst$$XMMRegister, $src$$XMMRegister, $mask$$KRegister, true, bt, vector_len);
+    BasicType bt  = Matcher::vector_element_basic_type(this);
+    __ compress_expand(opcode, $dst$$XMMRegister, $src$$XMMRegister, $mask$$KRegister, true, bt, vector_len);
   %}
   ins_pipe( pipe_slow );
 %}

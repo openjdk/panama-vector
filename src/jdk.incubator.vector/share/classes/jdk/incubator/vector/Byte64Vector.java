@@ -478,26 +478,10 @@ final class Byte64Vector extends ByteVector {
 
     @Override
     @ForceInline
-    public Byte64Vector compress(VectorMask<Byte> m, Vector<Byte> v) {
-        return (Byte64Vector)
-            super.compressTemplate(Byte64Mask.class,
-                                   (Byte64Mask) m, (Byte64Vector) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public Byte64Vector expand(VectorMask<Byte> m) {
         return (Byte64Vector)
             super.expandTemplate(Byte64Mask.class,
                                    (Byte64Mask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public Byte64Vector expand(VectorMask<Byte> m, Vector<Byte> v) {
-        return (Byte64Vector)
-            super.expandTemplate(Byte64Mask.class,
-                                   (Byte64Mask) m, (Byte64Vector) v);  // specialize
     }
 
     @Override

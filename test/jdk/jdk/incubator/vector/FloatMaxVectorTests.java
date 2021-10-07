@@ -289,31 +289,6 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertcompressArraysEquals(float[] r, float[] a, float[] b, boolean[] m, int vector_len) {
-        int i = 0, j = 0, k = 0;
-        try {
-            for (; i < a.length; i += vector_len) {
-                k = 0;
-                for (j = 0; j < vector_len; j++) {
-                    if (m[(i + j) % SPECIES.length()]) {
-                        Assert.assertEquals(r[i + k], a[i + j]);
-                        k++;
-                    }
-                }
-                for (; k < vector_len; k++) {
-                    Assert.assertEquals(r[i + k], b[i + k]);
-                }
-            }
-        } catch (AssertionError e) {
-            int idx = i + k;
-            if (m[(i + j) % SPECIES.length()]) {
-                Assert.assertEquals(r[idx], a[i + j], "at index #" + idx);
-            } else {
-                Assert.assertEquals(r[idx], b[idx], "at index #" + idx);
-            }
-        }
-    }
-
     static void assertexpandArraysEquals(float[] r, float[] a, boolean[] m, int vector_len) {
         int i = 0, j = 0, k = 0;
         try {
@@ -334,30 +309,6 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
                 Assert.assertEquals(r[idx], a[i + k], "at index #" + idx);
             } else {
                 Assert.assertEquals(r[idx], (float)0, "at index #" + idx);
-            }
-        }
-    }
-
-    static void assertexpandArraysEquals(float[] r, float[] a, float[] b, boolean[] m, int vector_len) {
-        int i = 0, j = 0, k = 0;
-        try {
-            for (; i < a.length; i += vector_len) {
-                k = 0;
-                for (j = 0; j < vector_len; j++) {
-                    if (m[(i + j) % SPECIES.length()]) {
-                        Assert.assertEquals(r[i + j], a[i + k]);
-                        k++;
-                    } else {
-                        Assert.assertEquals(r[i + j], b[i + j]);
-                    }
-                }
-            }
-        } catch (AssertionError e) {
-            int idx = i + j;
-            if (m[idx % SPECIES.length()]) {
-                Assert.assertEquals(r[idx], a[i + k], "at index #" + idx);
-            } else {
-                Assert.assertEquals(r[idx], b[idx], "at index #" + idx);
             }
         }
     }
@@ -3306,24 +3257,6 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
         assertcompressArraysEquals(r, a, mask, SPECIES.length());
     }
 
-    @Test(dataProvider = "floatBinaryOpMaskProvider")
-    static void compressFloatMaxVectorTestsMasked(IntFunction<float[]> fa, IntFunction<float[]> fb,
-                                          IntFunction<boolean[]> fm) {
-        float[] a = fa.apply(SPECIES.length());
-        float[] b = fb.apply(SPECIES.length());
-        float[] r = fr.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Float> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                FloatVector av = FloatVector.fromArray(SPECIES, a, i);
-                FloatVector bv = FloatVector.fromArray(SPECIES, b, i);
-                av.compress(vmask, bv).intoArray(r, i);
-            }
-        }
-        assertcompressArraysEquals(r, a, b, mask, SPECIES.length());
-    }
 
     @Test(dataProvider = "floatUnaryOpMaskProvider")
     static void expandMaskedFloatMaxVectorTests(IntFunction<float[]> fa,
@@ -3343,24 +3276,6 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
         assertexpandArraysEquals(r, a, mask, SPECIES.length());
     }
 
-    @Test(dataProvider = "floatBinaryOpMaskProvider")
-    static void expandFloatMaxVectorTestsMasked(IntFunction<float[]> fa, IntFunction<float[]> fb,
-                                          IntFunction<boolean[]> fm) {
-        float[] a = fa.apply(SPECIES.length());
-        float[] b = fb.apply(SPECIES.length());
-        float[] r = fr.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Float> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                FloatVector av = FloatVector.fromArray(SPECIES, a, i);
-                FloatVector bv = FloatVector.fromArray(SPECIES, b, i);
-                av.expand(vmask, bv).intoArray(r, i);
-            }
-        }
-        assertexpandArraysEquals(r, a, b, mask, SPECIES.length());
-    }
     @Test(dataProvider = "floatUnaryOpProvider")
     static void getFloatMaxVectorTests(IntFunction<float[]> fa) {
         float[] a = fa.apply(SPECIES.length());

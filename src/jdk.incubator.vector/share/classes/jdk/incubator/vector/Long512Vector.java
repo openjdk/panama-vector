@@ -468,26 +468,10 @@ final class Long512Vector extends LongVector {
 
     @Override
     @ForceInline
-    public Long512Vector compress(VectorMask<Long> m, Vector<Long> v) {
-        return (Long512Vector)
-            super.compressTemplate(Long512Mask.class,
-                                   (Long512Mask) m, (Long512Vector) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public Long512Vector expand(VectorMask<Long> m) {
         return (Long512Vector)
             super.expandTemplate(Long512Mask.class,
                                    (Long512Mask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public Long512Vector expand(VectorMask<Long> m, Vector<Long> v) {
-        return (Long512Vector)
-            super.expandTemplate(Long512Mask.class,
-                                   (Long512Mask) m, (Long512Vector) v);  // specialize
     }
 
     @Override

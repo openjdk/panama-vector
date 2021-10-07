@@ -2543,19 +2543,20 @@ private:
   void vpternlogq(XMMRegister dst, int imm8, XMMRegister src2, XMMRegister src3, int vector_len);
 
   // Vector compress/expand instructions.
-  void vpcompressb(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void vpcompressw(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void vpcompressd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void vpcompressq(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void vpcompressps(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpcompressb(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpcompressw(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpcompressd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpcompressq(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evcompressps(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evcompresspd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
   void vpcompresspd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
 
-  void vpexpandb(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void vpexpandw(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void vpexpandd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void vpexpandq(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void vpexpandps(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void vpexpandpd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpexpandb(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpexpandw(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpexpandd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpexpandq(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpexpandps(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpexpandpd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
 
   // Vector Rotate Left/Right instruction.
   void evprolvd(XMMRegister dst, XMMRegister src, XMMRegister shift, int vector_len);
@@ -2713,6 +2714,7 @@ private:
   void evpblendmw(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
   void evpblendmd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
   void evpblendmq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
+
  protected:
   // Next instructions require address alignment 16 bytes SSE mode.
   // They should be called only from corresponding MacroAssembler instructions.

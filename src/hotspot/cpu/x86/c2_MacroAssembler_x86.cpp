@@ -4106,30 +4106,58 @@ void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, XMMRegister
   }
 }
 
-void C2_MacroAssembler::vpcompress_expand(int opcode, XMMRegister dst, XMMRegister src, KRegister mask,
+void C2_MacroAssembler::compress_expand(int opcode, XMMRegister dst, XMMRegister src, KRegister mask,
                                           bool merge, BasicType bt, int vec_enc) {
   if (opcode == Op_VectorCompress) {
     switch(bt) {
-      case T_BYTE: vpcompressb(dst, mask, src, merge, vec_enc); break;
-      case T_CHAR:
-      case T_SHORT: vpcompressw(dst, mask, src, merge, vec_enc); break;
-      case T_INT: vpcompressd(dst, mask, src, merge, vec_enc); break;
-      case T_FLOAT: vpcompressps(dst, mask, src, merge, vec_enc); break;
-      case T_LONG: vpcompressq(dst, mask, src, merge, vec_enc); break;
-      case T_DOUBLE: vpcompresspd(dst, mask, src, merge, vec_enc); break;
-      default: fatal("Unsupported type"); break;
+    case T_BYTE:
+      evpcompressb(dst, mask, src, merge, vec_enc);
+      break;
+    case T_CHAR:
+    case T_SHORT:
+      evpcompressw(dst, mask, src, merge, vec_enc);
+      break;
+    case T_INT:
+      evpcompressd(dst, mask, src, merge, vec_enc);
+      break;
+    case T_FLOAT:
+      evcompressps(dst, mask, src, merge, vec_enc);
+      break;
+    case T_LONG:
+      evpcompressq(dst, mask, src, merge, vec_enc);
+      break;
+    case T_DOUBLE:
+      evcompresspd(dst, mask, src, merge, vec_enc);
+      break;
+    default:
+      fatal("Unsupported type");
+      break;
     }
   } else {
     assert(opcode == Op_VectorExpand, "");
     switch(bt) {
-      case T_BYTE: vpexpandb(dst, mask, src, merge, vec_enc); break;
-      case T_CHAR:
-      case T_SHORT: vpexpandw(dst, mask, src, merge, vec_enc); break;
-      case T_INT : vpexpandd(dst, mask, src, merge, vec_enc); break;
-      case T_FLOAT: vpexpandps(dst, mask, src, merge, vec_enc); break;
-      case T_LONG: vpexpandq(dst, mask, src, merge, vec_enc); break;
-      case T_DOUBLE: vpexpandpd(dst, mask, src, merge, vec_enc); break;
-      default: fatal("Unsupported type"); break;
+    case T_BYTE:
+      evpexpandb(dst, mask, src, merge, vec_enc);
+      break;
+    case T_CHAR:
+    case T_SHORT:
+      evpexpandw(dst, mask, src, merge, vec_enc);
+      break;
+    case T_INT:
+      evpexpandd(dst, mask, src, merge, vec_enc);
+      break;
+    case T_FLOAT:
+      evpexpandps(dst, mask, src, merge, vec_enc);
+      break;
+    case T_LONG:
+      evpexpandq(dst, mask, src, merge, vec_enc);
+      break;
+    case T_DOUBLE:
+      evpexpandpd(dst, mask, src, merge, vec_enc);
+      break;
+    default:
+      fatal("Unsupported type");
+      break;
     }
   }
 }

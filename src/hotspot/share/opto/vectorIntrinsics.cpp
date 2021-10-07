@@ -2696,7 +2696,7 @@ bool LibraryCallKit::inline_vector_extract() {
 //             Class<? extends V> vClass, Class<? extends M> mClass, Class<E> eClass,
 //             int length, V v1, V v2, M m,
 //             CmpExpOperation<V, M> defaultImpl)
-bool LibraryCallKit::inline_vector_comexp() {
+bool LibraryCallKit::inline_vector_compress_expand() {
   const TypeInt*     opr          = gvn().type(argument(0))->isa_int();
   const TypeInstPtr* vector_klass = gvn().type(argument(1))->isa_instptr();
   const TypeInstPtr* mask_klass   = gvn().type(argument(2))->isa_instptr();
@@ -2707,13 +2707,21 @@ bool LibraryCallKit::inline_vector_comexp() {
       vector_klass->const_oop() == NULL || mask_klass->const_oop() == NULL ||
       elem_klass->const_oop() == NULL || !vlen->is_con()) {
     if (C->print_intrinsics()) {
-      tty->print_cr("  ** missing constant: opr=%s vclass=%s etype=%s vlen=%s",
+      tty->print_cr("  ** missing constant: opr=%s vclass=%s mclass =%s etype=%s vlen=%s",
                     NodeClassNames[argument(0)->Opcode()],
                     NodeClassNames[argument(1)->Opcode()],
+                    NodeClassNames[argument(2)->Opcode()],
                     NodeClassNames[argument(3)->Opcode()],
                     NodeClassNames[argument(4)->Opcode()]);
     }
     return false; // not enough info for intrinsification
+  }
+
+  if (!is_klass_initialized(vector_klass) || !is_klass_initialized(mask_klass)) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** klass argument not initialized");
+    }
+    return false;
   }
 
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
@@ -2722,12 +2730,6 @@ bool LibraryCallKit::inline_vector_comexp() {
       tty->print_cr("  ** not a primitive bt=%d", elem_type->basic_type());
     }
     return false; // should be primitive type
-  }
-  if (!is_klass_initialized(vector_klass)) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** klass argument not initialized");
-    }
-    return false;
   }
 
   BasicType elem_bt = elem_type->basic_type();
