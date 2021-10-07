@@ -458,6 +458,9 @@ final class Double512Vector extends DoubleVector {
     @Override
     @ForceInline
     public Double512Vector compress(VectorMask<Double> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (Double512Vector)
             super.compressTemplate(Double512Mask.class,
                                    (Double512Mask) m);  // specialize
@@ -466,6 +469,9 @@ final class Double512Vector extends DoubleVector {
     @Override
     @ForceInline
     public Double512Vector expand(VectorMask<Double> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (Double512Vector)
             super.expandTemplate(Double512Mask.class,
                                    (Double512Mask) m);  // specialize

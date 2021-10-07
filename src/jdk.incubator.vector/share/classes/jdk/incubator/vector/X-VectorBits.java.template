@@ -477,6 +477,9 @@ final class $vectortype$ extends $abstractvectortype$ {
     @Override
     @ForceInline
     public $vectortype$ compress(VectorMask<$Boxtype$> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return ($vectortype$)
             super.compressTemplate($masktype$.class,
                                    ($masktype$) m);  // specialize
@@ -485,6 +488,9 @@ final class $vectortype$ extends $abstractvectortype$ {
     @Override
     @ForceInline
     public $vectortype$ expand(VectorMask<$Boxtype$> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return ($vectortype$)
             super.expandTemplate($masktype$.class,
                                    ($masktype$) m);  // specialize

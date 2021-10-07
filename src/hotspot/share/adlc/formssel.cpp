@@ -4235,7 +4235,6 @@ bool MatchRule::is_vector() const {
     "VectorCastB2X", "VectorCastS2X", "VectorCastI2X",
     "VectorCastL2X", "VectorCastF2X", "VectorCastD2X",
     "VectorMaskWrapper", "VectorMaskCmp", "VectorReinterpret","LoadVectorMasked","StoreVectorMasked",
-    "VectorCompress", "VectorExpand",
     "FmaVD", "FmaVF","PopCountVI",
     // Next are vector mask ops.
     "MaskAll", "AndVMask", "OrVMask", "XorVMask", "VectorMaskCast",

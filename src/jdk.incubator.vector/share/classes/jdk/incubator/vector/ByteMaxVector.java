@@ -471,6 +471,9 @@ final class ByteMaxVector extends ByteVector {
     @Override
     @ForceInline
     public ByteMaxVector compress(VectorMask<Byte> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (ByteMaxVector)
             super.compressTemplate(ByteMaxMask.class,
                                    (ByteMaxMask) m);  // specialize
@@ -479,6 +482,9 @@ final class ByteMaxVector extends ByteVector {
     @Override
     @ForceInline
     public ByteMaxVector expand(VectorMask<Byte> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (ByteMaxVector)
             super.expandTemplate(ByteMaxMask.class,
                                    (ByteMaxMask) m);  // specialize

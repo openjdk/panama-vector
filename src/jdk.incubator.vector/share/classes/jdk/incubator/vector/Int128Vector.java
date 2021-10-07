@@ -471,6 +471,9 @@ final class Int128Vector extends IntVector {
     @Override
     @ForceInline
     public Int128Vector compress(VectorMask<Integer> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (Int128Vector)
             super.compressTemplate(Int128Mask.class,
                                    (Int128Mask) m);  // specialize
@@ -479,6 +482,9 @@ final class Int128Vector extends IntVector {
     @Override
     @ForceInline
     public Int128Vector expand(VectorMask<Integer> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (Int128Vector)
             super.expandTemplate(Int128Mask.class,
                                    (Int128Mask) m);  // specialize

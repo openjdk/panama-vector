@@ -471,6 +471,9 @@ final class Short512Vector extends ShortVector {
     @Override
     @ForceInline
     public Short512Vector compress(VectorMask<Short> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (Short512Vector)
             super.compressTemplate(Short512Mask.class,
                                    (Short512Mask) m);  // specialize
@@ -479,6 +482,9 @@ final class Short512Vector extends ShortVector {
     @Override
     @ForceInline
     public Short512Vector expand(VectorMask<Short> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (Short512Vector)
             super.expandTemplate(Short512Mask.class,
                                    (Short512Mask) m);  // specialize

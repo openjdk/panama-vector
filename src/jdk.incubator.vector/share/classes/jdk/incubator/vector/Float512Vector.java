@@ -458,6 +458,9 @@ final class Float512Vector extends FloatVector {
     @Override
     @ForceInline
     public Float512Vector compress(VectorMask<Float> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (Float512Vector)
             super.compressTemplate(Float512Mask.class,
                                    (Float512Mask) m);  // specialize
@@ -466,6 +469,9 @@ final class Float512Vector extends FloatVector {
     @Override
     @ForceInline
     public Float512Vector expand(VectorMask<Float> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (Float512Vector)
             super.expandTemplate(Float512Mask.class,
                                    (Float512Mask) m);  // specialize

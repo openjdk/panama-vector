@@ -715,26 +715,24 @@ public:
 
 //------------------------------CompressVNode--------------------------------------
 // Vector compress
-class CompressVNode : public VectorNode {
-public:
-  CompressVNode(Node* vec1, Node* mask)
-    : VectorNode(vec1, mask, vec1->bottom_type()->is_vect()) {}
-
+class CompressVNode: public VectorNode {
+ public:
+  CompressVNode(Node* vec1, Node* vec2, Node* mask, const TypeVect* vt) :
+      VectorNode(vec1, vec2, mask, vt) {
+    init_class_id(Class_CompressV);
+  }
   virtual int Opcode() const;
-  Node* vec1() const { return in(1); }
-  Node* vec_mask() const { return in(2); }
 };
 
 //------------------------------ExpandVNode--------------------------------------
 // Vector expand
-class ExpandVNode : public VectorNode {
-public:
-  ExpandVNode(Node* vec1, Node* mask)
-    : VectorNode(vec1, mask, vec1->bottom_type()->is_vect()) {}
-
+class ExpandVNode: public VectorNode {
+ public:
+  ExpandVNode(Node* vec1, Node* vec2, Node* mask, const TypeVect* vt) :
+      VectorNode(vec1, vec2, mask, vt) {
+    init_class_id(Class_ExpandV);
+  }
   virtual int Opcode() const;
-  Node* vec1() const { return in(1); }
-  Node* vec_mask() const { return in(2); }
 };
 
 //================================= M E M O R Y ===============================
@@ -1346,24 +1344,6 @@ class VectorTestNode : public Node {
   virtual uint ideal_reg() const { return Op_RegI; }  // TODO Should be RegFlags but due to missing comparison flags for BoolTest
                                                       // in middle-end, we make it boolean result directly.
   BoolTest::mask get_predicate() const { return _predicate; }
-};
-
-class VectorExpandNode: public VectorNode {
- public:
-  VectorExpandNode(Node* vec1, Node* vec2, Node* mask, const TypeVect* vt) :
-      VectorNode(vec1, vec2, mask, vt) {
-    init_class_id(Class_VectorExpand);
-  }
-  virtual int Opcode() const;
-};
-
-class VectorCompressNode: public VectorNode {
- public:
-  VectorCompressNode(Node* vec1, Node* vec2, Node* mask, const TypeVect* vt) :
-      VectorNode(vec1, vec2, mask, vt) {
-    init_class_id(Class_VectorCompress);
-  }
-  virtual int Opcode() const;
 };
 
 class VectorBlendNode : public VectorNode {

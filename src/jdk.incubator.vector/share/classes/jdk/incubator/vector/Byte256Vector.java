@@ -471,6 +471,9 @@ final class Byte256Vector extends ByteVector {
     @Override
     @ForceInline
     public Byte256Vector compress(VectorMask<Byte> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (Byte256Vector)
             super.compressTemplate(Byte256Mask.class,
                                    (Byte256Mask) m);  // specialize
@@ -479,6 +482,9 @@ final class Byte256Vector extends ByteVector {
     @Override
     @ForceInline
     public Byte256Vector expand(VectorMask<Byte> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (Byte256Vector)
             super.expandTemplate(Byte256Mask.class,
                                    (Byte256Mask) m);  // specialize

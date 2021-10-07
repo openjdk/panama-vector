@@ -449,7 +449,7 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
         case T_INT:   // fall-through
         case T_LONG:  // fall-through
         case T_FLOAT: // fall-through
-        case T_DOUBLE: return Op_VectorExpand;
+        case T_DOUBLE: return Op_ExpandV;
         default: fatal("EXPAND: %s", type2name(bt));
       }
       break;
@@ -461,7 +461,7 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
         case T_INT:   // fall-through
         case T_LONG:  // fall-through
         case T_FLOAT: // fall-through
-        case T_DOUBLE: return Op_VectorCompress;
+        case T_DOUBLE: return Op_CompressV;
         default: fatal("COMPRESS: %s", type2name(bt));
       }
       break;

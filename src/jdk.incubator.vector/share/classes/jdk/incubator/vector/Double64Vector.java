@@ -458,6 +458,9 @@ final class Double64Vector extends DoubleVector {
     @Override
     @ForceInline
     public Double64Vector compress(VectorMask<Double> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (Double64Vector)
             super.compressTemplate(Double64Mask.class,
                                    (Double64Mask) m);  // specialize
@@ -466,6 +469,9 @@ final class Double64Vector extends DoubleVector {
     @Override
     @ForceInline
     public Double64Vector expand(VectorMask<Double> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (Double64Vector)
             super.expandTemplate(Double64Mask.class,
                                    (Double64Mask) m);  // specialize

@@ -4108,7 +4108,7 @@ void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, XMMRegister
 
 void C2_MacroAssembler::compress_expand(int opcode, XMMRegister dst, XMMRegister src, KRegister mask,
                                           bool merge, BasicType bt, int vec_enc) {
-  if (opcode == Op_VectorCompress) {
+  if (opcode == Op_CompressV) {
     switch(bt) {
     case T_BYTE:
       evpcompressb(dst, mask, src, merge, vec_enc);
@@ -4134,7 +4134,7 @@ void C2_MacroAssembler::compress_expand(int opcode, XMMRegister dst, XMMRegister
       break;
     }
   } else {
-    assert(opcode == Op_VectorExpand, "");
+    assert(opcode == Op_ExpandV, "");
     switch(bt) {
     case T_BYTE:
       evpexpandb(dst, mask, src, merge, vec_enc);

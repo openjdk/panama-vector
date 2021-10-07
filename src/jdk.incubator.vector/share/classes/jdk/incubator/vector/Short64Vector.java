@@ -471,6 +471,9 @@ final class Short64Vector extends ShortVector {
     @Override
     @ForceInline
     public Short64Vector compress(VectorMask<Short> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (Short64Vector)
             super.compressTemplate(Short64Mask.class,
                                    (Short64Mask) m);  // specialize
@@ -479,6 +482,9 @@ final class Short64Vector extends ShortVector {
     @Override
     @ForceInline
     public Short64Vector expand(VectorMask<Short> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (Short64Vector)
             super.expandTemplate(Short64Mask.class,
                                    (Short64Mask) m);  // specialize

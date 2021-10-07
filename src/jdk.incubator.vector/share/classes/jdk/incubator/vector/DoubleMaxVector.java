@@ -458,6 +458,9 @@ final class DoubleMaxVector extends DoubleVector {
     @Override
     @ForceInline
     public DoubleMaxVector compress(VectorMask<Double> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (DoubleMaxVector)
             super.compressTemplate(DoubleMaxMask.class,
                                    (DoubleMaxMask) m);  // specialize
@@ -466,6 +469,9 @@ final class DoubleMaxVector extends DoubleVector {
     @Override
     @ForceInline
     public DoubleMaxVector expand(VectorMask<Double> m) {
+        if (m.allTrue()) {
+            return this;
+        }
         return (DoubleMaxVector)
             super.expandTemplate(DoubleMaxMask.class,
                                    (DoubleMaxMask) m);  // specialize
