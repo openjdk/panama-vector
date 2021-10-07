@@ -478,26 +478,10 @@ final class Short256Vector extends ShortVector {
 
     @Override
     @ForceInline
-    public Short256Vector compress(VectorMask<Short> m, Vector<Short> v) {
-        return (Short256Vector)
-            super.compressTemplate(Short256Mask.class,
-                                   (Short256Mask) m, (Short256Vector) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public Short256Vector expand(VectorMask<Short> m) {
         return (Short256Vector)
             super.expandTemplate(Short256Mask.class,
                                    (Short256Mask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public Short256Vector expand(VectorMask<Short> m, Vector<Short> v) {
-        return (Short256Vector)
-            super.expandTemplate(Short256Mask.class,
-                                   (Short256Mask) m, (Short256Vector) v);  // specialize
     }
 
     @Override

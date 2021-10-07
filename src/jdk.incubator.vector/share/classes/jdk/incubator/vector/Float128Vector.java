@@ -465,26 +465,10 @@ final class Float128Vector extends FloatVector {
 
     @Override
     @ForceInline
-    public Float128Vector compress(VectorMask<Float> m, Vector<Float> v) {
-        return (Float128Vector)
-            super.compressTemplate(Float128Mask.class,
-                                   (Float128Mask) m, (Float128Vector) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public Float128Vector expand(VectorMask<Float> m) {
         return (Float128Vector)
             super.expandTemplate(Float128Mask.class,
                                    (Float128Mask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public Float128Vector expand(VectorMask<Float> m, Vector<Float> v) {
-        return (Float128Vector)
-            super.expandTemplate(Float128Mask.class,
-                                   (Float128Mask) m, (Float128Vector) v);  // specialize
     }
 
     @Override

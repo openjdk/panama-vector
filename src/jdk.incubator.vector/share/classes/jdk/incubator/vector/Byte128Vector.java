@@ -478,26 +478,10 @@ final class Byte128Vector extends ByteVector {
 
     @Override
     @ForceInline
-    public Byte128Vector compress(VectorMask<Byte> m, Vector<Byte> v) {
-        return (Byte128Vector)
-            super.compressTemplate(Byte128Mask.class,
-                                   (Byte128Mask) m, (Byte128Vector) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public Byte128Vector expand(VectorMask<Byte> m) {
         return (Byte128Vector)
             super.expandTemplate(Byte128Mask.class,
                                    (Byte128Mask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public Byte128Vector expand(VectorMask<Byte> m, Vector<Byte> v) {
-        return (Byte128Vector)
-            super.expandTemplate(Byte128Mask.class,
-                                   (Byte128Mask) m, (Byte128Vector) v);  // specialize
     }
 
     @Override

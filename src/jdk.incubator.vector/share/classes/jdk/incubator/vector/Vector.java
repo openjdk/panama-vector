@@ -2705,33 +2705,8 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *
      * @param m the mask controlling the compression
      * @return the compressed lane elements of this vector
-     * @see #compress(VectorMask,Vector)
      */
     public abstract Vector<E> compress(VectorMask<E> m);
-
-    /**
-     * Compresses the lane elements of this vector within another
-     * background vector selecting lanes under the control of a
-     * specific mask.
-     *
-     * This is a cross-lane operation that compresses the lane
-     * elements of this vector within another background vector
-     * as selected by the specified mask.
-     *
-     * For each lane {@code N} of the mask, if the mask at
-     * lane {@code N} is set, the element at lane {@code N}
-     * of this vector is selected and stored into the
-     * output vector contiguously starting from the lane {@code 0}.
-     * All the upper remaining lanes, if any, of the output
-     * vector get the value from the corresponding lanes
-     * of the background vector.
-     *
-     * @param m the mask controlling the compression
-     * @param v the background vector
-     * @return the compressed lane elements of this vector
-     * @see #compress(VectorMask)
-     */
-    public abstract Vector<E> compress(VectorMask<E> m, Vector<E> v);
 
     /**
      * Expands the lane elements of this vector
@@ -2749,33 +2724,8 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *
      * @param m the mask controlling the compression
      * @return the expanded lane elements of this vector
-     * @see #expand(VectorMask,Vector)
      */
     public abstract Vector<E> expand(VectorMask<E> m);
-
-    /**
-     * Expands the lane elements of this vector into another background
-     * vector under the control of a specific mask.
-     *
-     * This is a cross-lane operation that expands the contguous lane
-     * elements of this vector into lanes of a background vector
-     * as selected by the specified mask.
-     *
-     * For each lane {@code N} of the mask, if the mask at
-     * lane {@code N} is set, the next contiguous element of input vector
-     * starting from lane {@code 0} is selected and stored into the output
-     * vector at lane {@code N}.
-     * All the remaining lanes, if any, of the output
-     * vector get the value from the corresponding lanes
-     * of the background vector.
-     *
-     * @param m the mask controlling the compression
-     * @param v the background vector
-     * @return the expanded lane elements of this vector
-     * @see #expand(VectorMask)
-     */
-    public abstract Vector<E> expand(VectorMask<E> m, Vector<E> v);
-
 
     /**
      * Using index values stored in the lanes of this vector,

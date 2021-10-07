@@ -478,26 +478,10 @@ final class Int64Vector extends IntVector {
 
     @Override
     @ForceInline
-    public Int64Vector compress(VectorMask<Integer> m, Vector<Integer> v) {
-        return (Int64Vector)
-            super.compressTemplate(Int64Mask.class,
-                                   (Int64Mask) m, (Int64Vector) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public Int64Vector expand(VectorMask<Integer> m) {
         return (Int64Vector)
             super.expandTemplate(Int64Mask.class,
                                    (Int64Mask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public Int64Vector expand(VectorMask<Integer> m, Vector<Integer> v) {
-        return (Int64Vector)
-            super.expandTemplate(Int64Mask.class,
-                                   (Int64Mask) m, (Int64Vector) v);  // specialize
     }
 
     @Override

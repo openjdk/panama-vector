@@ -465,26 +465,10 @@ final class Double256Vector extends DoubleVector {
 
     @Override
     @ForceInline
-    public Double256Vector compress(VectorMask<Double> m, Vector<Double> v) {
-        return (Double256Vector)
-            super.compressTemplate(Double256Mask.class,
-                                   (Double256Mask) m, (Double256Vector) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public Double256Vector expand(VectorMask<Double> m) {
         return (Double256Vector)
             super.expandTemplate(Double256Mask.class,
                                    (Double256Mask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public Double256Vector expand(VectorMask<Double> m, Vector<Double> v) {
-        return (Double256Vector)
-            super.expandTemplate(Double256Mask.class,
-                                   (Double256Mask) m, (Double256Vector) v);  // specialize
     }
 
     @Override

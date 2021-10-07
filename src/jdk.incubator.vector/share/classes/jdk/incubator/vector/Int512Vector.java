@@ -478,26 +478,10 @@ final class Int512Vector extends IntVector {
 
     @Override
     @ForceInline
-    public Int512Vector compress(VectorMask<Integer> m, Vector<Integer> v) {
-        return (Int512Vector)
-            super.compressTemplate(Int512Mask.class,
-                                   (Int512Mask) m, (Int512Vector) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public Int512Vector expand(VectorMask<Integer> m) {
         return (Int512Vector)
             super.expandTemplate(Int512Mask.class,
                                    (Int512Mask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public Int512Vector expand(VectorMask<Integer> m, Vector<Integer> v) {
-        return (Int512Vector)
-            super.expandTemplate(Int512Mask.class,
-                                   (Int512Mask) m, (Int512Vector) v);  // specialize
     }
 
     @Override

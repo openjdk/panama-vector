@@ -478,26 +478,10 @@ final class ShortMaxVector extends ShortVector {
 
     @Override
     @ForceInline
-    public ShortMaxVector compress(VectorMask<Short> m, Vector<Short> v) {
-        return (ShortMaxVector)
-            super.compressTemplate(ShortMaxMask.class,
-                                   (ShortMaxMask) m, (ShortMaxVector) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public ShortMaxVector expand(VectorMask<Short> m) {
         return (ShortMaxVector)
             super.expandTemplate(ShortMaxMask.class,
                                    (ShortMaxMask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public ShortMaxVector expand(VectorMask<Short> m, Vector<Short> v) {
-        return (ShortMaxVector)
-            super.expandTemplate(ShortMaxMask.class,
-                                   (ShortMaxMask) m, (ShortMaxVector) v);  // specialize
     }
 
     @Override

@@ -465,26 +465,10 @@ final class DoubleMaxVector extends DoubleVector {
 
     @Override
     @ForceInline
-    public DoubleMaxVector compress(VectorMask<Double> m, Vector<Double> v) {
-        return (DoubleMaxVector)
-            super.compressTemplate(DoubleMaxMask.class,
-                                   (DoubleMaxMask) m, (DoubleMaxVector) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public DoubleMaxVector expand(VectorMask<Double> m) {
         return (DoubleMaxVector)
             super.expandTemplate(DoubleMaxMask.class,
                                    (DoubleMaxMask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public DoubleMaxVector expand(VectorMask<Double> m, Vector<Double> v) {
-        return (DoubleMaxVector)
-            super.expandTemplate(DoubleMaxMask.class,
-                                   (DoubleMaxMask) m, (DoubleMaxVector) v);  // specialize
     }
 
     @Override

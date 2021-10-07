@@ -478,26 +478,10 @@ final class IntMaxVector extends IntVector {
 
     @Override
     @ForceInline
-    public IntMaxVector compress(VectorMask<Integer> m, Vector<Integer> v) {
-        return (IntMaxVector)
-            super.compressTemplate(IntMaxMask.class,
-                                   (IntMaxMask) m, (IntMaxVector) v);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public IntMaxVector expand(VectorMask<Integer> m) {
         return (IntMaxVector)
             super.expandTemplate(IntMaxMask.class,
                                    (IntMaxMask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public IntMaxVector expand(VectorMask<Integer> m, Vector<Integer> v) {
-        return (IntMaxVector)
-            super.expandTemplate(IntMaxMask.class,
-                                   (IntMaxMask) m, (IntMaxVector) v);  // specialize
     }
 
     @Override

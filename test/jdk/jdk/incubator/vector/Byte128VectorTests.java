@@ -284,31 +284,6 @@ public class Byte128VectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertcompressArraysEquals(byte[] r, byte[] a, byte[] b, boolean[] m, int vector_len) {
-        int i = 0, j = 0, k = 0;
-        try {
-            for (; i < a.length; i += vector_len) {
-                k = 0;
-                for (j = 0; j < vector_len; j++) {
-                    if (m[(i + j) % SPECIES.length()]) {
-                        Assert.assertEquals(r[i + k], a[i + j]);
-                        k++;
-                    }
-                }
-                for (; k < vector_len; k++) {
-                    Assert.assertEquals(r[i + k], b[i + k]);
-                }
-            }
-        } catch (AssertionError e) {
-            int idx = i + k;
-            if (m[(i + j) % SPECIES.length()]) {
-                Assert.assertEquals(r[idx], a[i + j], "at index #" + idx);
-            } else {
-                Assert.assertEquals(r[idx], b[idx], "at index #" + idx);
-            }
-        }
-    }
-
     static void assertexpandArraysEquals(byte[] r, byte[] a, boolean[] m, int vector_len) {
         int i = 0, j = 0, k = 0;
         try {
@@ -329,30 +304,6 @@ public class Byte128VectorTests extends AbstractVectorTest {
                 Assert.assertEquals(r[idx], a[i + k], "at index #" + idx);
             } else {
                 Assert.assertEquals(r[idx], (byte)0, "at index #" + idx);
-            }
-        }
-    }
-
-    static void assertexpandArraysEquals(byte[] r, byte[] a, byte[] b, boolean[] m, int vector_len) {
-        int i = 0, j = 0, k = 0;
-        try {
-            for (; i < a.length; i += vector_len) {
-                k = 0;
-                for (j = 0; j < vector_len; j++) {
-                    if (m[(i + j) % SPECIES.length()]) {
-                        Assert.assertEquals(r[i + j], a[i + k]);
-                        k++;
-                    } else {
-                        Assert.assertEquals(r[i + j], b[i + j]);
-                    }
-                }
-            }
-        } catch (AssertionError e) {
-            int idx = i + j;
-            if (m[idx % SPECIES.length()]) {
-                Assert.assertEquals(r[idx], a[i + k], "at index #" + idx);
-            } else {
-                Assert.assertEquals(r[idx], b[idx], "at index #" + idx);
             }
         }
     }
@@ -4341,24 +4292,6 @@ public class Byte128VectorTests extends AbstractVectorTest {
         assertcompressArraysEquals(r, a, mask, SPECIES.length());
     }
 
-    @Test(dataProvider = "byteBinaryOpMaskProvider")
-    static void compressByte128VectorTestsMasked(IntFunction<byte[]> fa, IntFunction<byte[]> fb,
-                                          IntFunction<boolean[]> fm) {
-        byte[] a = fa.apply(SPECIES.length());
-        byte[] b = fb.apply(SPECIES.length());
-        byte[] r = fr.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
-                av.compress(vmask, bv).intoArray(r, i);
-            }
-        }
-        assertcompressArraysEquals(r, a, b, mask, SPECIES.length());
-    }
 
     @Test(dataProvider = "byteUnaryOpMaskProvider")
     static void expandMaskedByte128VectorTests(IntFunction<byte[]> fa,
@@ -4378,24 +4311,6 @@ public class Byte128VectorTests extends AbstractVectorTest {
         assertexpandArraysEquals(r, a, mask, SPECIES.length());
     }
 
-    @Test(dataProvider = "byteBinaryOpMaskProvider")
-    static void expandByte128VectorTestsMasked(IntFunction<byte[]> fa, IntFunction<byte[]> fb,
-                                          IntFunction<boolean[]> fm) {
-        byte[] a = fa.apply(SPECIES.length());
-        byte[] b = fb.apply(SPECIES.length());
-        byte[] r = fr.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
-                av.expand(vmask, bv).intoArray(r, i);
-            }
-        }
-        assertexpandArraysEquals(r, a, b, mask, SPECIES.length());
-    }
     @Test(dataProvider = "byteUnaryOpProvider")
     static void getByte128VectorTests(IntFunction<byte[]> fa) {
         byte[] a = fa.apply(SPECIES.length());
