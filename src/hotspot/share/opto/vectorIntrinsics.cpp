@@ -2743,10 +2743,8 @@ bool LibraryCallKit::inline_vector_compress_expand() {
   }
 
   bool is_compress = (opr == TypeInt::ONE);
-  assert(is_compress, "Temporary assert. Will remove after enable expand.");
   int num_elem = vlen->get_con();
-  int sopc = Op_CompressV;
-  // int sopc = is_compress ? Op_CompressV : Op_ExpandV;
+  int sopc = is_compress ? Op_CompressV : Op_ExpandV;
 
   BasicType elem_bt = elem_type->basic_type();
   BasicType mask_bt = elem_bt;

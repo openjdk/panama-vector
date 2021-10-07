@@ -1093,14 +1093,14 @@ class methodHandle;
                                                                                                                                                \
   do_intrinsic(_VectorSelectiveOp, jdk_internal_vm_vector_VectorSupport, vector_selective_op_name, vector_selective_op_sig, F_S)               \
    do_signature(vector_selective_op_sig, "(Z"                                                                                                  \
-                                      "Ljava/lang/Class;"                                                                                      \
-                                      "Ljava/lang/Class;"                                                                                      \
-                                      "Ljava/lang/Class;"                                                                                      \
-                                      "I"                                                                                                      \
-                                      "Ljdk/internal/vm/vector/VectorSupport$Vector;"                                                          \
-                                      "Ljdk/internal/vm/vector/VectorSupport$VectorMask;"                                                      \
-                                      "Ljdk/internal/vm/vector/VectorSupport$VectorSelectiveOp;)"                                              \
-                                      "Ljdk/internal/vm/vector/VectorSupport$Vector;")                                                         \
+                                         "Ljava/lang/Class;"                                                                                   \
+                                         "Ljava/lang/Class;"                                                                                   \
+                                         "Ljava/lang/Class;"                                                                                   \
+                                         "I"                                                                                                   \
+                                         "Ljdk/internal/vm/vector/VectorSupport$Vector;"                                                       \
+                                         "Ljdk/internal/vm/vector/VectorSupport$VectorMask;"                                                   \
+                                         "Ljdk/internal/vm/vector/VectorSupport$VectorSelectiveOp;)"                                           \
+                                         "Ljdk/internal/vm/vector/VectorSupport$Vector;")                                                      \
    do_name(vector_selective_op_name, "selectiveOp")                                                                                            \
                                                                                                                                                \
    /* (2) Bytecode intrinsics                                                                        */                        \

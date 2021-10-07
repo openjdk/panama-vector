@@ -9233,20 +9233,6 @@ instruct vfma_mem_masked(vec dst, vec src2, memory src3, kReg mask) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct evcompress_reg(vec dst, vec src, kReg mask) %{
-  predicate(UseAVX > 2);
-  match(Set dst (CompressV src mask));
-  format %{ "vcompress $dst, $src, $mask" %}
-  ins_encode %{
-    assert(Matcher::vector_length_in_bytes(this) >= 16, "sanity");
-    int vector_len = vector_length_encoding(this);
-    BasicType etype = Matcher::vector_element_basic_type(this);
-    // Zeroing-masking
-    __ evcompress(etype, $dst$$XMMRegister, $mask$$KRegister, $src$$XMMRegister, false /*merge*/, vector_len);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
 instruct evcmp_masked(kReg dst, vec src1, vec src2, immI8 cond, kReg mask, rRegP scratch) %{
   match(Set dst (VectorMaskCmp (Binary src1 src2) (Binary cond mask)));
   effect(TEMP scratch);
