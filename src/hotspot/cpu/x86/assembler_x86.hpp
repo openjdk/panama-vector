@@ -2698,6 +2698,15 @@ private:
   void evpblendmw(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
   void evpblendmd(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
   void evpblendmq(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, bool merge, int vector_len);
+
+  // Vector compresses
+  void evpcompressb(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpcompressw(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpcompressd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpcompressq(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evcompressps(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evcompresspd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+
  protected:
   // Next instructions require address alignment 16 bytes SSE mode.
   // They should be called only from corresponding MacroAssembler instructions.
