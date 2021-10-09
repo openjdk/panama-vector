@@ -314,6 +314,31 @@ public abstract class ShortVector extends AbstractVector<Short> {
         return v;
     }
 
+    // Selective operator
+
+    /*package-private*/
+    interface FSelOp {
+        void apply(short[] d, short[] s, int cnt, int i);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    ShortVector selOp(VectorMask<Short> m, FSelOp f) {
+        // mask true count
+        int cnt = 0;
+        short[] vec = vec();
+        short[] res = new short[length()];
+        boolean[] mbits = ((AbstractMask<Short>)m).getBits();
+        for (int i = 0; i < res.length; i++) {
+            if (mbits[i]) {
+                f.apply(res, vec, cnt, i);
+                cnt++;
+            }
+        }
+        return vectorFactory(res);
+    }
+
     // Memory reference
 
     /*package-private*/
@@ -2369,16 +2394,14 @@ public abstract class ShortVector extends AbstractVector<Short> {
     @ForceInline
     final
     <M extends VectorMask<Short>>
-    ShortVector compressTemplate(Class<M> masktype, M m) {
-      m.check(masktype, this);
-      int j = 0;
-      ShortVector v = ShortVector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(j++, lane(i));
-        }
-      }
-      return v;
+    ShortVector compressTemplate(Class<M> maskType, M m) {
+        m.check(maskType, this);
+        return VectorSupport.selectiveOp(
+            true, getClass(), maskType, short.class, length(),
+            this, m,
+            (v1, m_) -> v1.selOp(m_, (a, v, cnt, i) -> {
+                a[cnt] = v[i];
+            }));
     }
 
     /**
@@ -2392,16 +2415,14 @@ public abstract class ShortVector extends AbstractVector<Short> {
     @ForceInline
     final
     <M extends VectorMask<Short>>
-    ShortVector expandTemplate(Class<M> masktype, M m) {
-      m.check(masktype, this);
-      int j = 0;
-      ShortVector v = ShortVector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(i, lane(j++));
-        }
-      }
-      return v;
+    ShortVector expandTemplate(Class<M> maskType, M m) {
+        m.check(maskType, this);
+        return VectorSupport.selectiveOp(
+            false, getClass(), maskType, short.class, length(),
+            this, m,
+            (v1, m_) -> v1.selOp(m_, (a, v, cnt, i) -> {
+                a[i] = v[cnt];
+            }));
     }
 
     /**

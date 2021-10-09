@@ -318,6 +318,31 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         return v;
     }
 
+    // Selective operator
+
+    /*package-private*/
+    interface FSelOp {
+        void apply($type$[] d, $type$[] s, int cnt, int i);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    $abstractvectortype$ selOp(VectorMask<$Boxtype$> m, FSelOp f) {
+        // mask true count
+        int cnt = 0;
+        $type$[] vec = vec();
+        $type$[] res = new $type$[length()];
+        boolean[] mbits = ((AbstractMask<$Boxtype$>)m).getBits();
+        for (int i = 0; i < res.length; i++) {
+            if (mbits[i]) {
+                f.apply(res, vec, cnt, i);
+                cnt++;
+            }
+        }
+        return vectorFactory(res);
+    }
+
     // Memory reference
 
     /*package-private*/
@@ -2660,22 +2685,20 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
      */
     @Override
     public abstract
-    $Type$Vector compress(VectorMask<$Boxtype$> m);
+    $abstractvectortype$ compress(VectorMask<$Boxtype$> m);
 
     /*package-private*/
     @ForceInline
     final
     <M extends VectorMask<$Boxtype$>>
-    $Type$Vector compressTemplate(Class<M> masktype, M m) {
-      m.check(masktype, this);
-      int j = 0;
-      $Type$Vector v = $Type$Vector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(j++, lane(i));
-        }
-      }
-      return v;
+    $abstractvectortype$ compressTemplate(Class<M> maskType, M m) {
+        m.check(maskType, this);
+        return VectorSupport.selectiveOp(
+            true, getClass(), maskType, $type$.class, length(),
+            this, m,
+            (v1, m_) -> v1.selOp(m_, (a, v, cnt, i) -> {
+                a[cnt] = v[i];
+            }));
     }
 
     /**
@@ -2683,22 +2706,20 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
      */
     @Override
     public abstract
-    $Type$Vector expand(VectorMask<$Boxtype$> m);
+    $abstractvectortype$ expand(VectorMask<$Boxtype$> m);
 
     /*package-private*/
     @ForceInline
     final
     <M extends VectorMask<$Boxtype$>>
-    $Type$Vector expandTemplate(Class<M> masktype, M m) {
-      m.check(masktype, this);
-      int j = 0;
-      $Type$Vector v = $Type$Vector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(i, lane(j++));
-        }
-      }
-      return v;
+    $abstractvectortype$ expandTemplate(Class<M> maskType, M m) {
+        m.check(maskType, this);
+        return VectorSupport.selectiveOp(
+            false, getClass(), maskType, $type$.class, length(),
+            this, m,
+            (v1, m_) -> v1.selOp(m_, (a, v, cnt, i) -> {
+                a[i] = v[cnt];
+            }));
     }
 
     /**

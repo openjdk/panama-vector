@@ -314,6 +314,31 @@ public abstract class IntVector extends AbstractVector<Integer> {
         return v;
     }
 
+    // Selective operator
+
+    /*package-private*/
+    interface FSelOp {
+        void apply(int[] d, int[] s, int cnt, int i);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    IntVector selOp(VectorMask<Integer> m, FSelOp f) {
+        // mask true count
+        int cnt = 0;
+        int[] vec = vec();
+        int[] res = new int[length()];
+        boolean[] mbits = ((AbstractMask<Integer>)m).getBits();
+        for (int i = 0; i < res.length; i++) {
+            if (mbits[i]) {
+                f.apply(res, vec, cnt, i);
+                cnt++;
+            }
+        }
+        return vectorFactory(res);
+    }
+
     // Memory reference
 
     /*package-private*/
@@ -2368,16 +2393,14 @@ public abstract class IntVector extends AbstractVector<Integer> {
     @ForceInline
     final
     <M extends VectorMask<Integer>>
-    IntVector compressTemplate(Class<M> masktype, M m) {
-      m.check(masktype, this);
-      int j = 0;
-      IntVector v = IntVector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(j++, lane(i));
-        }
-      }
-      return v;
+    IntVector compressTemplate(Class<M> maskType, M m) {
+        m.check(maskType, this);
+        return VectorSupport.selectiveOp(
+            true, getClass(), maskType, int.class, length(),
+            this, m,
+            (v1, m_) -> v1.selOp(m_, (a, v, cnt, i) -> {
+                a[cnt] = v[i];
+            }));
     }
 
     /**
@@ -2391,16 +2414,14 @@ public abstract class IntVector extends AbstractVector<Integer> {
     @ForceInline
     final
     <M extends VectorMask<Integer>>
-    IntVector expandTemplate(Class<M> masktype, M m) {
-      m.check(masktype, this);
-      int j = 0;
-      IntVector v = IntVector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(i, lane(j++));
-        }
-      }
-      return v;
+    IntVector expandTemplate(Class<M> maskType, M m) {
+        m.check(maskType, this);
+        return VectorSupport.selectiveOp(
+            false, getClass(), maskType, int.class, length(),
+            this, m,
+            (v1, m_) -> v1.selOp(m_, (a, v, cnt, i) -> {
+                a[i] = v[cnt];
+            }));
     }
 
     /**

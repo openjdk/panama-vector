@@ -314,6 +314,31 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         return v;
     }
 
+    // Selective operator
+
+    /*package-private*/
+    interface FSelOp {
+        void apply(byte[] d, byte[] s, int cnt, int i);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    ByteVector selOp(VectorMask<Byte> m, FSelOp f) {
+        // mask true count
+        int cnt = 0;
+        byte[] vec = vec();
+        byte[] res = new byte[length()];
+        boolean[] mbits = ((AbstractMask<Byte>)m).getBits();
+        for (int i = 0; i < res.length; i++) {
+            if (mbits[i]) {
+                f.apply(res, vec, cnt, i);
+                cnt++;
+            }
+        }
+        return vectorFactory(res);
+    }
+
     // Memory reference
 
     /*package-private*/
@@ -2369,16 +2394,14 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     @ForceInline
     final
     <M extends VectorMask<Byte>>
-    ByteVector compressTemplate(Class<M> masktype, M m) {
-      m.check(masktype, this);
-      int j = 0;
-      ByteVector v = ByteVector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(j++, lane(i));
-        }
-      }
-      return v;
+    ByteVector compressTemplate(Class<M> maskType, M m) {
+        m.check(maskType, this);
+        return VectorSupport.selectiveOp(
+            true, getClass(), maskType, byte.class, length(),
+            this, m,
+            (v1, m_) -> v1.selOp(m_, (a, v, cnt, i) -> {
+                a[cnt] = v[i];
+            }));
     }
 
     /**
@@ -2392,16 +2415,14 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     @ForceInline
     final
     <M extends VectorMask<Byte>>
-    ByteVector expandTemplate(Class<M> masktype, M m) {
-      m.check(masktype, this);
-      int j = 0;
-      ByteVector v = ByteVector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(i, lane(j++));
-        }
-      }
-      return v;
+    ByteVector expandTemplate(Class<M> maskType, M m) {
+        m.check(maskType, this);
+        return VectorSupport.selectiveOp(
+            false, getClass(), maskType, byte.class, length(),
+            this, m,
+            (v1, m_) -> v1.selOp(m_, (a, v, cnt, i) -> {
+                a[i] = v[cnt];
+            }));
     }
 
     /**

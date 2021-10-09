@@ -314,6 +314,31 @@ public abstract class FloatVector extends AbstractVector<Float> {
         return v;
     }
 
+    // Selective operator
+
+    /*package-private*/
+    interface FSelOp {
+        void apply(float[] d, float[] s, int cnt, int i);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    FloatVector selOp(VectorMask<Float> m, FSelOp f) {
+        // mask true count
+        int cnt = 0;
+        float[] vec = vec();
+        float[] res = new float[length()];
+        boolean[] mbits = ((AbstractMask<Float>)m).getBits();
+        for (int i = 0; i < res.length; i++) {
+            if (mbits[i]) {
+                f.apply(res, vec, cnt, i);
+                cnt++;
+            }
+        }
+        return vectorFactory(res);
+    }
+
     // Memory reference
 
     /*package-private*/
@@ -2227,16 +2252,14 @@ public abstract class FloatVector extends AbstractVector<Float> {
     @ForceInline
     final
     <M extends VectorMask<Float>>
-    FloatVector compressTemplate(Class<M> masktype, M m) {
-      m.check(masktype, this);
-      int j = 0;
-      FloatVector v = FloatVector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(j++, lane(i));
-        }
-      }
-      return v;
+    FloatVector compressTemplate(Class<M> maskType, M m) {
+        m.check(maskType, this);
+        return VectorSupport.selectiveOp(
+            true, getClass(), maskType, float.class, length(),
+            this, m,
+            (v1, m_) -> v1.selOp(m_, (a, v, cnt, i) -> {
+                a[cnt] = v[i];
+            }));
     }
 
     /**
@@ -2250,16 +2273,14 @@ public abstract class FloatVector extends AbstractVector<Float> {
     @ForceInline
     final
     <M extends VectorMask<Float>>
-    FloatVector expandTemplate(Class<M> masktype, M m) {
-      m.check(masktype, this);
-      int j = 0;
-      FloatVector v = FloatVector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(i, lane(j++));
-        }
-      }
-      return v;
+    FloatVector expandTemplate(Class<M> maskType, M m) {
+        m.check(maskType, this);
+        return VectorSupport.selectiveOp(
+            false, getClass(), maskType, float.class, length(),
+            this, m,
+            (v1, m_) -> v1.selOp(m_, (a, v, cnt, i) -> {
+                a[i] = v[cnt];
+            }));
     }
 
     /**
