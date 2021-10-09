@@ -2549,7 +2549,6 @@ private:
   void evpcompressq(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
   void evcompressps(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
   void evcompresspd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void vpcompresspd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
 
   void evpexpandb(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
   void evpexpandw(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
