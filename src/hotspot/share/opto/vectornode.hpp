@@ -717,8 +717,8 @@ public:
 // Vector compress
 class CompressVNode: public VectorNode {
  public:
-  CompressVNode(Node* vec1, Node* vec2, Node* mask, const TypeVect* vt) :
-      VectorNode(vec1, vec2, mask, vt) {
+  CompressVNode(Node* vec, Node* mask, const TypeVect* vt) :
+      VectorNode(vec, mask, vt) {
     init_class_id(Class_CompressV);
   }
   virtual int Opcode() const;
@@ -728,8 +728,8 @@ class CompressVNode: public VectorNode {
 // Vector expand
 class ExpandVNode: public VectorNode {
  public:
-  ExpandVNode(Node* vec1, Node* vec2, Node* mask, const TypeVect* vt) :
-      VectorNode(vec1, vec2, mask, vt) {
+  ExpandVNode(Node* vec, Node* mask, const TypeVect* vt) :
+      VectorNode(vec, mask, vt) {
     init_class_id(Class_ExpandV);
   }
   virtual int Opcode() const;

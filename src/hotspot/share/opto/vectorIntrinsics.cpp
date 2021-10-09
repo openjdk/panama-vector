@@ -2694,7 +2694,7 @@ bool LibraryCallKit::inline_vector_extract() {
 //  E>
 //  V comExpOp(int opr,
 //             Class<? extends V> vClass, Class<? extends M> mClass, Class<E> eClass,
-//             int length, V v1, V v2, M m,
+//             int length, V v, M m,
 //             CmpExpOperation<V, M> defaultImpl)
 bool LibraryCallKit::inline_vector_compress_expand() {
   const TypeInt*     opr          = gvn().type(argument(0))->isa_int();
@@ -2756,20 +2756,11 @@ bool LibraryCallKit::inline_vector_compress_expand() {
     return false;
   }
 
-  Node* opd2 = unbox_vector(argument(6), vbox_type, elem_bt, num_elem);
-  if (opd2 == NULL) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** unbox failed v1=%s",
-                     NodeClassNames[argument(6)->Opcode()]);
-    }
-    return false;
-  }
-
   ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
   assert(is_vector_mask(mbox_klass), "argument(7) should be a mask class");
   const TypeInstPtr* mbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, mbox_klass);
 
-  Node* mask = unbox_vector(argument(7), mbox_type, elem_bt, num_elem);
+  Node* mask = unbox_vector(argument(6), mbox_type, elem_bt, num_elem);
   if (mask == NULL) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** unbox failed mask=%s",
@@ -2779,7 +2770,7 @@ bool LibraryCallKit::inline_vector_compress_expand() {
   }
 
   const TypeVect* vt = TypeVect::make(elem_bt, num_elem);
-  Node* operation = gvn().transform(VectorNode::make(opc, opd1, opd2, mask, vt));
+  Node* operation = gvn().transform(VectorNode::make(opc, opd1, mask, vt));
 
   // Wrap it up in VectorBox to keep object type information.
   Node* vbox = box_vector(operation, vbox_type, elem_bt, num_elem);

@@ -8743,14 +8743,14 @@ instruct vmask_first_or_last_true_avx(rRegI dst, vec mask, rRegL tmp, vec xtmp, 
 // --------------------------------- Compress/Expand Operations ---------------------------
 
 instruct vcompress_expand_reg(vec dst, vec src, kReg mask) %{
-  match(Set dst (CompressV (Binary dst src) mask));
-  match(Set dst (ExpandV (Binary dst src) mask));
+  match(Set dst (CompressV src mask));
+  match(Set dst (ExpandV src mask));
   format %{ "vector_compress_expand $dst, $src, $mask" %}
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vector_len = vector_length_encoding(this);
     BasicType bt  = Matcher::vector_element_basic_type(this);
-    __ compress_expand(opcode, $dst$$XMMRegister, $src$$XMMRegister, $mask$$KRegister, true, bt, vector_len);
+    __ compress_expand(opcode, $dst$$XMMRegister, $src$$XMMRegister, $mask$$KRegister, false, bt, vector_len);
   %}
   ins_pipe( pipe_slow );
 %}

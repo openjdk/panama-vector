@@ -627,7 +627,7 @@ public class VectorSupport {
 
     public interface ComExpOperation<V extends Vector<?>,
                                      M extends VectorMask<?>> {
-        V apply(V v1, V v2, M m);
+        V apply(V v, M m);
     }
 
     @IntrinsicCandidate
@@ -637,10 +637,10 @@ public class VectorSupport {
      E>
     V comExpOp(int opr,
               Class<? extends V> vClass, Class<? extends M> mClass, Class<E> eClass,
-              int length, V v1, V v2, M m,
+              int length, V v, M m,
               ComExpOperation<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(v1, v2, m);
+        return defaultImpl.apply(v, m);
     }
 
     /* ============================================================================ */

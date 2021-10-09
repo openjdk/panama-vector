@@ -351,10 +351,10 @@ public abstract class LongVector extends AbstractVector<Long> {
         return vectorFactory(res);
     }
 
-    static LongVector expandHelper(Vector<Long> v1, Vector<Long> v2, VectorMask<Long> m) {
+    static LongVector expandHelper(Vector<Long> v, VectorMask<Long> m) {
         VectorSpecies<Long> vsp = m.vectorSpecies();
-        LongVector r  = (LongVector) v1;
-        LongVector vi = (LongVector) v2;
+        LongVector r  = (LongVector) vsp.zero();
+        LongVector vi = (LongVector) v;
         for(int i = 0,j = 0; i < vsp.length(); i++) {
             if(m.laneIsSet(i)) {
                 r = r.withLane(i, vi.lane(j++));
@@ -363,10 +363,10 @@ public abstract class LongVector extends AbstractVector<Long> {
         return r;
     }
 
-    static LongVector compressHelper(Vector<Long> v1, Vector<Long> v2, VectorMask<Long> m) {
+    static LongVector compressHelper(Vector<Long> v, VectorMask<Long> m) {
         VectorSpecies<Long> vsp = m.vectorSpecies();
-        LongVector r  = (LongVector) v1;
-        LongVector vi = (LongVector) v2;
+        LongVector r  = (LongVector) vsp.zero();
+        LongVector vi = (LongVector) v;
         for(int i = 0, j = 0; i < vsp.length(); i++) {
             if (m.laneIsSet(i)) {
                 r = r.withLane(j++, vi.lane(i));
@@ -2261,8 +2261,8 @@ public abstract class LongVector extends AbstractVector<Long> {
     LongVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
-                                    long.class, length(), vspecies().zero(), this, m,
-                                    (v1, v2, m1) -> compressHelper(v1, v2, m1));
+                                    long.class, length(), this, m,
+                                    (v1, m1) -> compressHelper(v1, m1));
     }
 
     /**
@@ -2279,8 +2279,8 @@ public abstract class LongVector extends AbstractVector<Long> {
     LongVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
-                                    long.class, length(), vspecies().zero(), this, m,
-                                    (v1, v2, m1) -> expandHelper(v1, v2, m1));
+                                    long.class, length(), this, m,
+                                    (v1, m1) -> expandHelper(v1, m1));
     }
 
 

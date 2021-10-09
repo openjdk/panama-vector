@@ -351,10 +351,10 @@ public abstract class ShortVector extends AbstractVector<Short> {
         return vectorFactory(res);
     }
 
-    static ShortVector expandHelper(Vector<Short> v1, Vector<Short> v2, VectorMask<Short> m) {
+    static ShortVector expandHelper(Vector<Short> v, VectorMask<Short> m) {
         VectorSpecies<Short> vsp = m.vectorSpecies();
-        ShortVector r  = (ShortVector) v1;
-        ShortVector vi = (ShortVector) v2;
+        ShortVector r  = (ShortVector) vsp.zero();
+        ShortVector vi = (ShortVector) v;
         for(int i = 0,j = 0; i < vsp.length(); i++) {
             if(m.laneIsSet(i)) {
                 r = r.withLane(i, vi.lane(j++));
@@ -363,10 +363,10 @@ public abstract class ShortVector extends AbstractVector<Short> {
         return r;
     }
 
-    static ShortVector compressHelper(Vector<Short> v1, Vector<Short> v2, VectorMask<Short> m) {
+    static ShortVector compressHelper(Vector<Short> v, VectorMask<Short> m) {
         VectorSpecies<Short> vsp = m.vectorSpecies();
-        ShortVector r  = (ShortVector) v1;
-        ShortVector vi = (ShortVector) v2;
+        ShortVector r  = (ShortVector) vsp.zero();
+        ShortVector vi = (ShortVector) v;
         for(int i = 0, j = 0; i < vsp.length(); i++) {
             if (m.laneIsSet(i)) {
                 r = r.withLane(j++, vi.lane(i));
@@ -2396,8 +2396,8 @@ public abstract class ShortVector extends AbstractVector<Short> {
     ShortVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
-                                    short.class, length(), vspecies().zero(), this, m,
-                                    (v1, v2, m1) -> compressHelper(v1, v2, m1));
+                                    short.class, length(), this, m,
+                                    (v1, m1) -> compressHelper(v1, m1));
     }
 
     /**
@@ -2414,8 +2414,8 @@ public abstract class ShortVector extends AbstractVector<Short> {
     ShortVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
-                                    short.class, length(), vspecies().zero(), this, m,
-                                    (v1, v2, m1) -> expandHelper(v1, v2, m1));
+                                    short.class, length(), this, m,
+                                    (v1, m1) -> expandHelper(v1, m1));
     }
 
 

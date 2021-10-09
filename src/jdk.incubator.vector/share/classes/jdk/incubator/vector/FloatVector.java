@@ -351,10 +351,10 @@ public abstract class FloatVector extends AbstractVector<Float> {
         return vectorFactory(res);
     }
 
-    static FloatVector expandHelper(Vector<Float> v1, Vector<Float> v2, VectorMask<Float> m) {
+    static FloatVector expandHelper(Vector<Float> v, VectorMask<Float> m) {
         VectorSpecies<Float> vsp = m.vectorSpecies();
-        FloatVector r  = (FloatVector) v1;
-        FloatVector vi = (FloatVector) v2;
+        FloatVector r  = (FloatVector) vsp.zero();
+        FloatVector vi = (FloatVector) v;
         for(int i = 0,j = 0; i < vsp.length(); i++) {
             if(m.laneIsSet(i)) {
                 r = r.withLane(i, vi.lane(j++));
@@ -363,10 +363,10 @@ public abstract class FloatVector extends AbstractVector<Float> {
         return r;
     }
 
-    static FloatVector compressHelper(Vector<Float> v1, Vector<Float> v2, VectorMask<Float> m) {
+    static FloatVector compressHelper(Vector<Float> v, VectorMask<Float> m) {
         VectorSpecies<Float> vsp = m.vectorSpecies();
-        FloatVector r  = (FloatVector) v1;
-        FloatVector vi = (FloatVector) v2;
+        FloatVector r  = (FloatVector) vsp.zero();
+        FloatVector vi = (FloatVector) v;
         for(int i = 0, j = 0; i < vsp.length(); i++) {
             if (m.laneIsSet(i)) {
                 r = r.withLane(j++, vi.lane(i));
@@ -2254,8 +2254,8 @@ public abstract class FloatVector extends AbstractVector<Float> {
     FloatVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
-                                    float.class, length(), vspecies().zero(), this, m,
-                                    (v1, v2, m1) -> compressHelper(v1, v2, m1));
+                                    float.class, length(), this, m,
+                                    (v1, m1) -> compressHelper(v1, m1));
     }
 
     /**
@@ -2272,8 +2272,8 @@ public abstract class FloatVector extends AbstractVector<Float> {
     FloatVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
-                                    float.class, length(), vspecies().zero(), this, m,
-                                    (v1, v2, m1) -> expandHelper(v1, v2, m1));
+                                    float.class, length(), this, m,
+                                    (v1, m1) -> expandHelper(v1, m1));
     }
 
 

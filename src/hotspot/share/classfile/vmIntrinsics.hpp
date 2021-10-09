@@ -1097,7 +1097,6 @@ class methodHandle;
                                       "Ljava/lang/Class;Ljava/lang/Class;"                                                                     \
                                       "I"                                                                                                      \
                                       "Ljdk/internal/vm/vector/VectorSupport$Vector;"                                                          \
-                                      "Ljdk/internal/vm/vector/VectorSupport$Vector;"                                                          \
                                       "Ljdk/internal/vm/vector/VectorSupport$VectorMask;"                                                      \
                                       "Ljdk/internal/vm/vector/VectorSupport$ComExpOperation;)"                                                \
                                       "Ljdk/internal/vm/vector/VectorSupport$Vector;")                                                         \
