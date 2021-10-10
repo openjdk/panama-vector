@@ -471,9 +471,6 @@ final class Byte512Vector extends ByteVector {
     @Override
     @ForceInline
     public Byte512Vector compress(VectorMask<Byte> m) {
-        if (m.allTrue()) {
-            return this;
-        }
         return (Byte512Vector)
             super.compressTemplate(Byte512Mask.class,
                                    (Byte512Mask) m);  // specialize
@@ -482,9 +479,6 @@ final class Byte512Vector extends ByteVector {
     @Override
     @ForceInline
     public Byte512Vector expand(VectorMask<Byte> m) {
-        if (m.allTrue()) {
-            return this;
-        }
         return (Byte512Vector)
             super.expandTemplate(Byte512Mask.class,
                                    (Byte512Mask) m);  // specialize

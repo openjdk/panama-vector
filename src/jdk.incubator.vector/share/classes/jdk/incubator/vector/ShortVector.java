@@ -355,6 +355,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
         VectorSpecies<Short> vsp = m.vectorSpecies();
         ShortVector r  = (ShortVector) vsp.zero();
         ShortVector vi = (ShortVector) v;
+        if (m.allTrue()) {
+            return vi;
+        }
         for(int i = 0,j = 0; i < vsp.length(); i++) {
             if(m.laneIsSet(i)) {
                 r = r.withLane(i, vi.lane(j++));
@@ -367,6 +370,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
         VectorSpecies<Short> vsp = m.vectorSpecies();
         ShortVector r  = (ShortVector) vsp.zero();
         ShortVector vi = (ShortVector) v;
+        if (m.allTrue()) {
+            return vi;
+        }
         for(int i = 0, j = 0; i < vsp.length(); i++) {
             if (m.laneIsSet(i)) {
                 r = r.withLane(j++, vi.lane(i));

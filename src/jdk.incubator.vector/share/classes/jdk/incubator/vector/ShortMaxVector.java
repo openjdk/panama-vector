@@ -471,9 +471,6 @@ final class ShortMaxVector extends ShortVector {
     @Override
     @ForceInline
     public ShortMaxVector compress(VectorMask<Short> m) {
-        if (m.allTrue()) {
-            return this;
-        }
         return (ShortMaxVector)
             super.compressTemplate(ShortMaxMask.class,
                                    (ShortMaxMask) m);  // specialize
@@ -482,9 +479,6 @@ final class ShortMaxVector extends ShortVector {
     @Override
     @ForceInline
     public ShortMaxVector expand(VectorMask<Short> m) {
-        if (m.allTrue()) {
-            return this;
-        }
         return (ShortMaxVector)
             super.expandTemplate(ShortMaxMask.class,
                                    (ShortMaxMask) m);  // specialize

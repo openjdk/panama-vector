@@ -471,9 +471,6 @@ final class Short256Vector extends ShortVector {
     @Override
     @ForceInline
     public Short256Vector compress(VectorMask<Short> m) {
-        if (m.allTrue()) {
-            return this;
-        }
         return (Short256Vector)
             super.compressTemplate(Short256Mask.class,
                                    (Short256Mask) m);  // specialize
@@ -482,9 +479,6 @@ final class Short256Vector extends ShortVector {
     @Override
     @ForceInline
     public Short256Vector expand(VectorMask<Short> m) {
-        if (m.allTrue()) {
-            return this;
-        }
         return (Short256Vector)
             super.expandTemplate(Short256Mask.class,
                                    (Short256Mask) m);  // specialize

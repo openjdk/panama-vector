@@ -458,9 +458,6 @@ final class Float128Vector extends FloatVector {
     @Override
     @ForceInline
     public Float128Vector compress(VectorMask<Float> m) {
-        if (m.allTrue()) {
-            return this;
-        }
         return (Float128Vector)
             super.compressTemplate(Float128Mask.class,
                                    (Float128Mask) m);  // specialize
@@ -469,9 +466,6 @@ final class Float128Vector extends FloatVector {
     @Override
     @ForceInline
     public Float128Vector expand(VectorMask<Float> m) {
-        if (m.allTrue()) {
-            return this;
-        }
         return (Float128Vector)
             super.expandTemplate(Float128Mask.class,
                                    (Float128Mask) m);  // specialize

@@ -461,9 +461,6 @@ final class Long128Vector extends LongVector {
     @Override
     @ForceInline
     public Long128Vector compress(VectorMask<Long> m) {
-        if (m.allTrue()) {
-            return this;
-        }
         return (Long128Vector)
             super.compressTemplate(Long128Mask.class,
                                    (Long128Mask) m);  // specialize
@@ -472,9 +469,6 @@ final class Long128Vector extends LongVector {
     @Override
     @ForceInline
     public Long128Vector expand(VectorMask<Long> m) {
-        if (m.allTrue()) {
-            return this;
-        }
         return (Long128Vector)
             super.expandTemplate(Long128Mask.class,
                                    (Long128Mask) m);  // specialize

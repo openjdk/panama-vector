@@ -355,6 +355,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         VectorSpecies<Byte> vsp = m.vectorSpecies();
         ByteVector r  = (ByteVector) vsp.zero();
         ByteVector vi = (ByteVector) v;
+        if (m.allTrue()) {
+            return vi;
+        }
         for(int i = 0,j = 0; i < vsp.length(); i++) {
             if(m.laneIsSet(i)) {
                 r = r.withLane(i, vi.lane(j++));
@@ -367,6 +370,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         VectorSpecies<Byte> vsp = m.vectorSpecies();
         ByteVector r  = (ByteVector) vsp.zero();
         ByteVector vi = (ByteVector) v;
+        if (m.allTrue()) {
+            return vi;
+        }
         for(int i = 0, j = 0; i < vsp.length(); i++) {
             if (m.laneIsSet(i)) {
                 r = r.withLane(j++, vi.lane(i));

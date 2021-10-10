@@ -471,9 +471,6 @@ final class Int64Vector extends IntVector {
     @Override
     @ForceInline
     public Int64Vector compress(VectorMask<Integer> m) {
-        if (m.allTrue()) {
-            return this;
-        }
         return (Int64Vector)
             super.compressTemplate(Int64Mask.class,
                                    (Int64Mask) m);  // specialize
@@ -482,9 +479,6 @@ final class Int64Vector extends IntVector {
     @Override
     @ForceInline
     public Int64Vector expand(VectorMask<Integer> m) {
-        if (m.allTrue()) {
-            return this;
-        }
         return (Int64Vector)
             super.expandTemplate(Int64Mask.class,
                                    (Int64Mask) m);  // specialize

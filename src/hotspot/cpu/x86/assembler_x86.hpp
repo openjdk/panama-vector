@@ -2543,17 +2543,17 @@ private:
   void vpternlogq(XMMRegister dst, int imm8, XMMRegister src2, XMMRegister src3, int vector_len);
 
   // Vector compress/expand instructions.
-  void evcompressb(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void evcompressw(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void evcompressd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void evcompressq(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpcompressb(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpcompressw(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpcompressd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpcompressq(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
   void evcompressps(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
   void evcompresspd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
 
-  void evexpandb(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void evexpandw(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void evexpandd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
-  void evexpandq(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpexpandb(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpexpandw(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpexpandd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evpexpandq(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
   void evexpandps(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
   void evexpandpd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
 

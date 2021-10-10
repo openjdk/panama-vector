@@ -4111,20 +4111,20 @@ void C2_MacroAssembler::compress_expand(int opcode, XMMRegister dst, XMMRegister
   if (opcode == Op_CompressV) {
     switch(bt) {
     case T_BYTE:
-      evcompressb(dst, mask, src, merge, vec_enc);
+      evpcompressb(dst, mask, src, merge, vec_enc);
       break;
     case T_CHAR:
     case T_SHORT:
-      evcompressw(dst, mask, src, merge, vec_enc);
+      evpcompressw(dst, mask, src, merge, vec_enc);
       break;
     case T_INT:
-      evcompressd(dst, mask, src, merge, vec_enc);
+      evpcompressd(dst, mask, src, merge, vec_enc);
       break;
     case T_FLOAT:
       evcompressps(dst, mask, src, merge, vec_enc);
       break;
     case T_LONG:
-      evcompressq(dst, mask, src, merge, vec_enc);
+      evpcompressq(dst, mask, src, merge, vec_enc);
       break;
     case T_DOUBLE:
       evcompresspd(dst, mask, src, merge, vec_enc);
@@ -4137,20 +4137,20 @@ void C2_MacroAssembler::compress_expand(int opcode, XMMRegister dst, XMMRegister
     assert(opcode == Op_ExpandV, "");
     switch(bt) {
     case T_BYTE:
-      evexpandb(dst, mask, src, merge, vec_enc);
+      evpexpandb(dst, mask, src, merge, vec_enc);
       break;
     case T_CHAR:
     case T_SHORT:
-      evexpandw(dst, mask, src, merge, vec_enc);
+      evpexpandw(dst, mask, src, merge, vec_enc);
       break;
     case T_INT:
-      evexpandd(dst, mask, src, merge, vec_enc);
+      evpexpandd(dst, mask, src, merge, vec_enc);
       break;
     case T_FLOAT:
       evexpandps(dst, mask, src, merge, vec_enc);
       break;
     case T_LONG:
-      evexpandq(dst, mask, src, merge, vec_enc);
+      evpexpandq(dst, mask, src, merge, vec_enc);
       break;
     case T_DOUBLE:
       evexpandpd(dst, mask, src, merge, vec_enc);

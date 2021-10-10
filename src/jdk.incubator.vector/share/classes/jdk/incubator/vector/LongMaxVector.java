@@ -461,9 +461,6 @@ final class LongMaxVector extends LongVector {
     @Override
     @ForceInline
     public LongMaxVector compress(VectorMask<Long> m) {
-        if (m.allTrue()) {
-            return this;
-        }
         return (LongMaxVector)
             super.compressTemplate(LongMaxMask.class,
                                    (LongMaxMask) m);  // specialize
@@ -472,9 +469,6 @@ final class LongMaxVector extends LongVector {
     @Override
     @ForceInline
     public LongMaxVector expand(VectorMask<Long> m) {
-        if (m.allTrue()) {
-            return this;
-        }
         return (LongMaxVector)
             super.expandTemplate(LongMaxMask.class,
                                    (LongMaxMask) m);  // specialize

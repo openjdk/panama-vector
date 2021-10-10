@@ -355,6 +355,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         VectorSpecies<Double> vsp = m.vectorSpecies();
         DoubleVector r  = (DoubleVector) vsp.zero();
         DoubleVector vi = (DoubleVector) v;
+        if (m.allTrue()) {
+            return vi;
+        }
         for(int i = 0,j = 0; i < vsp.length(); i++) {
             if(m.laneIsSet(i)) {
                 r = r.withLane(i, vi.lane(j++));
@@ -367,6 +370,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         VectorSpecies<Double> vsp = m.vectorSpecies();
         DoubleVector r  = (DoubleVector) vsp.zero();
         DoubleVector vi = (DoubleVector) v;
+        if (m.allTrue()) {
+            return vi;
+        }
         for(int i = 0, j = 0; i < vsp.length(); i++) {
             if (m.laneIsSet(i)) {
                 r = r.withLane(j++, vi.lane(i));
