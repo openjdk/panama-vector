@@ -1094,7 +1094,8 @@ class methodHandle;
   do_intrinsic(_VectorComExp, jdk_internal_vm_vector_VectorSupport, vector_comexp_op_name, vector_comexp_op_sig, F_S)                           \
    do_signature(vector_comexp_op_sig, "(I"                                                                                                     \
                                       "Ljava/lang/Class;"                                                                                      \
-                                      "Ljava/lang/Class;Ljava/lang/Class;"                                                                     \
+                                      "Ljava/lang/Class;"                                                                                      \
+                                      "Ljava/lang/Class;"                                                                                      \
                                       "I"                                                                                                      \
                                       "Ljdk/internal/vm/vector/VectorSupport$Vector;"                                                          \
                                       "Ljdk/internal/vm/vector/VectorSupport$VectorMask;"                                                      \

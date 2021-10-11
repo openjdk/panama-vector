@@ -8742,7 +8742,7 @@ instruct vmask_first_or_last_true_avx(rRegI dst, vec mask, rRegL tmp, vec xtmp, 
 
 // --------------------------------- Compress/Expand Operations ---------------------------
 
-instruct vcompress_expand_reg(vec dst, vec src, kReg mask) %{
+instruct vcompress_expand_reg_evex(vec dst, vec src, kReg mask) %{
   match(Set dst (CompressV src mask));
   match(Set dst (ExpandV src mask));
   format %{ "vector_compress_expand $dst, $src, $mask" %}

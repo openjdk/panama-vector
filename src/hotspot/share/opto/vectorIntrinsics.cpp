@@ -2707,7 +2707,7 @@ bool LibraryCallKit::inline_vector_compress_expand() {
       vector_klass->const_oop() == NULL || mask_klass->const_oop() == NULL ||
       elem_klass->const_oop() == NULL || !vlen->is_con()) {
     if (C->print_intrinsics()) {
-      tty->print_cr("  ** missing constant: opr=%s vclass=%s mclass =%s etype=%s vlen=%s",
+      tty->print_cr("  ** missing constant: opr=%s vclass=%s mclass=%s etype=%s vlen=%s",
                     NodeClassNames[argument(0)->Opcode()],
                     NodeClassNames[argument(1)->Opcode()],
                     NodeClassNames[argument(2)->Opcode()],
@@ -2750,21 +2750,21 @@ bool LibraryCallKit::inline_vector_compress_expand() {
   Node* opd1 = unbox_vector(argument(5), vbox_type, elem_bt, num_elem);
   if (opd1 == NULL) {
     if (C->print_intrinsics()) {
-      tty->print_cr("  ** unbox failed v2=%s",
+      tty->print_cr("  ** unbox failed vector=%s",
                     NodeClassNames[argument(5)->Opcode()]);
     }
     return false;
   }
 
   ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
-  assert(is_vector_mask(mbox_klass), "argument(7) should be a mask class");
+  assert(is_vector_mask(mbox_klass), "argument(6) should be a mask class");
   const TypeInstPtr* mbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, mbox_klass);
 
   Node* mask = unbox_vector(argument(6), mbox_type, elem_bt, num_elem);
   if (mask == NULL) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** unbox failed mask=%s",
-                    NodeClassNames[argument(7)->Opcode()]);
+                    NodeClassNames[argument(6)->Opcode()]);
     }
     return false;
   }
