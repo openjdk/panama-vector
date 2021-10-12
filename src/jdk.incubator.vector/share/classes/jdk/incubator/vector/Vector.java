@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -2712,7 +2712,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      * Expands the lane elements of this vector
      * under the control of a specific mask.
      *
-     * This is a cross-lane operation that expands the contguous lane
+     * This is a cross-lane operation that expands the contiguous lane
      * elements of this vector into lanes of an output vector
      * as selected by the specified mask.
      *
