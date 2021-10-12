@@ -75,6 +75,10 @@ public class VectorSupport {
     public static final int VECTOR_OP_LROTATE = 23;
     public static final int VECTOR_OP_RROTATE = 24;
 
+    // Compression expansion operations
+    public static final int VECTOR_OP_COMPRESS = 25;
+    public static final int VECTOR_OP_EXPAND = 26;
+
     // Math routines
     public static final int VECTOR_OP_TAN = 101;
     public static final int VECTOR_OP_TANH = 102;
@@ -621,6 +625,26 @@ public class VectorSupport {
 
     /* ============================================================================ */
 
+    public interface ComExpOperation<V extends Vector<?>,
+                                     M extends VectorMask<?>> {
+        V apply(V v, M m);
+    }
+
+    @IntrinsicCandidate
+    public static
+    <V extends Vector<E>,
+     M extends VectorMask<E>,
+     E>
+    V comExpOp(int opr,
+              Class<? extends V> vClass, Class<? extends M> mClass, Class<E> eClass,
+              int length, V v, M m,
+              ComExpOperation<V, M> defaultImpl) {
+        assert isNonCapturingLambda(defaultImpl) : defaultImpl;
+        return defaultImpl.apply(v, m);
+    }
+
+    /* ============================================================================ */
+
     @IntrinsicCandidate
     public static
     <VP extends VectorPayload>
@@ -647,27 +671,6 @@ public class VectorSupport {
                               VectorMaskOp<M> defaultImpl) {
        assert isNonCapturingLambda(defaultImpl) : defaultImpl;
        return defaultImpl.apply(m);
-    }
-
-    /* ============================================================================ */
-
-    public interface VectorSelectiveOp<V extends Vector<?>,
-                                       M extends VectorMask<?>> {
-        V apply(V v, M m);
-    }
-
-    @IntrinsicCandidate
-    public static
-    <V extends Vector<E>,
-     M extends VectorMask<E>,
-     E>
-    V selectiveOp(boolean is_compress,
-                  Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
-                  int length,
-                  V v, M m,
-                  VectorSelectiveOp<V, M> defaultImpl) {
-        assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.apply(v, m);
     }
 
     /* ============================================================================ */

@@ -715,26 +715,24 @@ public:
 
 //------------------------------CompressVNode--------------------------------------
 // Vector compress
-class CompressVNode : public VectorNode {
-public:
-  CompressVNode(Node* vec1, Node* mask)
-    : VectorNode(vec1, mask, vec1->bottom_type()->is_vect()) {}
-
+class CompressVNode: public VectorNode {
+ public:
+  CompressVNode(Node* vec, Node* mask, const TypeVect* vt) :
+      VectorNode(vec, mask, vt) {
+    init_class_id(Class_CompressV);
+  }
   virtual int Opcode() const;
-  Node* vec1() const { return in(1); }
-  Node* vec_mask() const { return in(2); }
 };
 
 //------------------------------ExpandVNode--------------------------------------
 // Vector expand
-class ExpandVNode : public VectorNode {
-public:
-  ExpandVNode(Node* vec1, Node* mask)
-    : VectorNode(vec1, mask, vec1->bottom_type()->is_vect()) {}
-
+class ExpandVNode: public VectorNode {
+ public:
+  ExpandVNode(Node* vec, Node* mask, const TypeVect* vt) :
+      VectorNode(vec, mask, vt) {
+    init_class_id(Class_ExpandV);
+  }
   virtual int Opcode() const;
-  Node* vec1() const { return in(1); }
-  Node* vec_mask() const { return in(2); }
 };
 
 //================================= M E M O R Y ===============================
@@ -1352,7 +1350,6 @@ class VectorBlendNode : public VectorNode {
  public:
   VectorBlendNode(Node* vec1, Node* vec2, Node* mask)
     : VectorNode(vec1, vec2, mask, vec1->bottom_type()->is_vect()) {
-    // assert(mask->is_VectorMask(), "VectorBlendNode requires that third argument be a mask");
   }
 
   virtual int Opcode() const;

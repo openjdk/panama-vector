@@ -351,6 +351,36 @@ public abstract class IntVector extends AbstractVector<Integer> {
         return vectorFactory(res);
     }
 
+    static IntVector expandHelper(Vector<Integer> v, VectorMask<Integer> m) {
+        VectorSpecies<Integer> vsp = m.vectorSpecies();
+        IntVector r  = (IntVector) vsp.zero();
+        IntVector vi = (IntVector) v;
+        if (m.allTrue()) {
+            return vi;
+        }
+        for(int i = 0,j = 0; i < vsp.length(); i++) {
+            if(m.laneIsSet(i)) {
+                r = r.withLane(i, vi.lane(j++));
+            }
+        }
+        return r;
+    }
+
+    static IntVector compressHelper(Vector<Integer> v, VectorMask<Integer> m) {
+        VectorSpecies<Integer> vsp = m.vectorSpecies();
+        IntVector r  = (IntVector) vsp.zero();
+        IntVector vi = (IntVector) v;
+        if (m.allTrue()) {
+            return vi;
+        }
+        for(int i = 0, j = 0; i < vsp.length(); i++) {
+            if (m.laneIsSet(i)) {
+                r = r.withLane(j++, vi.lane(i));
+            }
+        }
+        return r;
+    }
+
     interface FStOp<M> {
         void apply(M memory, int offset, int i, int a);
     }
@@ -2370,14 +2400,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
     <M extends VectorMask<Integer>>
     IntVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      int j = 0;
-      IntVector v = IntVector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(j++, lane(i));
-        }
-      }
-      return v;
+      return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
+                                    int.class, length(), this, m,
+                                    (v1, m1) -> compressHelper(v1, m1));
     }
 
     /**
@@ -2393,15 +2418,11 @@ public abstract class IntVector extends AbstractVector<Integer> {
     <M extends VectorMask<Integer>>
     IntVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      int j = 0;
-      IntVector v = IntVector.zero(species());
-      for (int i = 0; i < length(); i++) {
-        if (m.laneIsSet(i)) {
-           v = v.withLane(i, lane(j++));
-        }
-      }
-      return v;
+      return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
+                                    int.class, length(), this, m,
+                                    (v1, m1) -> expandHelper(v1, m1));
     }
+
 
     /**
      * {@inheritDoc} <!--workaround-->

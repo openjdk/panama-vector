@@ -88,6 +88,9 @@ class VectorSupport : AllStatic {
     VECTOR_OP_LROTATE = 23,
     VECTOR_OP_RROTATE = 24,
 
+    VECTOR_OP_COMPRESS = 25,
+    VECTOR_OP_EXPAND = 26,
+
     // Vector Math Library
     VECTOR_OP_TAN   = 101,
     VECTOR_OP_TANH  = 102,

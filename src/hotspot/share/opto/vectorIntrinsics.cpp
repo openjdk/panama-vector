@@ -2692,12 +2692,10 @@ bool LibraryCallKit::inline_vector_extract() {
 // <V extends Vector<E>,
 //  M extends VectorMask<E>,
 //  E>
-// V selectiveOp(boolean is_compress,
-//               Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
-//               int length,
-//               V v, M m,
-//               VectorSelectiveOp<V, M> defaultImpl)
-//
+//  V comExpOp(int opr,
+//             Class<? extends V> vClass, Class<? extends M> mClass, Class<E> eClass,
+//             int length, V v, M m,
+//             CmpExpOperation<V, M> defaultImpl)
 bool LibraryCallKit::inline_vector_compress_expand() {
   const TypeInt*     opr          = gvn().type(argument(0))->isa_int();
   const TypeInstPtr* vector_klass = gvn().type(argument(1))->isa_instptr();
@@ -2705,9 +2703,9 @@ bool LibraryCallKit::inline_vector_compress_expand() {
   const TypeInstPtr* elem_klass   = gvn().type(argument(3))->isa_instptr();
   const TypeInt*     vlen         = gvn().type(argument(4))->isa_int();
 
-  if (vector_klass == NULL || mask_klass == NULL || elem_klass == NULL || opr == NULL || vlen == NULL ||
-      vector_klass->const_oop() == NULL || mask_klass->const_oop() == NULL || elem_klass->const_oop() == NULL ||
-      !(opr == TypeInt::ONE || opr == TypeInt::ZERO) || !vlen->is_con()) {
+  if (vector_klass == NULL || elem_klass == NULL || mask_klass == NULL || vlen == NULL ||
+      vector_klass->const_oop() == NULL || mask_klass->const_oop() == NULL ||
+      elem_klass->const_oop() == NULL || !vlen->is_con()) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** missing constant: opr=%s vclass=%s mclass=%s etype=%s vlen=%s",
                     NodeClassNames[argument(0)->Opcode()],
@@ -2734,49 +2732,49 @@ bool LibraryCallKit::inline_vector_compress_expand() {
     return false; // should be primitive type
   }
 
-  const Type* vmask_type = gvn().type(argument(6));
-  if (vmask_type->maybe_null()) {
+  BasicType elem_bt = elem_type->basic_type();
+  int num_elem = vlen->get_con();
+  int opc = VectorSupport::vop2ideal(opr->get_con(), elem_bt);
+
+  ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
+  const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
+
+  if (!arch_supports_vector(opc, num_elem, elem_bt, VecMaskUseLoad)) {
     if (C->print_intrinsics()) {
-      tty->print_cr("  ** null mask values are not allowed for compress/expand");
+      tty->print_cr("  ** not supported: opc=%d vlen=%d etype=%s ismask=useload",
+                    opc, num_elem, type2name(elem_bt));
+    }
+    return false; // not supported
+  }
+
+  Node* opd1 = unbox_vector(argument(5), vbox_type, elem_bt, num_elem);
+  if (opd1 == NULL) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** unbox failed vector=%s",
+                    NodeClassNames[argument(5)->Opcode()]);
     }
     return false;
   }
 
-  bool is_compress = (opr == TypeInt::ONE);
-  int num_elem = vlen->get_con();
-  int sopc = is_compress ? Op_CompressV : Op_ExpandV;
-
-  BasicType elem_bt = elem_type->basic_type();
-  BasicType mask_bt = elem_bt;
-
-  if (!arch_supports_vector(sopc, num_elem, elem_bt, VecMaskUsePred)) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** not supported: arity=2 op=compress vlen=%d etype=%s ismask=useload",
-                    num_elem, type2name(elem_bt));
-    }
-    return false; // not supported
-  }
-  ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
-  const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
-
   ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
+  assert(is_vector_mask(mbox_klass), "argument(6) should be a mask class");
   const TypeInstPtr* mbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, mbox_klass);
 
-  Node* vec1 = unbox_vector(argument(5), vbox_type, elem_bt, num_elem);
-  Node* mask = unbox_vector(argument(6), mbox_type, mask_bt, num_elem);
-
-  if (vec1 == NULL || mask == NULL) {
-    return false; // operand unboxing failed
+  Node* mask = unbox_vector(argument(6), mbox_type, elem_bt, num_elem);
+  if (mask == NULL) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** unbox failed mask=%s",
+                    NodeClassNames[argument(6)->Opcode()]);
+    }
+    return false;
   }
 
-  Node* ret;
-  if (is_compress) {
-    ret = gvn().transform(new CompressVNode(vec1, mask));
-  }
+  const TypeVect* vt = TypeVect::make(elem_bt, num_elem);
+  Node* operation = gvn().transform(VectorNode::make(opc, opd1, mask, vt));
 
-  Node* box = box_vector(ret, vbox_type, elem_bt, num_elem);
-  set_result(box);
+  // Wrap it up in VectorBox to keep object type information.
+  Node* vbox = box_vector(operation, vbox_type, elem_bt, num_elem);
+  set_result(vbox);
   C->set_max_vector_size(MAX2(C->max_vector_size(), (uint)(num_elem * type2aelembytes(elem_bt))));
   return true;
 }
-
