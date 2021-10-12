@@ -625,8 +625,8 @@ public abstract class VectorMask<E> extends jdk.internal.vm.vector.VectorSupport
     /**
      * Compresses set lanes from this mask.
      *
-     * Returns a mask which is a series of {@code N} set lanes followed by
-     * a series of unset lanes, where {@code N} is
+     * Returns a mask which is a series of {@code N} set lanes
+     * followed by a series of unset lanes, where {@code N} is
      * the true count of this mask.
      *
      * @return the compressed mask of this mask
