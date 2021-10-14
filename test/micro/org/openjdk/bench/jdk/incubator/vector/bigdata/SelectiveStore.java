@@ -24,8 +24,8 @@
 
 package org.openjdk.bench.jdk.incubator.vector.bigdata;
 
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.random.RandomGenerator;
 
 import jdk.incubator.vector.IntVector;
 import jdk.incubator.vector.VectorSpecies;
@@ -69,16 +69,16 @@ public class SelectiveStore {
     input2 = new int[ARRAY_LENGTH];
     conflict_array = new int[ARRAY_LENGTH];
 
-    Random rand = new Random();
-    int conflict_id_each_5_elements = rand.nextInt(5);
+    RandomGenerator rng = RandomGenerator.getDefault();
+    int conflict_id_each_5_elements = rng.nextInt(5);
 
     for (int i = 0; i < ARRAY_LENGTH; i++) {
-      index[i] = rand.nextInt(ARRAY_LENGTH);
-      input1[i] = rand.nextInt();
+      index[i] = rng.nextInt(ARRAY_LENGTH);
+      input1[i] = rng.nextInt();
       // Generate 20% conflict data
       int remainder = i % 5;
       if (remainder == conflict_id_each_5_elements) {
-        input2[i] = rand.nextInt();
+        input2[i] = rng.nextInt();
       } else {
         input2[i] = input1[i];
       }
