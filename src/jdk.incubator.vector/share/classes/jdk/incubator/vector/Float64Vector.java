@@ -648,6 +648,16 @@ final class Float64Vector extends FloatVector {
             return xor(maskAll(true));
         }
 
+        @Override
+        @ForceInline
+        public Float64Mask compress() {
+            return (Float64Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+                                                      Float64Vector.class, Float64Mask.class, float.class,
+                                                      VLENGTH, null, this,
+                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+        }
+
+
         // Binary operations
 
         @Override

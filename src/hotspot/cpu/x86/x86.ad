@@ -1834,6 +1834,11 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
         return false;
       }
       break;
+    case Op_CompressM:
+      if (UseAVX < 1 || !VM_Version::supports_bmi2()) {
+        return false;
+      }
+      break;
     case Op_CompressV:
     case Op_ExpandV:
       if (is_subword_type(bt) && !VM_Version::supports_avx512_vbmi2()) {
@@ -8782,7 +8787,34 @@ instruct vcompress_expand_reg_evex(vec dst, vec src, kReg mask) %{
     int opcode = this->ideal_Opcode();
     int vector_len = vector_length_encoding(this);
     BasicType bt  = Matcher::vector_element_basic_type(this);
-    __ compress_expand(opcode, $dst$$XMMRegister, $src$$XMMRegister, $mask$$KRegister, false, bt, vector_len);
+    __ vector_compress_expand(opcode, $dst$$XMMRegister, $src$$XMMRegister, $mask$$KRegister, false, bt, vector_len);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vcompress_mask_reg_evex(kReg dst, kReg mask, rRegL rtmp1, rRegL rtmp2, rFlagsReg cr) %{
+  predicate(n->in(1)->bottom_type()->isa_vectmask());
+  match(Set dst (CompressM mask));
+  effect(TEMP rtmp1, TEMP rtmp2, KILL cr);
+  format %{ "mask_compress_evex $dst, $mask\t! using $rtmp1 and $rtmp2 as TEMP" %}
+  ins_encode %{
+    int mask_len = Matcher::vector_length(this);
+    __ vector_mask_compress($dst$$KRegister, $mask$$KRegister, $rtmp1$$Register, $rtmp2$$Register, mask_len);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vcompress_mask_reg_avx(vec dst, vec mask, rRegL rtmp1, rRegL rtmp2, vec xtmp, rFlagsReg cr) %{
+  predicate(n->in(1)->bottom_type()->isa_vectmask() == NULL);
+  match(Set dst (CompressM mask));
+  effect(TEMP dst, TEMP rtmp1, TEMP rtmp2, TEMP xtmp, KILL cr);
+  format %{ "mask_compress_avx $dst, $mask\t! using $rtmp1, $rtmp2 and $xtmp as TEMP" %}
+  ins_encode %{
+    assert(Matcher::vector_element_basic_type(this, $mask) == T_BOOLEAN, "");
+    int mask_len = Matcher::vector_length(this, $mask);
+    int vec_enc = vector_length_encoding(this);
+    __ vector_mask_compress($dst$$XMMRegister, $mask$$XMMRegister, $rtmp1$$Register,
+                            $rtmp2$$Register, $xtmp$$XMMRegister, mask_len, vec_enc);
   %}
   ins_pipe( pipe_slow );
 %}

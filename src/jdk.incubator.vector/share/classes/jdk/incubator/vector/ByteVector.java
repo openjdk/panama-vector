@@ -2401,9 +2401,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     <M extends VectorMask<Byte>>
     ByteVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
-                                    byte.class, length(), this, m,
-                                    (v1, m1) -> compressHelper(v1, m1));
+      return (ByteVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
+                                                   byte.class, length(), this, m,
+                                                   (v1, m1) -> compressHelper(v1, m1));
     }
 
     /**
@@ -2419,9 +2419,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     <M extends VectorMask<Byte>>
     ByteVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
-                                    byte.class, length(), this, m,
-                                    (v1, m1) -> expandHelper(v1, m1));
+      return (ByteVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
+                                                   byte.class, length(), this, m,
+                                                   (v1, m1) -> expandHelper(v1, m1));
     }
 
 

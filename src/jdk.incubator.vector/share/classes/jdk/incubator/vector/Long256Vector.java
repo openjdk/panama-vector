@@ -653,6 +653,16 @@ final class Long256Vector extends LongVector {
             return xor(maskAll(true));
         }
 
+        @Override
+        @ForceInline
+        public Long256Mask compress() {
+            return (Long256Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+                                                      Long256Vector.class, Long256Mask.class, long.class,
+                                                      VLENGTH, null, this,
+                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+        }
+
+
         // Binary operations
 
         @Override

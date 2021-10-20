@@ -930,6 +930,16 @@ final class $vectortype$ extends $abstractvectortype$ {
             return xor(maskAll(true));
         }
 
+        @Override
+        @ForceInline
+        public $masktype$ compress() {
+            return ($masktype$)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+                                                      $vectortype$.class, $masktype$.class, $type$.class,
+                                                      VLENGTH, null, this,
+                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+        }
+
+
         // Binary operations
 
         @Override

@@ -657,6 +657,16 @@ final class IntMaxVector extends IntVector {
             return xor(maskAll(true));
         }
 
+        @Override
+        @ForceInline
+        public IntMaxMask compress() {
+            return (IntMaxMask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+                                                      IntMaxVector.class, IntMaxMask.class, int.class,
+                                                      VLENGTH, null, this,
+                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+        }
+
+
         // Binary operations
 
         @Override

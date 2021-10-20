@@ -92,8 +92,13 @@ public:
                  XMMRegister zero, XMMRegister one,
                  Register scratch);
 
-  void compress_expand(int opcode, XMMRegister dst, XMMRegister src, KRegister mask,
-                       bool merge, BasicType bt, int vec_enc);
+  void vector_compress_expand(int opcode, XMMRegister dst, XMMRegister src, KRegister mask,
+                              bool merge, BasicType bt, int vec_enc);
+
+  void vector_mask_compress(XMMRegister dst, XMMRegister src, Register rtmp1, Register rtmp2,
+                            XMMRegister xtmp, int mask_len, int vec_enc);
+
+  void vector_mask_compress(KRegister dst, KRegister src, Register rtmp1, Register rtmp2, int mask_len);
 
   void vextendbw(bool sign, XMMRegister dst, XMMRegister src, int vector_len);
   void vextendbw(bool sign, XMMRegister dst, XMMRegister src);

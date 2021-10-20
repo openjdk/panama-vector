@@ -2401,9 +2401,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
     <M extends VectorMask<Short>>
     ShortVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
-                                    short.class, length(), this, m,
-                                    (v1, m1) -> compressHelper(v1, m1));
+      return (ShortVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
+                                                   short.class, length(), this, m,
+                                                   (v1, m1) -> compressHelper(v1, m1));
     }
 
     /**
@@ -2419,9 +2419,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
     <M extends VectorMask<Short>>
     ShortVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
-                                    short.class, length(), this, m,
-                                    (v1, m1) -> expandHelper(v1, m1));
+      return (ShortVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
+                                                   short.class, length(), this, m,
+                                                   (v1, m1) -> expandHelper(v1, m1));
     }
 
 
