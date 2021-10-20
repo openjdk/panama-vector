@@ -63,6 +63,7 @@ public class VectorSupport {
     public static final int VECTOR_OP_URSHIFT = 16;
 
     public static final int VECTOR_OP_CAST        = 17;
+    public static final int VECTOR_OP_UCAST       = 24;
     public static final int VECTOR_OP_REINTERPRET = 18;
 
     // Mask manipulation operations

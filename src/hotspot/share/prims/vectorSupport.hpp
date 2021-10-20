@@ -76,6 +76,7 @@ class VectorSupport : AllStatic {
 
     // Convert
     VECTOR_OP_CAST        = 17,
+    VECTOR_OP_UCAST       = 24,
     VECTOR_OP_REINTERPRET = 18,
 
     // Mask manipulation operations

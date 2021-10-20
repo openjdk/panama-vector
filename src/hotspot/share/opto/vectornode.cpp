@@ -1069,18 +1069,35 @@ VectorStoreMaskNode* VectorStoreMaskNode::make(PhaseGVN& gvn, Node* in, BasicTyp
   return new VectorStoreMaskNode(in, gvn.intcon(elem_size), vt);
 }
 
-VectorCastNode* VectorCastNode::make(int vopc, Node* n1, BasicType bt, uint vlen) {
+VectorCastNode* VectorCastNode::make(int vopc, Node* n1, BasicType bt, uint vlen, bool is_unsigned) {
   const TypeVect* vt = TypeVect::make(bt, vlen);
-  switch (vopc) {
-    case Op_VectorCastB2X: return new VectorCastB2XNode(n1, vt);
-    case Op_VectorCastS2X: return new VectorCastS2XNode(n1, vt);
-    case Op_VectorCastI2X: return new VectorCastI2XNode(n1, vt);
-    case Op_VectorCastL2X: return new VectorCastL2XNode(n1, vt);
-    case Op_VectorCastF2X: return new VectorCastF2XNode(n1, vt);
-    case Op_VectorCastD2X: return new VectorCastD2XNode(n1, vt);
-    default:
-      assert(false, "unknown node: %s", NodeClassNames[vopc]);
-      return NULL;
+  if (!is_unsigned) {
+    switch (vopc) {
+      case Op_VectorCastB2X: return new VectorCastB2XNode(n1, vt);
+      case Op_VectorCastS2X: return new VectorCastS2XNode(n1, vt);
+      case Op_VectorCastI2X: return new VectorCastI2XNode(n1, vt);
+      case Op_VectorCastL2X: return new VectorCastL2XNode(n1, vt);
+      case Op_VectorCastF2X: return new VectorCastF2XNode(n1, vt);
+      case Op_VectorCastD2X: return new VectorCastD2XNode(n1, vt);
+      default:
+        assert(false, "unknown node: %s", NodeClassNames[vopc]);
+        return NULL;
+    }
+  } else {
+    switch (vopc) {
+      case Op_VectorCastB2X:
+        assert(bt == T_SHORT || bt == T_INT || bt == T_LONG, "illegal");
+        return new VectorUCastB2XNode(n1, vt);
+      case Op_VectorCastS2X:
+        assert(bt == T_INT || bt == T_LONG, "illegal");
+        return new VectorUCastS2XNode(n1, vt);
+      case Op_VectorCastI2X:
+        assert(bt == T_LONG, "illegal");
+        return new VectorUCastI2XNode(n1, vt);
+      default:
+        assert(false, "unknown node: %s", NodeClassNames[vopc]);
+        return NULL;
+    }
   }
 }
 

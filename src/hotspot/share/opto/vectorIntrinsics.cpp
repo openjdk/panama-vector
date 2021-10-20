@@ -2340,8 +2340,10 @@ bool LibraryCallKit::inline_vector_convert() {
   }
 
   assert(opr->get_con() == VectorSupport::VECTOR_OP_CAST ||
+         opr->get_con() == VectorSupport::VECTOR_OP_UCAST ||
          opr->get_con() == VectorSupport::VECTOR_OP_REINTERPRET, "wrong opcode");
-  bool is_cast = (opr->get_con() == VectorSupport::VECTOR_OP_CAST);
+  bool is_cast = (opr->get_con() == VectorSupport::VECTOR_OP_CAST || opr->get_con() == VectorSupport::VECTOR_OP_UCAST);
+  bool is_ucast = (opr->get_con() == VectorSupport::VECTOR_OP_UCAST);
 
   ciKlass* vbox_klass_from = vector_klass_from->const_oop()->as_instance()->java_lang_Class_klass();
   ciKlass* vbox_klass_to = vector_klass_to->const_oop()->as_instance()->java_lang_Class_klass();
@@ -2453,7 +2455,7 @@ bool LibraryCallKit::inline_vector_convert() {
         return false;
       }
 
-      op = gvn().transform(VectorCastNode::make(cast_vopc, op, elem_bt_to, num_elem_for_cast));
+      op = gvn().transform(VectorCastNode::make(cast_vopc, op, elem_bt_to, num_elem_for_cast, is_ucast));
       // Now ensure that the destination gets properly resized to needed size.
       op = gvn().transform(new VectorReinterpretNode(op, op->bottom_type()->is_vect(), dst_type));
     } else if (num_elem_from > num_elem_to) {
@@ -2478,7 +2480,7 @@ bool LibraryCallKit::inline_vector_convert() {
                                                      src_type,
                                                      TypeVect::make(elem_bt_from,
                                                                     num_elem_for_resize)));
-      op = gvn().transform(VectorCastNode::make(cast_vopc, op, elem_bt_to, num_elem_to));
+      op = gvn().transform(VectorCastNode::make(cast_vopc, op, elem_bt_to, num_elem_to, is_ucast));
     } else {
       if (is_mask) {
         if ((dst_type->isa_vectmask() && src_type->isa_vectmask()) ||
@@ -2504,7 +2506,7 @@ bool LibraryCallKit::inline_vector_convert() {
       } else {
         // Since input and output number of elements match, and since we know this vector size is
         // supported, simply do a cast with no resize needed.
-        op = gvn().transform(VectorCastNode::make(cast_vopc, op, elem_bt_to, num_elem_to));
+        op = gvn().transform(VectorCastNode::make(cast_vopc, op, elem_bt_to, num_elem_to, is_ucast));
       }
     }
   } else if (Type::cmp(src_type, dst_type) != 0) {
