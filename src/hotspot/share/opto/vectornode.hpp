@@ -724,6 +724,15 @@ class CompressVNode: public VectorNode {
   virtual int Opcode() const;
 };
 
+class CompressMNode: public VectorNode {
+ public:
+  CompressMNode(Node* mask, const TypeVect* vt) :
+      VectorNode(mask, vt) {
+    init_class_id(Class_CompressM);
+  }
+  virtual int Opcode() const;
+};
+
 //------------------------------ExpandVNode--------------------------------------
 // Vector expand
 class ExpandVNode: public VectorNode {

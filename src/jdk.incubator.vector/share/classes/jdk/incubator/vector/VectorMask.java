@@ -631,11 +631,7 @@ public abstract class VectorMask<E> extends jdk.internal.vm.vector.VectorSupport
      *
      * @return the compressed mask of this mask
      */
-    public final VectorMask<E> compress() {
-        // Temporary implementation
-        AbstractSpecies<E> species = (AbstractSpecies<E>) vectorSpecies();
-        return species.iota().compare(VectorOperators.LT, trueCount());
-    }
+    public abstract VectorMask<E> compress();
 
     // ==== JROSE NAME CHANGES ====
 

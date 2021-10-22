@@ -687,6 +687,16 @@ final class Int512Vector extends IntVector {
             return xor(maskAll(true));
         }
 
+        @Override
+        @ForceInline
+        public Int512Mask compress() {
+            return (Int512Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+                                                      Int512Vector.class, Int512Mask.class, int.class,
+                                                      VLENGTH, null, this,
+                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+        }
+
+
         // Binary operations
 
         @Override

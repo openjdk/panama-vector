@@ -660,6 +660,16 @@ final class Double512Vector extends DoubleVector {
             return xor(maskAll(true));
         }
 
+        @Override
+        @ForceInline
+        public Double512Mask compress() {
+            return (Double512Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+                                                      Double512Vector.class, Double512Mask.class, double.class,
+                                                      VLENGTH, null, this,
+                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+        }
+
+
         // Binary operations
 
         @Override

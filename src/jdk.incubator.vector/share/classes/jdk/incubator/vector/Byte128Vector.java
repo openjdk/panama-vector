@@ -687,6 +687,16 @@ final class Byte128Vector extends ByteVector {
             return xor(maskAll(true));
         }
 
+        @Override
+        @ForceInline
+        public Byte128Mask compress() {
+            return (Byte128Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+                                                      Byte128Vector.class, Byte128Mask.class, byte.class,
+                                                      VLENGTH, null, this,
+                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+        }
+
+
         // Binary operations
 
         @Override

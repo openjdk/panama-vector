@@ -176,6 +176,7 @@ class VectorSet;
 class VectorReinterpretNode;
 class ExpandVNode;
 class CompressVNode;
+class CompressMNode;
 
 // The type of all node counts and indexes.
 // It must hold at least 16 bits, but must also be fast to load and store.
@@ -714,6 +715,7 @@ public:
         DEFINE_CLASS_ID(VectorReinterpret, Vector, 2)
         DEFINE_CLASS_ID(CompressV, Vector, 3)
         DEFINE_CLASS_ID(ExpandV, Vector, 4)
+        DEFINE_CLASS_ID(CompressM, Vector, 5)
 
     DEFINE_CLASS_ID(Proj,  Node, 3)
       DEFINE_CLASS_ID(CatchProj, Proj, 0)
@@ -944,6 +946,7 @@ public:
   DEFINE_CLASS_QUERY(VectorReinterpret);
   DEFINE_CLASS_QUERY(CompressV);
   DEFINE_CLASS_QUERY(ExpandV);
+  DEFINE_CLASS_QUERY(CompressM);
   DEFINE_CLASS_QUERY(LoadVector)
   DEFINE_CLASS_QUERY(LoadVectorGather)
   DEFINE_CLASS_QUERY(StoreVector)

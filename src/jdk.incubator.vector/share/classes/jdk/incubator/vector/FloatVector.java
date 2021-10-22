@@ -2259,9 +2259,9 @@ public abstract class FloatVector extends AbstractVector<Float> {
     <M extends VectorMask<Float>>
     FloatVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
-                                    float.class, length(), this, m,
-                                    (v1, m1) -> compressHelper(v1, m1));
+      return (FloatVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
+                                                   float.class, length(), this, m,
+                                                   (v1, m1) -> compressHelper(v1, m1));
     }
 
     /**
@@ -2277,9 +2277,9 @@ public abstract class FloatVector extends AbstractVector<Float> {
     <M extends VectorMask<Float>>
     FloatVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      return VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
-                                    float.class, length(), this, m,
-                                    (v1, m1) -> expandHelper(v1, m1));
+      return (FloatVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
+                                                   float.class, length(), this, m,
+                                                   (v1, m1) -> expandHelper(v1, m1));
     }
 
 

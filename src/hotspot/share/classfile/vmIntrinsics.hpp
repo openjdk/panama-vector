@@ -1100,7 +1100,7 @@ class methodHandle;
                                       "Ljdk/internal/vm/vector/VectorSupport$Vector;"                                                          \
                                       "Ljdk/internal/vm/vector/VectorSupport$VectorMask;"                                                      \
                                       "Ljdk/internal/vm/vector/VectorSupport$ComExpOperation;)"                                                \
-                                      "Ljdk/internal/vm/vector/VectorSupport$Vector;")                                                         \
+                                      "Ljdk/internal/vm/vector/VectorSupport$VectorPayload;")                                                  \
    do_name(vector_comexp_op_name,     "comExpOp")                                                                                              \
    /* (2) Bytecode intrinsics                                                                        */                        \
                                                                                                                                \

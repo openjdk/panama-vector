@@ -78,6 +78,7 @@ public class VectorSupport {
     // Compression expansion operations
     public static final int VECTOR_OP_COMPRESS = 25;
     public static final int VECTOR_OP_EXPAND = 26;
+    public static final int VECTOR_OP_MASK_COMPRESS = 27;
 
     // Math routines
     public static final int VECTOR_OP_TAN = 101;
@@ -627,7 +628,7 @@ public class VectorSupport {
 
     public interface ComExpOperation<V extends Vector<?>,
                                      M extends VectorMask<?>> {
-        V apply(V v, M m);
+        VectorPayload apply(V v, M m);
     }
 
     @IntrinsicCandidate
@@ -635,10 +636,10 @@ public class VectorSupport {
     <V extends Vector<E>,
      M extends VectorMask<E>,
      E>
-    V comExpOp(int opr,
-              Class<? extends V> vClass, Class<? extends M> mClass, Class<E> eClass,
-              int length, V v, M m,
-              ComExpOperation<V, M> defaultImpl) {
+    VectorPayload comExpOp(int opr,
+                           Class<? extends V> vClass, Class<? extends M> mClass, Class<E> eClass,
+                           int length, V v, M m,
+                           ComExpOperation<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.apply(v, m);
     }

@@ -82,7 +82,8 @@ bool LibraryCallKit::arch_supports_vector_rotate(int opc, int num_elem, BasicTyp
   if (is_supported) {
     // Check whether mask unboxing is supported.
     if ((mask_use_type & VecMaskUseLoad) != 0) {
-      if (!Matcher::match_rule_supported_vector(Op_VectorLoadMask, num_elem, elem_bt)) {
+      if (!Matcher::match_rule_supported_vector(Op_VectorLoadMask, num_elem, elem_bt) ||
+          !Matcher::match_rule_supported_vector(Op_LoadVector, num_elem, T_BOOLEAN)) {
       #ifndef PRODUCT
         if (C->print_intrinsics()) {
           tty->print_cr("  ** Rejected vector mask loading (%s,%s,%d) because architecture does not support it",
@@ -252,7 +253,8 @@ bool LibraryCallKit::arch_supports_vector(int sopc, int num_elem, BasicType type
 
   // Check whether mask unboxing is supported.
   if ((mask_use_type & VecMaskUseLoad) != 0) {
-    if (!Matcher::match_rule_supported_vector(Op_VectorLoadMask, num_elem, type)) {
+    if (!Matcher::match_rule_supported_vector(Op_VectorLoadMask, num_elem, type) ||
+        !Matcher::match_rule_supported_vector(Op_LoadVector, num_elem, T_BOOLEAN)) {
     #ifndef PRODUCT
       if (C->print_intrinsics()) {
         tty->print_cr("  ** Rejected vector mask loading (%s,%s,%d) because architecture does not support it",
@@ -265,7 +267,8 @@ bool LibraryCallKit::arch_supports_vector(int sopc, int num_elem, BasicType type
 
   // Check whether mask boxing is supported.
   if ((mask_use_type & VecMaskUseStore) != 0) {
-    if (!Matcher::match_rule_supported_vector(Op_VectorStoreMask, num_elem, type)) {
+    if (!Matcher::match_rule_supported_vector(Op_VectorStoreMask, num_elem, type) ||
+        !Matcher::match_rule_supported_vector(Op_StoreVector, num_elem, T_BOOLEAN)) {
     #ifndef PRODUCT
       if (C->print_intrinsics()) {
         tty->print_cr("Rejected vector mask storing (%s,%s,%d) because architecture does not support it",
@@ -2743,14 +2746,19 @@ bool LibraryCallKit::inline_vector_compress_expand() {
     return false; // should be primitive type
   }
 
-  BasicType elem_bt = elem_type->basic_type();
   int num_elem = vlen->get_con();
+  BasicType elem_bt = elem_type->basic_type();
   int opc = VectorSupport::vop2ideal(opr->get_con(), elem_bt);
 
-  ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
-  const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
+  VectorMaskUseType checkFlags = VecMaskNotUsed;
+  if (opc == Op_CompressM) {
+     checkFlags = VecMaskUseAll;
+  } else {
+     assert(opc == Op_ExpandV || opc == Op_CompressV, "");
+     checkFlags = VecMaskUseLoad;
+  }
 
-  if (!arch_supports_vector(opc, num_elem, elem_bt, VecMaskUseLoad)) {
+  if (!arch_supports_vector(opc, num_elem, elem_bt, checkFlags)) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** not supported: opc=%d vlen=%d etype=%s ismask=useload",
                     opc, num_elem, type2name(elem_bt));
@@ -2758,13 +2766,19 @@ bool LibraryCallKit::inline_vector_compress_expand() {
     return false; // not supported
   }
 
-  Node* opd1 = unbox_vector(argument(5), vbox_type, elem_bt, num_elem);
-  if (opd1 == NULL) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** unbox failed vector=%s",
-                    NodeClassNames[argument(5)->Opcode()]);
+  Node* opd1 = NULL;
+  const TypeInstPtr* vbox_type = NULL;
+  if (opc != Op_CompressM) {
+    ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
+    vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
+    opd1 = unbox_vector(argument(5), vbox_type, elem_bt, num_elem);
+    if (opd1 == NULL) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** unbox failed vector=%s",
+                      NodeClassNames[argument(5)->Opcode()]);
+      }
+      return false;
     }
-    return false;
   }
 
   ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
@@ -2780,11 +2794,20 @@ bool LibraryCallKit::inline_vector_compress_expand() {
     return false;
   }
 
-  const TypeVect* vt = TypeVect::make(elem_bt, num_elem);
-  Node* operation = gvn().transform(VectorNode::make(opc, opd1, mask, vt));
+  Node* operation = NULL;
+  const TypeVect* vt = TypeVect::make(elem_bt, num_elem, opc == Op_CompressM);
+  if (opc == Op_CompressM && vt->isa_vectmask() == NULL) {
+    mask = gvn().transform(VectorStoreMaskNode::make(gvn(), mask, elem_bt, num_elem));
+    const TypeVect* ivt = TypeVect::make(T_BOOLEAN, num_elem);
+    operation = gvn().transform(VectorNode::make(opc, opd1, mask, ivt));
+    operation = gvn().transform(new VectorLoadMaskNode(operation, vt));
+  } else {
+    operation = gvn().transform(VectorNode::make(opc, opd1, mask, vt));
+  }
 
   // Wrap it up in VectorBox to keep object type information.
-  Node* vbox = box_vector(operation, vbox_type, elem_bt, num_elem);
+  const TypeInstPtr* box_type = opc == Op_CompressM ? mbox_type : vbox_type;
+  Node* vbox = box_vector(operation, box_type, elem_bt, num_elem);
   set_result(vbox);
   C->set_max_vector_size(MAX2(C->max_vector_size(), (uint)(num_elem * type2aelembytes(elem_bt))));
   return true;

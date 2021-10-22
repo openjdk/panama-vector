@@ -659,6 +659,16 @@ final class Int64Vector extends IntVector {
             return xor(maskAll(true));
         }
 
+        @Override
+        @ForceInline
+        public Int64Mask compress() {
+            return (Int64Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+                                                      Int64Vector.class, Int64Mask.class, int.class,
+                                                      VLENGTH, null, this,
+                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+        }
+
+
         // Binary operations
 
         @Override
