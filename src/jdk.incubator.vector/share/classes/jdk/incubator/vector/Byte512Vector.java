@@ -786,10 +786,19 @@ final class Byte512Vector extends ByteVector {
         @Override
         @ForceInline
         public Byte512Mask compress() {
+            if (VLENGTH < 4) {
+                boolean[] bits = getBits();
+                boolean[] res  = new boolean[VLENGTH];
+                for (int i = 0, j = 0; i < VLENGTH; i++){
+                    if (bits[i]) {
+                        res[j++] = bits[i];
+                    }
+                }
+                return new Byte512Mask(res);
+            }
             return (Byte512Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                                                      Byte512Vector.class, Byte512Mask.class, byte.class,
-                                                      VLENGTH, null, this,
-                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                Byte512Vector.class, Byte512Mask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
 
 
@@ -830,6 +839,9 @@ final class Byte512Vector extends ByteVector {
         @Override
         @ForceInline
         public int trueCount() {
+            if (VLENGTH < 4) {
+                return trueCountHelper(getBits());
+            }
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Byte512Mask.class, byte.class, VLENGTH, this,
                                                       (m) -> trueCountHelper(m.getBits()));
         }
@@ -837,6 +849,9 @@ final class Byte512Vector extends ByteVector {
         @Override
         @ForceInline
         public int firstTrue() {
+            if (VLENGTH < 4) {
+                return firstTrueHelper(getBits());
+            }
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Byte512Mask.class, byte.class, VLENGTH, this,
                                                       (m) -> firstTrueHelper(m.getBits()));
         }
@@ -844,6 +859,9 @@ final class Byte512Vector extends ByteVector {
         @Override
         @ForceInline
         public int lastTrue() {
+            if (VLENGTH < 4) {
+                return lastTrueHelper(getBits());
+            }
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Byte512Mask.class, byte.class, VLENGTH, this,
                                                       (m) -> lastTrueHelper(m.getBits()));
         }
@@ -863,6 +881,9 @@ final class Byte512Vector extends ByteVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
+            if (VLENGTH < 4) {
+                return anyTrueHelper(getBits());
+            }
             return VectorSupport.test(BT_ne, Byte512Mask.class, byte.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Byte512Mask)m).getBits()));
@@ -871,6 +892,9 @@ final class Byte512Vector extends ByteVector {
         @Override
         @ForceInline
         public boolean allTrue() {
+            if (VLENGTH < 4) {
+                return allTrueHelper(getBits());
+            }
             return VectorSupport.test(BT_overflow, Byte512Mask.class, byte.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> allTrueHelper(((Byte512Mask)m).getBits()));

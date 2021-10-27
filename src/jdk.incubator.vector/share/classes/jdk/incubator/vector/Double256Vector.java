@@ -655,10 +655,19 @@ final class Double256Vector extends DoubleVector {
         @Override
         @ForceInline
         public Double256Mask compress() {
+            if (VLENGTH < 4) {
+                boolean[] bits = getBits();
+                boolean[] res  = new boolean[VLENGTH];
+                for (int i = 0, j = 0; i < VLENGTH; i++){
+                    if (bits[i]) {
+                        res[j++] = bits[i];
+                    }
+                }
+                return new Double256Mask(res);
+            }
             return (Double256Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                                                      Double256Vector.class, Double256Mask.class, double.class,
-                                                      VLENGTH, null, this,
-                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                Double256Vector.class, Double256Mask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
 
 
@@ -699,6 +708,9 @@ final class Double256Vector extends DoubleVector {
         @Override
         @ForceInline
         public int trueCount() {
+            if (VLENGTH < 4) {
+                return trueCountHelper(getBits());
+            }
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Double256Mask.class, long.class, VLENGTH, this,
                                                       (m) -> trueCountHelper(m.getBits()));
         }
@@ -706,6 +718,9 @@ final class Double256Vector extends DoubleVector {
         @Override
         @ForceInline
         public int firstTrue() {
+            if (VLENGTH < 4) {
+                return firstTrueHelper(getBits());
+            }
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Double256Mask.class, long.class, VLENGTH, this,
                                                       (m) -> firstTrueHelper(m.getBits()));
         }
@@ -713,6 +728,9 @@ final class Double256Vector extends DoubleVector {
         @Override
         @ForceInline
         public int lastTrue() {
+            if (VLENGTH < 4) {
+                return lastTrueHelper(getBits());
+            }
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Double256Mask.class, long.class, VLENGTH, this,
                                                       (m) -> lastTrueHelper(m.getBits()));
         }
@@ -732,6 +750,9 @@ final class Double256Vector extends DoubleVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
+            if (VLENGTH < 4) {
+                return anyTrueHelper(getBits());
+            }
             return VectorSupport.test(BT_ne, Double256Mask.class, long.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Double256Mask)m).getBits()));
@@ -740,6 +761,9 @@ final class Double256Vector extends DoubleVector {
         @Override
         @ForceInline
         public boolean allTrue() {
+            if (VLENGTH < 4) {
+                return allTrueHelper(getBits());
+            }
             return VectorSupport.test(BT_overflow, Double256Mask.class, long.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> allTrueHelper(((Double256Mask)m).getBits()));

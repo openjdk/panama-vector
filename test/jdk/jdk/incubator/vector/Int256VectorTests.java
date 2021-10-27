@@ -4240,7 +4240,7 @@ public class Int256VectorTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "intUnaryOpMaskProvider")
-    static void compressMaskedInt256VectorTests(IntFunction<int[]> fa,
+    static void compressInt256VectorTests(IntFunction<int[]> fa,
                                                 IntFunction<boolean[]> fm) {
         int[] a = fa.apply(SPECIES.length());
         int[] r = fr.apply(SPECIES.length());
@@ -4257,9 +4257,8 @@ public class Int256VectorTests extends AbstractVectorTest {
         assertcompressArraysEquals(r, a, mask, SPECIES.length());
     }
 
-
     @Test(dataProvider = "intUnaryOpMaskProvider")
-    static void expandMaskedInt256VectorTests(IntFunction<int[]> fa,
+    static void expandInt256VectorTests(IntFunction<int[]> fa,
                                                 IntFunction<boolean[]> fm) {
         int[] a = fa.apply(SPECIES.length());
         int[] r = fr.apply(SPECIES.length());
@@ -4275,7 +4274,6 @@ public class Int256VectorTests extends AbstractVectorTest {
 
         assertexpandArraysEquals(r, a, mask, SPECIES.length());
     }
-
     @Test(dataProvider = "intUnaryOpProvider")
     static void getInt256VectorTests(IntFunction<int[]> fa) {
         int[] a = fa.apply(SPECIES.length());

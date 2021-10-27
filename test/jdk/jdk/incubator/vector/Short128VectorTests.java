@@ -4265,7 +4265,7 @@ public class Short128VectorTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void compressMaskedShort128VectorTests(IntFunction<short[]> fa,
+    static void compressShort128VectorTests(IntFunction<short[]> fa,
                                                 IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
@@ -4282,9 +4282,8 @@ public class Short128VectorTests extends AbstractVectorTest {
         assertcompressArraysEquals(r, a, mask, SPECIES.length());
     }
 
-
     @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void expandMaskedShort128VectorTests(IntFunction<short[]> fa,
+    static void expandShort128VectorTests(IntFunction<short[]> fa,
                                                 IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
@@ -4300,7 +4299,6 @@ public class Short128VectorTests extends AbstractVectorTest {
 
         assertexpandArraysEquals(r, a, mask, SPECIES.length());
     }
-
     @Test(dataProvider = "shortUnaryOpProvider")
     static void getShort128VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());

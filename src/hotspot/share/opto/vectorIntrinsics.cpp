@@ -680,16 +680,8 @@ bool LibraryCallKit::inline_vector_mask_operation() {
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
   BasicType elem_bt = elem_type->basic_type();
 
-  if (!arch_supports_vector(Op_LoadVector, num_elem, T_BOOLEAN, VecMaskNotUsed)) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** not supported: arity=1 op=cast#%d/3 vlen2=%d etype2=%s",
-                    Op_LoadVector, num_elem, type2name(T_BOOLEAN));
-    }
-    return false; // not supported
-  }
-
   int mopc = VectorSupport::vop2ideal(oper->get_con(), elem_bt);
-  if (!arch_supports_vector(mopc, num_elem, elem_bt, VecMaskNotUsed)) {
+  if (!arch_supports_vector(mopc, num_elem, elem_bt, VecMaskUseLoad)) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** not supported: arity=1 op=cast#%d/3 vlen2=%d etype2=%s",
                     mopc, num_elem, type2name(elem_bt));
@@ -1003,16 +995,6 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
     }
   }
   if (is_mask) {
-    if (!arch_supports_vector(Op_LoadVector, num_elem, T_BOOLEAN, VecMaskNotUsed)) {
-      if (C->print_intrinsics()) {
-        tty->print_cr("  ** not supported: arity=%d op=%s/mask vlen=%d etype=bit ismask=no",
-                      is_store, is_store ? "store" : "load",
-                      num_elem);
-      }
-      set_map(old_map);
-      set_sp(old_sp);
-      return false; // not supported
-    }
     if (!is_store) {
       if (!arch_supports_vector(Op_LoadVector, num_elem, elem_bt, VecMaskUseLoad)) {
         set_map(old_map);
@@ -1050,7 +1032,9 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
       const TypeVect* to_vect_type = TypeVect::make(T_BYTE, store_num_elem);
       val = gvn().transform(new VectorReinterpretNode(val, val->bottom_type()->is_vect(), to_vect_type));
     }
-
+    if (is_mask) {
+      val = gvn().transform(VectorStoreMaskNode::make(gvn(), val, elem_bt, num_elem));
+    }
     Node* vstore = gvn().transform(StoreVectorNode::make(0, control(), memory(addr), addr, addr_type, val, store_num_elem));
     set_memory(vstore, addr_type);
   } else {
@@ -2750,15 +2734,7 @@ bool LibraryCallKit::inline_vector_compress_expand() {
   BasicType elem_bt = elem_type->basic_type();
   int opc = VectorSupport::vop2ideal(opr->get_con(), elem_bt);
 
-  VectorMaskUseType checkFlags = VecMaskNotUsed;
-  if (opc == Op_CompressM) {
-     checkFlags = VecMaskUseAll;
-  } else {
-     assert(opc == Op_ExpandV || opc == Op_CompressV, "");
-     checkFlags = VecMaskUseLoad;
-  }
-
-  if (!arch_supports_vector(opc, num_elem, elem_bt, checkFlags)) {
+  if (!arch_supports_vector(opc, num_elem, elem_bt, VecMaskUseLoad)) {
     if (C->print_intrinsics()) {
       tty->print_cr("  ** not supported: opc=%d vlen=%d etype=%s ismask=useload",
                     opc, num_elem, type2name(elem_bt));
@@ -2794,16 +2770,8 @@ bool LibraryCallKit::inline_vector_compress_expand() {
     return false;
   }
 
-  Node* operation = NULL;
   const TypeVect* vt = TypeVect::make(elem_bt, num_elem, opc == Op_CompressM);
-  if (opc == Op_CompressM && vt->isa_vectmask() == NULL) {
-    mask = gvn().transform(VectorStoreMaskNode::make(gvn(), mask, elem_bt, num_elem));
-    const TypeVect* ivt = TypeVect::make(T_BOOLEAN, num_elem);
-    operation = gvn().transform(VectorNode::make(opc, opd1, mask, ivt));
-    operation = gvn().transform(new VectorLoadMaskNode(operation, vt));
-  } else {
-    operation = gvn().transform(VectorNode::make(opc, opd1, mask, vt));
-  }
+  Node* operation = gvn().transform(VectorNode::make(opc, opd1, mask, vt));
 
   // Wrap it up in VectorBox to keep object type information.
   const TypeInstPtr* box_type = opc == Op_CompressM ? mbox_type : vbox_type;

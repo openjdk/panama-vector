@@ -2398,9 +2398,21 @@ public abstract class ShortVector extends AbstractVector<Short> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<Short>>
+    <M extends AbstractMask<Short>>
     ShortVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
+      int vlen = length();
+      if (vlen < 4)  {
+          short[] arr = toArray();
+          short[] res = new short[vlen];
+          boolean [] bits = m.getBits();
+          for(int i = 0, j = 0; i < vlen; i++) {
+              if(bits[i]) {
+                  res[j++] = arr[i];
+              }
+          }
+          return vectorFactory(res);
+      }
       return (ShortVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
                                                    short.class, length(), this, m,
                                                    (v1, m1) -> compressHelper(v1, m1));
@@ -2416,9 +2428,21 @@ public abstract class ShortVector extends AbstractVector<Short> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<Short>>
+    <M extends AbstractMask<Short>>
     ShortVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
+      int vlen = length();
+      if (vlen < 4)  {
+          short[] arr = toArray();
+          short[] res = new short[vlen];
+          boolean [] bits = m.getBits();
+          for(int i = 0, j = 0; i < vlen; i++) {
+              if(bits[i]) {
+                  res[i] = arr[j++];
+              }
+          }
+          return vectorFactory(res);
+      }
       return (ShortVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
                                                    short.class, length(), this, m,
                                                    (v1, m1) -> expandHelper(v1, m1));

@@ -1235,6 +1235,56 @@ public class IntScalar extends AbstractVectorBenchmark {
         int window = 512 / Integer.SIZE;
         rearrangeShared(window, bh);
     }
+
+    @Benchmark
+    public void compressScalar(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] rs = new int[size];
+        boolean[] im = fmt.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0, j = 0; i < as.length; i++) {
+                if (im[i]) {
+                    rs[j++] = as[i];
+                }
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void expandScalar(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] rs = new int[size];
+        boolean[] im = fmt.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0, j = 0; i < as.length; i++) {
+                if (im[i]) {
+                    rs[i++] = as[j++];
+                }
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void maskCompressScalar(Blackhole bh) {
+        boolean[] im = fmt.apply(size);
+        boolean[] rm = new boolean[size];
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0, j = 0; i < im.length; i++) {
+                if (im[i]) {
+                    rm[j++] = im[i];
+                }
+            }
+        }
+
+        bh.consume(rm);
+    }
     void broadcastShared(int window, Blackhole bh) {
         int[] as = fa.apply(size);
         int[] rs = fr.apply(size);

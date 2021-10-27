@@ -2244,9 +2244,21 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<Double>>
+    <M extends AbstractMask<Double>>
     DoubleVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
+      int vlen = length();
+      if (vlen < 4)  {
+          double[] arr = toArray();
+          double[] res = new double[vlen];
+          boolean [] bits = m.getBits();
+          for(int i = 0, j = 0; i < vlen; i++) {
+              if(bits[i]) {
+                  res[j++] = arr[i];
+              }
+          }
+          return vectorFactory(res);
+      }
       return (DoubleVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
                                                    double.class, length(), this, m,
                                                    (v1, m1) -> compressHelper(v1, m1));
@@ -2262,9 +2274,21 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<Double>>
+    <M extends AbstractMask<Double>>
     DoubleVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
+      int vlen = length();
+      if (vlen < 4)  {
+          double[] arr = toArray();
+          double[] res = new double[vlen];
+          boolean [] bits = m.getBits();
+          for(int i = 0, j = 0; i < vlen; i++) {
+              if(bits[i]) {
+                  res[i] = arr[j++];
+              }
+          }
+          return vectorFactory(res);
+      }
       return (DoubleVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
                                                    double.class, length(), this, m,
                                                    (v1, m1) -> expandHelper(v1, m1));

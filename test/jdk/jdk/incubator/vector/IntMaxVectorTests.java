@@ -4245,7 +4245,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "intUnaryOpMaskProvider")
-    static void compressMaskedIntMaxVectorTests(IntFunction<int[]> fa,
+    static void compressIntMaxVectorTests(IntFunction<int[]> fa,
                                                 IntFunction<boolean[]> fm) {
         int[] a = fa.apply(SPECIES.length());
         int[] r = fr.apply(SPECIES.length());
@@ -4262,9 +4262,8 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         assertcompressArraysEquals(r, a, mask, SPECIES.length());
     }
 
-
     @Test(dataProvider = "intUnaryOpMaskProvider")
-    static void expandMaskedIntMaxVectorTests(IntFunction<int[]> fa,
+    static void expandIntMaxVectorTests(IntFunction<int[]> fa,
                                                 IntFunction<boolean[]> fm) {
         int[] a = fa.apply(SPECIES.length());
         int[] r = fr.apply(SPECIES.length());
@@ -4280,7 +4279,6 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
         assertexpandArraysEquals(r, a, mask, SPECIES.length());
     }
-
     @Test(dataProvider = "intUnaryOpProvider")
     static void getIntMaxVectorTests(IntFunction<int[]> fa) {
         int[] a = fa.apply(SPECIES.length());

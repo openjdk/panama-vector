@@ -4190,7 +4190,7 @@ public class Long64VectorTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void compressMaskedLong64VectorTests(IntFunction<long[]> fa,
+    static void compressLong64VectorTests(IntFunction<long[]> fa,
                                                 IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
@@ -4207,9 +4207,8 @@ public class Long64VectorTests extends AbstractVectorTest {
         assertcompressArraysEquals(r, a, mask, SPECIES.length());
     }
 
-
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void expandMaskedLong64VectorTests(IntFunction<long[]> fa,
+    static void expandLong64VectorTests(IntFunction<long[]> fa,
                                                 IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
@@ -4225,7 +4224,6 @@ public class Long64VectorTests extends AbstractVectorTest {
 
         assertexpandArraysEquals(r, a, mask, SPECIES.length());
     }
-
     @Test(dataProvider = "longUnaryOpProvider")
     static void getLong64VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());

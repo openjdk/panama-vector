@@ -2256,9 +2256,21 @@ public abstract class FloatVector extends AbstractVector<Float> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<Float>>
+    <M extends AbstractMask<Float>>
     FloatVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
+      int vlen = length();
+      if (vlen < 4)  {
+          float[] arr = toArray();
+          float[] res = new float[vlen];
+          boolean [] bits = m.getBits();
+          for(int i = 0, j = 0; i < vlen; i++) {
+              if(bits[i]) {
+                  res[j++] = arr[i];
+              }
+          }
+          return vectorFactory(res);
+      }
       return (FloatVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
                                                    float.class, length(), this, m,
                                                    (v1, m1) -> compressHelper(v1, m1));
@@ -2274,9 +2286,21 @@ public abstract class FloatVector extends AbstractVector<Float> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<Float>>
+    <M extends AbstractMask<Float>>
     FloatVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
+      int vlen = length();
+      if (vlen < 4)  {
+          float[] arr = toArray();
+          float[] res = new float[vlen];
+          boolean [] bits = m.getBits();
+          for(int i = 0, j = 0; i < vlen; i++) {
+              if(bits[i]) {
+                  res[i] = arr[j++];
+              }
+          }
+          return vectorFactory(res);
+      }
       return (FloatVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
                                                    float.class, length(), this, m,
                                                    (v1, m1) -> expandHelper(v1, m1));
