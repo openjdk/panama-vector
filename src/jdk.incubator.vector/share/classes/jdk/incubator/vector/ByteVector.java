@@ -2401,18 +2401,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     <M extends AbstractMask<Byte>>
     ByteVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      int vlen = length();
-      if (vlen < 4)  {
-          byte[] arr = toArray();
-          byte[] res = new byte[vlen];
-          boolean [] bits = m.getBits();
-          for(int i = 0, j = 0; i < vlen; i++) {
-              if(bits[i]) {
-                  res[j++] = arr[i];
-              }
-          }
-          return vectorFactory(res);
-      }
       return (ByteVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
                                                    byte.class, length(), this, m,
                                                    (v1, m1) -> compressHelper(v1, m1));
@@ -2431,18 +2419,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     <M extends AbstractMask<Byte>>
     ByteVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      int vlen = length();
-      if (vlen < 4)  {
-          byte[] arr = toArray();
-          byte[] res = new byte[vlen];
-          boolean [] bits = m.getBits();
-          for(int i = 0, j = 0; i < vlen; i++) {
-              if(bits[i]) {
-                  res[i] = arr[j++];
-              }
-          }
-          return vectorFactory(res);
-      }
       return (ByteVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
                                                    byte.class, length(), this, m,
                                                    (v1, m1) -> expandHelper(v1, m1));

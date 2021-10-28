@@ -664,16 +664,6 @@ final class Long512Vector extends LongVector {
         @Override
         @ForceInline
         public Long512Mask compress() {
-            if (VLENGTH < 4) {
-                boolean[] bits = getBits();
-                boolean[] res  = new boolean[VLENGTH];
-                for (int i = 0, j = 0; i < VLENGTH; i++){
-                    if (bits[i]) {
-                        res[j++] = bits[i];
-                    }
-                }
-                return new Long512Mask(res);
-            }
             return (Long512Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
                 Long512Vector.class, Long512Mask.class, ETYPE, VLENGTH, null, this,
                 (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
@@ -717,9 +707,6 @@ final class Long512Vector extends LongVector {
         @Override
         @ForceInline
         public int trueCount() {
-            if (VLENGTH < 4) {
-                return trueCountHelper(getBits());
-            }
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Long512Mask.class, long.class, VLENGTH, this,
                                                       (m) -> trueCountHelper(m.getBits()));
         }
@@ -727,9 +714,6 @@ final class Long512Vector extends LongVector {
         @Override
         @ForceInline
         public int firstTrue() {
-            if (VLENGTH < 4) {
-                return firstTrueHelper(getBits());
-            }
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Long512Mask.class, long.class, VLENGTH, this,
                                                       (m) -> firstTrueHelper(m.getBits()));
         }
@@ -737,9 +721,6 @@ final class Long512Vector extends LongVector {
         @Override
         @ForceInline
         public int lastTrue() {
-            if (VLENGTH < 4) {
-                return lastTrueHelper(getBits());
-            }
             return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Long512Mask.class, long.class, VLENGTH, this,
                                                       (m) -> lastTrueHelper(m.getBits()));
         }
@@ -759,9 +740,6 @@ final class Long512Vector extends LongVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            if (VLENGTH < 4) {
-                return anyTrueHelper(getBits());
-            }
             return VectorSupport.test(BT_ne, Long512Mask.class, long.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> anyTrueHelper(((Long512Mask)m).getBits()));
@@ -770,9 +748,6 @@ final class Long512Vector extends LongVector {
         @Override
         @ForceInline
         public boolean allTrue() {
-            if (VLENGTH < 4) {
-                return allTrueHelper(getBits());
-            }
             return VectorSupport.test(BT_overflow, Long512Mask.class, long.class, VLENGTH,
                                          this, vspecies().maskAll(true),
                                          (m, __) -> allTrueHelper(((Long512Mask)m).getBits()));
