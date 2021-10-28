@@ -1,0 +1,51 @@
+
+    @Benchmark
+    public Object compress[[TEST_TYPE]][[OP_NAME]]() {
+        $type$[] a = fa.apply(size);
+        $type$[] r = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<$Wideboxtype$> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
+                av.compress(m).intoArray(r, i);
+            }
+        }
+
+        return r;
+    }
+
+    @Benchmark
+    public Object expand[[TEST_TYPE]][[OP_NAME]]() {
+        $type$[] a = fa.apply(size);
+        $type$[] r = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<$Wideboxtype$> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
+                av.expand(m).intoArray(r, i);
+            }
+        }
+
+        return r;
+    }
+
+    @Benchmark
+    public Object maskCompress[[TEST_TYPE]][[OP_NAME]]() {
+        boolean[] ms = fmt.apply(size);
+        boolean[] rs = fmt.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0, j = 0; i < a.length; i += SPECIES.length()) {
+                VectorMask<$Wideboxtype$> m = VectorMask.fromArray(SPECIES, ms, i);
+                m.compress().intoArray(rs, j);
+                j += m.trueCount();
+            }
+        }
+
+        return rs;
+    }
+
