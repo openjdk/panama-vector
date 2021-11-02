@@ -922,7 +922,6 @@ class VectorMaskOpNode : public TypeNode {
  public:
   VectorMaskOpNode(Node* mask, const Type* ty, int mopc):
     TypeNode(ty, 2), _mopc(mopc) {
-    assert(Matcher::has_predicated_vectors() || mask->bottom_type()->is_vect()->element_basic_type() == T_BOOLEAN, "");
     init_req(1, mask);
   }
 

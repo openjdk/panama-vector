@@ -2475,6 +2475,9 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       break;
     case Op_LoadVectorGather:
     case Op_StoreVectorScatter:
+    case Op_VectorMaskTrueCount:
+    case Op_VectorMaskFirstTrue:
+    case Op_VectorMaskLastTrue:
       return false;
     default:
       break;

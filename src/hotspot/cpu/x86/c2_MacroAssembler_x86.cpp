@@ -4079,19 +4079,47 @@ void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, KRegister m
       bsfq(tmp, tmp);
       cmov(Assembler::notZero, dst, tmp);
       break;
+    case Op_VectorMaskToLong:
+      break;
     default: assert(false, "Unhandled mask operation");
   }
 }
 
 void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, XMMRegister mask, XMMRegister xtmp,
-                                              XMMRegister xtmp1, Register tmp, int masklen, int masksize,
-                                              int vec_enc) {
-  assert(VM_Version::supports_avx(), "");
-  vpxor(xtmp, xtmp, xtmp, vec_enc);
-  vpsubb(xtmp, xtmp, mask, vec_enc);
-  vpmovmskb(tmp, xtmp, vec_enc);
-  if (masksize < 16) {
-    andq(tmp, (((jlong)1 << masklen) - 1));
+                                              Register tmp, int masklen, BasicType bt, int vec_enc) {
+  switch(bt) {
+    case T_BYTE:
+      vpmovmskb(tmp, mask, vec_enc);
+      if (masklen < 16) {
+        andq(tmp, (((jlong)1 << masklen) - 1));
+      }
+      break;
+    case T_SHORT:
+      vpacksswb(xtmp, mask, mask, vec_enc);
+      if (masklen >= 16) {
+        assert(masklen == 16, "");
+        vpermpd(xtmp, xtmp, 8, vec_enc);
+      }
+      vpmovmskb(tmp, xtmp, Assembler::AVX_128bit);
+      if (masklen < 16) {
+        andq(tmp, (((jlong)1 << masklen) - 1));
+      }
+      break;
+    case T_INT:
+    case T_FLOAT:
+      vmovmskps(tmp, mask, vec_enc);
+      if (masklen < 4) {
+        andq(tmp, (((jlong)1 << masklen) - 1));
+      }
+      break;
+    case T_LONG:
+    case T_DOUBLE:
+      vmovmskpd(tmp, mask, vec_enc);
+      if (masklen < 2) {
+        andq(tmp, 1);
+      }
+      break;
+    default: assert(false, "Unhandled type, %s", type2name(bt));
   }
   switch(opc) {
     case Op_VectorMaskTrueCount:
@@ -4106,6 +4134,8 @@ void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, XMMRegister
       mov64(dst, masklen);
       bsfq(tmp, tmp);
       cmov(Assembler::notZero, dst, tmp);
+      break;
+    case Op_VectorMaskToLong:
       break;
     default: assert(false, "Unhandled mask operation");
   }
