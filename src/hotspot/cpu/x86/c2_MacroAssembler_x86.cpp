@@ -4087,6 +4087,7 @@ void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, KRegister m
 
 void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, XMMRegister mask, XMMRegister xtmp,
                                               Register tmp, int masklen, BasicType bt, int vec_enc) {
+  assert(VM_Version::supports_avx(), "");
   switch(bt) {
     case T_BYTE:
       vpmovmskb(tmp, mask, vec_enc);
