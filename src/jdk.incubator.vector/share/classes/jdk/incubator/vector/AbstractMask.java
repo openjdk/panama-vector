@@ -26,7 +26,9 @@ package jdk.incubator.vector;
 
 import java.util.Objects;
 
+import jdk.internal.misc.Unsafe;
 import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.vector.VectorSupport;
 
 import static jdk.incubator.vector.VectorOperators.*;
 
@@ -75,13 +77,24 @@ abstract class AbstractMask<E> extends VectorMask<E> {
     }
 
     @Override
-    public void intoArray(boolean[] bits, int i) {
-        System.arraycopy(getBits(), 0, bits, i, length());
+    @ForceInline
+    public final void intoArray(boolean[] bits, int offset) {
+        AbstractSpecies<E> vsp = vspecies();
+        int laneCount = vsp.laneCount();
+        offset = VectorIntrinsics.checkFromIndexSize(offset, laneCount, bits.length);
+        VectorSupport.store(vsp.maskType(), vsp.elementType(), laneCount,
+                bits, (long) offset + Unsafe.ARRAY_BOOLEAN_BASE_OFFSET,
+                this, bits, offset,
+                (c, idx, v)
+                  -> System.arraycopy(v.getBits(), 0, c, idx, v.length()));
     }
 
     @Override
-    public boolean[] toArray() {
-        return getBits().clone();
+    @ForceInline
+    public final boolean[] toArray() {
+        boolean[] res = new boolean[length()];
+        intoArray(res, 0);
+        return res;
     }
 
     @Override

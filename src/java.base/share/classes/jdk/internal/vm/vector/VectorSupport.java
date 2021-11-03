@@ -432,19 +432,19 @@ public class VectorSupport {
     /* ============================================================================ */
 
     public interface StoreVectorOperation<C,
-                                          V extends Vector<?>> {
-        void store(C container, int index, V v);
+                                          VM extends VectorPayload> {
+        void store(C container, int index, VM v);
     }
 
     @IntrinsicCandidate
     public static
     <C,
-     V extends Vector<?>>
-    void store(Class<?> vClass, Class<?> eClass,
+     VM extends VectorPayload>
+    void store(Class<?> vmClass, Class<?> eClass,
                int length,
                Object base, long offset,
-               V v, C container, int index,
-               StoreVectorOperation<C, V> defaultImpl) {
+               VM v, C container, int index,
+               StoreVectorOperation<C, VM> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         defaultImpl.store(container, index, v);
     }
