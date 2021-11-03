@@ -323,6 +323,14 @@ public class Double512Vector extends AbstractVectorBenchmark {
 
 
 
+
+
+
+
+
+
+
+
     @Benchmark
     public void MIN(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
@@ -1513,73 +1521,5 @@ public class Double512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-    @Benchmark
-    public void gather(Blackhole bh) {
-        double[] a = fa.apply(SPECIES.length());
-        int[] b    = fs.apply(a.length, SPECIES.length());
-        double[] r = new double[a.length];
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                DoubleVector av = DoubleVector.fromArray(SPECIES, a, i, b, i);
-                av.intoArray(r, i);
-            }
-        }
-
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void gatherMasked(Blackhole bh) {
-        double[] a = fa.apply(SPECIES.length());
-        int[] b    = fs.apply(a.length, SPECIES.length());
-        double[] r = new double[a.length];
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Double> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                DoubleVector av = DoubleVector.fromArray(SPECIES, a, i, b, i, vmask);
-                av.intoArray(r, i);
-            }
-        }
-
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void scatter(Blackhole bh) {
-        double[] a = fa.apply(SPECIES.length());
-        int[] b = fs.apply(a.length, SPECIES.length());
-        double[] r = new double[a.length];
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-                av.intoArray(r, i, b, i);
-            }
-        }
-
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void scatterMasked(Blackhole bh) {
-        double[] a = fa.apply(SPECIES.length());
-        int[] b = fs.apply(a.length, SPECIES.length());
-        double[] r = fb.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Double> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-                av.intoArray(r, i, b, i, vmask);
-            }
-        }
-
-        bh.consume(r);
-    }
 }
 

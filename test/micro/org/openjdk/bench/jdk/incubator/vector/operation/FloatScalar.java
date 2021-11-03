@@ -106,6 +106,7 @@ public class FloatScalar extends AbstractVectorBenchmark {
     }
 
 
+
     @Benchmark
     public void ADD(Blackhole bh) {
         float[] as = fa.apply(size);
@@ -299,6 +300,14 @@ public class FloatScalar extends AbstractVectorBenchmark {
         }
         bh.consume(rs);
     }
+
+
+
+
+
+
+
+
 
 
 
@@ -1249,119 +1258,5 @@ public class FloatScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
-    @Benchmark
-    public void gatherBase0(Blackhole bh) {
-        float[] as = fa.apply(size);
-        int[] is    = fs.apply(size);
-        float[] rs = fr.apply(size);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < as.length; i++) {
-                int ix = 0 + is[i];
-                rs[i] = as[ix];
-            }
-        }
-
-        bh.consume(rs);
-    }
-
-
-    void gather(int window, Blackhole bh) {
-        float[] as = fa.apply(size);
-        int[] is    = fs.apply(size);
-        float[] rs = fr.apply(size);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < as.length; i += window) {
-                for (int j = 0; j < window; j++) {
-                    int ix = is[i + j];
-                    rs[i + j] = as[ix];
-                }
-            }
-        }
-
-        bh.consume(rs);
-    }
-
-    @Benchmark
-    public void gather064(Blackhole bh) {
-        int window = 64 / Float.SIZE;
-        gather(window, bh);
-    }
-
-    @Benchmark
-    public void gather128(Blackhole bh) {
-        int window = 128 / Float.SIZE;
-        gather(window, bh);
-    }
-
-    @Benchmark
-    public void gather256(Blackhole bh) {
-        int window = 256 / Float.SIZE;
-        gather(window, bh);
-    }
-
-    @Benchmark
-    public void gather512(Blackhole bh) {
-        int window = 512 / Float.SIZE;
-        gather(window, bh);
-    }
-
-    @Benchmark
-    public void scatterBase0(Blackhole bh) {
-        float[] as = fa.apply(size);
-        int[] is    = fs.apply(size);
-        float[] rs = fr.apply(size);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < as.length; i++) {
-                int ix = 0 + is[i];
-                rs[ix] = as[i];
-            }
-        }
-
-        bh.consume(rs);
-    }
-
-    void scatter(int window, Blackhole bh) {
-        float[] as = fa.apply(size);
-        int[] is    = fs.apply(size);
-        float[] rs = fr.apply(size);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < as.length; i += window) {
-                for (int j = 0; j < window; j++) {
-                    int ix = is[i + j];
-                    rs[ix] = as[i + j];
-                }
-            }
-        }
-
-        bh.consume(rs);
-    }
-
-    @Benchmark
-    public void scatter064(Blackhole bh) {
-        int window = 64 / Float.SIZE;
-        scatter(window, bh);
-    }
-
-    @Benchmark
-    public void scatter128(Blackhole bh) {
-        int window = 128 / Float.SIZE;
-        scatter(window, bh);
-    }
-
-    @Benchmark
-    public void scatter256(Blackhole bh) {
-        int window = 256 / Float.SIZE;
-        scatter(window, bh);
-    }
-
-    @Benchmark
-    public void scatter512(Blackhole bh) {
-        int window = 512 / Float.SIZE;
-        scatter(window, bh);
-    }
 }
 
