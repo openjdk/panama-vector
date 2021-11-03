@@ -4086,14 +4086,14 @@ void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, KRegister m
 }
 
 void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, XMMRegister mask, XMMRegister xtmp,
-                                              Register tmp, int masklen, BasicType bt, int vec_enc) {
+                                              int masklen, BasicType bt, int vec_enc) {
   assert(VM_Version::supports_avx(), "");
+  assert(masklen <= 32, "");
+  bool need_clip = false;
   switch(bt) {
     case T_BYTE:
-      vpmovmskb(tmp, mask, vec_enc);
-      if (masklen < 16) {
-        andq(tmp, (((jlong)1 << masklen) - 1));
-      }
+      vpmovmskb(dst, mask, vec_enc);
+      need_clip = masklen < 16;
       break;
     case T_SHORT:
       vpacksswb(xtmp, mask, mask, vec_enc);
@@ -4101,42 +4101,45 @@ void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, XMMRegister
         assert(masklen == 16, "");
         vpermpd(xtmp, xtmp, 8, vec_enc);
       }
-      vpmovmskb(tmp, xtmp, Assembler::AVX_128bit);
-      if (masklen < 16) {
-        andq(tmp, (((jlong)1 << masklen) - 1));
-      }
+      vpmovmskb(dst, xtmp, Assembler::AVX_128bit);
+      need_clip = masklen < 16;
       break;
     case T_INT:
     case T_FLOAT:
-      vmovmskps(tmp, mask, vec_enc);
-      if (masklen < 4) {
-        andq(tmp, (((jlong)1 << masklen) - 1));
-      }
+      vmovmskps(dst, mask, vec_enc);
+      need_clip = masklen < 4;
       break;
     case T_LONG:
     case T_DOUBLE:
-      vmovmskpd(tmp, mask, vec_enc);
-      if (masklen < 2) {
-        andq(tmp, 1);
-      }
+      vmovmskpd(dst, mask, vec_enc);
+      need_clip = masklen < 2;
       break;
     default: assert(false, "Unhandled type, %s", type2name(bt));
   }
   switch(opc) {
     case Op_VectorMaskTrueCount:
-      popcntq(dst, tmp);
+      if (need_clip) {
+        andl(dst, (1 << masklen) - 1);
+      }
+      popcntl(dst, dst);
       break;
     case Op_VectorMaskLastTrue:
-      mov64(dst, -1);
-      bsrq(tmp, tmp);
-      cmov(Assembler::notZero, dst, tmp);
+      if (masklen < 32) {
+        shll(dst, 32 - masklen);
+        orl(dst, 1 << (31 - masklen));
+      }
+      lzcntl(dst, dst);
       break;
     case Op_VectorMaskFirstTrue:
-      mov64(dst, masklen);
-      bsfq(tmp, tmp);
-      cmov(Assembler::notZero, dst, tmp);
+      if (masklen < 32) {
+        orl(dst, 1 << masklen);
+      }
+      tzcntl(dst, dst);
       break;
     case Op_VectorMaskToLong:
+      if (need_clip) {
+        andq(dst, ((jlong)1 << masklen) - 1);
+      }
       break;
     default: assert(false, "Unhandled mask operation");
   }
