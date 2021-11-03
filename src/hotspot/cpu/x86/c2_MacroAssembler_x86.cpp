@@ -4119,16 +4119,19 @@ void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, XMMRegister
   switch(opc) {
     case Op_VectorMaskTrueCount:
       if (need_clip) {
+        // need_clip implies masklen < 32
         andl(dst, (1 << masklen) - 1);
       }
       popcntl(dst, dst);
       break;
     case Op_VectorMaskLastTrue:
-      if (masklen < 32) {
-        shll(dst, 32 - masklen);
-        orl(dst, 1 << (31 - masklen));
+      if (need_clip) {
+        // need_clip implies masklen < 32
+        andl(dst, (1 << masklen) - 1);
       }
       lzcntl(dst, dst);
+      negl(dst);
+      addl(dst, 31);
       break;
     case Op_VectorMaskFirstTrue:
       if (masklen < 32) {
