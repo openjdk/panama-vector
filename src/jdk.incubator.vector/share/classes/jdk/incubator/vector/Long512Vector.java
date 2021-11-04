@@ -665,9 +665,8 @@ final class Long512Vector extends LongVector {
         @ForceInline
         public Long512Mask compress() {
             return (Long512Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                                                      Long512Vector.class, Long512Mask.class, long.class,
-                                                      VLENGTH, null, this,
-                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                Long512Vector.class, Long512Mask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
 
 

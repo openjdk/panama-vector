@@ -437,14 +437,14 @@ public class VectorSupport {
     /* ============================================================================ */
 
     public interface StoreVectorOperation<C,
-                                          V extends Vector<?>> {
+                                          V extends VectorPayload> {
         void store(C container, int index, V v);
     }
 
     @IntrinsicCandidate
     public static
     <C,
-     V extends Vector<?>>
+     V extends VectorPayload>
     void store(Class<?> vClass, Class<?> eClass,
                int length,
                Object base, long offset,

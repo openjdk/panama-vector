@@ -505,8 +505,7 @@ gen_op_tmpl $blend "blend" ""
 gen_op_tmpl $rearrange_template "rearrange" ""
 
 # Compress/Expand
-gen_op_tmpl $compressexpand_template "compress" ""
-gen_op_tmpl $compressexpand_template "expand" ""
+gen_op_tmpl $compressexpand_template "compress_expand" ""
 
 # Get
 gen_get_op "lane" ""

@@ -656,9 +656,8 @@ final class Double256Vector extends DoubleVector {
         @ForceInline
         public Double256Mask compress() {
             return (Double256Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                                                      Double256Vector.class, Double256Mask.class, double.class,
-                                                      VLENGTH, null, this,
-                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                Double256Vector.class, Double256Mask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
 
 

@@ -661,9 +661,8 @@ final class ByteMaxVector extends ByteVector {
         @ForceInline
         public ByteMaxMask compress() {
             return (ByteMaxMask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                                                      ByteMaxVector.class, ByteMaxMask.class, byte.class,
-                                                      VLENGTH, null, this,
-                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                ByteMaxVector.class, ByteMaxMask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
 
 

@@ -4195,7 +4195,7 @@ public class LongMaxVectorTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void compressMaskedLongMaxVectorTests(IntFunction<long[]> fa,
+    static void compressLongMaxVectorTests(IntFunction<long[]> fa,
                                                 IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
@@ -4212,9 +4212,8 @@ public class LongMaxVectorTests extends AbstractVectorTest {
         assertcompressArraysEquals(r, a, mask, SPECIES.length());
     }
 
-
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void expandMaskedLongMaxVectorTests(IntFunction<long[]> fa,
+    static void expandLongMaxVectorTests(IntFunction<long[]> fa,
                                                 IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
@@ -4230,7 +4229,6 @@ public class LongMaxVectorTests extends AbstractVectorTest {
 
         assertexpandArraysEquals(r, a, mask, SPECIES.length());
     }
-
     @Test(dataProvider = "longUnaryOpProvider")
     static void getLongMaxVectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());

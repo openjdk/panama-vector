@@ -3235,7 +3235,7 @@ public class Float512VectorTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "floatUnaryOpMaskProvider")
-    static void compressMaskedFloat512VectorTests(IntFunction<float[]> fa,
+    static void compressFloat512VectorTests(IntFunction<float[]> fa,
                                                 IntFunction<boolean[]> fm) {
         float[] a = fa.apply(SPECIES.length());
         float[] r = fr.apply(SPECIES.length());
@@ -3252,9 +3252,8 @@ public class Float512VectorTests extends AbstractVectorTest {
         assertcompressArraysEquals(r, a, mask, SPECIES.length());
     }
 
-
     @Test(dataProvider = "floatUnaryOpMaskProvider")
-    static void expandMaskedFloat512VectorTests(IntFunction<float[]> fa,
+    static void expandFloat512VectorTests(IntFunction<float[]> fa,
                                                 IntFunction<boolean[]> fm) {
         float[] a = fa.apply(SPECIES.length());
         float[] r = fr.apply(SPECIES.length());
@@ -3270,7 +3269,6 @@ public class Float512VectorTests extends AbstractVectorTest {
 
         assertexpandArraysEquals(r, a, mask, SPECIES.length());
     }
-
     @Test(dataProvider = "floatUnaryOpProvider")
     static void getFloat512VectorTests(IntFunction<float[]> fa) {
         float[] a = fa.apply(SPECIES.length());

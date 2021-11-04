@@ -656,9 +656,8 @@ final class Float128Vector extends FloatVector {
         @ForceInline
         public Float128Mask compress() {
             return (Float128Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                                                      Float128Vector.class, Float128Mask.class, float.class,
-                                                      VLENGTH, null, this,
-                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                Float128Vector.class, Float128Mask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
 
 

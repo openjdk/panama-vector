@@ -2695,7 +2695,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<$Boxtype$>>
+    <M extends AbstractMask<$Boxtype$>>
     $Type$Vector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return ($Type$Vector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
@@ -2713,7 +2713,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<$Boxtype$>>
+    <M extends AbstractMask<$Boxtype$>>
     $Type$Vector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return ($Type$Vector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,

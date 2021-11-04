@@ -675,9 +675,8 @@ final class Int256Vector extends IntVector {
         @ForceInline
         public Int256Mask compress() {
             return (Int256Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                                                      Int256Vector.class, Int256Mask.class, int.class,
-                                                      VLENGTH, null, this,
-                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                Int256Vector.class, Int256Mask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
 
 

@@ -2244,7 +2244,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<Double>>
+    <M extends AbstractMask<Double>>
     DoubleVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return (DoubleVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
@@ -2262,7 +2262,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<Double>>
+    <M extends AbstractMask<Double>>
     DoubleVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return (DoubleVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,

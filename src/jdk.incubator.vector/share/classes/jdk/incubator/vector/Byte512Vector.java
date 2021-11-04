@@ -787,9 +787,8 @@ final class Byte512Vector extends ByteVector {
         @ForceInline
         public Byte512Mask compress() {
             return (Byte512Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                                                      Byte512Vector.class, Byte512Mask.class, byte.class,
-                                                      VLENGTH, null, this,
-                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                Byte512Vector.class, Byte512Mask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
 
 

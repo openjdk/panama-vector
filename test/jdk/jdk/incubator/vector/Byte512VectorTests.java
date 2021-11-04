@@ -4275,7 +4275,7 @@ public class Byte512VectorTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "byteUnaryOpMaskProvider")
-    static void compressMaskedByte512VectorTests(IntFunction<byte[]> fa,
+    static void compressByte512VectorTests(IntFunction<byte[]> fa,
                                                 IntFunction<boolean[]> fm) {
         byte[] a = fa.apply(SPECIES.length());
         byte[] r = fr.apply(SPECIES.length());
@@ -4292,9 +4292,8 @@ public class Byte512VectorTests extends AbstractVectorTest {
         assertcompressArraysEquals(r, a, mask, SPECIES.length());
     }
 
-
     @Test(dataProvider = "byteUnaryOpMaskProvider")
-    static void expandMaskedByte512VectorTests(IntFunction<byte[]> fa,
+    static void expandByte512VectorTests(IntFunction<byte[]> fa,
                                                 IntFunction<boolean[]> fm) {
         byte[] a = fa.apply(SPECIES.length());
         byte[] r = fr.apply(SPECIES.length());
@@ -4310,7 +4309,6 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
         assertexpandArraysEquals(r, a, mask, SPECIES.length());
     }
-
     @Test(dataProvider = "byteUnaryOpProvider")
     static void getByte512VectorTests(IntFunction<byte[]> fa) {
         byte[] a = fa.apply(SPECIES.length());

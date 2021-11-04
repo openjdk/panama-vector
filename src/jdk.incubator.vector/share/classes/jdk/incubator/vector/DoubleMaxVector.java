@@ -649,9 +649,8 @@ final class DoubleMaxVector extends DoubleVector {
         @ForceInline
         public DoubleMaxMask compress() {
             return (DoubleMaxMask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                                                      DoubleMaxVector.class, DoubleMaxMask.class, double.class,
-                                                      VLENGTH, null, this,
-                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                DoubleMaxVector.class, DoubleMaxMask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
 
 

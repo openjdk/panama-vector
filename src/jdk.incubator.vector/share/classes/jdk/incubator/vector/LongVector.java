@@ -2263,7 +2263,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<Long>>
+    <M extends AbstractMask<Long>>
     LongVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return (LongVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
@@ -2281,7 +2281,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<Long>>
+    <M extends AbstractMask<Long>>
     LongVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return (LongVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,

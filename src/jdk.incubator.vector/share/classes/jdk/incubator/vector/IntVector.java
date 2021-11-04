@@ -2397,7 +2397,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<Integer>>
+    <M extends AbstractMask<Integer>>
     IntVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return (IntVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
@@ -2415,7 +2415,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<Integer>>
+    <M extends AbstractMask<Integer>>
     IntVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return (IntVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,

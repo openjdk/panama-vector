@@ -723,9 +723,8 @@ final class Short512Vector extends ShortVector {
         @ForceInline
         public Short512Mask compress() {
             return (Short512Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                                                      Short512Vector.class, Short512Mask.class, short.class,
-                                                      VLENGTH, null, this,
-                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                Short512Vector.class, Short512Mask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
 
 

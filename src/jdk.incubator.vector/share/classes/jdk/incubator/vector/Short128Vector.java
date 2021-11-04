@@ -675,9 +675,8 @@ final class Short128Vector extends ShortVector {
         @ForceInline
         public Short128Mask compress() {
             return (Short128Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                                                      Short128Vector.class, Short128Mask.class, short.class,
-                                                      VLENGTH, null, this,
-                                                      (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                Short128Vector.class, Short128Mask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
 
 

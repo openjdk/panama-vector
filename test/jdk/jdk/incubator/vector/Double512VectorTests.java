@@ -3225,7 +3225,7 @@ public class Double512VectorTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "doubleUnaryOpMaskProvider")
-    static void compressMaskedDouble512VectorTests(IntFunction<double[]> fa,
+    static void compressDouble512VectorTests(IntFunction<double[]> fa,
                                                 IntFunction<boolean[]> fm) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
@@ -3242,9 +3242,8 @@ public class Double512VectorTests extends AbstractVectorTest {
         assertcompressArraysEquals(r, a, mask, SPECIES.length());
     }
 
-
     @Test(dataProvider = "doubleUnaryOpMaskProvider")
-    static void expandMaskedDouble512VectorTests(IntFunction<double[]> fa,
+    static void expandDouble512VectorTests(IntFunction<double[]> fa,
                                                 IntFunction<boolean[]> fm) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
@@ -3260,7 +3259,6 @@ public class Double512VectorTests extends AbstractVectorTest {
 
         assertexpandArraysEquals(r, a, mask, SPECIES.length());
     }
-
     @Test(dataProvider = "doubleUnaryOpProvider")
     static void getDouble512VectorTests(IntFunction<double[]> fa) {
         double[] a = fa.apply(SPECIES.length());

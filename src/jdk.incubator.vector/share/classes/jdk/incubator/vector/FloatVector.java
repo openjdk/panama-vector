@@ -2256,7 +2256,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<Float>>
+    <M extends AbstractMask<Float>>
     FloatVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return (FloatVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
@@ -2274,7 +2274,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
     /*package-private*/
     @ForceInline
     final
-    <M extends VectorMask<Float>>
+    <M extends AbstractMask<Float>>
     FloatVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return (FloatVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
