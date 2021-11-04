@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
+import jdk.internal.misc.Unsafe;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
 
@@ -633,6 +634,18 @@ final class Int64Vector extends IntVector {
             Objects.requireNonNull(mask);
             Int64Mask m = (Int64Mask)mask;
             return xor(m.not());
+        }
+
+        // Mask Store operations
+
+        @Override
+        @ForceInline
+        public void intoArray(boolean[] bits, int offset) {
+            offset = VectorIntrinsics.checkFromIndexSize(offset, VLENGTH, bits.length);
+            VectorSupport.store(Int64Mask.class, int.class, VLENGTH,
+                    bits, (long) offset + Unsafe.ARRAY_BOOLEAN_BASE_OFFSET,
+                    this, bits, offset,
+                    (c, idx, v) -> System.arraycopy(v.getBits(), 0, c, idx, VLENGTH));
         }
 
         // Unary operations

@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
+import jdk.internal.misc.Unsafe;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
 
@@ -635,6 +636,18 @@ final class Long512Vector extends LongVector {
             Objects.requireNonNull(mask);
             Long512Mask m = (Long512Mask)mask;
             return xor(m.not());
+        }
+
+        // Mask Store operations
+
+        @Override
+        @ForceInline
+        public void intoArray(boolean[] bits, int offset) {
+            offset = VectorIntrinsics.checkFromIndexSize(offset, VLENGTH, bits.length);
+            VectorSupport.store(Long512Mask.class, long.class, VLENGTH,
+                    bits, (long) offset + Unsafe.ARRAY_BOOLEAN_BASE_OFFSET,
+                    this, bits, offset,
+                    (c, idx, v) -> System.arraycopy(v.getBits(), 0, c, idx, VLENGTH));
         }
 
         // Unary operations

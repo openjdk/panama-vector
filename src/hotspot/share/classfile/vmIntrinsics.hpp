@@ -916,8 +916,10 @@ class methodHandle;
                                       "I"                                                                                                      \
                                       "Ljava/lang/Object;"                                                                                     \
                                       "J"                                                                                                      \
-                                      "Ljdk/internal/vm/vector/VectorSupport$VectorPayload;"                                                          \
-                                      "Ljava/lang/Object;ILjdk/internal/vm/vector/VectorSupport$StoreVectorOperation;)"                        \
+                                      "Ljdk/internal/vm/vector/VectorSupport$VectorPayload;"                                                   \
+                                      "Ljava/lang/Object;"                                                                                     \
+                                      "I"                                                                                                      \
+                                      "Ljdk/internal/vm/vector/VectorSupport$StoreVectorOperation;)"                                           \
                                       "V")                                                                                                     \
    do_name(vector_store_op_name,     "store")                                                                                                  \
                                                                                                                                                \
