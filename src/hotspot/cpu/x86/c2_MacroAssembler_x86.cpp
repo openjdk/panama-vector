@@ -4087,10 +4087,18 @@ void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, KRegister m
 
 void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, XMMRegister mask, XMMRegister xtmp,
                                               int masklen, BasicType bt, int vec_enc) {
-  assert(VM_Version::supports_avx(), "");
-  assert(masklen <= 32, "");
+  assert(VM_Version::supports_avx() && vec_enc == AVX_128bit ||
+         VM_Version::supports_avx2() && vec_enc == AVX_256bit, "");
+
   bool need_clip = false;
   switch(bt) {
+    case T_BOOLEAN:
+      // While masks of other types contain 0, -1; boolean masks contain lane values of 0, 1
+      vpxor(xtmp, xtmp, xtmp, vec_enc);
+      vpsubb(xtmp, xtmp, mask, vec_enc);
+      vpmovmskb(dst, xtmp, vec_enc);
+      need_clip = masklen < 16;
+      break;
     case T_BYTE:
       vpmovmskb(dst, mask, vec_enc);
       need_clip = masklen < 16;
@@ -4098,7 +4106,6 @@ void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, XMMRegister
     case T_SHORT:
       vpacksswb(xtmp, mask, mask, vec_enc);
       if (masklen >= 16) {
-        assert(masklen == 16, "");
         vpermpd(xtmp, xtmp, 8, vec_enc);
       }
       vpmovmskb(dst, xtmp, Assembler::AVX_128bit);
@@ -4116,6 +4123,7 @@ void C2_MacroAssembler::vector_mask_operation(int opc, Register dst, XMMRegister
       break;
     default: assert(false, "Unhandled type, %s", type2name(bt));
   }
+
   switch(opc) {
     case Op_VectorMaskTrueCount:
       if (need_clip) {
