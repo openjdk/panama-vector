@@ -1039,6 +1039,12 @@ import java.util.Arrays;
  * can encode a mathematical permutation as well as many other
  * patterns of data movement.
  *
+ * <li>The {@link #compress(VectorMask)} and {@link #expand(VectorMask)}
+ * methods, which select up to {@code VLENGTH} lanes from an
+ * input vector, and assemble them in lane order.  The selection of lanes
+ * is controlled by a {@code Mask}, with set lane elements mapping, by
+ * compression or expansion in lane order, source lanes to destination lanes.
+ *
  * </ul>
  * <p> Some vector operations are not lane-wise, but rather move data
  * across lane boundaries.  Such operations are typically rare in SIMD
