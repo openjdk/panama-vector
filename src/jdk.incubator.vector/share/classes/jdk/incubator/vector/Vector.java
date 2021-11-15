@@ -1042,7 +1042,7 @@ import java.util.Arrays;
  * <li>The {@link #compress(VectorMask)} and {@link #expand(VectorMask)}
  * methods, which select up to {@code VLENGTH} lanes from an
  * input vector, and assemble them in lane order.  The selection of lanes
- * is controlled by a {@code Mask}, with set lane elements mapping, by
+ * is controlled by a {@code VectorMask}, with set lane elements mapping, by
  * compression or expansion in lane order, source lanes to destination lanes.
  *
  * </ul>
