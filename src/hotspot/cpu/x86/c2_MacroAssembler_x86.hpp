@@ -224,7 +224,7 @@ public:
 
  public:
 #ifdef _LP64
-  void vector_mask_operation(int opc, Register dst, KRegister mask, Register tmp, int masklen, int masksize, int vec_enc);
+  void vector_mask_operation(int opc, Register dst, KRegister mask, int masklen, int masksize, int vec_enc);
 
   void vector_mask_operation(int opc, Register dst, XMMRegister mask, XMMRegister xtmp,
                              Register tmp, int masklen, BasicType bt, int vec_enc);
