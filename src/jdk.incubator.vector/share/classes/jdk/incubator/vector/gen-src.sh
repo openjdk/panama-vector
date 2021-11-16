@@ -53,10 +53,19 @@ typeprefix=
 globalArgs=""
 #globalArgs="$globalArgs -KextraOverrides"
 
-for type in byte short int long float double
+for type in byte short int long float double halffloat
 do
+
   Type="$(tr '[:lower:]' '[:upper:]' <<< ${type:0:1})${type:1}"
   TYPE="$(tr '[:lower:]' '[:upper:]' <<< ${type})"
+
+  case $type in
+    halffloat)
+       type=short
+       TYPE=SHORT
+       ;;
+  esac
+
   args=$globalArgs
   args="$args -K$type -Dtype=$type -DType=$Type -DTYPE=$TYPE"
 
@@ -73,18 +82,21 @@ do
   Fptype=$Type
   Boxfptype=$Boxtype
 
-  case $type in
-    byte)
+  case $Type in
+    Byte)
       Wideboxtype=Integer
       sizeInBytes=1
       args="$args -KbyteOrShort"
       ;;
-    short)
+    Short)
+      fptype=halffloat
+      Fptype=Halffloat
+      Boxfptype=Halffloat
       Wideboxtype=Integer
       sizeInBytes=2
       args="$args -KbyteOrShort"
       ;;
-    int)
+    Int)
       Boxtype=Integer
       Wideboxtype=Integer
       Boxbitstype=Integer
@@ -94,14 +106,14 @@ do
       sizeInBytes=4
       args="$args -KintOrLong -KintOrFP -KintOrFloat"
       ;;
-    long)
+    Long)
       fptype=double
       Fptype=Double
       Boxfptype=Double
       sizeInBytes=8
       args="$args -KintOrLong -KlongOrDouble"
       ;;
-    float)
+    Float)
       kind=FP
       bitstype=int
       Bitstype=Int
@@ -109,13 +121,21 @@ do
       sizeInBytes=4
       args="$args -KintOrFP -KintOrFloat"
       ;;
-    double)
+    Double)
       kind=FP
       bitstype=long
       Bitstype=Long
       Boxbitstype=Long
       sizeInBytes=8
       args="$args -KintOrFP -KlongOrDouble"
+      ;;
+    Halffloat)
+      kind=FP
+      bitstype=short
+      Bitstype=Short
+      Boxbitstype=Short
+      sizeInBytes=2
+      args="$args -KbyteOrShort -KshortOrFP -KshortOrHalffloat"
       ;;
   esac
 

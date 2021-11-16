@@ -40,7 +40,8 @@ enum LaneType {
     BYTE(byte.class, Byte.class, byte[].class, 'I', -1, Byte.SIZE, T_BYTE),
     SHORT(short.class, Short.class, short[].class, 'I', -1, Short.SIZE, T_SHORT),
     INT(int.class, Integer.class, int[].class, 'I', -1, Integer.SIZE, T_INT),
-    LONG(long.class, Long.class, long[].class, 'I', -1, Long.SIZE, T_LONG);
+    LONG(long.class, Long.class, long[].class, 'I', -1, Long.SIZE, T_LONG),
+    HALFFLOAT(Halffloat.class, Short.class, short[].class, 'F', 11, Halffloat.SIZE, T_SHORT);
 
     LaneType(Class<?> elementType,
              Class<?> genericElementType,
@@ -176,13 +177,14 @@ enum LaneType {
     // don't optimize properly; see JDK-8161245
 
     static final int
-        SK_FLOAT    = 1,
-        SK_DOUBLE   = 2,
-        SK_BYTE     = 3,
-        SK_SHORT    = 4,
-        SK_INT      = 5,
-        SK_LONG     = 6,
-        SK_LIMIT    = 7;
+        SK_FLOAT     = 1,
+        SK_DOUBLE    = 2,
+        SK_BYTE      = 3,
+        SK_SHORT     = 4,
+        SK_INT       = 5,
+        SK_LONG      = 6,
+        SK_HALFFLOAT = 7,
+        SK_LIMIT     = 8;
 
     /*package-private*/
     @ForceInline

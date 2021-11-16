@@ -610,6 +610,8 @@ abstract class AbstractSpecies<E> extends jdk.internal.vm.vector.VectorSupport.V
             s = IntVector.species(shape); break;
         case LaneType.SK_LONG:
             s = LongVector.species(shape); break;
+        case LaneType.SK_HALFFLOAT:
+            s = HalffloatVector.species(shape); break;
         }
         if (s == null) {
             // NOTE: The result of this method is guaranteed to be

@@ -255,6 +255,15 @@ abstract class AbstractVector<E> extends Vector<E> {
      */
     @Override
     @ForceInline
+    public HalffloatVector reinterpretAsHalffloats() {
+        return (HalffloatVector) asVectorRaw(LaneType.HALFFLOAT);
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    @ForceInline
     public final <F>
     Vector<F> convert(Conversion<E,F> conv, int part) {
         // Shape invariance is simple to implement.

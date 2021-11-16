@@ -27,7 +27,8 @@
  * @requires vm.compiler2.enabled
  */
 
-import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.Halffloat;
+import jdk.incubator.vector.HalffloatVector;
 import jdk.incubator.vector.VectorShape;
 import jdk.incubator.vector.VectorSpecies;
 import jdk.incubator.vector.Vector;
@@ -36,30 +37,32 @@ import java.util.Arrays;
 import java.util.stream.IntStream;
 
 public class AddTest {
-    static final VectorSpecies<Float> SPECIES =
-            FloatVector.SPECIES_256;
+    static final VectorSpecies<Halffloat> SPECIES =
+            HalffloatVector.SPECIES_128;
 
     static final int SIZE = 1024;
-    static float[] a = new float[SIZE];
-    static float[] b = new float[SIZE];
-    static float[] c = new float[SIZE];
+    static short[] a = new short[SIZE];
+    static short[] b = new short[SIZE];
+    static short[] c = new short[SIZE];
 
     static {
         for (int i = 0; i < SIZE; i++) {
-            a[i] = 1f;
-            b[i] = 2f;
+            a[i] = 0x3C66;
+            b[i] = 0x4066;
         }
     }
 
     static void workload() {
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
-            FloatVector bv = FloatVector.fromArray(SPECIES, b, i);
-            av.add(bv).intoArray(c, i);
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            //HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+            //av.add(bv).intoArray(c, i);
+			av.intoArray(c,i);
+
         }
     }
 
-    static final int[] IDENTITY_INDEX_MAPPING = IntStream.range(0, SPECIES.length()).toArray();
+    /*static final int[] IDENTITY_INDEX_MAPPING = IntStream.range(0, SPECIES.length()).toArray();
 
     static void workloadIndexMapped() {
         for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -67,7 +70,7 @@ public class AddTest {
             FloatVector bv = FloatVector.fromArray(SPECIES, b, i, IDENTITY_INDEX_MAPPING, 0);
             av.add(bv).intoArray(c, i, IDENTITY_INDEX_MAPPING, 0);
         }
-    }
+    }*/
 
     public static void main(String args[]) {
         for (int i = 0; i < 30_0000; i++) {
@@ -78,7 +81,7 @@ public class AddTest {
                 throw new AssertionError();
         }
 
-        Arrays.fill(c, 0.0f);
+        /*Arrays.fill(c, 0.0f);
 
         for (int i = 0; i < 30_0000; i++) {
             workloadIndexMapped();
@@ -86,6 +89,6 @@ public class AddTest {
         for (int i = 0; i < a.length; i++) {
             if (c[i] != a[i] + b[i])
                 throw new AssertionError();
-        }
+        }*/
     }
 }
