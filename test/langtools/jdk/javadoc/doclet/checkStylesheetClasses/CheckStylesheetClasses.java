@@ -120,7 +120,7 @@ public class CheckStylesheetClasses {
                 "modifiers", "permits", "return-type");
 
         // misc: these are defined in HtmlStyle, and used by the doclet
-        removeAll(htmlStyleNames, "col-plain", "details-table", "external-link",
+        removeAll(htmlStyleNames, "col-plain", "external-link",
                 "hierarchy", "index", "package-uses", "packages", "permits-note",
                 "serialized-package-container", "source-container");
 
@@ -140,6 +140,9 @@ public class CheckStylesheetClasses {
                 "ui-autocomplete", "ui-autocomplete-category",
                 "watermark");
 
+        // snippet-related
+        removeAll(styleSheetNames, "bold", "highlighted", "italic");
+
         // very JDK specific
         styleSheetNames.remove("module-graph");
 
@@ -148,7 +151,7 @@ public class CheckStylesheetClasses {
         // (a) it is a poorly chosen name
         // (b) it does not seem to be used in make/Docs.gmk or anywhere else
         removeAll(styleSheetNames, "all-classes-container", "all-packages-container",
-                "bottom-nav", "clear", "constant-values-container", "deprecated-content",
+                "clear", "constant-values-container", "deprecated-content", "expanded",
                 "footer", "hidden", "override-specify-label", "serialized-class-details",
                 "tab", "table-sub-heading-color");
 

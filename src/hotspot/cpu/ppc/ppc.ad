@@ -2108,6 +2108,8 @@ const bool Matcher::match_rule_supported(int opcode) {
   switch (opcode) {
     case Op_SqrtD:
       return VM_Version::has_fsqrt();
+    case Op_RoundDoubleMode:
+      return VM_Version::has_vsx();
     case Op_CountLeadingZerosI:
     case Op_CountLeadingZerosL:
       return UseCountLeadingZerosInstructionsPPC64;
@@ -2175,6 +2177,10 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
   return true; // Per default match rules are supported.
 }
 
+const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, BasicType bt) {
+  return false;
+}
+
 const RegMask* Matcher::predicate_reg_mask(void) {
   return NULL;
 }
@@ -2191,10 +2197,6 @@ const bool Matcher::supports_vector_calling_convention(void) {
 OptoRegPair Matcher::vector_return_value(uint ideal_reg) {
   Unimplemented();
   return OptoRegPair(0, 0);
-}
-
-const int Matcher::float_pressure(int default_pressure_threshold) {
-  return default_pressure_threshold;
 }
 
 // Vector width in bytes.
@@ -2272,7 +2274,7 @@ MachOper* Matcher::pd_specialize_generic_vector_operand(MachOper* original_opnd,
   return NULL;
 }
 
-bool Matcher::is_generic_reg2reg_move(MachNode* m) {
+bool Matcher::is_reg2reg_move(MachNode* m) {
   ShouldNotReachHere();  // generic vector operands not supported
   return false;
 }
@@ -2361,6 +2363,16 @@ bool Matcher::can_be_java_arg(int reg) {
 
 bool Matcher::is_spillable_arg(int reg) {
   return can_be_java_arg(reg);
+}
+
+uint Matcher::int_pressure_limit()
+{
+  return (INTPRESSURE == -1) ? 26 : INTPRESSURE;
+}
+
+uint Matcher::float_pressure_limit()
+{
+  return (FLOATPRESSURE == -1) ? 28 : FLOATPRESSURE;
 }
 
 bool Matcher::use_asm_for_ldiv_by_con(jlong divisor) {
@@ -12117,8 +12129,7 @@ instruct cmpFastLock(flagsReg crx, iRegPdst oop, iRegPdst box, iRegPdst tmp1, iR
   format %{ "FASTLOCK  $oop, $box, $tmp1, $tmp2" %}
   ins_encode %{
     __ compiler_fast_lock_object($crx$$CondRegister, $oop$$Register, $box$$Register,
-                                 $tmp1$$Register, $tmp2$$Register, /*tmp3*/ R0,
-                                 UseBiasedLocking && !UseOptoBiasInlining);
+                                 $tmp1$$Register, $tmp2$$Register, /*tmp3*/ R0);
     // If locking was successfull, crx should indicate 'EQ'.
     // The compiler generates a branch to the runtime call to
     // _complete_monitor_locking_Java for the case where crx is 'NE'.
@@ -12136,10 +12147,9 @@ instruct cmpFastLock_tm(flagsReg crx, iRegPdst oop, rarg2RegP box, iRegPdst tmp1
   ins_encode %{
     __ compiler_fast_lock_object($crx$$CondRegister, $oop$$Register, $box$$Register,
                                  $tmp1$$Register, $tmp2$$Register, $tmp3$$Register,
-                                 /*Biased Locking*/ false,
                                  _rtm_counters, _stack_rtm_counters,
                                  ((Method*)(ra_->C->method()->constant_encoding()))->method_data(),
-                                 /*TM*/ true, ra_->C->profile_rtm());
+                                 /*RTM*/ true, ra_->C->profile_rtm());
     // If locking was successfull, crx should indicate 'EQ'.
     // The compiler generates a branch to the runtime call to
     // _complete_monitor_locking_Java for the case where crx is 'NE'.
@@ -12156,7 +12166,6 @@ instruct cmpFastUnlock(flagsReg crx, iRegPdst oop, iRegPdst box, iRegPdst tmp1, 
   ins_encode %{
     __ compiler_fast_unlock_object($crx$$CondRegister, $oop$$Register, $box$$Register,
                                    $tmp1$$Register, $tmp2$$Register, $tmp3$$Register,
-                                   UseBiasedLocking && !UseOptoBiasInlining,
                                    false);
     // If unlocking was successfull, crx should indicate 'EQ'.
     // The compiler generates a branch to the runtime call to
@@ -12174,7 +12183,7 @@ instruct cmpFastUnlock_tm(flagsReg crx, iRegPdst oop, iRegPdst box, iRegPdst tmp
   ins_encode %{
     __ compiler_fast_unlock_object($crx$$CondRegister, $oop$$Register, $box$$Register,
                                    $tmp1$$Register, $tmp2$$Register, $tmp3$$Register,
-                                   /*Biased Locking*/ false, /*TM*/ true);
+                                   /*RTM*/ true);
     // If unlocking was successfull, crx should indicate 'EQ'.
     // The compiler generates a branch to the runtime call to
     // _complete_monitor_unlocking_Java for the case where crx is 'NE'.
@@ -12784,6 +12793,7 @@ instruct has_negatives(rarg1RegP ary1, iRegIsrc len, iRegIdst result, iRegLdst t
 // encode char[] to byte[] in ISO_8859_1
 instruct encode_iso_array(rarg1RegP src, rarg2RegP dst, iRegIsrc len, iRegIdst result, iRegLdst tmp1,
                           iRegLdst tmp2, iRegLdst tmp3, iRegLdst tmp4, iRegLdst tmp5, regCTR ctr, flagsRegCR0 cr0) %{
+  predicate(!((EncodeISOArrayNode*)n)->is_ascii());
   match(Set result (EncodeISOArray src (Binary dst len)));
   effect(TEMP_DEF result, TEMP tmp1, TEMP tmp2, TEMP tmp3, TEMP tmp4, TEMP tmp5,
          USE_KILL src, USE_KILL dst, KILL ctr, KILL cr0);
@@ -13961,7 +13971,7 @@ instruct roundD_reg(regD dst, regD src, immI8 rmode) %{
   ins_encode %{
     switch ($rmode$$constant) {
       case RoundDoubleModeNode::rmode_rint:
-        __ frin($dst$$FloatRegister, $src$$FloatRegister);
+        __ xvrdpic($dst$$FloatRegister->to_vsr(), $src$$FloatRegister->to_vsr());
         break;
       case RoundDoubleModeNode::rmode_floor:
         __ frim($dst$$FloatRegister, $src$$FloatRegister);
@@ -13985,7 +13995,7 @@ instruct vround2D_reg(vecX dst, vecX src, immI8 rmode) %{
   ins_encode %{
     switch ($rmode$$constant) {
       case RoundDoubleModeNode::rmode_rint:
-        __ xvrdpi($dst$$VectorSRegister, $src$$VectorSRegister);
+        __ xvrdpic($dst$$VectorSRegister, $src$$VectorSRegister);
         break;
       case RoundDoubleModeNode::rmode_floor:
         __ xvrdpim($dst$$VectorSRegister, $src$$VectorSRegister);
