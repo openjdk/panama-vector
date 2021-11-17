@@ -57,8 +57,7 @@ public class AddTest {
             HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
             //HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
             //av.add(bv).intoArray(c, i);
-			av.intoArray(c,i);
-
+            av.intoArray(c,i);
         }
     }
 

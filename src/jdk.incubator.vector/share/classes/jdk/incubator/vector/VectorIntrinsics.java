@@ -114,9 +114,8 @@ import java.util.Objects;
             return Math.floorMod(index, Math.abs(size));
         }
     }
-
-	static <V> V maybeRebox(V v) {
-		U.loadFence();
-		return v;
-	}
+    static <V> V maybeRebox(V v) {
+        U.loadFence();
+        return v;
+    }
 }
