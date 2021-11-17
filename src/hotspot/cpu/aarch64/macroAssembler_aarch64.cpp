@@ -1855,15 +1855,6 @@ void MacroAssembler::increment(Address dst, int value)
   str(rscratch1, dst);
 }
 
-
-void MacroAssembler::pusha() {
-  push(0x7fffffff, sp);
-}
-
-void MacroAssembler::popa() {
-  pop(0x7fffffff, sp);
-}
-
 // Push lots of registers in the bit set supplied.  Don't push sp.
 // Return the number of words pushed
 int MacroAssembler::push(unsigned int bitset, Register stack) {
@@ -1987,7 +1978,7 @@ int MacroAssembler::push_fp(unsigned int bitset, Register stack) {
   return count * 2;
 }
 
-// Return the number of dwords poped
+// Return the number of dwords popped
 int MacroAssembler::pop_fp(unsigned int bitset, Register stack) {
   int words_pushed = 0;
   bool use_sve = false;
@@ -2062,10 +2053,9 @@ int MacroAssembler::push_p(unsigned int bitset, Register stack) {
     return 0;
   }
 
-  const int num_of_regs = PRegisterImpl::number_of_saved_registers;
-  unsigned char regs[num_of_regs];
+  unsigned char regs[PRegisterImpl::number_of_saved_registers];
   int count = 0;
-  for (int reg = 0; reg < num_of_regs; reg++) {
+  for (int reg = 0; reg < PRegisterImpl::number_of_saved_registers; reg++) {
     if (1 & bitset)
       regs[count++] = reg;
     bitset >>= 1;
@@ -2084,7 +2074,7 @@ int MacroAssembler::push_p(unsigned int bitset, Register stack) {
   return total_push_bytes / 8;
 }
 
-// Return the number of dwords poped
+// Return the number of dwords popped
 int MacroAssembler::pop_p(unsigned int bitset, Register stack) {
   bool use_sve = false;
   int sve_predicate_size_in_slots = 0;
@@ -2100,10 +2090,9 @@ int MacroAssembler::pop_p(unsigned int bitset, Register stack) {
     return 0;
   }
 
-  const int num_of_regs = PRegisterImpl::number_of_saved_registers;
-  unsigned char regs[num_of_regs];
+  unsigned char regs[PRegisterImpl::number_of_saved_registers];
   int count = 0;
-  for (int reg = 0; reg < num_of_regs; reg++) {
+  for (int reg = 0; reg < PRegisterImpl::number_of_saved_registers; reg++) {
     if (1 & bitset)
       regs[count++] = reg;
     bitset >>= 1;
@@ -2581,7 +2570,7 @@ void MacroAssembler::pop_call_clobbered_registers_except(RegSet exclude) {
 
 void MacroAssembler::push_CPU_state(bool save_vectors, bool use_sve,
                                     int sve_vector_size_in_bytes, int total_predicate_in_bytes) {
-  push(0x3fffffff, sp);         // integer registers except lr & sp
+  push(RegSet::range(r0, r29), sp); // integer registers except lr & sp
   if (save_vectors && use_sve && sve_vector_size_in_bytes > 16) {
     sub(sp, sp, sve_vector_size_in_bytes * FloatRegisterImpl::number_of_registers);
     for (int i = 0; i < FloatRegisterImpl::number_of_registers; i++) {
@@ -2631,7 +2620,14 @@ void MacroAssembler::pop_CPU_state(bool restore_vectors, bool use_sve,
     reinitialize_ptrue();
   }
 
-  pop(0x3fffffff, sp);         // integer registers except lr & sp
+  // integer registers except lr & sp
+  pop(RegSet::range(r0, r17), sp);
+#ifdef R18_RESERVED
+  ldp(zr, r19, Address(post(sp, 2 * wordSize)));
+  pop(RegSet::range(r20, r29), sp);
+#else
+  pop(RegSet::range(r18_tls, r29), sp);
+#endif
 }
 
 /**
@@ -5244,3 +5240,21 @@ void MacroAssembler::verify_cross_modify_fence_not_required() {
   }
 }
 #endif
+
+void MacroAssembler::spin_wait() {
+  for (int i = 0; i < VM_Version::spin_wait_desc().inst_count(); ++i) {
+    switch (VM_Version::spin_wait_desc().inst()) {
+      case SpinWait::NOP:
+        nop();
+        break;
+      case SpinWait::ISB:
+        isb();
+        break;
+      case SpinWait::YIELD:
+        yield();
+        break;
+      default:
+        ShouldNotReachHere();
+    }
+  }
+}

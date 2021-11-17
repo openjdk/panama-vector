@@ -2301,20 +2301,29 @@ instruct vcvtFtoX_narrow(vReg dst, vReg src, vReg tmp)
   ins_pipe(pipe_slow);
 %}
 
-instruct vcvtFtoX_extend(vReg dst, vReg src)
+instruct vcvtFtoI(vReg dst, vReg src)
 %{
   predicate(UseSVE > 0 &&
-            (n->bottom_type()->is_vect()->element_basic_type() == T_INT ||
-             n->bottom_type()->is_vect()->element_basic_type() == T_LONG));
+            (n->bottom_type()->is_vect()->element_basic_type() == T_INT));
   match(Set dst (VectorCastF2X src));
   ins_cost(SVE_COST);
-  format %{ "sve_vectorcast_f2x  $dst, $src\t# convert F to I/L vector" %}
+  format %{ "sve_vectorcast_f2x  $dst, $src\t# convert F to I vector" %}
   ins_encode %{
-    BasicType to_bt = Matcher::vector_element_basic_type(this);
     __ sve_fcvtzs(as_FloatRegister($dst$$reg), __ S, ptrue, as_FloatRegister($src$$reg), __ S);
-    if (to_bt == T_LONG) {
-      __ sve_vector_extend(as_FloatRegister($dst$$reg), __ D, as_FloatRegister($dst$$reg), __ S);
-    }
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vcvtFtoL(vReg dst, vReg src)
+%{
+  predicate(UseSVE > 0 &&
+            (n->bottom_type()->is_vect()->element_basic_type() == T_LONG));
+  match(Set dst (VectorCastF2X src));
+  ins_cost(SVE_COST * 2);
+  format %{ "sve_vectorcast_f2x  $dst, $src\t# convert F to L vector" %}
+  ins_encode %{
+    __ sve_sunpklo(as_FloatRegister($dst$$reg), __ D, as_FloatRegister($src$$reg));
+    __ sve_fcvtzs(as_FloatRegister($dst$$reg), __ D, ptrue, as_FloatRegister($dst$$reg), __ S);
   %}
   ins_pipe(pipe_slow);
 %}
@@ -2346,7 +2355,7 @@ instruct vcvtDtoX_narrow(vReg dst, vReg src, vReg tmp)
   ins_encode %{
     BasicType to_bt = Matcher::vector_element_basic_type(this);
     Assembler::SIMD_RegVariant to_size = __ elemType_to_regVariant(to_bt);
-    __ sve_fcvtzs(as_FloatRegister($dst$$reg), __ D, ptrue, as_FloatRegister($src$$reg), __ D);
+    __ sve_fcvtzs(as_FloatRegister($dst$$reg), __ S, ptrue, as_FloatRegister($src$$reg), __ D);
     __ sve_vector_narrow(as_FloatRegister($dst$$reg), to_size,
                          as_FloatRegister($dst$$reg), __ D, as_FloatRegister($tmp$$reg));
   %}
@@ -3026,36 +3035,36 @@ instruct vmask_lasttrue(iRegINoSp dst, pReg src, pReg ptmp) %{
   ins_pipe(pipe_slow);
 %}
 
-instruct vmask_truecount_partial(iRegINoSp dst, pReg src, pRegGov pgtmp, rFlagsReg cr) %{
+instruct vmask_truecount_partial(iRegINoSp dst, pReg src, pReg ptmp, rFlagsReg cr) %{
   predicate(UseSVE > 0 &&
             n->in(1)->bottom_type()->is_vect()->length_in_bytes() < MaxVectorSize);
   match(Set dst (VectorMaskTrueCount src));
-  effect(TEMP pgtmp, KILL cr);
+  effect(TEMP ptmp, KILL cr);
   ins_cost(2 * SVE_COST);
   format %{ "vmask_truecount_partial $dst, $src\t# vector mask truecount partial (sve)" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this, $src);
     Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
-    __ sve_whilelo_zr_imm(as_PRegister($pgtmp$$reg), size, Matcher::vector_length(this, $src));
-    __ sve_cntp($dst$$Register, size, as_PRegister($pgtmp$$reg), as_PRegister($src$$reg));
+    __ sve_whilelo_zr_imm(as_PRegister($ptmp$$reg), size, Matcher::vector_length(this, $src));
+    __ sve_cntp($dst$$Register, size, as_PRegister($ptmp$$reg), as_PRegister($src$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
 
-instruct vmask_firsttrue_partial(iRegINoSp dst, pReg src, pRegGov pgtmp, pReg ptmp, rFlagsReg cr) %{
+instruct vmask_firsttrue_partial(iRegINoSp dst, pReg src, pReg ptmp1, pReg ptmp2, rFlagsReg cr) %{
   predicate(UseSVE > 0 &&
             n->in(1)->bottom_type()->is_vect()->length_in_bytes() < MaxVectorSize);
   match(Set dst (VectorMaskFirstTrue src));
-  effect(TEMP pgtmp, TEMP ptmp, KILL cr);
+  effect(TEMP ptmp1, TEMP ptmp2, KILL cr);
   ins_cost(3 * SVE_COST);
   format %{ "vmask_firsttrue_partial $dst, $src\t# vector mask firsttrue partial (sve)" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this, $src);
     Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
-    __ sve_whilelo_zr_imm(as_PRegister($pgtmp$$reg), size,
+    __ sve_whilelo_zr_imm(as_PRegister($ptmp1$$reg), size,
                           Matcher::vector_length(this, $src));
-    __ sve_brkb(as_PRegister($ptmp$$reg), as_PRegister($pgtmp$$reg), as_PRegister($src$$reg), false);
-    __ sve_cntp($dst$$Register, size, as_PRegister($pgtmp$$reg), as_PRegister($ptmp$$reg));
+    __ sve_brkb(as_PRegister($ptmp2$$reg), as_PRegister($ptmp1$$reg), as_PRegister($src$$reg), false);
+    __ sve_cntp($dst$$Register, size, as_PRegister($ptmp1$$reg), as_PRegister($ptmp2$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
