@@ -772,6 +772,57 @@ public class Float256Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
+    public Object compress() {
+        float[] a = fa.apply(size);
+        float[] r = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<Float> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+                av.compress(m).intoArray(r, i);
+            }
+        }
+
+        return r;
+    }
+
+    @Benchmark
+    public Object expand() {
+        float[] a = fa.apply(size);
+        float[] r = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<Float> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+                av.expand(m).intoArray(r, i);
+            }
+        }
+
+        return r;
+    }
+
+    @Benchmark
+    public Object maskCompress() {
+        boolean[] ms = fmt.apply(size);
+        boolean[] rs = fmt.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0, j = 0; i < ms.length; i += SPECIES.length()) {
+                VectorMask<Float> m = VectorMask.fromArray(SPECIES, ms, i);
+                m.compress().intoArray(rs, j);
+                j += m.trueCount();
+            }
+        }
+
+        return rs;
+    }
+
+
+    @Benchmark
     public void laneextract(Blackhole bh) {
         float[] a = fa.apply(SPECIES.length());
         float[] r = fr.apply(SPECIES.length());
