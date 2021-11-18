@@ -772,6 +772,57 @@ public class Double128Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
+    public Object compress() {
+        double[] a = fa.apply(size);
+        double[] r = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<Double> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
+                av.compress(m).intoArray(r, i);
+            }
+        }
+
+        return r;
+    }
+
+    @Benchmark
+    public Object expand() {
+        double[] a = fa.apply(size);
+        double[] r = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<Double> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
+                av.expand(m).intoArray(r, i);
+            }
+        }
+
+        return r;
+    }
+
+    @Benchmark
+    public Object maskCompress() {
+        boolean[] ms = fmt.apply(size);
+        boolean[] rs = fmt.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0, j = 0; i < ms.length; i += SPECIES.length()) {
+                VectorMask<Double> m = VectorMask.fromArray(SPECIES, ms, i);
+                m.compress().intoArray(rs, j);
+                j += m.trueCount();
+            }
+        }
+
+        return rs;
+    }
+
+
+    @Benchmark
     public void laneextract(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = fr.apply(SPECIES.length());
