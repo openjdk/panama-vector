@@ -755,7 +755,7 @@ bool LibraryCallKit::inline_vector_shuffle_to_vector() {
     return false;
   }
 
-  int cast_vopc = VectorCastNode::opcode(T_BYTE); // from shuffle of type T_BYTE
+  int cast_vopc = VectorCastNode::opcode(T_BYTE, false); // from shuffle of type T_BYTE
   // Make sure that cast is implemented to particular type/size combination.
   if (!arch_supports_vector(cast_vopc, num_elem, elem_bt, VecMaskNotUsed)) {
     if (C->print_intrinsics()) {
@@ -2436,7 +2436,7 @@ bool LibraryCallKit::inline_vector_convert() {
     if (is_mask && is_floating_point_type(elem_bt_from)) {
       new_elem_bt_from = elem_bt_from == T_FLOAT ? T_INT : T_LONG;
     }
-    int cast_vopc = VectorCastNode::opcode(new_elem_bt_from);
+    int cast_vopc = VectorCastNode::opcode(new_elem_bt_from, is_ucast);
     // Make sure that cast is implemented to particular type/size combination.
     if (!arch_supports_vector(cast_vopc, num_elem_to, elem_bt_to, VecMaskNotUsed)) {
       if (C->print_intrinsics()) {
@@ -2463,7 +2463,7 @@ bool LibraryCallKit::inline_vector_convert() {
         return false;
       }
 
-      op = gvn().transform(VectorCastNode::make(cast_vopc, op, elem_bt_to, num_elem_for_cast, is_ucast));
+      op = gvn().transform(VectorCastNode::make(cast_vopc, op, elem_bt_to, num_elem_for_cast));
       // Now ensure that the destination gets properly resized to needed size.
       op = gvn().transform(new VectorReinterpretNode(op, op->bottom_type()->is_vect(), dst_type));
     } else if (num_elem_from > num_elem_to) {
@@ -2488,7 +2488,7 @@ bool LibraryCallKit::inline_vector_convert() {
                                                      src_type,
                                                      TypeVect::make(elem_bt_from,
                                                                     num_elem_for_resize)));
-      op = gvn().transform(VectorCastNode::make(cast_vopc, op, elem_bt_to, num_elem_to, is_ucast));
+      op = gvn().transform(VectorCastNode::make(cast_vopc, op, elem_bt_to, num_elem_to));
     } else {
       if (is_mask) {
         if ((dst_type->isa_vectmask() && src_type->isa_vectmask()) ||
@@ -2514,7 +2514,7 @@ bool LibraryCallKit::inline_vector_convert() {
       } else {
         // Since input and output number of elements match, and since we know this vector size is
         // supported, simply do a cast with no resize needed.
-        op = gvn().transform(VectorCastNode::make(cast_vopc, op, elem_bt_to, num_elem_to, is_ucast));
+        op = gvn().transform(VectorCastNode::make(cast_vopc, op, elem_bt_to, num_elem_to));
       }
     }
   } else if (Type::cmp(src_type, dst_type) != 0) {

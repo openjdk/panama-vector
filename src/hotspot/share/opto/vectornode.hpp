@@ -1422,8 +1422,8 @@ class VectorCastNode : public VectorNode {
   VectorCastNode(Node* in, const TypeVect* vt) : VectorNode(in, vt) {}
   virtual int Opcode() const;
 
-  static VectorCastNode* make(int vopc, Node* n1, BasicType bt, uint vlen, bool is_unsigned = false);
-  static int  opcode(BasicType bt);
+  static VectorCastNode* make(int vopc, Node* n1, BasicType bt, uint vlen);
+  static int  opcode(BasicType bt, bool is_unsigned);
   static bool implemented(BasicType bt, uint vlen);
 
   virtual Node* Identity(PhaseGVN* phase);

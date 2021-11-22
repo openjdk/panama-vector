@@ -1808,12 +1808,12 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       }
       break;
     case Op_VectorUCastS2X:
-      if (is_integral_type(bt) && size_in_bits == 256 && UseAVX < 2) {
+      if (size_in_bits == 256 && UseAVX < 2) {
         return false;
       }
       break;
     case Op_VectorUCastI2X:
-      if (is_integral_type(bt) && size_in_bits == 256 && UseAVX < 2) {
+      if (size_in_bits == 256 && UseAVX < 2) {
         return false;
       }
       break;
