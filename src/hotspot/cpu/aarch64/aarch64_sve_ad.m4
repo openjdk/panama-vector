@@ -144,8 +144,6 @@ source %{
       case Op_LoadVector:
       case Op_StoreVector:
         return Matcher::vector_size_supported(bt, vlen);
-      case Op_CompressV:
-        return (bt == T_INT || bt == T_LONG);
       default:
         break;
     }
@@ -3207,15 +3205,64 @@ instruct vmask_tolong(iRegLNoSp dst, pReg src, vReg vtmp1, vReg vtmp2, pRegGov p
 
 // ---------------------------- Compress/Expand Operations ---------------------------
 
-instruct vcompress(vReg dst, vReg src, pRegGov pg) %{
+instruct mcompress(pReg dst, pReg mask, rFlagsReg cr) %{
   predicate(UseSVE > 0);
+  match(Set dst (CompressM mask));
+  effect(KILL cr);
+  ins_cost(2 * SVE_COST);
+  format %{ "sve_cntp rscratch1, $mask\n\t"
+            "sve_whilelo $dst, zr, rscratch1\t# mask compress (B/H/S/D)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
+    __ sve_cntp(rscratch1, size, ptrue, as_PRegister($mask$$reg));
+    __ sve_whilelo(as_PRegister($dst$$reg), size, zr, rscratch1);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vcompress(vReg dst, vReg src, pRegGov pg) %{
+  predicate(UseSVE > 0 &&
+            (n->bottom_type()->is_vect()->element_basic_type() == T_INT ||
+             n->bottom_type()->is_vect()->element_basic_type() == T_FLOAT ||
+             n->bottom_type()->is_vect()->element_basic_type() == T_LONG ||
+             n->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE));
   match(Set dst (CompressV src pg));
   ins_cost(SVE_COST);
-  format %{ "sve_compact $dst, $src, $pg\t# vector compress (sve)" %}
+  format %{ "sve_compact $dst, $src, $pg\t# vector compress (S/D)" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
     __ sve_compact(as_FloatRegister($dst$$reg), size, as_FloatRegister($src$$reg), as_PRegister($pg$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vcompressB(vReg dst, vReg src, pReg mask, vReg vtmp1, vReg vtmp2, vReg vtmp3, vReg vtmp4,
+                    pReg ptmp, pRegGov pgtmp) %{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
+  effect(TEMP_DEF dst, TEMP vtmp1, TEMP vtmp2, TEMP vtmp3, TEMP vtmp4, TEMP ptmp, TEMP pgtmp);
+  match(Set dst (CompressV src mask));
+  ins_cost(13 * SVE_COST);
+  format %{ "sve_compact $dst, $src, $mask\t# vector compress (B)" %}
+  ins_encode %{
+    __ sve_compress_byte(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), as_PRegister($mask$$reg),
+                         as_FloatRegister($vtmp1$$reg),as_FloatRegister($vtmp2$$reg),
+                         as_FloatRegister($vtmp3$$reg),as_FloatRegister($vtmp4$$reg),
+                         as_PRegister($ptmp$$reg), as_PRegister($pgtmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vcompressS(vReg dst, vReg src, pReg mask, vReg vtmp1, vReg vtmp2, pRegGov pgtmp) %{
+  predicate(UseSVE > 0 && n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
+  effect(TEMP_DEF dst, TEMP vtmp1, TEMP vtmp2, TEMP pgtmp);
+  match(Set dst (CompressV src mask));
+  ins_cost(38 * SVE_COST);
+  format %{ "sve_compact $dst, $src, $mask\t# vector compress (H)" %}
+  ins_encode %{
+    __ sve_compress_short(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), as_PRegister($mask$$reg),
+                          as_FloatRegister($vtmp1$$reg),as_FloatRegister($vtmp2$$reg), as_PRegister($pgtmp$$reg));
   %}
   ins_pipe(pipe_slow);
 %}
