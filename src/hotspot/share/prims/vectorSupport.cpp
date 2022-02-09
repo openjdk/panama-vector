@@ -479,6 +479,15 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
       }
       break;
     }
+    case VECTOR_OP_POPCNT: {
+     switch (bt) {
+        case T_BYTE:  // fall-through
+        case T_SHORT: // fall-through
+        case T_INT:   return Op_PopCountI;
+        case T_LONG:  return Op_PopCountL;
+      }
+      break;
+    }
     case VECTOR_OP_TAN:
     case VECTOR_OP_TANH:
     case VECTOR_OP_SIN:

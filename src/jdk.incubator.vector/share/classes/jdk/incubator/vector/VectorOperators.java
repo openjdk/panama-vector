@@ -450,6 +450,8 @@ public abstract class VectorOperators {
     public static final Unary ABS = unary("ABS", "abs", VectorSupport.VECTOR_OP_ABS, VO_ALL);
     /** Produce {@code -a}. */
     public static final Unary NEG = unary("NEG", "-a", VectorSupport.VECTOR_OP_NEG, VO_ALL|VO_SPECIAL);
+    /** Produce {@code bitCount(a)} */
+    public static final Unary POPCNT = unary("POPCNT", "popcnt", VectorSupport.VECTOR_OP_POPCNT, VO_NOFP);
 
     /** Produce {@code sin(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
