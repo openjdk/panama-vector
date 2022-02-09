@@ -298,7 +298,16 @@ abstract class AbstractSpecies<E> extends jdk.internal.vm.vector.VectorSupport.V
         return makeDummyVector();
     }
     private AbstractVector<E> makeDummyVector() {
-        Object za = Array.newInstance(elementType(), laneCount);
+        Object za;
+        // FIXME: Remove following special handling for Halffloat
+        // till Valhalla integration when Halffloat will become a
+        // primitive class.
+        if (elementType() == Halffloat.class)  {
+           za = Array.newInstance(short.class, laneCount);
+        } else {
+           za = Array.newInstance(elementType(), laneCount);
+        }
+
         return dummyVector = vectorFactory.apply(za);
         // This is the only use of vectorFactory.
         // All other factory requests are routed

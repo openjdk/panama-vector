@@ -44,20 +44,18 @@ public class AddTest {
     static short[] a = new short[SIZE];
     static short[] b = new short[SIZE];
     static short[] c = new short[SIZE];
-
     static {
         for (int i = 0; i < SIZE; i++) {
-            a[i] = 0x3C66;
-            b[i] = 0x4066;
+            a[i] = Halffloat.valueOf((float)i);
+            b[i] = Halffloat.valueOf((float)i);
         }
     }
 
     static void workload() {
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
-            //HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
-            //av.add(bv).intoArray(c, i);
-            av.intoArray(c,i);
+            HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+            av.add(bv).intoArray(c, i);
         }
     }
 
@@ -76,8 +74,14 @@ public class AddTest {
             workload();
         }
         for (int i = 0; i < a.length; i++) {
-            if (c[i] != a[i] + b[i])
+            Halffloat hfa = new Halffloat(a[i]);
+            Halffloat hfb = new Halffloat(b[i]);
+            Halffloat hfc = new Halffloat(c[i]);
+
+            if (hfc.floatValue() != (hfa.floatValue() + hfb.floatValue())) {
+                System.out.println("c[" + i + "] = " + hfc.floatValue() + " res = " + (hfa.floatValue() + hfb.floatValue()));
                 throw new AssertionError();
+            }
         }
 
         /*Arrays.fill(c, 0.0f);
@@ -89,5 +93,6 @@ public class AddTest {
             if (c[i] != a[i] + b[i])
                 throw new AssertionError();
         }*/
+        System.out.println("PASSED");
     }
 }
