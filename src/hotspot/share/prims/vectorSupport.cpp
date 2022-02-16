@@ -481,10 +481,9 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
     }
     case VECTOR_OP_POPCNT: {
      switch (bt) {
-        case T_BYTE:  // fall-through
-        case T_SHORT: // fall-through
         case T_INT:   return Op_PopCountI;
         case T_LONG:  return Op_PopCountL;
+        default: fatal("BIT_COUNT: %s", type2name(bt));
       }
       break;
     }

@@ -1182,9 +1182,9 @@ public class ByteMaxVector extends AbstractVectorBenchmark {
         byte[] r = fr.apply(SPECIES.length());
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
+            for (int i = 0, j = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                av.withLane(0, (byte)4).intoArray(r, i);
+                av.withLane((j++ & (SPECIES.length()-1)), (byte)(65535+i)).intoArray(r, i);
             }
         }
 
@@ -2011,6 +2011,8 @@ public class ByteMaxVector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
+
+
 
 
 

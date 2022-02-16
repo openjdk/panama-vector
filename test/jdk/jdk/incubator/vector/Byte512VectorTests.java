@@ -24,7 +24,7 @@
 /*
  * @test
  * @modules jdk.incubator.vector
- * @run testng/othervm/timeout=240 -ea -esa -Xbatch -XX:-TieredCompilation Byte512VectorTests
+ * @run testng/othervm -ea -esa -Xbatch -XX:-TieredCompilation Byte512VectorTests
  */
 
 // -- This file was mechanically generated: Do not edit! -- //
@@ -5169,6 +5169,9 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, mask, Byte512VectorTests::ZOMO);
     }
+
+
+
 
 
 

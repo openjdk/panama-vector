@@ -458,13 +458,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 #end[intOrLong]
     }
 #end[BITWISE]
-#if[intOrLong]
-    /*package-private*/
-    @ForceInline
-    static int popcount($type$ a) {
-        return $Boxtype$.bitCount(a);
-    }
-#end[intOrLong]
 
     /*package-private*/
     @Override
@@ -689,8 +682,8 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             case VECTOR_OP_ABS: return (v0, m) ->
                     v0.uOp(m, (i, a) -> ($type$) Math.abs(a));
 #if[intOrLong]
-            case VECTOR_OP_POPCNT: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> ($type$) popcount(a));
+            case VECTOR_OP_BIT_COUNT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> ($type$) $Boxtype$.bitCount(a));
 #end[intOrLong]
 #if[FP]
             case VECTOR_OP_SIN: return (v0, m) ->
@@ -2033,27 +2026,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         return lanewise(ABS);
     }
 
-#if[intOrLong]
-    // Popcount
-    /**
-     * Computes the number of one-bits in the two's complement
-     * binary representation of the specified value
-     *
-     * This method is also equivalent to the expression
-     * {@link #lanewise(VectorOperators.Unary)
-     *  lanewise}{@code (}{@link VectorOperators#POPCNT
-     * }{@code )}.
-     *
-     * @return number of one-bits
-     * @see VectorOperators#POPCNT
-     * @see #lanewise(VectorOperators.Unary)
-     */
-    @ForceInline
-    public final
-    $abstractvectortype$ popcnt() {
-        return lanewise(POPCNT);
-    }
-#end[intOrLong]
 #if[BITWISE]
     // not (~)
     /**

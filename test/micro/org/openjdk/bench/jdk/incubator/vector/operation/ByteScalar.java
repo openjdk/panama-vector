@@ -1714,5 +1714,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
 
 
+
+
 }
 

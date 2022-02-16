@@ -24,7 +24,7 @@
 /*
  * @test
  * @modules jdk.incubator.vector
- * @run testng/othervm/timeout=240 -ea -esa -Xbatch -XX:-TieredCompilation ByteMaxVectorTests
+ * @run testng/othervm -ea -esa -Xbatch -XX:-TieredCompilation ByteMaxVectorTests
  */
 
 // -- This file was mechanically generated: Do not edit! -- //
@@ -5174,6 +5174,9 @@ public class ByteMaxVectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, mask, ByteMaxVectorTests::ZOMO);
     }
+
+
+
 
 
 

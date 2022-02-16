@@ -507,9 +507,9 @@ public class Float128Vector extends AbstractVectorBenchmark {
         float[] r = fr.apply(SPECIES.length());
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
+            for (int i = 0, j = 0; i < a.length; i += SPECIES.length()) {
                 FloatVector av = FloatVector.fromArray(SPECIES, a, i);
-                av.withLane(0, (float)4).intoArray(r, i);
+                av.withLane((j++ & (SPECIES.length()-1)), (float)(65535+i)).intoArray(r, i);
             }
         }
 
@@ -1571,6 +1571,8 @@ public class Float128Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
+
+
 
 }
 

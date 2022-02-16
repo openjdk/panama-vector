@@ -5169,6 +5169,9 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
 
 
 
+
+
+
     @Test(dataProvider = "shortCompareOpProvider")
     static void ltShortMaxVectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());

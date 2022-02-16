@@ -5164,6 +5164,9 @@ public class Short64VectorTests extends AbstractVectorTest {
 
 
 
+
+
+
     @Test(dataProvider = "shortCompareOpProvider")
     static void ltShort64VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());

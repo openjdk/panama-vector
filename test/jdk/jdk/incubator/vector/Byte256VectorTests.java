@@ -5174,6 +5174,9 @@ public class Byte256VectorTests extends AbstractVectorTest {
 
 
 
+
+
+
     @Test(dataProvider = "byteCompareOpProvider")
     static void ltByte256VectorTestsBroadcastSmokeTest(IntFunction<byte[]> fa, IntFunction<byte[]> fb) {
         byte[] a = fa.apply(SPECIES.length());

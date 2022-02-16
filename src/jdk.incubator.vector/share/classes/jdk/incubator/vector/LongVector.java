@@ -444,11 +444,6 @@ public abstract class LongVector extends AbstractVector<Long> {
     static long rotateRight(long a, int n) {
         return Long.rotateRight(a, n);
     }
-    /*package-private*/
-    @ForceInline
-    static int popcount(long a) {
-        return Long.bitCount(a);
-    }
 
     /*package-private*/
     @Override
@@ -618,8 +613,8 @@ public abstract class LongVector extends AbstractVector<Long> {
                     v0.uOp(m, (i, a) -> (long) -a);
             case VECTOR_OP_ABS: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (long) Math.abs(a));
-            case VECTOR_OP_POPCNT: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (long) popcount(a));
+            case VECTOR_OP_BIT_COUNT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (long) Long.bitCount(a));
             default: return null;
         }
     }
@@ -1700,25 +1695,6 @@ public abstract class LongVector extends AbstractVector<Long> {
         return lanewise(ABS);
     }
 
-    // Popcount
-    /**
-     * Computes the number of one-bits in the two's complement
-     * binary representation of the specified value
-     *
-     * This method is also equivalent to the expression
-     * {@link #lanewise(VectorOperators.Unary)
-     *  lanewise}{@code (}{@link VectorOperators#POPCNT
-     * }{@code )}.
-     *
-     * @return number of one-bits
-     * @see VectorOperators#POPCNT
-     * @see #lanewise(VectorOperators.Unary)
-     */
-    @ForceInline
-    public final
-    LongVector popcnt() {
-        return lanewise(POPCNT);
-    }
     // not (~)
     /**
      * Computes the bitwise logical complement ({@code ~})
