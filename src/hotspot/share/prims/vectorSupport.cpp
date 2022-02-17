@@ -479,7 +479,7 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
       }
       break;
     }
-    case VECTOR_OP_POPCNT: {
+    case VECTOR_OP_BIT_COUNT: {
      switch (bt) {
         case T_INT:   return Op_PopCountI;
         case T_LONG:  return Op_PopCountL;
