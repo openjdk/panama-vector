@@ -1716,5 +1716,43 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
 
 
+
+
+    @Benchmark
+    public void BIT_COUNT(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                rs[i] = (byte)(Integer.bitCount((int)a & 0xFF));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void BIT_COUNTMasked(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (byte)(Integer.bitCount((int)a & 0xFF)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
 }
 

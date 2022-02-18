@@ -1716,5 +1716,43 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
 
 
+
+
+
+
+    @Benchmark
+    public void BIT_COUNT(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                rs[i] = (short)(Integer.bitCount((int)a & 0xFFFF));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void BIT_COUNTMasked(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (short)(Integer.bitCount((int)a & 0xFFFF)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
 }
 

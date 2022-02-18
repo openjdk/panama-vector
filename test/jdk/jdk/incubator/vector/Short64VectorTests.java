@@ -5167,6 +5167,52 @@ public class Short64VectorTests extends AbstractVectorTest {
 
 
 
+
+
+
+
+    static short BIT_COUNT(short a) {
+        return (short)(Integer.bitCount((int)a & 0xFFFF));
+    }
+
+
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void BIT_COUNTShort64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.BIT_COUNT).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Short64VectorTests::BIT_COUNT);
+    }
+
+
+
+    @Test(dataProvider = "shortUnaryOpMaskProvider")
+    static void BIT_COUNTMaskedShort64VectorTests(IntFunction<short[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.BIT_COUNT, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Short64VectorTests::BIT_COUNT);
+    }
+
+
     @Test(dataProvider = "shortCompareOpProvider")
     static void ltShort64VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());

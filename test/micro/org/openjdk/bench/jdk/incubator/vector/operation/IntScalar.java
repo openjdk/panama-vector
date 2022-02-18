@@ -1750,5 +1750,9 @@ public class IntScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
+
+
+
+
 }
 

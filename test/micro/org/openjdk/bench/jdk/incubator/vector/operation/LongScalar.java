@@ -1750,5 +1750,9 @@ public class LongScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
+
+
+
+
 }
 

@@ -5187,6 +5187,12 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     }
 
 
+
+
+
+
+
+
     @Test(dataProvider = "intCompareOpProvider")
     static void ltIntMaxVectorTestsBroadcastSmokeTest(IntFunction<int[]> fa, IntFunction<int[]> fb) {
         int[] a = fa.apply(SPECIES.length());

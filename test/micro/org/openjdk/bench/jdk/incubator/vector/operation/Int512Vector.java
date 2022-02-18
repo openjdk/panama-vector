@@ -2050,5 +2050,9 @@ public class Int512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
+
+
+
+
 }
 
