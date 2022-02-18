@@ -2032,7 +2032,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     }
 
 #if[!FP]
-#if[!double]
 #if[!intOrLong]
     static int bitCount($type$ a) {
 #if[short]
@@ -2042,7 +2041,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 #end[short]
     }
 #end[!intOrLong]
-#end[!double]
 #end[!FP]
 
 #if[BITWISE]
