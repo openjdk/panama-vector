@@ -657,6 +657,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                     v0.uOp(m, (i, a) -> (byte) Math.abs(a));
             case VECTOR_OP_BIT_COUNT: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (byte) bitCount(a));
+
             default: return null;
         }
     }
@@ -1786,6 +1787,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     static int bitCount(byte a) {
         return Integer.bitCount((int)a & 0xFF);
     }
+
     // not (~)
     /**
      * Computes the bitwise logical complement ({@code ~})

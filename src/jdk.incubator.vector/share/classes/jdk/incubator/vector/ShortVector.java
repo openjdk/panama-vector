@@ -657,6 +657,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                     v0.uOp(m, (i, a) -> (short) Math.abs(a));
             case VECTOR_OP_BIT_COUNT: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (short) bitCount(a));
+
             default: return null;
         }
     }
@@ -1786,6 +1787,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
     static int bitCount(short a) {
         return Integer.bitCount((int)a & 0xFFFF);
     }
+
     // not (~)
     /**
      * Computes the bitwise logical complement ({@code ~})
