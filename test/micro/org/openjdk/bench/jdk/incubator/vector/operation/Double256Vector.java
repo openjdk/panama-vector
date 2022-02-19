@@ -507,9 +507,9 @@ public class Double256Vector extends AbstractVectorBenchmark {
         double[] r = fr.apply(SPECIES.length());
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
+            for (int i = 0, j = 0; i < a.length; i += SPECIES.length()) {
                 DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-                av.withLane(0, (double)4).intoArray(r, i);
+                av.withLane((j++ & (SPECIES.length()-1)), (double)(65535+i)).intoArray(r, i);
             }
         }
 
@@ -1571,6 +1571,12 @@ public class Double256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
+
+
+
+
+
+
 
 }
 

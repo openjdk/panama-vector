@@ -1714,5 +1714,45 @@ public class IntScalar extends AbstractVectorBenchmark {
 
 
 
+
+
+    @Benchmark
+    public void BIT_COUNT(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                rs[i] = (int)(Integer.bitCount(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void BIT_COUNTMasked(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (int)(Integer.bitCount(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+
+
 }
 

@@ -54,6 +54,7 @@ class VectorSupport : AllStatic {
     VECTOR_OP_ABS     = 0,
     VECTOR_OP_NEG     = 1,
     VECTOR_OP_SQRT    = 2,
+    VECTOR_OP_BIT_COUNT = 3,
 
     // Binary
     VECTOR_OP_ADD     = 4,

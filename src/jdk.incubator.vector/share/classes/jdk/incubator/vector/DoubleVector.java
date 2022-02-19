@@ -633,6 +633,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                     v0.uOp(m, (i, a) -> (double) -a);
             case VECTOR_OP_ABS: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (double) Math.abs(a));
+
             case VECTOR_OP_SIN: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (double) Math.sin(a));
             case VECTOR_OP_COS: return (v0, m) ->
@@ -1622,6 +1623,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     DoubleVector abs() {
         return lanewise(ABS);
     }
+
 
 
     // sqrt

@@ -681,6 +681,15 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                     v0.uOp(m, (i, a) -> ($type$) -a);
             case VECTOR_OP_ABS: return (v0, m) ->
                     v0.uOp(m, (i, a) -> ($type$) Math.abs(a));
+#if[!FP]
+            case VECTOR_OP_BIT_COUNT: return (v0, m) ->
+#if[intOrLong]
+                    v0.uOp(m, (i, a) -> ($type$) $Boxtype$.bitCount(a));
+#else[intOrLong]
+                    v0.uOp(m, (i, a) -> ($type$) bitCount(a));
+#end[intOrLong]
+#end[!FP]
+
 #if[FP]
             case VECTOR_OP_SIN: return (v0, m) ->
                     v0.uOp(m, (i, a) -> ($type$) Math.sin(a));
@@ -2021,6 +2030,18 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     $abstractvectortype$ abs() {
         return lanewise(ABS);
     }
+
+#if[!FP]
+#if[!intOrLong]
+    static int bitCount($type$ a) {
+#if[short]
+        return Integer.bitCount((int)a & 0xFFFF);
+#else[short]
+        return Integer.bitCount((int)a & 0xFF);
+#end[short]
+    }
+#end[!intOrLong]
+#end[!FP]
 
 #if[BITWISE]
     // not (~)

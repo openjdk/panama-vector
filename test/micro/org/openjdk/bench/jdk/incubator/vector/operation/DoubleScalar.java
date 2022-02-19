@@ -1308,5 +1308,11 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
+
+
+
+
+
+
 }
 

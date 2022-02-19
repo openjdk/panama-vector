@@ -613,6 +613,9 @@ public abstract class LongVector extends AbstractVector<Long> {
                     v0.uOp(m, (i, a) -> (long) -a);
             case VECTOR_OP_ABS: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (long) Math.abs(a));
+            case VECTOR_OP_BIT_COUNT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (long) Long.bitCount(a));
+
             default: return null;
         }
     }
@@ -1692,6 +1695,7 @@ public abstract class LongVector extends AbstractVector<Long> {
     LongVector abs() {
         return lanewise(ABS);
     }
+
 
     // not (~)
     /**

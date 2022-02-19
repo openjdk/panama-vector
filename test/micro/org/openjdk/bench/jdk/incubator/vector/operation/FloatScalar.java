@@ -1308,5 +1308,11 @@ public class FloatScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
+
+
+
+
+
+
 }
 
