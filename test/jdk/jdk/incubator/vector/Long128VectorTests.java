@@ -1232,6 +1232,10 @@ public class Long128VectorTests extends AbstractVectorTest {
         return Long.compareUnsigned(a, b) >= 0;
     }
 
+    static long firstNonZero(long a, long b) {
+        return Long.compare(a, (long) 0) != 0 ? a : b;
+    }
+
     @Test
     static void smokeTest1() {
         LongVector three = LongVector.broadcast(SPECIES, (byte)-3);
@@ -3252,7 +3256,7 @@ public class Long128VectorTests extends AbstractVectorTest {
     static long MINReduce(long[] a, int idx) {
         long res = Long.MAX_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            res = (long)Math.min(res, a[i]);
+            res = (long) Math.min(res, a[i]);
         }
 
         return res;
@@ -3260,8 +3264,8 @@ public class Long128VectorTests extends AbstractVectorTest {
 
     static long MINReduceAll(long[] a) {
         long res = Long.MAX_VALUE;
-        for (int i = 0; i < a.length; i++) {
-            res = (long)Math.min(res, a[i]);
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            res = (long) Math.min(res, MINReduce(a, i));
         }
 
         return res;
@@ -3283,7 +3287,7 @@ public class Long128VectorTests extends AbstractVectorTest {
             ra = Long.MAX_VALUE;
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
-                ra = (long)Math.min(ra, av.reduceLanes(VectorOperators.MIN));
+                ra = (long) Math.min(ra, av.reduceLanes(VectorOperators.MIN));
             }
         }
 
@@ -3293,8 +3297,8 @@ public class Long128VectorTests extends AbstractVectorTest {
     static long MINReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = Long.MAX_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
-                res = (long)Math.min(res, a[i]);
+            if (mask[i % SPECIES.length()])
+                res = (long) Math.min(res, a[i]);
         }
 
         return res;
@@ -3302,9 +3306,8 @@ public class Long128VectorTests extends AbstractVectorTest {
 
     static long MINReduceAllMasked(long[] a, boolean[] mask) {
         long res = Long.MAX_VALUE;
-        for (int i = 0; i < a.length; i++) {
-            if(mask[i % SPECIES.length()])
-                res = (long)Math.min(res, a[i]);
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            res = (long) Math.min(res, MINReduceMasked(a, i, mask));
         }
 
         return res;
@@ -3328,7 +3331,7 @@ public class Long128VectorTests extends AbstractVectorTest {
             ra = Long.MAX_VALUE;
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
-                ra = (long)Math.min(ra, av.reduceLanes(VectorOperators.MIN, vmask));
+                ra = (long) Math.min(ra, av.reduceLanes(VectorOperators.MIN, vmask));
             }
         }
 
@@ -3338,7 +3341,7 @@ public class Long128VectorTests extends AbstractVectorTest {
     static long MAXReduce(long[] a, int idx) {
         long res = Long.MIN_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            res = (long)Math.max(res, a[i]);
+            res = (long) Math.max(res, a[i]);
         }
 
         return res;
@@ -3346,8 +3349,8 @@ public class Long128VectorTests extends AbstractVectorTest {
 
     static long MAXReduceAll(long[] a) {
         long res = Long.MIN_VALUE;
-        for (int i = 0; i < a.length; i++) {
-            res = (long)Math.max(res, a[i]);
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            res = (long) Math.max(res, MAXReduce(a, i));
         }
 
         return res;
@@ -3369,7 +3372,7 @@ public class Long128VectorTests extends AbstractVectorTest {
             ra = Long.MIN_VALUE;
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
-                ra = (long)Math.max(ra, av.reduceLanes(VectorOperators.MAX));
+                ra = (long) Math.max(ra, av.reduceLanes(VectorOperators.MAX));
             }
         }
 
@@ -3379,8 +3382,8 @@ public class Long128VectorTests extends AbstractVectorTest {
     static long MAXReduceMasked(long[] a, int idx, boolean[] mask) {
         long res = Long.MIN_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
-            if(mask[i % SPECIES.length()])
-                res = (long)Math.max(res, a[i]);
+            if (mask[i % SPECIES.length()])
+                res = (long) Math.max(res, a[i]);
         }
 
         return res;
@@ -3388,9 +3391,8 @@ public class Long128VectorTests extends AbstractVectorTest {
 
     static long MAXReduceAllMasked(long[] a, boolean[] mask) {
         long res = Long.MIN_VALUE;
-        for (int i = 0; i < a.length; i++) {
-            if(mask[i % SPECIES.length()])
-                res = (long)Math.max(res, a[i]);
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            res = (long) Math.max(res, MAXReduceMasked(a, i, mask));
         }
 
         return res;
@@ -3414,12 +3416,97 @@ public class Long128VectorTests extends AbstractVectorTest {
             ra = Long.MIN_VALUE;
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
-                ra = (long)Math.max(ra, av.reduceLanes(VectorOperators.MAX, vmask));
+                ra = (long) Math.max(ra, av.reduceLanes(VectorOperators.MAX, vmask));
             }
         }
 
         assertReductionArraysEqualsMasked(r, ra, a, mask,
                 Long128VectorTests::MAXReduceMasked, Long128VectorTests::MAXReduceAllMasked);
+    }
+    static long FIRST_NONZEROReduce(long[] a, int idx) {
+        long res = (long) 0;
+        for (int i = idx; i < (idx + SPECIES.length()); i++) {
+            res = firstNonZero(res, a[i]);
+        }
+
+        return res;
+    }
+
+    static long FIRST_NONZEROReduceAll(long[] a) {
+        long res = (long) 0;
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            res = firstNonZero(res, FIRST_NONZEROReduce(a, i));
+        }
+
+        return res;
+    }
+    @Test(dataProvider = "longUnaryOpProvider")
+    static void FIRST_NONZEROReduceLong128VectorTests(IntFunction<long[]> fa) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        long ra = (long) 0;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                r[i] = av.reduceLanes(VectorOperators.FIRST_NONZERO);
+            }
+        }
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            ra = (long) 0;
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                ra = firstNonZero(ra, av.reduceLanes(VectorOperators.FIRST_NONZERO));
+            }
+        }
+
+        assertReductionArraysEquals(r, ra, a,
+                Long128VectorTests::FIRST_NONZEROReduce, Long128VectorTests::FIRST_NONZEROReduceAll);
+    }
+    static long FIRST_NONZEROReduceMasked(long[] a, int idx, boolean[] mask) {
+        long res = (long) 0;
+        for (int i = idx; i < (idx + SPECIES.length()); i++) {
+            if (mask[i % SPECIES.length()])
+                res = firstNonZero(res, a[i]);
+        }
+
+        return res;
+    }
+
+    static long FIRST_NONZEROReduceAllMasked(long[] a, boolean[] mask) {
+        long res = (long) 0;
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            res = firstNonZero(res, FIRST_NONZEROReduceMasked(a, i, mask));
+        }
+
+        return res;
+    }
+    @Test(dataProvider = "longUnaryOpMaskProvider")
+    static void FIRST_NONZEROReduceLong128VectorTestsMasked(IntFunction<long[]> fa, IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        long ra = (long) 0;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                r[i] = av.reduceLanes(VectorOperators.FIRST_NONZERO, vmask);
+            }
+        }
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            ra = (long) 0;
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                ra = firstNonZero(ra, av.reduceLanes(VectorOperators.FIRST_NONZERO, vmask));
+            }
+        }
+
+        assertReductionArraysEqualsMasked(r, ra, a, mask,
+                Long128VectorTests::FIRST_NONZEROReduceMasked, Long128VectorTests::FIRST_NONZEROReduceAllMasked);
     }
 
     static boolean anyTrue(boolean[] a, int idx) {
