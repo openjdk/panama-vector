@@ -64,22 +64,23 @@ public class VectorSupport {
     public static final int VECTOR_OP_URSHIFT = 16;
 
     public static final int VECTOR_OP_CAST        = 17;
-    public static final int VECTOR_OP_REINTERPRET = 18;
+    public static final int VECTOR_OP_UCAST       = 18;
+    public static final int VECTOR_OP_REINTERPRET = 19;
 
     // Mask manipulation operations
-    public static final int VECTOR_OP_MASK_TRUECOUNT = 19;
-    public static final int VECTOR_OP_MASK_FIRSTTRUE = 20;
-    public static final int VECTOR_OP_MASK_LASTTRUE  = 21;
-    public static final int VECTOR_OP_MASK_TOLONG    = 22;
+    public static final int VECTOR_OP_MASK_TRUECOUNT = 20;
+    public static final int VECTOR_OP_MASK_FIRSTTRUE = 21;
+    public static final int VECTOR_OP_MASK_LASTTRUE  = 22;
+    public static final int VECTOR_OP_MASK_TOLONG    = 23;
 
     // Rotate operations
-    public static final int VECTOR_OP_LROTATE = 23;
-    public static final int VECTOR_OP_RROTATE = 24;
+    public static final int VECTOR_OP_LROTATE = 24;
+    public static final int VECTOR_OP_RROTATE = 25;
 
     // Compression expansion operations
-    public static final int VECTOR_OP_COMPRESS = 25;
-    public static final int VECTOR_OP_EXPAND = 26;
-    public static final int VECTOR_OP_MASK_COMPRESS = 27;
+    public static final int VECTOR_OP_COMPRESS = 26;
+    public static final int VECTOR_OP_EXPAND = 27;
+    public static final int VECTOR_OP_MASK_COMPRESS = 28;
 
     // Math routines
     public static final int VECTOR_OP_TAN = 101;

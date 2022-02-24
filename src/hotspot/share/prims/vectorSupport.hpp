@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,7 @@
 
 #include "jni.h"
 #include "code/debugInfo.hpp"
-#include "memory/allocation.hpp"
+#include "memory/allStatic.hpp"
 #include "oops/typeArrayOop.hpp"
 #include "runtime/registerMap.hpp"
 #include "utilities/exceptions.hpp"
@@ -77,21 +77,22 @@ class VectorSupport : AllStatic {
 
     // Convert
     VECTOR_OP_CAST        = 17,
-    VECTOR_OP_REINTERPRET = 18,
+    VECTOR_OP_UCAST       = 18,
+    VECTOR_OP_REINTERPRET = 19,
 
     // Mask manipulation operations
-    VECTOR_OP_MASK_TRUECOUNT = 19,
-    VECTOR_OP_MASK_FIRSTTRUE = 20,
-    VECTOR_OP_MASK_LASTTRUE  = 21,
-    VECTOR_OP_MASK_TOLONG    = 22,
+    VECTOR_OP_MASK_TRUECOUNT = 20,
+    VECTOR_OP_MASK_FIRSTTRUE = 21,
+    VECTOR_OP_MASK_LASTTRUE  = 22,
+    VECTOR_OP_MASK_TOLONG    = 23,
 
     // Rotate operations
-    VECTOR_OP_LROTATE = 23,
-    VECTOR_OP_RROTATE = 24,
+    VECTOR_OP_LROTATE = 24,
+    VECTOR_OP_RROTATE = 25,
 
-    VECTOR_OP_COMPRESS = 25,
-    VECTOR_OP_EXPAND = 26,
-    VECTOR_OP_MASK_COMPRESS = 27,
+    VECTOR_OP_COMPRESS = 26,
+    VECTOR_OP_EXPAND = 27,
+    VECTOR_OP_MASK_COMPRESS = 28,
 
     // Vector Math Library
     VECTOR_OP_TAN   = 101,
