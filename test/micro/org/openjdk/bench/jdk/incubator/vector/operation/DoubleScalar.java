@@ -449,62 +449,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-    @Benchmark
-    public void MINLanes(Blackhole bh) {
-        double[] as = fa.apply(size);
-        double r = Double.POSITIVE_INFINITY;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Double.POSITIVE_INFINITY;
-            for (int i = 0; i < as.length; i++) {
-                r = (double)Math.min(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void MINMaskedLanes(Blackhole bh) {
-        double[] as = fa.apply(size);
-        boolean[] ms = fm.apply(size);
-        double r = Double.POSITIVE_INFINITY;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Double.POSITIVE_INFINITY;
-            for (int i = 0; i < as.length; i++) {
-                if (ms[i % ms.length])
-                    r = (double)Math.min(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void MAXLanes(Blackhole bh) {
-        double[] as = fa.apply(size);
-        double r = Double.NEGATIVE_INFINITY;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Double.NEGATIVE_INFINITY;
-            for (int i = 0; i < as.length; i++) {
-                r = (double)Math.max(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void MAXMaskedLanes(Blackhole bh) {
-        double[] as = fa.apply(size);
-        boolean[] ms = fm.apply(size);
-        double r = Double.NEGATIVE_INFINITY;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Double.NEGATIVE_INFINITY;
-            for (int i = 0; i < as.length; i++) {
-                if (ms[i % ms.length])
-                    r = (double)Math.max(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
 
 
     @Benchmark

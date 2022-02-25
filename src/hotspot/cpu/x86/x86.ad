@@ -8618,8 +8618,13 @@ instruct vpopcountL(vec dst, vec src) %{
     assert(UsePopCountInstruction, "not enabled");
 
     int vlen_enc = vector_length_encoding(this, $src);
+    BasicType bt = Matcher::vector_element_basic_type(this);
     __ vpopcntq($dst$$XMMRegister, $src$$XMMRegister, vlen_enc);
-    __ evpmovqd($dst$$XMMRegister, $dst$$XMMRegister, vlen_enc);
+    if ( bt == T_INT) {
+      __ evpmovqd($dst$$XMMRegister, $dst$$XMMRegister, vlen_enc);
+    } else {
+      assert(bt == T_LONG, "");
+    }
 
   %}
   ins_pipe( pipe_slow );
