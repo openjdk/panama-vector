@@ -1071,62 +1071,6 @@ public class LongScalar extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-    @Benchmark
-    public void MINLanes(Blackhole bh) {
-        long[] as = fa.apply(size);
-        long r = Long.MAX_VALUE;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Long.MAX_VALUE;
-            for (int i = 0; i < as.length; i++) {
-                r = (long)Math.min(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void MINMaskedLanes(Blackhole bh) {
-        long[] as = fa.apply(size);
-        boolean[] ms = fm.apply(size);
-        long r = Long.MAX_VALUE;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Long.MAX_VALUE;
-            for (int i = 0; i < as.length; i++) {
-                if (ms[i % ms.length])
-                    r = (long)Math.min(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void MAXLanes(Blackhole bh) {
-        long[] as = fa.apply(size);
-        long r = Long.MIN_VALUE;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Long.MIN_VALUE;
-            for (int i = 0; i < as.length; i++) {
-                r = (long)Math.max(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void MAXMaskedLanes(Blackhole bh) {
-        long[] as = fa.apply(size);
-        boolean[] ms = fm.apply(size);
-        long r = Long.MIN_VALUE;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Long.MIN_VALUE;
-            for (int i = 0; i < as.length; i++) {
-                if (ms[i % ms.length])
-                    r = (long)Math.max(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
 
     @Benchmark
     public void anyTrue(Blackhole bh) {

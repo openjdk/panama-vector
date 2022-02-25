@@ -449,62 +449,6 @@ public class FloatScalar extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-    @Benchmark
-    public void MINLanes(Blackhole bh) {
-        float[] as = fa.apply(size);
-        float r = Float.POSITIVE_INFINITY;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Float.POSITIVE_INFINITY;
-            for (int i = 0; i < as.length; i++) {
-                r = (float)Math.min(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void MINMaskedLanes(Blackhole bh) {
-        float[] as = fa.apply(size);
-        boolean[] ms = fm.apply(size);
-        float r = Float.POSITIVE_INFINITY;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Float.POSITIVE_INFINITY;
-            for (int i = 0; i < as.length; i++) {
-                if (ms[i % ms.length])
-                    r = (float)Math.min(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void MAXLanes(Blackhole bh) {
-        float[] as = fa.apply(size);
-        float r = Float.NEGATIVE_INFINITY;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Float.NEGATIVE_INFINITY;
-            for (int i = 0; i < as.length; i++) {
-                r = (float)Math.max(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void MAXMaskedLanes(Blackhole bh) {
-        float[] as = fa.apply(size);
-        boolean[] ms = fm.apply(size);
-        float r = Float.NEGATIVE_INFINITY;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Float.NEGATIVE_INFINITY;
-            for (int i = 0; i < as.length; i++) {
-                if (ms[i % ms.length])
-                    r = (float)Math.max(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
 
 
     @Benchmark
