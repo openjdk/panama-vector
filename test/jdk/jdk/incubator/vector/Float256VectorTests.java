@@ -1332,7 +1332,6 @@ public class Float256VectorTests extends AbstractVectorTest {
         return new long[length];
     };
 
-
     static boolean eq(float a, float b) {
         return a == b;
     }
@@ -4627,6 +4626,12 @@ public class Float256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, mask, Float256VectorTests::SQRT);
     }
+
+
+
+
+
+
 
 
 

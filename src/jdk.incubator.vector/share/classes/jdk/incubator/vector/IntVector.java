@@ -658,6 +658,12 @@ public abstract class IntVector extends AbstractVector<Integer> {
             case VECTOR_OP_BIT_COUNT: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (int) Integer.bitCount(a));
 
+            case VECTOR_OP_CTZ: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (int) Integer.numberOfTrailingZeros(a));
+
+            case VECTOR_OP_CLZ: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (int) Integer.numberOfLeadingZeros(a));
+
             default: return null;
         }
     }
@@ -1782,6 +1788,8 @@ public abstract class IntVector extends AbstractVector<Integer> {
     IntVector abs() {
         return lanewise(ABS);
     }
+
+
 
 
     // not (~)

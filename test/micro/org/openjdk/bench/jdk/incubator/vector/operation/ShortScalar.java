@@ -129,6 +129,15 @@ public class ShortScalar extends AbstractVectorBenchmark {
         return (short)(((((short)a) & 0xFFFF) >>> (b & 15)) | ((((short)a) & 0xFFFF) << (16 - (b & 15))));
     }
 
+    static short CTZ_scalar(short a) {
+        return (short) (a != 0 ? Integer.numberOfTrailingZeros(a) : 16);
+    }
+
+    static short CLZ_scalar(short a) {
+        return (short) (a >= 0 ? Integer.numberOfLeadingZeros(a) - 16 : 0);
+    }
+
+
     @Benchmark
     public void ADD(Blackhole bh) {
         short[] as = fa.apply(size);
@@ -1692,6 +1701,78 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 boolean m = ms[i % ms.length];
                 rs[i] = (m ? (short)(Integer.bitCount((int)a & 0xFFFF)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void CTZ(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                rs[i] = (short)(CTZ_scalar(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void CTZMasked(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (short)(CTZ_scalar(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void CLZ(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                rs[i] = (short)(CLZ_scalar(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void CLZMasked(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (short)(CLZ_scalar(a)) : a);
             }
         }
 

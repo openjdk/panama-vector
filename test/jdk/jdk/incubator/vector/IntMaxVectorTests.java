@@ -1175,6 +1175,14 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         return Integer.rotateRight(a, ((int)b));
     }
 
+    static int CTZ_scalar(int a) {
+        return Integer.numberOfTrailingZeros(a);
+    }
+
+    static int CLZ_scalar(int a) {
+        return Integer.numberOfLeadingZeros(a);
+    }
+
     static boolean eq(int a, int b) {
         return a == b;
     }
@@ -5278,6 +5286,92 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
 
+
+
+
+    static int CTZ(int a) {
+        return (int)(CTZ_scalar(a));
+    }
+
+
+
+    @Test(dataProvider = "intUnaryOpProvider")
+    static void CTZIntMaxVectorTests(IntFunction<int[]> fa) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.CTZ).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, IntMaxVectorTests::CTZ);
+    }
+
+
+
+    @Test(dataProvider = "intUnaryOpMaskProvider")
+    static void CTZMaskedIntMaxVectorTests(IntFunction<int[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.CTZ, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, IntMaxVectorTests::CTZ);
+    }
+
+
+
+    static int CLZ(int a) {
+        return (int)(CLZ_scalar(a));
+    }
+
+
+
+    @Test(dataProvider = "intUnaryOpProvider")
+    static void CLZIntMaxVectorTests(IntFunction<int[]> fa) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.CLZ).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, IntMaxVectorTests::CLZ);
+    }
+
+
+
+    @Test(dataProvider = "intUnaryOpMaskProvider")
+    static void CLZMaskedIntMaxVectorTests(IntFunction<int[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.CLZ, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, IntMaxVectorTests::CLZ);
+    }
 
 
     @Test(dataProvider = "intCompareOpProvider")

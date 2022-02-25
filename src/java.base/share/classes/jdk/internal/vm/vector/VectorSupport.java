@@ -42,6 +42,8 @@ public class VectorSupport {
     public static final int VECTOR_OP_NEG  = 1;
     public static final int VECTOR_OP_SQRT = 2;
     public static final int VECTOR_OP_BIT_COUNT = 3;
+    public static final int VECTOR_OP_CTZ  = 29;
+    public static final int VECTOR_OP_CLZ  = 30;
 
     // Binary
     public static final int VECTOR_OP_ADD  = 4;

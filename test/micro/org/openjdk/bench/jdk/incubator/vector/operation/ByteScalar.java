@@ -129,6 +129,15 @@ public class ByteScalar extends AbstractVectorBenchmark {
         return (byte)(((((byte)a) & 0xFF) >>> (b & 7)) | ((((byte)a) & 0xFF) << (8 - (b & 7))));
     }
 
+    static byte CTZ_scalar(byte a) {
+        return (byte) (a != 0 ? Integer.numberOfTrailingZeros(a) : 8);
+    }
+
+    static byte CLZ_scalar(byte a) {
+        return (byte) (a >= 0 ? Integer.numberOfLeadingZeros(a) - 24 : 0);
+    }
+
+
     @Benchmark
     public void ADD(Blackhole bh) {
         byte[] as = fa.apply(size);
@@ -1697,6 +1706,78 @@ public class ByteScalar extends AbstractVectorBenchmark {
     }
 
 
+
+
+
+    @Benchmark
+    public void CTZ(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                rs[i] = (byte)(CTZ_scalar(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void CTZMasked(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (byte)(CTZ_scalar(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void CLZ(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                rs[i] = (byte)(CLZ_scalar(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void CLZMasked(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (byte)(CLZ_scalar(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
 
 }
 

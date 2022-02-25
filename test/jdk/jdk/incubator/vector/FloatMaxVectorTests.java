@@ -1337,7 +1337,6 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
         return new long[length];
     };
 
-
     static boolean eq(float a, float b) {
         return a == b;
     }
@@ -4632,6 +4631,12 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, mask, FloatMaxVectorTests::SQRT);
     }
+
+
+
+
+
+
 
 
 

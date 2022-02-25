@@ -1205,6 +1205,14 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return (short)(((((short)a) & 0xFFFF) >>> (b & 15)) | ((((short)a) & 0xFFFF) << (16 - (b & 15))));
     }
 
+    static short CTZ_scalar(short a) {
+        return (short) (a != 0 ? Integer.numberOfTrailingZeros(a) : 16);
+    }
+
+    static short CLZ_scalar(short a) {
+        return (short) (a >= 0 ? Integer.numberOfLeadingZeros(a) - 16 : 0);
+    }
+
     static boolean eq(short a, short b) {
         return a == b;
     }
@@ -5302,6 +5310,92 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(r, a, mask, ShortMaxVectorTests::BIT_COUNT);
+    }
+
+
+
+    static short CTZ(short a) {
+        return (short)(CTZ_scalar(a));
+    }
+
+
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void CTZShortMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.CTZ).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, ShortMaxVectorTests::CTZ);
+    }
+
+
+
+    @Test(dataProvider = "shortUnaryOpMaskProvider")
+    static void CTZMaskedShortMaxVectorTests(IntFunction<short[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.CTZ, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, ShortMaxVectorTests::CTZ);
+    }
+
+
+
+    static short CLZ(short a) {
+        return (short)(CLZ_scalar(a));
+    }
+
+
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void CLZShortMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.CLZ).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, ShortMaxVectorTests::CLZ);
+    }
+
+
+
+    @Test(dataProvider = "shortUnaryOpMaskProvider")
+    static void CLZMaskedShortMaxVectorTests(IntFunction<short[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.CLZ, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, ShortMaxVectorTests::CLZ);
     }
 
 

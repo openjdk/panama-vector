@@ -129,6 +129,15 @@ public class LongScalar extends AbstractVectorBenchmark {
         return Long.rotateRight(a, ((int)b));
     }
 
+    static long CTZ_scalar(long a) {
+        return Long.numberOfTrailingZeros(a);
+    }
+
+    static long CLZ_scalar(long a) {
+        return Long.numberOfLeadingZeros(a);
+    }
+
+
     @Benchmark
     public void ADD(Blackhole bh) {
         long[] as = fa.apply(size);
@@ -1697,6 +1706,78 @@ public class LongScalar extends AbstractVectorBenchmark {
 
 
 
+
+
+
+    @Benchmark
+    public void CTZ(Blackhole bh) {
+        long[] as = fa.apply(size);
+        long[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                long a = as[i];
+                rs[i] = (long)(CTZ_scalar(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void CTZMasked(Blackhole bh) {
+        long[] as = fa.apply(size);
+        long[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                long a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (long)(CTZ_scalar(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void CLZ(Blackhole bh) {
+        long[] as = fa.apply(size);
+        long[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                long a = as[i];
+                rs[i] = (long)(CLZ_scalar(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void CLZMasked(Blackhole bh) {
+        long[] as = fa.apply(size);
+        long[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                long a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (long)(CLZ_scalar(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
 
 }
 

@@ -1322,7 +1322,6 @@ public class Double256VectorTests extends AbstractVectorTest {
         return new long[length];
     };
 
-
     static boolean eq(double a, double b) {
         return a == b;
     }
@@ -4659,6 +4658,12 @@ public class Double256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, mask, Double256VectorTests::SQRT);
     }
+
+
+
+
+
+
 
 
 

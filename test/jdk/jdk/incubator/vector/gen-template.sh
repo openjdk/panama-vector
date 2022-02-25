@@ -552,6 +552,8 @@ gen_unary_alu_op "SQRT+sqrt" "Math.sqrt((double)a)" "FP"
 gen_unary_alu_op "BIT_COUNT" "\$Boxtype\$.bitCount(a)" "intOrLong"
 gen_unary_alu_op "BIT_COUNT" "Integer.bitCount((int)a \& 0xFF)" "byte"
 gen_unary_alu_op "BIT_COUNT" "Integer.bitCount((int)a \& 0xFFFF)" "short"
+gen_unary_alu_op "CTZ" "CTZ_scalar(a)" "BITWISE"
+gen_unary_alu_op "CLZ" "CLZ_scalar(a)" "BITWISE"
 
 # Miscellaneous Smoke Tests
 gen_op_tmpl $miscellaneous_template "MISC" "" ""

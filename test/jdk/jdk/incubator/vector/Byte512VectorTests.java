@@ -1210,6 +1210,14 @@ public class Byte512VectorTests extends AbstractVectorTest {
         return (byte)(((((byte)a) & 0xFF) >>> (b & 7)) | ((((byte)a) & 0xFF) << (8 - (b & 7))));
     }
 
+    static byte CTZ_scalar(byte a) {
+        return (byte) (a != 0 ? Integer.numberOfTrailingZeros(a) : 8);
+    }
+
+    static byte CLZ_scalar(byte a) {
+        return (byte) (a >= 0 ? Integer.numberOfLeadingZeros(a) - 24 : 0);
+    }
+
     static boolean eq(byte a, byte b) {
         return a == b;
     }
@@ -5308,6 +5316,92 @@ public class Byte512VectorTests extends AbstractVectorTest {
 
 
 
+
+
+
+    static byte CTZ(byte a) {
+        return (byte)(CTZ_scalar(a));
+    }
+
+
+
+    @Test(dataProvider = "byteUnaryOpProvider")
+    static void CTZByte512VectorTests(IntFunction<byte[]> fa) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.CTZ).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Byte512VectorTests::CTZ);
+    }
+
+
+
+    @Test(dataProvider = "byteUnaryOpMaskProvider")
+    static void CTZMaskedByte512VectorTests(IntFunction<byte[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.CTZ, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Byte512VectorTests::CTZ);
+    }
+
+
+
+    static byte CLZ(byte a) {
+        return (byte)(CLZ_scalar(a));
+    }
+
+
+
+    @Test(dataProvider = "byteUnaryOpProvider")
+    static void CLZByte512VectorTests(IntFunction<byte[]> fa) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.CLZ).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Byte512VectorTests::CLZ);
+    }
+
+
+
+    @Test(dataProvider = "byteUnaryOpMaskProvider")
+    static void CLZMaskedByte512VectorTests(IntFunction<byte[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.CLZ, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Byte512VectorTests::CLZ);
+    }
 
 
     @Test(dataProvider = "byteCompareOpProvider")

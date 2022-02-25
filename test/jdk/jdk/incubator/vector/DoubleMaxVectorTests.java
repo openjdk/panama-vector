@@ -1327,7 +1327,6 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         return new long[length];
     };
 
-
     static boolean eq(double a, double b) {
         return a == b;
     }
@@ -4664,6 +4663,12 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, mask, DoubleMaxVectorTests::SQRT);
     }
+
+
+
+
+
+
 
 
 
