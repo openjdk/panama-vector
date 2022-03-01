@@ -67,6 +67,10 @@ public class ByteMaxVector extends AbstractVectorBenchmark {
         }
     }
 
+    static byte firstNonZero(byte a, byte b) {
+        return Byte.compare(a, (byte) 0) != 0 ? a : b;
+    }
+
     @Param("1024")
     int size;
 
@@ -1079,17 +1083,9 @@ public class ByteMaxVector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void MIN(Blackhole bh) {
+    public void MINLanes(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
-        byte[] r = fr.apply(SPECIES.length());
         byte ra = Byte.MAX_VALUE;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                r[i] = av.reduceLanes(VectorOperators.MIN);
-            }
-        }
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             ra = Byte.MAX_VALUE;
@@ -1098,24 +1094,15 @@ public class ByteMaxVector extends AbstractVectorBenchmark {
                 ra = (byte) Math.min(ra, av.reduceLanes(VectorOperators.MIN));
             }
         }
-
-        bh.consume(r);
+        bh.consume(ra);
     }
 
     @Benchmark
-    public void MINMasked(Blackhole bh) {
+    public void MINMaskedLanes(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
-        byte[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
         byte ra = Byte.MAX_VALUE;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                r[i] = av.reduceLanes(VectorOperators.MIN, vmask);
-            }
-        }
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             ra = Byte.MAX_VALUE;
@@ -1124,22 +1111,13 @@ public class ByteMaxVector extends AbstractVectorBenchmark {
                 ra = (byte) Math.min(ra, av.reduceLanes(VectorOperators.MIN, vmask));
             }
         }
-
-        bh.consume(r);
+        bh.consume(ra);
     }
 
     @Benchmark
-    public void MAX(Blackhole bh) {
+    public void MAXLanes(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
-        byte[] r = fr.apply(SPECIES.length());
         byte ra = Byte.MIN_VALUE;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                r[i] = av.reduceLanes(VectorOperators.MAX);
-            }
-        }
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             ra = Byte.MIN_VALUE;
@@ -1148,24 +1126,15 @@ public class ByteMaxVector extends AbstractVectorBenchmark {
                 ra = (byte) Math.max(ra, av.reduceLanes(VectorOperators.MAX));
             }
         }
-
-        bh.consume(r);
+        bh.consume(ra);
     }
 
     @Benchmark
-    public void MAXMasked(Blackhole bh) {
+    public void MAXMaskedLanes(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
-        byte[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
         byte ra = Byte.MIN_VALUE;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                r[i] = av.reduceLanes(VectorOperators.MAX, vmask);
-            }
-        }
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             ra = Byte.MIN_VALUE;
@@ -1174,22 +1143,13 @@ public class ByteMaxVector extends AbstractVectorBenchmark {
                 ra = (byte) Math.max(ra, av.reduceLanes(VectorOperators.MAX, vmask));
             }
         }
-
-        bh.consume(r);
+        bh.consume(ra);
     }
 
     @Benchmark
-    public void FIRST_NONZERO(Blackhole bh) {
+    public void FIRST_NONZEROLanes(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
-        byte[] r = fr.apply(SPECIES.length());
         byte ra = (byte) 0;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                r[i] = av.reduceLanes(VectorOperators.FIRST_NONZERO);
-            }
-        }
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             ra = (byte) 0;
@@ -1198,24 +1158,15 @@ public class ByteMaxVector extends AbstractVectorBenchmark {
                 ra = firstNonZero(ra, av.reduceLanes(VectorOperators.FIRST_NONZERO));
             }
         }
-
-        bh.consume(r);
+        bh.consume(ra);
     }
 
     @Benchmark
-    public void FIRST_NONZEROMasked(Blackhole bh) {
+    public void FIRST_NONZEROMaskedLanes(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
-        byte[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
         byte ra = (byte) 0;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                r[i] = av.reduceLanes(VectorOperators.FIRST_NONZERO, vmask);
-            }
-        }
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             ra = (byte) 0;
@@ -1224,8 +1175,7 @@ public class ByteMaxVector extends AbstractVectorBenchmark {
                 ra = firstNonZero(ra, av.reduceLanes(VectorOperators.FIRST_NONZERO, vmask));
             }
         }
-
-        bh.consume(r);
+        bh.consume(ra);
     }
 
 
