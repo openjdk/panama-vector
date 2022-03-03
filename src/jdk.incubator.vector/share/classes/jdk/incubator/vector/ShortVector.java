@@ -1790,11 +1790,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
     static int bitCount(short a) {
         return Integer.bitCount((int)a & 0xFFFF);
     }
-
     static int numberOfTrailingZeros(short a) {
         return a != 0 ? Integer.numberOfTrailingZeros(a) : 16;
     }
-
     static int numberOfLeadingZeros(short a) {
         return a >= 0 ? Integer.numberOfLeadingZeros(a) - 16 : 0;
     }

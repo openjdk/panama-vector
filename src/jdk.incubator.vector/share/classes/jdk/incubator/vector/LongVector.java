@@ -1700,8 +1700,6 @@ public abstract class LongVector extends AbstractVector<Long> {
     }
 
 
-
-
     // not (~)
     /**
      * Computes the bitwise logical complement ({@code ~})

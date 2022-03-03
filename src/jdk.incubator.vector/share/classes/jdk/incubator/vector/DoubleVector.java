@@ -1625,8 +1625,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
 
 
 
-
-
     // sqrt
     /**
      * Computes the square root of this vector.

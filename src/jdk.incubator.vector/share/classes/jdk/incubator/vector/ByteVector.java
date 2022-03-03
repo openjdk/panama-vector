@@ -1790,11 +1790,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     static int bitCount(byte a) {
         return Integer.bitCount((int)a & 0xFF);
     }
-
     static int numberOfTrailingZeros(byte a) {
         return a != 0 ? Integer.numberOfTrailingZeros(a) : 8;
     }
-
     static int numberOfLeadingZeros(byte a) {
         return a >= 0 ? Integer.numberOfLeadingZeros(a) - 24 : 0;
     }

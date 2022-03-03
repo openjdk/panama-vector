@@ -2050,7 +2050,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     }
 #end[!intOrLong]
 #end[!FP]
-
 #if[!FP]
 #if[!intOrLong]
     static int numberOfTrailingZeros($type$ a) {
@@ -2062,7 +2061,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     }
 #end[!intOrLong]
 #end[!FP]
-
 #if[!FP]
 #if[!intOrLong]
     static int numberOfLeadingZeros($type$ a) {

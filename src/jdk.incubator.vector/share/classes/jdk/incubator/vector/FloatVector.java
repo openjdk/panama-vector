@@ -1633,8 +1633,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
 
 
 
-
-
     // sqrt
     /**
      * Computes the square root of this vector.

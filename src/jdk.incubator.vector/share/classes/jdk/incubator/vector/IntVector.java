@@ -1787,8 +1787,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
     }
 
 
-
-
     // not (~)
     /**
      * Computes the bitwise logical complement ({@code ~})
