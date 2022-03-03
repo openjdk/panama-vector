@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1215,11 +1215,11 @@ public class ByteMaxVectorTests extends AbstractVectorTest {
         return (byte)(((((byte)a) & 0xFF) >>> (b & 7)) | ((((byte)a) & 0xFF) << (8 - (b & 7))));
     }
 
-    static byte CTZ_scalar(byte a) {
+    static byte TRAILING_ZEROS_COUNT_scalar(byte a) {
         return (byte) (a != 0 ? Integer.numberOfTrailingZeros(a) : 8);
     }
 
-    static byte CLZ_scalar(byte a) {
+    static byte LEADING_ZEROS_COUNT_scalar(byte a) {
         return (byte) (a >= 0 ? Integer.numberOfLeadingZeros(a) - 24 : 0);
     }
 
@@ -5324,31 +5324,31 @@ public class ByteMaxVectorTests extends AbstractVectorTest {
 
 
 
-    static byte CTZ(byte a) {
-        return (byte)(CTZ_scalar(a));
+    static byte TRAILING_ZEROS_COUNT(byte a) {
+        return (byte)(TRAILING_ZEROS_COUNT_scalar(a));
     }
 
 
 
     @Test(dataProvider = "byteUnaryOpProvider")
-    static void CTZByteMaxVectorTests(IntFunction<byte[]> fa) {
+    static void TRAILING_ZEROS_COUNTByteMaxVectorTests(IntFunction<byte[]> fa) {
         byte[] a = fa.apply(SPECIES.length());
         byte[] r = fr.apply(SPECIES.length());
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CTZ).intoArray(r, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT).intoArray(r, i);
             }
         }
 
-        assertArraysEquals(r, a, ByteMaxVectorTests::CTZ);
+        assertArraysEquals(r, a, ByteMaxVectorTests::TRAILING_ZEROS_COUNT);
     }
 
 
 
     @Test(dataProvider = "byteUnaryOpMaskProvider")
-    static void CTZMaskedByteMaxVectorTests(IntFunction<byte[]> fa,
+    static void TRAILING_ZEROS_COUNTMaskedByteMaxVectorTests(IntFunction<byte[]> fa,
                                                 IntFunction<boolean[]> fm) {
         byte[] a = fa.apply(SPECIES.length());
         byte[] r = fr.apply(SPECIES.length());
@@ -5358,40 +5358,40 @@ public class ByteMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CTZ, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT, vmask).intoArray(r, i);
             }
         }
 
-        assertArraysEquals(r, a, mask, ByteMaxVectorTests::CTZ);
+        assertArraysEquals(r, a, mask, ByteMaxVectorTests::TRAILING_ZEROS_COUNT);
     }
 
 
 
-    static byte CLZ(byte a) {
-        return (byte)(CLZ_scalar(a));
+    static byte LEADING_ZEROS_COUNT(byte a) {
+        return (byte)(LEADING_ZEROS_COUNT_scalar(a));
     }
 
 
 
     @Test(dataProvider = "byteUnaryOpProvider")
-    static void CLZByteMaxVectorTests(IntFunction<byte[]> fa) {
+    static void LEADING_ZEROS_COUNTByteMaxVectorTests(IntFunction<byte[]> fa) {
         byte[] a = fa.apply(SPECIES.length());
         byte[] r = fr.apply(SPECIES.length());
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CLZ).intoArray(r, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT).intoArray(r, i);
             }
         }
 
-        assertArraysEquals(r, a, ByteMaxVectorTests::CLZ);
+        assertArraysEquals(r, a, ByteMaxVectorTests::LEADING_ZEROS_COUNT);
     }
 
 
 
     @Test(dataProvider = "byteUnaryOpMaskProvider")
-    static void CLZMaskedByteMaxVectorTests(IntFunction<byte[]> fa,
+    static void LEADING_ZEROS_COUNTMaskedByteMaxVectorTests(IntFunction<byte[]> fa,
                                                 IntFunction<boolean[]> fm) {
         byte[] a = fa.apply(SPECIES.length());
         byte[] r = fr.apply(SPECIES.length());
@@ -5401,11 +5401,11 @@ public class ByteMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CLZ, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT, vmask).intoArray(r, i);
             }
         }
 
-        assertArraysEquals(r, a, mask, ByteMaxVectorTests::CLZ);
+        assertArraysEquals(r, a, mask, ByteMaxVectorTests::LEADING_ZEROS_COUNT);
     }
 
 

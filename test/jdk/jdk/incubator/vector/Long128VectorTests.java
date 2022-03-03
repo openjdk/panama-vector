@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1192,11 +1192,11 @@ public class Long128VectorTests extends AbstractVectorTest {
         return Long.rotateRight(a, ((int)b));
     }
 
-    static long CTZ_scalar(long a) {
+    static long TRAILING_ZEROS_COUNT_scalar(long a) {
         return Long.numberOfTrailingZeros(a);
     }
 
-    static long CLZ_scalar(long a) {
+    static long LEADING_ZEROS_COUNT_scalar(long a) {
         return Long.numberOfLeadingZeros(a);
     }
 
@@ -5234,31 +5234,31 @@ public class Long128VectorTests extends AbstractVectorTest {
 
 
 
-    static long CTZ(long a) {
-        return (long)(CTZ_scalar(a));
+    static long TRAILING_ZEROS_COUNT(long a) {
+        return (long)(TRAILING_ZEROS_COUNT_scalar(a));
     }
 
 
 
     @Test(dataProvider = "longUnaryOpProvider")
-    static void CTZLong128VectorTests(IntFunction<long[]> fa) {
+    static void TRAILING_ZEROS_COUNTLong128VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CTZ).intoArray(r, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT).intoArray(r, i);
             }
         }
 
-        assertArraysEquals(r, a, Long128VectorTests::CTZ);
+        assertArraysEquals(r, a, Long128VectorTests::TRAILING_ZEROS_COUNT);
     }
 
 
 
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void CTZMaskedLong128VectorTests(IntFunction<long[]> fa,
+    static void TRAILING_ZEROS_COUNTMaskedLong128VectorTests(IntFunction<long[]> fa,
                                                 IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
@@ -5268,40 +5268,40 @@ public class Long128VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CTZ, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT, vmask).intoArray(r, i);
             }
         }
 
-        assertArraysEquals(r, a, mask, Long128VectorTests::CTZ);
+        assertArraysEquals(r, a, mask, Long128VectorTests::TRAILING_ZEROS_COUNT);
     }
 
 
 
-    static long CLZ(long a) {
-        return (long)(CLZ_scalar(a));
+    static long LEADING_ZEROS_COUNT(long a) {
+        return (long)(LEADING_ZEROS_COUNT_scalar(a));
     }
 
 
 
     @Test(dataProvider = "longUnaryOpProvider")
-    static void CLZLong128VectorTests(IntFunction<long[]> fa) {
+    static void LEADING_ZEROS_COUNTLong128VectorTests(IntFunction<long[]> fa) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CLZ).intoArray(r, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT).intoArray(r, i);
             }
         }
 
-        assertArraysEquals(r, a, Long128VectorTests::CLZ);
+        assertArraysEquals(r, a, Long128VectorTests::LEADING_ZEROS_COUNT);
     }
 
 
 
     @Test(dataProvider = "longUnaryOpMaskProvider")
-    static void CLZMaskedLong128VectorTests(IntFunction<long[]> fa,
+    static void LEADING_ZEROS_COUNTMaskedLong128VectorTests(IntFunction<long[]> fa,
                                                 IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
@@ -5311,11 +5311,11 @@ public class Long128VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CLZ, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT, vmask).intoArray(r, i);
             }
         }
 
-        assertArraysEquals(r, a, mask, Long128VectorTests::CLZ);
+        assertArraysEquals(r, a, mask, Long128VectorTests::LEADING_ZEROS_COUNT);
     }
 
 

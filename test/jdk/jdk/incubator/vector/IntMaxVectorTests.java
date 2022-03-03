@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1175,11 +1175,11 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         return Integer.rotateRight(a, ((int)b));
     }
 
-    static int CTZ_scalar(int a) {
+    static int TRAILING_ZEROS_COUNT_scalar(int a) {
         return Integer.numberOfTrailingZeros(a);
     }
 
-    static int CLZ_scalar(int a) {
+    static int LEADING_ZEROS_COUNT_scalar(int a) {
         return Integer.numberOfLeadingZeros(a);
     }
 
@@ -5289,31 +5289,31 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
 
-    static int CTZ(int a) {
-        return (int)(CTZ_scalar(a));
+    static int TRAILING_ZEROS_COUNT(int a) {
+        return (int)(TRAILING_ZEROS_COUNT_scalar(a));
     }
 
 
 
     @Test(dataProvider = "intUnaryOpProvider")
-    static void CTZIntMaxVectorTests(IntFunction<int[]> fa) {
+    static void TRAILING_ZEROS_COUNTIntMaxVectorTests(IntFunction<int[]> fa) {
         int[] a = fa.apply(SPECIES.length());
         int[] r = fr.apply(SPECIES.length());
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CTZ).intoArray(r, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT).intoArray(r, i);
             }
         }
 
-        assertArraysEquals(r, a, IntMaxVectorTests::CTZ);
+        assertArraysEquals(r, a, IntMaxVectorTests::TRAILING_ZEROS_COUNT);
     }
 
 
 
     @Test(dataProvider = "intUnaryOpMaskProvider")
-    static void CTZMaskedIntMaxVectorTests(IntFunction<int[]> fa,
+    static void TRAILING_ZEROS_COUNTMaskedIntMaxVectorTests(IntFunction<int[]> fa,
                                                 IntFunction<boolean[]> fm) {
         int[] a = fa.apply(SPECIES.length());
         int[] r = fr.apply(SPECIES.length());
@@ -5323,40 +5323,40 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CTZ, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT, vmask).intoArray(r, i);
             }
         }
 
-        assertArraysEquals(r, a, mask, IntMaxVectorTests::CTZ);
+        assertArraysEquals(r, a, mask, IntMaxVectorTests::TRAILING_ZEROS_COUNT);
     }
 
 
 
-    static int CLZ(int a) {
-        return (int)(CLZ_scalar(a));
+    static int LEADING_ZEROS_COUNT(int a) {
+        return (int)(LEADING_ZEROS_COUNT_scalar(a));
     }
 
 
 
     @Test(dataProvider = "intUnaryOpProvider")
-    static void CLZIntMaxVectorTests(IntFunction<int[]> fa) {
+    static void LEADING_ZEROS_COUNTIntMaxVectorTests(IntFunction<int[]> fa) {
         int[] a = fa.apply(SPECIES.length());
         int[] r = fr.apply(SPECIES.length());
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CLZ).intoArray(r, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT).intoArray(r, i);
             }
         }
 
-        assertArraysEquals(r, a, IntMaxVectorTests::CLZ);
+        assertArraysEquals(r, a, IntMaxVectorTests::LEADING_ZEROS_COUNT);
     }
 
 
 
     @Test(dataProvider = "intUnaryOpMaskProvider")
-    static void CLZMaskedIntMaxVectorTests(IntFunction<int[]> fa,
+    static void LEADING_ZEROS_COUNTMaskedIntMaxVectorTests(IntFunction<int[]> fa,
                                                 IntFunction<boolean[]> fm) {
         int[] a = fa.apply(SPECIES.length());
         int[] r = fr.apply(SPECIES.length());
@@ -5366,11 +5366,11 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CLZ, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT, vmask).intoArray(r, i);
             }
         }
 
-        assertArraysEquals(r, a, mask, IntMaxVectorTests::CLZ);
+        assertArraysEquals(r, a, mask, IntMaxVectorTests::LEADING_ZEROS_COUNT);
     }
 
 

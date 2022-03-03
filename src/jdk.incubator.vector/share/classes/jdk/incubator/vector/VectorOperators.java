@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -453,9 +453,9 @@ public abstract class VectorOperators {
     /** Produce {@code bitCount(a)} */
     public static final Unary BIT_COUNT = unary("BIT_COUNT", "bitCount", VectorSupport.VECTOR_OP_BIT_COUNT, VO_NOFP);
     /** Produce {@code numberOfTrailingZeros(a)} */
-    public static final Unary CTZ = unary("CTZ", "numberOfTrailingZeros", VectorSupport.VECTOR_OP_CTZ, VO_NOFP);
+    public static final Unary TRAILING_ZEROS_COUNT = unary("TRAILING_ZEROS_COUNT", "numberOfTrailingZeros", VectorSupport.VECTOR_OP_TZ_COUNT, VO_NOFP);
     /** Produce {@code numberOfLeadingZeros(a)} */
-    public static final Unary CLZ = unary("CLZ", "numberOfLeadingZeros", VectorSupport.VECTOR_OP_CLZ, VO_NOFP);
+    public static final Unary LEADING_ZEROS_COUNT = unary("LEADING_ZEROS_COUNT", "numberOfLeadingZeros", VectorSupport.VECTOR_OP_LZ_COUNT, VO_NOFP);
 
     /** Produce {@code sin(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above

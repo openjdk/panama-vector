@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -552,8 +552,8 @@ gen_unary_alu_op "SQRT+sqrt" "Math.sqrt((double)a)" "FP"
 gen_unary_alu_op "BIT_COUNT" "\$Boxtype\$.bitCount(a)" "intOrLong"
 gen_unary_alu_op "BIT_COUNT" "Integer.bitCount((int)a \& 0xFF)" "byte"
 gen_unary_alu_op "BIT_COUNT" "Integer.bitCount((int)a \& 0xFFFF)" "short"
-gen_unary_alu_op "CTZ" "CTZ_scalar(a)" "BITWISE"
-gen_unary_alu_op "CLZ" "CLZ_scalar(a)" "BITWISE"
+gen_unary_alu_op "TRAILING_ZEROS_COUNT" "TRAILING_ZEROS_COUNT_scalar(a)" "BITWISE"
+gen_unary_alu_op "LEADING_ZEROS_COUNT" "LEADING_ZEROS_COUNT_scalar(a)" "BITWISE"
 
 # Miscellaneous Smoke Tests
 gen_op_tmpl $miscellaneous_template "MISC" "" ""

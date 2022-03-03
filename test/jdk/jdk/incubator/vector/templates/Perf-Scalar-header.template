@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -148,7 +148,7 @@ public class $Type$Scalar extends AbstractVectorBenchmark {
 #end[intOrLong]
     }
 
-    static $type$ CTZ_scalar($type$ a) {
+    static $type$ TRAILING_ZEROS_COUNT_scalar($type$ a) {
 #if[intOrLong]
         return $Wideboxtype$.numberOfTrailingZeros(a);
 #else[intOrLong]
@@ -160,7 +160,7 @@ public class $Type$Scalar extends AbstractVectorBenchmark {
 #end[intOrLong]
     }
 
-    static $type$ CLZ_scalar($type$ a) {
+    static $type$ LEADING_ZEROS_COUNT_scalar($type$ a) {
 #if[intOrLong]
         return $Wideboxtype$.numberOfLeadingZeros(a);
 #else[intOrLong]

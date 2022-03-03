@@ -42,8 +42,6 @@ public class VectorSupport {
     public static final int VECTOR_OP_NEG  = 1;
     public static final int VECTOR_OP_SQRT = 2;
     public static final int VECTOR_OP_BIT_COUNT = 3;
-    public static final int VECTOR_OP_CTZ  = 29;
-    public static final int VECTOR_OP_CLZ  = 30;
 
     // Binary
     public static final int VECTOR_OP_ADD  = 4;
@@ -83,6 +81,10 @@ public class VectorSupport {
     public static final int VECTOR_OP_COMPRESS = 26;
     public static final int VECTOR_OP_EXPAND = 27;
     public static final int VECTOR_OP_MASK_COMPRESS = 28;
+
+    // Leading/Trailing zeros count operations
+    public static final int VECTOR_OP_TZ_COUNT  = 29;
+    public static final int VECTOR_OP_LZ_COUNT  = 30;
 
     // Math routines
     public static final int VECTOR_OP_TAN = 101;

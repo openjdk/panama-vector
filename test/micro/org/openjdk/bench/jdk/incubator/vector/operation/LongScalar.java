@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -129,11 +129,11 @@ public class LongScalar extends AbstractVectorBenchmark {
         return Long.rotateRight(a, ((int)b));
     }
 
-    static long CTZ_scalar(long a) {
+    static long TRAILING_ZEROS_COUNT_scalar(long a) {
         return Long.numberOfTrailingZeros(a);
     }
 
-    static long CLZ_scalar(long a) {
+    static long LEADING_ZEROS_COUNT_scalar(long a) {
         return Long.numberOfLeadingZeros(a);
     }
 
@@ -1710,14 +1710,14 @@ public class LongScalar extends AbstractVectorBenchmark {
 
 
     @Benchmark
-    public void CTZ(Blackhole bh) {
+    public void TRAILING_ZEROS_COUNT(Blackhole bh) {
         long[] as = fa.apply(size);
         long[] rs = fr.apply(size);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 long a = as[i];
-                rs[i] = (long)(CTZ_scalar(a));
+                rs[i] = (long)(TRAILING_ZEROS_COUNT_scalar(a));
             }
         }
 
@@ -1727,7 +1727,7 @@ public class LongScalar extends AbstractVectorBenchmark {
 
 
     @Benchmark
-    public void CTZMasked(Blackhole bh) {
+    public void TRAILING_ZEROS_COUNTMasked(Blackhole bh) {
         long[] as = fa.apply(size);
         long[] rs = fr.apply(size);
         boolean[] ms = fm.apply(size);
@@ -1736,7 +1736,7 @@ public class LongScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 long a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (long)(CTZ_scalar(a)) : a);
+                rs[i] = (m ? (long)(TRAILING_ZEROS_COUNT_scalar(a)) : a);
             }
         }
 
@@ -1746,14 +1746,14 @@ public class LongScalar extends AbstractVectorBenchmark {
 
 
     @Benchmark
-    public void CLZ(Blackhole bh) {
+    public void LEADING_ZEROS_COUNT(Blackhole bh) {
         long[] as = fa.apply(size);
         long[] rs = fr.apply(size);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 long a = as[i];
-                rs[i] = (long)(CLZ_scalar(a));
+                rs[i] = (long)(LEADING_ZEROS_COUNT_scalar(a));
             }
         }
 
@@ -1763,7 +1763,7 @@ public class LongScalar extends AbstractVectorBenchmark {
 
 
     @Benchmark
-    public void CLZMasked(Blackhole bh) {
+    public void LEADING_ZEROS_COUNTMasked(Blackhole bh) {
         long[] as = fa.apply(size);
         long[] rs = fr.apply(size);
         boolean[] ms = fm.apply(size);
@@ -1772,7 +1772,7 @@ public class LongScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 long a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (long)(CLZ_scalar(a)) : a);
+                rs[i] = (m ? (long)(LEADING_ZEROS_COUNT_scalar(a)) : a);
             }
         }
 

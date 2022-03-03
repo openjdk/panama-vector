@@ -2143,14 +2143,14 @@ public class Long256Vector extends AbstractVectorBenchmark {
 
 
     @Benchmark
-    public void CTZ(Blackhole bh) {
+    public void TRAILING_ZEROS_COUNT(Blackhole bh) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CTZ).intoArray(r, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT).intoArray(r, i);
             }
         }
 
@@ -2160,7 +2160,7 @@ public class Long256Vector extends AbstractVectorBenchmark {
 
 
     @Benchmark
-    public void CTZMasked(Blackhole bh) {
+    public void TRAILING_ZEROS_COUNTMasked(Blackhole bh) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2169,7 +2169,7 @@ public class Long256Vector extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CTZ, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT, vmask).intoArray(r, i);
             }
         }
 
@@ -2179,14 +2179,14 @@ public class Long256Vector extends AbstractVectorBenchmark {
 
 
     @Benchmark
-    public void CLZ(Blackhole bh) {
+    public void LEADING_ZEROS_COUNT(Blackhole bh) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CLZ).intoArray(r, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT).intoArray(r, i);
             }
         }
 
@@ -2196,7 +2196,7 @@ public class Long256Vector extends AbstractVectorBenchmark {
 
 
     @Benchmark
-    public void CLZMasked(Blackhole bh) {
+    public void LEADING_ZEROS_COUNTMasked(Blackhole bh) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -2205,7 +2205,7 @@ public class Long256Vector extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.CLZ, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT, vmask).intoArray(r, i);
             }
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -129,11 +129,11 @@ public class ByteScalar extends AbstractVectorBenchmark {
         return (byte)(((((byte)a) & 0xFF) >>> (b & 7)) | ((((byte)a) & 0xFF) << (8 - (b & 7))));
     }
 
-    static byte CTZ_scalar(byte a) {
+    static byte TRAILING_ZEROS_COUNT_scalar(byte a) {
         return (byte) (a != 0 ? Integer.numberOfTrailingZeros(a) : 8);
     }
 
-    static byte CLZ_scalar(byte a) {
+    static byte LEADING_ZEROS_COUNT_scalar(byte a) {
         return (byte) (a >= 0 ? Integer.numberOfLeadingZeros(a) - 24 : 0);
     }
 
@@ -1710,14 +1710,14 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
 
     @Benchmark
-    public void CTZ(Blackhole bh) {
+    public void TRAILING_ZEROS_COUNT(Blackhole bh) {
         byte[] as = fa.apply(size);
         byte[] rs = fr.apply(size);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
-                rs[i] = (byte)(CTZ_scalar(a));
+                rs[i] = (byte)(TRAILING_ZEROS_COUNT_scalar(a));
             }
         }
 
@@ -1727,7 +1727,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
 
     @Benchmark
-    public void CTZMasked(Blackhole bh) {
+    public void TRAILING_ZEROS_COUNTMasked(Blackhole bh) {
         byte[] as = fa.apply(size);
         byte[] rs = fr.apply(size);
         boolean[] ms = fm.apply(size);
@@ -1736,7 +1736,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)(CTZ_scalar(a)) : a);
+                rs[i] = (m ? (byte)(TRAILING_ZEROS_COUNT_scalar(a)) : a);
             }
         }
 
@@ -1746,14 +1746,14 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
 
     @Benchmark
-    public void CLZ(Blackhole bh) {
+    public void LEADING_ZEROS_COUNT(Blackhole bh) {
         byte[] as = fa.apply(size);
         byte[] rs = fr.apply(size);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
-                rs[i] = (byte)(CLZ_scalar(a));
+                rs[i] = (byte)(LEADING_ZEROS_COUNT_scalar(a));
             }
         }
 
@@ -1763,7 +1763,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
 
     @Benchmark
-    public void CLZMasked(Blackhole bh) {
+    public void LEADING_ZEROS_COUNTMasked(Blackhole bh) {
         byte[] as = fa.apply(size);
         byte[] rs = fr.apply(size);
         boolean[] ms = fm.apply(size);
@@ -1772,7 +1772,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)(CLZ_scalar(a)) : a);
+                rs[i] = (m ? (byte)(LEADING_ZEROS_COUNT_scalar(a)) : a);
             }
         }
 

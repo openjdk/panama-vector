@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -657,13 +657,10 @@ public abstract class ShortVector extends AbstractVector<Short> {
                     v0.uOp(m, (i, a) -> (short) Math.abs(a));
             case VECTOR_OP_BIT_COUNT: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (short) bitCount(a));
-
-            case VECTOR_OP_CTZ: return (v0, m) ->
+            case VECTOR_OP_TZ_COUNT: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (short) numberOfTrailingZeros(a));
-
-            case VECTOR_OP_CLZ: return (v0, m) ->
+            case VECTOR_OP_LZ_COUNT: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (short) numberOfLeadingZeros(a));
-
             default: return null;
         }
     }

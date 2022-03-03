@@ -489,23 +489,23 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
       }
       break;
     }
-    case VECTOR_OP_CTZ: {
+    case VECTOR_OP_TZ_COUNT: {
      switch (bt) {
         case T_BYTE:
         case T_SHORT:
         case T_INT:   return Op_CountTrailingZerosI;
         case T_LONG:  return Op_CountTrailingZerosL;
-        default: fatal("CTZ: %s", type2name(bt));
+        default: fatal("TZ_COUNT: %s", type2name(bt));
       }
       break;
     }
-    case VECTOR_OP_CLZ: {
+    case VECTOR_OP_LZ_COUNT: {
      switch (bt) {
         case T_BYTE:
         case T_SHORT:
         case T_INT:   return Op_CountLeadingZerosI;
         case T_LONG:  return Op_CountLeadingZerosL;
-        default: fatal("CLZ: %s", type2name(bt));
+        default: fatal("LZ_COUNT: %s", type2name(bt));
       }
       break;
     }

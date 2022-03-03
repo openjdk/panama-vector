@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -633,9 +633,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                     v0.uOp(m, (i, a) -> (double) -a);
             case VECTOR_OP_ABS: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (double) Math.abs(a));
-
-
-
             case VECTOR_OP_SIN: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (double) Math.sin(a));
             case VECTOR_OP_COS: return (v0, m) ->
