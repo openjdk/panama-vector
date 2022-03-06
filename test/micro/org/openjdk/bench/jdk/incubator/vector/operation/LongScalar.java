@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -128,6 +128,15 @@ public class LongScalar extends AbstractVectorBenchmark {
     static long ROR_scalar(long a, long b) {
         return Long.rotateRight(a, ((int)b));
     }
+
+    static long TRAILING_ZEROS_COUNT_scalar(long a) {
+        return Long.numberOfTrailingZeros(a);
+    }
+
+    static long LEADING_ZEROS_COUNT_scalar(long a) {
+        return Long.numberOfLeadingZeros(a);
+    }
+
 
     @Benchmark
     public void ADD(Blackhole bh) {
@@ -1697,6 +1706,78 @@ public class LongScalar extends AbstractVectorBenchmark {
 
 
 
+
+
+
+    @Benchmark
+    public void TRAILING_ZEROS_COUNT(Blackhole bh) {
+        long[] as = fa.apply(size);
+        long[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                long a = as[i];
+                rs[i] = (long)(TRAILING_ZEROS_COUNT_scalar(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void TRAILING_ZEROS_COUNTMasked(Blackhole bh) {
+        long[] as = fa.apply(size);
+        long[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                long a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (long)(TRAILING_ZEROS_COUNT_scalar(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void LEADING_ZEROS_COUNT(Blackhole bh) {
+        long[] as = fa.apply(size);
+        long[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                long a = as[i];
+                rs[i] = (long)(LEADING_ZEROS_COUNT_scalar(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void LEADING_ZEROS_COUNTMasked(Blackhole bh) {
+        long[] as = fa.apply(size);
+        long[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                long a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (long)(LEADING_ZEROS_COUNT_scalar(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
 
 }
 

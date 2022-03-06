@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -682,14 +682,22 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             case VECTOR_OP_ABS: return (v0, m) ->
                     v0.uOp(m, (i, a) -> ($type$) Math.abs(a));
 #if[!FP]
-            case VECTOR_OP_BIT_COUNT: return (v0, m) ->
 #if[intOrLong]
+            case VECTOR_OP_BIT_COUNT: return (v0, m) ->
                     v0.uOp(m, (i, a) -> ($type$) $Boxtype$.bitCount(a));
+            case VECTOR_OP_TZ_COUNT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> ($type$) $Boxtype$.numberOfTrailingZeros(a));
+            case VECTOR_OP_LZ_COUNT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> ($type$) $Boxtype$.numberOfLeadingZeros(a));
 #else[intOrLong]
+            case VECTOR_OP_BIT_COUNT: return (v0, m) ->
                     v0.uOp(m, (i, a) -> ($type$) bitCount(a));
+            case VECTOR_OP_TZ_COUNT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> ($type$) numberOfTrailingZeros(a));
+            case VECTOR_OP_LZ_COUNT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> ($type$) numberOfLeadingZeros(a));
 #end[intOrLong]
 #end[!FP]
-
 #if[FP]
             case VECTOR_OP_SIN: return (v0, m) ->
                     v0.uOp(m, (i, a) -> ($type$) Math.sin(a));
@@ -2038,6 +2046,28 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         return Integer.bitCount((int)a & 0xFFFF);
 #else[short]
         return Integer.bitCount((int)a & 0xFF);
+#end[short]
+    }
+#end[!intOrLong]
+#end[!FP]
+#if[!FP]
+#if[!intOrLong]
+    static int numberOfTrailingZeros($type$ a) {
+#if[short]
+        return a != 0 ? Integer.numberOfTrailingZeros(a) : 16;
+#else[short]
+        return a != 0 ? Integer.numberOfTrailingZeros(a) : 8;
+#end[short]
+    }
+#end[!intOrLong]
+#end[!FP]
+#if[!FP]
+#if[!intOrLong]
+    static int numberOfLeadingZeros($type$ a) {
+#if[short]
+        return a >= 0 ? Integer.numberOfLeadingZeros(a) - 16 : 0;
+#else[short]
+        return a >= 0 ? Integer.numberOfLeadingZeros(a) - 24 : 0;
 #end[short]
     }
 #end[!intOrLong]

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1198,6 +1198,14 @@ public class Short256VectorTests extends AbstractVectorTest {
 
     static short ROR_scalar(short a, short b) {
         return (short)(((((short)a) & 0xFFFF) >>> (b & 15)) | ((((short)a) & 0xFFFF) << (16 - (b & 15))));
+    }
+
+    static short TRAILING_ZEROS_COUNT_scalar(short a) {
+        return (short) (a != 0 ? Integer.numberOfTrailingZeros(a) : 16);
+    }
+
+    static short LEADING_ZEROS_COUNT_scalar(short a) {
+        return (short) (a >= 0 ? Integer.numberOfLeadingZeros(a) - 16 : 0);
     }
 
     static boolean eq(short a, short b) {
@@ -5297,6 +5305,92 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(r, a, mask, Short256VectorTests::BIT_COUNT);
+    }
+
+
+
+    static short TRAILING_ZEROS_COUNT(short a) {
+        return (short)(TRAILING_ZEROS_COUNT_scalar(a));
+    }
+
+
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void TRAILING_ZEROS_COUNTShort256VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Short256VectorTests::TRAILING_ZEROS_COUNT);
+    }
+
+
+
+    @Test(dataProvider = "shortUnaryOpMaskProvider")
+    static void TRAILING_ZEROS_COUNTMaskedShort256VectorTests(IntFunction<short[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Short256VectorTests::TRAILING_ZEROS_COUNT);
+    }
+
+
+
+    static short LEADING_ZEROS_COUNT(short a) {
+        return (short)(LEADING_ZEROS_COUNT_scalar(a));
+    }
+
+
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void LEADING_ZEROS_COUNTShort256VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Short256VectorTests::LEADING_ZEROS_COUNT);
+    }
+
+
+
+    @Test(dataProvider = "shortUnaryOpMaskProvider")
+    static void LEADING_ZEROS_COUNTMaskedShort256VectorTests(IntFunction<short[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Short256VectorTests::LEADING_ZEROS_COUNT);
     }
 
 

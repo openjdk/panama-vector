@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1168,6 +1168,14 @@ public class Int512VectorTests extends AbstractVectorTest {
 
     static int ROR_scalar(int a, int b) {
         return Integer.rotateRight(a, ((int)b));
+    }
+
+    static int TRAILING_ZEROS_COUNT_scalar(int a) {
+        return Integer.numberOfTrailingZeros(a);
+    }
+
+    static int LEADING_ZEROS_COUNT_scalar(int a) {
+        return Integer.numberOfLeadingZeros(a);
     }
 
     static boolean eq(int a, int b) {
@@ -5273,6 +5281,92 @@ public class Int512VectorTests extends AbstractVectorTest {
 
 
 
+
+
+
+    static int TRAILING_ZEROS_COUNT(int a) {
+        return (int)(TRAILING_ZEROS_COUNT_scalar(a));
+    }
+
+
+
+    @Test(dataProvider = "intUnaryOpProvider")
+    static void TRAILING_ZEROS_COUNTInt512VectorTests(IntFunction<int[]> fa) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Int512VectorTests::TRAILING_ZEROS_COUNT);
+    }
+
+
+
+    @Test(dataProvider = "intUnaryOpMaskProvider")
+    static void TRAILING_ZEROS_COUNTMaskedInt512VectorTests(IntFunction<int[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Int512VectorTests::TRAILING_ZEROS_COUNT);
+    }
+
+
+
+    static int LEADING_ZEROS_COUNT(int a) {
+        return (int)(LEADING_ZEROS_COUNT_scalar(a));
+    }
+
+
+
+    @Test(dataProvider = "intUnaryOpProvider")
+    static void LEADING_ZEROS_COUNTInt512VectorTests(IntFunction<int[]> fa) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Int512VectorTests::LEADING_ZEROS_COUNT);
+    }
+
+
+
+    @Test(dataProvider = "intUnaryOpMaskProvider")
+    static void LEADING_ZEROS_COUNTMaskedInt512VectorTests(IntFunction<int[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Int512VectorTests::LEADING_ZEROS_COUNT);
+    }
 
 
     @Test(dataProvider = "intCompareOpProvider")

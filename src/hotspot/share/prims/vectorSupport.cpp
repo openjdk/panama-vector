@@ -489,6 +489,26 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
       }
       break;
     }
+    case VECTOR_OP_TZ_COUNT: {
+     switch (bt) {
+        case T_BYTE:
+        case T_SHORT:
+        case T_INT:   return Op_CountTrailingZerosI;
+        case T_LONG:  return Op_CountTrailingZerosL;
+        default: fatal("TZ_COUNT: %s", type2name(bt));
+      }
+      break;
+    }
+    case VECTOR_OP_LZ_COUNT: {
+     switch (bt) {
+        case T_BYTE:
+        case T_SHORT:
+        case T_INT:   return Op_CountLeadingZerosI;
+        case T_LONG:  return Op_CountLeadingZerosL;
+        default: fatal("LZ_COUNT: %s", type2name(bt));
+      }
+      break;
+    }
     case VECTOR_OP_TAN:
     case VECTOR_OP_TANH:
     case VECTOR_OP_SIN:
