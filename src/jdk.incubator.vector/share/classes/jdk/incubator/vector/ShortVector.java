@@ -661,6 +661,8 @@ public abstract class ShortVector extends AbstractVector<Short> {
                     v0.uOp(m, (i, a) -> (short) numberOfTrailingZeros(a));
             case VECTOR_OP_LZ_COUNT: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (short) numberOfLeadingZeros(a));
+            case VECTOR_OP_REVERSE: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> reverse(a));
             default: return null;
         }
     }
@@ -1796,6 +1798,15 @@ public abstract class ShortVector extends AbstractVector<Short> {
     static int numberOfLeadingZeros(short a) {
         return a >= 0 ? Integer.numberOfLeadingZeros(a) - 16 : 0;
     }
+
+    static short reverse(short a) {
+        short b = rotateLeft(a, 8);
+        b = (short)(((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
+        b = (short)(((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
+        b = (short)(((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
+       return b;
+    }
+
 
     // not (~)
     /**

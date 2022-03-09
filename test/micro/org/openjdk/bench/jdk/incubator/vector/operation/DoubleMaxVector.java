@@ -1618,5 +1618,7 @@ public class DoubleMaxVector extends AbstractVectorBenchmark {
 
 
 
+
+
 }
 

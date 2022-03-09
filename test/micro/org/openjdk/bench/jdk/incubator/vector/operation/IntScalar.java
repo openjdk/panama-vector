@@ -137,6 +137,9 @@ public class IntScalar extends AbstractVectorBenchmark {
         return Integer.numberOfLeadingZeros(a);
     }
 
+    static int REVERSE_scalar(int a) {
+        return Integer.reverse(a);
+    }
 
     @Benchmark
     public void ADD(Blackhole bh) {
@@ -1773,6 +1776,42 @@ public class IntScalar extends AbstractVectorBenchmark {
                 int a = as[i];
                 boolean m = ms[i % ms.length];
                 rs[i] = (m ? (int)(LEADING_ZEROS_COUNT_scalar(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void REVERSE(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                rs[i] = (int)(REVERSE_scalar(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void REVERSEMasked(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (int)(REVERSE_scalar(a)) : a);
             }
         }
 

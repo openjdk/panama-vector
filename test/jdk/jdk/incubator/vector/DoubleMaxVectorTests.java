@@ -4680,6 +4680,9 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
 
 
 
+
+
+
     @Test(dataProvider = "doubleCompareOpProvider")
     static void ltDoubleMaxVectorTestsBroadcastSmokeTest(IntFunction<double[]> fa, IntFunction<double[]> fb) {
         double[] a = fa.apply(SPECIES.length());

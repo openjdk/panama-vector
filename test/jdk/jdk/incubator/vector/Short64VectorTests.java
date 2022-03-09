@@ -1208,6 +1208,15 @@ public class Short64VectorTests extends AbstractVectorTest {
         return (short) (a >= 0 ? Integer.numberOfLeadingZeros(a) - 16 : 0);
     }
 
+    static short REVERSE_scalar(short a) {
+        short b = ROL_scalar(a, (short) 8);
+        b = (short)(((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
+        b = (short)(((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
+        b = (short)(((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
+        return b;
+    }
+
+
     static boolean eq(short a, short b) {
         return a == b;
     }
@@ -5391,6 +5400,49 @@ public class Short64VectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(r, a, mask, Short64VectorTests::LEADING_ZEROS_COUNT);
+    }
+
+
+
+    static short REVERSE(short a) {
+        return (short)(REVERSE_scalar(a));
+    }
+
+
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void REVERSEShort64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Short64VectorTests::REVERSE);
+    }
+
+
+
+    @Test(dataProvider = "shortUnaryOpMaskProvider")
+    static void REVERSEMaskedShort64VectorTests(IntFunction<short[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Short64VectorTests::REVERSE);
     }
 
 
