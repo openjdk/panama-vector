@@ -426,7 +426,6 @@
   template(numberOfLeadingZeros_name,                 "numberOfLeadingZeros")                     \
   template(numberOfTrailingZeros_name,                "numberOfTrailingZeros")                    \
   template(bitCount_name,                             "bitCount")                                 \
-  template(reverse_name,                              "reverse")                                  \
   template(profile_name,                              "profile")                                  \
   template(equals_name,                               "equals")                                   \
   template(length_name,                               "length")                                   \

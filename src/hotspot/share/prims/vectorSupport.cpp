@@ -509,8 +509,8 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
       }
       break;
     }
-     case VECTOR_OP_REVERSE: {
-      switch (bt) {
+    case VECTOR_OP_REVERSE: {
+     switch (bt) {
         case T_BYTE:  // Temporarily returning
         case T_SHORT: // Op_ReverseI for byte and short
         case T_INT:   return Op_ReverseI;

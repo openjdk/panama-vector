@@ -221,8 +221,6 @@ class methodHandle;
                                                                                                                         \
   do_intrinsic(_bitCount_i,               java_lang_Integer,      bitCount_name,            int_int_signature,   F_S)   \
   do_intrinsic(_bitCount_l,               java_lang_Long,         bitCount_name,            long_int_signature,  F_S)   \
-  do_intrinsic(_reverse_i,                java_lang_Integer,      reverse_name,             int_int_signature,   F_S)   \
-  do_intrinsic(_reverse_l,                java_lang_Long,         reverse_name,             long_long_signature, F_S)   \
                                                                                                                         \
   do_intrinsic(_reverseBytes_i,           java_lang_Integer,      reverseBytes_name,        int_int_signature,   F_S)   \
    do_name(     reverseBytes_name,                               "reverseBytes")                                        \
