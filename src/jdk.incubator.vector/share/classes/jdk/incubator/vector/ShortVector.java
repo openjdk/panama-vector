@@ -1804,9 +1804,8 @@ public abstract class ShortVector extends AbstractVector<Short> {
         b = (short)(((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
         b = (short)(((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
         b = (short)(((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
-       return b;
+        return b;
     }
-
 
     // not (~)
     /**

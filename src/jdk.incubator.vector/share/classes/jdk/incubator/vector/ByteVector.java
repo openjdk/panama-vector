@@ -1803,9 +1803,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         byte b = rotateLeft(a, 4);
         b = (byte)(((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
         b = (byte)(((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
-       return b;
+        return b;
     }
-
 
     // not (~)
     /**
