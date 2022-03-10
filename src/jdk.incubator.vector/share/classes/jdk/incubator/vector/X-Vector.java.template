@@ -2076,6 +2076,8 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     }
 
     static $type$ reverse($type$ a) {
+        if (a == 0 || a == -1) return a;
+
 #if[short]
         $type$ b = rotateLeft(a, 8);
         b = ($type$)(((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));

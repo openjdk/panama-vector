@@ -1800,6 +1800,8 @@ public abstract class ShortVector extends AbstractVector<Short> {
     }
 
     static short reverse(short a) {
+        if (a == 0 || a == -1) return a;
+
         short b = rotateLeft(a, 8);
         b = (short)(((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
         b = (short)(((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));

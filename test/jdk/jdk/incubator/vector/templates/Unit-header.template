@@ -1500,7 +1500,6 @@ public class $vectorteststype$ extends AbstractVectorTest {
 #end[intOrLong]
     }
 
-
 #end[BITWISE]
     static boolean eq($type$ a, $type$ b) {
         return a == b;

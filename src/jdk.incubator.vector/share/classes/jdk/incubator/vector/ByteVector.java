@@ -1800,6 +1800,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     }
 
     static byte reverse(byte a) {
+        if (a == 0 || a == -1) return a;
+
         byte b = rotateLeft(a, 4);
         b = (byte)(((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
         b = (byte)(((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
