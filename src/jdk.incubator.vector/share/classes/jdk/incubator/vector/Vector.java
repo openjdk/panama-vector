@@ -3538,6 +3538,8 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *         for any lane {@code N} in the vector
      * @throws java.lang.IllegalArgumentException
      *         if the memory segment is read-only
+     * @throws IllegalStateException if the memory segment's session is not alive,
+     *         or if access occurs from a thread other than the thread owning the session.
      */
     public abstract void intoMemorySegment(MemorySegment ms, long offset, ByteOrder bo);
 
@@ -3559,7 +3561,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      * var slice = ms.asSlice(offset)
      * for (int n = 0; n < a.length; n++) {
      *     if (m.laneIsSet(n)) {
-     *         slice.setAtIndex(ValueLayout.JAVA_E, n);
+     *         slice.setAtIndex(ValueLayout.JAVA_E.withBitAlignment(8), n);
      *     }
      * }
      * }</pre>
@@ -3586,6 +3588,8 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *         where the mask is set
      * @throws java.lang.IllegalArgumentException
      *         if the memory segment is read-only
+     * @throws IllegalStateException if the memory segment's session is not alive,
+     *         or if access occurs from a thread other than the thread owning the session.
      */
     public abstract void intoMemorySegment(MemorySegment ms, long offset,
                                            ByteOrder bo, VectorMask<E> m);

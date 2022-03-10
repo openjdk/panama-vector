@@ -3217,6 +3217,8 @@ public abstract class IntVector extends AbstractVector<Integer> {
      *         if {@code offset+N*4 < 0}
      *         or {@code offset+N*4 >= ms.byteSize()}
      *         for any lane {@code N} in the vector
+     * @throws IllegalStateException if the memory segment's session is not alive,
+     *         or if access occurs from a thread other than the thread owning the session.
      */
     @ForceInline
     public static
@@ -3245,7 +3247,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
      * int[] ar = new int[species.length()];
      * for (int n = 0; n < ar.length; n++) {
      *     if (m.laneIsSet(n)) {
-     *         ar[n] = slice.getAtIndex(ValuaLayout.JAVA_INT, n);
+     *         ar[n] = slice.getAtIndex(ValuaLayout.JAVA_INT.withBitAlignment(8), n);
      *     }
      * }
      * IntVector r = IntVector.fromArray(species, ar, 0);
@@ -3269,6 +3271,8 @@ public abstract class IntVector extends AbstractVector<Integer> {
      *         or {@code offset+N*4 >= ms.byteSize()}
      *         for any lane {@code N} in the vector
      *         where the mask is set
+     * @throws IllegalStateException if the memory segment's session is not alive,
+     *         or if access occurs from a thread other than the thread owning the session.
      */
     @ForceInline
     public static
@@ -3284,8 +3288,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
         // FIXME: optimize
         // @@@ downcast from long to int
         checkMaskFromIndexSize((int) offset, vsp, m, 4, (int) ms.byteSize());
+        var layout = ValueLayout.JAVA_INT.withBitAlignment(8);
         return vsp.ldOp(ms, (int) offset, (AbstractMask<Integer>)m,
-                   (ms_, o, i)  -> ms_.get(ValueLayout.JAVA_INT, o + i * 4L));
+                   (ms_, o, i)  -> ms_.get(layout, o + i * 4L));
     }
 
     // Memory store operations
@@ -3726,8 +3731,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
                 (MemorySegmentProxy) ms, (int) offset, vsp, // @@@ downcast from long to int
                 (msp, off, s) -> {
+                    var layout = ValueLayout.JAVA_INT.withBitAlignment(8);
                     return s.ldOp((MemorySegment) msp, off,
-                            (ms_, o, i) -> ms_.get(ValueLayout.JAVA_INT, o + i * 4L));
+                            (ms_, o, i) -> ms_.get(layout, o + i * 4L));
                 });
     }
 
@@ -3743,8 +3749,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
                 (MemorySegmentProxy) ms, (int) offset, m, vsp, // @@@ downcast from long to int
                 (msp, off, s, vm) -> {
+                    var layout = ValueLayout.JAVA_INT.withBitAlignment(8);
                     return s.ldOp((MemorySegment) msp, off, vm,
-                            (ms_, o, i) -> ms_.get(ValueLayout.JAVA_INT, o + i * 4L));
+                            (ms_, o, i) -> ms_.get(layout, o + i * 4L));
                 });
     }
 
@@ -3896,8 +3903,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 this,
                 (MemorySegmentProxy) ms, (int) offset, // @@@ downcast from long to int
                 (msp, off, v) -> {
+                    var layout = ValueLayout.JAVA_INT.withBitAlignment(8);
                     v.stOp((MemorySegment) msp, off,
-                            (ms_, o, i, e) -> ms_.set(ValueLayout.JAVA_INT, o + i * 4L, e));
+                            (ms_, o, i, e) -> ms_.set(layout, o + i * 4L, e));
                 });
     }
 
@@ -3914,8 +3922,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 this, m,
                 (MemorySegmentProxy) ms, (int) offset, // @@@ downcast from long to int
                 (msp, off, v, vm) -> {
+                    var layout = ValueLayout.JAVA_INT.withBitAlignment(8);
                     v.stOp((MemorySegment) msp, off, vm,
-                            (ms_, o, i, e) -> ms_.set(ValueLayout.JAVA_INT, o + i * 4L, e));
+                            (ms_, o, i, e) -> ms_.set(layout, o + i * 4L, e));
                 });
     }
 
