@@ -94,6 +94,9 @@ class VectorSupport : AllStatic {
     VECTOR_OP_EXPAND = 27,
     VECTOR_OP_MASK_COMPRESS = 28,
 
+    VECTOR_OP_TZ_COUNT = 29,
+    VECTOR_OP_LZ_COUNT = 30,
+
     // Vector Math Library
     VECTOR_OP_TAN   = 101,
     VECTOR_OP_TANH  = 102,

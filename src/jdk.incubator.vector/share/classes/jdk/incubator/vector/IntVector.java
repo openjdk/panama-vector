@@ -660,7 +660,10 @@ public abstract class IntVector extends AbstractVector<Integer> {
                     v0.uOp(m, (i, a) -> (int) Math.abs(a));
             case VECTOR_OP_BIT_COUNT: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (int) Integer.bitCount(a));
-
+            case VECTOR_OP_TZ_COUNT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (int) Integer.numberOfTrailingZeros(a));
+            case VECTOR_OP_LZ_COUNT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (int) Integer.numberOfLeadingZeros(a));
             default: return null;
         }
     }

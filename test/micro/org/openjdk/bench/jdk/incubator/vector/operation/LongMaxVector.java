@@ -67,6 +67,10 @@ public class LongMaxVector extends AbstractVectorBenchmark {
         }
     }
 
+    static long firstNonZero(long a, long b) {
+        return Long.compare(a, (long) 0) != 0 ? a : b;
+    }
+
     @Param("1024")
     int size;
 
@@ -1079,17 +1083,9 @@ public class LongMaxVector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void MIN(Blackhole bh) {
+    public void MINLanes(Blackhole bh) {
         long[] a = fa.apply(SPECIES.length());
-        long[] r = fr.apply(SPECIES.length());
         long ra = Long.MAX_VALUE;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                LongVector av = LongVector.fromArray(SPECIES, a, i);
-                r[i] = av.reduceLanes(VectorOperators.MIN);
-            }
-        }
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             ra = Long.MAX_VALUE;
@@ -1098,24 +1094,15 @@ public class LongMaxVector extends AbstractVectorBenchmark {
                 ra = (long) Math.min(ra, av.reduceLanes(VectorOperators.MIN));
             }
         }
-
-        bh.consume(r);
+        bh.consume(ra);
     }
 
     @Benchmark
-    public void MINMasked(Blackhole bh) {
+    public void MINMaskedLanes(Blackhole bh) {
         long[] a = fa.apply(SPECIES.length());
-        long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
         long ra = Long.MAX_VALUE;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                LongVector av = LongVector.fromArray(SPECIES, a, i);
-                r[i] = av.reduceLanes(VectorOperators.MIN, vmask);
-            }
-        }
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             ra = Long.MAX_VALUE;
@@ -1124,22 +1111,13 @@ public class LongMaxVector extends AbstractVectorBenchmark {
                 ra = (long) Math.min(ra, av.reduceLanes(VectorOperators.MIN, vmask));
             }
         }
-
-        bh.consume(r);
+        bh.consume(ra);
     }
 
     @Benchmark
-    public void MAX(Blackhole bh) {
+    public void MAXLanes(Blackhole bh) {
         long[] a = fa.apply(SPECIES.length());
-        long[] r = fr.apply(SPECIES.length());
         long ra = Long.MIN_VALUE;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                LongVector av = LongVector.fromArray(SPECIES, a, i);
-                r[i] = av.reduceLanes(VectorOperators.MAX);
-            }
-        }
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             ra = Long.MIN_VALUE;
@@ -1148,24 +1126,15 @@ public class LongMaxVector extends AbstractVectorBenchmark {
                 ra = (long) Math.max(ra, av.reduceLanes(VectorOperators.MAX));
             }
         }
-
-        bh.consume(r);
+        bh.consume(ra);
     }
 
     @Benchmark
-    public void MAXMasked(Blackhole bh) {
+    public void MAXMaskedLanes(Blackhole bh) {
         long[] a = fa.apply(SPECIES.length());
-        long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
         long ra = Long.MIN_VALUE;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                LongVector av = LongVector.fromArray(SPECIES, a, i);
-                r[i] = av.reduceLanes(VectorOperators.MAX, vmask);
-            }
-        }
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             ra = Long.MIN_VALUE;
@@ -1174,22 +1143,13 @@ public class LongMaxVector extends AbstractVectorBenchmark {
                 ra = (long) Math.max(ra, av.reduceLanes(VectorOperators.MAX, vmask));
             }
         }
-
-        bh.consume(r);
+        bh.consume(ra);
     }
 
     @Benchmark
-    public void FIRST_NONZERO(Blackhole bh) {
+    public void FIRST_NONZEROLanes(Blackhole bh) {
         long[] a = fa.apply(SPECIES.length());
-        long[] r = fr.apply(SPECIES.length());
         long ra = (long) 0;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                LongVector av = LongVector.fromArray(SPECIES, a, i);
-                r[i] = av.reduceLanes(VectorOperators.FIRST_NONZERO);
-            }
-        }
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             ra = (long) 0;
@@ -1198,24 +1158,15 @@ public class LongMaxVector extends AbstractVectorBenchmark {
                 ra = firstNonZero(ra, av.reduceLanes(VectorOperators.FIRST_NONZERO));
             }
         }
-
-        bh.consume(r);
+        bh.consume(ra);
     }
 
     @Benchmark
-    public void FIRST_NONZEROMasked(Blackhole bh) {
+    public void FIRST_NONZEROMaskedLanes(Blackhole bh) {
         long[] a = fa.apply(SPECIES.length());
-        long[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
         long ra = (long) 0;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                LongVector av = LongVector.fromArray(SPECIES, a, i);
-                r[i] = av.reduceLanes(VectorOperators.FIRST_NONZERO, vmask);
-            }
-        }
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             ra = (long) 0;
@@ -1224,8 +1175,7 @@ public class LongMaxVector extends AbstractVectorBenchmark {
                 ra = firstNonZero(ra, av.reduceLanes(VectorOperators.FIRST_NONZERO, vmask));
             }
         }
-
-        bh.consume(r);
+        bh.consume(ra);
     }
 
 
@@ -2139,6 +2089,78 @@ public class LongMaxVector extends AbstractVectorBenchmark {
 
 
 
+
+
+
+    @Benchmark
+    public void TRAILING_ZEROS_COUNT(Blackhole bh) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+
+
+    @Benchmark
+    public void TRAILING_ZEROS_COUNTMasked(Blackhole bh) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+
+
+    @Benchmark
+    public void LEADING_ZEROS_COUNT(Blackhole bh) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+
+
+    @Benchmark
+    public void LEADING_ZEROS_COUNTMasked(Blackhole bh) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
 
 }
 

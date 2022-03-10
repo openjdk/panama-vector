@@ -660,7 +660,10 @@ public abstract class ShortVector extends AbstractVector<Short> {
                     v0.uOp(m, (i, a) -> (short) Math.abs(a));
             case VECTOR_OP_BIT_COUNT: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (short) bitCount(a));
-
+            case VECTOR_OP_TZ_COUNT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (short) numberOfTrailingZeros(a));
+            case VECTOR_OP_LZ_COUNT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (short) numberOfLeadingZeros(a));
             default: return null;
         }
     }
@@ -1789,6 +1792,12 @@ public abstract class ShortVector extends AbstractVector<Short> {
 
     static int bitCount(short a) {
         return Integer.bitCount((int)a & 0xFFFF);
+    }
+    static int numberOfTrailingZeros(short a) {
+        return a != 0 ? Integer.numberOfTrailingZeros(a) : 16;
+    }
+    static int numberOfLeadingZeros(short a) {
+        return a >= 0 ? Integer.numberOfLeadingZeros(a) - 16 : 0;
     }
 
     // not (~)

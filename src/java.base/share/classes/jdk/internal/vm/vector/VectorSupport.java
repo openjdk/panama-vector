@@ -82,6 +82,10 @@ public class VectorSupport {
     public static final int VECTOR_OP_EXPAND = 27;
     public static final int VECTOR_OP_MASK_COMPRESS = 28;
 
+    // Leading/Trailing zeros count operations
+    public static final int VECTOR_OP_TZ_COUNT  = 29;
+    public static final int VECTOR_OP_LZ_COUNT  = 30;
+
     // Math routines
     public static final int VECTOR_OP_TAN = 101;
     public static final int VECTOR_OP_TANH = 102;

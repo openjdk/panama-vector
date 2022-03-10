@@ -73,6 +73,10 @@ public class $vectorbenchtype$ extends AbstractVectorBenchmark {
     }
 #end[BITWISE]
 
+    static $type$ firstNonZero($type$ a, $type$ b) {
+        return $Boxtype$.compare(a, ($type$) 0) != 0 ? a : b;
+    }
+
     @Param("1024")
     int size;
 

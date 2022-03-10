@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1321,7 +1321,6 @@ public class Double512VectorTests extends AbstractVectorTest {
         int length = BUFFER_REPS * vl;
         return new long[length];
     };
-
 
     static boolean eq(double a, double b) {
         return a == b;
@@ -4659,6 +4658,12 @@ public class Double512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, mask, Double512VectorTests::SQRT);
     }
+
+
+
+
+
+
 
 
 
