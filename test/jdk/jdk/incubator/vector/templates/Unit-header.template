@@ -114,12 +114,12 @@ public class $vectorteststype$ extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a[i]));
             }
         } catch (AssertionError e) {
             $type$[] ref = f.apply(a[i]);
-            $type$[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            $type$[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i);
@@ -281,12 +281,12 @@ public class $vectorteststype$ extends AbstractVectorTest {
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
-                    Assert.assertEquals(r[i+j], a[i+order[i+j]]);
+                    Assert.assertEquals(r[i + j], a[i+order[i + j]]);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
-            Assert.assertEquals(r[i+j], a[i+order[i+j]], "at index #" + idx + ", input = " + a[i+order[i+j]]);
+            Assert.assertEquals(r[i + j], a[i+order[i + j]], "at index #" + idx + ", input = " + a[i + order[i + j]]);
         }
     }
 
@@ -302,7 +302,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
                     }
                 }
                 for (; k < vector_len; k++) {
-                    Assert.assertEquals(r[i + k], ($type$)0);
+                    Assert.assertEquals(r[i + k], ($type$) 0);
                 }
             }
         } catch (AssertionError e) {
@@ -310,7 +310,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
             if (m[(i + j) % SPECIES.length()]) {
                 Assert.assertEquals(r[idx], a[i + j], "at index #" + idx);
             } else {
-                Assert.assertEquals(r[idx], ($type$)0, "at index #" + idx);
+                Assert.assertEquals(r[idx], ($type$) 0, "at index #" + idx);
             }
         }
     }
@@ -325,7 +325,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
                         Assert.assertEquals(r[i + j], a[i + k]);
                         k++;
                     } else {
-                        Assert.assertEquals(r[i + j], ($type$)0);
+                        Assert.assertEquals(r[i + j], ($type$) 0);
                     }
                 }
             }
@@ -334,7 +334,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
             if (m[idx % SPECIES.length()]) {
                 Assert.assertEquals(r[idx], a[i + k], "at index #" + idx);
             } else {
-                Assert.assertEquals(r[idx], ($type$)0, "at index #" + idx);
+                Assert.assertEquals(r[idx], ($type$) 0, "at index #" + idx);
             }
         }
     }
@@ -344,12 +344,12 @@ public class $vectorteststype$ extends AbstractVectorTest {
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
-                    Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                    Assert.assertEquals(r[i + j], a[i + (int) order[i + j]]);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
-            Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]]);
+            Assert.assertEquals(r[i + j], a[i + (int) order[i + j]], "at index #" + idx + ", input = " + a[i + (int) order[i + j]]);
         }
     }
 
@@ -359,17 +359,17 @@ public class $vectorteststype$ extends AbstractVectorTest {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
                     if (mask[j % SPECIES.length()])
-                         Assert.assertEquals(r[i+j], a[i+order[i+j]]);
+                         Assert.assertEquals(r[i + j], a[i + order[i + j]]);
                     else
-                         Assert.assertEquals(r[i+j], ($type$)0);
+                         Assert.assertEquals(r[i + j], ($type$) 0);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
             if (mask[j % SPECIES.length()])
-                Assert.assertEquals(r[i+j], a[i+order[i+j]], "at index #" + idx + ", input = " + a[i+order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i + j], a[i + order[i + j]], "at index #" + idx + ", input = " + a[i + order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
             else
-                Assert.assertEquals(r[i+j], ($type$)0, "at index #" + idx + ", input = " + a[i+order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i + j], ($type$) 0, "at index #" + idx + ", input = " + a[i + order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
         }
     }
 
@@ -379,17 +379,17 @@ public class $vectorteststype$ extends AbstractVectorTest {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
                     if (mask[j % SPECIES.length()])
-                         Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                         Assert.assertEquals(r[i + j], a[i + (int) order[i + j]]);
                     else
-                         Assert.assertEquals(r[i+j], ($type$)0);
+                         Assert.assertEquals(r[i + j], ($type$) 0);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
             if (mask[j % SPECIES.length()])
-                Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i + j], a[i + (int) order[i + j]], "at index #" + idx + ", input = " + a[i + (int) order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
             else
-                Assert.assertEquals(r[i+j], ($type$)0, "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i + j], ($type$) 0, "at index #" + idx + ", input = " + a[i + (int) order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
         }
     }
 
@@ -398,7 +398,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
         for (; i < a.length; i += SPECIES.length()) {
             int idx = i;
             for (int j = idx; j < (idx + SPECIES.length()); j++)
-                a[j]=a[idx];
+                a[j] = a[idx];
         }
 
         try {
@@ -449,10 +449,10 @@ public class $vectorteststype$ extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i++) {
-                Assert.assertEquals(r[i], f.apply(a[i], ($type$)((long)b[(i / SPECIES.length()) * SPECIES.length()])));
+                Assert.assertEquals(r[i], f.apply(a[i], ($type$) ((long) b[(i / SPECIES.length()) * SPECIES.length()])));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], f.apply(a[i], ($type$)((long)b[(i / SPECIES.length()) * SPECIES.length()])),
+            Assert.assertEquals(r[i], f.apply(a[i], ($type$) ((long) b[(i / SPECIES.length()) * SPECIES.length()])),
                                 "(" + a[i] + ", " + b[(i / SPECIES.length()) * SPECIES.length()] + ") at index #" + i);
         }
     }
@@ -498,10 +498,10 @@ public class $vectorteststype$ extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i++) {
-                Assert.assertEquals(r[i], f.apply(a[i], ($type$)((long)b[(i / SPECIES.length()) * SPECIES.length()]), mask[i % SPECIES.length()]));
+                Assert.assertEquals(r[i], f.apply(a[i], ($type$) ((long) b[(i / SPECIES.length()) * SPECIES.length()]), mask[i % SPECIES.length()]));
             }
         } catch (AssertionError err) {
-            Assert.assertEquals(r[i], f.apply(a[i], ($type$)((long)b[(i / SPECIES.length()) * SPECIES.length()]),
+            Assert.assertEquals(r[i], f.apply(a[i], ($type$) ((long) b[(i / SPECIES.length()) * SPECIES.length()]),
                                 mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] +
                                 ", input2 = " + b[(i / SPECIES.length()) * SPECIES.length()] + ", mask = " +
                                 mask[i % SPECIES.length()]);
@@ -514,11 +514,11 @@ public class $vectorteststype$ extends AbstractVectorTest {
         try {
             for (; j < a.length; j += SPECIES.length()) {
                 for (i = 0; i < SPECIES.length(); i++) {
-                    Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j]));
+                    Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j]));
                 }
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j]), "at index #" + i + ", " + j);
+            Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j]), "at index #" + i + ", " + j);
         }
     }
 
@@ -532,11 +532,11 @@ public class $vectorteststype$ extends AbstractVectorTest {
         try {
             for (; j < a.length; j += SPECIES.length()) {
                 for (i = 0; i < SPECIES.length(); i++) {
-                    Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j], mask[i]));
+                    Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j], mask[i]));
                 }
             }
         } catch (AssertionError err) {
-            Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j], mask[i]), "at index #" + i + ", input1 = " + a[i+j] + ", input2 = " + b[j] + ", mask = " + mask[i]);
+            Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j], mask[i]), "at index #" + i + ", input1 = " + a[i + j] + ", input2 = " + b[j] + ", mask = " + mask[i]);
         }
     }
 
@@ -684,7 +684,6 @@ public class $vectorteststype$ extends AbstractVectorTest {
         }
     }
 
-
 #if[FP]
     static boolean isWithin1Ulp($type$ actual, $type$ expected) {
         if ($Type$.isNaN(expected) && !$Type$.isNaN(actual)) {
@@ -785,17 +784,17 @@ public class $vectorteststype$ extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, i, b, i));
             }
         } catch (AssertionError e) {
             $type$[] ref = f.apply(a, i, b, i);
-            $type$[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            $type$[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref,
               "(ref: " + Arrays.toString(ref) + ", res: " + Arrays.toString(res) + ", a: "
-              + Arrays.toString(Arrays.copyOfRange(a, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(a, i, i + SPECIES.length()))
               + ", b: "
-              + Arrays.toString(Arrays.copyOfRange(b, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(b, i, i + SPECIES.length()))
               + " at index #" + i);
         }
     }
@@ -812,17 +811,17 @@ public class $vectorteststype$ extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, i, mask, b, i));
             }
         } catch (AssertionError e) {
             $type$[] ref = f.apply(a, i, mask, b, i);
-            $type$[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            $type$[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref,
               "(ref: " + Arrays.toString(ref) + ", res: " + Arrays.toString(res) + ", a: "
-              + Arrays.toString(Arrays.copyOfRange(a, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(a, i, i + SPECIES.length()))
               + ", b: "
-              + Arrays.toString(Arrays.copyOfRange(b, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(b, i, i + SPECIES.length()))
               + ", mask: "
               + Arrays.toString(mask)
               + " at index #" + i);
@@ -833,19 +832,19 @@ public class $vectorteststype$ extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(r, a, i, mask, b, i));
             }
         } catch (AssertionError e) {
             $type$[] ref = f.apply(r, a, i, mask, b, i);
-            $type$[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            $type$[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref,
               "(ref: " + Arrays.toString(ref) + ", res: " + Arrays.toString(res) + ", a: "
-              + Arrays.toString(Arrays.copyOfRange(a, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(a, i, i + SPECIES.length()))
               + ", b: "
-              + Arrays.toString(Arrays.copyOfRange(b, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(b, i, i + SPECIES.length()))
               + ", r: "
-              + Arrays.toString(Arrays.copyOfRange(r, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(r, i, i + SPECIES.length()))
               + ", mask: "
               + Arrays.toString(mask)
               + " at index #" + i);
@@ -860,12 +859,12 @@ public class $vectorteststype$ extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, origin, i));
             }
         } catch (AssertionError e) {
             $type$[] ref = f.apply(a, origin, i);
-            $type$[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            $type$[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i);
@@ -880,12 +879,12 @@ public class $vectorteststype$ extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, b, origin, i));
             }
         } catch (AssertionError e) {
             $type$[] ref = f.apply(a, b, origin, i);
-            $type$[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            $type$[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -901,12 +900,12 @@ public class $vectorteststype$ extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, b, origin, mask, i));
             }
         } catch (AssertionError e) {
             $type$[] ref = f.apply(a, b, origin, mask, i);
-            $type$[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            $type$[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -922,12 +921,12 @@ public class $vectorteststype$ extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, b, origin, part, i));
             }
         } catch (AssertionError e) {
             $type$[] ref = f.apply(a, b, origin, part, i);
-            $type$[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            $type$[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -944,12 +943,12 @@ public class $vectorteststype$ extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, b, origin, part, mask, i));
             }
         } catch (AssertionError e) {
             $type$[] ref = f.apply(a, b, origin, part, mask, i);
-            $type$[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            $type$[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -971,26 +970,26 @@ public class $vectorteststype$ extends AbstractVectorTest {
             case 3:
                 return Integer.MAX_VALUE;
             default:
-                return (int)0;
+                return (int) 0;
         }
     }
 
     static final List<IntFunction<$type$[]>> INT_$TYPE$_GENERATORS = List.of(
             withToString("$type$[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> ($type$)(-i * 5));
+                            i -> ($type$) (-i * 5));
             }),
             withToString("$type$[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> ($type$)(i * 5));
+                            i -> ($type$) (i * 5));
             }),
             withToString("$type$[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> ((($type$)(i + 1) == 0) ? 1 : ($type$)(i + 1)));
+                            i -> ((($type$) (i + 1) == 0) ? 1 : ($type$) (i + 1)));
             }),
             withToString("$type$[intCornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> ($type$)intCornerCaseValue(i));
+                            i -> ($type$) intCornerCaseValue(i));
             })
     );
 #end[!byteOrShort]
@@ -1000,10 +999,10 @@ public class $vectorteststype$ extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < r.length; i++) {
-                Assert.assertEquals(r[i], (int)(a[i+offs]));
+                Assert.assertEquals(r[i], (int) (a[i + offs]));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], (int)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+            Assert.assertEquals(r[i], (int) (a[i + offs]), "at index #" + i + ", input = " + a[i + offs]);
         }
     }
 
@@ -1020,26 +1019,26 @@ public class $vectorteststype$ extends AbstractVectorTest {
             case 3:
                 return Long.MAX_VALUE;
             default:
-                return (long)0;
+                return (long) 0;
         }
     }
 
     static final List<IntFunction<$type$[]>> LONG_$TYPE$_GENERATORS = List.of(
             withToString("$type$[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> ($type$)(-i * 5));
+                            i -> ($type$) (-i * 5));
             }),
             withToString("$type$[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> ($type$)(i * 5));
+                            i -> ($type$) (i * 5));
             }),
             withToString("$type$[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> ((($type$)(i + 1) == 0) ? 1 : ($type$)(i + 1)));
+                            i -> ((($type$) (i + 1) == 0) ? 1 : ($type$) (i + 1)));
             }),
             withToString("$type$[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> ($type$)longCornerCaseValue(i));
+                            i -> ($type$) longCornerCaseValue(i));
             })
     );
 #end[FP]
@@ -1050,10 +1049,10 @@ public class $vectorteststype$ extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < r.length; i++) {
-                Assert.assertEquals(r[i], (long)(a[i+offs]));
+                Assert.assertEquals(r[i], (long) (a[i + offs]));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], (long)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+            Assert.assertEquals(r[i], (long) (a[i + offs]), "at index #" + i + ", input = " + a[i + offs]);
         }
     }
 #end[byte]
@@ -1062,10 +1061,10 @@ public class $vectorteststype$ extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < r.length; i++) {
-                Assert.assertEquals(r[i], (long)(a[i+offs]));
+                Assert.assertEquals(r[i], (long) (a[i + offs]));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], (long)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+            Assert.assertEquals(r[i], (long) (a[i + offs]), "at index #" + i + ", input = " + a[i + offs]);
         }
     }
 
@@ -1074,14 +1073,13 @@ public class $vectorteststype$ extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < r.length; i++) {
-                Assert.assertEquals(r[i], (double)(a[i+offs]));
+                Assert.assertEquals(r[i], (double) (a[i + offs]));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], (double)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+            Assert.assertEquals(r[i], (double) (a[i + offs]), "at index #" + i + ", input = " + a[i + offs]);
         }
     }
 #end[!Double]
-
 
     static $bitstype$ bits($type$ e) {
         return {#if[FP]? $Type$.$type$To$Bitstype$Bits(e): e};
@@ -1090,15 +1088,15 @@ public class $vectorteststype$ extends AbstractVectorTest {
     static final List<IntFunction<$type$[]>> $TYPE$_GENERATORS = List.of(
             withToString("$type$[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> ($type$)(-i * 5));
+                            i -> ($type$) (-i * 5));
             }),
             withToString("$type$[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> ($type$)(i * 5));
+                            i -> ($type$) (i * 5));
             }),
             withToString("$type$[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> ((($type$)(i + 1) == 0) ? 1 : ($type$)(i + 1)));
+                            i -> ((($type$) (i + 1) == 0) ? 1 : ($type$) (i + 1)));
             }),
             withToString("$type$[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1252,7 +1250,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
                 int upper = m;
 #end[ByteMax]
                 for (int i = 0; i < 1; i++) {
-                    a[i] = ($type$)RAND.nextInt(upper);
+                    a[i] = ($type$) RAND.nextInt(upper);
                 }
                 return a;
             })
@@ -1276,29 +1274,28 @@ public class $vectorteststype$ extends AbstractVectorTest {
                 }))).
                 toArray(Object[][]::new);
     }
-
 #end[!Int]
 
     static final List<IntFunction<$type$[]>> $TYPE$_COMPARE_GENERATORS = List.of(
             withToString("$type$[i]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> ($type$)i);
+                            i -> ($type$) i);
             }),
             withToString("$type$[i - length / 2]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> ($type$)(i - (s * BUFFER_REPS / 2)));
+                            i -> ($type$) (i - (s * BUFFER_REPS / 2)));
             }),
             withToString("$type$[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> ($type$)(i + 1));
+                            i -> ($type$) (i + 1));
             }),
             withToString("$type$[i - 2]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> ($type$)(i - 2));
+                            i -> ($type$) (i - 2));
             }),
             withToString("$type$[zigZag(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> i%3 == 0 ? ($type$)i : (i%3 == 1 ? ($type$)(i + 1) : ($type$)(i - 2)));
+                            i -> i % 3 == 0 ? ($type$) i : (i % 3 == 1 ? ($type$) (i + 1) : ($type$) (i - 2)));
             }),
             withToString("$type$[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1375,9 +1372,9 @@ public class $vectorteststype$ extends AbstractVectorTest {
             case 4:
                 return $Wideboxtype$.NaN;
             case 5:
-                return ($type$)0.0;
+                return ($type$) 0.0;
             default:
-                return ($type$)-0.0;
+                return ($type$) -0.0;
         }
 #else[FP]
         switch(i % 5) {
@@ -1390,7 +1387,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
             case 3:
                 return $Wideboxtype$.MAX_VALUE;
             default:
-                return ($type$)0;
+                return ($type$) 0;
         }
 #end[FP]
     }
@@ -1435,24 +1432,24 @@ public class $vectorteststype$ extends AbstractVectorTest {
 
     static $type$ ROL_scalar($type$ a, $type$ b) {
 #if[intOrLong]
-        return $Wideboxtype$.rotateLeft(a, ((int)b));
+        return $Wideboxtype$.rotateLeft(a, ((int) b));
 #else[intOrLong]
 #if[short]
-        return (short)(((((short)a) & 0xFFFF) << (b & 15)) | ((((short)a) & 0xFFFF) >>> (16 - (b & 15))));
+        return (short) (((((short) a) & 0xFFFF) << (b & 15)) | ((((short) a) & 0xFFFF) >>> (16 - (b & 15))));
 #else[short]
-        return (byte)(((((byte)a) & 0xFF) << (b & 7)) | ((((byte)a) & 0xFF) >>> (8 - (b & 7))));
+        return (byte) (((((byte) a) & 0xFF) << (b & 7)) | ((((byte) a) & 0xFF) >>> (8 - (b & 7))));
 #end[short]
 #end[intOrLong]
     }
 
     static $type$ ROR_scalar($type$ a, $type$ b) {
 #if[intOrLong]
-        return $Wideboxtype$.rotateRight(a, ((int)b));
+        return $Wideboxtype$.rotateRight(a, ((int) b));
 #else[intOrLong]
 #if[short]
-        return (short)(((((short)a) & 0xFFFF) >>> (b & 15)) | ((((short)a) & 0xFFFF) << (16 - (b & 15))));
+        return (short) (((((short) a) & 0xFFFF) >>> (b & 15)) | ((((short) a) & 0xFFFF) << (16 - (b & 15))));
 #else[short]
-        return (byte)(((((byte)a) & 0xFF) >>> (b & 7)) | ((((byte)a) & 0xFF) << (8 - (b & 7))));
+        return (byte) (((((byte) a) & 0xFF) >>> (b & 7)) | ((((byte) a) & 0xFF) << (8 - (b & 7))));
 #end[short]
 #end[intOrLong]
     }
@@ -1487,14 +1484,14 @@ public class $vectorteststype$ extends AbstractVectorTest {
 #else[intOrLong]
 #if[short]
         $type$ b = ROL_scalar(a, ($type$) 8);
-        b = (short)(((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
-        b = (short)(((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
-        b = (short)(((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
+        b = (short) (((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
+        b = (short) (((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
+        b = (short) (((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
         return b;
 #else[short]
         $type$ b = ($type$) ROL_scalar(a, ($type$) 4);
-        b = (byte)(((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
-        b = (byte)(((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
+        b = (byte) (((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
+        b = (byte) (((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
         return b;
 #end[short]
 #end[intOrLong]
@@ -1549,7 +1546,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
 
     @Test
     static void smokeTest1() {
-        $abstractvectortype$ three = $abstractvectortype$.broadcast(SPECIES, (byte)-3);
+        $abstractvectortype$ three = $abstractvectortype$.broadcast(SPECIES, (byte) -3);
         $abstractvectortype$ three2 = ($abstractvectortype$) SPECIES.broadcast(-3);
         assert(three.eq(three2).allTrue());
         $abstractvectortype$ three3 = three2.broadcast(1).broadcast(-3);
@@ -1563,14 +1560,14 @@ public class $vectorteststype$ extends AbstractVectorTest {
         $abstractvectortype$ higher = three.addIndex(scale);
         VectorMask<$Boxtype$> m = three.compare(VectorOperators.LE, higher);
         assert(m.allTrue());
-        m = higher.min(($type$)-1).test(VectorOperators.IS_NEGATIVE);
+        m = higher.min(($type$) -1).test(VectorOperators.IS_NEGATIVE);
         assert(m.allTrue());
 #if[FP]
         m = higher.test(VectorOperators.IS_FINITE);
         assert(m.allTrue());
 #end[FP]
         $type$ max = higher.reduceLanes(VectorOperators.MAX);
-        assert(max == -3 + scale * (SPECIES.length()-1));
+        assert(max == -3 + scale * (SPECIES.length() - 1));
     }
 
     private static $type$[]
@@ -1585,27 +1582,27 @@ public class $vectorteststype$ extends AbstractVectorTest {
     static void smokeTest2() {
         // Do some zipping and shuffling.
         $abstractvectortype$ io = ($abstractvectortype$) SPECIES.broadcast(0).addIndex(1);
-        $abstractvectortype$ io2 = ($abstractvectortype$) VectorShuffle.iota(SPECIES,0,1,false).toVector();
+        $abstractvectortype$ io2 = ($abstractvectortype$) VectorShuffle.iota(SPECIES, 0, 1, false).toVector();
         Assert.assertEquals(io, io2);
-        $abstractvectortype$ a = io.add(($type$)1); //[1,2]
+        $abstractvectortype$ a = io.add(($type$) 1); //[1,2]
         $abstractvectortype$ b = a.neg();  //[-1,-2]
         $type$[] abValues = bothToArray(a,b); //[1,2,-1,-2]
         VectorShuffle<$Boxtype$> zip0 = VectorShuffle.makeZip(SPECIES, 0);
         VectorShuffle<$Boxtype$> zip1 = VectorShuffle.makeZip(SPECIES, 1);
-        $abstractvectortype$ zab0 = a.rearrange(zip0,b); //[1,-1]
-        $abstractvectortype$ zab1 = a.rearrange(zip1,b); //[2,-2]
+        $abstractvectortype$ zab0 = a.rearrange(zip0, b); //[1,-1]
+        $abstractvectortype$ zab1 = a.rearrange(zip1, b); //[2,-2]
         $type$[] zabValues = bothToArray(zab0, zab1); //[1,-1,2,-2]
         // manually zip
         $type$[] manual = new $type$[zabValues.length];
         for (int i = 0; i < manual.length; i += 2) {
-            manual[i+0] = abValues[i/2];
-            manual[i+1] = abValues[a.length() + i/2];
+            manual[i + 0] = abValues[i / 2];
+            manual[i + 1] = abValues[a.length() + i / 2];
         }
         Assert.assertEquals(Arrays.toString(zabValues), Arrays.toString(manual));
         VectorShuffle<$Boxtype$> unz0 = VectorShuffle.makeUnzip(SPECIES, 0);
         VectorShuffle<$Boxtype$> unz1 = VectorShuffle.makeUnzip(SPECIES, 1);
-        $abstractvectortype$ uab0 = zab0.rearrange(unz0,zab1);
-        $abstractvectortype$ uab1 = zab0.rearrange(unz1,zab1);
+        $abstractvectortype$ uab0 = zab0.rearrange(unz0, zab1);
+        $abstractvectortype$ uab1 = zab0.rearrange(unz1, zab1);
         $type$[] abValues1 = bothToArray(uab0, uab1);
         Assert.assertEquals(Arrays.toString(abValues), Arrays.toString(abValues1));
     }

@@ -90,12 +90,12 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a[i]));
             }
         } catch (AssertionError e) {
             int[] ref = f.apply(a[i]);
-            int[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            int[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i);
@@ -255,12 +255,12 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
-                    Assert.assertEquals(r[i+j], a[i+order[i+j]]);
+                    Assert.assertEquals(r[i + j], a[i+order[i + j]]);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
-            Assert.assertEquals(r[i+j], a[i+order[i+j]], "at index #" + idx + ", input = " + a[i+order[i+j]]);
+            Assert.assertEquals(r[i + j], a[i+order[i + j]], "at index #" + idx + ", input = " + a[i + order[i + j]]);
         }
     }
 
@@ -276,7 +276,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
                     }
                 }
                 for (; k < vector_len; k++) {
-                    Assert.assertEquals(r[i + k], (int)0);
+                    Assert.assertEquals(r[i + k], (int) 0);
                 }
             }
         } catch (AssertionError e) {
@@ -284,7 +284,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
             if (m[(i + j) % SPECIES.length()]) {
                 Assert.assertEquals(r[idx], a[i + j], "at index #" + idx);
             } else {
-                Assert.assertEquals(r[idx], (int)0, "at index #" + idx);
+                Assert.assertEquals(r[idx], (int) 0, "at index #" + idx);
             }
         }
     }
@@ -299,7 +299,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
                         Assert.assertEquals(r[i + j], a[i + k]);
                         k++;
                     } else {
-                        Assert.assertEquals(r[i + j], (int)0);
+                        Assert.assertEquals(r[i + j], (int) 0);
                     }
                 }
             }
@@ -308,7 +308,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
             if (m[idx % SPECIES.length()]) {
                 Assert.assertEquals(r[idx], a[i + k], "at index #" + idx);
             } else {
-                Assert.assertEquals(r[idx], (int)0, "at index #" + idx);
+                Assert.assertEquals(r[idx], (int) 0, "at index #" + idx);
             }
         }
     }
@@ -318,12 +318,12 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
-                    Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                    Assert.assertEquals(r[i + j], a[i + (int) order[i + j]]);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
-            Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]]);
+            Assert.assertEquals(r[i + j], a[i + (int) order[i + j]], "at index #" + idx + ", input = " + a[i + (int) order[i + j]]);
         }
     }
 
@@ -333,17 +333,17 @@ public class IntMaxVectorTests extends AbstractVectorTest {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
                     if (mask[j % SPECIES.length()])
-                         Assert.assertEquals(r[i+j], a[i+order[i+j]]);
+                         Assert.assertEquals(r[i + j], a[i + order[i + j]]);
                     else
-                         Assert.assertEquals(r[i+j], (int)0);
+                         Assert.assertEquals(r[i + j], (int) 0);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
             if (mask[j % SPECIES.length()])
-                Assert.assertEquals(r[i+j], a[i+order[i+j]], "at index #" + idx + ", input = " + a[i+order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i + j], a[i + order[i + j]], "at index #" + idx + ", input = " + a[i + order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
             else
-                Assert.assertEquals(r[i+j], (int)0, "at index #" + idx + ", input = " + a[i+order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i + j], (int) 0, "at index #" + idx + ", input = " + a[i + order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
         }
     }
 
@@ -353,17 +353,17 @@ public class IntMaxVectorTests extends AbstractVectorTest {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
                     if (mask[j % SPECIES.length()])
-                         Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                         Assert.assertEquals(r[i + j], a[i + (int) order[i + j]]);
                     else
-                         Assert.assertEquals(r[i+j], (int)0);
+                         Assert.assertEquals(r[i + j], (int) 0);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
             if (mask[j % SPECIES.length()])
-                Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i + j], a[i + (int) order[i + j]], "at index #" + idx + ", input = " + a[i + (int) order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
             else
-                Assert.assertEquals(r[i+j], (int)0, "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i + j], (int) 0, "at index #" + idx + ", input = " + a[i + (int) order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
         }
     }
 
@@ -372,7 +372,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (; i < a.length; i += SPECIES.length()) {
             int idx = i;
             for (int j = idx; j < (idx + SPECIES.length()); j++)
-                a[j]=a[idx];
+                a[j] = a[idx];
         }
 
         try {
@@ -423,10 +423,10 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i++) {
-                Assert.assertEquals(r[i], f.apply(a[i], (int)((long)b[(i / SPECIES.length()) * SPECIES.length()])));
+                Assert.assertEquals(r[i], f.apply(a[i], (int) ((long) b[(i / SPECIES.length()) * SPECIES.length()])));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], f.apply(a[i], (int)((long)b[(i / SPECIES.length()) * SPECIES.length()])),
+            Assert.assertEquals(r[i], f.apply(a[i], (int) ((long) b[(i / SPECIES.length()) * SPECIES.length()])),
                                 "(" + a[i] + ", " + b[(i / SPECIES.length()) * SPECIES.length()] + ") at index #" + i);
         }
     }
@@ -472,10 +472,10 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i++) {
-                Assert.assertEquals(r[i], f.apply(a[i], (int)((long)b[(i / SPECIES.length()) * SPECIES.length()]), mask[i % SPECIES.length()]));
+                Assert.assertEquals(r[i], f.apply(a[i], (int) ((long) b[(i / SPECIES.length()) * SPECIES.length()]), mask[i % SPECIES.length()]));
             }
         } catch (AssertionError err) {
-            Assert.assertEquals(r[i], f.apply(a[i], (int)((long)b[(i / SPECIES.length()) * SPECIES.length()]),
+            Assert.assertEquals(r[i], f.apply(a[i], (int) ((long) b[(i / SPECIES.length()) * SPECIES.length()]),
                                 mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] +
                                 ", input2 = " + b[(i / SPECIES.length()) * SPECIES.length()] + ", mask = " +
                                 mask[i % SPECIES.length()]);
@@ -488,11 +488,11 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         try {
             for (; j < a.length; j += SPECIES.length()) {
                 for (i = 0; i < SPECIES.length(); i++) {
-                    Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j]));
+                    Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j]));
                 }
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j]), "at index #" + i + ", " + j);
+            Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j]), "at index #" + i + ", " + j);
         }
     }
 
@@ -506,11 +506,11 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         try {
             for (; j < a.length; j += SPECIES.length()) {
                 for (i = 0; i < SPECIES.length(); i++) {
-                    Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j], mask[i]));
+                    Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j], mask[i]));
                 }
             }
         } catch (AssertionError err) {
-            Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j], mask[i]), "at index #" + i + ", input1 = " + a[i+j] + ", input2 = " + b[j] + ", mask = " + mask[i]);
+            Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j], mask[i]), "at index #" + i + ", input1 = " + a[i + j] + ", input2 = " + b[j] + ", mask = " + mask[i]);
         }
     }
 
@@ -659,7 +659,6 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     }
 
 
-
     interface FBinArrayOp {
         int apply(int[] a, int b);
     }
@@ -683,17 +682,17 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, i, b, i));
             }
         } catch (AssertionError e) {
             int[] ref = f.apply(a, i, b, i);
-            int[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            int[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref,
               "(ref: " + Arrays.toString(ref) + ", res: " + Arrays.toString(res) + ", a: "
-              + Arrays.toString(Arrays.copyOfRange(a, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(a, i, i + SPECIES.length()))
               + ", b: "
-              + Arrays.toString(Arrays.copyOfRange(b, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(b, i, i + SPECIES.length()))
               + " at index #" + i);
         }
     }
@@ -710,17 +709,17 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, i, mask, b, i));
             }
         } catch (AssertionError e) {
             int[] ref = f.apply(a, i, mask, b, i);
-            int[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            int[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref,
               "(ref: " + Arrays.toString(ref) + ", res: " + Arrays.toString(res) + ", a: "
-              + Arrays.toString(Arrays.copyOfRange(a, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(a, i, i + SPECIES.length()))
               + ", b: "
-              + Arrays.toString(Arrays.copyOfRange(b, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(b, i, i + SPECIES.length()))
               + ", mask: "
               + Arrays.toString(mask)
               + " at index #" + i);
@@ -731,19 +730,19 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(r, a, i, mask, b, i));
             }
         } catch (AssertionError e) {
             int[] ref = f.apply(r, a, i, mask, b, i);
-            int[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            int[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref,
               "(ref: " + Arrays.toString(ref) + ", res: " + Arrays.toString(res) + ", a: "
-              + Arrays.toString(Arrays.copyOfRange(a, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(a, i, i + SPECIES.length()))
               + ", b: "
-              + Arrays.toString(Arrays.copyOfRange(b, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(b, i, i + SPECIES.length()))
               + ", r: "
-              + Arrays.toString(Arrays.copyOfRange(r, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(r, i, i + SPECIES.length()))
               + ", mask: "
               + Arrays.toString(mask)
               + " at index #" + i);
@@ -758,12 +757,12 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, origin, i));
             }
         } catch (AssertionError e) {
             int[] ref = f.apply(a, origin, i);
-            int[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            int[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i);
@@ -778,12 +777,12 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, b, origin, i));
             }
         } catch (AssertionError e) {
             int[] ref = f.apply(a, b, origin, i);
-            int[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            int[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -799,12 +798,12 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, b, origin, mask, i));
             }
         } catch (AssertionError e) {
             int[] ref = f.apply(a, b, origin, mask, i);
-            int[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            int[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -820,12 +819,12 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, b, origin, part, i));
             }
         } catch (AssertionError e) {
             int[] ref = f.apply(a, b, origin, part, i);
-            int[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            int[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -842,12 +841,12 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, b, origin, part, mask, i));
             }
         } catch (AssertionError e) {
             int[] ref = f.apply(a, b, origin, part, mask, i);
-            int[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            int[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -861,10 +860,10 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < r.length; i++) {
-                Assert.assertEquals(r[i], (int)(a[i+offs]));
+                Assert.assertEquals(r[i], (int) (a[i + offs]));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], (int)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+            Assert.assertEquals(r[i], (int) (a[i + offs]), "at index #" + i + ", input = " + a[i + offs]);
         }
     }
 
@@ -874,10 +873,10 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < r.length; i++) {
-                Assert.assertEquals(r[i], (long)(a[i+offs]));
+                Assert.assertEquals(r[i], (long) (a[i + offs]));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], (long)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+            Assert.assertEquals(r[i], (long) (a[i + offs]), "at index #" + i + ", input = " + a[i + offs]);
         }
     }
 
@@ -885,13 +884,12 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < r.length; i++) {
-                Assert.assertEquals(r[i], (double)(a[i+offs]));
+                Assert.assertEquals(r[i], (double) (a[i + offs]));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], (double)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+            Assert.assertEquals(r[i], (double) (a[i + offs]), "at index #" + i + ", input = " + a[i + offs]);
         }
     }
-
 
     static int bits(int e) {
         return  e;
@@ -900,15 +898,15 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     static final List<IntFunction<int[]>> INT_GENERATORS = List.of(
             withToString("int[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (int)(-i * 5));
+                            i -> (int) (-i * 5));
             }),
             withToString("int[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (int)(i * 5));
+                            i -> (int) (i * 5));
             }),
             withToString("int[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((int)(i + 1) == 0) ? 1 : (int)(i + 1)));
+                            i -> (((int) (i + 1) == 0) ? 1 : (int) (i + 1)));
             }),
             withToString("int[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1038,23 +1036,23 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     static final List<IntFunction<int[]>> INT_COMPARE_GENERATORS = List.of(
             withToString("int[i]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (int)i);
+                            i -> (int) i);
             }),
             withToString("int[i - length / 2]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (int)(i - (s * BUFFER_REPS / 2)));
+                            i -> (int) (i - (s * BUFFER_REPS / 2)));
             }),
             withToString("int[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (int)(i + 1));
+                            i -> (int) (i + 1));
             }),
             withToString("int[i - 2]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (int)(i - 2));
+                            i -> (int) (i - 2));
             }),
             withToString("int[zigZag(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> i%3 == 0 ? (int)i : (i%3 == 1 ? (int)(i + 1) : (int)(i - 2)));
+                            i -> i % 3 == 0 ? (int) i : (i % 3 == 1 ? (int) (i + 1) : (int) (i - 2)));
             }),
             withToString("int[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1128,7 +1126,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
             case 3:
                 return Integer.MAX_VALUE;
             default:
-                return (int)0;
+                return (int) 0;
         }
     }
 
@@ -1168,11 +1166,11 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     }
 
     static int ROL_scalar(int a, int b) {
-        return Integer.rotateLeft(a, ((int)b));
+        return Integer.rotateLeft(a, ((int) b));
     }
 
     static int ROR_scalar(int a, int b) {
-        return Integer.rotateRight(a, ((int)b));
+        return Integer.rotateRight(a, ((int) b));
     }
 
     static int TRAILING_ZEROS_COUNT_scalar(int a) {
@@ -1186,7 +1184,6 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     static int REVERSE_scalar(int a) {
         return Integer.reverse(a);
     }
-
 
     static boolean eq(int a, int b) {
         return a == b;
@@ -1234,7 +1231,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
     @Test
     static void smokeTest1() {
-        IntVector three = IntVector.broadcast(SPECIES, (byte)-3);
+        IntVector three = IntVector.broadcast(SPECIES, (byte) -3);
         IntVector three2 = (IntVector) SPECIES.broadcast(-3);
         assert(three.eq(three2).allTrue());
         IntVector three3 = three2.broadcast(1).broadcast(-3);
@@ -1248,10 +1245,10 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         IntVector higher = three.addIndex(scale);
         VectorMask<Integer> m = three.compare(VectorOperators.LE, higher);
         assert(m.allTrue());
-        m = higher.min((int)-1).test(VectorOperators.IS_NEGATIVE);
+        m = higher.min((int) -1).test(VectorOperators.IS_NEGATIVE);
         assert(m.allTrue());
         int max = higher.reduceLanes(VectorOperators.MAX);
-        assert(max == -3 + scale * (SPECIES.length()-1));
+        assert(max == -3 + scale * (SPECIES.length() - 1));
     }
 
     private static int[]
@@ -1266,27 +1263,27 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     static void smokeTest2() {
         // Do some zipping and shuffling.
         IntVector io = (IntVector) SPECIES.broadcast(0).addIndex(1);
-        IntVector io2 = (IntVector) VectorShuffle.iota(SPECIES,0,1,false).toVector();
+        IntVector io2 = (IntVector) VectorShuffle.iota(SPECIES, 0, 1, false).toVector();
         Assert.assertEquals(io, io2);
-        IntVector a = io.add((int)1); //[1,2]
+        IntVector a = io.add((int) 1); //[1,2]
         IntVector b = a.neg();  //[-1,-2]
         int[] abValues = bothToArray(a,b); //[1,2,-1,-2]
         VectorShuffle<Integer> zip0 = VectorShuffle.makeZip(SPECIES, 0);
         VectorShuffle<Integer> zip1 = VectorShuffle.makeZip(SPECIES, 1);
-        IntVector zab0 = a.rearrange(zip0,b); //[1,-1]
-        IntVector zab1 = a.rearrange(zip1,b); //[2,-2]
+        IntVector zab0 = a.rearrange(zip0, b); //[1,-1]
+        IntVector zab1 = a.rearrange(zip1, b); //[2,-2]
         int[] zabValues = bothToArray(zab0, zab1); //[1,-1,2,-2]
         // manually zip
         int[] manual = new int[zabValues.length];
         for (int i = 0; i < manual.length; i += 2) {
-            manual[i+0] = abValues[i/2];
-            manual[i+1] = abValues[a.length() + i/2];
+            manual[i + 0] = abValues[i / 2];
+            manual[i + 1] = abValues[a.length() + i / 2];
         }
         Assert.assertEquals(Arrays.toString(zabValues), Arrays.toString(manual));
         VectorShuffle<Integer> unz0 = VectorShuffle.makeUnzip(SPECIES, 0);
         VectorShuffle<Integer> unz1 = VectorShuffle.makeUnzip(SPECIES, 1);
-        IntVector uab0 = zab0.rearrange(unz0,zab1);
-        IntVector uab1 = zab0.rearrange(unz1,zab1);
+        IntVector uab0 = zab0.rearrange(unz0, zab1);
+        IntVector uab1 = zab0.rearrange(unz1, zab1);
         int[] abValues1 = bothToArray(uab0, uab1);
         Assert.assertEquals(Arrays.toString(abValues), Arrays.toString(abValues1));
     }
@@ -1343,7 +1340,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         }
     }
     static int ADD(int a, int b) {
-        return (int)(a + b);
+        return (int) (a + b);
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -1363,7 +1360,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, IntMaxVectorTests::ADD);
     }
     static int add(int a, int b) {
-        return (int)(a + b);
+        return (int) (a + b);
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -1419,7 +1416,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, mask, IntMaxVectorTests::add);
     }
     static int SUB(int a, int b) {
-        return (int)(a - b);
+        return (int) (a - b);
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -1439,7 +1436,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, IntMaxVectorTests::SUB);
     }
     static int sub(int a, int b) {
-        return (int)(a - b);
+        return (int) (a - b);
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -1495,7 +1492,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, mask, IntMaxVectorTests::sub);
     }
     static int MUL(int a, int b) {
-        return (int)(a * b);
+        return (int) (a * b);
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -1515,7 +1512,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, IntMaxVectorTests::MUL);
     }
     static int mul(int a, int b) {
-        return (int)(a * b);
+        return (int) (a * b);
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -1574,7 +1571,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int DIV(int a, int b) {
-        return (int)(a / b);
+        return (int) (a / b);
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -1596,7 +1593,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, IntMaxVectorTests::DIV);
     }
     static int div(int a, int b) {
-        return (int)(a / b);
+        return (int) (a / b);
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -1665,7 +1662,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     }
 
     static int FIRST_NONZERO(int a, int b) {
-        return (int)((a)!=0?a:b);
+        return (int) ((a) != 0 ? a : b);
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -1706,7 +1703,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     }
 
     static int AND(int a, int b) {
-        return (int)(a & b);
+        return (int) (a & b);
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -1726,7 +1723,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, IntMaxVectorTests::AND);
     }
     static int and(int a, int b) {
-        return (int)(a & b);
+        return (int) (a & b);
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -1768,7 +1765,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int AND_NOT(int a, int b) {
-        return (int)(a & ~b);
+        return (int) (a & ~b);
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -1812,7 +1809,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int OR(int a, int b) {
-        return (int)(a | b);
+        return (int) (a | b);
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -1832,7 +1829,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, IntMaxVectorTests::OR);
     }
     static int or(int a, int b) {
-        return (int)(a | b);
+        return (int) (a | b);
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -1874,7 +1871,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int XOR(int a, int b) {
-        return (int)(a ^ b);
+        return (int) (a ^ b);
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2158,7 +2155,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             IntVector av = IntVector.fromArray(SPECIES, a, i);
-            av.lanewise(VectorOperators.OR, (long)b[i]).intoArray(r, i);
+            av.lanewise(VectorOperators.OR, (long) b[i]).intoArray(r, i);
         }
 
         assertBroadcastLongArraysEquals(r, a, b, IntMaxVectorTests::OR);
@@ -2177,7 +2174,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             IntVector av = IntVector.fromArray(SPECIES, a, i);
-            av.lanewise(VectorOperators.OR, (long)b[i], vmask).intoArray(r, i);
+            av.lanewise(VectorOperators.OR, (long) b[i], vmask).intoArray(r, i);
         }
 
         assertBroadcastLongArraysEquals(r, a, b, mask, IntMaxVectorTests::OR);
@@ -2192,7 +2189,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             IntVector av = IntVector.fromArray(SPECIES, a, i);
-            av.lanewise(VectorOperators.ADD, (long)b[i]).intoArray(r, i);
+            av.lanewise(VectorOperators.ADD, (long) b[i]).intoArray(r, i);
         }
 
         assertBroadcastLongArraysEquals(r, a, b, IntMaxVectorTests::ADD);
@@ -2209,14 +2206,14 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             IntVector av = IntVector.fromArray(SPECIES, a, i);
-            av.lanewise(VectorOperators.ADD, (long)b[i], vmask).intoArray(r, i);
+            av.lanewise(VectorOperators.ADD, (long) b[i], vmask).intoArray(r, i);
         }
 
         assertBroadcastLongArraysEquals(r, a, b, mask, IntMaxVectorTests::ADD);
     }
 
     static int LSHL(int a, int b) {
-        return (int)((a << b));
+        return (int) ((a << b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2264,7 +2261,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int ASHR(int a, int b) {
-        return (int)((a >> b));
+        return (int) ((a >> b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2312,7 +2309,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int LSHR(int a, int b) {
-        return (int)((a >>> b));
+        return (int) ((a >>> b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2360,7 +2357,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int LSHL_unary(int a, int b) {
-        return (int)((a << b));
+        return (int) ((a << b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2372,7 +2369,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.LSHL, (int)b[i]).intoArray(r, i);
+                av.lanewise(VectorOperators.LSHL, (int) b[i]).intoArray(r, i);
             }
         }
 
@@ -2393,7 +2390,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.LSHL, (int)b[i], vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.LSHL, (int) b[i], vmask).intoArray(r, i);
             }
         }
 
@@ -2406,7 +2403,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int LSHR_unary(int a, int b) {
-        return (int)((a >>> b));
+        return (int) ((a >>> b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2418,7 +2415,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.LSHR, (int)b[i]).intoArray(r, i);
+                av.lanewise(VectorOperators.LSHR, (int) b[i]).intoArray(r, i);
             }
         }
 
@@ -2439,7 +2436,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.LSHR, (int)b[i], vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.LSHR, (int) b[i], vmask).intoArray(r, i);
             }
         }
 
@@ -2452,7 +2449,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int ASHR_unary(int a, int b) {
-        return (int)((a >> b));
+        return (int) ((a >> b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2464,7 +2461,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.ASHR, (int)b[i]).intoArray(r, i);
+                av.lanewise(VectorOperators.ASHR, (int) b[i]).intoArray(r, i);
             }
         }
 
@@ -2485,7 +2482,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.ASHR, (int)b[i], vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.ASHR, (int) b[i], vmask).intoArray(r, i);
             }
         }
 
@@ -2498,7 +2495,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int ROR(int a, int b) {
-        return (int)(ROR_scalar(a,b));
+        return (int) (ROR_scalar(a, b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2542,7 +2539,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int ROL(int a, int b) {
-        return (int)(ROL_scalar(a,b));
+        return (int) (ROL_scalar(a, b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2586,7 +2583,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int ROR_unary(int a, int b) {
-        return (int)(ROR_scalar(a,b));
+        return (int) (ROR_scalar(a, b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2598,7 +2595,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.ROR, (int)b[i]).intoArray(r, i);
+                av.lanewise(VectorOperators.ROR, (int) b[i]).intoArray(r, i);
             }
         }
 
@@ -2619,7 +2616,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.ROR, (int)b[i], vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.ROR, (int) b[i], vmask).intoArray(r, i);
             }
         }
 
@@ -2628,7 +2625,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int ROL_unary(int a, int b) {
-        return (int)(ROL_scalar(a,b));
+        return (int) (ROL_scalar(a, b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2640,7 +2637,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.ROL, (int)b[i]).intoArray(r, i);
+                av.lanewise(VectorOperators.ROL, (int) b[i]).intoArray(r, i);
             }
         }
 
@@ -2661,7 +2658,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.ROL, (int)b[i], vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.ROL, (int) b[i], vmask).intoArray(r, i);
             }
         }
 
@@ -2669,7 +2666,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     }
 
     static int MIN(int a, int b) {
-        return (int)(Math.min(a, b));
+        return (int) (Math.min(a, b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2689,7 +2686,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, IntMaxVectorTests::MIN);
     }
     static int min(int a, int b) {
-        return (int)(Math.min(a, b));
+        return (int) (Math.min(a, b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2707,7 +2704,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, IntMaxVectorTests::min);
     }
     static int MAX(int a, int b) {
-        return (int)(Math.max(a, b));
+        return (int) (Math.max(a, b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2727,7 +2724,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, IntMaxVectorTests::MAX);
     }
     static int max(int a, int b) {
-        return (int)(Math.max(a, b));
+        return (int) (Math.max(a, b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -3565,17 +3562,17 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0, j = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.withLane((j++ & (SPECIES.length()-1)), (int)(65535+i)).intoArray(r, i);
+                av.withLane((j++ & (SPECIES.length() - 1)), (int) (65535 + i)).intoArray(r, i);
             }
         }
 
 
         for (int i = 0, j = 0; i < a.length; i += SPECIES.length()) {
-            assertInsertArraysEquals(r, a, (int)(65535+i), (j++ & (SPECIES.length()-1)), i , i + SPECIES.length());
+            assertInsertArraysEquals(r, a, (int) (65535 + i), (j++ & (SPECIES.length() - 1)), i , i + SPECIES.length());
         }
     }
     static boolean testIS_DEFAULT(int a) {
-        return bits(a)==0;
+        return bits(a) == 0;
     }
 
     @Test(dataProvider = "intTestOpProvider")
@@ -3608,12 +3605,12 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_DEFAULT(a[i + j]));
+                Assert.assertEquals(mv.laneIsSet(j), vmask.laneIsSet(j) && testIS_DEFAULT(a[i + j]));
             }
         }
     }
     static boolean testIS_NEGATIVE(int a) {
-        return bits(a)<0;
+        return bits(a) < 0;
     }
 
     @Test(dataProvider = "intTestOpProvider")
@@ -3646,7 +3643,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_NEGATIVE(a[i + j]));
+                Assert.assertEquals(mv.laneIsSet(j), vmask.laneIsSet(j) && testIS_NEGATIVE(a[i + j]));
             }
         }
     }
@@ -4156,7 +4153,6 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-
     @Test(dataProvider = "intCompareOpMaskProvider")
     static void LTIntMaxVectorTestsBroadcastMaskedSmokeTest(IntFunction<int[]> fa,
                                 IntFunction<int[]> fb, IntFunction<boolean[]> fm) {
@@ -4184,15 +4180,14 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             IntVector av = IntVector.fromArray(SPECIES, a, i);
-            VectorMask<Integer> mv = av.compare(VectorOperators.LT, (long)b[i]);
+            VectorMask<Integer> mv = av.compare(VectorOperators.LT, (long) b[i]);
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j), a[i + j] < (int)((long)b[i]));
+                Assert.assertEquals(mv.laneIsSet(j), a[i + j] < (int) ((long) b[i]));
             }
         }
     }
-
 
     @Test(dataProvider = "intCompareOpMaskProvider")
     static void LTIntMaxVectorTestsBroadcastLongMaskedSmokeTest(IntFunction<int[]> fa,
@@ -4205,11 +4200,11 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             IntVector av = IntVector.fromArray(SPECIES, a, i);
-            VectorMask<Integer> mv = av.compare(VectorOperators.LT, (long)b[i], vmask);
+            VectorMask<Integer> mv = av.compare(VectorOperators.LT, (long) b[i], vmask);
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] < (int)((long)b[i])));
+                Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] < (int) ((long) b[i])));
             }
         }
     }
@@ -4229,7 +4224,6 @@ public class IntMaxVectorTests extends AbstractVectorTest {
             }
         }
     }
-
 
     @Test(dataProvider = "intCompareOpMaskProvider")
     static void EQIntMaxVectorTestsBroadcastMaskedSmokeTest(IntFunction<int[]> fa,
@@ -4258,15 +4252,14 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             IntVector av = IntVector.fromArray(SPECIES, a, i);
-            VectorMask<Integer> mv = av.compare(VectorOperators.EQ, (long)b[i]);
+            VectorMask<Integer> mv = av.compare(VectorOperators.EQ, (long) b[i]);
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j), a[i + j] == (int)((long)b[i]));
+                Assert.assertEquals(mv.laneIsSet(j), a[i + j] == (int) ((long) b[i]));
             }
         }
     }
-
 
     @Test(dataProvider = "intCompareOpMaskProvider")
     static void EQIntMaxVectorTestsBroadcastLongMaskedSmokeTest(IntFunction<int[]> fa,
@@ -4279,11 +4272,11 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             IntVector av = IntVector.fromArray(SPECIES, a, i);
-            VectorMask<Integer> mv = av.compare(VectorOperators.EQ, (long)b[i], vmask);
+            VectorMask<Integer> mv = av.compare(VectorOperators.EQ, (long) b[i], vmask);
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] == (int)((long)b[i])));
+                Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] == (int) ((long) b[i])));
             }
         }
     }
@@ -4394,142 +4387,142 @@ public class IntMaxVectorTests extends AbstractVectorTest {
                 // Manually unroll because full unroll happens after intrinsification.
                 // Unroll is needed because get intrinsic requires for index to be a known constant.
                 if (num_lanes == 1) {
-                    r[i]=av.lane(0);
+                    r[i] = av.lane(0);
                 } else if (num_lanes == 2) {
-                    r[i]=av.lane(0);
-                    r[i+1]=av.lane(1);
+                    r[i] = av.lane(0);
+                    r[i + 1] = av.lane(1);
                 } else if (num_lanes == 4) {
-                    r[i]=av.lane(0);
-                    r[i+1]=av.lane(1);
-                    r[i+2]=av.lane(2);
-                    r[i+3]=av.lane(3);
+                    r[i] = av.lane(0);
+                    r[i + 1] = av.lane(1);
+                    r[i + 2] = av.lane(2);
+                    r[i + 3] = av.lane(3);
                 } else if (num_lanes == 8) {
-                    r[i]=av.lane(0);
-                    r[i+1]=av.lane(1);
-                    r[i+2]=av.lane(2);
-                    r[i+3]=av.lane(3);
-                    r[i+4]=av.lane(4);
-                    r[i+5]=av.lane(5);
-                    r[i+6]=av.lane(6);
-                    r[i+7]=av.lane(7);
+                    r[i] = av.lane(0);
+                    r[i + 1] = av.lane(1);
+                    r[i + 2] = av.lane(2);
+                    r[i + 3] = av.lane(3);
+                    r[i + 4] = av.lane(4);
+                    r[i + 5] = av.lane(5);
+                    r[i + 6] = av.lane(6);
+                    r[i + 7] = av.lane(7);
                 } else if (num_lanes == 16) {
-                    r[i]=av.lane(0);
-                    r[i+1]=av.lane(1);
-                    r[i+2]=av.lane(2);
-                    r[i+3]=av.lane(3);
-                    r[i+4]=av.lane(4);
-                    r[i+5]=av.lane(5);
-                    r[i+6]=av.lane(6);
-                    r[i+7]=av.lane(7);
-                    r[i+8]=av.lane(8);
-                    r[i+9]=av.lane(9);
-                    r[i+10]=av.lane(10);
-                    r[i+11]=av.lane(11);
-                    r[i+12]=av.lane(12);
-                    r[i+13]=av.lane(13);
-                    r[i+14]=av.lane(14);
-                    r[i+15]=av.lane(15);
+                    r[i] = av.lane(0);
+                    r[i + 1] = av.lane(1);
+                    r[i + 2] = av.lane(2);
+                    r[i + 3] = av.lane(3);
+                    r[i + 4] = av.lane(4);
+                    r[i + 5] = av.lane(5);
+                    r[i + 6] = av.lane(6);
+                    r[i + 7] = av.lane(7);
+                    r[i + 8] = av.lane(8);
+                    r[i + 9] = av.lane(9);
+                    r[i + 10] = av.lane(10);
+                    r[i + 11] = av.lane(11);
+                    r[i + 12] = av.lane(12);
+                    r[i + 13] = av.lane(13);
+                    r[i + 14] = av.lane(14);
+                    r[i + 15] = av.lane(15);
                 } else if (num_lanes == 32) {
-                    r[i]=av.lane(0);
-                    r[i+1]=av.lane(1);
-                    r[i+2]=av.lane(2);
-                    r[i+3]=av.lane(3);
-                    r[i+4]=av.lane(4);
-                    r[i+5]=av.lane(5);
-                    r[i+6]=av.lane(6);
-                    r[i+7]=av.lane(7);
-                    r[i+8]=av.lane(8);
-                    r[i+9]=av.lane(9);
-                    r[i+10]=av.lane(10);
-                    r[i+11]=av.lane(11);
-                    r[i+12]=av.lane(12);
-                    r[i+13]=av.lane(13);
-                    r[i+14]=av.lane(14);
-                    r[i+15]=av.lane(15);
-                    r[i+16]=av.lane(16);
-                    r[i+17]=av.lane(17);
-                    r[i+18]=av.lane(18);
-                    r[i+19]=av.lane(19);
-                    r[i+20]=av.lane(20);
-                    r[i+21]=av.lane(21);
-                    r[i+22]=av.lane(22);
-                    r[i+23]=av.lane(23);
-                    r[i+24]=av.lane(24);
-                    r[i+25]=av.lane(25);
-                    r[i+26]=av.lane(26);
-                    r[i+27]=av.lane(27);
-                    r[i+28]=av.lane(28);
-                    r[i+29]=av.lane(29);
-                    r[i+30]=av.lane(30);
-                    r[i+31]=av.lane(31);
+                    r[i] = av.lane(0);
+                    r[i + 1] = av.lane(1);
+                    r[i + 2] = av.lane(2);
+                    r[i + 3] = av.lane(3);
+                    r[i + 4] = av.lane(4);
+                    r[i + 5] = av.lane(5);
+                    r[i + 6] = av.lane(6);
+                    r[i + 7] = av.lane(7);
+                    r[i + 8] = av.lane(8);
+                    r[i + 9] = av.lane(9);
+                    r[i + 10] = av.lane(10);
+                    r[i + 11] = av.lane(11);
+                    r[i + 12] = av.lane(12);
+                    r[i + 13] = av.lane(13);
+                    r[i + 14] = av.lane(14);
+                    r[i + 15] = av.lane(15);
+                    r[i + 16] = av.lane(16);
+                    r[i + 17] = av.lane(17);
+                    r[i + 18] = av.lane(18);
+                    r[i + 19] = av.lane(19);
+                    r[i + 20] = av.lane(20);
+                    r[i + 21] = av.lane(21);
+                    r[i + 22] = av.lane(22);
+                    r[i + 23] = av.lane(23);
+                    r[i + 24] = av.lane(24);
+                    r[i + 25] = av.lane(25);
+                    r[i + 26] = av.lane(26);
+                    r[i + 27] = av.lane(27);
+                    r[i + 28] = av.lane(28);
+                    r[i + 29] = av.lane(29);
+                    r[i + 30] = av.lane(30);
+                    r[i + 31] = av.lane(31);
                 } else if (num_lanes == 64) {
-                    r[i]=av.lane(0);
-                    r[i+1]=av.lane(1);
-                    r[i+2]=av.lane(2);
-                    r[i+3]=av.lane(3);
-                    r[i+4]=av.lane(4);
-                    r[i+5]=av.lane(5);
-                    r[i+6]=av.lane(6);
-                    r[i+7]=av.lane(7);
-                    r[i+8]=av.lane(8);
-                    r[i+9]=av.lane(9);
-                    r[i+10]=av.lane(10);
-                    r[i+11]=av.lane(11);
-                    r[i+12]=av.lane(12);
-                    r[i+13]=av.lane(13);
-                    r[i+14]=av.lane(14);
-                    r[i+15]=av.lane(15);
-                    r[i+16]=av.lane(16);
-                    r[i+17]=av.lane(17);
-                    r[i+18]=av.lane(18);
-                    r[i+19]=av.lane(19);
-                    r[i+20]=av.lane(20);
-                    r[i+21]=av.lane(21);
-                    r[i+22]=av.lane(22);
-                    r[i+23]=av.lane(23);
-                    r[i+24]=av.lane(24);
-                    r[i+25]=av.lane(25);
-                    r[i+26]=av.lane(26);
-                    r[i+27]=av.lane(27);
-                    r[i+28]=av.lane(28);
-                    r[i+29]=av.lane(29);
-                    r[i+30]=av.lane(30);
-                    r[i+31]=av.lane(31);
-                    r[i+32]=av.lane(32);
-                    r[i+33]=av.lane(33);
-                    r[i+34]=av.lane(34);
-                    r[i+35]=av.lane(35);
-                    r[i+36]=av.lane(36);
-                    r[i+37]=av.lane(37);
-                    r[i+38]=av.lane(38);
-                    r[i+39]=av.lane(39);
-                    r[i+40]=av.lane(40);
-                    r[i+41]=av.lane(41);
-                    r[i+42]=av.lane(42);
-                    r[i+43]=av.lane(43);
-                    r[i+44]=av.lane(44);
-                    r[i+45]=av.lane(45);
-                    r[i+46]=av.lane(46);
-                    r[i+47]=av.lane(47);
-                    r[i+48]=av.lane(48);
-                    r[i+49]=av.lane(49);
-                    r[i+50]=av.lane(50);
-                    r[i+51]=av.lane(51);
-                    r[i+52]=av.lane(52);
-                    r[i+53]=av.lane(53);
-                    r[i+54]=av.lane(54);
-                    r[i+55]=av.lane(55);
-                    r[i+56]=av.lane(56);
-                    r[i+57]=av.lane(57);
-                    r[i+58]=av.lane(58);
-                    r[i+59]=av.lane(59);
-                    r[i+60]=av.lane(60);
-                    r[i+61]=av.lane(61);
-                    r[i+62]=av.lane(62);
-                    r[i+63]=av.lane(63);
+                    r[i] = av.lane(0);
+                    r[i + 1] = av.lane(1);
+                    r[i + 2] = av.lane(2);
+                    r[i + 3] = av.lane(3);
+                    r[i + 4] = av.lane(4);
+                    r[i + 5] = av.lane(5);
+                    r[i + 6] = av.lane(6);
+                    r[i + 7] = av.lane(7);
+                    r[i + 8] = av.lane(8);
+                    r[i + 9] = av.lane(9);
+                    r[i + 10] = av.lane(10);
+                    r[i + 11] = av.lane(11);
+                    r[i + 12] = av.lane(12);
+                    r[i + 13] = av.lane(13);
+                    r[i + 14] = av.lane(14);
+                    r[i + 15] = av.lane(15);
+                    r[i + 16] = av.lane(16);
+                    r[i + 17] = av.lane(17);
+                    r[i + 18] = av.lane(18);
+                    r[i + 19] = av.lane(19);
+                    r[i + 20] = av.lane(20);
+                    r[i + 21] = av.lane(21);
+                    r[i + 22] = av.lane(22);
+                    r[i + 23] = av.lane(23);
+                    r[i + 24] = av.lane(24);
+                    r[i + 25] = av.lane(25);
+                    r[i + 26] = av.lane(26);
+                    r[i + 27] = av.lane(27);
+                    r[i + 28] = av.lane(28);
+                    r[i + 29] = av.lane(29);
+                    r[i + 30] = av.lane(30);
+                    r[i + 31] = av.lane(31);
+                    r[i + 32] = av.lane(32);
+                    r[i + 33] = av.lane(33);
+                    r[i + 34] = av.lane(34);
+                    r[i + 35] = av.lane(35);
+                    r[i + 36] = av.lane(36);
+                    r[i + 37] = av.lane(37);
+                    r[i + 38] = av.lane(38);
+                    r[i + 39] = av.lane(39);
+                    r[i + 40] = av.lane(40);
+                    r[i + 41] = av.lane(41);
+                    r[i + 42] = av.lane(42);
+                    r[i + 43] = av.lane(43);
+                    r[i + 44] = av.lane(44);
+                    r[i + 45] = av.lane(45);
+                    r[i + 46] = av.lane(46);
+                    r[i + 47] = av.lane(47);
+                    r[i + 48] = av.lane(48);
+                    r[i + 49] = av.lane(49);
+                    r[i + 50] = av.lane(50);
+                    r[i + 51] = av.lane(51);
+                    r[i + 52] = av.lane(52);
+                    r[i + 53] = av.lane(53);
+                    r[i + 54] = av.lane(54);
+                    r[i + 55] = av.lane(55);
+                    r[i + 56] = av.lane(56);
+                    r[i + 57] = av.lane(57);
+                    r[i + 58] = av.lane(58);
+                    r[i + 59] = av.lane(59);
+                    r[i + 60] = av.lane(60);
+                    r[i + 61] = av.lane(61);
+                    r[i + 62] = av.lane(62);
+                    r[i + 63] = av.lane(63);
                 } else {
                     for (int j = 0; j < SPECIES.length(); j++) {
-                        r[i+j]=av.lane(j);
+                        r[i + j] = av.lane(j);
                     }
                 }
             }
@@ -4570,16 +4563,13 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         Assert.assertEquals(a, r);
     }
 
-
-
-
     static int[] sliceUnary(int[] a, int origin, int idx) {
         int[] res = new int[SPECIES.length()];
         for (int i = 0; i < SPECIES.length(); i++){
-            if(i+origin < SPECIES.length())
-                res[i] = a[idx+i+origin];
+            if(i + origin < SPECIES.length())
+                res[i] = a[idx + i + origin];
             else
-                res[i] = (int)0;
+                res[i] = (int) 0;
         }
         return res;
     }
@@ -4602,9 +4592,9 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int[] res = new int[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
             if(i+origin < SPECIES.length())
-                res[i] = a[idx+i+origin];
+                res[i] = a[idx + i + origin];
             else {
-                res[i] = b[idx+j];
+                res[i] = b[idx + j];
                 j++;
             }
         }
@@ -4630,10 +4620,10 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     static int[] slice(int[] a, int[] b, int origin, boolean[] mask, int idx) {
         int[] res = new int[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
-            if(i+origin < SPECIES.length())
-                res[i] = mask[i] ? a[idx+i+origin] : (int)0;
+            if(i + origin < SPECIES.length())
+                res[i] = mask[i] ? a[idx + i + origin] : (int) 0;
             else {
-                res[i] = mask[i] ? b[idx+j] : (int)0;
+                res[i] = mask[i] ? b[idx + j] : (int) 0;
                 j++;
             }
         }
@@ -4664,9 +4654,9 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         int[] res = new int[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
             if(i < origin)
-                res[i] = (int)0;
+                res[i] = (int) 0;
             else {
-                res[i] = a[idx+j];
+                res[i] = a[idx + j];
                 j++;
             }
         }
@@ -4692,16 +4682,16 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
             if (part == 0) {
                 if (i < origin)
-                    res[i] = b[idx+i];
+                    res[i] = b[idx + i];
                 else {
-                    res[i] = a[idx+j];
+                    res[i] = a[idx + j];
                     j++;
                 }
             } else if (part == 1) {
                 if (i < origin)
-                    res[i] = a[idx+SPECIES.length()-origin+i];
+                    res[i] = a[idx + SPECIES.length() - origin + i];
                 else {
-                    res[i] = b[idx+origin+j];
+                    res[i] = b[idx + origin + j];
                     j++;
                 }
             }
@@ -4729,32 +4719,32 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     static int[] unslice(int[] a, int[] b, int origin, int part, boolean[] mask, int idx) {
         int[] res = new int[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
-            if(i+origin < SPECIES.length())
-                res[i] = b[idx+i+origin];
+            if(i + origin < SPECIES.length())
+                res[i] = b[idx + i + origin];
             else {
-                res[i] = b[idx+j];
+                res[i] = b[idx + j];
                 j++;
             }
         }
         for (int i = 0; i < SPECIES.length(); i++){
-            res[i] = mask[i] ? a[idx+i] : res[i];
+            res[i] = mask[i] ? a[idx + i] : res[i];
         }
         int[] res1 = new int[SPECIES.length()];
         if (part == 0) {
             for (int i = 0, j = 0; i < SPECIES.length(); i++){
                 if (i < origin)
-                    res1[i] = b[idx+i];
+                    res1[i] = b[idx + i];
                 else {
-                   res1[i] = res[j];
-                   j++;
+                    res1[i] = res[j];
+                    j++;
                 }
             }
         } else if (part == 1) {
             for (int i = 0, j = 0; i < SPECIES.length(); i++){
                 if (i < origin)
-                    res1[i] = res[SPECIES.length()-origin+i];
+                    res1[i] = res[SPECIES.length() - origin + i];
                 else {
-                    res1[i] = b[idx+origin+j];
+                    res1[i] = b[idx + origin + j];
                     j++;
                 }
             }
@@ -4806,10 +4796,10 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int BITWISE_BLEND(int a, int b, int c) {
-        return (int)((a&~(c))|(b&c));
+        return (int) ((a &~ (c)) | (b & c));
     }
     static int bitwiseBlend(int a, int b, int c) {
-        return (int)((a&~(c))|(b&c));
+        return (int) ((a &~ (c)) | (b & c));
     }
 
 
@@ -5025,11 +5015,11 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int NEG(int a) {
-        return (int)(-((int)a));
+        return (int) (-((int) a));
     }
 
     static int neg(int a) {
-        return (int)(-((int)a));
+        return (int) (-((int) a));
     }
 
     @Test(dataProvider = "intUnaryOpProvider")
@@ -5081,11 +5071,11 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     }
 
     static int ABS(int a) {
-        return (int)(Math.abs((int)a));
+        return (int) (Math.abs((int) a));
     }
 
     static int abs(int a) {
-        return (int)(Math.abs((int)a));
+        return (int) (Math.abs((int) a));
     }
 
     @Test(dataProvider = "intUnaryOpProvider")
@@ -5138,11 +5128,11 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int NOT(int a) {
-        return (int)(~((int)a));
+        return (int) (~((int) a));
     }
 
     static int not(int a) {
-        return (int)(~((int)a));
+        return (int) (~((int) a));
     }
 
 
@@ -5200,7 +5190,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int ZOMO(int a) {
-        return (int)((a==0?0:-1));
+        return (int) ((a == 0 ? 0 : -1));
     }
 
 
@@ -5246,7 +5236,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int BIT_COUNT(int a) {
-        return (int)(Integer.bitCount(a));
+        return (int) (Integer.bitCount(a));
     }
 
 
@@ -5295,7 +5285,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int TRAILING_ZEROS_COUNT(int a) {
-        return (int)(TRAILING_ZEROS_COUNT_scalar(a));
+        return (int) (TRAILING_ZEROS_COUNT_scalar(a));
     }
 
 
@@ -5338,7 +5328,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int LEADING_ZEROS_COUNT(int a) {
-        return (int)(LEADING_ZEROS_COUNT_scalar(a));
+        return (int) (LEADING_ZEROS_COUNT_scalar(a));
     }
 
 
@@ -5381,7 +5371,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int REVERSE(int a) {
-        return (int)(REVERSE_scalar(a));
+        return (int) (REVERSE_scalar(a));
     }
 
 
@@ -5521,7 +5511,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
             res += a[i];
         }
 
-        return (long)res;
+        return (long) res;
     }
 
     static long ADDReduceAllLong(int[] a) {
@@ -5560,7 +5550,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
                 res += a[i];
         }
 
-        return (long)res;
+        return (long) res;
     }
 
     static long ADDReduceAllLongMasked(int[] a, boolean[] mask) {
@@ -5617,7 +5607,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.blend((long)b[i], vmask).intoArray(r, i);
+                av.blend((long) b[i], vmask).intoArray(r, i);
             }
         }
         assertBroadcastLongArraysEquals(r, a, b, mask, IntMaxVectorTests::blend);

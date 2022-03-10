@@ -358,8 +358,8 @@ public abstract class IntVector extends AbstractVector<Integer> {
         if (m.allTrue()) {
             return vi;
         }
-        for(int i = 0,j = 0; i < vsp.length(); i++) {
-            if(m.laneIsSet(i)) {
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
+            if (m.laneIsSet(i)) {
                 r = r.withLane(i, vi.lane(j++));
             }
         }
@@ -373,7 +373,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         if (m.allTrue()) {
             return vi;
         }
-        for(int i = 0, j = 0; i < vsp.length(); i++) {
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
             if (m.laneIsSet(i)) {
                 r = r.withLane(j++, vi.lane(i));
             }
@@ -427,7 +427,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         int[] vec1 = vec();
         int[] vec2 = ((IntVector)o).vec();
         boolean[] bits = new boolean[length()];
-        for (int i = 0; i < length(); i++){
+        for (int i = 0; i < length(); i++) {
             bits[i] = f.apply(cond, i, vec1[i], vec2[i]);
         }
         return maskFactory(bits);

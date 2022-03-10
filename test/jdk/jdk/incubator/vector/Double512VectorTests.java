@@ -85,12 +85,12 @@ public class Double512VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a[i]));
             }
         } catch (AssertionError e) {
             double[] ref = f.apply(a[i]);
-            double[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            double[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i);
@@ -250,12 +250,12 @@ public class Double512VectorTests extends AbstractVectorTest {
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
-                    Assert.assertEquals(r[i+j], a[i+order[i+j]]);
+                    Assert.assertEquals(r[i + j], a[i+order[i + j]]);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
-            Assert.assertEquals(r[i+j], a[i+order[i+j]], "at index #" + idx + ", input = " + a[i+order[i+j]]);
+            Assert.assertEquals(r[i + j], a[i+order[i + j]], "at index #" + idx + ", input = " + a[i + order[i + j]]);
         }
     }
 
@@ -271,7 +271,7 @@ public class Double512VectorTests extends AbstractVectorTest {
                     }
                 }
                 for (; k < vector_len; k++) {
-                    Assert.assertEquals(r[i + k], (double)0);
+                    Assert.assertEquals(r[i + k], (double) 0);
                 }
             }
         } catch (AssertionError e) {
@@ -279,7 +279,7 @@ public class Double512VectorTests extends AbstractVectorTest {
             if (m[(i + j) % SPECIES.length()]) {
                 Assert.assertEquals(r[idx], a[i + j], "at index #" + idx);
             } else {
-                Assert.assertEquals(r[idx], (double)0, "at index #" + idx);
+                Assert.assertEquals(r[idx], (double) 0, "at index #" + idx);
             }
         }
     }
@@ -294,7 +294,7 @@ public class Double512VectorTests extends AbstractVectorTest {
                         Assert.assertEquals(r[i + j], a[i + k]);
                         k++;
                     } else {
-                        Assert.assertEquals(r[i + j], (double)0);
+                        Assert.assertEquals(r[i + j], (double) 0);
                     }
                 }
             }
@@ -303,7 +303,7 @@ public class Double512VectorTests extends AbstractVectorTest {
             if (m[idx % SPECIES.length()]) {
                 Assert.assertEquals(r[idx], a[i + k], "at index #" + idx);
             } else {
-                Assert.assertEquals(r[idx], (double)0, "at index #" + idx);
+                Assert.assertEquals(r[idx], (double) 0, "at index #" + idx);
             }
         }
     }
@@ -313,12 +313,12 @@ public class Double512VectorTests extends AbstractVectorTest {
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
-                    Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                    Assert.assertEquals(r[i + j], a[i + (int) order[i + j]]);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
-            Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]]);
+            Assert.assertEquals(r[i + j], a[i + (int) order[i + j]], "at index #" + idx + ", input = " + a[i + (int) order[i + j]]);
         }
     }
 
@@ -328,17 +328,17 @@ public class Double512VectorTests extends AbstractVectorTest {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
                     if (mask[j % SPECIES.length()])
-                         Assert.assertEquals(r[i+j], a[i+order[i+j]]);
+                         Assert.assertEquals(r[i + j], a[i + order[i + j]]);
                     else
-                         Assert.assertEquals(r[i+j], (double)0);
+                         Assert.assertEquals(r[i + j], (double) 0);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
             if (mask[j % SPECIES.length()])
-                Assert.assertEquals(r[i+j], a[i+order[i+j]], "at index #" + idx + ", input = " + a[i+order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i + j], a[i + order[i + j]], "at index #" + idx + ", input = " + a[i + order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
             else
-                Assert.assertEquals(r[i+j], (double)0, "at index #" + idx + ", input = " + a[i+order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i + j], (double) 0, "at index #" + idx + ", input = " + a[i + order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
         }
     }
 
@@ -348,17 +348,17 @@ public class Double512VectorTests extends AbstractVectorTest {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
                     if (mask[j % SPECIES.length()])
-                         Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                         Assert.assertEquals(r[i + j], a[i + (int) order[i + j]]);
                     else
-                         Assert.assertEquals(r[i+j], (double)0);
+                         Assert.assertEquals(r[i + j], (double) 0);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
             if (mask[j % SPECIES.length()])
-                Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i + j], a[i + (int) order[i + j]], "at index #" + idx + ", input = " + a[i + (int) order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
             else
-                Assert.assertEquals(r[i+j], (double)0, "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i + j], (double) 0, "at index #" + idx + ", input = " + a[i + (int) order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
         }
     }
 
@@ -367,7 +367,7 @@ public class Double512VectorTests extends AbstractVectorTest {
         for (; i < a.length; i += SPECIES.length()) {
             int idx = i;
             for (int j = idx; j < (idx + SPECIES.length()); j++)
-                a[j]=a[idx];
+                a[j] = a[idx];
         }
 
         try {
@@ -418,10 +418,10 @@ public class Double512VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i++) {
-                Assert.assertEquals(r[i], f.apply(a[i], (double)((long)b[(i / SPECIES.length()) * SPECIES.length()])));
+                Assert.assertEquals(r[i], f.apply(a[i], (double) ((long) b[(i / SPECIES.length()) * SPECIES.length()])));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], f.apply(a[i], (double)((long)b[(i / SPECIES.length()) * SPECIES.length()])),
+            Assert.assertEquals(r[i], f.apply(a[i], (double) ((long) b[(i / SPECIES.length()) * SPECIES.length()])),
                                 "(" + a[i] + ", " + b[(i / SPECIES.length()) * SPECIES.length()] + ") at index #" + i);
         }
     }
@@ -467,10 +467,10 @@ public class Double512VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i++) {
-                Assert.assertEquals(r[i], f.apply(a[i], (double)((long)b[(i / SPECIES.length()) * SPECIES.length()]), mask[i % SPECIES.length()]));
+                Assert.assertEquals(r[i], f.apply(a[i], (double) ((long) b[(i / SPECIES.length()) * SPECIES.length()]), mask[i % SPECIES.length()]));
             }
         } catch (AssertionError err) {
-            Assert.assertEquals(r[i], f.apply(a[i], (double)((long)b[(i / SPECIES.length()) * SPECIES.length()]),
+            Assert.assertEquals(r[i], f.apply(a[i], (double) ((long) b[(i / SPECIES.length()) * SPECIES.length()]),
                                 mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] +
                                 ", input2 = " + b[(i / SPECIES.length()) * SPECIES.length()] + ", mask = " +
                                 mask[i % SPECIES.length()]);
@@ -483,11 +483,11 @@ public class Double512VectorTests extends AbstractVectorTest {
         try {
             for (; j < a.length; j += SPECIES.length()) {
                 for (i = 0; i < SPECIES.length(); i++) {
-                    Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j]));
+                    Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j]));
                 }
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j]), "at index #" + i + ", " + j);
+            Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j]), "at index #" + i + ", " + j);
         }
     }
 
@@ -501,11 +501,11 @@ public class Double512VectorTests extends AbstractVectorTest {
         try {
             for (; j < a.length; j += SPECIES.length()) {
                 for (i = 0; i < SPECIES.length(); i++) {
-                    Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j], mask[i]));
+                    Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j], mask[i]));
                 }
             }
         } catch (AssertionError err) {
-            Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j], mask[i]), "at index #" + i + ", input1 = " + a[i+j] + ", input2 = " + b[j] + ", mask = " + mask[i]);
+            Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j], mask[i]), "at index #" + i + ", input1 = " + a[i + j] + ", input2 = " + b[j] + ", mask = " + mask[i]);
         }
     }
 
@@ -653,7 +653,6 @@ public class Double512VectorTests extends AbstractVectorTest {
         }
     }
 
-
     static boolean isWithin1Ulp(double actual, double expected) {
         if (Double.isNaN(expected) && !Double.isNaN(actual)) {
             return false;
@@ -752,17 +751,17 @@ public class Double512VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, i, b, i));
             }
         } catch (AssertionError e) {
             double[] ref = f.apply(a, i, b, i);
-            double[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            double[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref,
               "(ref: " + Arrays.toString(ref) + ", res: " + Arrays.toString(res) + ", a: "
-              + Arrays.toString(Arrays.copyOfRange(a, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(a, i, i + SPECIES.length()))
               + ", b: "
-              + Arrays.toString(Arrays.copyOfRange(b, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(b, i, i + SPECIES.length()))
               + " at index #" + i);
         }
     }
@@ -779,17 +778,17 @@ public class Double512VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, i, mask, b, i));
             }
         } catch (AssertionError e) {
             double[] ref = f.apply(a, i, mask, b, i);
-            double[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            double[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref,
               "(ref: " + Arrays.toString(ref) + ", res: " + Arrays.toString(res) + ", a: "
-              + Arrays.toString(Arrays.copyOfRange(a, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(a, i, i + SPECIES.length()))
               + ", b: "
-              + Arrays.toString(Arrays.copyOfRange(b, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(b, i, i + SPECIES.length()))
               + ", mask: "
               + Arrays.toString(mask)
               + " at index #" + i);
@@ -800,19 +799,19 @@ public class Double512VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(r, a, i, mask, b, i));
             }
         } catch (AssertionError e) {
             double[] ref = f.apply(r, a, i, mask, b, i);
-            double[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            double[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref,
               "(ref: " + Arrays.toString(ref) + ", res: " + Arrays.toString(res) + ", a: "
-              + Arrays.toString(Arrays.copyOfRange(a, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(a, i, i + SPECIES.length()))
               + ", b: "
-              + Arrays.toString(Arrays.copyOfRange(b, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(b, i, i + SPECIES.length()))
               + ", r: "
-              + Arrays.toString(Arrays.copyOfRange(r, i, i+SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(r, i, i + SPECIES.length()))
               + ", mask: "
               + Arrays.toString(mask)
               + " at index #" + i);
@@ -827,12 +826,12 @@ public class Double512VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, origin, i));
             }
         } catch (AssertionError e) {
             double[] ref = f.apply(a, origin, i);
-            double[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            double[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i);
@@ -847,12 +846,12 @@ public class Double512VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, b, origin, i));
             }
         } catch (AssertionError e) {
             double[] ref = f.apply(a, b, origin, i);
-            double[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            double[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -868,12 +867,12 @@ public class Double512VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, b, origin, mask, i));
             }
         } catch (AssertionError e) {
             double[] ref = f.apply(a, b, origin, mask, i);
-            double[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            double[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -889,12 +888,12 @@ public class Double512VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, b, origin, part, i));
             }
         } catch (AssertionError e) {
             double[] ref = f.apply(a, b, origin, part, i);
-            double[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            double[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -911,12 +910,12 @@ public class Double512VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
                   f.apply(a, b, origin, part, mask, i));
             }
         } catch (AssertionError e) {
             double[] ref = f.apply(a, b, origin, part, mask, i);
-            double[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
+            double[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -936,26 +935,26 @@ public class Double512VectorTests extends AbstractVectorTest {
             case 3:
                 return Integer.MAX_VALUE;
             default:
-                return (int)0;
+                return (int) 0;
         }
     }
 
     static final List<IntFunction<double[]>> INT_DOUBLE_GENERATORS = List.of(
             withToString("double[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (double)(-i * 5));
+                            i -> (double) (-i * 5));
             }),
             withToString("double[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (double)(i * 5));
+                            i -> (double) (i * 5));
             }),
             withToString("double[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((double)(i + 1) == 0) ? 1 : (double)(i + 1)));
+                            i -> (((double) (i + 1) == 0) ? 1 : (double) (i + 1)));
             }),
             withToString("double[intCornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (double)intCornerCaseValue(i));
+                            i -> (double) intCornerCaseValue(i));
             })
     );
 
@@ -963,10 +962,10 @@ public class Double512VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < r.length; i++) {
-                Assert.assertEquals(r[i], (int)(a[i+offs]));
+                Assert.assertEquals(r[i], (int) (a[i + offs]));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], (int)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+            Assert.assertEquals(r[i], (int) (a[i + offs]), "at index #" + i + ", input = " + a[i + offs]);
         }
     }
 
@@ -981,26 +980,26 @@ public class Double512VectorTests extends AbstractVectorTest {
             case 3:
                 return Long.MAX_VALUE;
             default:
-                return (long)0;
+                return (long) 0;
         }
     }
 
     static final List<IntFunction<double[]>> LONG_DOUBLE_GENERATORS = List.of(
             withToString("double[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (double)(-i * 5));
+                            i -> (double) (-i * 5));
             }),
             withToString("double[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (double)(i * 5));
+                            i -> (double) (i * 5));
             }),
             withToString("double[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((double)(i + 1) == 0) ? 1 : (double)(i + 1)));
+                            i -> (((double) (i + 1) == 0) ? 1 : (double) (i + 1)));
             }),
             withToString("double[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (double)longCornerCaseValue(i));
+                            i -> (double) longCornerCaseValue(i));
             })
     );
 
@@ -1009,13 +1008,12 @@ public class Double512VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < r.length; i++) {
-                Assert.assertEquals(r[i], (long)(a[i+offs]));
+                Assert.assertEquals(r[i], (long) (a[i + offs]));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], (long)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
+            Assert.assertEquals(r[i], (long) (a[i + offs]), "at index #" + i + ", input = " + a[i + offs]);
         }
     }
-
 
 
     static long bits(double e) {
@@ -1025,15 +1023,15 @@ public class Double512VectorTests extends AbstractVectorTest {
     static final List<IntFunction<double[]>> DOUBLE_GENERATORS = List.of(
             withToString("double[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (double)(-i * 5));
+                            i -> (double) (-i * 5));
             }),
             withToString("double[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (double)(i * 5));
+                            i -> (double) (i * 5));
             }),
             withToString("double[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((double)(i + 1) == 0) ? 1 : (double)(i + 1)));
+                            i -> (((double) (i + 1) == 0) ? 1 : (double) (i + 1)));
             }),
             withToString("double[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1176,7 +1174,7 @@ public class Double512VectorTests extends AbstractVectorTest {
                 double[] a = new double[l];
                 int upper = m;
                 for (int i = 0; i < 1; i++) {
-                    a[i] = (double)RAND.nextInt(upper);
+                    a[i] = (double) RAND.nextInt(upper);
                 }
                 return a;
             })
@@ -1201,27 +1199,26 @@ public class Double512VectorTests extends AbstractVectorTest {
                 toArray(Object[][]::new);
     }
 
-
     static final List<IntFunction<double[]>> DOUBLE_COMPARE_GENERATORS = List.of(
             withToString("double[i]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (double)i);
+                            i -> (double) i);
             }),
             withToString("double[i - length / 2]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (double)(i - (s * BUFFER_REPS / 2)));
+                            i -> (double) (i - (s * BUFFER_REPS / 2)));
             }),
             withToString("double[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (double)(i + 1));
+                            i -> (double) (i + 1));
             }),
             withToString("double[i - 2]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (double)(i - 2));
+                            i -> (double) (i - 2));
             }),
             withToString("double[zigZag(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> i%3 == 0 ? (double)i : (i%3 == 1 ? (double)(i + 1) : (double)(i - 2)));
+                            i -> i % 3 == 0 ? (double) i : (i % 3 == 1 ? (double) (i + 1) : (double) (i - 2)));
             }),
             withToString("double[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1297,9 +1294,9 @@ public class Double512VectorTests extends AbstractVectorTest {
             case 4:
                 return Double.NaN;
             case 5:
-                return (double)0.0;
+                return (double) 0.0;
             default:
-                return (double)-0.0;
+                return (double) -0.0;
         }
     }
 
@@ -1353,7 +1350,7 @@ public class Double512VectorTests extends AbstractVectorTest {
 
     @Test
     static void smokeTest1() {
-        DoubleVector three = DoubleVector.broadcast(SPECIES, (byte)-3);
+        DoubleVector three = DoubleVector.broadcast(SPECIES, (byte) -3);
         DoubleVector three2 = (DoubleVector) SPECIES.broadcast(-3);
         assert(three.eq(three2).allTrue());
         DoubleVector three3 = three2.broadcast(1).broadcast(-3);
@@ -1367,12 +1364,12 @@ public class Double512VectorTests extends AbstractVectorTest {
         DoubleVector higher = three.addIndex(scale);
         VectorMask<Double> m = three.compare(VectorOperators.LE, higher);
         assert(m.allTrue());
-        m = higher.min((double)-1).test(VectorOperators.IS_NEGATIVE);
+        m = higher.min((double) -1).test(VectorOperators.IS_NEGATIVE);
         assert(m.allTrue());
         m = higher.test(VectorOperators.IS_FINITE);
         assert(m.allTrue());
         double max = higher.reduceLanes(VectorOperators.MAX);
-        assert(max == -3 + scale * (SPECIES.length()-1));
+        assert(max == -3 + scale * (SPECIES.length() - 1));
     }
 
     private static double[]
@@ -1387,27 +1384,27 @@ public class Double512VectorTests extends AbstractVectorTest {
     static void smokeTest2() {
         // Do some zipping and shuffling.
         DoubleVector io = (DoubleVector) SPECIES.broadcast(0).addIndex(1);
-        DoubleVector io2 = (DoubleVector) VectorShuffle.iota(SPECIES,0,1,false).toVector();
+        DoubleVector io2 = (DoubleVector) VectorShuffle.iota(SPECIES, 0, 1, false).toVector();
         Assert.assertEquals(io, io2);
-        DoubleVector a = io.add((double)1); //[1,2]
+        DoubleVector a = io.add((double) 1); //[1,2]
         DoubleVector b = a.neg();  //[-1,-2]
         double[] abValues = bothToArray(a,b); //[1,2,-1,-2]
         VectorShuffle<Double> zip0 = VectorShuffle.makeZip(SPECIES, 0);
         VectorShuffle<Double> zip1 = VectorShuffle.makeZip(SPECIES, 1);
-        DoubleVector zab0 = a.rearrange(zip0,b); //[1,-1]
-        DoubleVector zab1 = a.rearrange(zip1,b); //[2,-2]
+        DoubleVector zab0 = a.rearrange(zip0, b); //[1,-1]
+        DoubleVector zab1 = a.rearrange(zip1, b); //[2,-2]
         double[] zabValues = bothToArray(zab0, zab1); //[1,-1,2,-2]
         // manually zip
         double[] manual = new double[zabValues.length];
         for (int i = 0; i < manual.length; i += 2) {
-            manual[i+0] = abValues[i/2];
-            manual[i+1] = abValues[a.length() + i/2];
+            manual[i + 0] = abValues[i / 2];
+            manual[i + 1] = abValues[a.length() + i / 2];
         }
         Assert.assertEquals(Arrays.toString(zabValues), Arrays.toString(manual));
         VectorShuffle<Double> unz0 = VectorShuffle.makeUnzip(SPECIES, 0);
         VectorShuffle<Double> unz1 = VectorShuffle.makeUnzip(SPECIES, 1);
-        DoubleVector uab0 = zab0.rearrange(unz0,zab1);
-        DoubleVector uab1 = zab0.rearrange(unz1,zab1);
+        DoubleVector uab0 = zab0.rearrange(unz0, zab1);
+        DoubleVector uab1 = zab0.rearrange(unz1, zab1);
         double[] abValues1 = bothToArray(uab0, uab1);
         Assert.assertEquals(Arrays.toString(abValues), Arrays.toString(abValues1));
     }
@@ -1444,7 +1441,7 @@ public class Double512VectorTests extends AbstractVectorTest {
     }
 
     static double ADD(double a, double b) {
-        return (double)(a + b);
+        return (double) (a + b);
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -1464,7 +1461,7 @@ public class Double512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Double512VectorTests::ADD);
     }
     static double add(double a, double b) {
-        return (double)(a + b);
+        return (double) (a + b);
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -1520,7 +1517,7 @@ public class Double512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, mask, Double512VectorTests::add);
     }
     static double SUB(double a, double b) {
-        return (double)(a - b);
+        return (double) (a - b);
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -1540,7 +1537,7 @@ public class Double512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Double512VectorTests::SUB);
     }
     static double sub(double a, double b) {
-        return (double)(a - b);
+        return (double) (a - b);
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -1596,7 +1593,7 @@ public class Double512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, mask, Double512VectorTests::sub);
     }
     static double MUL(double a, double b) {
-        return (double)(a * b);
+        return (double) (a * b);
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -1616,7 +1613,7 @@ public class Double512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Double512VectorTests::MUL);
     }
     static double mul(double a, double b) {
-        return (double)(a * b);
+        return (double) (a * b);
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -1673,7 +1670,7 @@ public class Double512VectorTests extends AbstractVectorTest {
     }
 
     static double DIV(double a, double b) {
-        return (double)(a / b);
+        return (double) (a / b);
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -1693,7 +1690,7 @@ public class Double512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Double512VectorTests::DIV);
     }
     static double div(double a, double b) {
-        return (double)(a / b);
+        return (double) (a / b);
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -1754,7 +1751,7 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double FIRST_NONZERO(double a, double b) {
-        return (double)(Double.doubleToLongBits(a)!=0?a:b);
+        return (double) (Double.doubleToLongBits(a) != 0 ? a : b);
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -1946,7 +1943,7 @@ public class Double512VectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-            av.lanewise(VectorOperators.ADD, (long)b[i]).intoArray(r, i);
+            av.lanewise(VectorOperators.ADD, (long) b[i]).intoArray(r, i);
         }
 
         assertBroadcastLongArraysEquals(r, a, b, Double512VectorTests::ADD);
@@ -1963,7 +1960,7 @@ public class Double512VectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-            av.lanewise(VectorOperators.ADD, (long)b[i], vmask).intoArray(r, i);
+            av.lanewise(VectorOperators.ADD, (long) b[i], vmask).intoArray(r, i);
         }
 
         assertBroadcastLongArraysEquals(r, a, b, mask, Double512VectorTests::ADD);
@@ -2013,7 +2010,7 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double MIN(double a, double b) {
-        return (double)(Math.min(a, b));
+        return (double) (Math.min(a, b));
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -2033,7 +2030,7 @@ public class Double512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Double512VectorTests::MIN);
     }
     static double min(double a, double b) {
-        return (double)(Math.min(a, b));
+        return (double) (Math.min(a, b));
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -2051,7 +2048,7 @@ public class Double512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Double512VectorTests::min);
     }
     static double MAX(double a, double b) {
-        return (double)(Math.max(a, b));
+        return (double) (Math.max(a, b));
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -2071,7 +2068,7 @@ public class Double512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Double512VectorTests::MAX);
     }
     static double max(double a, double b) {
-        return (double)(Math.max(a, b));
+        return (double) (Math.max(a, b));
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -2594,17 +2591,17 @@ public class Double512VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0, j = 0; i < a.length; i += SPECIES.length()) {
                 DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-                av.withLane((j++ & (SPECIES.length()-1)), (double)(65535+i)).intoArray(r, i);
+                av.withLane((j++ & (SPECIES.length() - 1)), (double) (65535 + i)).intoArray(r, i);
             }
         }
 
 
         for (int i = 0, j = 0; i < a.length; i += SPECIES.length()) {
-            assertInsertArraysEquals(r, a, (double)(65535+i), (j++ & (SPECIES.length()-1)), i , i + SPECIES.length());
+            assertInsertArraysEquals(r, a, (double) (65535 + i), (j++ & (SPECIES.length() - 1)), i , i + SPECIES.length());
         }
     }
     static boolean testIS_DEFAULT(double a) {
-        return bits(a)==0;
+        return bits(a) == 0;
     }
 
     @Test(dataProvider = "doubleTestOpProvider")
@@ -2637,12 +2634,12 @@ public class Double512VectorTests extends AbstractVectorTest {
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_DEFAULT(a[i + j]));
+                Assert.assertEquals(mv.laneIsSet(j), vmask.laneIsSet(j) && testIS_DEFAULT(a[i + j]));
             }
         }
     }
     static boolean testIS_NEGATIVE(double a) {
-        return bits(a)<0;
+        return bits(a) < 0;
     }
 
     @Test(dataProvider = "doubleTestOpProvider")
@@ -2675,7 +2672,7 @@ public class Double512VectorTests extends AbstractVectorTest {
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_NEGATIVE(a[i + j]));
+                Assert.assertEquals(mv.laneIsSet(j), vmask.laneIsSet(j) && testIS_NEGATIVE(a[i + j]));
             }
         }
     }
@@ -2714,7 +2711,7 @@ public class Double512VectorTests extends AbstractVectorTest {
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_FINITE(a[i + j]));
+                Assert.assertEquals(mv.laneIsSet(j), vmask.laneIsSet(j) && testIS_FINITE(a[i + j]));
             }
         }
     }
@@ -2754,7 +2751,7 @@ public class Double512VectorTests extends AbstractVectorTest {
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_NAN(a[i + j]));
+                Assert.assertEquals(mv.laneIsSet(j), vmask.laneIsSet(j) && testIS_NAN(a[i + j]));
             }
         }
     }
@@ -2794,7 +2791,7 @@ public class Double512VectorTests extends AbstractVectorTest {
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_INFINITE(a[i + j]));
+                Assert.assertEquals(mv.laneIsSet(j), vmask.laneIsSet(j) && testIS_INFINITE(a[i + j]));
             }
         }
     }
@@ -3122,7 +3119,6 @@ public class Double512VectorTests extends AbstractVectorTest {
         }
     }
 
-
     @Test(dataProvider = "doubleCompareOpMaskProvider")
     static void LTDouble512VectorTestsBroadcastMaskedSmokeTest(IntFunction<double[]> fa,
                                 IntFunction<double[]> fb, IntFunction<boolean[]> fm) {
@@ -3150,15 +3146,14 @@ public class Double512VectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-            VectorMask<Double> mv = av.compare(VectorOperators.LT, (long)b[i]);
+            VectorMask<Double> mv = av.compare(VectorOperators.LT, (long) b[i]);
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j), a[i + j] < (double)((long)b[i]));
+                Assert.assertEquals(mv.laneIsSet(j), a[i + j] < (double) ((long) b[i]));
             }
         }
     }
-
 
     @Test(dataProvider = "doubleCompareOpMaskProvider")
     static void LTDouble512VectorTestsBroadcastLongMaskedSmokeTest(IntFunction<double[]> fa,
@@ -3171,11 +3166,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-            VectorMask<Double> mv = av.compare(VectorOperators.LT, (long)b[i], vmask);
+            VectorMask<Double> mv = av.compare(VectorOperators.LT, (long) b[i], vmask);
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] < (double)((long)b[i])));
+                Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] < (double) ((long) b[i])));
             }
         }
     }
@@ -3195,7 +3190,6 @@ public class Double512VectorTests extends AbstractVectorTest {
             }
         }
     }
-
 
     @Test(dataProvider = "doubleCompareOpMaskProvider")
     static void EQDouble512VectorTestsBroadcastMaskedSmokeTest(IntFunction<double[]> fa,
@@ -3224,15 +3218,14 @@ public class Double512VectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-            VectorMask<Double> mv = av.compare(VectorOperators.EQ, (long)b[i]);
+            VectorMask<Double> mv = av.compare(VectorOperators.EQ, (long) b[i]);
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j), a[i + j] == (double)((long)b[i]));
+                Assert.assertEquals(mv.laneIsSet(j), a[i + j] == (double) ((long) b[i]));
             }
         }
     }
-
 
     @Test(dataProvider = "doubleCompareOpMaskProvider")
     static void EQDouble512VectorTestsBroadcastLongMaskedSmokeTest(IntFunction<double[]> fa,
@@ -3245,11 +3238,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-            VectorMask<Double> mv = av.compare(VectorOperators.EQ, (long)b[i], vmask);
+            VectorMask<Double> mv = av.compare(VectorOperators.EQ, (long) b[i], vmask);
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] == (double)((long)b[i])));
+                Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] == (double) ((long) b[i])));
             }
         }
     }
@@ -3360,142 +3353,142 @@ public class Double512VectorTests extends AbstractVectorTest {
                 // Manually unroll because full unroll happens after intrinsification.
                 // Unroll is needed because get intrinsic requires for index to be a known constant.
                 if (num_lanes == 1) {
-                    r[i]=av.lane(0);
+                    r[i] = av.lane(0);
                 } else if (num_lanes == 2) {
-                    r[i]=av.lane(0);
-                    r[i+1]=av.lane(1);
+                    r[i] = av.lane(0);
+                    r[i + 1] = av.lane(1);
                 } else if (num_lanes == 4) {
-                    r[i]=av.lane(0);
-                    r[i+1]=av.lane(1);
-                    r[i+2]=av.lane(2);
-                    r[i+3]=av.lane(3);
+                    r[i] = av.lane(0);
+                    r[i + 1] = av.lane(1);
+                    r[i + 2] = av.lane(2);
+                    r[i + 3] = av.lane(3);
                 } else if (num_lanes == 8) {
-                    r[i]=av.lane(0);
-                    r[i+1]=av.lane(1);
-                    r[i+2]=av.lane(2);
-                    r[i+3]=av.lane(3);
-                    r[i+4]=av.lane(4);
-                    r[i+5]=av.lane(5);
-                    r[i+6]=av.lane(6);
-                    r[i+7]=av.lane(7);
+                    r[i] = av.lane(0);
+                    r[i + 1] = av.lane(1);
+                    r[i + 2] = av.lane(2);
+                    r[i + 3] = av.lane(3);
+                    r[i + 4] = av.lane(4);
+                    r[i + 5] = av.lane(5);
+                    r[i + 6] = av.lane(6);
+                    r[i + 7] = av.lane(7);
                 } else if (num_lanes == 16) {
-                    r[i]=av.lane(0);
-                    r[i+1]=av.lane(1);
-                    r[i+2]=av.lane(2);
-                    r[i+3]=av.lane(3);
-                    r[i+4]=av.lane(4);
-                    r[i+5]=av.lane(5);
-                    r[i+6]=av.lane(6);
-                    r[i+7]=av.lane(7);
-                    r[i+8]=av.lane(8);
-                    r[i+9]=av.lane(9);
-                    r[i+10]=av.lane(10);
-                    r[i+11]=av.lane(11);
-                    r[i+12]=av.lane(12);
-                    r[i+13]=av.lane(13);
-                    r[i+14]=av.lane(14);
-                    r[i+15]=av.lane(15);
+                    r[i] = av.lane(0);
+                    r[i + 1] = av.lane(1);
+                    r[i + 2] = av.lane(2);
+                    r[i + 3] = av.lane(3);
+                    r[i + 4] = av.lane(4);
+                    r[i + 5] = av.lane(5);
+                    r[i + 6] = av.lane(6);
+                    r[i + 7] = av.lane(7);
+                    r[i + 8] = av.lane(8);
+                    r[i + 9] = av.lane(9);
+                    r[i + 10] = av.lane(10);
+                    r[i + 11] = av.lane(11);
+                    r[i + 12] = av.lane(12);
+                    r[i + 13] = av.lane(13);
+                    r[i + 14] = av.lane(14);
+                    r[i + 15] = av.lane(15);
                 } else if (num_lanes == 32) {
-                    r[i]=av.lane(0);
-                    r[i+1]=av.lane(1);
-                    r[i+2]=av.lane(2);
-                    r[i+3]=av.lane(3);
-                    r[i+4]=av.lane(4);
-                    r[i+5]=av.lane(5);
-                    r[i+6]=av.lane(6);
-                    r[i+7]=av.lane(7);
-                    r[i+8]=av.lane(8);
-                    r[i+9]=av.lane(9);
-                    r[i+10]=av.lane(10);
-                    r[i+11]=av.lane(11);
-                    r[i+12]=av.lane(12);
-                    r[i+13]=av.lane(13);
-                    r[i+14]=av.lane(14);
-                    r[i+15]=av.lane(15);
-                    r[i+16]=av.lane(16);
-                    r[i+17]=av.lane(17);
-                    r[i+18]=av.lane(18);
-                    r[i+19]=av.lane(19);
-                    r[i+20]=av.lane(20);
-                    r[i+21]=av.lane(21);
-                    r[i+22]=av.lane(22);
-                    r[i+23]=av.lane(23);
-                    r[i+24]=av.lane(24);
-                    r[i+25]=av.lane(25);
-                    r[i+26]=av.lane(26);
-                    r[i+27]=av.lane(27);
-                    r[i+28]=av.lane(28);
-                    r[i+29]=av.lane(29);
-                    r[i+30]=av.lane(30);
-                    r[i+31]=av.lane(31);
+                    r[i] = av.lane(0);
+                    r[i + 1] = av.lane(1);
+                    r[i + 2] = av.lane(2);
+                    r[i + 3] = av.lane(3);
+                    r[i + 4] = av.lane(4);
+                    r[i + 5] = av.lane(5);
+                    r[i + 6] = av.lane(6);
+                    r[i + 7] = av.lane(7);
+                    r[i + 8] = av.lane(8);
+                    r[i + 9] = av.lane(9);
+                    r[i + 10] = av.lane(10);
+                    r[i + 11] = av.lane(11);
+                    r[i + 12] = av.lane(12);
+                    r[i + 13] = av.lane(13);
+                    r[i + 14] = av.lane(14);
+                    r[i + 15] = av.lane(15);
+                    r[i + 16] = av.lane(16);
+                    r[i + 17] = av.lane(17);
+                    r[i + 18] = av.lane(18);
+                    r[i + 19] = av.lane(19);
+                    r[i + 20] = av.lane(20);
+                    r[i + 21] = av.lane(21);
+                    r[i + 22] = av.lane(22);
+                    r[i + 23] = av.lane(23);
+                    r[i + 24] = av.lane(24);
+                    r[i + 25] = av.lane(25);
+                    r[i + 26] = av.lane(26);
+                    r[i + 27] = av.lane(27);
+                    r[i + 28] = av.lane(28);
+                    r[i + 29] = av.lane(29);
+                    r[i + 30] = av.lane(30);
+                    r[i + 31] = av.lane(31);
                 } else if (num_lanes == 64) {
-                    r[i]=av.lane(0);
-                    r[i+1]=av.lane(1);
-                    r[i+2]=av.lane(2);
-                    r[i+3]=av.lane(3);
-                    r[i+4]=av.lane(4);
-                    r[i+5]=av.lane(5);
-                    r[i+6]=av.lane(6);
-                    r[i+7]=av.lane(7);
-                    r[i+8]=av.lane(8);
-                    r[i+9]=av.lane(9);
-                    r[i+10]=av.lane(10);
-                    r[i+11]=av.lane(11);
-                    r[i+12]=av.lane(12);
-                    r[i+13]=av.lane(13);
-                    r[i+14]=av.lane(14);
-                    r[i+15]=av.lane(15);
-                    r[i+16]=av.lane(16);
-                    r[i+17]=av.lane(17);
-                    r[i+18]=av.lane(18);
-                    r[i+19]=av.lane(19);
-                    r[i+20]=av.lane(20);
-                    r[i+21]=av.lane(21);
-                    r[i+22]=av.lane(22);
-                    r[i+23]=av.lane(23);
-                    r[i+24]=av.lane(24);
-                    r[i+25]=av.lane(25);
-                    r[i+26]=av.lane(26);
-                    r[i+27]=av.lane(27);
-                    r[i+28]=av.lane(28);
-                    r[i+29]=av.lane(29);
-                    r[i+30]=av.lane(30);
-                    r[i+31]=av.lane(31);
-                    r[i+32]=av.lane(32);
-                    r[i+33]=av.lane(33);
-                    r[i+34]=av.lane(34);
-                    r[i+35]=av.lane(35);
-                    r[i+36]=av.lane(36);
-                    r[i+37]=av.lane(37);
-                    r[i+38]=av.lane(38);
-                    r[i+39]=av.lane(39);
-                    r[i+40]=av.lane(40);
-                    r[i+41]=av.lane(41);
-                    r[i+42]=av.lane(42);
-                    r[i+43]=av.lane(43);
-                    r[i+44]=av.lane(44);
-                    r[i+45]=av.lane(45);
-                    r[i+46]=av.lane(46);
-                    r[i+47]=av.lane(47);
-                    r[i+48]=av.lane(48);
-                    r[i+49]=av.lane(49);
-                    r[i+50]=av.lane(50);
-                    r[i+51]=av.lane(51);
-                    r[i+52]=av.lane(52);
-                    r[i+53]=av.lane(53);
-                    r[i+54]=av.lane(54);
-                    r[i+55]=av.lane(55);
-                    r[i+56]=av.lane(56);
-                    r[i+57]=av.lane(57);
-                    r[i+58]=av.lane(58);
-                    r[i+59]=av.lane(59);
-                    r[i+60]=av.lane(60);
-                    r[i+61]=av.lane(61);
-                    r[i+62]=av.lane(62);
-                    r[i+63]=av.lane(63);
+                    r[i] = av.lane(0);
+                    r[i + 1] = av.lane(1);
+                    r[i + 2] = av.lane(2);
+                    r[i + 3] = av.lane(3);
+                    r[i + 4] = av.lane(4);
+                    r[i + 5] = av.lane(5);
+                    r[i + 6] = av.lane(6);
+                    r[i + 7] = av.lane(7);
+                    r[i + 8] = av.lane(8);
+                    r[i + 9] = av.lane(9);
+                    r[i + 10] = av.lane(10);
+                    r[i + 11] = av.lane(11);
+                    r[i + 12] = av.lane(12);
+                    r[i + 13] = av.lane(13);
+                    r[i + 14] = av.lane(14);
+                    r[i + 15] = av.lane(15);
+                    r[i + 16] = av.lane(16);
+                    r[i + 17] = av.lane(17);
+                    r[i + 18] = av.lane(18);
+                    r[i + 19] = av.lane(19);
+                    r[i + 20] = av.lane(20);
+                    r[i + 21] = av.lane(21);
+                    r[i + 22] = av.lane(22);
+                    r[i + 23] = av.lane(23);
+                    r[i + 24] = av.lane(24);
+                    r[i + 25] = av.lane(25);
+                    r[i + 26] = av.lane(26);
+                    r[i + 27] = av.lane(27);
+                    r[i + 28] = av.lane(28);
+                    r[i + 29] = av.lane(29);
+                    r[i + 30] = av.lane(30);
+                    r[i + 31] = av.lane(31);
+                    r[i + 32] = av.lane(32);
+                    r[i + 33] = av.lane(33);
+                    r[i + 34] = av.lane(34);
+                    r[i + 35] = av.lane(35);
+                    r[i + 36] = av.lane(36);
+                    r[i + 37] = av.lane(37);
+                    r[i + 38] = av.lane(38);
+                    r[i + 39] = av.lane(39);
+                    r[i + 40] = av.lane(40);
+                    r[i + 41] = av.lane(41);
+                    r[i + 42] = av.lane(42);
+                    r[i + 43] = av.lane(43);
+                    r[i + 44] = av.lane(44);
+                    r[i + 45] = av.lane(45);
+                    r[i + 46] = av.lane(46);
+                    r[i + 47] = av.lane(47);
+                    r[i + 48] = av.lane(48);
+                    r[i + 49] = av.lane(49);
+                    r[i + 50] = av.lane(50);
+                    r[i + 51] = av.lane(51);
+                    r[i + 52] = av.lane(52);
+                    r[i + 53] = av.lane(53);
+                    r[i + 54] = av.lane(54);
+                    r[i + 55] = av.lane(55);
+                    r[i + 56] = av.lane(56);
+                    r[i + 57] = av.lane(57);
+                    r[i + 58] = av.lane(58);
+                    r[i + 59] = av.lane(59);
+                    r[i + 60] = av.lane(60);
+                    r[i + 61] = av.lane(61);
+                    r[i + 62] = av.lane(62);
+                    r[i + 63] = av.lane(63);
                 } else {
                     for (int j = 0; j < SPECIES.length(); j++) {
-                        r[i+j]=av.lane(j);
+                        r[i + j] = av.lane(j);
                     }
                 }
             }
@@ -3536,16 +3529,13 @@ public class Double512VectorTests extends AbstractVectorTest {
         Assert.assertEquals(a, r);
     }
 
-
-
-
     static double[] sliceUnary(double[] a, int origin, int idx) {
         double[] res = new double[SPECIES.length()];
         for (int i = 0; i < SPECIES.length(); i++){
-            if(i+origin < SPECIES.length())
-                res[i] = a[idx+i+origin];
+            if(i + origin < SPECIES.length())
+                res[i] = a[idx + i + origin];
             else
-                res[i] = (double)0;
+                res[i] = (double) 0;
         }
         return res;
     }
@@ -3568,9 +3558,9 @@ public class Double512VectorTests extends AbstractVectorTest {
         double[] res = new double[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
             if(i+origin < SPECIES.length())
-                res[i] = a[idx+i+origin];
+                res[i] = a[idx + i + origin];
             else {
-                res[i] = b[idx+j];
+                res[i] = b[idx + j];
                 j++;
             }
         }
@@ -3596,10 +3586,10 @@ public class Double512VectorTests extends AbstractVectorTest {
     static double[] slice(double[] a, double[] b, int origin, boolean[] mask, int idx) {
         double[] res = new double[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
-            if(i+origin < SPECIES.length())
-                res[i] = mask[i] ? a[idx+i+origin] : (double)0;
+            if(i + origin < SPECIES.length())
+                res[i] = mask[i] ? a[idx + i + origin] : (double) 0;
             else {
-                res[i] = mask[i] ? b[idx+j] : (double)0;
+                res[i] = mask[i] ? b[idx + j] : (double) 0;
                 j++;
             }
         }
@@ -3630,9 +3620,9 @@ public class Double512VectorTests extends AbstractVectorTest {
         double[] res = new double[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
             if(i < origin)
-                res[i] = (double)0;
+                res[i] = (double) 0;
             else {
-                res[i] = a[idx+j];
+                res[i] = a[idx + j];
                 j++;
             }
         }
@@ -3658,16 +3648,16 @@ public class Double512VectorTests extends AbstractVectorTest {
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
             if (part == 0) {
                 if (i < origin)
-                    res[i] = b[idx+i];
+                    res[i] = b[idx + i];
                 else {
-                    res[i] = a[idx+j];
+                    res[i] = a[idx + j];
                     j++;
                 }
             } else if (part == 1) {
                 if (i < origin)
-                    res[i] = a[idx+SPECIES.length()-origin+i];
+                    res[i] = a[idx + SPECIES.length() - origin + i];
                 else {
-                    res[i] = b[idx+origin+j];
+                    res[i] = b[idx + origin + j];
                     j++;
                 }
             }
@@ -3695,32 +3685,32 @@ public class Double512VectorTests extends AbstractVectorTest {
     static double[] unslice(double[] a, double[] b, int origin, int part, boolean[] mask, int idx) {
         double[] res = new double[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
-            if(i+origin < SPECIES.length())
-                res[i] = b[idx+i+origin];
+            if(i + origin < SPECIES.length())
+                res[i] = b[idx + i + origin];
             else {
-                res[i] = b[idx+j];
+                res[i] = b[idx + j];
                 j++;
             }
         }
         for (int i = 0; i < SPECIES.length(); i++){
-            res[i] = mask[i] ? a[idx+i] : res[i];
+            res[i] = mask[i] ? a[idx + i] : res[i];
         }
         double[] res1 = new double[SPECIES.length()];
         if (part == 0) {
             for (int i = 0, j = 0; i < SPECIES.length(); i++){
                 if (i < origin)
-                    res1[i] = b[idx+i];
+                    res1[i] = b[idx + i];
                 else {
-                   res1[i] = res[j];
-                   j++;
+                    res1[i] = res[j];
+                    j++;
                 }
             }
         } else if (part == 1) {
             for (int i = 0, j = 0; i < SPECIES.length(); i++){
                 if (i < origin)
-                    res1[i] = res[SPECIES.length()-origin+i];
+                    res1[i] = res[SPECIES.length() - origin + i];
                 else {
-                    res1[i] = b[idx+origin+j];
+                    res1[i] = b[idx + origin + j];
                     j++;
                 }
             }
@@ -3750,11 +3740,11 @@ public class Double512VectorTests extends AbstractVectorTest {
     }
 
     static double SIN(double a) {
-        return (double)(Math.sin((double)a));
+        return (double) (Math.sin((double) a));
     }
 
     static double strictSIN(double a) {
-        return (double)(StrictMath.sin((double)a));
+        return (double) (StrictMath.sin((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -3774,11 +3764,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double EXP(double a) {
-        return (double)(Math.exp((double)a));
+        return (double) (Math.exp((double) a));
     }
 
     static double strictEXP(double a) {
-        return (double)(StrictMath.exp((double)a));
+        return (double) (StrictMath.exp((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -3798,11 +3788,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double LOG1P(double a) {
-        return (double)(Math.log1p((double)a));
+        return (double) (Math.log1p((double) a));
     }
 
     static double strictLOG1P(double a) {
-        return (double)(StrictMath.log1p((double)a));
+        return (double) (StrictMath.log1p((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -3822,11 +3812,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double LOG(double a) {
-        return (double)(Math.log((double)a));
+        return (double) (Math.log((double) a));
     }
 
     static double strictLOG(double a) {
-        return (double)(StrictMath.log((double)a));
+        return (double) (StrictMath.log((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -3846,11 +3836,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double LOG10(double a) {
-        return (double)(Math.log10((double)a));
+        return (double) (Math.log10((double) a));
     }
 
     static double strictLOG10(double a) {
-        return (double)(StrictMath.log10((double)a));
+        return (double) (StrictMath.log10((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -3870,11 +3860,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double EXPM1(double a) {
-        return (double)(Math.expm1((double)a));
+        return (double) (Math.expm1((double) a));
     }
 
     static double strictEXPM1(double a) {
-        return (double)(StrictMath.expm1((double)a));
+        return (double) (StrictMath.expm1((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -3894,11 +3884,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double COS(double a) {
-        return (double)(Math.cos((double)a));
+        return (double) (Math.cos((double) a));
     }
 
     static double strictCOS(double a) {
-        return (double)(StrictMath.cos((double)a));
+        return (double) (StrictMath.cos((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -3918,11 +3908,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double TAN(double a) {
-        return (double)(Math.tan((double)a));
+        return (double) (Math.tan((double) a));
     }
 
     static double strictTAN(double a) {
-        return (double)(StrictMath.tan((double)a));
+        return (double) (StrictMath.tan((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -3942,11 +3932,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double SINH(double a) {
-        return (double)(Math.sinh((double)a));
+        return (double) (Math.sinh((double) a));
     }
 
     static double strictSINH(double a) {
-        return (double)(StrictMath.sinh((double)a));
+        return (double) (StrictMath.sinh((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -3966,11 +3956,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double COSH(double a) {
-        return (double)(Math.cosh((double)a));
+        return (double) (Math.cosh((double) a));
     }
 
     static double strictCOSH(double a) {
-        return (double)(StrictMath.cosh((double)a));
+        return (double) (StrictMath.cosh((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -3990,11 +3980,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double TANH(double a) {
-        return (double)(Math.tanh((double)a));
+        return (double) (Math.tanh((double) a));
     }
 
     static double strictTANH(double a) {
-        return (double)(StrictMath.tanh((double)a));
+        return (double) (StrictMath.tanh((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -4014,11 +4004,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double ASIN(double a) {
-        return (double)(Math.asin((double)a));
+        return (double) (Math.asin((double) a));
     }
 
     static double strictASIN(double a) {
-        return (double)(StrictMath.asin((double)a));
+        return (double) (StrictMath.asin((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -4038,11 +4028,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double ACOS(double a) {
-        return (double)(Math.acos((double)a));
+        return (double) (Math.acos((double) a));
     }
 
     static double strictACOS(double a) {
-        return (double)(StrictMath.acos((double)a));
+        return (double) (StrictMath.acos((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -4062,11 +4052,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double ATAN(double a) {
-        return (double)(Math.atan((double)a));
+        return (double) (Math.atan((double) a));
     }
 
     static double strictATAN(double a) {
-        return (double)(StrictMath.atan((double)a));
+        return (double) (StrictMath.atan((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -4086,11 +4076,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double CBRT(double a) {
-        return (double)(Math.cbrt((double)a));
+        return (double) (Math.cbrt((double) a));
     }
 
     static double strictCBRT(double a) {
-        return (double)(StrictMath.cbrt((double)a));
+        return (double) (StrictMath.cbrt((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -4110,11 +4100,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double HYPOT(double a, double b) {
-        return (double)(Math.hypot((double)a, (double)b));
+        return (double)(Math.hypot((double) a, (double) b));
     }
 
     static double strictHYPOT(double a, double b) {
-        return (double)(StrictMath.hypot((double)a, (double)b));
+        return (double)(StrictMath.hypot((double) a, (double) b));
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -4137,11 +4127,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double POW(double a, double b) {
-        return (double)(Math.pow((double)a, (double)b));
+        return (double)(Math.pow((double) a, (double) b));
     }
 
     static double strictPOW(double a, double b) {
-        return (double)(StrictMath.pow((double)a, (double)b));
+        return (double)(StrictMath.pow((double) a, (double) b));
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -4162,11 +4152,11 @@ public class Double512VectorTests extends AbstractVectorTest {
     }
 
     static double pow(double a, double b) {
-        return (double)(Math.pow((double)a, (double)b));
+        return (double)(Math.pow((double) a, (double) b));
     }
 
     static double strictpow(double a, double b) {
-        return (double)(StrictMath.pow((double)a, (double)b));
+        return (double)(StrictMath.pow((double) a, (double) b));
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -4189,11 +4179,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double ATAN2(double a, double b) {
-        return (double)(Math.atan2((double)a, (double)b));
+        return (double)(Math.atan2((double) a, (double) b));
     }
 
     static double strictATAN2(double a, double b) {
-        return (double)(StrictMath.atan2((double)a, (double)b));
+        return (double)(StrictMath.atan2((double) a, (double) b));
     }
 
     @Test(dataProvider = "doubleBinaryOpProvider")
@@ -4246,10 +4236,10 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double FMA(double a, double b, double c) {
-        return (double)(Math.fma(a, b, c));
+        return (double) (Math.fma(a, b, c));
     }
     static double fma(double a, double b, double c) {
-        return (double)(Math.fma(a, b, c));
+        return (double) (Math.fma(a, b, c));
     }
 
 
@@ -4259,7 +4249,7 @@ public class Double512VectorTests extends AbstractVectorTest {
         switch ("FMA") {
         case "fma": case "lanewise_FMA":
            // Math.fma uses BigDecimal
-           count = Math.max(5, count/20); break;
+           count = Math.max(5, count / 20); break;
         }
         final int INVOC_COUNT = count;
         double[] a = fa.apply(SPECIES.length());
@@ -4284,7 +4274,7 @@ public class Double512VectorTests extends AbstractVectorTest {
         switch ("fma") {
         case "fma": case "lanewise_FMA":
            // Math.fma uses BigDecimal
-           count = Math.max(5, count/20); break;
+           count = Math.max(5, count / 20); break;
         }
         final int INVOC_COUNT = count;
         double[] a = fa.apply(SPECIES.length());
@@ -4310,7 +4300,7 @@ public class Double512VectorTests extends AbstractVectorTest {
         switch ("FMA") {
         case "fma": case "lanewise_FMA":
            // Math.fma uses BigDecimal
-           count = Math.max(5, count/20); break;
+           count = Math.max(5, count / 20); break;
         }
         final int INVOC_COUNT = count;
         double[] a = fa.apply(SPECIES.length());
@@ -4481,11 +4471,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double NEG(double a) {
-        return (double)(-((double)a));
+        return (double) (-((double) a));
     }
 
     static double neg(double a) {
-        return (double)(-((double)a));
+        return (double) (-((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -4537,11 +4527,11 @@ public class Double512VectorTests extends AbstractVectorTest {
     }
 
     static double ABS(double a) {
-        return (double)(Math.abs((double)a));
+        return (double) (Math.abs((double) a));
     }
 
     static double abs(double a) {
-        return (double)(Math.abs((double)a));
+        return (double) (Math.abs((double) a));
     }
 
     @Test(dataProvider = "doubleUnaryOpProvider")
@@ -4600,11 +4590,11 @@ public class Double512VectorTests extends AbstractVectorTest {
 
 
     static double SQRT(double a) {
-        return (double)(Math.sqrt((double)a));
+        return (double) (Math.sqrt((double) a));
     }
 
     static double sqrt(double a) {
-        return (double)(Math.sqrt((double)a));
+        return (double) (Math.sqrt((double) a));
     }
 
 
@@ -4767,7 +4757,7 @@ public class Double512VectorTests extends AbstractVectorTest {
             res += a[i];
         }
 
-        return (long)res;
+        return (long) res;
     }
 
     static long ADDReduceAllLong(double[] a) {
@@ -4806,7 +4796,7 @@ public class Double512VectorTests extends AbstractVectorTest {
                 res += a[i];
         }
 
-        return (long)res;
+        return (long) res;
     }
 
     static long ADDReduceAllLongMasked(double[] a, boolean[] mask) {
@@ -4863,7 +4853,7 @@ public class Double512VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-                av.blend((long)b[i], vmask).intoArray(r, i);
+                av.blend((long) b[i], vmask).intoArray(r, i);
             }
         }
         assertBroadcastLongArraysEquals(r, a, b, mask, Double512VectorTests::blend);

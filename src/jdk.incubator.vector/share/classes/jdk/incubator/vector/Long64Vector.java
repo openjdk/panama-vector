@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -114,7 +114,7 @@ final class Long64Vector extends LongVector {
     @ForceInline
     final @Override
     long[] vec() {
-        return (long[])getPayload();
+        return (long[]) getPayload();
     }
 
     // Virtualized constructors
@@ -139,11 +139,11 @@ final class Long64Vector extends LongVector {
     @ForceInline
     Long64Shuffle iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return (Long64Shuffle)VectorSupport.shuffleIota(ETYPE, Long64Shuffle.class, VSPECIES, VLENGTH, start, step, 1,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
+        return (Long64Shuffle) VectorSupport.shuffleIota(ETYPE, Long64Shuffle.class, VSPECIES, VLENGTH, start, step, 1,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i * lstep + lstart, l))));
       } else {
-        return (Long64Shuffle)VectorSupport.shuffleIota(ETYPE, Long64Shuffle.class, VSPECIES, VLENGTH, start, step, 0,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i*lstep + lstart)));
+        return (Long64Shuffle) VectorSupport.shuffleIota(ETYPE, Long64Shuffle.class, VSPECIES, VLENGTH, start, step, 0,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i * lstep + lstart)));
       }
     }
 
@@ -190,7 +190,7 @@ final class Long64Vector extends LongVector {
     final @Override
     Long64Vector uOp(VectorMask<Long> m, FUnOp f) {
         return (Long64Vector)
-            super.uOpTemplate((Long64Mask)m, f);  // specialize
+            super.uOpTemplate((Long64Mask) m, f);  // specialize
     }
 
     // Binary operator
@@ -198,7 +198,7 @@ final class Long64Vector extends LongVector {
     @ForceInline
     final @Override
     Long64Vector bOp(Vector<Long> v, FBinOp f) {
-        return (Long64Vector) super.bOpTemplate((Long64Vector)v, f);  // specialize
+        return (Long64Vector) super.bOpTemplate((Long64Vector) v, f);  // specialize
     }
 
     @ForceInline
@@ -206,7 +206,7 @@ final class Long64Vector extends LongVector {
     Long64Vector bOp(Vector<Long> v,
                      VectorMask<Long> m, FBinOp f) {
         return (Long64Vector)
-            super.bOpTemplate((Long64Vector)v, (Long64Mask)m,
+            super.bOpTemplate((Long64Vector) v, (Long64Mask) m,
                               f);  // specialize
     }
 
@@ -216,7 +216,7 @@ final class Long64Vector extends LongVector {
     final @Override
     Long64Vector tOp(Vector<Long> v1, Vector<Long> v2, FTriOp f) {
         return (Long64Vector)
-            super.tOpTemplate((Long64Vector)v1, (Long64Vector)v2,
+            super.tOpTemplate((Long64Vector) v1, (Long64Vector) v2,
                               f);  // specialize
     }
 
@@ -225,8 +225,8 @@ final class Long64Vector extends LongVector {
     Long64Vector tOp(Vector<Long> v1, Vector<Long> v2,
                      VectorMask<Long> m, FTriOp f) {
         return (Long64Vector)
-            super.tOpTemplate((Long64Vector)v1, (Long64Vector)v2,
-                              (Long64Mask)m, f);  // specialize
+            super.tOpTemplate((Long64Vector) v1, (Long64Vector) v2,
+                              (Long64Mask) m, f);  // specialize
     }
 
     @ForceInline
@@ -506,7 +506,7 @@ final class Long64Vector extends LongVector {
                                 this, i,
                                 (vec, ix) -> {
                                     long[] vecarr = vec.vec();
-                                    return (long)vecarr[ix];
+                                    return (long) vecarr[ix];
                                 });
     }
 
@@ -522,10 +522,10 @@ final class Long64Vector extends LongVector {
     public Long64Vector withLaneHelper(int i, long e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
-                                this, i, (long)e,
+                                this, i, (long) e,
                                 (v, ix, bits) -> {
                                     long[] res = v.vec().clone();
-                                    res[ix] = (long)bits;
+                                    res[ix] = (long) bits;
                                     return v.vectorFactory(res);
                                 });
     }
@@ -573,7 +573,7 @@ final class Long64Vector extends LongVector {
 
         @ForceInline
         boolean[] getBits() {
-            return (boolean[])getPayload();
+            return (boolean[]) getPayload();
         }
 
         @Override
@@ -590,7 +590,7 @@ final class Long64Vector extends LongVector {
         Long64Mask bOp(VectorMask<Long> m, MBinOp f) {
             boolean[] res = new boolean[vspecies().laneCount()];
             boolean[] bits = getBits();
-            boolean[] mbits = ((Long64Mask)m).getBits();
+            boolean[] mbits = ((Long64Mask) m).getBits();
             for (int i = 0; i < res.length; i++) {
                 res[i] = f.apply(i, bits[i], mbits[i]);
             }
@@ -614,7 +614,7 @@ final class Long64Vector extends LongVector {
             if (length() != dsp.laneCount())
                 throw new IllegalArgumentException("VectorMask length and species length differ");
             boolean[] maskArray = toArray();
-            return  dsp.maskFactory(maskArray).check(dsp);
+            return dsp.maskFactory(maskArray).check(dsp);
         }
 
         @Override
@@ -635,7 +635,7 @@ final class Long64Vector extends LongVector {
         @ForceInline
         public Long64Mask eq(VectorMask<Long> mask) {
             Objects.requireNonNull(mask);
-            Long64Mask m = (Long64Mask)mask;
+            Long64Mask m = (Long64Mask) mask;
             return xor(m.not());
         }
 
@@ -650,7 +650,7 @@ final class Long64Vector extends LongVector {
         @Override
         @ForceInline
         public Long64Mask compress() {
-            return (Long64Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+            return (Long64Mask) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
                 Long64Vector.class, Long64Mask.class, ETYPE, VLENGTH, null, this,
                 (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
@@ -662,7 +662,7 @@ final class Long64Vector extends LongVector {
         @ForceInline
         public Long64Mask and(VectorMask<Long> mask) {
             Objects.requireNonNull(mask);
-            Long64Mask m = (Long64Mask)mask;
+            Long64Mask m = (Long64Mask) mask;
             return VectorSupport.binaryOp(VECTOR_OP_AND, Long64Mask.class, null, long.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
@@ -672,7 +672,7 @@ final class Long64Vector extends LongVector {
         @ForceInline
         public Long64Mask or(VectorMask<Long> mask) {
             Objects.requireNonNull(mask);
-            Long64Mask m = (Long64Mask)mask;
+            Long64Mask m = (Long64Mask) mask;
             return VectorSupport.binaryOp(VECTOR_OP_OR, Long64Mask.class, null, long.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
@@ -682,7 +682,7 @@ final class Long64Vector extends LongVector {
         /* package-private */
         Long64Mask xor(VectorMask<Long> mask) {
             Objects.requireNonNull(mask);
-            Long64Mask m = (Long64Mask)mask;
+            Long64Mask m = (Long64Mask) mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, Long64Mask.class, null, long.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
@@ -728,7 +728,7 @@ final class Long64Vector extends LongVector {
         public boolean anyTrue() {
             return VectorSupport.test(BT_ne, Long64Mask.class, long.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> anyTrueHelper(((Long64Mask)m).getBits()));
+                                         (m, __) -> anyTrueHelper(((Long64Mask) m).getBits()));
         }
 
         @Override
@@ -736,7 +736,7 @@ final class Long64Vector extends LongVector {
         public boolean allTrue() {
             return VectorSupport.test(BT_overflow, Long64Mask.class, long.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> allTrueHelper(((Long64Mask)m).getBits()));
+                                         (m, __) -> allTrueHelper(((Long64Mask) m).getBits()));
         }
 
         @ForceInline
@@ -790,7 +790,7 @@ final class Long64Vector extends LongVector {
         @ForceInline
         public Long64Vector toVector() {
             return VectorSupport.shuffleToVector(VCLASS, ETYPE, Long64Shuffle.class, this, VLENGTH,
-                                                    (s) -> ((Long64Vector)(((AbstractShuffle<Long>)(s)).toVectorTemplate())));
+                                                    (s) -> ((Long64Vector) (((AbstractShuffle<Long>) (s)).toVectorTemplate())));
         }
 
         @Override

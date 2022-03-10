@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -114,7 +114,7 @@ final class ShortMaxVector extends ShortVector {
     @ForceInline
     final @Override
     short[] vec() {
-        return (short[])getPayload();
+        return (short[]) getPayload();
     }
 
     // Virtualized constructors
@@ -144,11 +144,11 @@ final class ShortMaxVector extends ShortVector {
     @ForceInline
     ShortMaxShuffle iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return (ShortMaxShuffle)VectorSupport.shuffleIota(ETYPE, ShortMaxShuffle.class, VSPECIES, VLENGTH, start, step, 1,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
+        return (ShortMaxShuffle) VectorSupport.shuffleIota(ETYPE, ShortMaxShuffle.class, VSPECIES, VLENGTH, start, step, 1,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i * lstep + lstart, l))));
       } else {
-        return (ShortMaxShuffle)VectorSupport.shuffleIota(ETYPE, ShortMaxShuffle.class, VSPECIES, VLENGTH, start, step, 0,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i*lstep + lstart)));
+        return (ShortMaxShuffle) VectorSupport.shuffleIota(ETYPE, ShortMaxShuffle.class, VSPECIES, VLENGTH, start, step, 0,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i * lstep + lstart)));
       }
     }
 
@@ -195,7 +195,7 @@ final class ShortMaxVector extends ShortVector {
     final @Override
     ShortMaxVector uOp(VectorMask<Short> m, FUnOp f) {
         return (ShortMaxVector)
-            super.uOpTemplate((ShortMaxMask)m, f);  // specialize
+            super.uOpTemplate((ShortMaxMask) m, f);  // specialize
     }
 
     // Binary operator
@@ -203,7 +203,7 @@ final class ShortMaxVector extends ShortVector {
     @ForceInline
     final @Override
     ShortMaxVector bOp(Vector<Short> v, FBinOp f) {
-        return (ShortMaxVector) super.bOpTemplate((ShortMaxVector)v, f);  // specialize
+        return (ShortMaxVector) super.bOpTemplate((ShortMaxVector) v, f);  // specialize
     }
 
     @ForceInline
@@ -211,7 +211,7 @@ final class ShortMaxVector extends ShortVector {
     ShortMaxVector bOp(Vector<Short> v,
                      VectorMask<Short> m, FBinOp f) {
         return (ShortMaxVector)
-            super.bOpTemplate((ShortMaxVector)v, (ShortMaxMask)m,
+            super.bOpTemplate((ShortMaxVector) v, (ShortMaxMask) m,
                               f);  // specialize
     }
 
@@ -221,7 +221,7 @@ final class ShortMaxVector extends ShortVector {
     final @Override
     ShortMaxVector tOp(Vector<Short> v1, Vector<Short> v2, FTriOp f) {
         return (ShortMaxVector)
-            super.tOpTemplate((ShortMaxVector)v1, (ShortMaxVector)v2,
+            super.tOpTemplate((ShortMaxVector) v1, (ShortMaxVector) v2,
                               f);  // specialize
     }
 
@@ -230,8 +230,8 @@ final class ShortMaxVector extends ShortVector {
     ShortMaxVector tOp(Vector<Short> v1, Vector<Short> v2,
                      VectorMask<Short> m, FTriOp f) {
         return (ShortMaxVector)
-            super.tOpTemplate((ShortMaxVector)v1, (ShortMaxVector)v2,
-                              (ShortMaxMask)m, f);  // specialize
+            super.tOpTemplate((ShortMaxVector) v1, (ShortMaxVector) v2,
+                              (ShortMaxMask) m, f);  // specialize
     }
 
     @ForceInline
@@ -516,7 +516,7 @@ final class ShortMaxVector extends ShortVector {
                                 this, i,
                                 (vec, ix) -> {
                                     short[] vecarr = vec.vec();
-                                    return (long)vecarr[ix];
+                                    return (long) vecarr[ix];
                                 });
     }
 
@@ -532,10 +532,10 @@ final class ShortMaxVector extends ShortVector {
     public ShortMaxVector withLaneHelper(int i, short e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
-                                this, i, (long)e,
+                                this, i, (long) e,
                                 (v, ix, bits) -> {
                                     short[] res = v.vec().clone();
-                                    res[ix] = (short)bits;
+                                    res[ix] = (short) bits;
                                     return v.vectorFactory(res);
                                 });
     }
@@ -583,7 +583,7 @@ final class ShortMaxVector extends ShortVector {
 
         @ForceInline
         boolean[] getBits() {
-            return (boolean[])getPayload();
+            return (boolean[]) getPayload();
         }
 
         @Override
@@ -600,7 +600,7 @@ final class ShortMaxVector extends ShortVector {
         ShortMaxMask bOp(VectorMask<Short> m, MBinOp f) {
             boolean[] res = new boolean[vspecies().laneCount()];
             boolean[] bits = getBits();
-            boolean[] mbits = ((ShortMaxMask)m).getBits();
+            boolean[] mbits = ((ShortMaxMask) m).getBits();
             for (int i = 0; i < res.length; i++) {
                 res[i] = f.apply(i, bits[i], mbits[i]);
             }
@@ -624,7 +624,7 @@ final class ShortMaxVector extends ShortVector {
             if (length() != dsp.laneCount())
                 throw new IllegalArgumentException("VectorMask length and species length differ");
             boolean[] maskArray = toArray();
-            return  dsp.maskFactory(maskArray).check(dsp);
+            return dsp.maskFactory(maskArray).check(dsp);
         }
 
         @Override
@@ -645,7 +645,7 @@ final class ShortMaxVector extends ShortVector {
         @ForceInline
         public ShortMaxMask eq(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
-            ShortMaxMask m = (ShortMaxMask)mask;
+            ShortMaxMask m = (ShortMaxMask) mask;
             return xor(m.not());
         }
 
@@ -660,7 +660,7 @@ final class ShortMaxVector extends ShortVector {
         @Override
         @ForceInline
         public ShortMaxMask compress() {
-            return (ShortMaxMask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+            return (ShortMaxMask) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
                 ShortMaxVector.class, ShortMaxMask.class, ETYPE, VLENGTH, null, this,
                 (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
@@ -672,7 +672,7 @@ final class ShortMaxVector extends ShortVector {
         @ForceInline
         public ShortMaxMask and(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
-            ShortMaxMask m = (ShortMaxMask)mask;
+            ShortMaxMask m = (ShortMaxMask) mask;
             return VectorSupport.binaryOp(VECTOR_OP_AND, ShortMaxMask.class, null, short.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
@@ -682,7 +682,7 @@ final class ShortMaxVector extends ShortVector {
         @ForceInline
         public ShortMaxMask or(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
-            ShortMaxMask m = (ShortMaxMask)mask;
+            ShortMaxMask m = (ShortMaxMask) mask;
             return VectorSupport.binaryOp(VECTOR_OP_OR, ShortMaxMask.class, null, short.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
@@ -692,7 +692,7 @@ final class ShortMaxVector extends ShortVector {
         /* package-private */
         ShortMaxMask xor(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
-            ShortMaxMask m = (ShortMaxMask)mask;
+            ShortMaxMask m = (ShortMaxMask) mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, ShortMaxMask.class, null, short.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
@@ -738,7 +738,7 @@ final class ShortMaxVector extends ShortVector {
         public boolean anyTrue() {
             return VectorSupport.test(BT_ne, ShortMaxMask.class, short.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> anyTrueHelper(((ShortMaxMask)m).getBits()));
+                                         (m, __) -> anyTrueHelper(((ShortMaxMask) m).getBits()));
         }
 
         @Override
@@ -746,7 +746,7 @@ final class ShortMaxVector extends ShortVector {
         public boolean allTrue() {
             return VectorSupport.test(BT_overflow, ShortMaxMask.class, short.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> allTrueHelper(((ShortMaxMask)m).getBits()));
+                                         (m, __) -> allTrueHelper(((ShortMaxMask) m).getBits()));
         }
 
         @ForceInline
@@ -800,7 +800,7 @@ final class ShortMaxVector extends ShortVector {
         @ForceInline
         public ShortMaxVector toVector() {
             return VectorSupport.shuffleToVector(VCLASS, ETYPE, ShortMaxShuffle.class, this, VLENGTH,
-                                                    (s) -> ((ShortMaxVector)(((AbstractShuffle<Short>)(s)).toVectorTemplate())));
+                                                    (s) -> ((ShortMaxVector) (((AbstractShuffle<Short>) (s)).toVectorTemplate())));
         }
 
         @Override

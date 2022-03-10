@@ -61,15 +61,15 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
     @Setup
     public void init() {
-        as = fill(i -> (byte)(2*i));
-        bs = fill(i -> (byte)(i+1));
-        cs = fill(i -> (byte)(i+5));
-        rs = fill(i -> (byte)0);
+        as = fill(i -> (byte) (2 * i));
+        bs = fill(i -> (byte) (i + 1));
+        cs = fill(i -> (byte) (i + 5));
+        rs = fill(i -> (byte) 0);
         ms = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);
         rms = fillMask(size, i -> false);
 
-        ss = fillInt(size, i -> RANDOM.nextInt(Math.max(i,1)));
+        ss = fillInt(size, i -> RANDOM.nextInt(Math.max(i, 1)));
     }
 
     final IntFunction<byte[]> fa = vl -> as;
@@ -122,11 +122,11 @@ public class ByteScalar extends AbstractVectorBenchmark {
     }
 
     static byte ROL_scalar(byte a, byte b) {
-        return (byte)(((((byte)a) & 0xFF) << (b & 7)) | ((((byte)a) & 0xFF) >>> (8 - (b & 7))));
+        return (byte) (((((byte) a) & 0xFF) << (b & 7)) | ((((byte) a) & 0xFF) >>> (8 - (b & 7))));
     }
 
     static byte ROR_scalar(byte a, byte b) {
-        return (byte)(((((byte)a) & 0xFF) >>> (b & 7)) | ((((byte)a) & 0xFF) << (8 - (b & 7))));
+        return (byte) (((((byte) a) & 0xFF) >>> (b & 7)) | ((((byte) a) & 0xFF) << (8 - (b & 7))));
     }
 
     static byte TRAILING_ZEROS_COUNT_scalar(byte a) {
@@ -139,8 +139,8 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
     static byte REVERSE_scalar(byte a) {
         byte b = ROL_scalar(a, (byte) 4);
-        b = (byte)(((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
-        b = (byte)(((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
+        b = (byte) (((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
+        b = (byte) (((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
         return b;
     }
 
@@ -154,7 +154,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(a + b);
+                rs[i] = (byte) (a + b);
             }
         }
 
@@ -173,7 +173,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (byte)(a + b);
+                    rs[i] = (byte) (a + b);
                 } else {
                     rs[i] = a;
                 }
@@ -192,7 +192,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(a - b);
+                rs[i] = (byte) (a - b);
             }
         }
 
@@ -211,7 +211,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (byte)(a - b);
+                    rs[i] = (byte) (a - b);
                 } else {
                     rs[i] = a;
                 }
@@ -230,7 +230,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(a * b);
+                rs[i] = (byte) (a * b);
             }
         }
 
@@ -249,7 +249,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (byte)(a * b);
+                    rs[i] = (byte) (a * b);
                 } else {
                     rs[i] = a;
                 }
@@ -270,7 +270,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)((a)!=0?a:b);
+                rs[i] = (byte) ((a) != 0 ? a : b);
             }
         }
 
@@ -289,7 +289,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (byte)((a)!=0?a:b);
+                    rs[i] = (byte) ((a) != 0 ? a : b);
                 } else {
                     rs[i] = a;
                 }
@@ -309,7 +309,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(a & b);
+                rs[i] = (byte) (a & b);
             }
         }
 
@@ -330,7 +330,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (byte)(a & b);
+                    rs[i] = (byte) (a & b);
                 } else {
                     rs[i] = a;
                 }
@@ -351,7 +351,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(a & ~b);
+                rs[i] = (byte) (a & ~b);
             }
         }
 
@@ -372,7 +372,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (byte)(a & ~b);
+                    rs[i] = (byte) (a & ~b);
                 } else {
                     rs[i] = a;
                 }
@@ -393,7 +393,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(a | b);
+                rs[i] = (byte) (a | b);
             }
         }
 
@@ -414,7 +414,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (byte)(a | b);
+                    rs[i] = (byte) (a | b);
                 } else {
                     rs[i] = a;
                 }
@@ -435,7 +435,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(a ^ b);
+                rs[i] = (byte) (a ^ b);
             }
         }
 
@@ -456,7 +456,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (byte)(a ^ b);
+                    rs[i] = (byte) (a ^ b);
                 } else {
                     rs[i] = a;
                 }
@@ -479,7 +479,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)((a << (b & 0x7)));
+                rs[i] = (byte) ((a << (b & 0x7)));
             }
         }
 
@@ -500,7 +500,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (byte)((a << (b & 0x7)));
+                    rs[i] = (byte) ((a << (b & 0x7)));
                 } else {
                     rs[i] = a;
                 }
@@ -525,7 +525,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)((a >> (b & 0x7)));
+                rs[i] = (byte) ((a >> (b & 0x7)));
             }
         }
 
@@ -546,7 +546,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (byte)((a >> (b & 0x7)));
+                    rs[i] = (byte) ((a >> (b & 0x7)));
                 } else {
                     rs[i] = a;
                 }
@@ -571,7 +571,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(((a & 0xFF) >>> (b & 0x7)));
+                rs[i] = (byte) (((a & 0xFF) >>> (b & 0x7)));
             }
         }
 
@@ -592,7 +592,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (byte)(((a & 0xFF) >>> (b & 0x7)));
+                    rs[i] = (byte) (((a & 0xFF) >>> (b & 0x7)));
                 } else {
                     rs[i] = a;
                 }
@@ -617,7 +617,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)((a << (b & 7)));
+                rs[i] = (byte) ((a << (b & 7)));
             }
         }
 
@@ -638,7 +638,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)((a << (b & 7))) : a);
+                rs[i] = (m ? (byte) ((a << (b & 7))) : a);
             }
         }
 
@@ -661,7 +661,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(((a & 0xFF) >>> (b & 7)));
+                rs[i] = (byte) (((a & 0xFF) >>> (b & 7)));
             }
         }
 
@@ -682,7 +682,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)(((a & 0xFF) >>> (b & 7))) : a);
+                rs[i] = (m ? (byte) (((a & 0xFF) >>> (b & 7))) : a);
             }
         }
 
@@ -705,7 +705,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)((a >> (b & 7)));
+                rs[i] = (byte) ((a >> (b & 7)));
             }
         }
 
@@ -726,7 +726,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)((a >> (b & 7))) : a);
+                rs[i] = (m ? (byte) ((a >> (b & 7))) : a);
             }
         }
 
@@ -747,7 +747,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(ROR_scalar(a,b));
+                rs[i] = (byte) (ROR_scalar(a, b));
             }
         }
 
@@ -768,7 +768,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (byte)(ROR_scalar(a,b));
+                    rs[i] = (byte) (ROR_scalar(a, b));
                 } else {
                     rs[i] = a;
                 }
@@ -789,7 +789,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(ROL_scalar(a,b));
+                rs[i] = (byte) (ROL_scalar(a, b));
             }
         }
 
@@ -810,7 +810,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (byte)(ROL_scalar(a,b));
+                    rs[i] = (byte) (ROL_scalar(a, b));
                 } else {
                     rs[i] = a;
                 }
@@ -831,7 +831,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(ROR_scalar(a,b));
+                rs[i] = (byte) (ROR_scalar(a, b));
             }
         }
 
@@ -852,7 +852,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)(ROR_scalar(a,b)) : a);
+                rs[i] = (m ? (byte) (ROR_scalar(a, b)) : a);
             }
         }
 
@@ -871,7 +871,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(ROL_scalar(a,b));
+                rs[i] = (byte) (ROL_scalar(a, b));
             }
         }
 
@@ -892,7 +892,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)(ROL_scalar(a,b)) : a);
+                rs[i] = (m ? (byte) (ROL_scalar(a, b)) : a);
             }
         }
 
@@ -910,7 +910,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(Math.min(a, b));
+                rs[i] = (byte) (Math.min(a, b));
             }
         }
 
@@ -927,7 +927,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(Math.max(a, b));
+                rs[i] = (byte) (Math.max(a, b));
             }
         }
 
@@ -1124,7 +1124,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
-                r &= (bits(a)==0); // accumulate so JIT can't eliminate the computation
+                r &= (bits(a) == 0); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -1139,7 +1139,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
-                r &= (bits(a)<0); // accumulate so JIT can't eliminate the computation
+                r &= (bits(a) < 0); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -1333,7 +1333,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i += window) {
                 for (int j = 0; j < window; j++) {
-                    byte a = as[i+j];
+                    byte a = as[i + j];
                     int pos = order[j];
                     rs[i + pos] = a;
                 }
@@ -1462,7 +1462,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                as[i] = (byte)0;
+                as[i] = (byte) 0;
             }
         }
 
@@ -1502,7 +1502,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 byte c = cs[i];
-                rs[i] = (byte)((a&~(c))|(b&c));
+                rs[i] = (byte) ((a &~ (c)) | (b & c));
             }
         }
 
@@ -1526,7 +1526,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte b = bs[i];
                 byte c = cs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (byte)((a&~(c))|(b&c));
+                    rs[i] = (byte) ((a &~ (c)) | (b & c));
                 } else {
                     rs[i] = a;
                 }
@@ -1544,7 +1544,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
-                rs[i] = (byte)(-((byte)a));
+                rs[i] = (byte) (-((byte) a));
             }
         }
 
@@ -1561,7 +1561,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)(-((byte)a)) : a);
+                rs[i] = (m ? (byte) (-((byte) a)) : a);
             }
         }
 
@@ -1576,7 +1576,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
-                rs[i] = (byte)(Math.abs((byte)a));
+                rs[i] = (byte) (Math.abs((byte) a));
             }
         }
 
@@ -1593,7 +1593,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)(Math.abs((byte)a)) : a);
+                rs[i] = (m ? (byte) (Math.abs((byte) a)) : a);
             }
         }
 
@@ -1609,7 +1609,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
-                rs[i] = (byte)(~((byte)a));
+                rs[i] = (byte) (~((byte) a));
             }
         }
 
@@ -1628,7 +1628,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)(~((byte)a)) : a);
+                rs[i] = (m ? (byte) (~((byte) a)) : a);
             }
         }
 
@@ -1645,7 +1645,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
-                rs[i] = (byte)((a==0?0:-1));
+                rs[i] = (byte) ((a == 0 ? 0 : -1));
             }
         }
 
@@ -1664,7 +1664,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)((a==0?0:-1)) : a);
+                rs[i] = (m ? (byte) ((a == 0 ? 0 : -1)) : a);
             }
         }
 
@@ -1685,7 +1685,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
-                rs[i] = (byte)(Integer.bitCount((int)a & 0xFF));
+                rs[i] = (byte) (Integer.bitCount((int) a & 0xFF));
             }
         }
 
@@ -1704,7 +1704,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)(Integer.bitCount((int)a & 0xFF)) : a);
+                rs[i] = (m ? (byte) (Integer.bitCount((int) a & 0xFF)) : a);
             }
         }
 
@@ -1723,7 +1723,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
-                rs[i] = (byte)(TRAILING_ZEROS_COUNT_scalar(a));
+                rs[i] = (byte) (TRAILING_ZEROS_COUNT_scalar(a));
             }
         }
 
@@ -1742,7 +1742,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)(TRAILING_ZEROS_COUNT_scalar(a)) : a);
+                rs[i] = (m ? (byte) (TRAILING_ZEROS_COUNT_scalar(a)) : a);
             }
         }
 
@@ -1759,7 +1759,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
-                rs[i] = (byte)(LEADING_ZEROS_COUNT_scalar(a));
+                rs[i] = (byte) (LEADING_ZEROS_COUNT_scalar(a));
             }
         }
 
@@ -1778,7 +1778,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)(LEADING_ZEROS_COUNT_scalar(a)) : a);
+                rs[i] = (m ? (byte) (LEADING_ZEROS_COUNT_scalar(a)) : a);
             }
         }
 
@@ -1795,7 +1795,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
-                rs[i] = (byte)(REVERSE_scalar(a));
+                rs[i] = (byte) (REVERSE_scalar(a));
             }
         }
 
@@ -1814,7 +1814,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)(REVERSE_scalar(a)) : a);
+                rs[i] = (m ? (byte) (REVERSE_scalar(a)) : a);
             }
         }
 

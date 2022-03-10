@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -114,7 +114,7 @@ final class FloatMaxVector extends FloatVector {
     @ForceInline
     final @Override
     float[] vec() {
-        return (float[])getPayload();
+        return (float[]) getPayload();
     }
 
     // Virtualized constructors
@@ -144,11 +144,11 @@ final class FloatMaxVector extends FloatVector {
     @ForceInline
     FloatMaxShuffle iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return (FloatMaxShuffle)VectorSupport.shuffleIota(ETYPE, FloatMaxShuffle.class, VSPECIES, VLENGTH, start, step, 1,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
+        return (FloatMaxShuffle) VectorSupport.shuffleIota(ETYPE, FloatMaxShuffle.class, VSPECIES, VLENGTH, start, step, 1,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i * lstep + lstart, l))));
       } else {
-        return (FloatMaxShuffle)VectorSupport.shuffleIota(ETYPE, FloatMaxShuffle.class, VSPECIES, VLENGTH, start, step, 0,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i*lstep + lstart)));
+        return (FloatMaxShuffle) VectorSupport.shuffleIota(ETYPE, FloatMaxShuffle.class, VSPECIES, VLENGTH, start, step, 0,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i * lstep + lstart)));
       }
     }
 
@@ -195,7 +195,7 @@ final class FloatMaxVector extends FloatVector {
     final @Override
     FloatMaxVector uOp(VectorMask<Float> m, FUnOp f) {
         return (FloatMaxVector)
-            super.uOpTemplate((FloatMaxMask)m, f);  // specialize
+            super.uOpTemplate((FloatMaxMask) m, f);  // specialize
     }
 
     // Binary operator
@@ -203,7 +203,7 @@ final class FloatMaxVector extends FloatVector {
     @ForceInline
     final @Override
     FloatMaxVector bOp(Vector<Float> v, FBinOp f) {
-        return (FloatMaxVector) super.bOpTemplate((FloatMaxVector)v, f);  // specialize
+        return (FloatMaxVector) super.bOpTemplate((FloatMaxVector) v, f);  // specialize
     }
 
     @ForceInline
@@ -211,7 +211,7 @@ final class FloatMaxVector extends FloatVector {
     FloatMaxVector bOp(Vector<Float> v,
                      VectorMask<Float> m, FBinOp f) {
         return (FloatMaxVector)
-            super.bOpTemplate((FloatMaxVector)v, (FloatMaxMask)m,
+            super.bOpTemplate((FloatMaxVector) v, (FloatMaxMask) m,
                               f);  // specialize
     }
 
@@ -221,7 +221,7 @@ final class FloatMaxVector extends FloatVector {
     final @Override
     FloatMaxVector tOp(Vector<Float> v1, Vector<Float> v2, FTriOp f) {
         return (FloatMaxVector)
-            super.tOpTemplate((FloatMaxVector)v1, (FloatMaxVector)v2,
+            super.tOpTemplate((FloatMaxVector) v1, (FloatMaxVector) v2,
                               f);  // specialize
     }
 
@@ -230,8 +230,8 @@ final class FloatMaxVector extends FloatVector {
     FloatMaxVector tOp(Vector<Float> v1, Vector<Float> v2,
                      VectorMask<Float> m, FTriOp f) {
         return (FloatMaxVector)
-            super.tOpTemplate((FloatMaxVector)v1, (FloatMaxVector)v2,
-                              (FloatMaxMask)m, f);  // specialize
+            super.tOpTemplate((FloatMaxVector) v1, (FloatMaxVector) v2,
+                              (FloatMaxMask) m, f);  // specialize
     }
 
     @ForceInline
@@ -504,7 +504,7 @@ final class FloatMaxVector extends FloatVector {
                      this, i,
                      (vec, ix) -> {
                      float[] vecarr = vec.vec();
-                     return (long)Float.floatToIntBits(vecarr[ix]);
+                     return (long) Float.floatToIntBits(vecarr[ix]);
                      });
     }
 
@@ -520,10 +520,10 @@ final class FloatMaxVector extends FloatVector {
     public FloatMaxVector withLaneHelper(int i, float e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
-                                this, i, (long)Float.floatToIntBits(e),
+                                this, i, (long) Float.floatToIntBits(e),
                                 (v, ix, bits) -> {
                                     float[] res = v.vec().clone();
-                                    res[ix] = Float.intBitsToFloat((int)bits);
+                                    res[ix] = Float.intBitsToFloat((int) bits);
                                     return v.vectorFactory(res);
                                 });
     }
@@ -571,7 +571,7 @@ final class FloatMaxVector extends FloatVector {
 
         @ForceInline
         boolean[] getBits() {
-            return (boolean[])getPayload();
+            return (boolean[]) getPayload();
         }
 
         @Override
@@ -588,7 +588,7 @@ final class FloatMaxVector extends FloatVector {
         FloatMaxMask bOp(VectorMask<Float> m, MBinOp f) {
             boolean[] res = new boolean[vspecies().laneCount()];
             boolean[] bits = getBits();
-            boolean[] mbits = ((FloatMaxMask)m).getBits();
+            boolean[] mbits = ((FloatMaxMask) m).getBits();
             for (int i = 0; i < res.length; i++) {
                 res[i] = f.apply(i, bits[i], mbits[i]);
             }
@@ -612,7 +612,7 @@ final class FloatMaxVector extends FloatVector {
             if (length() != dsp.laneCount())
                 throw new IllegalArgumentException("VectorMask length and species length differ");
             boolean[] maskArray = toArray();
-            return  dsp.maskFactory(maskArray).check(dsp);
+            return dsp.maskFactory(maskArray).check(dsp);
         }
 
         @Override
@@ -633,7 +633,7 @@ final class FloatMaxVector extends FloatVector {
         @ForceInline
         public FloatMaxMask eq(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
-            FloatMaxMask m = (FloatMaxMask)mask;
+            FloatMaxMask m = (FloatMaxMask) mask;
             return xor(m.not());
         }
 
@@ -648,7 +648,7 @@ final class FloatMaxVector extends FloatVector {
         @Override
         @ForceInline
         public FloatMaxMask compress() {
-            return (FloatMaxMask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+            return (FloatMaxMask) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
                 FloatMaxVector.class, FloatMaxMask.class, ETYPE, VLENGTH, null, this,
                 (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
@@ -660,7 +660,7 @@ final class FloatMaxVector extends FloatVector {
         @ForceInline
         public FloatMaxMask and(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
-            FloatMaxMask m = (FloatMaxMask)mask;
+            FloatMaxMask m = (FloatMaxMask) mask;
             return VectorSupport.binaryOp(VECTOR_OP_AND, FloatMaxMask.class, null, int.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
@@ -670,7 +670,7 @@ final class FloatMaxVector extends FloatVector {
         @ForceInline
         public FloatMaxMask or(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
-            FloatMaxMask m = (FloatMaxMask)mask;
+            FloatMaxMask m = (FloatMaxMask) mask;
             return VectorSupport.binaryOp(VECTOR_OP_OR, FloatMaxMask.class, null, int.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
@@ -680,7 +680,7 @@ final class FloatMaxVector extends FloatVector {
         /* package-private */
         FloatMaxMask xor(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
-            FloatMaxMask m = (FloatMaxMask)mask;
+            FloatMaxMask m = (FloatMaxMask) mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, FloatMaxMask.class, null, int.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
@@ -726,7 +726,7 @@ final class FloatMaxVector extends FloatVector {
         public boolean anyTrue() {
             return VectorSupport.test(BT_ne, FloatMaxMask.class, int.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> anyTrueHelper(((FloatMaxMask)m).getBits()));
+                                         (m, __) -> anyTrueHelper(((FloatMaxMask) m).getBits()));
         }
 
         @Override
@@ -734,7 +734,7 @@ final class FloatMaxVector extends FloatVector {
         public boolean allTrue() {
             return VectorSupport.test(BT_overflow, FloatMaxMask.class, int.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> allTrueHelper(((FloatMaxMask)m).getBits()));
+                                         (m, __) -> allTrueHelper(((FloatMaxMask) m).getBits()));
         }
 
         @ForceInline
@@ -788,7 +788,7 @@ final class FloatMaxVector extends FloatVector {
         @ForceInline
         public FloatMaxVector toVector() {
             return VectorSupport.shuffleToVector(VCLASS, ETYPE, FloatMaxShuffle.class, this, VLENGTH,
-                                                    (s) -> ((FloatMaxVector)(((AbstractShuffle<Float>)(s)).toVectorTemplate())));
+                                                    (s) -> ((FloatMaxVector) (((AbstractShuffle<Float>) (s)).toVectorTemplate())));
         }
 
         @Override

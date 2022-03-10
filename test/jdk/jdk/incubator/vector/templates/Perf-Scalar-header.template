@@ -61,15 +61,15 @@ public class $Type$Scalar extends AbstractVectorBenchmark {
 
     @Setup
     public void init() {
-        as = fill(i -> ($type$)(2*i));
-        bs = fill(i -> ($type$)(i+1));
-        cs = fill(i -> ($type$)(i+5));
-        rs = fill(i -> ($type$)0);
+        as = fill(i -> ($type$) (2 * i));
+        bs = fill(i -> ($type$) (i + 1));
+        cs = fill(i -> ($type$) (i + 5));
+        rs = fill(i -> ($type$) 0);
         ms = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);
         rms = fillMask(size, i -> false);
 
-        ss = fillInt(size, i -> RANDOM.nextInt(Math.max(i,1)));
+        ss = fillInt(size, i -> RANDOM.nextInt(Math.max(i, 1)));
     }
 
     final IntFunction<$type$[]> fa = vl -> as;
@@ -126,24 +126,24 @@ public class $Type$Scalar extends AbstractVectorBenchmark {
 #if[BITWISE]
     static $type$ ROL_scalar($type$ a, $type$ b) {
 #if[intOrLong]
-        return $Wideboxtype$.rotateLeft(a, ((int)b));
+        return $Wideboxtype$.rotateLeft(a, ((int) b));
 #else[intOrLong]
 #if[short]
-        return (short)(((((short)a) & 0xFFFF) << (b & 15)) | ((((short)a) & 0xFFFF) >>> (16 - (b & 15))));
+        return (short) (((((short) a) & 0xFFFF) << (b & 15)) | ((((short) a) & 0xFFFF) >>> (16 - (b & 15))));
 #else[short]
-        return (byte)(((((byte)a) & 0xFF) << (b & 7)) | ((((byte)a) & 0xFF) >>> (8 - (b & 7))));
+        return (byte) (((((byte) a) & 0xFF) << (b & 7)) | ((((byte) a) & 0xFF) >>> (8 - (b & 7))));
 #end[short]
 #end[intOrLong]
     }
 
     static $type$ ROR_scalar($type$ a, $type$ b) {
 #if[intOrLong]
-        return $Wideboxtype$.rotateRight(a, ((int)b));
+        return $Wideboxtype$.rotateRight(a, ((int) b));
 #else[intOrLong]
 #if[short]
-        return (short)(((((short)a) & 0xFFFF) >>> (b & 15)) | ((((short)a) & 0xFFFF) << (16 - (b & 15))));
+        return (short) (((((short) a) & 0xFFFF) >>> (b & 15)) | ((((short) a) & 0xFFFF) << (16 - (b & 15))));
 #else[short]
-        return (byte)(((((byte)a) & 0xFF) >>> (b & 7)) | ((((byte)a) & 0xFF) << (8 - (b & 7))));
+        return (byte) (((((byte) a) & 0xFF) >>> (b & 7)) | ((((byte) a) & 0xFF) << (8 - (b & 7))));
 #end[short]
 #end[intOrLong]
     }
@@ -178,14 +178,14 @@ public class $Type$Scalar extends AbstractVectorBenchmark {
 #else[intOrLong]
 #if[short]
         $type$ b = ROL_scalar(a, ($type$) 8);
-        b = (short)(((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
-        b = (short)(((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
-        b = (short)(((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
+        b = (short) (((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
+        b = (short) (((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
+        b = (short) (((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
         return b;
 #else[short]
         $type$ b = ROL_scalar(a, ($type$) 4);
-        b = (byte)(((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
-        b = (byte)(((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
+        b = (byte) (((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
+        b = (byte) (((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
         return b;
 #end[short]
 #end[intOrLong]

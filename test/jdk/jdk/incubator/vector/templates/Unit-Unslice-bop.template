@@ -3,16 +3,16 @@
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
             if (part == 0) {
                 if (i < origin)
-                    res[i] = b[idx+i];
+                    res[i] = b[idx + i];
                 else {
-                    res[i] = a[idx+j];
+                    res[i] = a[idx + j];
                     j++;
                 }
             } else if (part == 1) {
                 if (i < origin)
-                    res[i] = a[idx+SPECIES.length()-origin+i];
+                    res[i] = a[idx + SPECIES.length() - origin + i];
                 else {
-                    res[i] = b[idx+origin+j];
+                    res[i] = b[idx + origin + j];
                     j++;
                 }
             }

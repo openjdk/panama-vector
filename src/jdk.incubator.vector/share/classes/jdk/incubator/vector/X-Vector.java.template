@@ -362,8 +362,8 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         if (m.allTrue()) {
             return vi;
         }
-        for(int i = 0,j = 0; i < vsp.length(); i++) {
-            if(m.laneIsSet(i)) {
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
+            if (m.laneIsSet(i)) {
                 r = r.withLane(i, vi.lane(j++));
             }
         }
@@ -377,7 +377,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         if (m.allTrue()) {
             return vi;
         }
-        for(int i = 0, j = 0; i < vsp.length(); i++) {
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
             if (m.laneIsSet(i)) {
                 r = r.withLane(j++, vi.lane(i));
             }
@@ -431,7 +431,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         $type$[] vec1 = vec();
         $type$[] vec2 = (($abstractvectortype$)o).vec();
         boolean[] bits = new boolean[length()];
-        for (int i = 0; i < length(); i++){
+        for (int i = 0; i < length(); i++) {
             bits[i] = f.apply(cond, i, vec1[i], vec2[i]);
         }
         return maskFactory(bits);
@@ -2080,13 +2080,13 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 
 #if[short]
         $type$ b = rotateLeft(a, 8);
-        b = ($type$)(((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
-        b = ($type$)(((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
-        b = ($type$)(((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
+        b = ($type$) (((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
+        b = ($type$) (((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
+        b = ($type$) (((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
 #else[short]
         $type$ b = rotateLeft(a, 4);
-        b = ($type$)(((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
-        b = ($type$)(((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
+        b = ($type$) (((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
+        b = ($type$) (((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
 #end[short]
         return b;
     }

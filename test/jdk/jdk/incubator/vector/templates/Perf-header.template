@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -96,10 +96,10 @@ public class $vectorbenchtype$ extends AbstractVectorBenchmark {
     public void init() {
         size += size % SPECIES.length(); // FIXME: add post-loops
 
-        a = fill(i -> ($type$)(2*i));
-        b = fill(i -> ($type$)(i+1));
-        c = fill(i -> ($type$)(i+5));
-        r = fill(i -> ($type$)0);
+        a = fill(i -> ($type$) (2 * i));
+        b = fill(i -> ($type$) (i + 1));
+        c = fill(i -> ($type$) (i + 5));
+        r = fill(i -> ($type$) 0);
 
         m = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);
