@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -544,6 +544,191 @@ public class ScopedMemoryAccess {
                     BufferAccess.bufferBase(bb), BufferAccess.bufferAddress(bb, offset),
                     v, m,
                     bb, offset,
+                    defaultImpl);
+        } finally {
+            Reference.reachabilityFence(scope);
+        }
+    }
+
+
+
+    @ForceInline
+    public static
+    <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>>
+    V loadFromMemorySegment(Class<? extends V> vmClass, Class<E> e, int length,
+                         MemorySegmentProxy msp, int offset,
+                         S s,
+                         VectorSupport.LoadOperation<MemorySegmentProxy, V, S> defaultImpl) {
+        // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
+        if (msp.maxAlignMask() > 1) {
+            throw new IllegalArgumentException();
+        }
+
+        try {
+            return loadFromMemorySegmentScoped(
+                    msp.scope(),
+                    vmClass, e, length,
+                    msp, offset,
+                    s,
+                    defaultImpl);
+        } catch (ScopedMemoryAccess.Scope.ScopedAccessError ex) {
+            throw new IllegalStateException("This segment is already closed");
+        }
+    }
+
+    @Scoped
+    @ForceInline
+    private static
+    <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>>
+    V loadFromMemorySegmentScoped(ScopedMemoryAccess.Scope scope,
+                                  Class<? extends V> vmClass, Class<E> e, int length,
+                                  MemorySegmentProxy msp, int offset,
+                                  S s,
+                                  VectorSupport.LoadOperation<MemorySegmentProxy, V, S> defaultImpl) {
+        try {
+            scope.checkValidState();
+
+            return VectorSupport.load(vmClass, e, length,
+                    msp.unsafeGetBase(), msp.unsafeGetOffset() + offset,
+                    msp, offset, s,
+                    defaultImpl);
+        } finally {
+            Reference.reachabilityFence(scope);
+        }
+    }
+
+    @ForceInline
+    public static
+    <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>,
+     M extends VectorSupport.VectorMask<E>>
+    V loadFromMemorySegmentMasked(Class<? extends V> vmClass, Class<M> maskClass, Class<E> e,
+                                  int length, MemorySegmentProxy msp, int offset, M m, S s,
+                                  VectorSupport.LoadVectorMaskedOperation<MemorySegmentProxy, V, S, M> defaultImpl) {
+        // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
+        if (msp.maxAlignMask() > 1) {
+            throw new IllegalArgumentException();
+        }
+
+        try {
+            return loadFromMemorySegmentMaskedScoped(
+                    msp.scope(),
+                    vmClass, maskClass, e, length,
+                    msp, offset, m,
+                    s,
+                    defaultImpl);
+        } catch (ScopedMemoryAccess.Scope.ScopedAccessError ex) {
+            throw new IllegalStateException("This segment is already closed");
+        }
+    }
+
+    @Scoped
+    @ForceInline
+    private static
+    <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>,
+     M extends VectorSupport.VectorMask<E>>
+    V loadFromMemorySegmentMaskedScoped(ScopedMemoryAccess.Scope scope, Class<? extends V> vmClass,
+                                        Class<M> maskClass, Class<E> e, int length,
+                                        MemorySegmentProxy msp, int offset, M m,
+                                        S s,
+                                        VectorSupport.LoadVectorMaskedOperation<MemorySegmentProxy, V, S, M> defaultImpl) {
+        try {
+            scope.checkValidState();
+
+            return VectorSupport.loadMasked(vmClass, maskClass, e, length,
+                    msp.unsafeGetBase(), msp.unsafeGetOffset() + offset, m,
+                    msp, offset, s,
+                    defaultImpl);
+        } finally {
+            Reference.reachabilityFence(scope);
+        }
+    }
+
+    @ForceInline
+    public static
+    <V extends VectorSupport.Vector<E>, E>
+    void storeIntoMemorySegment(Class<? extends V> vmClass, Class<E> e, int length,
+                                V v,
+                                MemorySegmentProxy msp, int offset,
+                                VectorSupport.StoreVectorOperation<MemorySegmentProxy, V> defaultImpl) {
+        // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
+        if (msp.maxAlignMask() > 1) {
+            throw new IllegalArgumentException();
+        }
+
+        try {
+            storeIntoMemorySegmentScoped(
+                    msp.scope(),
+                    vmClass, e, length,
+                    v,
+                    msp, offset,
+                    defaultImpl);
+        } catch (ScopedMemoryAccess.Scope.ScopedAccessError ex) {
+            throw new IllegalStateException("This segment is already closed");
+        }
+    }
+
+    @Scoped
+    @ForceInline
+    private static
+    <V extends VectorSupport.Vector<E>, E>
+    void storeIntoMemorySegmentScoped(ScopedMemoryAccess.Scope scope,
+                                      Class<? extends V> vmClass, Class<E> e, int length,
+                                      V v,
+                                      MemorySegmentProxy msp, int offset,
+                                      VectorSupport.StoreVectorOperation<MemorySegmentProxy, V> defaultImpl) {
+        try {
+            scope.checkValidState();
+
+            VectorSupport.store(vmClass, e, length,
+                    msp.unsafeGetBase(), msp.unsafeGetOffset() + offset,
+                    v,
+                    msp, offset,
+                    defaultImpl);
+        } finally {
+            Reference.reachabilityFence(scope);
+        }
+    }
+
+    @ForceInline
+    public static
+    <V extends VectorSupport.Vector<E>, E, M extends VectorSupport.VectorMask<E>>
+    void storeIntoMemorySegmentMasked(Class<? extends V> vmClass, Class<M> maskClass, Class<E> e,
+                                      int length, V v, M m,
+                                      MemorySegmentProxy msp, int offset,
+                                      VectorSupport.StoreVectorMaskedOperation<MemorySegmentProxy, V, M> defaultImpl) {
+        // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
+        if (msp.maxAlignMask() > 1) {
+            throw new IllegalArgumentException();
+        }
+
+        try {
+            storeIntoMemorySegmentMaskedScoped(
+                    msp.scope(),
+                    vmClass, maskClass, e, length,
+                    v, m,
+                    msp, offset,
+                    defaultImpl);
+        } catch (ScopedMemoryAccess.Scope.ScopedAccessError ex) {
+            throw new IllegalStateException("This segment is already closed");
+        }
+    }
+
+    @Scoped
+    @ForceInline
+    private static
+    <V extends VectorSupport.Vector<E>, E, M extends VectorSupport.VectorMask<E>>
+    void storeIntoMemorySegmentMaskedScoped(ScopedMemoryAccess.Scope scope,
+                                           Class<? extends V> vmClass, Class<M> maskClass,
+                                           Class<E> e, int length, V v, M m,
+                                           MemorySegmentProxy msp, int offset,
+                                           VectorSupport.StoreVectorMaskedOperation<MemorySegmentProxy, V, M> defaultImpl) {
+        try {
+            scope.checkValidState();
+
+            VectorSupport.storeMasked(vmClass, maskClass, e, length,
+                    msp.unsafeGetBase(), msp.unsafeGetOffset() + offset,
+                    v, m,
+                    msp, offset,
                     defaultImpl);
         } finally {
             Reference.reachabilityFence(scope);

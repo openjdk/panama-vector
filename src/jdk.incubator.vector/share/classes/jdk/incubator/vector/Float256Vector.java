@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
+import jdk.incubator.foreign.MemorySegment;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
 
@@ -889,6 +890,20 @@ final class Float256Vector extends FloatVector {
     @ForceInline
     @Override
     final
+    FloatVector fromMemorySegment0(MemorySegment ms, long offset) {
+        return super.fromMemorySegment0Template(ms, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    FloatVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Float> m) {
+        return super.fromMemorySegment0Template(Float256Mask.class, ms, offset, (Float256Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
     void intoArray0(float[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
     }
@@ -927,6 +942,13 @@ final class Float256Vector extends FloatVector {
     final
     void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Float> m) {
         super.intoByteBuffer0Template(Float256Mask.class, bb, offset, (Float256Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Float> m) {
+        super.intoMemorySegment0Template(Float256Mask.class, ms, offset, (Float256Mask) m);
     }
 
 

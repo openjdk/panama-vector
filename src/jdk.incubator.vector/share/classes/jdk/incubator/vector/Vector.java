@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,6 +23,8 @@
  * questions.
  */
 package jdk.incubator.vector;
+
+import jdk.incubator.foreign.MemorySegment;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -3509,6 +3511,84 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      */
     public abstract void intoByteBuffer(ByteBuffer bb, int offset,
                                         ByteOrder bo, VectorMask<E> m);
+
+    /**
+     * Stores this vector into a memory segment starting at an offset
+     * using explicit byte order.
+     * <p>
+     * Bytes are extracted from primitive lane elements according
+     * to the specified byte ordering.
+     * The lanes are stored according to their
+     * <a href="Vector.html#lane-order">memory ordering</a>.
+     * <p>
+     * This method behaves as if it calls
+     * {@link #intoMemorySegment(MemorySegment,int,ByteOrder,VectorMask)
+     * intoMemorySegment()} as follows:
+     * <pre>{@code
+     * var m = maskAll(true);
+     * intoMemorySegment(ms, offset, bo, m);
+     * }</pre>
+     *
+     * @param ms the memory segment
+     * @param offset the offset into the memory segment
+     * @param bo the intended byte order
+     * @throws IndexOutOfBoundsException
+     *         if {@code offset+N*ESIZE < 0}
+     *         or {@code offset+(N+1)*ESIZE > ms.byteSize()}
+     *         for any lane {@code N} in the vector
+     * @throws java.lang.IllegalArgumentException
+     *         if the memory segment is read-only
+     */
+    public abstract void intoMemorySegment(MemorySegment ms, long offset, ByteOrder bo);
+
+    /**
+     * Stores this vector into a memory segment starting at an offset
+     * using explicit byte order and a mask.
+     * <p>
+     * Bytes are extracted from primitive lane elements according
+     * to the specified byte ordering.
+     * The lanes are stored according to their
+     * <a href="Vector.html#lane-order">memory ordering</a>.
+     * <p>
+     * The following pseudocode illustrates the behavior, where
+     * {@code JAVA_E} is layout of the primitive element type, {@code ETYPE} is the
+     * primitive element type, and {@code EVector} is the primitive
+     * vector type for this vector:
+     * <pre>{@code
+     * ETYPE[] a = this.toArray();
+     * MemorySegment slice = ms.asSlice(offset)
+     * for (int n = 0; n < a.length; n++) {
+     *     if (m.laneIsSet(n)) {
+     *         slice.setAtIndex(ValueLayout.JAVA_E, n);
+     *     }
+     * }
+     * }</pre>
+     *
+     * @implNote
+     * This operation is likely to be more efficient if
+     * the specified byte order is the same as
+     * {@linkplain ByteOrder#nativeOrder()
+     * the platform native order},
+     * since this method will not need to reorder
+     * the bytes of lane values.
+     * In the special case where {@code ETYPE} is
+     * {@code byte}, the byte order argument is
+     * ignored.
+     *
+     * @param ms the memory segment
+     * @param offset the offset into the memory segment
+     * @param bo the intended byte order
+     * @param m the mask controlling lane selection
+     * @throws IndexOutOfBoundsException
+     *         if {@code offset+N*ESIZE < 0}
+     *         or {@code offset+(N+1)*ESIZE > ms.byteSize()}
+     *         for any lane {@code N} in the vector
+     *         where the mask is set
+     * @throws java.lang.IllegalArgumentException
+     *         if the memory segment is read-only
+     */
+    public abstract void intoMemorySegment(MemorySegment ms, int offset,
+                                           ByteOrder bo, VectorMask<E> m);
 
     /**
      * Returns a packed array containing all the lane values.

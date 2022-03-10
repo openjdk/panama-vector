@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,9 @@
 
 // -- This file was mechanically generated: Do not edit! -- //
 
+import jdk.incubator.foreign.MemorySegment;
+import jdk.incubator.foreign.ResourceScope;
+import jdk.incubator.foreign.ValueLayout;
 import jdk.incubator.vector.LongVector;
 import jdk.incubator.vector.VectorMask;
 import jdk.incubator.vector.VectorSpecies;
@@ -209,6 +212,27 @@ public class Long128VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     }
 
     @DataProvider
+    public Object[][] longMemorySegmentProvider() {
+        return LONG_GENERATORS.stream().
+                flatMap(fa -> MEMORY_SEGMENT_GENERATORS.stream().
+                        flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
+                            return new Object[]{fa, fb, bo};
+                        }))).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] longMemorySegmentMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> LONG_GENERATORS.stream().
+                        flatMap(fa -> MEMORY_SEGMENT_GENERATORS.stream().
+                                flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
+                            return new Object[]{fa, fb, fm, bo};
+                        })))).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
     public Object[][] longByteArrayProvider() {
         return LONG_GENERATORS.stream().
                 flatMap(fa -> BYTE_ORDER_VALUES.stream().map(bo -> {
@@ -259,6 +283,18 @@ public class Long128VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         long[] d = new long[db.capacity()];
         db.get(0, d);
         return d;
+    }
+
+    static MemorySegment toSegment(long[] a, IntFunction<MemorySegment> fb) {
+        MemorySegment ms = fb.apply(a.length * SPECIES.elementSize() / 8);
+        for (int i = 0; i < a.length; i++) {
+            ms.set(ValueLayout.JAVA_LONG, i * SPECIES.elementSize() / 8 , a[i]);
+        }
+        return ms;
+    }
+
+    static long[] segmentToArray(MemorySegment ms) {
+        return ms.toArray(ValueLayout.JAVA_LONG);
     }
 
     static byte[] toByteArray(long[] a, IntFunction<byte[]> fb, ByteOrder bo) {
@@ -346,6 +382,25 @@ public class Long128VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         v.intoByteBuffer(a, i, bo, m);
     }
 
+    @DontInline
+    static LongVector fromMemorySegment(MemorySegment a, int i, ByteOrder bo) {
+        return LongVector.fromMemorySegment(SPECIES, a, i, bo);
+    }
+
+    @DontInline
+    static LongVector fromMemorySegment(MemorySegment a, int i, ByteOrder bo, VectorMask<Long> m) {
+        return LongVector.fromMemorySegment(SPECIES, a, i, bo, m);
+    }
+
+    @DontInline
+    static void intoMemorySegment(LongVector v, MemorySegment a, int i, ByteOrder bo) {
+        v.intoMemorySegment(a, i, bo);
+    }
+
+    @DontInline
+    static void intoMemorySegment(LongVector v, MemorySegment a, int i, ByteOrder bo, VectorMask<Long> m) {
+        v.intoMemorySegment(a, i, bo, m);
+    }
 
     @Test(dataProvider = "longProvider")
     static void loadStoreArray(IntFunction<long[]> fa) {
@@ -736,6 +791,216 @@ public class Long128VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
             SPECIES.zero().intoByteBuffer(a, 0, bo, m);
             Assert.fail("ReadOnlyBufferException expected");
         } catch (ReadOnlyBufferException e) {
+        }
+    }
+
+
+    @Test(dataProvider = "longMemorySegmentProvider")
+    static void loadStoreMemorySegment(IntFunction<long[]> fa,
+                                       IntFunction<MemorySegment> fb,
+                                       ByteOrder bo) {
+        MemorySegment a = toSegment(fa.apply(SPECIES.length()), fb);
+        MemorySegment r = fb.apply((int) a.byteSize());
+
+        int l = (int) a.byteSize();
+        int s = SPECIES.vectorByteSize();
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                LongVector av = LongVector.fromMemorySegment(SPECIES, a, i, bo);
+                av.intoMemorySegment(r, i, bo);
+            }
+        }
+        long m = r.mismatch(a);
+        Assert.assertEquals(m, -1, "Segments not equal");
+    }
+
+    @Test(dataProvider = "longByteProviderForIOOBE")
+    static void loadMemorySegmentIOOBE(IntFunction<long[]> fa, IntFunction<Integer> fi) {
+        MemorySegment a = toSegment(fa.apply(SPECIES.length()), i -> MemorySegment.allocateNative(i, ResourceScope.newImplicitScope()));
+        MemorySegment r = MemorySegment.allocateNative(a.byteSize(), ResourceScope.newImplicitScope());
+
+        int l = (int) a.byteSize();
+        int s = SPECIES.vectorByteSize();
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                LongVector av = fromMemorySegment(a, i, ByteOrder.nativeOrder());
+                av.intoMemorySegment(r, i, ByteOrder.nativeOrder());
+            }
+        }
+
+        int index = fi.apply((int) a.byteSize());
+        boolean shouldFail = isIndexOutOfBounds(SPECIES.vectorByteSize(), index, (int) a.byteSize());
+        try {
+            fromMemorySegment(a, index, ByteOrder.nativeOrder());
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
+    }
+
+    @Test(dataProvider = "longByteProviderForIOOBE")
+    static void storeMemorySegmentIOOBE(IntFunction<long[]> fa, IntFunction<Integer> fi) {
+        MemorySegment a = toSegment(fa.apply(SPECIES.length()), i -> MemorySegment.allocateNative(i, ResourceScope.newImplicitScope()));
+        MemorySegment r = MemorySegment.allocateNative(a.byteSize(), ResourceScope.newImplicitScope());
+
+        int l = (int) a.byteSize();
+        int s = SPECIES.vectorByteSize();
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                LongVector av = LongVector.fromMemorySegment(SPECIES, a, i, ByteOrder.nativeOrder());
+                intoMemorySegment(av, r, i, ByteOrder.nativeOrder());
+            }
+        }
+
+        int index = fi.apply((int) a.byteSize());
+        boolean shouldFail = isIndexOutOfBounds(SPECIES.vectorByteSize(), index, (int) a.byteSize());
+        try {
+            LongVector av = LongVector.fromMemorySegment(SPECIES, a, 0, ByteOrder.nativeOrder());
+            intoMemorySegment(av, r, index, ByteOrder.nativeOrder());
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
+    }
+
+    @Test(dataProvider = "longMemorySegmentMaskProvider")
+    static void loadStoreMemorySegmentMask(IntFunction<long[]> fa,
+                                           IntFunction<MemorySegment> fb,
+                                           IntFunction<boolean[]> fm,
+                                           ByteOrder bo) {
+        long[] _a = fa.apply(SPECIES.length());
+        MemorySegment a = toSegment(_a, fb);
+        MemorySegment r = fb.apply((int) a.byteSize());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromValues(SPECIES, mask);
+
+        int l = (int) a.byteSize();
+        int s = SPECIES.vectorByteSize();
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                LongVector av = LongVector.fromMemorySegment(SPECIES, a, i, bo, vmask);
+                av.intoMemorySegment(r, i, bo);
+            }
+        }
+        assertArraysEquals(segmentToArray(r), _a, mask);
+
+
+        r = fb.apply((int) a.byteSize());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                LongVector av = LongVector.fromMemorySegment(SPECIES, a, i, bo);
+                av.intoMemorySegment(r, i, bo, vmask);
+            }
+        }
+        assertArraysEquals(segmentToArray(r), _a, mask);
+    }
+
+    @Test(dataProvider = "longByteMaskProviderForIOOBE")
+    static void loadMemorySegmentMaskIOOBE(IntFunction<long[]> fa, IntFunction<Integer> fi, IntFunction<boolean[]> fm) {
+        MemorySegment a = toSegment(fa.apply(SPECIES.length()), i -> MemorySegment.allocateNative(i, ResourceScope.newImplicitScope()));
+        MemorySegment r = MemorySegment.allocateNative(a.byteSize(), ResourceScope.newImplicitScope());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromValues(SPECIES, mask);
+
+        int l = (int) a.byteSize();
+        int s = SPECIES.vectorByteSize();
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                LongVector av = fromMemorySegment(a, i, ByteOrder.nativeOrder(), vmask);
+                av.intoMemorySegment(r, i, ByteOrder.nativeOrder());
+            }
+        }
+
+        int index = fi.apply((int) a.byteSize());
+        boolean shouldFail = isIndexOutOfBoundsForMask(mask, index, (int) a.byteSize(), SPECIES.elementSize() / 8);
+        try {
+            fromMemorySegment(a, index, ByteOrder.nativeOrder(), vmask);
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
+    }
+
+    @Test(dataProvider = "longByteMaskProviderForIOOBE")
+    static void storeMemorySegmentMaskIOOBE(IntFunction<long[]> fa, IntFunction<Integer> fi, IntFunction<boolean[]> fm) {
+        MemorySegment a = toSegment(fa.apply(SPECIES.length()), i -> MemorySegment.allocateNative(i, ResourceScope.newImplicitScope()));
+        MemorySegment r = MemorySegment.allocateNative(a.byteSize(), ResourceScope.newImplicitScope());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromValues(SPECIES, mask);
+
+        int l = (int) a.byteSize();
+        int s = SPECIES.vectorByteSize();
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                LongVector av = LongVector.fromMemorySegment(SPECIES, a, i, ByteOrder.nativeOrder());
+                intoMemorySegment(av, r, i, ByteOrder.nativeOrder(), vmask);
+            }
+        }
+
+        int index = fi.apply((int) a.byteSize());
+        boolean shouldFail = isIndexOutOfBoundsForMask(mask, index, (int) a.byteSize(), SPECIES.elementSize() / 8);
+        try {
+            LongVector av = LongVector.fromMemorySegment(SPECIES, a, 0, ByteOrder.nativeOrder());
+            intoMemorySegment(av, a, index, ByteOrder.nativeOrder(), vmask);
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
+    }
+
+    @Test(dataProvider = "longMemorySegmentProvider")
+    static void loadStoreReadonlyMemorySegment(IntFunction<long[]> fa,
+                                               IntFunction<MemorySegment> fb,
+                                               ByteOrder bo) {
+        MemorySegment a = toSegment(fa.apply(SPECIES.length()), fb).asReadOnly();
+
+        try {
+            SPECIES.zero().intoMemorySegment(a, 0, bo);
+            Assert.fail("IllegalArgumentException expected");
+        } catch (IllegalArgumentException e) {
+        }
+
+        try {
+            SPECIES.zero().intoMemorySegment(a, 0, bo, SPECIES.maskAll(true));
+            Assert.fail("IllegalArgumentException expected");
+        } catch (IllegalArgumentException e) {
+        }
+
+        try {
+            SPECIES.zero().intoMemorySegment(a, 0, bo, SPECIES.maskAll(false));
+            Assert.fail("IllegalArgumentException expected");
+        } catch (IllegalArgumentException e) {
+        }
+
+        try {
+            VectorMask<Long> m = SPECIES.shuffleFromOp(i -> i % 2 == 0 ? 1 : -1)
+                    .laneIsValid();
+            SPECIES.zero().intoMemorySegment(a, 0, bo, m);
+            Assert.fail("IllegalArgumentException expected");
+        } catch (IllegalArgumentException e) {
         }
     }
 

@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
+import jdk.incubator.foreign.MemorySegment;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
 
@@ -893,6 +894,20 @@ final class ByteMaxVector extends ByteVector {
     @ForceInline
     @Override
     final
+    ByteVector fromMemorySegment0(MemorySegment ms, long offset) {
+        return super.fromMemorySegment0Template(ms, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    ByteVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Byte> m) {
+        return super.fromMemorySegment0Template(ByteMaxMask.class, ms, offset, (ByteMaxMask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
     void intoArray0(byte[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
     }
@@ -931,6 +946,13 @@ final class ByteMaxVector extends ByteVector {
     final
     void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Byte> m) {
         super.intoByteBuffer0Template(ByteMaxMask.class, bb, offset, (ByteMaxMask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Byte> m) {
+        super.intoMemorySegment0Template(ByteMaxMask.class, ms, offset, (ByteMaxMask) m);
     }
 
 

@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
+import jdk.incubator.foreign.MemorySegment;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
 
@@ -878,6 +879,20 @@ final class Long128Vector extends LongVector {
     @ForceInline
     @Override
     final
+    LongVector fromMemorySegment0(MemorySegment ms, long offset) {
+        return super.fromMemorySegment0Template(ms, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    LongVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Long> m) {
+        return super.fromMemorySegment0Template(Long128Mask.class, ms, offset, (Long128Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
     void intoArray0(long[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
     }
@@ -916,6 +931,13 @@ final class Long128Vector extends LongVector {
     final
     void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Long> m) {
         super.intoByteBuffer0Template(Long128Mask.class, bb, offset, (Long128Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Long> m) {
+        super.intoMemorySegment0Template(Long128Mask.class, ms, offset, (Long128Mask) m);
     }
 
 

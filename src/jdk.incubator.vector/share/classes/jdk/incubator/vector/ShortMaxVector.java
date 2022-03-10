@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
+import jdk.incubator.foreign.MemorySegment;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
 
@@ -893,6 +894,20 @@ final class ShortMaxVector extends ShortVector {
     @ForceInline
     @Override
     final
+    ShortVector fromMemorySegment0(MemorySegment ms, long offset) {
+        return super.fromMemorySegment0Template(ms, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    ShortVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Short> m) {
+        return super.fromMemorySegment0Template(ShortMaxMask.class, ms, offset, (ShortMaxMask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
     void intoArray0(short[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
     }
@@ -925,6 +940,13 @@ final class ShortMaxVector extends ShortVector {
     final
     void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Short> m) {
         super.intoByteBuffer0Template(ShortMaxMask.class, bb, offset, (ShortMaxMask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Short> m) {
+        super.intoMemorySegment0Template(ShortMaxMask.class, ms, offset, (ShortMaxMask) m);
     }
 
     @ForceInline

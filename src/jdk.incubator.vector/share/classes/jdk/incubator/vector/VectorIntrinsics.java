@@ -55,6 +55,16 @@ import java.util.Objects;
     }
 
     @ForceInline
+    static long checkFromIndexSize(long ix, long vlen, long length) {
+        switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
+            case 0: return ix; // no range check
+            case 1: return Objects.checkFromIndexSize(ix, vlen, length);
+            case 2: return Objects.checkIndex(ix, length - (vlen - 1));
+            default: throw new InternalError();
+        }
+    }
+
+    @ForceInline
     static IntVector checkIndex(IntVector vix, int length) {
         switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
             case 0: return vix; // no range check
