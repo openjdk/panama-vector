@@ -4073,7 +4073,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 
     /**
      * Loads a vector from a {@linkplain MemorySegment memory segment}
-     * starting at an offset into the memory segment buffer.
+     * starting at an offset into the memory segment.
      * Bytes are composed into primitive lane elements according
      * to the specified byte order.
      * The vector is arranged into lanes according to
@@ -4108,8 +4108,8 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     }
 
     /**
-     * Loads a vector from a {@linkplain ByteBuffer byte buffer}
-     * starting at an offset into the byte buffer
+     * Loads a vector from a {@linkplain MemorySegment memory segment}
+     * starting at an offset into the memory segment
      * and using a mask.
      * Lanes where the mask is unset are filled with the default
      * value of {@code $type$} ({#if[FP]?positive }zero).
@@ -4120,7 +4120,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
      * <p>
      * The following pseudocode illustrates the behavior:
      * <pre>{@code
-     * MemorySegment slice = ms.asSlice(offset);
+     * var slice = ms.asSlice(offset);
      * $type$[] ar = new $type$[species.length()];
      * for (int n = 0; n < ar.length; n++) {
      *     if (m.laneIsSet(n)) {
@@ -4799,7 +4799,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     @Override
     @ForceInline
     public final
-    void intoMemorySegment(MemorySegment ms, int offset,
+    void intoMemorySegment(MemorySegment ms, long offset,
                            ByteOrder bo,
                            VectorMask<$Boxtype$> m) {
         if (m.allTrue()) {
@@ -4809,7 +4809,8 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 throw new IllegalArgumentException();
             }
             $Type$Species vsp = vspecies();
-            checkMaskFromIndexSize(offset, vsp, m, $sizeInBytes$, (int) ms.byteSize());
+            // @@@ downcast from long to int
+            checkMaskFromIndexSize((int) offset, vsp, m, $sizeInBytes$, (int) ms.byteSize());
             maybeSwap(bo).intoMemorySegment0(ms, offset, m);
         }
     }

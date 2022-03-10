@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -3191,7 +3191,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
 
     /**
      * Loads a vector from a {@linkplain MemorySegment memory segment}
-     * starting at an offset into the memory segment buffer.
+     * starting at an offset into the memory segment.
      * Bytes are composed into primitive lane elements according
      * to the specified byte order.
      * The vector is arranged into lanes according to
@@ -3226,8 +3226,8 @@ public abstract class IntVector extends AbstractVector<Integer> {
     }
 
     /**
-     * Loads a vector from a {@linkplain ByteBuffer byte buffer}
-     * starting at an offset into the byte buffer
+     * Loads a vector from a {@linkplain MemorySegment memory segment}
+     * starting at an offset into the memory segment
      * and using a mask.
      * Lanes where the mask is unset are filled with the default
      * value of {@code int} (zero).
@@ -3238,7 +3238,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
      * <p>
      * The following pseudocode illustrates the behavior:
      * <pre>{@code
-     * MemorySegment slice = ms.asSlice(offset);
+     * var slice = ms.asSlice(offset);
      * int[] ar = new int[species.length()];
      * for (int n = 0; n < ar.length; n++) {
      *     if (m.laneIsSet(n)) {
@@ -3539,7 +3539,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
     @Override
     @ForceInline
     public final
-    void intoMemorySegment(MemorySegment ms, int offset,
+    void intoMemorySegment(MemorySegment ms, long offset,
                            ByteOrder bo,
                            VectorMask<Integer> m) {
         if (m.allTrue()) {
@@ -3549,7 +3549,8 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 throw new IllegalArgumentException();
             }
             IntSpecies vsp = vspecies();
-            checkMaskFromIndexSize(offset, vsp, m, 4, (int) ms.byteSize());
+            // @@@ downcast from long to int
+            checkMaskFromIndexSize((int) offset, vsp, m, 4, (int) ms.byteSize());
             maybeSwap(bo).intoMemorySegment0(ms, offset, m);
         }
     }

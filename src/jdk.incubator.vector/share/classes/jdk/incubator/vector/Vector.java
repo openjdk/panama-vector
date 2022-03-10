@@ -3513,8 +3513,8 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
                                         ByteOrder bo, VectorMask<E> m);
 
     /**
-     * Stores this vector into a memory segment starting at an offset
-     * using explicit byte order.
+     * Stores this vector into a {@linkplain MemorySegment memory segment}
+     * starting at an offset using explicit byte order.
      * <p>
      * Bytes are extracted from primitive lane elements according
      * to the specified byte ordering.
@@ -3522,7 +3522,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      * <a href="Vector.html#lane-order">memory ordering</a>.
      * <p>
      * This method behaves as if it calls
-     * {@link #intoMemorySegment(MemorySegment,int,ByteOrder,VectorMask)
+     * {@link #intoMemorySegment(MemorySegment,long,ByteOrder,VectorMask)
      * intoMemorySegment()} as follows:
      * <pre>{@code
      * var m = maskAll(true);
@@ -3542,8 +3542,8 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
     public abstract void intoMemorySegment(MemorySegment ms, long offset, ByteOrder bo);
 
     /**
-     * Stores this vector into a memory segment starting at an offset
-     * using explicit byte order and a mask.
+     * Stores this vector into a {@linkplain MemorySegment memory segment}
+     * starting at an offset using explicit byte order and a mask.
      * <p>
      * Bytes are extracted from primitive lane elements according
      * to the specified byte ordering.
@@ -3551,12 +3551,12 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      * <a href="Vector.html#lane-order">memory ordering</a>.
      * <p>
      * The following pseudocode illustrates the behavior, where
-     * {@code JAVA_E} is layout of the primitive element type, {@code ETYPE} is the
+     * {@code JAVA_E} is the layout of the primitive element type, {@code ETYPE} is the
      * primitive element type, and {@code EVector} is the primitive
      * vector type for this vector:
      * <pre>{@code
      * ETYPE[] a = this.toArray();
-     * MemorySegment slice = ms.asSlice(offset)
+     * var slice = ms.asSlice(offset)
      * for (int n = 0; n < a.length; n++) {
      *     if (m.laneIsSet(n)) {
      *         slice.setAtIndex(ValueLayout.JAVA_E, n);
@@ -3587,7 +3587,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      * @throws java.lang.IllegalArgumentException
      *         if the memory segment is read-only
      */
-    public abstract void intoMemorySegment(MemorySegment ms, int offset,
+    public abstract void intoMemorySegment(MemorySegment ms, long offset,
                                            ByteOrder bo, VectorMask<E> m);
 
     /**
