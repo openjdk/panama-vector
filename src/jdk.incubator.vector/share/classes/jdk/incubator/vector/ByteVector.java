@@ -3886,7 +3886,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     void intoMemorySegment(MemorySegment ms, long offset,
                            ByteOrder bo) {
         if (ms.isReadOnly()) {
-            throw new IllegalArgumentException();
+            throw new UnsupportedOperationException("Attempt to write a read-only segment");
         }
 
         offset = checkFromIndexSize(offset, byteSize(), ms.byteSize());
@@ -3906,7 +3906,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             intoMemorySegment(ms, offset, bo);
         } else {
             if (ms.isReadOnly()) {
-                throw new IllegalArgumentException();
+                throw new UnsupportedOperationException("Attempt to write a read-only segment");
             }
             ByteSpecies vsp = vspecies();
             checkMaskFromIndexSize(offset, vsp, m, 1, ms.byteSize());

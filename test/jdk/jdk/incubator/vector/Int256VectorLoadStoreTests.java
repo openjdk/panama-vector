@@ -979,28 +979,28 @@ public class Int256VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
 
         try {
             SPECIES.zero().intoMemorySegment(a, 0, bo);
-            Assert.fail("IllegalArgumentException expected");
-        } catch (IllegalArgumentException e) {
+            Assert.fail("UnsupportedOperationException expected");
+        } catch (UnsupportedOperationException e) {
         }
 
         try {
             SPECIES.zero().intoMemorySegment(a, 0, bo, SPECIES.maskAll(true));
-            Assert.fail("IllegalArgumentException expected");
-        } catch (IllegalArgumentException e) {
+            Assert.fail("UnsupportedOperationException expected");
+        } catch (UnsupportedOperationException e) {
         }
 
         try {
             SPECIES.zero().intoMemorySegment(a, 0, bo, SPECIES.maskAll(false));
-            Assert.fail("IllegalArgumentException expected");
-        } catch (IllegalArgumentException e) {
+            Assert.fail("UnsupportedOperationException expected");
+        } catch (UnsupportedOperationException e) {
         }
 
         try {
             VectorMask<Integer> m = SPECIES.shuffleFromOp(i -> i % 2 == 0 ? 1 : -1)
                     .laneIsValid();
             SPECIES.zero().intoMemorySegment(a, 0, bo, m);
-            Assert.fail("IllegalArgumentException expected");
-        } catch (IllegalArgumentException e) {
+            Assert.fail("UnsupportedOperationException expected");
+        } catch (UnsupportedOperationException e) {
         }
     }
 
