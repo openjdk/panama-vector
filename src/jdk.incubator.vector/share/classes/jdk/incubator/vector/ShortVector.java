@@ -3464,7 +3464,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             this,
             a, offset,
             (arr, off, v)
-            -> v.stOp(arr, off,
+            -> v.stOp(arr, (int) off,
                       (arr_, off_, i, e) -> arr_[off_ + i] = e));
     }
 
@@ -3610,7 +3610,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             this,
             a, offset,
             (arr, off, v)
-            -> v.stOp(arr, off,
+            -> v.stOp(arr, (int) off,
                       (arr_, off_, i, e) -> arr_[off_ + i] = (char) e));
     }
 
@@ -3872,7 +3872,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
             a, offset, vsp,
-            (arr, off, s) -> s.ldOp(arr, off,
+            (arr, off, s) -> s.ldOp(arr, (int) off,
                                     (arr_, off_, i) -> arr_[off_ + i]));
     }
 
@@ -3889,7 +3889,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset), m,
             a, offset, vsp,
-            (arr, off, s, vm) -> s.ldOp(arr, off, vm,
+            (arr, off, s, vm) -> s.ldOp(arr, (int) off, vm,
                                         (arr_, off_, i) -> arr_[off_ + i]));
     }
 
@@ -3905,7 +3905,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, charArrayAddress(a, offset),
             a, offset, vsp,
-            (arr, off, s) -> s.ldOp(arr, off,
+            (arr, off, s) -> s.ldOp(arr, (int) off,
                                     (arr_, off_, i) -> (short) arr_[off_ + i]));
     }
 
@@ -3922,7 +3922,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
                 a, charArrayAddress(a, offset), m,
                 a, offset, vsp,
-                (arr, off, s, vm) -> s.ldOp(arr, off, vm,
+                (arr, off, s, vm) -> s.ldOp(arr, (int) off, vm,
                                             (arr_, off_, i) -> (short) arr_[off_ + i]));
     }
 
@@ -3940,7 +3940,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             a, offset, vsp,
             (arr, off, s) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
-                return s.ldOp(wb, off,
+                return s.ldOp(wb, (int) off,
                         (wb_, o, i) -> wb_.getShort(o + i * 2));
             });
     }
@@ -3959,7 +3959,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             a, offset, vsp,
             (arr, off, s, vm) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
-                return s.ldOp(wb, off, vm,
+                return s.ldOp(wb, (int) off, vm,
                         (wb_, o, i) -> wb_.getShort(o + i * 2));
             });
     }
@@ -3975,7 +3975,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 bb, offset, vsp,
                 (buf, off, s) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    return s.ldOp(wb, off,
+                    return s.ldOp(wb, (int) off,
                             (wb_, o, i) -> wb_.getShort(o + i * 2));
                 });
     }
@@ -3993,7 +3993,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 bb, offset, m, vsp,
                 (buf, off, s, vm) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    return s.ldOp(wb, off, vm,
+                    return s.ldOp(wb, (int) off, vm,
                             (wb_, o, i) -> wb_.getShort(o + i * 2));
                 });
     }
@@ -4006,10 +4006,10 @@ public abstract class ShortVector extends AbstractVector<Short> {
         ShortSpecies vsp = vspecies();
         return ScopedMemoryAccess.loadFromMemorySegment(
                 vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                (MemorySegmentProxy) ms, (int) offset, vsp, // @@@ downcast from long to int
+                (MemorySegmentProxy) ms, offset, vsp,
                 (msp, off, s) -> {
                     var layout = ValueLayout.JAVA_SHORT.withBitAlignment(8);
-                    return s.ldOp((MemorySegment) msp, off,
+                    return s.ldOp((MemorySegment) msp, (int) off, // @@@ downcast from long to int
                             (ms_, o, i) -> ms_.get(layout, o + i * 2L));
                 });
     }
@@ -4024,10 +4024,10 @@ public abstract class ShortVector extends AbstractVector<Short> {
         m.check(vsp);
         return ScopedMemoryAccess.loadFromMemorySegmentMasked(
                 vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-                (MemorySegmentProxy) ms, (int) offset, m, vsp, // @@@ downcast from long to int
+                (MemorySegmentProxy) ms, offset, m, vsp,
                 (msp, off, s, vm) -> {
                     var layout = ValueLayout.JAVA_SHORT.withBitAlignment(8);
-                    return s.ldOp((MemorySegment) msp, off, vm,
+                    return s.ldOp((MemorySegment) msp, (int) off, vm, // @@@ downcast from long to int
                             (ms_, o, i) -> ms_.get(layout, o + i * 2L));
                 });
     }
@@ -4047,7 +4047,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             a, arrayAddress(a, offset),
             this, a, offset,
             (arr, off, v)
-            -> v.stOp(arr, off,
+            -> v.stOp(arr, (int) off,
                       (arr_, off_, i, e) -> arr_[off_+i] = e));
     }
 
@@ -4064,7 +4064,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             a, arrayAddress(a, offset),
             this, m, a, offset,
             (arr, off, v, vm)
-            -> v.stOp(arr, off, vm,
+            -> v.stOp(arr, (int) off, vm,
                       (arr_, off_, i, e) -> arr_[off_ + i] = e));
     }
 
@@ -4082,7 +4082,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             this, a, offset,
             (arr, off, v) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
-                v.stOp(wb, off,
+                v.stOp(wb, (int) off,
                         (tb_, o, i, e) -> tb_.putShort(o + i * 2, e));
             });
     }
@@ -4101,7 +4101,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             this, m, a, offset,
             (arr, off, v, vm) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
-                v.stOp(wb, off, vm,
+                v.stOp(wb, (int) off, vm,
                         (tb_, o, i, e) -> tb_.putShort(o + i * 2, e));
             });
     }
@@ -4115,7 +4115,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 this, bb, offset,
                 (buf, off, v) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    v.stOp(wb, off,
+                    v.stOp(wb, (int) off,
                             (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
                 });
     }
@@ -4133,7 +4133,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 this, m, bb, offset,
                 (buf, off, v, vm) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    v.stOp(wb, off, vm,
+                    v.stOp(wb, (int) off, vm,
                             (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
                 });
     }
@@ -4145,10 +4145,10 @@ public abstract class ShortVector extends AbstractVector<Short> {
         ScopedMemoryAccess.storeIntoMemorySegment(
                 vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
                 this,
-                (MemorySegmentProxy) ms, (int) offset, // @@@ downcast from long to int
+                (MemorySegmentProxy) ms, offset,
                 (msp, off, v) -> {
                     var layout = ValueLayout.JAVA_SHORT.withBitAlignment(8);
-                    v.stOp((MemorySegment) msp, off,
+                    v.stOp((MemorySegment) msp, (int) off, // @@@ downcast from long to int
                             (ms_, o, i, e) -> ms_.set(layout, o + i * 2L, e));
                 });
     }
@@ -4164,10 +4164,10 @@ public abstract class ShortVector extends AbstractVector<Short> {
         ScopedMemoryAccess.storeIntoMemorySegmentMasked(
                 vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
                 this, m,
-                (MemorySegmentProxy) ms, (int) offset, // @@@ downcast from long to int
+                (MemorySegmentProxy) ms, offset,
                 (msp, off, v, vm) -> {
                     var layout = ValueLayout.JAVA_SHORT.withBitAlignment(8);
-                    v.stOp((MemorySegment) msp, off, vm,
+                    v.stOp((MemorySegment) msp, (int) off, vm,  // @@@ downcast from long to int
                             (ms_, o, i, e) -> ms_.set(layout, o + i * 2L, e));
                 });
     }
@@ -4186,7 +4186,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             a, charArrayAddress(a, offset),
             this, m, a, offset,
             (arr, off, v, vm)
-            -> v.stOp(arr, off, vm,
+            -> v.stOp(arr, (int) off, vm,
                       (arr_, off_, i, e) -> arr_[off_ + i] = (char) e));
     }
 

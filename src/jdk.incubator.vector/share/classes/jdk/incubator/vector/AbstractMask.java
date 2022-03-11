@@ -88,7 +88,7 @@ abstract class AbstractMask<E> extends VectorMask<E> {
             vsp.maskType(), vsp.elementType(), laneCount,
             bits, (long) i + Unsafe.ARRAY_BOOLEAN_BASE_OFFSET,
             this, bits, i,
-            (c, idx, s) -> System.arraycopy(s.getBits(), 0, c, idx, s.length()));
+            (c, idx, s) -> System.arraycopy(s.getBits(), 0, c, (int) idx, s.length()));
 
     }
 

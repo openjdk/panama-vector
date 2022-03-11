@@ -556,7 +556,7 @@ public class ScopedMemoryAccess {
     public static
     <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>>
     V loadFromMemorySegment(Class<? extends V> vmClass, Class<E> e, int length,
-                         MemorySegmentProxy msp, int offset,
+                         MemorySegmentProxy msp, long offset,
                          S s,
                          VectorSupport.LoadOperation<MemorySegmentProxy, V, S> defaultImpl) {
         // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
@@ -582,7 +582,7 @@ public class ScopedMemoryAccess {
     <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>>
     V loadFromMemorySegmentScoped(ScopedMemoryAccess.Scope scope,
                                   Class<? extends V> vmClass, Class<E> e, int length,
-                                  MemorySegmentProxy msp, int offset,
+                                  MemorySegmentProxy msp, long offset,
                                   S s,
                                   VectorSupport.LoadOperation<MemorySegmentProxy, V, S> defaultImpl) {
         try {
@@ -602,7 +602,7 @@ public class ScopedMemoryAccess {
     <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>,
      M extends VectorSupport.VectorMask<E>>
     V loadFromMemorySegmentMasked(Class<? extends V> vmClass, Class<M> maskClass, Class<E> e,
-                                  int length, MemorySegmentProxy msp, int offset, M m, S s,
+                                  int length, MemorySegmentProxy msp, long offset, M m, S s,
                                   VectorSupport.LoadVectorMaskedOperation<MemorySegmentProxy, V, S, M> defaultImpl) {
         // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
         if (msp.maxAlignMask() > 1) {
@@ -628,7 +628,7 @@ public class ScopedMemoryAccess {
      M extends VectorSupport.VectorMask<E>>
     V loadFromMemorySegmentMaskedScoped(ScopedMemoryAccess.Scope scope, Class<? extends V> vmClass,
                                         Class<M> maskClass, Class<E> e, int length,
-                                        MemorySegmentProxy msp, int offset, M m,
+                                        MemorySegmentProxy msp, long offset, M m,
                                         S s,
                                         VectorSupport.LoadVectorMaskedOperation<MemorySegmentProxy, V, S, M> defaultImpl) {
         try {
@@ -648,7 +648,7 @@ public class ScopedMemoryAccess {
     <V extends VectorSupport.Vector<E>, E>
     void storeIntoMemorySegment(Class<? extends V> vmClass, Class<E> e, int length,
                                 V v,
-                                MemorySegmentProxy msp, int offset,
+                                MemorySegmentProxy msp, long offset,
                                 VectorSupport.StoreVectorOperation<MemorySegmentProxy, V> defaultImpl) {
         // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
         if (msp.maxAlignMask() > 1) {
@@ -674,7 +674,7 @@ public class ScopedMemoryAccess {
     void storeIntoMemorySegmentScoped(ScopedMemoryAccess.Scope scope,
                                       Class<? extends V> vmClass, Class<E> e, int length,
                                       V v,
-                                      MemorySegmentProxy msp, int offset,
+                                      MemorySegmentProxy msp, long offset,
                                       VectorSupport.StoreVectorOperation<MemorySegmentProxy, V> defaultImpl) {
         try {
             scope.checkValidState();
@@ -694,7 +694,7 @@ public class ScopedMemoryAccess {
     <V extends VectorSupport.Vector<E>, E, M extends VectorSupport.VectorMask<E>>
     void storeIntoMemorySegmentMasked(Class<? extends V> vmClass, Class<M> maskClass, Class<E> e,
                                       int length, V v, M m,
-                                      MemorySegmentProxy msp, int offset,
+                                      MemorySegmentProxy msp, long offset,
                                       VectorSupport.StoreVectorMaskedOperation<MemorySegmentProxy, V, M> defaultImpl) {
         // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
         if (msp.maxAlignMask() > 1) {
@@ -720,7 +720,7 @@ public class ScopedMemoryAccess {
     void storeIntoMemorySegmentMaskedScoped(ScopedMemoryAccess.Scope scope,
                                            Class<? extends V> vmClass, Class<M> maskClass,
                                            Class<E> e, int length, V v, M m,
-                                           MemorySegmentProxy msp, int offset,
+                                           MemorySegmentProxy msp, long offset,
                                            VectorSupport.StoreVectorMaskedOperation<MemorySegmentProxy, V, M> defaultImpl) {
         try {
             scope.checkValidState();
