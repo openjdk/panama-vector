@@ -354,6 +354,41 @@ public abstract class IntVector extends AbstractVector<Integer> {
         return vectorFactory(res);
     }
 
+    /*package-private*/
+    interface FLdLongOp<M> {
+        int apply(M memory, long offset, int i);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> IntVector ldLongOp(M memory, long offset,
+                                  FLdLongOp<M> f) {
+        //dummy; no vec = vec();
+        int[] res = new int[length()];
+        for (int i = 0; i < res.length; i++) {
+            res[i] = f.apply(memory, offset, i);
+        }
+        return vectorFactory(res);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> IntVector ldLongOp(M memory, long offset,
+                                  VectorMask<Integer> m,
+                                  FLdLongOp<M> f) {
+        //int[] vec = vec();
+        int[] res = new int[length()];
+        boolean[] mbits = ((AbstractMask<Integer>)m).getBits();
+        for (int i = 0; i < res.length; i++) {
+            if (mbits[i]) {
+                res[i] = f.apply(memory, offset, i);
+            }
+        }
+        return vectorFactory(res);
+    }
+
     static IntVector expandHelper(Vector<Integer> v, VectorMask<Integer> m) {
         VectorSpecies<Integer> vsp = m.vectorSpecies();
         IntVector r  = (IntVector) vsp.zero();
@@ -405,6 +440,36 @@ public abstract class IntVector extends AbstractVector<Integer> {
     <M> void stOp(M memory, int offset,
                   VectorMask<Integer> m,
                   FStOp<M> f) {
+        int[] vec = vec();
+        boolean[] mbits = ((AbstractMask<Integer>)m).getBits();
+        for (int i = 0; i < vec.length; i++) {
+            if (mbits[i]) {
+                f.apply(memory, offset, i, vec[i]);
+            }
+        }
+    }
+
+    interface FStLongOp<M> {
+        void apply(M memory, long offset, int i, int a);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> void stLongOp(M memory, long offset,
+                  FStLongOp<M> f) {
+        int[] vec = vec();
+        for (int i = 0; i < vec.length; i++) {
+            f.apply(memory, offset, i, vec[i]);
+        }
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> void stLongOp(M memory, long offset,
+                  VectorMask<Integer> m,
+                  FStLongOp<M> f) {
         int[] vec = vec();
         boolean[] mbits = ((AbstractMask<Integer>)m).getBits();
         for (int i = 0; i < vec.length; i++) {
@@ -3286,10 +3351,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
         }
 
         // FIXME: optimize
-        // @@@ downcast from long to int
-        checkMaskFromIndexSize((int) offset, vsp, m, 4, (int) ms.byteSize());
+        checkMaskFromIndexSize(offset, vsp, m, 4, ms.byteSize());
         var layout = ValueLayout.JAVA_INT.withBitAlignment(8);
-        return vsp.ldOp(ms, (int) offset, (AbstractMask<Integer>)m,
+        return vsp.ldLongOp(ms, offset, (AbstractMask<Integer>)m,
                    (ms_, o, i)  -> ms_.get(layout, o + i * 4L));
     }
 
@@ -3557,8 +3621,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 throw new IllegalArgumentException();
             }
             IntSpecies vsp = vspecies();
-            // @@@ downcast from long to int
-            checkMaskFromIndexSize((int) offset, vsp, m, 4, (int) ms.byteSize());
+            checkMaskFromIndexSize(offset, vsp, m, 4, ms.byteSize());
             maybeSwap(bo).intoMemorySegment0(ms, offset, m);
         }
     }
@@ -3732,7 +3795,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 (MemorySegmentProxy) ms, offset, vsp,
                 (msp, off, s) -> {
                     var layout = ValueLayout.JAVA_INT.withBitAlignment(8);
-                    return s.ldOp((MemorySegment) msp, (int) off, // @@@ downcast from long to int
+                    return s.ldLongOp((MemorySegment) msp, off,
                             (ms_, o, i) -> ms_.get(layout, o + i * 4L));
                 });
     }
@@ -3750,7 +3813,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 (MemorySegmentProxy) ms, offset, m, vsp,
                 (msp, off, s, vm) -> {
                     var layout = ValueLayout.JAVA_INT.withBitAlignment(8);
-                    return s.ldOp((MemorySegment) msp, (int) off, vm, // @@@ downcast from long to int
+                    return s.ldLongOp((MemorySegment) msp, off, vm,
                             (ms_, o, i) -> ms_.get(layout, o + i * 4L));
                 });
     }
@@ -3904,7 +3967,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 (MemorySegmentProxy) ms, offset,
                 (msp, off, v) -> {
                     var layout = ValueLayout.JAVA_INT.withBitAlignment(8);
-                    v.stOp((MemorySegment) msp, (int) off, // @@@ downcast from long to int
+                    v.stLongOp((MemorySegment) msp, off,
                             (ms_, o, i, e) -> ms_.set(layout, o + i * 4L, e));
                 });
     }
@@ -3923,7 +3986,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 (MemorySegmentProxy) ms, offset,
                 (msp, off, v, vm) -> {
                     var layout = ValueLayout.JAVA_INT.withBitAlignment(8);
-                    v.stOp((MemorySegment) msp, (int) off, vm,  // @@@ downcast from long to int
+                    v.stLongOp((MemorySegment) msp, off, vm,
                             (ms_, o, i, e) -> ms_.set(layout, o + i * 4L, e));
                 });
     }
@@ -3937,6 +4000,16 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                 VectorMask<Integer> m,
                                 int scale,
                                 int limit) {
+        ((AbstractMask<Integer>)m)
+            .checkIndexByLane(offset, limit, vsp.iota(), scale);
+    }
+
+    private static
+    void checkMaskFromIndexSize(long offset,
+                                IntSpecies vsp,
+                                VectorMask<Integer> m,
+                                int scale,
+                                long limit) {
         ((AbstractMask<Integer>)m)
             .checkIndexByLane(offset, limit, vsp.iota(), scale);
     }
@@ -4253,6 +4326,21 @@ public abstract class IntVector extends AbstractVector<Integer> {
 
         /*package-private*/
         @ForceInline
+        <M> IntVector ldLongOp(M memory, long offset,
+                                      FLdLongOp<M> f) {
+            return dummyVector().ldLongOp(memory, offset, f);
+        }
+
+        /*package-private*/
+        @ForceInline
+        <M> IntVector ldLongOp(M memory, long offset,
+                                      VectorMask<Integer> m,
+                                      FLdLongOp<M> f) {
+            return dummyVector().ldLongOp(memory, offset, m, f);
+        }
+
+        /*package-private*/
+        @ForceInline
         <M> void stOp(M memory, int offset, FStOp<M> f) {
             dummyVector().stOp(memory, offset, f);
         }
@@ -4263,6 +4351,20 @@ public abstract class IntVector extends AbstractVector<Integer> {
                       AbstractMask<Integer> m,
                       FStOp<M> f) {
             dummyVector().stOp(memory, offset, m, f);
+        }
+
+        /*package-private*/
+        @ForceInline
+        <M> void stLongOp(M memory, long offset, FStLongOp<M> f) {
+            dummyVector().stLongOp(memory, offset, f);
+        }
+
+        /*package-private*/
+        @ForceInline
+        <M> void stLongOp(M memory, long offset,
+                      AbstractMask<Integer> m,
+                      FStLongOp<M> f) {
+            dummyVector().stLongOp(memory, offset, m, f);
         }
 
         // N.B. Make sure these constant vectors and

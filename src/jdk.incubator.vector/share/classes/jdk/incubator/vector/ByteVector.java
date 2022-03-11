@@ -354,6 +354,41 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         return vectorFactory(res);
     }
 
+    /*package-private*/
+    interface FLdLongOp<M> {
+        byte apply(M memory, long offset, int i);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> ByteVector ldLongOp(M memory, long offset,
+                                  FLdLongOp<M> f) {
+        //dummy; no vec = vec();
+        byte[] res = new byte[length()];
+        for (int i = 0; i < res.length; i++) {
+            res[i] = f.apply(memory, offset, i);
+        }
+        return vectorFactory(res);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> ByteVector ldLongOp(M memory, long offset,
+                                  VectorMask<Byte> m,
+                                  FLdLongOp<M> f) {
+        //byte[] vec = vec();
+        byte[] res = new byte[length()];
+        boolean[] mbits = ((AbstractMask<Byte>)m).getBits();
+        for (int i = 0; i < res.length; i++) {
+            if (mbits[i]) {
+                res[i] = f.apply(memory, offset, i);
+            }
+        }
+        return vectorFactory(res);
+    }
+
     static ByteVector expandHelper(Vector<Byte> v, VectorMask<Byte> m) {
         VectorSpecies<Byte> vsp = m.vectorSpecies();
         ByteVector r  = (ByteVector) vsp.zero();
@@ -405,6 +440,36 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     <M> void stOp(M memory, int offset,
                   VectorMask<Byte> m,
                   FStOp<M> f) {
+        byte[] vec = vec();
+        boolean[] mbits = ((AbstractMask<Byte>)m).getBits();
+        for (int i = 0; i < vec.length; i++) {
+            if (mbits[i]) {
+                f.apply(memory, offset, i, vec[i]);
+            }
+        }
+    }
+
+    interface FStLongOp<M> {
+        void apply(M memory, long offset, int i, byte a);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> void stLongOp(M memory, long offset,
+                  FStLongOp<M> f) {
+        byte[] vec = vec();
+        for (int i = 0; i < vec.length; i++) {
+            f.apply(memory, offset, i, vec[i]);
+        }
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> void stLongOp(M memory, long offset,
+                  VectorMask<Byte> m,
+                  FStLongOp<M> f) {
         byte[] vec = vec();
         boolean[] mbits = ((AbstractMask<Byte>)m).getBits();
         for (int i = 0; i < vec.length; i++) {
@@ -3426,10 +3491,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         }
 
         // FIXME: optimize
-        // @@@ downcast from long to int
-        checkMaskFromIndexSize((int) offset, vsp, m, 1, (int) ms.byteSize());
+        checkMaskFromIndexSize(offset, vsp, m, 1, ms.byteSize());
         var layout = ValueLayout.JAVA_BYTE.withBitAlignment(8);
-        return vsp.ldOp(ms, (int) offset, (AbstractMask<Byte>)m,
+        return vsp.ldLongOp(ms, offset, (AbstractMask<Byte>)m,
                    (ms_, o, i)  -> ms_.get(layout, o + i * 1L));
     }
 
@@ -3845,8 +3909,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 throw new IllegalArgumentException();
             }
             ByteSpecies vsp = vspecies();
-            // @@@ downcast from long to int
-            checkMaskFromIndexSize((int) offset, vsp, m, 1, (int) ms.byteSize());
+            checkMaskFromIndexSize(offset, vsp, m, 1, ms.byteSize());
             maybeSwap(bo).intoMemorySegment0(ms, offset, m);
         }
     }
@@ -4018,7 +4081,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 (MemorySegmentProxy) ms, offset, vsp,
                 (msp, off, s) -> {
                     var layout = ValueLayout.JAVA_BYTE.withBitAlignment(8);
-                    return s.ldOp((MemorySegment) msp, (int) off, // @@@ downcast from long to int
+                    return s.ldLongOp((MemorySegment) msp, off,
                             (ms_, o, i) -> ms_.get(layout, o + i * 1L));
                 });
     }
@@ -4036,7 +4099,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 (MemorySegmentProxy) ms, offset, m, vsp,
                 (msp, off, s, vm) -> {
                     var layout = ValueLayout.JAVA_BYTE.withBitAlignment(8);
-                    return s.ldOp((MemorySegment) msp, (int) off, vm, // @@@ downcast from long to int
+                    return s.ldLongOp((MemorySegment) msp, off, vm,
                             (ms_, o, i) -> ms_.get(layout, o + i * 1L));
                 });
     }
@@ -4174,7 +4237,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 (MemorySegmentProxy) ms, offset,
                 (msp, off, v) -> {
                     var layout = ValueLayout.JAVA_BYTE.withBitAlignment(8);
-                    v.stOp((MemorySegment) msp, (int) off, // @@@ downcast from long to int
+                    v.stLongOp((MemorySegment) msp, off,
                             (ms_, o, i, e) -> ms_.set(layout, o + i * 1L, e));
                 });
     }
@@ -4193,7 +4256,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 (MemorySegmentProxy) ms, offset,
                 (msp, off, v, vm) -> {
                     var layout = ValueLayout.JAVA_BYTE.withBitAlignment(8);
-                    v.stOp((MemorySegment) msp, (int) off, vm,  // @@@ downcast from long to int
+                    v.stLongOp((MemorySegment) msp, off, vm,
                             (ms_, o, i, e) -> ms_.set(layout, o + i * 1L, e));
                 });
     }
@@ -4207,6 +4270,16 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                 VectorMask<Byte> m,
                                 int scale,
                                 int limit) {
+        ((AbstractMask<Byte>)m)
+            .checkIndexByLane(offset, limit, vsp.iota(), scale);
+    }
+
+    private static
+    void checkMaskFromIndexSize(long offset,
+                                ByteSpecies vsp,
+                                VectorMask<Byte> m,
+                                int scale,
+                                long limit) {
         ((AbstractMask<Byte>)m)
             .checkIndexByLane(offset, limit, vsp.iota(), scale);
     }
@@ -4532,6 +4605,21 @@ public abstract class ByteVector extends AbstractVector<Byte> {
 
         /*package-private*/
         @ForceInline
+        <M> ByteVector ldLongOp(M memory, long offset,
+                                      FLdLongOp<M> f) {
+            return dummyVector().ldLongOp(memory, offset, f);
+        }
+
+        /*package-private*/
+        @ForceInline
+        <M> ByteVector ldLongOp(M memory, long offset,
+                                      VectorMask<Byte> m,
+                                      FLdLongOp<M> f) {
+            return dummyVector().ldLongOp(memory, offset, m, f);
+        }
+
+        /*package-private*/
+        @ForceInline
         <M> void stOp(M memory, int offset, FStOp<M> f) {
             dummyVector().stOp(memory, offset, f);
         }
@@ -4542,6 +4630,20 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                       AbstractMask<Byte> m,
                       FStOp<M> f) {
             dummyVector().stOp(memory, offset, m, f);
+        }
+
+        /*package-private*/
+        @ForceInline
+        <M> void stLongOp(M memory, long offset, FStLongOp<M> f) {
+            dummyVector().stLongOp(memory, offset, f);
+        }
+
+        /*package-private*/
+        @ForceInline
+        <M> void stLongOp(M memory, long offset,
+                      AbstractMask<Byte> m,
+                      FStLongOp<M> f) {
+            dummyVector().stLongOp(memory, offset, m, f);
         }
 
         // N.B. Make sure these constant vectors and

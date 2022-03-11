@@ -354,6 +354,41 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         return vectorFactory(res);
     }
 
+    /*package-private*/
+    interface FLdLongOp<M> {
+        double apply(M memory, long offset, int i);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> DoubleVector ldLongOp(M memory, long offset,
+                                  FLdLongOp<M> f) {
+        //dummy; no vec = vec();
+        double[] res = new double[length()];
+        for (int i = 0; i < res.length; i++) {
+            res[i] = f.apply(memory, offset, i);
+        }
+        return vectorFactory(res);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> DoubleVector ldLongOp(M memory, long offset,
+                                  VectorMask<Double> m,
+                                  FLdLongOp<M> f) {
+        //double[] vec = vec();
+        double[] res = new double[length()];
+        boolean[] mbits = ((AbstractMask<Double>)m).getBits();
+        for (int i = 0; i < res.length; i++) {
+            if (mbits[i]) {
+                res[i] = f.apply(memory, offset, i);
+            }
+        }
+        return vectorFactory(res);
+    }
+
     static DoubleVector expandHelper(Vector<Double> v, VectorMask<Double> m) {
         VectorSpecies<Double> vsp = m.vectorSpecies();
         DoubleVector r  = (DoubleVector) vsp.zero();
@@ -405,6 +440,36 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     <M> void stOp(M memory, int offset,
                   VectorMask<Double> m,
                   FStOp<M> f) {
+        double[] vec = vec();
+        boolean[] mbits = ((AbstractMask<Double>)m).getBits();
+        for (int i = 0; i < vec.length; i++) {
+            if (mbits[i]) {
+                f.apply(memory, offset, i, vec[i]);
+            }
+        }
+    }
+
+    interface FStLongOp<M> {
+        void apply(M memory, long offset, int i, double a);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> void stLongOp(M memory, long offset,
+                  FStLongOp<M> f) {
+        double[] vec = vec();
+        for (int i = 0; i < vec.length; i++) {
+            f.apply(memory, offset, i, vec[i]);
+        }
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> void stLongOp(M memory, long offset,
+                  VectorMask<Double> m,
+                  FStLongOp<M> f) {
         double[] vec = vec();
         boolean[] mbits = ((AbstractMask<Double>)m).getBits();
         for (int i = 0; i < vec.length; i++) {
@@ -3108,10 +3173,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         }
 
         // FIXME: optimize
-        // @@@ downcast from long to int
-        checkMaskFromIndexSize((int) offset, vsp, m, 8, (int) ms.byteSize());
+        checkMaskFromIndexSize(offset, vsp, m, 8, ms.byteSize());
         var layout = ValueLayout.JAVA_DOUBLE.withBitAlignment(8);
-        return vsp.ldOp(ms, (int) offset, (AbstractMask<Double>)m,
+        return vsp.ldLongOp(ms, offset, (AbstractMask<Double>)m,
                    (ms_, o, i)  -> ms_.get(layout, o + i * 8L));
     }
 
@@ -3398,8 +3462,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                 throw new IllegalArgumentException();
             }
             DoubleSpecies vsp = vspecies();
-            // @@@ downcast from long to int
-            checkMaskFromIndexSize((int) offset, vsp, m, 8, (int) ms.byteSize());
+            checkMaskFromIndexSize(offset, vsp, m, 8, ms.byteSize());
             maybeSwap(bo).intoMemorySegment0(ms, offset, m);
         }
     }
@@ -3591,7 +3654,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                 (MemorySegmentProxy) ms, offset, vsp,
                 (msp, off, s) -> {
                     var layout = ValueLayout.JAVA_DOUBLE.withBitAlignment(8);
-                    return s.ldOp((MemorySegment) msp, (int) off, // @@@ downcast from long to int
+                    return s.ldLongOp((MemorySegment) msp, off,
                             (ms_, o, i) -> ms_.get(layout, o + i * 8L));
                 });
     }
@@ -3609,7 +3672,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                 (MemorySegmentProxy) ms, offset, m, vsp,
                 (msp, off, s, vm) -> {
                     var layout = ValueLayout.JAVA_DOUBLE.withBitAlignment(8);
-                    return s.ldOp((MemorySegment) msp, (int) off, vm, // @@@ downcast from long to int
+                    return s.ldLongOp((MemorySegment) msp, off, vm,
                             (ms_, o, i) -> ms_.get(layout, o + i * 8L));
                 });
     }
@@ -3782,7 +3845,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                 (MemorySegmentProxy) ms, offset,
                 (msp, off, v) -> {
                     var layout = ValueLayout.JAVA_DOUBLE.withBitAlignment(8);
-                    v.stOp((MemorySegment) msp, (int) off, // @@@ downcast from long to int
+                    v.stLongOp((MemorySegment) msp, off,
                             (ms_, o, i, e) -> ms_.set(layout, o + i * 8L, e));
                 });
     }
@@ -3801,7 +3864,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                 (MemorySegmentProxy) ms, offset,
                 (msp, off, v, vm) -> {
                     var layout = ValueLayout.JAVA_DOUBLE.withBitAlignment(8);
-                    v.stOp((MemorySegment) msp, (int) off, vm,  // @@@ downcast from long to int
+                    v.stLongOp((MemorySegment) msp, off, vm,
                             (ms_, o, i, e) -> ms_.set(layout, o + i * 8L, e));
                 });
     }
@@ -3815,6 +3878,16 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                 VectorMask<Double> m,
                                 int scale,
                                 int limit) {
+        ((AbstractMask<Double>)m)
+            .checkIndexByLane(offset, limit, vsp.iota(), scale);
+    }
+
+    private static
+    void checkMaskFromIndexSize(long offset,
+                                DoubleSpecies vsp,
+                                VectorMask<Double> m,
+                                int scale,
+                                long limit) {
         ((AbstractMask<Double>)m)
             .checkIndexByLane(offset, limit, vsp.iota(), scale);
     }
@@ -4131,6 +4204,21 @@ public abstract class DoubleVector extends AbstractVector<Double> {
 
         /*package-private*/
         @ForceInline
+        <M> DoubleVector ldLongOp(M memory, long offset,
+                                      FLdLongOp<M> f) {
+            return dummyVector().ldLongOp(memory, offset, f);
+        }
+
+        /*package-private*/
+        @ForceInline
+        <M> DoubleVector ldLongOp(M memory, long offset,
+                                      VectorMask<Double> m,
+                                      FLdLongOp<M> f) {
+            return dummyVector().ldLongOp(memory, offset, m, f);
+        }
+
+        /*package-private*/
+        @ForceInline
         <M> void stOp(M memory, int offset, FStOp<M> f) {
             dummyVector().stOp(memory, offset, f);
         }
@@ -4141,6 +4229,20 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                       AbstractMask<Double> m,
                       FStOp<M> f) {
             dummyVector().stOp(memory, offset, m, f);
+        }
+
+        /*package-private*/
+        @ForceInline
+        <M> void stLongOp(M memory, long offset, FStLongOp<M> f) {
+            dummyVector().stLongOp(memory, offset, f);
+        }
+
+        /*package-private*/
+        @ForceInline
+        <M> void stLongOp(M memory, long offset,
+                      AbstractMask<Double> m,
+                      FStLongOp<M> f) {
+            dummyVector().stLongOp(memory, offset, m, f);
         }
 
         // N.B. Make sure these constant vectors and

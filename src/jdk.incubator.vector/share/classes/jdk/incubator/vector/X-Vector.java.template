@@ -358,6 +358,41 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         return vectorFactory(res);
     }
 
+    /*package-private*/
+    interface FLdLongOp<M> {
+        $type$ apply(M memory, long offset, int i);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> $abstractvectortype$ ldLongOp(M memory, long offset,
+                                  FLdLongOp<M> f) {
+        //dummy; no vec = vec();
+        $type$[] res = new $type$[length()];
+        for (int i = 0; i < res.length; i++) {
+            res[i] = f.apply(memory, offset, i);
+        }
+        return vectorFactory(res);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> $abstractvectortype$ ldLongOp(M memory, long offset,
+                                  VectorMask<$Boxtype$> m,
+                                  FLdLongOp<M> f) {
+        //$type$[] vec = vec();
+        $type$[] res = new $type$[length()];
+        boolean[] mbits = ((AbstractMask<$Boxtype$>)m).getBits();
+        for (int i = 0; i < res.length; i++) {
+            if (mbits[i]) {
+                res[i] = f.apply(memory, offset, i);
+            }
+        }
+        return vectorFactory(res);
+    }
+
     static $abstractvectortype$ expandHelper(Vector<$Boxtype$> v, VectorMask<$Boxtype$> m) {
         VectorSpecies<$Boxtype$> vsp = m.vectorSpecies();
         $abstractvectortype$ r  = ($abstractvectortype$) vsp.zero();
@@ -409,6 +444,36 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     <M> void stOp(M memory, int offset,
                   VectorMask<$Boxtype$> m,
                   FStOp<M> f) {
+        $type$[] vec = vec();
+        boolean[] mbits = ((AbstractMask<$Boxtype$>)m).getBits();
+        for (int i = 0; i < vec.length; i++) {
+            if (mbits[i]) {
+                f.apply(memory, offset, i, vec[i]);
+            }
+        }
+    }
+
+    interface FStLongOp<M> {
+        void apply(M memory, long offset, int i, $type$ a);
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> void stLongOp(M memory, long offset,
+                  FStLongOp<M> f) {
+        $type$[] vec = vec();
+        for (int i = 0; i < vec.length; i++) {
+            f.apply(memory, offset, i, vec[i]);
+        }
+    }
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M> void stLongOp(M memory, long offset,
+                  VectorMask<$Boxtype$> m,
+                  FStLongOp<M> f) {
         $type$[] vec = vec();
         boolean[] mbits = ((AbstractMask<$Boxtype$>)m).getBits();
         for (int i = 0; i < vec.length; i++) {
@@ -4199,10 +4264,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         }
 
         // FIXME: optimize
-        // @@@ downcast from long to int
-        checkMaskFromIndexSize((int) offset, vsp, m, $sizeInBytes$, (int) ms.byteSize());
+        checkMaskFromIndexSize(offset, vsp, m, $sizeInBytes$, ms.byteSize());
         var layout = ValueLayout.JAVA_$TYPE$.withBitAlignment(8);
-        return vsp.ldOp(ms, (int) offset, (AbstractMask<$Boxtype$>)m,
+        return vsp.ldLongOp(ms, offset, (AbstractMask<$Boxtype$>)m,
                    (ms_, o, i)  -> ms_.get(layout, o + i * $sizeInBytes$L));
     }
 
@@ -4844,8 +4908,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 throw new IllegalArgumentException();
             }
             $Type$Species vsp = vspecies();
-            // @@@ downcast from long to int
-            checkMaskFromIndexSize((int) offset, vsp, m, $sizeInBytes$, (int) ms.byteSize());
+            checkMaskFromIndexSize(offset, vsp, m, $sizeInBytes$, ms.byteSize());
             maybeSwap(bo).intoMemorySegment0(ms, offset, m);
         }
     }
@@ -5112,7 +5175,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 (MemorySegmentProxy) ms, offset, vsp,
                 (msp, off, s) -> {
                     var layout = ValueLayout.JAVA_$TYPE$.withBitAlignment(8);
-                    return s.ldOp((MemorySegment) msp, (int) off, // @@@ downcast from long to int
+                    return s.ldLongOp((MemorySegment) msp, off,
                             (ms_, o, i) -> ms_.get(layout, o + i * $sizeInBytes$L));
                 });
     }
@@ -5130,7 +5193,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 (MemorySegmentProxy) ms, offset, m, vsp,
                 (msp, off, s, vm) -> {
                     var layout = ValueLayout.JAVA_$TYPE$.withBitAlignment(8);
-                    return s.ldOp((MemorySegment) msp, (int) off, vm, // @@@ downcast from long to int
+                    return s.ldLongOp((MemorySegment) msp, off, vm,
                             (ms_, o, i) -> ms_.get(layout, o + i * $sizeInBytes$L));
                 });
     }
@@ -5331,7 +5394,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 (MemorySegmentProxy) ms, offset,
                 (msp, off, v) -> {
                     var layout = ValueLayout.JAVA_$TYPE$.withBitAlignment(8);
-                    v.stOp((MemorySegment) msp, (int) off, // @@@ downcast from long to int
+                    v.stLongOp((MemorySegment) msp, off,
                             (ms_, o, i, e) -> ms_.set(layout, o + i * $sizeInBytes$L, e));
                 });
     }
@@ -5350,7 +5413,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 (MemorySegmentProxy) ms, offset,
                 (msp, off, v, vm) -> {
                     var layout = ValueLayout.JAVA_$TYPE$.withBitAlignment(8);
-                    v.stOp((MemorySegment) msp, (int) off, vm,  // @@@ downcast from long to int
+                    v.stLongOp((MemorySegment) msp, off, vm,
                             (ms_, o, i, e) -> ms_.set(layout, o + i * $sizeInBytes$L, e));
                 });
     }
@@ -5383,6 +5446,16 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                                 VectorMask<$Boxtype$> m,
                                 int scale,
                                 int limit) {
+        ((AbstractMask<$Boxtype$>)m)
+            .checkIndexByLane(offset, limit, vsp.iota(), scale);
+    }
+
+    private static
+    void checkMaskFromIndexSize(long offset,
+                                $Type$Species vsp,
+                                VectorMask<$Boxtype$> m,
+                                int scale,
+                                long limit) {
         ((AbstractMask<$Boxtype$>)m)
             .checkIndexByLane(offset, limit, vsp.iota(), scale);
     }
@@ -5757,6 +5830,21 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 
         /*package-private*/
         @ForceInline
+        <M> $abstractvectortype$ ldLongOp(M memory, long offset,
+                                      FLdLongOp<M> f) {
+            return dummyVector().ldLongOp(memory, offset, f);
+        }
+
+        /*package-private*/
+        @ForceInline
+        <M> $abstractvectortype$ ldLongOp(M memory, long offset,
+                                      VectorMask<$Boxtype$> m,
+                                      FLdLongOp<M> f) {
+            return dummyVector().ldLongOp(memory, offset, m, f);
+        }
+
+        /*package-private*/
+        @ForceInline
         <M> void stOp(M memory, int offset, FStOp<M> f) {
             dummyVector().stOp(memory, offset, f);
         }
@@ -5767,6 +5855,20 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                       AbstractMask<$Boxtype$> m,
                       FStOp<M> f) {
             dummyVector().stOp(memory, offset, m, f);
+        }
+
+        /*package-private*/
+        @ForceInline
+        <M> void stLongOp(M memory, long offset, FStLongOp<M> f) {
+            dummyVector().stLongOp(memory, offset, f);
+        }
+
+        /*package-private*/
+        @ForceInline
+        <M> void stLongOp(M memory, long offset,
+                      AbstractMask<$Boxtype$> m,
+                      FStLongOp<M> f) {
+            dummyVector().stLongOp(memory, offset, m, f);
         }
 
         // N.B. Make sure these constant vectors and
