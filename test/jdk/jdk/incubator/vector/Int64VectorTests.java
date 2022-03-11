@@ -1178,6 +1178,11 @@ public class Int64VectorTests extends AbstractVectorTest {
         return Integer.numberOfLeadingZeros(a);
     }
 
+    static int REVERSE_scalar(int a) {
+        return Integer.reverse(a);
+    }
+
+
     static boolean eq(int a, int b) {
         return a == b;
     }
@@ -5366,6 +5371,49 @@ public class Int64VectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(r, a, mask, Int64VectorTests::LEADING_ZEROS_COUNT);
+    }
+
+
+
+    static int REVERSE(int a) {
+        return (int)(REVERSE_scalar(a));
+    }
+
+
+
+    @Test(dataProvider = "intUnaryOpProvider")
+    static void REVERSEInt64VectorTests(IntFunction<int[]> fa) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Int64VectorTests::REVERSE);
+    }
+
+
+
+    @Test(dataProvider = "intUnaryOpMaskProvider")
+    static void REVERSEMaskedInt64VectorTests(IntFunction<int[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Int64VectorTests::REVERSE);
     }
 
 

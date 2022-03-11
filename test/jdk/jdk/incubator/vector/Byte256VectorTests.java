@@ -1218,6 +1218,14 @@ public class Byte256VectorTests extends AbstractVectorTest {
         return (byte) (a >= 0 ? Integer.numberOfLeadingZeros(a) - 24 : 0);
     }
 
+    static byte REVERSE_scalar(byte a) {
+        byte b = (byte) ROL_scalar(a, (byte) 4);
+        b = (byte)(((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
+        b = (byte)(((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
+        return b;
+    }
+
+
     static boolean eq(byte a, byte b) {
         return a == b;
     }
@@ -5401,6 +5409,49 @@ public class Byte256VectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(r, a, mask, Byte256VectorTests::LEADING_ZEROS_COUNT);
+    }
+
+
+
+    static byte REVERSE(byte a) {
+        return (byte)(REVERSE_scalar(a));
+    }
+
+
+
+    @Test(dataProvider = "byteUnaryOpProvider")
+    static void REVERSEByte256VectorTests(IntFunction<byte[]> fa) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Byte256VectorTests::REVERSE);
+    }
+
+
+
+    @Test(dataProvider = "byteUnaryOpMaskProvider")
+    static void REVERSEMaskedByte256VectorTests(IntFunction<byte[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Byte256VectorTests::REVERSE);
     }
 
 

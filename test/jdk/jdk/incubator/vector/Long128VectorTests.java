@@ -1200,6 +1200,11 @@ public class Long128VectorTests extends AbstractVectorTest {
         return Long.numberOfLeadingZeros(a);
     }
 
+    static long REVERSE_scalar(long a) {
+        return Long.reverse(a);
+    }
+
+
     static boolean eq(long a, long b) {
         return a == b;
     }
@@ -5316,6 +5321,49 @@ public class Long128VectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(r, a, mask, Long128VectorTests::LEADING_ZEROS_COUNT);
+    }
+
+
+
+    static long REVERSE(long a) {
+        return (long)(REVERSE_scalar(a));
+    }
+
+
+
+    @Test(dataProvider = "longUnaryOpProvider")
+    static void REVERSELong128VectorTests(IntFunction<long[]> fa) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Long128VectorTests::REVERSE);
+    }
+
+
+
+    @Test(dataProvider = "longUnaryOpMaskProvider")
+    static void REVERSEMaskedLong128VectorTests(IntFunction<long[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Long128VectorTests::REVERSE);
     }
 
 

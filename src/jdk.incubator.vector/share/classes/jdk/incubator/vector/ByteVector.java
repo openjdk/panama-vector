@@ -661,6 +661,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                     v0.uOp(m, (i, a) -> (byte) numberOfTrailingZeros(a));
             case VECTOR_OP_LZ_COUNT: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (byte) numberOfLeadingZeros(a));
+            case VECTOR_OP_REVERSE: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> reverse(a));
             default: return null;
         }
     }
@@ -1795,6 +1797,15 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     }
     static int numberOfLeadingZeros(byte a) {
         return a >= 0 ? Integer.numberOfLeadingZeros(a) - 24 : 0;
+    }
+
+    static byte reverse(byte a) {
+        if (a == 0 || a == -1) return a;
+
+        byte b = rotateLeft(a, 4);
+        b = (byte)(((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
+        b = (byte)(((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
+        return b;
     }
 
     // not (~)

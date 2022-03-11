@@ -156,6 +156,12 @@ int VectorNode::opcode(int sopc, BasicType bt) {
     return (bt == T_INT ? Op_PopCountVI : 0);
   case Op_PopCountL:
     return Op_PopCountVL;
+  case Op_ReverseI:
+    // Not implemented. Returning 0 temporarily
+    return 0;
+  case Op_ReverseL:
+    // Not implemented. Returning 0 temporarily
+    return 0;
   case Op_LShiftI:
     switch (bt) {
     case T_BOOLEAN:
