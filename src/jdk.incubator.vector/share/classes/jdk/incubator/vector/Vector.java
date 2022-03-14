@@ -3536,7 +3536,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *         if {@code offset+N*ESIZE < 0}
      *         or {@code offset+(N+1)*ESIZE > ms.byteSize()}
      *         for any lane {@code N} in the vector
-     * @throws UnsupportedOperationException`
+     * @throws UnsupportedOperationException
      *         if the memory segment is read-only
      * @throws IllegalArgumentException if the memory segment is a heap segment that is
      *         not backed by a {@code byte[]} array.
