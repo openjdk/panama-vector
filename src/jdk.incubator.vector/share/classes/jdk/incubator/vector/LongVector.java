@@ -3161,6 +3161,8 @@ public abstract class LongVector extends AbstractVector<Long> {
      *         if {@code offset+N*8 < 0}
      *         or {@code offset+N*8 >= ms.byteSize()}
      *         for any lane {@code N} in the vector
+     * @throws IllegalArgumentException if the memory segment is a heap segment that is
+     *         not backed by a {@code byte[]} array.
      * @throws IllegalStateException if the memory segment's session is not alive,
      *         or if access occurs from a thread other than the thread owning the session.
      */
@@ -3215,6 +3217,8 @@ public abstract class LongVector extends AbstractVector<Long> {
      *         or {@code offset+N*8 >= ms.byteSize()}
      *         for any lane {@code N} in the vector
      *         where the mask is set
+     * @throws IllegalArgumentException if the memory segment is a heap segment that is
+     *         not backed by a {@code byte[]} array.
      * @throws IllegalStateException if the memory segment's session is not alive,
      *         or if access occurs from a thread other than the thread owning the session.
      */
