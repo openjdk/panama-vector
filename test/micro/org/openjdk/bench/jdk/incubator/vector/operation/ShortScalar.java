@@ -61,15 +61,15 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
     @Setup
     public void init() {
-        as = fill(i -> (short) (2 * i));
-        bs = fill(i -> (short) (i + 1));
-        cs = fill(i -> (short) (i + 5));
-        rs = fill(i -> (short) 0);
+        as = fill(i -> (short)(2*i));
+        bs = fill(i -> (short)(i+1));
+        cs = fill(i -> (short)(i+5));
+        rs = fill(i -> (short)0);
         ms = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);
         rms = fillMask(size, i -> false);
 
-        ss = fillInt(size, i -> RANDOM.nextInt(Math.max(i, 1)));
+        ss = fillInt(size, i -> RANDOM.nextInt(Math.max(i,1)));
     }
 
     final IntFunction<short[]> fa = vl -> as;
@@ -122,11 +122,11 @@ public class ShortScalar extends AbstractVectorBenchmark {
     }
 
     static short ROL_scalar(short a, short b) {
-        return (short) (((((short) a) & 0xFFFF) << (b & 15)) | ((((short) a) & 0xFFFF) >>> (16 - (b & 15))));
+        return (short)(((((short)a) & 0xFFFF) << (b & 15)) | ((((short)a) & 0xFFFF) >>> (16 - (b & 15))));
     }
 
     static short ROR_scalar(short a, short b) {
-        return (short) (((((short) a) & 0xFFFF) >>> (b & 15)) | ((((short) a) & 0xFFFF) << (16 - (b & 15))));
+        return (short)(((((short)a) & 0xFFFF) >>> (b & 15)) | ((((short)a) & 0xFFFF) << (16 - (b & 15))));
     }
 
     static short TRAILING_ZEROS_COUNT_scalar(short a) {
@@ -139,9 +139,9 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
     static short REVERSE_scalar(short a) {
         short b = ROL_scalar(a, (short) 8);
-        b = (short) (((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
-        b = (short) (((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
-        b = (short) (((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
+        b = (short)(((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
+        b = (short)(((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
+        b = (short)(((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
         return b;
     }
 
@@ -155,7 +155,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) (a + b);
+                rs[i] = (short)(a + b);
             }
         }
 
@@ -174,7 +174,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (short) (a + b);
+                    rs[i] = (short)(a + b);
                 } else {
                     rs[i] = a;
                 }
@@ -193,7 +193,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) (a - b);
+                rs[i] = (short)(a - b);
             }
         }
 
@@ -212,7 +212,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (short) (a - b);
+                    rs[i] = (short)(a - b);
                 } else {
                     rs[i] = a;
                 }
@@ -231,7 +231,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) (a * b);
+                rs[i] = (short)(a * b);
             }
         }
 
@@ -250,7 +250,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (short) (a * b);
+                    rs[i] = (short)(a * b);
                 } else {
                     rs[i] = a;
                 }
@@ -271,7 +271,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) ((a) != 0 ? a : b);
+                rs[i] = (short)((a)!=0?a:b);
             }
         }
 
@@ -290,7 +290,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (short) ((a) != 0 ? a : b);
+                    rs[i] = (short)((a)!=0?a:b);
                 } else {
                     rs[i] = a;
                 }
@@ -310,7 +310,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) (a & b);
+                rs[i] = (short)(a & b);
             }
         }
 
@@ -331,7 +331,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (short) (a & b);
+                    rs[i] = (short)(a & b);
                 } else {
                     rs[i] = a;
                 }
@@ -352,7 +352,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) (a & ~b);
+                rs[i] = (short)(a & ~b);
             }
         }
 
@@ -373,7 +373,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (short) (a & ~b);
+                    rs[i] = (short)(a & ~b);
                 } else {
                     rs[i] = a;
                 }
@@ -394,7 +394,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) (a | b);
+                rs[i] = (short)(a | b);
             }
         }
 
@@ -415,7 +415,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (short) (a | b);
+                    rs[i] = (short)(a | b);
                 } else {
                     rs[i] = a;
                 }
@@ -436,7 +436,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) (a ^ b);
+                rs[i] = (short)(a ^ b);
             }
         }
 
@@ -457,7 +457,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (short) (a ^ b);
+                    rs[i] = (short)(a ^ b);
                 } else {
                     rs[i] = a;
                 }
@@ -482,7 +482,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) ((a << (b & 0xF)));
+                rs[i] = (short)((a << (b & 0xF)));
             }
         }
 
@@ -503,7 +503,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (short) ((a << (b & 0xF)));
+                    rs[i] = (short)((a << (b & 0xF)));
                 } else {
                     rs[i] = a;
                 }
@@ -528,7 +528,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) ((a >> (b & 0xF)));
+                rs[i] = (short)((a >> (b & 0xF)));
             }
         }
 
@@ -549,7 +549,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (short) ((a >> (b & 0xF)));
+                    rs[i] = (short)((a >> (b & 0xF)));
                 } else {
                     rs[i] = a;
                 }
@@ -574,7 +574,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) (((a & 0xFFFF) >>> (b & 0xF)));
+                rs[i] = (short)(((a & 0xFFFF) >>> (b & 0xF)));
             }
         }
 
@@ -595,7 +595,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (short) (((a & 0xFFFF) >>> (b & 0xF)));
+                    rs[i] = (short)(((a & 0xFFFF) >>> (b & 0xF)));
                 } else {
                     rs[i] = a;
                 }
@@ -620,7 +620,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) ((a << (b & 15)));
+                rs[i] = (short)((a << (b & 15)));
             }
         }
 
@@ -641,7 +641,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short) ((a << (b & 15))) : a);
+                rs[i] = (m ? (short)((a << (b & 15))) : a);
             }
         }
 
@@ -664,7 +664,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) (((a & 0xFFFF) >>> (b & 15)));
+                rs[i] = (short)(((a & 0xFFFF) >>> (b & 15)));
             }
         }
 
@@ -685,7 +685,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short) (((a & 0xFFFF) >>> (b & 15))) : a);
+                rs[i] = (m ? (short)(((a & 0xFFFF) >>> (b & 15))) : a);
             }
         }
 
@@ -708,7 +708,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) ((a >> (b & 15)));
+                rs[i] = (short)((a >> (b & 15)));
             }
         }
 
@@ -729,7 +729,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short) ((a >> (b & 15))) : a);
+                rs[i] = (m ? (short)((a >> (b & 15))) : a);
             }
         }
 
@@ -748,7 +748,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) (ROR_scalar(a, b));
+                rs[i] = (short)(ROR_scalar(a,b));
             }
         }
 
@@ -769,7 +769,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (short) (ROR_scalar(a, b));
+                    rs[i] = (short)(ROR_scalar(a,b));
                 } else {
                     rs[i] = a;
                 }
@@ -790,7 +790,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) (ROL_scalar(a, b));
+                rs[i] = (short)(ROL_scalar(a,b));
             }
         }
 
@@ -811,7 +811,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (short) (ROL_scalar(a, b));
+                    rs[i] = (short)(ROL_scalar(a,b));
                 } else {
                     rs[i] = a;
                 }
@@ -832,7 +832,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) (ROR_scalar(a, b));
+                rs[i] = (short)(ROR_scalar(a,b));
             }
         }
 
@@ -853,7 +853,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short) (ROR_scalar(a, b)) : a);
+                rs[i] = (m ? (short)(ROR_scalar(a,b)) : a);
             }
         }
 
@@ -872,7 +872,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) (ROL_scalar(a, b));
+                rs[i] = (short)(ROL_scalar(a,b));
             }
         }
 
@@ -893,7 +893,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short) (ROL_scalar(a, b)) : a);
+                rs[i] = (m ? (short)(ROL_scalar(a,b)) : a);
             }
         }
 
@@ -911,7 +911,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) (Math.min(a, b));
+                rs[i] = (short)(Math.min(a, b));
             }
         }
 
@@ -928,7 +928,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short) (Math.max(a, b));
+                rs[i] = (short)(Math.max(a, b));
             }
         }
 
@@ -1125,7 +1125,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
-                r &= (bits(a) == 0); // accumulate so JIT can't eliminate the computation
+                r &= (bits(a)==0); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -1140,7 +1140,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
-                r &= (bits(a) < 0); // accumulate so JIT can't eliminate the computation
+                r &= (bits(a)<0); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -1334,7 +1334,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i += window) {
                 for (int j = 0; j < window; j++) {
-                    short a = as[i + j];
+                    short a = as[i+j];
                     int pos = order[j];
                     rs[i + pos] = a;
                 }
@@ -1463,7 +1463,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                as[i] = (short) 0;
+                as[i] = (short)0;
             }
         }
 
@@ -1503,7 +1503,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 short c = cs[i];
-                rs[i] = (short) ((a &~ (c)) | (b & c));
+                rs[i] = (short)((a&~(c))|(b&c));
             }
         }
 
@@ -1527,7 +1527,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short b = bs[i];
                 short c = cs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (short) ((a &~ (c)) | (b & c));
+                    rs[i] = (short)((a&~(c))|(b&c));
                 } else {
                     rs[i] = a;
                 }
@@ -1545,7 +1545,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
-                rs[i] = (short) (-((short) a));
+                rs[i] = (short)(-((short)a));
             }
         }
 
@@ -1562,7 +1562,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short) (-((short) a)) : a);
+                rs[i] = (m ? (short)(-((short)a)) : a);
             }
         }
 
@@ -1577,7 +1577,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
-                rs[i] = (short) (Math.abs((short) a));
+                rs[i] = (short)(Math.abs((short)a));
             }
         }
 
@@ -1594,7 +1594,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short) (Math.abs((short) a)) : a);
+                rs[i] = (m ? (short)(Math.abs((short)a)) : a);
             }
         }
 
@@ -1610,7 +1610,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
-                rs[i] = (short) (~((short) a));
+                rs[i] = (short)(~((short)a));
             }
         }
 
@@ -1629,7 +1629,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short) (~((short) a)) : a);
+                rs[i] = (m ? (short)(~((short)a)) : a);
             }
         }
 
@@ -1646,7 +1646,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
-                rs[i] = (short) ((a == 0 ? 0 : -1));
+                rs[i] = (short)((a==0?0:-1));
             }
         }
 
@@ -1665,7 +1665,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short) ((a == 0 ? 0 : -1)) : a);
+                rs[i] = (m ? (short)((a==0?0:-1)) : a);
             }
         }
 
@@ -1688,7 +1688,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
-                rs[i] = (short) (Integer.bitCount((int) a & 0xFFFF));
+                rs[i] = (short)(Integer.bitCount((int)a & 0xFFFF));
             }
         }
 
@@ -1707,7 +1707,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short) (Integer.bitCount((int) a & 0xFFFF)) : a);
+                rs[i] = (m ? (short)(Integer.bitCount((int)a & 0xFFFF)) : a);
             }
         }
 
@@ -1724,7 +1724,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
-                rs[i] = (short) (TRAILING_ZEROS_COUNT_scalar(a));
+                rs[i] = (short)(TRAILING_ZEROS_COUNT_scalar(a));
             }
         }
 
@@ -1743,7 +1743,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short) (TRAILING_ZEROS_COUNT_scalar(a)) : a);
+                rs[i] = (m ? (short)(TRAILING_ZEROS_COUNT_scalar(a)) : a);
             }
         }
 
@@ -1760,7 +1760,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
-                rs[i] = (short) (LEADING_ZEROS_COUNT_scalar(a));
+                rs[i] = (short)(LEADING_ZEROS_COUNT_scalar(a));
             }
         }
 
@@ -1779,7 +1779,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short) (LEADING_ZEROS_COUNT_scalar(a)) : a);
+                rs[i] = (m ? (short)(LEADING_ZEROS_COUNT_scalar(a)) : a);
             }
         }
 
@@ -1796,7 +1796,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
-                rs[i] = (short) (REVERSE_scalar(a));
+                rs[i] = (short)(REVERSE_scalar(a));
             }
         }
 
@@ -1815,7 +1815,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short) (REVERSE_scalar(a)) : a);
+                rs[i] = (m ? (short)(REVERSE_scalar(a)) : a);
             }
         }
 

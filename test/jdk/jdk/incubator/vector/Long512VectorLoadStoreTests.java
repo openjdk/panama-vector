@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -71,21 +71,21 @@ public class Long512VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         int i = 0;
         try {
             for (; i < a.length; i++) {
-                Assert.assertEquals(r[i], mask[(i * 8 / SPECIES.elementSize()) % SPECIES.length()] ? a[i] : (byte) 0);
+                Assert.assertEquals(r[i], mask[(i*8/SPECIES.elementSize()) % SPECIES.length()] ? a[i] : (byte) 0);
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], mask[(i * 8 / SPECIES.elementSize()) % SPECIES.length()] ? a[i] : (byte) 0, "at index #" + i);
+            Assert.assertEquals(r[i], mask[(i*8/SPECIES.elementSize()) % SPECIES.length()] ? a[i] : (byte) 0, "at index #" + i);
         }
     }
 
     static final List<IntFunction<long[]>> LONG_GENERATORS = List.of(
             withToString("long[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (long) (i * 5));
+                            i -> (long)(i * 5));
             }),
             withToString("long[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((long) (i + 1) == 0) ? 1 : (long) (i + 1)));
+                            i -> (((long)(i + 1) == 0) ? 1 : (long)(i + 1)));
             })
     );
 
@@ -192,7 +192,7 @@ public class Long512VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         return LONG_GENERATORS.stream().
                 flatMap(fa -> BYTE_BUFFER_GENERATORS.stream().
                         flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
-                            return new Object[] {fa, fb, bo};
+                            return new Object[]{fa, fb, bo};
                         }))).
                 toArray(Object[][]::new);
     }
@@ -203,7 +203,7 @@ public class Long512VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
                 flatMap(fm -> LONG_GENERATORS.stream().
                         flatMap(fa -> BYTE_BUFFER_GENERATORS.stream().
                                 flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
-                            return new Object[] {fa, fb, fm, bo};
+                            return new Object[]{fa, fb, fm, bo};
                         })))).
                 toArray(Object[][]::new);
     }
@@ -212,7 +212,7 @@ public class Long512VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     public Object[][] longByteArrayProvider() {
         return LONG_GENERATORS.stream().
                 flatMap(fa -> BYTE_ORDER_VALUES.stream().map(bo -> {
-                    return new Object[] {fa, bo};
+                    return new Object[]{fa, bo};
                 })).
                 toArray(Object[][]::new);
     }
@@ -222,7 +222,7 @@ public class Long512VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         return BOOLEAN_MASK_GENERATORS.stream().
                 flatMap(fm -> LONG_GENERATORS.stream().
                     flatMap(fa -> BYTE_ORDER_VALUES.stream().map(bo -> {
-                        return new Object[] {fa, fm, bo};
+                        return new Object[]{fa, fm, bo};
                     }))).
                 toArray(Object[][]::new);
     }
@@ -941,6 +941,8 @@ public class Long512VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
 
 
 
+
+
     // Gather/Scatter load/store tests
 
     static void assertGatherArraysEquals(long[] r, long[] a, int[] indexMap) {
@@ -1088,6 +1090,7 @@ public class Long512VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
 
         assertScatterArraysEquals(r, a, b, mask);
     }
+
 
 
 }

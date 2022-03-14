@@ -6,7 +6,7 @@
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             r = [[TEST_INIT]];
             for (int i = 0; i < as.length; i++) {
-                r = ($type$) Math.min(r, as[i]);
+                r = ($type$)Math.min(r, as[i]);
             }
         }
         bh.consume(r);

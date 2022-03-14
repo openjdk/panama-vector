@@ -427,7 +427,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
         float[] vec1 = vec();
         float[] vec2 = ((FloatVector)o).vec();
         boolean[] bits = new boolean[length()];
-        for (int i = 0; i < length(); i++) {
+        for (int i = 0; i < length(); i++){
             bits[i] = f.apply(cond, i, vec1[i], vec2[i]);
         }
         return maskFactory(bits);

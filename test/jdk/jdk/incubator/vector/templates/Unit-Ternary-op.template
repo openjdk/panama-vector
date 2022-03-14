@@ -5,7 +5,7 @@
         switch ("[[TEST]]") {
         case "fma": case "lanewise_FMA":
            // Math.fma uses BigDecimal
-           count = Math.max(5, count / 20); break;
+           count = Math.max(5, count/20); break;
         }
         final int INVOC_COUNT = count;
 #end[double]

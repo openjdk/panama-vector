@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -114,7 +114,7 @@ final class Short256Vector extends ShortVector {
     @ForceInline
     final @Override
     short[] vec() {
-        return (short[]) getPayload();
+        return (short[])getPayload();
     }
 
     // Virtualized constructors
@@ -144,11 +144,11 @@ final class Short256Vector extends ShortVector {
     @ForceInline
     Short256Shuffle iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return (Short256Shuffle) VectorSupport.shuffleIota(ETYPE, Short256Shuffle.class, VSPECIES, VLENGTH, start, step, 1,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i * lstep + lstart, l))));
+        return (Short256Shuffle)VectorSupport.shuffleIota(ETYPE, Short256Shuffle.class, VSPECIES, VLENGTH, start, step, 1,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
       } else {
-        return (Short256Shuffle) VectorSupport.shuffleIota(ETYPE, Short256Shuffle.class, VSPECIES, VLENGTH, start, step, 0,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i * lstep + lstart)));
+        return (Short256Shuffle)VectorSupport.shuffleIota(ETYPE, Short256Shuffle.class, VSPECIES, VLENGTH, start, step, 0,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i*lstep + lstart)));
       }
     }
 
@@ -195,7 +195,7 @@ final class Short256Vector extends ShortVector {
     final @Override
     Short256Vector uOp(VectorMask<Short> m, FUnOp f) {
         return (Short256Vector)
-            super.uOpTemplate((Short256Mask) m, f);  // specialize
+            super.uOpTemplate((Short256Mask)m, f);  // specialize
     }
 
     // Binary operator
@@ -203,7 +203,7 @@ final class Short256Vector extends ShortVector {
     @ForceInline
     final @Override
     Short256Vector bOp(Vector<Short> v, FBinOp f) {
-        return (Short256Vector) super.bOpTemplate((Short256Vector) v, f);  // specialize
+        return (Short256Vector) super.bOpTemplate((Short256Vector)v, f);  // specialize
     }
 
     @ForceInline
@@ -211,7 +211,7 @@ final class Short256Vector extends ShortVector {
     Short256Vector bOp(Vector<Short> v,
                      VectorMask<Short> m, FBinOp f) {
         return (Short256Vector)
-            super.bOpTemplate((Short256Vector) v, (Short256Mask) m,
+            super.bOpTemplate((Short256Vector)v, (Short256Mask)m,
                               f);  // specialize
     }
 
@@ -221,7 +221,7 @@ final class Short256Vector extends ShortVector {
     final @Override
     Short256Vector tOp(Vector<Short> v1, Vector<Short> v2, FTriOp f) {
         return (Short256Vector)
-            super.tOpTemplate((Short256Vector) v1, (Short256Vector) v2,
+            super.tOpTemplate((Short256Vector)v1, (Short256Vector)v2,
                               f);  // specialize
     }
 
@@ -230,8 +230,8 @@ final class Short256Vector extends ShortVector {
     Short256Vector tOp(Vector<Short> v1, Vector<Short> v2,
                      VectorMask<Short> m, FTriOp f) {
         return (Short256Vector)
-            super.tOpTemplate((Short256Vector) v1, (Short256Vector) v2,
-                              (Short256Mask) m, f);  // specialize
+            super.tOpTemplate((Short256Vector)v1, (Short256Vector)v2,
+                              (Short256Mask)m, f);  // specialize
     }
 
     @ForceInline
@@ -531,7 +531,7 @@ final class Short256Vector extends ShortVector {
                                 this, i,
                                 (vec, ix) -> {
                                     short[] vecarr = vec.vec();
-                                    return (long) vecarr[ix];
+                                    return (long)vecarr[ix];
                                 });
     }
 
@@ -562,10 +562,10 @@ final class Short256Vector extends ShortVector {
     public Short256Vector withLaneHelper(int i, short e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
-                                this, i, (long) e,
+                                this, i, (long)e,
                                 (v, ix, bits) -> {
                                     short[] res = v.vec().clone();
-                                    res[ix] = (short) bits;
+                                    res[ix] = (short)bits;
                                     return v.vectorFactory(res);
                                 });
     }
@@ -613,7 +613,7 @@ final class Short256Vector extends ShortVector {
 
         @ForceInline
         boolean[] getBits() {
-            return (boolean[]) getPayload();
+            return (boolean[])getPayload();
         }
 
         @Override
@@ -630,7 +630,7 @@ final class Short256Vector extends ShortVector {
         Short256Mask bOp(VectorMask<Short> m, MBinOp f) {
             boolean[] res = new boolean[vspecies().laneCount()];
             boolean[] bits = getBits();
-            boolean[] mbits = ((Short256Mask) m).getBits();
+            boolean[] mbits = ((Short256Mask)m).getBits();
             for (int i = 0; i < res.length; i++) {
                 res[i] = f.apply(i, bits[i], mbits[i]);
             }
@@ -654,7 +654,7 @@ final class Short256Vector extends ShortVector {
             if (length() != dsp.laneCount())
                 throw new IllegalArgumentException("VectorMask length and species length differ");
             boolean[] maskArray = toArray();
-            return dsp.maskFactory(maskArray).check(dsp);
+            return  dsp.maskFactory(maskArray).check(dsp);
         }
 
         @Override
@@ -675,7 +675,7 @@ final class Short256Vector extends ShortVector {
         @ForceInline
         public Short256Mask eq(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
-            Short256Mask m = (Short256Mask) mask;
+            Short256Mask m = (Short256Mask)mask;
             return xor(m.not());
         }
 
@@ -690,7 +690,7 @@ final class Short256Vector extends ShortVector {
         @Override
         @ForceInline
         public Short256Mask compress() {
-            return (Short256Mask) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+            return (Short256Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
                 Short256Vector.class, Short256Mask.class, ETYPE, VLENGTH, null, this,
                 (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
@@ -702,7 +702,7 @@ final class Short256Vector extends ShortVector {
         @ForceInline
         public Short256Mask and(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
-            Short256Mask m = (Short256Mask) mask;
+            Short256Mask m = (Short256Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_AND, Short256Mask.class, null, short.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
@@ -712,7 +712,7 @@ final class Short256Vector extends ShortVector {
         @ForceInline
         public Short256Mask or(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
-            Short256Mask m = (Short256Mask) mask;
+            Short256Mask m = (Short256Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_OR, Short256Mask.class, null, short.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
@@ -722,7 +722,7 @@ final class Short256Vector extends ShortVector {
         /* package-private */
         Short256Mask xor(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
-            Short256Mask m = (Short256Mask) mask;
+            Short256Mask m = (Short256Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, Short256Mask.class, null, short.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
@@ -768,7 +768,7 @@ final class Short256Vector extends ShortVector {
         public boolean anyTrue() {
             return VectorSupport.test(BT_ne, Short256Mask.class, short.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> anyTrueHelper(((Short256Mask) m).getBits()));
+                                         (m, __) -> anyTrueHelper(((Short256Mask)m).getBits()));
         }
 
         @Override
@@ -776,7 +776,7 @@ final class Short256Vector extends ShortVector {
         public boolean allTrue() {
             return VectorSupport.test(BT_overflow, Short256Mask.class, short.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> allTrueHelper(((Short256Mask) m).getBits()));
+                                         (m, __) -> allTrueHelper(((Short256Mask)m).getBits()));
         }
 
         @ForceInline
@@ -830,7 +830,7 @@ final class Short256Vector extends ShortVector {
         @ForceInline
         public Short256Vector toVector() {
             return VectorSupport.shuffleToVector(VCLASS, ETYPE, Short256Shuffle.class, this, VLENGTH,
-                                                    (s) -> ((Short256Vector) (((AbstractShuffle<Short>) (s)).toVectorTemplate())));
+                                                    (s) -> ((Short256Vector)(((AbstractShuffle<Short>)(s)).toVectorTemplate())));
         }
 
         @Override

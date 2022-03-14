@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -114,7 +114,7 @@ final class $vectortype$ extends $abstractvectortype$ {
     @ForceInline
     final @Override
     $type$[] vec() {
-        return ($type$[]) getPayload();
+        return ($type$[])getPayload();
     }
 
     // Virtualized constructors
@@ -146,11 +146,11 @@ final class $vectortype$ extends $abstractvectortype$ {
     @ForceInline
     $shuffletype$ iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return ($shuffletype$) VectorSupport.shuffleIota(ETYPE, $shuffletype$.class, VSPECIES, VLENGTH, start, step, 1,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i * lstep + lstart, l))));
+        return ($shuffletype$)VectorSupport.shuffleIota(ETYPE, $shuffletype$.class, VSPECIES, VLENGTH, start, step, 1,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
       } else {
-        return ($shuffletype$) VectorSupport.shuffleIota(ETYPE, $shuffletype$.class, VSPECIES, VLENGTH, start, step, 0,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i * lstep + lstart)));
+        return ($shuffletype$)VectorSupport.shuffleIota(ETYPE, $shuffletype$.class, VSPECIES, VLENGTH, start, step, 0,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i*lstep + lstart)));
       }
     }
 
@@ -197,7 +197,7 @@ final class $vectortype$ extends $abstractvectortype$ {
     final @Override
     $vectortype$ uOp(VectorMask<$Boxtype$> m, FUnOp f) {
         return ($vectortype$)
-            super.uOpTemplate(($masktype$) m, f);  // specialize
+            super.uOpTemplate(($masktype$)m, f);  // specialize
     }
 
     // Binary operator
@@ -205,7 +205,7 @@ final class $vectortype$ extends $abstractvectortype$ {
     @ForceInline
     final @Override
     $vectortype$ bOp(Vector<$Boxtype$> v, FBinOp f) {
-        return ($vectortype$) super.bOpTemplate(($vectortype$) v, f);  // specialize
+        return ($vectortype$) super.bOpTemplate(($vectortype$)v, f);  // specialize
     }
 
     @ForceInline
@@ -213,7 +213,7 @@ final class $vectortype$ extends $abstractvectortype$ {
     $vectortype$ bOp(Vector<$Boxtype$> v,
                      VectorMask<$Boxtype$> m, FBinOp f) {
         return ($vectortype$)
-            super.bOpTemplate(($vectortype$) v, ($masktype$) m,
+            super.bOpTemplate(($vectortype$)v, ($masktype$)m,
                               f);  // specialize
     }
 
@@ -223,7 +223,7 @@ final class $vectortype$ extends $abstractvectortype$ {
     final @Override
     $vectortype$ tOp(Vector<$Boxtype$> v1, Vector<$Boxtype$> v2, FTriOp f) {
         return ($vectortype$)
-            super.tOpTemplate(($vectortype$) v1, ($vectortype$) v2,
+            super.tOpTemplate(($vectortype$)v1, ($vectortype$)v2,
                               f);  // specialize
     }
 
@@ -232,8 +232,8 @@ final class $vectortype$ extends $abstractvectortype$ {
     $vectortype$ tOp(Vector<$Boxtype$> v1, Vector<$Boxtype$> v2,
                      VectorMask<$Boxtype$> m, FTriOp f) {
         return ($vectortype$)
-            super.tOpTemplate(($vectortype$) v1, ($vectortype$) v2,
-                              ($masktype$) m, f);  // specialize
+            super.tOpTemplate(($vectortype$)v1, ($vectortype$)v2,
+                              ($masktype$)m, f);  // specialize
     }
 
     @ForceInline
@@ -555,7 +555,7 @@ final class $vectortype$ extends $abstractvectortype$ {
                      this, i,
                      (vec, ix) -> {
                      $type$[] vecarr = vec.vec();
-                     return (long) $Type$.$type$To$Bitstype$Bits(vecarr[ix]);
+                     return (long)$Type$.$type$To$Bitstype$Bits(vecarr[ix]);
                      });
     }
 
@@ -601,10 +601,10 @@ final class $vectortype$ extends $abstractvectortype$ {
     public $vectortype$ withLaneHelper(int i, $type$ e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
-                                this, i, (long) $Type$.$type$To$Bitstype$Bits(e),
+                                this, i, (long)$Type$.$type$To$Bitstype$Bits(e),
                                 (v, ix, bits) -> {
                                     $type$[] res = v.vec().clone();
-                                    res[ix] = $Type$.$bitstype$BitsTo$Type$(($bitstype$) bits);
+                                    res[ix] = $Type$.$bitstype$BitsTo$Type$(($bitstype$)bits);
                                     return v.vectorFactory(res);
                                 });
     }
@@ -706,7 +706,7 @@ final class $vectortype$ extends $abstractvectortype$ {
                                 this, i,
                                 (vec, ix) -> {
                                     $type$[] vecarr = vec.vec();
-                                    return (long) vecarr[ix];
+                                    return (long)vecarr[ix];
                                 });
     }
 
@@ -804,10 +804,10 @@ final class $vectortype$ extends $abstractvectortype$ {
     public $vectortype$ withLaneHelper(int i, $type$ e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
-                                this, i, (long) e,
+                                this, i, (long)e,
                                 (v, ix, bits) -> {
                                     $type$[] res = v.vec().clone();
-                                    res[ix] = ($type$) bits;
+                                    res[ix] = ($type$)bits;
                                     return v.vectorFactory(res);
                                 });
     }
@@ -856,7 +856,7 @@ final class $vectortype$ extends $abstractvectortype$ {
 
         @ForceInline
         boolean[] getBits() {
-            return (boolean[]) getPayload();
+            return (boolean[])getPayload();
         }
 
         @Override
@@ -873,7 +873,7 @@ final class $vectortype$ extends $abstractvectortype$ {
         $masktype$ bOp(VectorMask<$Boxtype$> m, MBinOp f) {
             boolean[] res = new boolean[vspecies().laneCount()];
             boolean[] bits = getBits();
-            boolean[] mbits = (($masktype$) m).getBits();
+            boolean[] mbits = (($masktype$)m).getBits();
             for (int i = 0; i < res.length; i++) {
                 res[i] = f.apply(i, bits[i], mbits[i]);
             }
@@ -897,7 +897,7 @@ final class $vectortype$ extends $abstractvectortype$ {
             if (length() != dsp.laneCount())
                 throw new IllegalArgumentException("VectorMask length and species length differ");
             boolean[] maskArray = toArray();
-            return dsp.maskFactory(maskArray).check(dsp);
+            return  dsp.maskFactory(maskArray).check(dsp);
         }
 
         @Override
@@ -918,7 +918,7 @@ final class $vectortype$ extends $abstractvectortype$ {
         @ForceInline
         public $masktype$ eq(VectorMask<$Boxtype$> mask) {
             Objects.requireNonNull(mask);
-            $masktype$ m = ($masktype$) mask;
+            $masktype$ m = ($masktype$)mask;
             return xor(m.not());
         }
 
@@ -933,7 +933,7 @@ final class $vectortype$ extends $abstractvectortype$ {
         @Override
         @ForceInline
         public $masktype$ compress() {
-            return ($masktype$) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+            return ($masktype$)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
                 $vectortype$.class, $masktype$.class, ETYPE, VLENGTH, null, this,
                 (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
@@ -945,7 +945,7 @@ final class $vectortype$ extends $abstractvectortype$ {
         @ForceInline
         public $masktype$ and(VectorMask<$Boxtype$> mask) {
             Objects.requireNonNull(mask);
-            $masktype$ m = ($masktype$) mask;
+            $masktype$ m = ($masktype$)mask;
             return VectorSupport.binaryOp(VECTOR_OP_AND, $masktype$.class, null, $bitstype$.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
@@ -955,7 +955,7 @@ final class $vectortype$ extends $abstractvectortype$ {
         @ForceInline
         public $masktype$ or(VectorMask<$Boxtype$> mask) {
             Objects.requireNonNull(mask);
-            $masktype$ m = ($masktype$) mask;
+            $masktype$ m = ($masktype$)mask;
             return VectorSupport.binaryOp(VECTOR_OP_OR, $masktype$.class, null, $bitstype$.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
@@ -965,7 +965,7 @@ final class $vectortype$ extends $abstractvectortype$ {
         /* package-private */
         $masktype$ xor(VectorMask<$Boxtype$> mask) {
             Objects.requireNonNull(mask);
-            $masktype$ m = ($masktype$) mask;
+            $masktype$ m = ($masktype$)mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, $masktype$.class, null, $bitstype$.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
@@ -1011,7 +1011,7 @@ final class $vectortype$ extends $abstractvectortype$ {
         public boolean anyTrue() {
             return VectorSupport.test(BT_ne, $masktype$.class, $bitstype$.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> anyTrueHelper((($masktype$) m).getBits()));
+                                         (m, __) -> anyTrueHelper((($masktype$)m).getBits()));
         }
 
         @Override
@@ -1019,7 +1019,7 @@ final class $vectortype$ extends $abstractvectortype$ {
         public boolean allTrue() {
             return VectorSupport.test(BT_overflow, $masktype$.class, $bitstype$.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> allTrueHelper((($masktype$) m).getBits()));
+                                         (m, __) -> allTrueHelper((($masktype$)m).getBits()));
         }
 
         @ForceInline
@@ -1088,7 +1088,7 @@ final class $vectortype$ extends $abstractvectortype$ {
         @ForceInline
         public $vectortype$ toVector() {
             return VectorSupport.shuffleToVector(VCLASS, ETYPE, $shuffletype$.class, this, VLENGTH,
-                                                    (s) -> (($vectortype$) (((AbstractShuffle<$Boxtype$>) (s)).toVectorTemplate())));
+                                                    (s) -> (($vectortype$)(((AbstractShuffle<$Boxtype$>)(s)).toVectorTemplate())));
         }
 
         @Override

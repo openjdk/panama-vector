@@ -9,7 +9,7 @@
             for (int i = 0; i < as.length; i++) {
                 $type$ a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? ($type$) ([[TEST_OP]]) : a);
+                rs[i] = (m ? ($type$)([[TEST_OP]]) : a);
             }
         }
 

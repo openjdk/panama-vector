@@ -9,7 +9,7 @@
             for (int i = 0; i < as.length; i++) {
                 $type$ a = as[i];
                 $type$ b = bs[i];
-                rs[i] = ($type$) ([[TEST_OP]]);
+                rs[i] = ($type$)([[TEST_OP]]);
             }
         }
 

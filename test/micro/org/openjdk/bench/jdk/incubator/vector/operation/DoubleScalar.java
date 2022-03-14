@@ -61,15 +61,15 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
     @Setup
     public void init() {
-        as = fill(i -> (double) (2 * i));
-        bs = fill(i -> (double) (i + 1));
-        cs = fill(i -> (double) (i + 5));
-        rs = fill(i -> (double) 0);
+        as = fill(i -> (double)(2*i));
+        bs = fill(i -> (double)(i+1));
+        cs = fill(i -> (double)(i+5));
+        rs = fill(i -> (double)0);
         ms = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);
         rms = fillMask(size, i -> false);
 
-        ss = fillInt(size, i -> RANDOM.nextInt(Math.max(i, 1)));
+        ss = fillInt(size, i -> RANDOM.nextInt(Math.max(i,1)));
     }
 
     final IntFunction<double[]> fa = vl -> as;
@@ -117,7 +117,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
                 double b = bs[i];
-                rs[i] = (double) (a + b);
+                rs[i] = (double)(a + b);
             }
         }
 
@@ -136,7 +136,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
                 double a = as[i];
                 double b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (double) (a + b);
+                    rs[i] = (double)(a + b);
                 } else {
                     rs[i] = a;
                 }
@@ -155,7 +155,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
                 double b = bs[i];
-                rs[i] = (double) (a - b);
+                rs[i] = (double)(a - b);
             }
         }
 
@@ -174,7 +174,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
                 double a = as[i];
                 double b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (double) (a - b);
+                    rs[i] = (double)(a - b);
                 } else {
                     rs[i] = a;
                 }
@@ -193,7 +193,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
                 double b = bs[i];
-                rs[i] = (double) (a * b);
+                rs[i] = (double)(a * b);
             }
         }
 
@@ -212,7 +212,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
                 double a = as[i];
                 double b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (double) (a * b);
+                    rs[i] = (double)(a * b);
                 } else {
                     rs[i] = a;
                 }
@@ -232,7 +232,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
                 double b = bs[i];
-                rs[i] = (double) (a / b);
+                rs[i] = (double)(a / b);
             }
         }
 
@@ -253,7 +253,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
                 double a = as[i];
                 double b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (double) (a / b);
+                    rs[i] = (double)(a / b);
                 } else {
                     rs[i] = a;
                 }
@@ -273,7 +273,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
                 double b = bs[i];
-                rs[i] = (double) (Double.doubleToLongBits(a) != 0 ? a : b);
+                rs[i] = (double)(Double.doubleToLongBits(a)!=0?a:b);
             }
         }
 
@@ -292,7 +292,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
                 double a = as[i];
                 double b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (double) (Double.doubleToLongBits(a) != 0 ? a : b);
+                    rs[i] = (double)(Double.doubleToLongBits(a)!=0?a:b);
                 } else {
                     rs[i] = a;
                 }
@@ -363,7 +363,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
                 double b = bs[i];
-                rs[i] = (double) (Math.min(a, b));
+                rs[i] = (double)(Math.min(a, b));
             }
         }
 
@@ -380,7 +380,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
                 double b = bs[i];
-                rs[i] = (double) (Math.max(a, b));
+                rs[i] = (double)(Math.max(a, b));
             }
         }
 
@@ -459,7 +459,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                r &= (bits(a) == 0); // accumulate so JIT can't eliminate the computation
+                r &= (bits(a)==0); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -474,7 +474,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                r &= (bits(a) < 0); // accumulate so JIT can't eliminate the computation
+                r &= (bits(a)<0); // accumulate so JIT can't eliminate the computation
             }
         }
 
@@ -652,7 +652,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i += window) {
                 for (int j = 0; j < window; j++) {
-                    double a = as[i + j];
+                    double a = as[i+j];
                     int pos = order[j];
                     rs[i + pos] = a;
                 }
@@ -781,7 +781,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
-                as[i] = (double) 0;
+                as[i] = (double)0;
             }
         }
 
@@ -797,7 +797,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.sin((double) a));
+                rs[i] = (double)(Math.sin((double)a));
             }
         }
 
@@ -814,7 +814,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.exp((double) a));
+                rs[i] = (double)(Math.exp((double)a));
             }
         }
 
@@ -831,7 +831,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.log1p((double) a));
+                rs[i] = (double)(Math.log1p((double)a));
             }
         }
 
@@ -848,7 +848,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.log((double) a));
+                rs[i] = (double)(Math.log((double)a));
             }
         }
 
@@ -865,7 +865,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.log10((double) a));
+                rs[i] = (double)(Math.log10((double)a));
             }
         }
 
@@ -882,7 +882,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.expm1((double) a));
+                rs[i] = (double)(Math.expm1((double)a));
             }
         }
 
@@ -899,7 +899,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.cos((double) a));
+                rs[i] = (double)(Math.cos((double)a));
             }
         }
 
@@ -916,7 +916,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.tan((double) a));
+                rs[i] = (double)(Math.tan((double)a));
             }
         }
 
@@ -933,7 +933,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.sinh((double) a));
+                rs[i] = (double)(Math.sinh((double)a));
             }
         }
 
@@ -950,7 +950,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.cosh((double) a));
+                rs[i] = (double)(Math.cosh((double)a));
             }
         }
 
@@ -967,7 +967,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.tanh((double) a));
+                rs[i] = (double)(Math.tanh((double)a));
             }
         }
 
@@ -984,7 +984,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.asin((double) a));
+                rs[i] = (double)(Math.asin((double)a));
             }
         }
 
@@ -1001,7 +1001,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.acos((double) a));
+                rs[i] = (double)(Math.acos((double)a));
             }
         }
 
@@ -1018,7 +1018,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.atan((double) a));
+                rs[i] = (double)(Math.atan((double)a));
             }
         }
 
@@ -1035,7 +1035,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.cbrt((double) a));
+                rs[i] = (double)(Math.cbrt((double)a));
             }
         }
 
@@ -1054,7 +1054,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
                 double b = bs[i];
-                rs[i] = (double) (Math.hypot((double) a, (double) b));
+                rs[i] = (double)(Math.hypot((double)a, (double)b));
             }
         }
 
@@ -1073,7 +1073,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
                 double b = bs[i];
-                rs[i] = (double) (Math.pow((double) a, (double) b));
+                rs[i] = (double)(Math.pow((double)a, (double)b));
             }
         }
 
@@ -1092,7 +1092,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
                 double b = bs[i];
-                rs[i] = (double) (Math.atan2((double) a, (double) b));
+                rs[i] = (double)(Math.atan2((double)a, (double)b));
             }
         }
 
@@ -1113,7 +1113,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
                 double a = as[i];
                 double b = bs[i];
                 double c = cs[i];
-                rs[i] = (double) (Math.fma(a, b, c));
+                rs[i] = (double)(Math.fma(a, b, c));
             }
         }
 
@@ -1137,7 +1137,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
                 double b = bs[i];
                 double c = cs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (double) (Math.fma(a, b, c));
+                    rs[i] = (double)(Math.fma(a, b, c));
                 } else {
                     rs[i] = a;
                 }
@@ -1157,7 +1157,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (-((double) a));
+                rs[i] = (double)(-((double)a));
             }
         }
 
@@ -1174,7 +1174,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (double) (-((double) a)) : a);
+                rs[i] = (m ? (double)(-((double)a)) : a);
             }
         }
 
@@ -1189,7 +1189,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.abs((double) a));
+                rs[i] = (double)(Math.abs((double)a));
             }
         }
 
@@ -1206,7 +1206,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (double) (Math.abs((double) a)) : a);
+                rs[i] = (m ? (double)(Math.abs((double)a)) : a);
             }
         }
 
@@ -1226,7 +1226,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
-                rs[i] = (double) (Math.sqrt((double) a));
+                rs[i] = (double)(Math.sqrt((double)a));
             }
         }
 
@@ -1245,7 +1245,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 double a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (double) (Math.sqrt((double) a)) : a);
+                rs[i] = (m ? (double)(Math.sqrt((double)a)) : a);
             }
         }
 

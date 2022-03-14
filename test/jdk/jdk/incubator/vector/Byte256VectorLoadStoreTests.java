@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -70,11 +70,11 @@ public class Byte256VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     static final List<IntFunction<byte[]>> BYTE_GENERATORS = List.of(
             withToString("byte[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (byte) (i * 5));
+                            i -> (byte)(i * 5));
             }),
             withToString("byte[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((byte) (i + 1) == 0) ? 1 : (byte) (i + 1)));
+                            i -> (((byte)(i + 1) == 0) ? 1 : (byte)(i + 1)));
             })
     );
 
@@ -181,7 +181,7 @@ public class Byte256VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         return BYTE_GENERATORS.stream().
                 flatMap(fa -> BYTE_BUFFER_GENERATORS.stream().
                         flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
-                            return new Object[] {fa, fb, bo};
+                            return new Object[]{fa, fb, bo};
                         }))).
                 toArray(Object[][]::new);
     }
@@ -192,7 +192,7 @@ public class Byte256VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
                 flatMap(fm -> BYTE_GENERATORS.stream().
                         flatMap(fa -> BYTE_BUFFER_GENERATORS.stream().
                                 flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
-                            return new Object[] {fa, fb, fm, bo};
+                            return new Object[]{fa, fb, fm, bo};
                         })))).
                 toArray(Object[][]::new);
     }
@@ -201,7 +201,7 @@ public class Byte256VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     public Object[][] byteByteArrayProvider() {
         return BYTE_GENERATORS.stream().
                 flatMap(fa -> BYTE_ORDER_VALUES.stream().map(bo -> {
-                    return new Object[] {fa, bo};
+                    return new Object[]{fa, bo};
                 })).
                 toArray(Object[][]::new);
     }
@@ -211,7 +211,7 @@ public class Byte256VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         return BOOLEAN_MASK_GENERATORS.stream().
                 flatMap(fm -> BYTE_GENERATORS.stream().
                     flatMap(fa -> BYTE_ORDER_VALUES.stream().map(bo -> {
-                        return new Object[] {fa, fm, bo};
+                        return new Object[]{fa, fm, bo};
                     }))).
                 toArray(Object[][]::new);
     }
@@ -929,6 +929,7 @@ public class Byte256VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     }
 
 
+
     static void assertArraysEquals(boolean[] r, byte[] a) {
         int i = 0;
         try {
@@ -1016,6 +1017,7 @@ public class Byte256VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         }
         assertArraysEquals(r, a, mask);
     }
+
 
     // Gather/Scatter load/store tests
 
@@ -1291,4 +1293,5 @@ public class Byte256VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
 
         assertScatterArraysEquals(r, a, b, mask);
     }
+
 }

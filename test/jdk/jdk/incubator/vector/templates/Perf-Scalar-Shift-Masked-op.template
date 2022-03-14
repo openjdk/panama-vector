@@ -11,7 +11,7 @@
                 $type$ a = as[i];
                 $type$ b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? ($type$) ([[TEST_OP]]) : a);
+                rs[i] = (m ? ($type$)([[TEST_OP]]) : a);
             }
         }
 

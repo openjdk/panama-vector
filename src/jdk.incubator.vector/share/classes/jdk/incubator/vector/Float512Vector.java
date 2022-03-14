@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -114,7 +114,7 @@ final class Float512Vector extends FloatVector {
     @ForceInline
     final @Override
     float[] vec() {
-        return (float[]) getPayload();
+        return (float[])getPayload();
     }
 
     // Virtualized constructors
@@ -144,11 +144,11 @@ final class Float512Vector extends FloatVector {
     @ForceInline
     Float512Shuffle iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return (Float512Shuffle) VectorSupport.shuffleIota(ETYPE, Float512Shuffle.class, VSPECIES, VLENGTH, start, step, 1,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i * lstep + lstart, l))));
+        return (Float512Shuffle)VectorSupport.shuffleIota(ETYPE, Float512Shuffle.class, VSPECIES, VLENGTH, start, step, 1,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
       } else {
-        return (Float512Shuffle) VectorSupport.shuffleIota(ETYPE, Float512Shuffle.class, VSPECIES, VLENGTH, start, step, 0,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i * lstep + lstart)));
+        return (Float512Shuffle)VectorSupport.shuffleIota(ETYPE, Float512Shuffle.class, VSPECIES, VLENGTH, start, step, 0,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i*lstep + lstart)));
       }
     }
 
@@ -195,7 +195,7 @@ final class Float512Vector extends FloatVector {
     final @Override
     Float512Vector uOp(VectorMask<Float> m, FUnOp f) {
         return (Float512Vector)
-            super.uOpTemplate((Float512Mask) m, f);  // specialize
+            super.uOpTemplate((Float512Mask)m, f);  // specialize
     }
 
     // Binary operator
@@ -203,7 +203,7 @@ final class Float512Vector extends FloatVector {
     @ForceInline
     final @Override
     Float512Vector bOp(Vector<Float> v, FBinOp f) {
-        return (Float512Vector) super.bOpTemplate((Float512Vector) v, f);  // specialize
+        return (Float512Vector) super.bOpTemplate((Float512Vector)v, f);  // specialize
     }
 
     @ForceInline
@@ -211,7 +211,7 @@ final class Float512Vector extends FloatVector {
     Float512Vector bOp(Vector<Float> v,
                      VectorMask<Float> m, FBinOp f) {
         return (Float512Vector)
-            super.bOpTemplate((Float512Vector) v, (Float512Mask) m,
+            super.bOpTemplate((Float512Vector)v, (Float512Mask)m,
                               f);  // specialize
     }
 
@@ -221,7 +221,7 @@ final class Float512Vector extends FloatVector {
     final @Override
     Float512Vector tOp(Vector<Float> v1, Vector<Float> v2, FTriOp f) {
         return (Float512Vector)
-            super.tOpTemplate((Float512Vector) v1, (Float512Vector) v2,
+            super.tOpTemplate((Float512Vector)v1, (Float512Vector)v2,
                               f);  // specialize
     }
 
@@ -230,8 +230,8 @@ final class Float512Vector extends FloatVector {
     Float512Vector tOp(Vector<Float> v1, Vector<Float> v2,
                      VectorMask<Float> m, FTriOp f) {
         return (Float512Vector)
-            super.tOpTemplate((Float512Vector) v1, (Float512Vector) v2,
-                              (Float512Mask) m, f);  // specialize
+            super.tOpTemplate((Float512Vector)v1, (Float512Vector)v2,
+                              (Float512Mask)m, f);  // specialize
     }
 
     @ForceInline
@@ -520,7 +520,7 @@ final class Float512Vector extends FloatVector {
                      this, i,
                      (vec, ix) -> {
                      float[] vecarr = vec.vec();
-                     return (long) Float.floatToIntBits(vecarr[ix]);
+                     return (long)Float.floatToIntBits(vecarr[ix]);
                      });
     }
 
@@ -551,10 +551,10 @@ final class Float512Vector extends FloatVector {
     public Float512Vector withLaneHelper(int i, float e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
-                                this, i, (long) Float.floatToIntBits(e),
+                                this, i, (long)Float.floatToIntBits(e),
                                 (v, ix, bits) -> {
                                     float[] res = v.vec().clone();
-                                    res[ix] = Float.intBitsToFloat((int) bits);
+                                    res[ix] = Float.intBitsToFloat((int)bits);
                                     return v.vectorFactory(res);
                                 });
     }
@@ -602,7 +602,7 @@ final class Float512Vector extends FloatVector {
 
         @ForceInline
         boolean[] getBits() {
-            return (boolean[]) getPayload();
+            return (boolean[])getPayload();
         }
 
         @Override
@@ -619,7 +619,7 @@ final class Float512Vector extends FloatVector {
         Float512Mask bOp(VectorMask<Float> m, MBinOp f) {
             boolean[] res = new boolean[vspecies().laneCount()];
             boolean[] bits = getBits();
-            boolean[] mbits = ((Float512Mask) m).getBits();
+            boolean[] mbits = ((Float512Mask)m).getBits();
             for (int i = 0; i < res.length; i++) {
                 res[i] = f.apply(i, bits[i], mbits[i]);
             }
@@ -643,7 +643,7 @@ final class Float512Vector extends FloatVector {
             if (length() != dsp.laneCount())
                 throw new IllegalArgumentException("VectorMask length and species length differ");
             boolean[] maskArray = toArray();
-            return dsp.maskFactory(maskArray).check(dsp);
+            return  dsp.maskFactory(maskArray).check(dsp);
         }
 
         @Override
@@ -664,7 +664,7 @@ final class Float512Vector extends FloatVector {
         @ForceInline
         public Float512Mask eq(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
-            Float512Mask m = (Float512Mask) mask;
+            Float512Mask m = (Float512Mask)mask;
             return xor(m.not());
         }
 
@@ -679,7 +679,7 @@ final class Float512Vector extends FloatVector {
         @Override
         @ForceInline
         public Float512Mask compress() {
-            return (Float512Mask) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+            return (Float512Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
                 Float512Vector.class, Float512Mask.class, ETYPE, VLENGTH, null, this,
                 (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
@@ -691,7 +691,7 @@ final class Float512Vector extends FloatVector {
         @ForceInline
         public Float512Mask and(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
-            Float512Mask m = (Float512Mask) mask;
+            Float512Mask m = (Float512Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_AND, Float512Mask.class, null, int.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
@@ -701,7 +701,7 @@ final class Float512Vector extends FloatVector {
         @ForceInline
         public Float512Mask or(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
-            Float512Mask m = (Float512Mask) mask;
+            Float512Mask m = (Float512Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_OR, Float512Mask.class, null, int.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
@@ -711,7 +711,7 @@ final class Float512Vector extends FloatVector {
         /* package-private */
         Float512Mask xor(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
-            Float512Mask m = (Float512Mask) mask;
+            Float512Mask m = (Float512Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, Float512Mask.class, null, int.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
@@ -757,7 +757,7 @@ final class Float512Vector extends FloatVector {
         public boolean anyTrue() {
             return VectorSupport.test(BT_ne, Float512Mask.class, int.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> anyTrueHelper(((Float512Mask) m).getBits()));
+                                         (m, __) -> anyTrueHelper(((Float512Mask)m).getBits()));
         }
 
         @Override
@@ -765,7 +765,7 @@ final class Float512Vector extends FloatVector {
         public boolean allTrue() {
             return VectorSupport.test(BT_overflow, Float512Mask.class, int.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> allTrueHelper(((Float512Mask) m).getBits()));
+                                         (m, __) -> allTrueHelper(((Float512Mask)m).getBits()));
         }
 
         @ForceInline
@@ -819,7 +819,7 @@ final class Float512Vector extends FloatVector {
         @ForceInline
         public Float512Vector toVector() {
             return VectorSupport.shuffleToVector(VCLASS, ETYPE, Float512Shuffle.class, this, VLENGTH,
-                                                    (s) -> ((Float512Vector) (((AbstractShuffle<Float>) (s)).toVectorTemplate())));
+                                                    (s) -> ((Float512Vector)(((AbstractShuffle<Float>)(s)).toVectorTemplate())));
         }
 
         @Override

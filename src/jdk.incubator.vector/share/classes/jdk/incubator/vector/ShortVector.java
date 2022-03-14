@@ -427,7 +427,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
         short[] vec1 = vec();
         short[] vec2 = ((ShortVector)o).vec();
         boolean[] bits = new boolean[length()];
-        for (int i = 0; i < length(); i++) {
+        for (int i = 0; i < length(); i++){
             bits[i] = f.apply(cond, i, vec1[i], vec2[i]);
         }
         return maskFactory(bits);
@@ -1803,9 +1803,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
         if (a == 0 || a == -1) return a;
 
         short b = rotateLeft(a, 8);
-        b = (short)(((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
-        b = (short)(((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
-        b = (short)(((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
+        b = (short) (((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
+        b = (short) (((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
+        b = (short) (((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
         return b;
     }
 

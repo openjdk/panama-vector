@@ -85,12 +85,12 @@ public class Short256VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
                   f.apply(a[i]));
             }
         } catch (AssertionError e) {
             short[] ref = f.apply(a[i]);
-            short[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
+            short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i);
@@ -250,12 +250,12 @@ public class Short256VectorTests extends AbstractVectorTest {
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
-                    Assert.assertEquals(r[i + j], a[i+order[i + j]]);
+                    Assert.assertEquals(r[i+j], a[i+order[i+j]]);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
-            Assert.assertEquals(r[i + j], a[i+order[i + j]], "at index #" + idx + ", input = " + a[i + order[i + j]]);
+            Assert.assertEquals(r[i+j], a[i+order[i+j]], "at index #" + idx + ", input = " + a[i+order[i+j]]);
         }
     }
 
@@ -271,7 +271,7 @@ public class Short256VectorTests extends AbstractVectorTest {
                     }
                 }
                 for (; k < vector_len; k++) {
-                    Assert.assertEquals(r[i + k], (short) 0);
+                    Assert.assertEquals(r[i + k], (short)0);
                 }
             }
         } catch (AssertionError e) {
@@ -279,7 +279,7 @@ public class Short256VectorTests extends AbstractVectorTest {
             if (m[(i + j) % SPECIES.length()]) {
                 Assert.assertEquals(r[idx], a[i + j], "at index #" + idx);
             } else {
-                Assert.assertEquals(r[idx], (short) 0, "at index #" + idx);
+                Assert.assertEquals(r[idx], (short)0, "at index #" + idx);
             }
         }
     }
@@ -294,7 +294,7 @@ public class Short256VectorTests extends AbstractVectorTest {
                         Assert.assertEquals(r[i + j], a[i + k]);
                         k++;
                     } else {
-                        Assert.assertEquals(r[i + j], (short) 0);
+                        Assert.assertEquals(r[i + j], (short)0);
                     }
                 }
             }
@@ -303,7 +303,7 @@ public class Short256VectorTests extends AbstractVectorTest {
             if (m[idx % SPECIES.length()]) {
                 Assert.assertEquals(r[idx], a[i + k], "at index #" + idx);
             } else {
-                Assert.assertEquals(r[idx], (short) 0, "at index #" + idx);
+                Assert.assertEquals(r[idx], (short)0, "at index #" + idx);
             }
         }
     }
@@ -313,12 +313,12 @@ public class Short256VectorTests extends AbstractVectorTest {
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
-                    Assert.assertEquals(r[i + j], a[i + (int) order[i + j]]);
+                    Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
-            Assert.assertEquals(r[i + j], a[i + (int) order[i + j]], "at index #" + idx + ", input = " + a[i + (int) order[i + j]]);
+            Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]]);
         }
     }
 
@@ -328,17 +328,17 @@ public class Short256VectorTests extends AbstractVectorTest {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
                     if (mask[j % SPECIES.length()])
-                         Assert.assertEquals(r[i + j], a[i + order[i + j]]);
+                         Assert.assertEquals(r[i+j], a[i+order[i+j]]);
                     else
-                         Assert.assertEquals(r[i + j], (short) 0);
+                         Assert.assertEquals(r[i+j], (short)0);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
             if (mask[j % SPECIES.length()])
-                Assert.assertEquals(r[i + j], a[i + order[i + j]], "at index #" + idx + ", input = " + a[i + order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], a[i+order[i+j]], "at index #" + idx + ", input = " + a[i+order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
             else
-                Assert.assertEquals(r[i + j], (short) 0, "at index #" + idx + ", input = " + a[i + order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], (short)0, "at index #" + idx + ", input = " + a[i+order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
         }
     }
 
@@ -348,17 +348,17 @@ public class Short256VectorTests extends AbstractVectorTest {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
                     if (mask[j % SPECIES.length()])
-                         Assert.assertEquals(r[i + j], a[i + (int) order[i + j]]);
+                         Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
                     else
-                         Assert.assertEquals(r[i + j], (short) 0);
+                         Assert.assertEquals(r[i+j], (short)0);
                 }
             }
         } catch (AssertionError e) {
             int idx = i + j;
             if (mask[j % SPECIES.length()])
-                Assert.assertEquals(r[i + j], a[i + (int) order[i + j]], "at index #" + idx + ", input = " + a[i + (int) order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
             else
-                Assert.assertEquals(r[i + j], (short) 0, "at index #" + idx + ", input = " + a[i + (int) order[i + j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], (short)0, "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
         }
     }
 
@@ -367,7 +367,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         for (; i < a.length; i += SPECIES.length()) {
             int idx = i;
             for (int j = idx; j < (idx + SPECIES.length()); j++)
-                a[j] = a[idx];
+                a[j]=a[idx];
         }
 
         try {
@@ -418,10 +418,10 @@ public class Short256VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i++) {
-                Assert.assertEquals(r[i], f.apply(a[i], (short) ((long) b[(i / SPECIES.length()) * SPECIES.length()])));
+                Assert.assertEquals(r[i], f.apply(a[i], (short)((long)b[(i / SPECIES.length()) * SPECIES.length()])));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], f.apply(a[i], (short) ((long) b[(i / SPECIES.length()) * SPECIES.length()])),
+            Assert.assertEquals(r[i], f.apply(a[i], (short)((long)b[(i / SPECIES.length()) * SPECIES.length()])),
                                 "(" + a[i] + ", " + b[(i / SPECIES.length()) * SPECIES.length()] + ") at index #" + i);
         }
     }
@@ -467,10 +467,10 @@ public class Short256VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i++) {
-                Assert.assertEquals(r[i], f.apply(a[i], (short) ((long) b[(i / SPECIES.length()) * SPECIES.length()]), mask[i % SPECIES.length()]));
+                Assert.assertEquals(r[i], f.apply(a[i], (short)((long)b[(i / SPECIES.length()) * SPECIES.length()]), mask[i % SPECIES.length()]));
             }
         } catch (AssertionError err) {
-            Assert.assertEquals(r[i], f.apply(a[i], (short) ((long) b[(i / SPECIES.length()) * SPECIES.length()]),
+            Assert.assertEquals(r[i], f.apply(a[i], (short)((long)b[(i / SPECIES.length()) * SPECIES.length()]),
                                 mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] +
                                 ", input2 = " + b[(i / SPECIES.length()) * SPECIES.length()] + ", mask = " +
                                 mask[i % SPECIES.length()]);
@@ -483,11 +483,11 @@ public class Short256VectorTests extends AbstractVectorTest {
         try {
             for (; j < a.length; j += SPECIES.length()) {
                 for (i = 0; i < SPECIES.length(); i++) {
-                    Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j]));
+                    Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j]));
                 }
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j]), "at index #" + i + ", " + j);
+            Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j]), "at index #" + i + ", " + j);
         }
     }
 
@@ -501,11 +501,11 @@ public class Short256VectorTests extends AbstractVectorTest {
         try {
             for (; j < a.length; j += SPECIES.length()) {
                 for (i = 0; i < SPECIES.length(); i++) {
-                    Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j], mask[i]));
+                    Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j], mask[i]));
                 }
             }
         } catch (AssertionError err) {
-            Assert.assertEquals(r[i + j], f.apply(a[i + j], b[j], mask[i]), "at index #" + i + ", input1 = " + a[i + j] + ", input2 = " + b[j] + ", mask = " + mask[i]);
+            Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j], mask[i]), "at index #" + i + ", input1 = " + a[i+j] + ", input2 = " + b[j] + ", mask = " + mask[i]);
         }
     }
 
@@ -654,6 +654,7 @@ public class Short256VectorTests extends AbstractVectorTest {
     }
 
 
+
     interface FBinArrayOp {
         short apply(short[] a, int b);
     }
@@ -677,17 +678,17 @@ public class Short256VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
                   f.apply(a, i, b, i));
             }
         } catch (AssertionError e) {
             short[] ref = f.apply(a, i, b, i);
-            short[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
+            short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
             Assert.assertEquals(res, ref,
               "(ref: " + Arrays.toString(ref) + ", res: " + Arrays.toString(res) + ", a: "
-              + Arrays.toString(Arrays.copyOfRange(a, i, i + SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(a, i, i+SPECIES.length()))
               + ", b: "
-              + Arrays.toString(Arrays.copyOfRange(b, i, i + SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(b, i, i+SPECIES.length()))
               + " at index #" + i);
         }
     }
@@ -704,17 +705,17 @@ public class Short256VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
                   f.apply(a, i, mask, b, i));
             }
         } catch (AssertionError e) {
             short[] ref = f.apply(a, i, mask, b, i);
-            short[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
+            short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
             Assert.assertEquals(res, ref,
               "(ref: " + Arrays.toString(ref) + ", res: " + Arrays.toString(res) + ", a: "
-              + Arrays.toString(Arrays.copyOfRange(a, i, i + SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(a, i, i+SPECIES.length()))
               + ", b: "
-              + Arrays.toString(Arrays.copyOfRange(b, i, i + SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(b, i, i+SPECIES.length()))
               + ", mask: "
               + Arrays.toString(mask)
               + " at index #" + i);
@@ -725,19 +726,19 @@ public class Short256VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
                   f.apply(r, a, i, mask, b, i));
             }
         } catch (AssertionError e) {
             short[] ref = f.apply(r, a, i, mask, b, i);
-            short[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
+            short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
             Assert.assertEquals(res, ref,
               "(ref: " + Arrays.toString(ref) + ", res: " + Arrays.toString(res) + ", a: "
-              + Arrays.toString(Arrays.copyOfRange(a, i, i + SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(a, i, i+SPECIES.length()))
               + ", b: "
-              + Arrays.toString(Arrays.copyOfRange(b, i, i + SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(b, i, i+SPECIES.length()))
               + ", r: "
-              + Arrays.toString(Arrays.copyOfRange(r, i, i + SPECIES.length()))
+              + Arrays.toString(Arrays.copyOfRange(r, i, i+SPECIES.length()))
               + ", mask: "
               + Arrays.toString(mask)
               + " at index #" + i);
@@ -752,12 +753,12 @@ public class Short256VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
                   f.apply(a, origin, i));
             }
         } catch (AssertionError e) {
             short[] ref = f.apply(a, origin, i);
-            short[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
+            short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i);
@@ -772,12 +773,12 @@ public class Short256VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
                   f.apply(a, b, origin, i));
             }
         } catch (AssertionError e) {
             short[] ref = f.apply(a, b, origin, i);
-            short[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
+            short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -793,12 +794,12 @@ public class Short256VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
                   f.apply(a, b, origin, mask, i));
             }
         } catch (AssertionError e) {
             short[] ref = f.apply(a, b, origin, mask, i);
-            short[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
+            short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -814,12 +815,12 @@ public class Short256VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
                   f.apply(a, b, origin, part, i));
             }
         } catch (AssertionError e) {
             short[] ref = f.apply(a, b, origin, part, i);
-            short[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
+            short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -836,12 +837,12 @@ public class Short256VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(Arrays.copyOfRange(r, i, i + SPECIES.length()),
+                Assert.assertEquals(Arrays.copyOfRange(r, i, i+SPECIES.length()),
                   f.apply(a, b, origin, part, mask, i));
             }
         } catch (AssertionError e) {
             short[] ref = f.apply(a, b, origin, part, mask, i);
-            short[] res = Arrays.copyOfRange(r, i, i + SPECIES.length());
+            short[] res = Arrays.copyOfRange(r, i, i+SPECIES.length());
             Assert.assertEquals(res, ref, "(ref: " + Arrays.toString(ref)
               + ", res: " + Arrays.toString(res)
               + "), at index #" + i
@@ -855,10 +856,10 @@ public class Short256VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < r.length; i++) {
-                Assert.assertEquals(r[i], (int) (a[i + offs]));
+                Assert.assertEquals(r[i], (int)(a[i+offs]));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], (int) (a[i + offs]), "at index #" + i + ", input = " + a[i + offs]);
+            Assert.assertEquals(r[i], (int)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
         }
     }
 
@@ -868,10 +869,10 @@ public class Short256VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < r.length; i++) {
-                Assert.assertEquals(r[i], (long) (a[i + offs]));
+                Assert.assertEquals(r[i], (long)(a[i+offs]));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], (long) (a[i + offs]), "at index #" + i + ", input = " + a[i + offs]);
+            Assert.assertEquals(r[i], (long)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
         }
     }
 
@@ -879,12 +880,13 @@ public class Short256VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < r.length; i++) {
-                Assert.assertEquals(r[i], (double) (a[i + offs]));
+                Assert.assertEquals(r[i], (double)(a[i+offs]));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(r[i], (double) (a[i + offs]), "at index #" + i + ", input = " + a[i + offs]);
+            Assert.assertEquals(r[i], (double)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
         }
     }
+
 
     static short bits(short e) {
         return  e;
@@ -893,15 +895,15 @@ public class Short256VectorTests extends AbstractVectorTest {
     static final List<IntFunction<short[]>> SHORT_GENERATORS = List.of(
             withToString("short[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short) (-i * 5));
+                            i -> (short)(-i * 5));
             }),
             withToString("short[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short) (i * 5));
+                            i -> (short)(i * 5));
             }),
             withToString("short[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((short) (i + 1) == 0) ? 1 : (short) (i + 1)));
+                            i -> (((short)(i + 1) == 0) ? 1 : (short)(i + 1)));
             }),
             withToString("short[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1032,7 +1034,7 @@ public class Short256VectorTests extends AbstractVectorTest {
                 short[] a = new short[l];
                 int upper = m;
                 for (int i = 0; i < 1; i++) {
-                    a[i] = (short) RAND.nextInt(upper);
+                    a[i] = (short)RAND.nextInt(upper);
                 }
                 return a;
             })
@@ -1057,26 +1059,27 @@ public class Short256VectorTests extends AbstractVectorTest {
                 toArray(Object[][]::new);
     }
 
+
     static final List<IntFunction<short[]>> SHORT_COMPARE_GENERATORS = List.of(
             withToString("short[i]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short) i);
+                            i -> (short)i);
             }),
             withToString("short[i - length / 2]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short) (i - (s * BUFFER_REPS / 2)));
+                            i -> (short)(i - (s * BUFFER_REPS / 2)));
             }),
             withToString("short[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short) (i + 1));
+                            i -> (short)(i + 1));
             }),
             withToString("short[i - 2]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short) (i - 2));
+                            i -> (short)(i - 2));
             }),
             withToString("short[zigZag(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> i % 3 == 0 ? (short) i : (i % 3 == 1 ? (short) (i + 1) : (short) (i - 2)));
+                            i -> i%3 == 0 ? (short)i : (i%3 == 1 ? (short)(i + 1) : (short)(i - 2)));
             }),
             withToString("short[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1150,7 +1153,7 @@ public class Short256VectorTests extends AbstractVectorTest {
             case 3:
                 return Short.MAX_VALUE;
             default:
-                return (short) 0;
+                return (short)0;
         }
     }
 
@@ -1190,11 +1193,11 @@ public class Short256VectorTests extends AbstractVectorTest {
     }
 
     static short ROL_scalar(short a, short b) {
-        return (short) (((((short) a) & 0xFFFF) << (b & 15)) | ((((short) a) & 0xFFFF) >>> (16 - (b & 15))));
+        return (short)(((((short)a) & 0xFFFF) << (b & 15)) | ((((short)a) & 0xFFFF) >>> (16 - (b & 15))));
     }
 
     static short ROR_scalar(short a, short b) {
-        return (short) (((((short) a) & 0xFFFF) >>> (b & 15)) | ((((short) a) & 0xFFFF) << (16 - (b & 15))));
+        return (short)(((((short)a) & 0xFFFF) >>> (b & 15)) | ((((short)a) & 0xFFFF) << (16 - (b & 15))));
     }
 
     static short TRAILING_ZEROS_COUNT_scalar(short a) {
@@ -1259,7 +1262,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
     @Test
     static void smokeTest1() {
-        ShortVector three = ShortVector.broadcast(SPECIES, (byte) -3);
+        ShortVector three = ShortVector.broadcast(SPECIES, (byte)-3);
         ShortVector three2 = (ShortVector) SPECIES.broadcast(-3);
         assert(three.eq(three2).allTrue());
         ShortVector three3 = three2.broadcast(1).broadcast(-3);
@@ -1273,10 +1276,10 @@ public class Short256VectorTests extends AbstractVectorTest {
         ShortVector higher = three.addIndex(scale);
         VectorMask<Short> m = three.compare(VectorOperators.LE, higher);
         assert(m.allTrue());
-        m = higher.min((short) -1).test(VectorOperators.IS_NEGATIVE);
+        m = higher.min((short)-1).test(VectorOperators.IS_NEGATIVE);
         assert(m.allTrue());
         short max = higher.reduceLanes(VectorOperators.MAX);
-        assert(max == -3 + scale * (SPECIES.length() - 1));
+        assert(max == -3 + scale * (SPECIES.length()-1));
     }
 
     private static short[]
@@ -1291,27 +1294,27 @@ public class Short256VectorTests extends AbstractVectorTest {
     static void smokeTest2() {
         // Do some zipping and shuffling.
         ShortVector io = (ShortVector) SPECIES.broadcast(0).addIndex(1);
-        ShortVector io2 = (ShortVector) VectorShuffle.iota(SPECIES, 0, 1, false).toVector();
+        ShortVector io2 = (ShortVector) VectorShuffle.iota(SPECIES,0,1,false).toVector();
         Assert.assertEquals(io, io2);
-        ShortVector a = io.add((short) 1); //[1,2]
+        ShortVector a = io.add((short)1); //[1,2]
         ShortVector b = a.neg();  //[-1,-2]
         short[] abValues = bothToArray(a,b); //[1,2,-1,-2]
         VectorShuffle<Short> zip0 = VectorShuffle.makeZip(SPECIES, 0);
         VectorShuffle<Short> zip1 = VectorShuffle.makeZip(SPECIES, 1);
-        ShortVector zab0 = a.rearrange(zip0, b); //[1,-1]
-        ShortVector zab1 = a.rearrange(zip1, b); //[2,-2]
+        ShortVector zab0 = a.rearrange(zip0,b); //[1,-1]
+        ShortVector zab1 = a.rearrange(zip1,b); //[2,-2]
         short[] zabValues = bothToArray(zab0, zab1); //[1,-1,2,-2]
         // manually zip
         short[] manual = new short[zabValues.length];
         for (int i = 0; i < manual.length; i += 2) {
-            manual[i + 0] = abValues[i / 2];
-            manual[i + 1] = abValues[a.length() + i / 2];
+            manual[i+0] = abValues[i/2];
+            manual[i+1] = abValues[a.length() + i/2];
         }
         Assert.assertEquals(Arrays.toString(zabValues), Arrays.toString(manual));
         VectorShuffle<Short> unz0 = VectorShuffle.makeUnzip(SPECIES, 0);
         VectorShuffle<Short> unz1 = VectorShuffle.makeUnzip(SPECIES, 1);
-        ShortVector uab0 = zab0.rearrange(unz0, zab1);
-        ShortVector uab1 = zab0.rearrange(unz1, zab1);
+        ShortVector uab0 = zab0.rearrange(unz0,zab1);
+        ShortVector uab1 = zab0.rearrange(unz1,zab1);
         short[] abValues1 = bothToArray(uab0, uab1);
         Assert.assertEquals(Arrays.toString(abValues), Arrays.toString(abValues1));
     }
@@ -1363,7 +1366,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
     static short ADD(short a, short b) {
-        return (short) (a + b);
+        return (short)(a + b);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1383,7 +1386,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::ADD);
     }
     static short add(short a, short b) {
-        return (short) (a + b);
+        return (short)(a + b);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1439,7 +1442,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, mask, Short256VectorTests::add);
     }
     static short SUB(short a, short b) {
-        return (short) (a - b);
+        return (short)(a - b);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1459,7 +1462,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::SUB);
     }
     static short sub(short a, short b) {
-        return (short) (a - b);
+        return (short)(a - b);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1515,7 +1518,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, mask, Short256VectorTests::sub);
     }
     static short MUL(short a, short b) {
-        return (short) (a * b);
+        return (short)(a * b);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1535,7 +1538,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::MUL);
     }
     static short mul(short a, short b) {
-        return (short) (a * b);
+        return (short)(a * b);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1594,7 +1597,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short DIV(short a, short b) {
-        return (short) (a / b);
+        return (short)(a / b);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1616,7 +1619,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::DIV);
     }
     static short div(short a, short b) {
-        return (short) (a / b);
+        return (short)(a / b);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1685,7 +1688,7 @@ public class Short256VectorTests extends AbstractVectorTest {
     }
 
     static short FIRST_NONZERO(short a, short b) {
-        return (short) ((a) != 0 ? a : b);
+        return (short)((a)!=0?a:b);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1726,7 +1729,7 @@ public class Short256VectorTests extends AbstractVectorTest {
     }
 
     static short AND(short a, short b) {
-        return (short) (a & b);
+        return (short)(a & b);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1746,7 +1749,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::AND);
     }
     static short and(short a, short b) {
-        return (short) (a & b);
+        return (short)(a & b);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1788,7 +1791,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short AND_NOT(short a, short b) {
-        return (short) (a & ~b);
+        return (short)(a & ~b);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1832,7 +1835,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short OR(short a, short b) {
-        return (short) (a | b);
+        return (short)(a | b);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1852,7 +1855,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::OR);
     }
     static short or(short a, short b) {
-        return (short) (a | b);
+        return (short)(a | b);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1894,7 +1897,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short XOR(short a, short b) {
-        return (short) (a ^ b);
+        return (short)(a ^ b);
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2178,7 +2181,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-            av.lanewise(VectorOperators.OR, (long) b[i]).intoArray(r, i);
+            av.lanewise(VectorOperators.OR, (long)b[i]).intoArray(r, i);
         }
 
         assertBroadcastLongArraysEquals(r, a, b, Short256VectorTests::OR);
@@ -2197,7 +2200,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-            av.lanewise(VectorOperators.OR, (long) b[i], vmask).intoArray(r, i);
+            av.lanewise(VectorOperators.OR, (long)b[i], vmask).intoArray(r, i);
         }
 
         assertBroadcastLongArraysEquals(r, a, b, mask, Short256VectorTests::OR);
@@ -2212,7 +2215,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-            av.lanewise(VectorOperators.ADD, (long) b[i]).intoArray(r, i);
+            av.lanewise(VectorOperators.ADD, (long)b[i]).intoArray(r, i);
         }
 
         assertBroadcastLongArraysEquals(r, a, b, Short256VectorTests::ADD);
@@ -2229,7 +2232,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-            av.lanewise(VectorOperators.ADD, (long) b[i], vmask).intoArray(r, i);
+            av.lanewise(VectorOperators.ADD, (long)b[i], vmask).intoArray(r, i);
         }
 
         assertBroadcastLongArraysEquals(r, a, b, mask, Short256VectorTests::ADD);
@@ -2240,7 +2243,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short LSHL(short a, short b) {
-        return (short) ((a << (b & 0xF)));
+        return (short)((a << (b & 0xF)));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2288,7 +2291,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short ASHR(short a, short b) {
-        return (short) ((a >> (b & 0xF)));
+        return (short)((a >> (b & 0xF)));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2336,7 +2339,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short LSHR(short a, short b) {
-        return (short) (((a & 0xFFFF) >>> (b & 0xF)));
+        return (short)(((a & 0xFFFF) >>> (b & 0xF)));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2384,7 +2387,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short LSHL_unary(short a, short b) {
-        return (short) ((a << (b & 15)));
+        return (short)((a << (b & 15)));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2396,7 +2399,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.LSHL, (int) b[i]).intoArray(r, i);
+                av.lanewise(VectorOperators.LSHL, (int)b[i]).intoArray(r, i);
             }
         }
 
@@ -2417,7 +2420,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.LSHL, (int) b[i], vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.LSHL, (int)b[i], vmask).intoArray(r, i);
             }
         }
 
@@ -2430,7 +2433,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short LSHR_unary(short a, short b) {
-        return (short) (((a & 0xFFFF) >>> (b & 15)));
+        return (short)(((a & 0xFFFF) >>> (b & 15)));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2442,7 +2445,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.LSHR, (int) b[i]).intoArray(r, i);
+                av.lanewise(VectorOperators.LSHR, (int)b[i]).intoArray(r, i);
             }
         }
 
@@ -2463,7 +2466,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.LSHR, (int) b[i], vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.LSHR, (int)b[i], vmask).intoArray(r, i);
             }
         }
 
@@ -2476,7 +2479,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short ASHR_unary(short a, short b) {
-        return (short) ((a >> (b & 15)));
+        return (short)((a >> (b & 15)));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2488,7 +2491,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.ASHR, (int) b[i]).intoArray(r, i);
+                av.lanewise(VectorOperators.ASHR, (int)b[i]).intoArray(r, i);
             }
         }
 
@@ -2509,7 +2512,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.ASHR, (int) b[i], vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.ASHR, (int)b[i], vmask).intoArray(r, i);
             }
         }
 
@@ -2518,7 +2521,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short ROR(short a, short b) {
-        return (short) (ROR_scalar(a, b));
+        return (short)(ROR_scalar(a,b));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2562,7 +2565,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short ROL(short a, short b) {
-        return (short) (ROL_scalar(a, b));
+        return (short)(ROL_scalar(a,b));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2606,7 +2609,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short ROR_unary(short a, short b) {
-        return (short) (ROR_scalar(a, b));
+        return (short)(ROR_scalar(a,b));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2618,7 +2621,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.ROR, (int) b[i]).intoArray(r, i);
+                av.lanewise(VectorOperators.ROR, (int)b[i]).intoArray(r, i);
             }
         }
 
@@ -2639,7 +2642,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.ROR, (int) b[i], vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.ROR, (int)b[i], vmask).intoArray(r, i);
             }
         }
 
@@ -2648,7 +2651,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short ROL_unary(short a, short b) {
-        return (short) (ROL_scalar(a, b));
+        return (short)(ROL_scalar(a,b));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2660,7 +2663,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.ROL, (int) b[i]).intoArray(r, i);
+                av.lanewise(VectorOperators.ROL, (int)b[i]).intoArray(r, i);
             }
         }
 
@@ -2681,7 +2684,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.ROL, (int) b[i], vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.ROL, (int)b[i], vmask).intoArray(r, i);
             }
         }
 
@@ -2689,7 +2692,7 @@ public class Short256VectorTests extends AbstractVectorTest {
     }
 
     static short MIN(short a, short b) {
-        return (short) (Math.min(a, b));
+        return (short)(Math.min(a, b));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2709,7 +2712,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::MIN);
     }
     static short min(short a, short b) {
-        return (short) (Math.min(a, b));
+        return (short)(Math.min(a, b));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2727,7 +2730,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::min);
     }
     static short MAX(short a, short b) {
-        return (short) (Math.max(a, b));
+        return (short)(Math.max(a, b));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2747,7 +2750,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::MAX);
     }
     static short max(short a, short b) {
-        return (short) (Math.max(a, b));
+        return (short)(Math.max(a, b));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -3585,17 +3588,17 @@ public class Short256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0, j = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.withLane((j++ & (SPECIES.length() - 1)), (short) (65535 + i)).intoArray(r, i);
+                av.withLane((j++ & (SPECIES.length()-1)), (short)(65535+i)).intoArray(r, i);
             }
         }
 
 
         for (int i = 0, j = 0; i < a.length; i += SPECIES.length()) {
-            assertInsertArraysEquals(r, a, (short) (65535 + i), (j++ & (SPECIES.length() - 1)), i , i + SPECIES.length());
+            assertInsertArraysEquals(r, a, (short)(65535+i), (j++ & (SPECIES.length()-1)), i , i + SPECIES.length());
         }
     }
     static boolean testIS_DEFAULT(short a) {
-        return bits(a) == 0;
+        return bits(a)==0;
     }
 
     @Test(dataProvider = "shortTestOpProvider")
@@ -3628,12 +3631,12 @@ public class Short256VectorTests extends AbstractVectorTest {
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j), vmask.laneIsSet(j) && testIS_DEFAULT(a[i + j]));
+                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_DEFAULT(a[i + j]));
             }
         }
     }
     static boolean testIS_NEGATIVE(short a) {
-        return bits(a) < 0;
+        return bits(a)<0;
     }
 
     @Test(dataProvider = "shortTestOpProvider")
@@ -3666,7 +3669,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j), vmask.laneIsSet(j) && testIS_NEGATIVE(a[i + j]));
+                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_NEGATIVE(a[i + j]));
             }
         }
     }
@@ -4176,6 +4179,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
 
+
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void LTShort256VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa,
                                 IntFunction<short[]> fb, IntFunction<boolean[]> fm) {
@@ -4203,14 +4207,15 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-            VectorMask<Short> mv = av.compare(VectorOperators.LT, (long) b[i]);
+            VectorMask<Short> mv = av.compare(VectorOperators.LT, (long)b[i]);
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j), a[i + j] < (short) ((long) b[i]));
+                Assert.assertEquals(mv.laneIsSet(j), a[i + j] < (short)((long)b[i]));
             }
         }
     }
+
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void LTShort256VectorTestsBroadcastLongMaskedSmokeTest(IntFunction<short[]> fa,
@@ -4223,11 +4228,11 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-            VectorMask<Short> mv = av.compare(VectorOperators.LT, (long) b[i], vmask);
+            VectorMask<Short> mv = av.compare(VectorOperators.LT, (long)b[i], vmask);
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] < (short) ((long) b[i])));
+                Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] < (short)((long)b[i])));
             }
         }
     }
@@ -4247,6 +4252,7 @@ public class Short256VectorTests extends AbstractVectorTest {
             }
         }
     }
+
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void EQShort256VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa,
@@ -4275,14 +4281,15 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-            VectorMask<Short> mv = av.compare(VectorOperators.EQ, (long) b[i]);
+            VectorMask<Short> mv = av.compare(VectorOperators.EQ, (long)b[i]);
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j), a[i + j] == (short) ((long) b[i]));
+                Assert.assertEquals(mv.laneIsSet(j), a[i + j] == (short)((long)b[i]));
             }
         }
     }
+
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void EQShort256VectorTestsBroadcastLongMaskedSmokeTest(IntFunction<short[]> fa,
@@ -4295,11 +4302,11 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-            VectorMask<Short> mv = av.compare(VectorOperators.EQ, (long) b[i], vmask);
+            VectorMask<Short> mv = av.compare(VectorOperators.EQ, (long)b[i], vmask);
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] == (short) ((long) b[i])));
+                Assert.assertEquals(mv.laneIsSet(j), mask[j] && (a[i + j] == (short)((long)b[i])));
             }
         }
     }
@@ -4410,142 +4417,142 @@ public class Short256VectorTests extends AbstractVectorTest {
                 // Manually unroll because full unroll happens after intrinsification.
                 // Unroll is needed because get intrinsic requires for index to be a known constant.
                 if (num_lanes == 1) {
-                    r[i] = av.lane(0);
+                    r[i]=av.lane(0);
                 } else if (num_lanes == 2) {
-                    r[i] = av.lane(0);
-                    r[i + 1] = av.lane(1);
+                    r[i]=av.lane(0);
+                    r[i+1]=av.lane(1);
                 } else if (num_lanes == 4) {
-                    r[i] = av.lane(0);
-                    r[i + 1] = av.lane(1);
-                    r[i + 2] = av.lane(2);
-                    r[i + 3] = av.lane(3);
+                    r[i]=av.lane(0);
+                    r[i+1]=av.lane(1);
+                    r[i+2]=av.lane(2);
+                    r[i+3]=av.lane(3);
                 } else if (num_lanes == 8) {
-                    r[i] = av.lane(0);
-                    r[i + 1] = av.lane(1);
-                    r[i + 2] = av.lane(2);
-                    r[i + 3] = av.lane(3);
-                    r[i + 4] = av.lane(4);
-                    r[i + 5] = av.lane(5);
-                    r[i + 6] = av.lane(6);
-                    r[i + 7] = av.lane(7);
+                    r[i]=av.lane(0);
+                    r[i+1]=av.lane(1);
+                    r[i+2]=av.lane(2);
+                    r[i+3]=av.lane(3);
+                    r[i+4]=av.lane(4);
+                    r[i+5]=av.lane(5);
+                    r[i+6]=av.lane(6);
+                    r[i+7]=av.lane(7);
                 } else if (num_lanes == 16) {
-                    r[i] = av.lane(0);
-                    r[i + 1] = av.lane(1);
-                    r[i + 2] = av.lane(2);
-                    r[i + 3] = av.lane(3);
-                    r[i + 4] = av.lane(4);
-                    r[i + 5] = av.lane(5);
-                    r[i + 6] = av.lane(6);
-                    r[i + 7] = av.lane(7);
-                    r[i + 8] = av.lane(8);
-                    r[i + 9] = av.lane(9);
-                    r[i + 10] = av.lane(10);
-                    r[i + 11] = av.lane(11);
-                    r[i + 12] = av.lane(12);
-                    r[i + 13] = av.lane(13);
-                    r[i + 14] = av.lane(14);
-                    r[i + 15] = av.lane(15);
+                    r[i]=av.lane(0);
+                    r[i+1]=av.lane(1);
+                    r[i+2]=av.lane(2);
+                    r[i+3]=av.lane(3);
+                    r[i+4]=av.lane(4);
+                    r[i+5]=av.lane(5);
+                    r[i+6]=av.lane(6);
+                    r[i+7]=av.lane(7);
+                    r[i+8]=av.lane(8);
+                    r[i+9]=av.lane(9);
+                    r[i+10]=av.lane(10);
+                    r[i+11]=av.lane(11);
+                    r[i+12]=av.lane(12);
+                    r[i+13]=av.lane(13);
+                    r[i+14]=av.lane(14);
+                    r[i+15]=av.lane(15);
                 } else if (num_lanes == 32) {
-                    r[i] = av.lane(0);
-                    r[i + 1] = av.lane(1);
-                    r[i + 2] = av.lane(2);
-                    r[i + 3] = av.lane(3);
-                    r[i + 4] = av.lane(4);
-                    r[i + 5] = av.lane(5);
-                    r[i + 6] = av.lane(6);
-                    r[i + 7] = av.lane(7);
-                    r[i + 8] = av.lane(8);
-                    r[i + 9] = av.lane(9);
-                    r[i + 10] = av.lane(10);
-                    r[i + 11] = av.lane(11);
-                    r[i + 12] = av.lane(12);
-                    r[i + 13] = av.lane(13);
-                    r[i + 14] = av.lane(14);
-                    r[i + 15] = av.lane(15);
-                    r[i + 16] = av.lane(16);
-                    r[i + 17] = av.lane(17);
-                    r[i + 18] = av.lane(18);
-                    r[i + 19] = av.lane(19);
-                    r[i + 20] = av.lane(20);
-                    r[i + 21] = av.lane(21);
-                    r[i + 22] = av.lane(22);
-                    r[i + 23] = av.lane(23);
-                    r[i + 24] = av.lane(24);
-                    r[i + 25] = av.lane(25);
-                    r[i + 26] = av.lane(26);
-                    r[i + 27] = av.lane(27);
-                    r[i + 28] = av.lane(28);
-                    r[i + 29] = av.lane(29);
-                    r[i + 30] = av.lane(30);
-                    r[i + 31] = av.lane(31);
+                    r[i]=av.lane(0);
+                    r[i+1]=av.lane(1);
+                    r[i+2]=av.lane(2);
+                    r[i+3]=av.lane(3);
+                    r[i+4]=av.lane(4);
+                    r[i+5]=av.lane(5);
+                    r[i+6]=av.lane(6);
+                    r[i+7]=av.lane(7);
+                    r[i+8]=av.lane(8);
+                    r[i+9]=av.lane(9);
+                    r[i+10]=av.lane(10);
+                    r[i+11]=av.lane(11);
+                    r[i+12]=av.lane(12);
+                    r[i+13]=av.lane(13);
+                    r[i+14]=av.lane(14);
+                    r[i+15]=av.lane(15);
+                    r[i+16]=av.lane(16);
+                    r[i+17]=av.lane(17);
+                    r[i+18]=av.lane(18);
+                    r[i+19]=av.lane(19);
+                    r[i+20]=av.lane(20);
+                    r[i+21]=av.lane(21);
+                    r[i+22]=av.lane(22);
+                    r[i+23]=av.lane(23);
+                    r[i+24]=av.lane(24);
+                    r[i+25]=av.lane(25);
+                    r[i+26]=av.lane(26);
+                    r[i+27]=av.lane(27);
+                    r[i+28]=av.lane(28);
+                    r[i+29]=av.lane(29);
+                    r[i+30]=av.lane(30);
+                    r[i+31]=av.lane(31);
                 } else if (num_lanes == 64) {
-                    r[i] = av.lane(0);
-                    r[i + 1] = av.lane(1);
-                    r[i + 2] = av.lane(2);
-                    r[i + 3] = av.lane(3);
-                    r[i + 4] = av.lane(4);
-                    r[i + 5] = av.lane(5);
-                    r[i + 6] = av.lane(6);
-                    r[i + 7] = av.lane(7);
-                    r[i + 8] = av.lane(8);
-                    r[i + 9] = av.lane(9);
-                    r[i + 10] = av.lane(10);
-                    r[i + 11] = av.lane(11);
-                    r[i + 12] = av.lane(12);
-                    r[i + 13] = av.lane(13);
-                    r[i + 14] = av.lane(14);
-                    r[i + 15] = av.lane(15);
-                    r[i + 16] = av.lane(16);
-                    r[i + 17] = av.lane(17);
-                    r[i + 18] = av.lane(18);
-                    r[i + 19] = av.lane(19);
-                    r[i + 20] = av.lane(20);
-                    r[i + 21] = av.lane(21);
-                    r[i + 22] = av.lane(22);
-                    r[i + 23] = av.lane(23);
-                    r[i + 24] = av.lane(24);
-                    r[i + 25] = av.lane(25);
-                    r[i + 26] = av.lane(26);
-                    r[i + 27] = av.lane(27);
-                    r[i + 28] = av.lane(28);
-                    r[i + 29] = av.lane(29);
-                    r[i + 30] = av.lane(30);
-                    r[i + 31] = av.lane(31);
-                    r[i + 32] = av.lane(32);
-                    r[i + 33] = av.lane(33);
-                    r[i + 34] = av.lane(34);
-                    r[i + 35] = av.lane(35);
-                    r[i + 36] = av.lane(36);
-                    r[i + 37] = av.lane(37);
-                    r[i + 38] = av.lane(38);
-                    r[i + 39] = av.lane(39);
-                    r[i + 40] = av.lane(40);
-                    r[i + 41] = av.lane(41);
-                    r[i + 42] = av.lane(42);
-                    r[i + 43] = av.lane(43);
-                    r[i + 44] = av.lane(44);
-                    r[i + 45] = av.lane(45);
-                    r[i + 46] = av.lane(46);
-                    r[i + 47] = av.lane(47);
-                    r[i + 48] = av.lane(48);
-                    r[i + 49] = av.lane(49);
-                    r[i + 50] = av.lane(50);
-                    r[i + 51] = av.lane(51);
-                    r[i + 52] = av.lane(52);
-                    r[i + 53] = av.lane(53);
-                    r[i + 54] = av.lane(54);
-                    r[i + 55] = av.lane(55);
-                    r[i + 56] = av.lane(56);
-                    r[i + 57] = av.lane(57);
-                    r[i + 58] = av.lane(58);
-                    r[i + 59] = av.lane(59);
-                    r[i + 60] = av.lane(60);
-                    r[i + 61] = av.lane(61);
-                    r[i + 62] = av.lane(62);
-                    r[i + 63] = av.lane(63);
+                    r[i]=av.lane(0);
+                    r[i+1]=av.lane(1);
+                    r[i+2]=av.lane(2);
+                    r[i+3]=av.lane(3);
+                    r[i+4]=av.lane(4);
+                    r[i+5]=av.lane(5);
+                    r[i+6]=av.lane(6);
+                    r[i+7]=av.lane(7);
+                    r[i+8]=av.lane(8);
+                    r[i+9]=av.lane(9);
+                    r[i+10]=av.lane(10);
+                    r[i+11]=av.lane(11);
+                    r[i+12]=av.lane(12);
+                    r[i+13]=av.lane(13);
+                    r[i+14]=av.lane(14);
+                    r[i+15]=av.lane(15);
+                    r[i+16]=av.lane(16);
+                    r[i+17]=av.lane(17);
+                    r[i+18]=av.lane(18);
+                    r[i+19]=av.lane(19);
+                    r[i+20]=av.lane(20);
+                    r[i+21]=av.lane(21);
+                    r[i+22]=av.lane(22);
+                    r[i+23]=av.lane(23);
+                    r[i+24]=av.lane(24);
+                    r[i+25]=av.lane(25);
+                    r[i+26]=av.lane(26);
+                    r[i+27]=av.lane(27);
+                    r[i+28]=av.lane(28);
+                    r[i+29]=av.lane(29);
+                    r[i+30]=av.lane(30);
+                    r[i+31]=av.lane(31);
+                    r[i+32]=av.lane(32);
+                    r[i+33]=av.lane(33);
+                    r[i+34]=av.lane(34);
+                    r[i+35]=av.lane(35);
+                    r[i+36]=av.lane(36);
+                    r[i+37]=av.lane(37);
+                    r[i+38]=av.lane(38);
+                    r[i+39]=av.lane(39);
+                    r[i+40]=av.lane(40);
+                    r[i+41]=av.lane(41);
+                    r[i+42]=av.lane(42);
+                    r[i+43]=av.lane(43);
+                    r[i+44]=av.lane(44);
+                    r[i+45]=av.lane(45);
+                    r[i+46]=av.lane(46);
+                    r[i+47]=av.lane(47);
+                    r[i+48]=av.lane(48);
+                    r[i+49]=av.lane(49);
+                    r[i+50]=av.lane(50);
+                    r[i+51]=av.lane(51);
+                    r[i+52]=av.lane(52);
+                    r[i+53]=av.lane(53);
+                    r[i+54]=av.lane(54);
+                    r[i+55]=av.lane(55);
+                    r[i+56]=av.lane(56);
+                    r[i+57]=av.lane(57);
+                    r[i+58]=av.lane(58);
+                    r[i+59]=av.lane(59);
+                    r[i+60]=av.lane(60);
+                    r[i+61]=av.lane(61);
+                    r[i+62]=av.lane(62);
+                    r[i+63]=av.lane(63);
                 } else {
                     for (int j = 0; j < SPECIES.length(); j++) {
-                        r[i + j] = av.lane(j);
+                        r[i+j]=av.lane(j);
                     }
                 }
             }
@@ -4586,13 +4593,16 @@ public class Short256VectorTests extends AbstractVectorTest {
         Assert.assertEquals(a, r);
     }
 
+
+
+
     static short[] sliceUnary(short[] a, int origin, int idx) {
         short[] res = new short[SPECIES.length()];
         for (int i = 0; i < SPECIES.length(); i++){
-            if(i + origin < SPECIES.length())
-                res[i] = a[idx + i + origin];
+            if(i+origin < SPECIES.length())
+                res[i] = a[idx+i+origin];
             else
-                res[i] = (short) 0;
+                res[i] = (short)0;
         }
         return res;
     }
@@ -4615,9 +4625,9 @@ public class Short256VectorTests extends AbstractVectorTest {
         short[] res = new short[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
             if(i+origin < SPECIES.length())
-                res[i] = a[idx + i + origin];
+                res[i] = a[idx+i+origin];
             else {
-                res[i] = b[idx + j];
+                res[i] = b[idx+j];
                 j++;
             }
         }
@@ -4643,10 +4653,10 @@ public class Short256VectorTests extends AbstractVectorTest {
     static short[] slice(short[] a, short[] b, int origin, boolean[] mask, int idx) {
         short[] res = new short[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
-            if(i + origin < SPECIES.length())
-                res[i] = mask[i] ? a[idx + i + origin] : (short) 0;
+            if(i+origin < SPECIES.length())
+                res[i] = mask[i] ? a[idx+i+origin] : (short)0;
             else {
-                res[i] = mask[i] ? b[idx + j] : (short) 0;
+                res[i] = mask[i] ? b[idx+j] : (short)0;
                 j++;
             }
         }
@@ -4677,9 +4687,9 @@ public class Short256VectorTests extends AbstractVectorTest {
         short[] res = new short[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
             if(i < origin)
-                res[i] = (short) 0;
+                res[i] = (short)0;
             else {
-                res[i] = a[idx + j];
+                res[i] = a[idx+j];
                 j++;
             }
         }
@@ -4705,16 +4715,16 @@ public class Short256VectorTests extends AbstractVectorTest {
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
             if (part == 0) {
                 if (i < origin)
-                    res[i] = b[idx + i];
+                    res[i] = b[idx+i];
                 else {
-                    res[i] = a[idx + j];
+                    res[i] = a[idx+j];
                     j++;
                 }
             } else if (part == 1) {
                 if (i < origin)
-                    res[i] = a[idx + SPECIES.length() - origin + i];
+                    res[i] = a[idx+SPECIES.length()-origin+i];
                 else {
-                    res[i] = b[idx + origin + j];
+                    res[i] = b[idx+origin+j];
                     j++;
                 }
             }
@@ -4742,32 +4752,32 @@ public class Short256VectorTests extends AbstractVectorTest {
     static short[] unslice(short[] a, short[] b, int origin, int part, boolean[] mask, int idx) {
         short[] res = new short[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
-            if(i + origin < SPECIES.length())
-                res[i] = b[idx + i + origin];
+            if(i+origin < SPECIES.length())
+                res[i] = b[idx+i+origin];
             else {
-                res[i] = b[idx + j];
+                res[i] = b[idx+j];
                 j++;
             }
         }
         for (int i = 0; i < SPECIES.length(); i++){
-            res[i] = mask[i] ? a[idx + i] : res[i];
+            res[i] = mask[i] ? a[idx+i] : res[i];
         }
         short[] res1 = new short[SPECIES.length()];
         if (part == 0) {
             for (int i = 0, j = 0; i < SPECIES.length(); i++){
                 if (i < origin)
-                    res1[i] = b[idx + i];
+                    res1[i] = b[idx+i];
                 else {
-                    res1[i] = res[j];
-                    j++;
+                   res1[i] = res[j];
+                   j++;
                 }
             }
         } else if (part == 1) {
             for (int i = 0, j = 0; i < SPECIES.length(); i++){
                 if (i < origin)
-                    res1[i] = res[SPECIES.length() - origin + i];
+                    res1[i] = res[SPECIES.length()-origin+i];
                 else {
-                    res1[i] = b[idx + origin + j];
+                    res1[i] = b[idx+origin+j];
                     j++;
                 }
             }
@@ -4819,10 +4829,10 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short BITWISE_BLEND(short a, short b, short c) {
-        return (short) ((a &~ (c)) | (b & c));
+        return (short)((a&~(c))|(b&c));
     }
     static short bitwiseBlend(short a, short b, short c) {
-        return (short) ((a &~ (c)) | (b & c));
+        return (short)((a&~(c))|(b&c));
     }
 
 
@@ -5038,11 +5048,11 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short NEG(short a) {
-        return (short) (-((short) a));
+        return (short)(-((short)a));
     }
 
     static short neg(short a) {
-        return (short) (-((short) a));
+        return (short)(-((short)a));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -5094,11 +5104,11 @@ public class Short256VectorTests extends AbstractVectorTest {
     }
 
     static short ABS(short a) {
-        return (short) (Math.abs((short) a));
+        return (short)(Math.abs((short)a));
     }
 
     static short abs(short a) {
-        return (short) (Math.abs((short) a));
+        return (short)(Math.abs((short)a));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -5151,11 +5161,11 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short NOT(short a) {
-        return (short) (~((short) a));
+        return (short)(~((short)a));
     }
 
     static short not(short a) {
-        return (short) (~((short) a));
+        return (short)(~((short)a));
     }
 
 
@@ -5213,7 +5223,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short ZOMO(short a) {
-        return (short) ((a == 0 ? 0 : -1));
+        return (short)((a==0?0:-1));
     }
 
 
@@ -5265,7 +5275,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short BIT_COUNT(short a) {
-        return (short) (Integer.bitCount((int) a & 0xFFFF));
+        return (short)(Integer.bitCount((int)a & 0xFFFF));
     }
 
 
@@ -5308,7 +5318,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short TRAILING_ZEROS_COUNT(short a) {
-        return (short) (TRAILING_ZEROS_COUNT_scalar(a));
+        return (short)(TRAILING_ZEROS_COUNT_scalar(a));
     }
 
 
@@ -5351,7 +5361,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short LEADING_ZEROS_COUNT(short a) {
-        return (short) (LEADING_ZEROS_COUNT_scalar(a));
+        return (short)(LEADING_ZEROS_COUNT_scalar(a));
     }
 
 
@@ -5394,7 +5404,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
 
     static short REVERSE(short a) {
-        return (short) (REVERSE_scalar(a));
+        return (short)(REVERSE_scalar(a));
     }
 
 
@@ -5534,7 +5544,7 @@ public class Short256VectorTests extends AbstractVectorTest {
             res += a[i];
         }
 
-        return (long) res;
+        return (long)res;
     }
 
     static long ADDReduceAllLong(short[] a) {
@@ -5573,7 +5583,7 @@ public class Short256VectorTests extends AbstractVectorTest {
                 res += a[i];
         }
 
-        return (long) res;
+        return (long)res;
     }
 
     static long ADDReduceAllLongMasked(short[] a, boolean[] mask) {
@@ -5630,7 +5640,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.blend((long) b[i], vmask).intoArray(r, i);
+                av.blend((long)b[i], vmask).intoArray(r, i);
             }
         }
         assertBroadcastLongArraysEquals(r, a, b, mask, Short256VectorTests::blend);

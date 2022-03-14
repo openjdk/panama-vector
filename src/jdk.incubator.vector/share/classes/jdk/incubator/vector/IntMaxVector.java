@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -114,7 +114,7 @@ final class IntMaxVector extends IntVector {
     @ForceInline
     final @Override
     int[] vec() {
-        return (int[]) getPayload();
+        return (int[])getPayload();
     }
 
     // Virtualized constructors
@@ -144,11 +144,11 @@ final class IntMaxVector extends IntVector {
     @ForceInline
     IntMaxShuffle iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return (IntMaxShuffle) VectorSupport.shuffleIota(ETYPE, IntMaxShuffle.class, VSPECIES, VLENGTH, start, step, 1,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i * lstep + lstart, l))));
+        return (IntMaxShuffle)VectorSupport.shuffleIota(ETYPE, IntMaxShuffle.class, VSPECIES, VLENGTH, start, step, 1,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
       } else {
-        return (IntMaxShuffle) VectorSupport.shuffleIota(ETYPE, IntMaxShuffle.class, VSPECIES, VLENGTH, start, step, 0,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i * lstep + lstart)));
+        return (IntMaxShuffle)VectorSupport.shuffleIota(ETYPE, IntMaxShuffle.class, VSPECIES, VLENGTH, start, step, 0,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i*lstep + lstart)));
       }
     }
 
@@ -195,7 +195,7 @@ final class IntMaxVector extends IntVector {
     final @Override
     IntMaxVector uOp(VectorMask<Integer> m, FUnOp f) {
         return (IntMaxVector)
-            super.uOpTemplate((IntMaxMask) m, f);  // specialize
+            super.uOpTemplate((IntMaxMask)m, f);  // specialize
     }
 
     // Binary operator
@@ -203,7 +203,7 @@ final class IntMaxVector extends IntVector {
     @ForceInline
     final @Override
     IntMaxVector bOp(Vector<Integer> v, FBinOp f) {
-        return (IntMaxVector) super.bOpTemplate((IntMaxVector) v, f);  // specialize
+        return (IntMaxVector) super.bOpTemplate((IntMaxVector)v, f);  // specialize
     }
 
     @ForceInline
@@ -211,7 +211,7 @@ final class IntMaxVector extends IntVector {
     IntMaxVector bOp(Vector<Integer> v,
                      VectorMask<Integer> m, FBinOp f) {
         return (IntMaxVector)
-            super.bOpTemplate((IntMaxVector) v, (IntMaxMask) m,
+            super.bOpTemplate((IntMaxVector)v, (IntMaxMask)m,
                               f);  // specialize
     }
 
@@ -221,7 +221,7 @@ final class IntMaxVector extends IntVector {
     final @Override
     IntMaxVector tOp(Vector<Integer> v1, Vector<Integer> v2, FTriOp f) {
         return (IntMaxVector)
-            super.tOpTemplate((IntMaxVector) v1, (IntMaxVector) v2,
+            super.tOpTemplate((IntMaxVector)v1, (IntMaxVector)v2,
                               f);  // specialize
     }
 
@@ -230,8 +230,8 @@ final class IntMaxVector extends IntVector {
     IntMaxVector tOp(Vector<Integer> v1, Vector<Integer> v2,
                      VectorMask<Integer> m, FTriOp f) {
         return (IntMaxVector)
-            super.tOpTemplate((IntMaxVector) v1, (IntMaxVector) v2,
-                              (IntMaxMask) m, f);  // specialize
+            super.tOpTemplate((IntMaxVector)v1, (IntMaxVector)v2,
+                              (IntMaxMask)m, f);  // specialize
     }
 
     @ForceInline
@@ -516,7 +516,7 @@ final class IntMaxVector extends IntVector {
                                 this, i,
                                 (vec, ix) -> {
                                     int[] vecarr = vec.vec();
-                                    return (long) vecarr[ix];
+                                    return (long)vecarr[ix];
                                 });
     }
 
@@ -532,10 +532,10 @@ final class IntMaxVector extends IntVector {
     public IntMaxVector withLaneHelper(int i, int e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
-                                this, i, (long) e,
+                                this, i, (long)e,
                                 (v, ix, bits) -> {
                                     int[] res = v.vec().clone();
-                                    res[ix] = (int) bits;
+                                    res[ix] = (int)bits;
                                     return v.vectorFactory(res);
                                 });
     }
@@ -583,7 +583,7 @@ final class IntMaxVector extends IntVector {
 
         @ForceInline
         boolean[] getBits() {
-            return (boolean[]) getPayload();
+            return (boolean[])getPayload();
         }
 
         @Override
@@ -600,7 +600,7 @@ final class IntMaxVector extends IntVector {
         IntMaxMask bOp(VectorMask<Integer> m, MBinOp f) {
             boolean[] res = new boolean[vspecies().laneCount()];
             boolean[] bits = getBits();
-            boolean[] mbits = ((IntMaxMask) m).getBits();
+            boolean[] mbits = ((IntMaxMask)m).getBits();
             for (int i = 0; i < res.length; i++) {
                 res[i] = f.apply(i, bits[i], mbits[i]);
             }
@@ -624,7 +624,7 @@ final class IntMaxVector extends IntVector {
             if (length() != dsp.laneCount())
                 throw new IllegalArgumentException("VectorMask length and species length differ");
             boolean[] maskArray = toArray();
-            return dsp.maskFactory(maskArray).check(dsp);
+            return  dsp.maskFactory(maskArray).check(dsp);
         }
 
         @Override
@@ -645,7 +645,7 @@ final class IntMaxVector extends IntVector {
         @ForceInline
         public IntMaxMask eq(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
-            IntMaxMask m = (IntMaxMask) mask;
+            IntMaxMask m = (IntMaxMask)mask;
             return xor(m.not());
         }
 
@@ -660,7 +660,7 @@ final class IntMaxVector extends IntVector {
         @Override
         @ForceInline
         public IntMaxMask compress() {
-            return (IntMaxMask) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+            return (IntMaxMask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
                 IntMaxVector.class, IntMaxMask.class, ETYPE, VLENGTH, null, this,
                 (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
@@ -672,7 +672,7 @@ final class IntMaxVector extends IntVector {
         @ForceInline
         public IntMaxMask and(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
-            IntMaxMask m = (IntMaxMask) mask;
+            IntMaxMask m = (IntMaxMask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_AND, IntMaxMask.class, null, int.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
@@ -682,7 +682,7 @@ final class IntMaxVector extends IntVector {
         @ForceInline
         public IntMaxMask or(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
-            IntMaxMask m = (IntMaxMask) mask;
+            IntMaxMask m = (IntMaxMask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_OR, IntMaxMask.class, null, int.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
@@ -692,7 +692,7 @@ final class IntMaxVector extends IntVector {
         /* package-private */
         IntMaxMask xor(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
-            IntMaxMask m = (IntMaxMask) mask;
+            IntMaxMask m = (IntMaxMask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, IntMaxMask.class, null, int.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
@@ -738,7 +738,7 @@ final class IntMaxVector extends IntVector {
         public boolean anyTrue() {
             return VectorSupport.test(BT_ne, IntMaxMask.class, int.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> anyTrueHelper(((IntMaxMask) m).getBits()));
+                                         (m, __) -> anyTrueHelper(((IntMaxMask)m).getBits()));
         }
 
         @Override
@@ -746,7 +746,7 @@ final class IntMaxVector extends IntVector {
         public boolean allTrue() {
             return VectorSupport.test(BT_overflow, IntMaxMask.class, int.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> allTrueHelper(((IntMaxMask) m).getBits()));
+                                         (m, __) -> allTrueHelper(((IntMaxMask)m).getBits()));
         }
 
         @ForceInline
@@ -811,7 +811,7 @@ final class IntMaxVector extends IntVector {
         @ForceInline
         public IntMaxVector toVector() {
             return VectorSupport.shuffleToVector(VCLASS, ETYPE, IntMaxShuffle.class, this, VLENGTH,
-                                                    (s) -> ((IntMaxVector) (((AbstractShuffle<Integer>) (s)).toVectorTemplate())));
+                                                    (s) -> ((IntMaxVector)(((AbstractShuffle<Integer>)(s)).toVectorTemplate())));
         }
 
         @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -114,7 +114,7 @@ final class Double128Vector extends DoubleVector {
     @ForceInline
     final @Override
     double[] vec() {
-        return (double[]) getPayload();
+        return (double[])getPayload();
     }
 
     // Virtualized constructors
@@ -144,11 +144,11 @@ final class Double128Vector extends DoubleVector {
     @ForceInline
     Double128Shuffle iotaShuffle(int start, int step, boolean wrap) {
       if (wrap) {
-        return (Double128Shuffle) VectorSupport.shuffleIota(ETYPE, Double128Shuffle.class, VSPECIES, VLENGTH, start, step, 1,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i * lstep + lstart, l))));
+        return (Double128Shuffle)VectorSupport.shuffleIota(ETYPE, Double128Shuffle.class, VSPECIES, VLENGTH, start, step, 1,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
       } else {
-        return (Double128Shuffle) VectorSupport.shuffleIota(ETYPE, Double128Shuffle.class, VSPECIES, VLENGTH, start, step, 0,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i * lstep + lstart)));
+        return (Double128Shuffle)VectorSupport.shuffleIota(ETYPE, Double128Shuffle.class, VSPECIES, VLENGTH, start, step, 0,
+                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i*lstep + lstart)));
       }
     }
 
@@ -195,7 +195,7 @@ final class Double128Vector extends DoubleVector {
     final @Override
     Double128Vector uOp(VectorMask<Double> m, FUnOp f) {
         return (Double128Vector)
-            super.uOpTemplate((Double128Mask) m, f);  // specialize
+            super.uOpTemplate((Double128Mask)m, f);  // specialize
     }
 
     // Binary operator
@@ -203,7 +203,7 @@ final class Double128Vector extends DoubleVector {
     @ForceInline
     final @Override
     Double128Vector bOp(Vector<Double> v, FBinOp f) {
-        return (Double128Vector) super.bOpTemplate((Double128Vector) v, f);  // specialize
+        return (Double128Vector) super.bOpTemplate((Double128Vector)v, f);  // specialize
     }
 
     @ForceInline
@@ -211,7 +211,7 @@ final class Double128Vector extends DoubleVector {
     Double128Vector bOp(Vector<Double> v,
                      VectorMask<Double> m, FBinOp f) {
         return (Double128Vector)
-            super.bOpTemplate((Double128Vector) v, (Double128Mask) m,
+            super.bOpTemplate((Double128Vector)v, (Double128Mask)m,
                               f);  // specialize
     }
 
@@ -221,7 +221,7 @@ final class Double128Vector extends DoubleVector {
     final @Override
     Double128Vector tOp(Vector<Double> v1, Vector<Double> v2, FTriOp f) {
         return (Double128Vector)
-            super.tOpTemplate((Double128Vector) v1, (Double128Vector) v2,
+            super.tOpTemplate((Double128Vector)v1, (Double128Vector)v2,
                               f);  // specialize
     }
 
@@ -230,8 +230,8 @@ final class Double128Vector extends DoubleVector {
     Double128Vector tOp(Vector<Double> v1, Vector<Double> v2,
                      VectorMask<Double> m, FTriOp f) {
         return (Double128Vector)
-            super.tOpTemplate((Double128Vector) v1, (Double128Vector) v2,
-                              (Double128Mask) m, f);  // specialize
+            super.tOpTemplate((Double128Vector)v1, (Double128Vector)v2,
+                              (Double128Mask)m, f);  // specialize
     }
 
     @ForceInline
@@ -506,7 +506,7 @@ final class Double128Vector extends DoubleVector {
                      this, i,
                      (vec, ix) -> {
                      double[] vecarr = vec.vec();
-                     return (long) Double.doubleToLongBits(vecarr[ix]);
+                     return (long)Double.doubleToLongBits(vecarr[ix]);
                      });
     }
 
@@ -523,10 +523,10 @@ final class Double128Vector extends DoubleVector {
     public Double128Vector withLaneHelper(int i, double e) {
         return VectorSupport.insert(
                                 VCLASS, ETYPE, VLENGTH,
-                                this, i, (long) Double.doubleToLongBits(e),
+                                this, i, (long)Double.doubleToLongBits(e),
                                 (v, ix, bits) -> {
                                     double[] res = v.vec().clone();
-                                    res[ix] = Double.longBitsToDouble((long) bits);
+                                    res[ix] = Double.longBitsToDouble((long)bits);
                                     return v.vectorFactory(res);
                                 });
     }
@@ -574,7 +574,7 @@ final class Double128Vector extends DoubleVector {
 
         @ForceInline
         boolean[] getBits() {
-            return (boolean[]) getPayload();
+            return (boolean[])getPayload();
         }
 
         @Override
@@ -591,7 +591,7 @@ final class Double128Vector extends DoubleVector {
         Double128Mask bOp(VectorMask<Double> m, MBinOp f) {
             boolean[] res = new boolean[vspecies().laneCount()];
             boolean[] bits = getBits();
-            boolean[] mbits = ((Double128Mask) m).getBits();
+            boolean[] mbits = ((Double128Mask)m).getBits();
             for (int i = 0; i < res.length; i++) {
                 res[i] = f.apply(i, bits[i], mbits[i]);
             }
@@ -615,7 +615,7 @@ final class Double128Vector extends DoubleVector {
             if (length() != dsp.laneCount())
                 throw new IllegalArgumentException("VectorMask length and species length differ");
             boolean[] maskArray = toArray();
-            return dsp.maskFactory(maskArray).check(dsp);
+            return  dsp.maskFactory(maskArray).check(dsp);
         }
 
         @Override
@@ -636,7 +636,7 @@ final class Double128Vector extends DoubleVector {
         @ForceInline
         public Double128Mask eq(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
-            Double128Mask m = (Double128Mask) mask;
+            Double128Mask m = (Double128Mask)mask;
             return xor(m.not());
         }
 
@@ -651,7 +651,7 @@ final class Double128Vector extends DoubleVector {
         @Override
         @ForceInline
         public Double128Mask compress() {
-            return (Double128Mask) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+            return (Double128Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
                 Double128Vector.class, Double128Mask.class, ETYPE, VLENGTH, null, this,
                 (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
         }
@@ -663,7 +663,7 @@ final class Double128Vector extends DoubleVector {
         @ForceInline
         public Double128Mask and(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
-            Double128Mask m = (Double128Mask) mask;
+            Double128Mask m = (Double128Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_AND, Double128Mask.class, null, long.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
@@ -673,7 +673,7 @@ final class Double128Vector extends DoubleVector {
         @ForceInline
         public Double128Mask or(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
-            Double128Mask m = (Double128Mask) mask;
+            Double128Mask m = (Double128Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_OR, Double128Mask.class, null, long.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
@@ -683,7 +683,7 @@ final class Double128Vector extends DoubleVector {
         /* package-private */
         Double128Mask xor(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
-            Double128Mask m = (Double128Mask) mask;
+            Double128Mask m = (Double128Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, Double128Mask.class, null, long.class, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
@@ -729,7 +729,7 @@ final class Double128Vector extends DoubleVector {
         public boolean anyTrue() {
             return VectorSupport.test(BT_ne, Double128Mask.class, long.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> anyTrueHelper(((Double128Mask) m).getBits()));
+                                         (m, __) -> anyTrueHelper(((Double128Mask)m).getBits()));
         }
 
         @Override
@@ -737,7 +737,7 @@ final class Double128Vector extends DoubleVector {
         public boolean allTrue() {
             return VectorSupport.test(BT_overflow, Double128Mask.class, long.class, VLENGTH,
                                          this, vspecies().maskAll(true),
-                                         (m, __) -> allTrueHelper(((Double128Mask) m).getBits()));
+                                         (m, __) -> allTrueHelper(((Double128Mask)m).getBits()));
         }
 
         @ForceInline
@@ -791,7 +791,7 @@ final class Double128Vector extends DoubleVector {
         @ForceInline
         public Double128Vector toVector() {
             return VectorSupport.shuffleToVector(VCLASS, ETYPE, Double128Shuffle.class, this, VLENGTH,
-                                                    (s) -> ((Double128Vector) (((AbstractShuffle<Double>) (s)).toVectorTemplate())));
+                                                    (s) -> ((Double128Vector)(((AbstractShuffle<Double>)(s)).toVectorTemplate())));
         }
 
         @Override

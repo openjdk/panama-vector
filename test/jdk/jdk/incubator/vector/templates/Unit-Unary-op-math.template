@@ -1,9 +1,9 @@
     static $type$ [[TEST]]($type$ a) {
-        return ($type$) ([[TEST_OP]]);
+        return ($type$)([[TEST_OP]]);
     }
 
     static $type$ strict[[TEST]]($type$ a) {
-        return ($type$) (Strict[[TEST_OP]]);
+        return ($type$)(Strict[[TEST_OP]]);
     }
 
     @Test(dataProvider = "$type$UnaryOpProvider")

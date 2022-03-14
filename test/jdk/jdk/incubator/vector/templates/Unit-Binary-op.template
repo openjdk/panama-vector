@@ -1,5 +1,5 @@
     static $type$ [[TEST]]($type$ a, $type$ b) {
-        return ($type$) ([[TEST_OP]]);
+        return ($type$)([[TEST_OP]]);
     }
 
     @Test(dataProvider = "$type$BinaryOpProvider")

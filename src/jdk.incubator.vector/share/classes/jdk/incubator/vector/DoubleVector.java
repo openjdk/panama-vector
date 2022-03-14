@@ -427,7 +427,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         double[] vec1 = vec();
         double[] vec2 = ((DoubleVector)o).vec();
         boolean[] bits = new boolean[length()];
-        for (int i = 0; i < length(); i++) {
+        for (int i = 0; i < length(); i++){
             bits[i] = f.apply(cond, i, vec1[i], vec2[i]);
         }
         return maskFactory(bits);
