@@ -3536,7 +3536,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *         if {@code offset+N*ESIZE < 0}
      *         or {@code offset+(N+1)*ESIZE > ms.byteSize()}
      *         for any lane {@code N} in the vector
-     * @throws java.lang.IllegalArgumentException
+     * @throws UnsupportedOperationException
      *         if the memory segment is read-only
      * @throws IllegalStateException if the memory segment's session is not alive,
      *         or if access occurs from a thread other than the thread owning the session.
@@ -3586,7 +3586,7 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
      *         or {@code offset+(N+1)*ESIZE > ms.byteSize()}
      *         for any lane {@code N} in the vector
      *         where the mask is set
-     * @throws java.lang.IllegalArgumentException
+     * @throws UnsupportedOperationException
      *         if the memory segment is read-only
      * @throws IllegalStateException if the memory segment's session is not alive,
      *         or if access occurs from a thread other than the thread owning the session.
