@@ -1,5 +1,5 @@
-// Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
-// Copyright (c) 2020, 2021, Arm Limited. All rights reserved.
+// Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+// Copyright (c) 2020, 2022, Arm Limited. All rights reserved.
 // DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 //
 // This code is free software; you can redistribute it and/or modify it
@@ -2513,3 +2513,57 @@ instruct vmask_tolong16B(iRegLNoSp dst, vecX src) %{
   %}
   ins_pipe(pipe_slow);
 %}
+
+//------------------------CountLeadingZerosV-------------------------------
+dnl
+dnl CLTZ_I($1,      $2,     $3  )
+dnl CLTZ_I(op_name, suffix, type)
+define(`CLTZ_I', `
+instruct count$1I$2(vec$2 dst, vec$2 src) %{
+  ifelse($2, D,
+       `predicate(n->as_Vector()->length_in_bytes() == 8);',
+       `predicate(n->as_Vector()->length_in_bytes() == 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() != T_LONG);')
+  match(Set dst (Count$1 src));
+  ins_cost(ifelse($1, `TrailingZerosV', `3 * ', `')INSN_COST);
+  format %{ "count$1 $dst, $src\t# vector ($3)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_Arrangement size = __ esize2arrangement((unsigned)type2aelembytes(bt), ifelse($2, D, false, true));dnl
+ifelse($1, `TrailingZerosV', `
+    __ neon_reverse_bits(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), bt, ifelse($2, D, false, true));', `')
+    __ clz(as_FloatRegister($dst$$reg), size, as_FloatRegister($ifelse($1, `TrailingZerosV', dst, src)$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+dnl CLTZ_L($1,      $2  )
+dnl CLTZ_L(op_name, cost)
+define(`CLTZ_L', `
+instruct count$1L(vecX dst, vecX src) %{
+  predicate(n->as_Vector()->length_in_bytes() == 16 &&
+            n->bottom_type()->is_vect()->element_basic_type() == T_LONG);
+  match(Set dst (Count$1 src));
+  ins_cost($2 * INSN_COST);
+  format %{ "count$1 $dst, $src\t# vector (2D)" %}
+  ins_encode %{dnl
+ifelse($1, `TrailingZerosV', `
+    __ neon_reverse_bits(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), T_LONG, true);', `')
+    __ umov(rscratch1, as_FloatRegister($ifelse($1, `TrailingZerosV', dst, src)$$reg), __ D, 0);
+    __ clz(rscratch1, rscratch1);
+    __ mov(as_FloatRegister($dst$$reg), __ D, 0, rscratch1);
+    __ umov(rscratch1, as_FloatRegister($ifelse($1, `TrailingZerosV', dst, src)$$reg), __ D, 1);
+    __ clz(rscratch1, rscratch1);
+    __ mov(as_FloatRegister($dst$$reg), __ D, 1, rscratch1);
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+CLTZ_I(LeadingZerosV, D, 8B/4H/2S)
+CLTZ_I(LeadingZerosV, X, 16B/8H/4S)
+CLTZ_L(LeadingZerosV, 6)
+
+//----------------------------CountTrailingZerosV-------------------------------
+CLTZ_I(TrailingZerosV, D, 8B/4H/2S)
+CLTZ_I(TrailingZerosV, X, 16B/8H/4S)
+CLTZ_L(TrailingZerosV, 8)

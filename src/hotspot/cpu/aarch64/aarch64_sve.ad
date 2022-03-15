@@ -5824,3 +5824,66 @@ instruct vmask_gen(pRegGov pg, iRegL len, rFlagsReg cr) %{
   %}
   ins_pipe(pipe_slow);
 %}
+
+// ------------------------------ CountLeadingZerosV ------------------------------
+
+instruct countLeadingZerosV(vReg dst, vReg src) %{
+  predicate(UseSVE > 0 &&
+            !n->as_Vector()->is_predicated_vector());
+  match(Set dst (CountLeadingZerosV src));
+  ins_cost(SVE_COST);
+  format %{ "countLeadingZerosV $dst, $src\t# vector (sve)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
+    __ sve_clz(as_FloatRegister($dst$$reg), size, ptrue, as_FloatRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct countLeadingZerosV_masked(vReg dst_src, pRegGov pg) %{
+  predicate(UseSVE > 0);
+  match(Set dst_src (CountLeadingZerosV dst_src pg));
+  ins_cost(SVE_COST);
+  format %{ "countLeadingZerosV $dst_src, $pg, $dst_src\t# vector (sve)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
+    __ sve_clz(as_FloatRegister($dst_src$$reg), size,
+        as_PRegister($pg$$reg), as_FloatRegister($dst_src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// ------------------------------ CountTrailingZerosV -----------------------------
+
+instruct countTrailingZerosV(vReg dst, vReg src) %{
+  predicate(UseSVE > 0 &&
+            !n->as_Vector()->is_predicated_vector());
+  match(Set dst (CountTrailingZerosV src));
+  ins_cost(2 * SVE_COST);
+  format %{ "countTrailingZerosV $dst, $src\t# vector (sve)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
+    __ sve_rbit(as_FloatRegister($dst$$reg), size, ptrue, as_FloatRegister($src$$reg));
+    __ sve_clz(as_FloatRegister($dst$$reg), size, ptrue, as_FloatRegister($dst$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct countTrailingZerosV_masked(vReg dst_src, pRegGov pg) %{
+  predicate(UseSVE > 0);
+  match(Set dst_src (CountTrailingZerosV dst_src pg));
+  ins_cost(2 * SVE_COST);
+  format %{ "countTrailingZerosV $dst_src, $pg, $dst_src\t# vector (sve)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
+    __ sve_rbit(as_FloatRegister($dst_src$$reg), size,
+        as_PRegister($pg$$reg), as_FloatRegister($dst_src$$reg));
+    __ sve_clz(as_FloatRegister($dst_src$$reg), size,
+        as_PRegister($pg$$reg), as_FloatRegister($dst_src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}

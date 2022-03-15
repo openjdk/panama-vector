@@ -3297,3 +3297,52 @@ instruct vmask_gen(pRegGov pg, iRegL len, rFlagsReg cr) %{
   %}
   ins_pipe(pipe_slow);
 %}
+
+dnl
+dnl CLTZ($1     )
+dnl CLTZ(op_name)
+define(`CLTZ', `
+instruct count$1(vReg dst, vReg src) %{
+  predicate(UseSVE > 0 &&
+            !n->as_Vector()->is_predicated_vector());
+  match(Set dst (Count$1 src));
+  ins_cost(ifelse($1, `TrailingZerosV', `2 * ', `')SVE_COST);
+  format %{ "count$1 $dst, $src\t# vector (sve)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);dnl
+ifelse($1, `TrailingZerosV', `
+    __ sve_rbit(as_FloatRegister($dst$$reg), size, ptrue, as_FloatRegister($src$$reg));', `')
+    __ sve_clz(as_FloatRegister($dst$$reg), size, ptrue, as_FloatRegister($ifelse($1, `LeadingZerosV', src, dst)$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+dnl
+dnl CLTZ_PREDICATE($1     )
+dnl CLTZ_PREDICATE(op_name)
+define(`CLTZ_PREDICATE', `
+instruct count$1_masked(vReg dst_src, pRegGov pg) %{
+  predicate(UseSVE > 0);
+  match(Set dst_src (Count$1 dst_src pg));
+  ins_cost(ifelse($1, `TrailingZerosV', `2 * ', `')SVE_COST);
+  format %{ "count$1 $dst_src, $pg, $dst_src\t# vector (sve)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);dnl
+ifelse($1, `TrailingZerosV', `
+    __ sve_rbit(as_FloatRegister($dst_src$$reg), size,
+        as_PRegister($pg$$reg), as_FloatRegister($dst_src$$reg));', `')
+    __ sve_clz(as_FloatRegister($dst_src$$reg), size,
+        as_PRegister($pg$$reg), as_FloatRegister($dst_src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+// ------------------------------ CountLeadingZerosV ------------------------------
+CLTZ(LeadingZerosV)
+CLTZ_PREDICATE(LeadingZerosV)
+
+// ------------------------------ CountTrailingZerosV -----------------------------
+CLTZ(TrailingZerosV)
+CLTZ_PREDICATE(TrailingZerosV)
