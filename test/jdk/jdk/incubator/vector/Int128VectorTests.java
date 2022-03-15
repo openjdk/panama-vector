@@ -1182,7 +1182,6 @@ public class Int128VectorTests extends AbstractVectorTest {
         return Integer.reverse(a);
     }
 
-
     static boolean eq(int a, int b) {
         return a == b;
     }

@@ -1487,14 +1487,14 @@ public class $vectorteststype$ extends AbstractVectorTest {
 #else[intOrLong]
 #if[short]
         $type$ b = ROL_scalar(a, ($type$) 8);
-        b = (short)(((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
-        b = (short)(((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
-        b = (short)(((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
+        b = (short) (((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
+        b = (short) (((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
+        b = (short) (((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
         return b;
 #else[short]
         $type$ b = ($type$) ROL_scalar(a, ($type$) 4);
-        b = (byte)(((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
-        b = (byte)(((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
+        b = (byte) (((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
+        b = (byte) (((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
         return b;
 #end[short]
 #end[intOrLong]

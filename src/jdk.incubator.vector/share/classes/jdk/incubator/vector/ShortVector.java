@@ -358,8 +358,8 @@ public abstract class ShortVector extends AbstractVector<Short> {
         if (m.allTrue()) {
             return vi;
         }
-        for(int i = 0,j = 0; i < vsp.length(); i++) {
-            if(m.laneIsSet(i)) {
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
+            if (m.laneIsSet(i)) {
                 r = r.withLane(i, vi.lane(j++));
             }
         }
@@ -373,7 +373,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
         if (m.allTrue()) {
             return vi;
         }
-        for(int i = 0, j = 0; i < vsp.length(); i++) {
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
             if (m.laneIsSet(i)) {
                 r = r.withLane(j++, vi.lane(i));
             }
@@ -1803,9 +1803,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
         if (a == 0 || a == -1) return a;
 
         short b = rotateLeft(a, 8);
-        b = (short)(((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
-        b = (short)(((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
-        b = (short)(((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
+        b = (short) (((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
+        b = (short) (((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
+        b = (short) (((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
         return b;
     }
 

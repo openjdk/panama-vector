@@ -1220,11 +1220,10 @@ public class Byte128VectorTests extends AbstractVectorTest {
 
     static byte REVERSE_scalar(byte a) {
         byte b = (byte) ROL_scalar(a, (byte) 4);
-        b = (byte)(((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
-        b = (byte)(((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
+        b = (byte) (((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
+        b = (byte) (((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
         return b;
     }
-
 
     static boolean eq(byte a, byte b) {
         return a == b;

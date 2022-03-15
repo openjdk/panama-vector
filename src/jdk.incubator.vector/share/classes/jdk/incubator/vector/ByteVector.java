@@ -358,8 +358,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         if (m.allTrue()) {
             return vi;
         }
-        for(int i = 0,j = 0; i < vsp.length(); i++) {
-            if(m.laneIsSet(i)) {
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
+            if (m.laneIsSet(i)) {
                 r = r.withLane(i, vi.lane(j++));
             }
         }
@@ -373,7 +373,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         if (m.allTrue()) {
             return vi;
         }
-        for(int i = 0, j = 0; i < vsp.length(); i++) {
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
             if (m.laneIsSet(i)) {
                 r = r.withLane(j++, vi.lane(i));
             }
@@ -1803,8 +1803,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         if (a == 0 || a == -1) return a;
 
         byte b = rotateLeft(a, 4);
-        b = (byte)(((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
-        b = (byte)(((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
+        b = (byte) (((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
+        b = (byte) (((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
         return b;
     }
 
