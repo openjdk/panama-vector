@@ -1216,6 +1216,9 @@ public class Short256VectorTests extends AbstractVectorTest {
         return b;
     }
 
+    static short REVERSE_BYTES_scalar(short a) {
+        return (short) ((a << 8) | (a >>> 8));
+    }
     static boolean eq(short a, short b) {
         return a == b;
     }
@@ -5442,6 +5445,49 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(r, a, mask, Short256VectorTests::REVERSE);
+    }
+
+
+
+    static short REVERSE_BYTES(short a) {
+        return (short)(REVERSE_BYTES_scalar(a));
+    }
+
+
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void REVERSE_BYTESShort256VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE_BYTES).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Short256VectorTests::REVERSE_BYTES);
+    }
+
+
+
+    @Test(dataProvider = "shortUnaryOpMaskProvider")
+    static void REVERSE_BYTESMaskedShort256VectorTests(IntFunction<short[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE_BYTES, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Short256VectorTests::REVERSE_BYTES);
     }
 
 

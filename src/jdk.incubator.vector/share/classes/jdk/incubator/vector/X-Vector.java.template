@@ -691,6 +691,8 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                     v0.uOp(m, (i, a) -> ($type$) $Boxtype$.numberOfLeadingZeros(a));
             case VECTOR_OP_REVERSE: return (v0, m) ->
                     v0.uOp(m, (i, a) -> ($type$) $Boxtype$.reverse(a));
+            case VECTOR_OP_REVERSE_BYTES: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> ($type$) $Boxtype$.reverseBytes(a));
 #else[intOrLong]
             case VECTOR_OP_BIT_COUNT: return (v0, m) ->
                     v0.uOp(m, (i, a) -> ($type$) bitCount(a));
@@ -700,6 +702,8 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                     v0.uOp(m, (i, a) -> ($type$) numberOfLeadingZeros(a));
             case VECTOR_OP_REVERSE: return (v0, m) ->
                     v0.uOp(m, (i, a) -> reverse(a));
+            case VECTOR_OP_REVERSE_BYTES: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> ($type$) reverseBytes(a));
 #end[intOrLong]
 #end[!FP]
 #if[FP]
@@ -2089,6 +2093,17 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         b = ($type$) (((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
 #end[short]
         return b;
+    }
+#end[!intOrLong]
+#end[!FP]
+#if[!FP]
+#if[!intOrLong]
+    static int reverseBytes($type$ a) {
+#if[short]
+        return (short) ((a << 8) | (a >>> 8));
+#else[short]
+        return a;
+#end[short]
     }
 #end[!intOrLong]
 #end[!FP]

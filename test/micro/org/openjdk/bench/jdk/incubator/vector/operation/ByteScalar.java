@@ -144,6 +144,10 @@ public class ByteScalar extends AbstractVectorBenchmark {
         return b;
     }
 
+    static byte REVERSE_BYTES_scalar(byte a) {
+        return (byte) a;
+    }
+
     @Benchmark
     public void ADD(Blackhole bh) {
         byte[] as = fa.apply(size);
@@ -1815,6 +1819,42 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 boolean m = ms[i % ms.length];
                 rs[i] = (m ? (byte)(REVERSE_scalar(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void REVERSE_BYTES(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                rs[i] = (byte)(REVERSE_BYTES_scalar(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void REVERSE_BYTESMasked(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (byte)(REVERSE_BYTES_scalar(a)) : a);
             }
         }
 
