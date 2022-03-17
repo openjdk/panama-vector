@@ -5841,6 +5841,8 @@ instruct countLeadingZerosV(vReg dst, vReg src) %{
   ins_pipe(pipe_slow);
 %}
 
+// The dst and src should use the same register to make sure the
+// inactive lanes in dst save the same elements as src.
 instruct countLeadingZerosV_masked(vReg dst_src, pRegGov pg) %{
   predicate(UseSVE > 0);
   match(Set dst_src (CountLeadingZerosV dst_src pg));
@@ -5872,6 +5874,8 @@ instruct countTrailingZerosV(vReg dst, vReg src) %{
   ins_pipe(pipe_slow);
 %}
 
+// The dst and src should use the same register to make sure the
+// inactive lanes in dst save the same elements as src.
 instruct countTrailingZerosV_masked(vReg dst_src, pRegGov pg) %{
   predicate(UseSVE > 0);
   match(Set dst_src (CountTrailingZerosV dst_src pg));

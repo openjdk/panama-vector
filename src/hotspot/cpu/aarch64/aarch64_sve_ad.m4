@@ -3322,6 +3322,8 @@ dnl
 dnl CLTZ_PREDICATE($1     )
 dnl CLTZ_PREDICATE(op_name)
 define(`CLTZ_PREDICATE', `
+// The dst and src should use the same register to make sure the
+// inactive lanes in dst save the same elements as src.
 instruct count$1_masked(vReg dst_src, pRegGov pg) %{
   predicate(UseSVE > 0);
   match(Set dst_src (Count$1 dst_src pg));
