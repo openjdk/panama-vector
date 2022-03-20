@@ -177,6 +177,9 @@ class x86 {
   static address _vector_short_shuffle_mask;
   static address _vector_long_shuffle_mask;
   static address _vector_iota_indices;
+  static address _vector_reverse_byte_perm_mask_long;
+  static address _vector_reverse_byte_perm_mask_int;
+  static address _vector_reverse_byte_perm_mask_short;
 #ifdef _LP64
   static juint _k256_W[];
   static address _k256_W_adr;
@@ -340,6 +343,17 @@ class x86 {
     return _vector_iota_indices;
   }
 
+  static address vector_reverse_byte_perm_mask_long() {
+    return _vector_reverse_byte_perm_mask_long;
+  }
+
+  static address vector_reverse_byte_perm_mask_int() {
+    return _vector_reverse_byte_perm_mask_int;
+  }
+
+  static address vector_reverse_byte_perm_mask_short() {
+    return _vector_reverse_byte_perm_mask_short;
+  }
 #ifdef _LP64
   static address k256_W_addr()    { return _k256_W_adr; }
   static address k512_W_addr()    { return _k512_W_addr; }

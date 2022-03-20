@@ -4393,3 +4393,181 @@ void C2_MacroAssembler::vector_maskall_operation32(KRegister dst, Register src, 
   kunpckdql(dst, tmp, tmp);
 }
 #endif
+
+void C2_MacroAssembler::vector_reverse_bit_avx(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                               XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc) {
+  vpcmpeqd(xtmp3, xtmp3, xtmp3, vec_enc);
+
+  // Shift based bit reversal.
+  movl(rtmp, 0x0f0f0f0f);
+  movq(dst, rtmp);
+  vpbroadcastd(dst, dst, vec_enc);
+  vpxor(xtmp2, xtmp3, dst, vec_enc);
+
+  vpand(dst, dst, src, vec_enc);
+  vpsllq(dst, dst, 4, vec_enc);
+  vpand(xtmp2, xtmp2, src, vec_enc);
+  vpsrlq(xtmp2, xtmp2, 4, vec_enc);
+  vpor(xtmp1, dst, xtmp2, vec_enc);
+
+  movl(rtmp, 0x33333333);
+  movq(dst, rtmp);
+  vpbroadcastd(dst, dst, vec_enc);
+  vpxor(xtmp2, xtmp3, dst, vec_enc);
+
+  vpand(dst, dst, xtmp1, vec_enc);
+  vpsllq(dst, dst, 2, vec_enc);
+  vpand(xtmp2, xtmp2, xtmp1, vec_enc);
+  vpsrlq(xtmp2, xtmp2, 2, vec_enc);
+  vpor(xtmp1, dst, xtmp2, vec_enc);
+
+  movl(rtmp, 0x55555555);
+  movq(dst, rtmp);
+  vpbroadcastd(dst, dst, vec_enc);
+  vpxor(xtmp2, xtmp3, dst, vec_enc);
+
+  vpand(dst, dst, xtmp1, vec_enc);
+  vpsllq(dst, dst, 1, vec_enc);
+  vpand(xtmp2, xtmp2, xtmp1, vec_enc);
+  vpsrlq(xtmp2, xtmp2, 1, vec_enc);
+  vpor(dst, dst, xtmp2, vec_enc);
+
+  if (bt != T_BYTE) {
+    vector_reverse_byte_avx(bt, dst, dst, xtmp1, vec_enc);
+  }
+}
+
+void C2_MacroAssembler::vector_reverse_bit_evex(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                                XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  // Shift based bit reversal.
+  movl(rtmp, 0x0f0f0f0f);
+  evpbroadcastd(xtmp1, rtmp, vec_enc);
+  vpternlogd(xtmp2, 0x11, xtmp1, xtmp1, vec_enc);
+
+  vpandq(dst, xtmp1, src, vec_enc);
+  vpsllq(dst, dst, 4, vec_enc);
+  vpandq(xtmp2, xtmp2, src, vec_enc);
+  vpsrlq(xtmp2, xtmp2, 4, vec_enc);
+  vporq(xtmp1, dst, xtmp2, vec_enc);
+
+  movl(rtmp, 0x33333333);
+  evpbroadcastd(dst, rtmp, vec_enc);
+  vpternlogd(xtmp2, 0x11, dst, dst, vec_enc);
+
+  vpandq(dst, dst, xtmp1, vec_enc);
+  vpsllq(dst, dst, 2, vec_enc);
+  vpandq(xtmp2, xtmp2, xtmp1, vec_enc);
+  vpsrlq(xtmp2, xtmp2, 2, vec_enc);
+  vporq(xtmp1, dst, xtmp2, vec_enc);
+
+  movl(rtmp, 0x55555555);
+  evpbroadcastd(dst, rtmp, vec_enc);
+  vpternlogd(xtmp2, 0x11, dst, dst, vec_enc);
+
+  vpandq(dst, dst, xtmp1, vec_enc);
+  vpsllq(dst, dst, 1, vec_enc);
+  vpandq(xtmp2, xtmp2, xtmp1, vec_enc);
+  vpsrlq(xtmp2, xtmp2, 1, vec_enc);
+  vporq(dst, dst, xtmp2, vec_enc);
+
+  if (bt != T_BYTE) {
+    vector_reverse_byte_evex(bt, dst, dst, xtmp1, xtmp2, rtmp, vec_enc);
+  }
+}
+
+#ifdef _LP64
+void C2_MacroAssembler::vector_reverse_bit_gfni(BasicType bt, XMMRegister dst, XMMRegister src,
+                                                XMMRegister xtmp, Register rtmp, int vec_enc) {
+  // Galois field instruction based bit reversal.
+  assert(VM_Version::supports_gfni(), "");
+  mov64(rtmp, 0x8040201008040201L);
+  movq(xtmp, rtmp);
+  vpbroadcastq(xtmp, xtmp, vec_enc);
+  vgf2p8affineqb(dst, 0, src, xtmp, vec_enc);
+  if (bt != T_BYTE) {
+    if (VM_Version::supports_avx512bw()) {
+      vector_reverse_byte_evex(bt, dst, dst, xtmp, xnoreg, noreg, vec_enc);
+    } else {
+      assert(vec_enc < Assembler::AVX_512bit, "");
+      vector_reverse_byte_avx(bt, dst, dst, xtmp, vec_enc);
+    }
+  }
+}
+#endif
+
+void C2_MacroAssembler::vector_reverse_byte_avx(BasicType bt, XMMRegister dst, XMMRegister src,
+                                                XMMRegister xtmp, int vec_enc) {
+  // Shift based bit reversal.
+  vmovdqu(xtmp, src);
+  switch(bt) {
+    case T_LONG:
+      vpsrlq(dst, xtmp, 32, vec_enc);
+      vpsllq(xtmp, xtmp, 32, vec_enc);
+      vpor(xtmp, dst, xtmp, vec_enc);
+    case T_INT:
+      vpsrld(dst, xtmp, 16, vec_enc);
+      vpslld(xtmp, xtmp, 16, vec_enc);
+      vpor(xtmp, dst, xtmp, vec_enc);
+    case T_SHORT:
+      vpsllw(dst, xtmp, 8, vec_enc);
+      vpsrlw(xtmp, xtmp, 8, vec_enc);
+      vpor(dst, dst, xtmp, vec_enc);
+      break;
+    default:
+      fatal("Unsupported type");
+      break;
+  }
+}
+
+void C2_MacroAssembler::vector_reverse_byte_evex(BasicType bt, XMMRegister dst, XMMRegister src,
+                                                 XMMRegister xtmp1, XMMRegister xtmp2, Register rtmp,
+                                                 int vec_enc) {
+  if (VM_Version::supports_avx512_vbmi()) {
+    switch(bt) {
+      case T_LONG:
+        evmovdquq(xtmp1, ExternalAddress(StubRoutines::x86::vector_reverse_byte_perm_mask_long()),
+                                         vec_enc, rtmp);
+        break;
+      case T_INT:
+        evmovdquq(xtmp1, ExternalAddress(StubRoutines::x86::vector_reverse_byte_perm_mask_int()),
+                                         vec_enc, rtmp);
+        break;
+      case T_SHORT:
+        evmovdquq(xtmp1, ExternalAddress(StubRoutines::x86::vector_reverse_byte_perm_mask_short()),
+                                        vec_enc, rtmp);
+        break;
+      default:
+        fatal("Unsupported type");
+        break;
+    }
+    vpermb(dst, xtmp1, src, vec_enc);
+  } else {
+    // Shift based bit reversal.
+    evmovdqul(xtmp1, k0, src, true, vec_enc);
+    switch(bt) {
+      case T_LONG:
+        evprorq(xtmp1, k0, xtmp1, 32, true, vec_enc);
+      case T_INT:
+        evprord(xtmp1, k0, xtmp1, 16, true, vec_enc);
+      case T_SHORT:
+        if (VM_Version::supports_avx512bw()) {
+          vpsllw(dst, xtmp1, 8, vec_enc);
+          vpsrlw(xtmp1, xtmp1, 8, vec_enc);
+          vporq(dst, dst, xtmp1, vec_enc);
+        } else {
+          movl(rtmp, 0x00FF00FF);
+          evpbroadcastd(dst, rtmp, vec_enc);
+          vpandq(xtmp2, dst, xtmp1, vec_enc);
+          vpsllq(xtmp2, xtmp2, 8, vec_enc);
+          vpternlogd(dst, 0x1, dst, dst, vec_enc);
+          vpandq(xtmp1, dst, xtmp1, vec_enc);
+          vpsrlq(dst, xtmp1, 8, vec_enc);
+          vporq(dst, dst, xtmp2, vec_enc);
+        }
+        break;
+      default:
+        fatal("Unsupported type");
+        break;
+    }
+  }
+}

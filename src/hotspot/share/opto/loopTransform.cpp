@@ -968,6 +968,7 @@ bool IdealLoopTree::policy_unroll(PhaseIdealLoop *phase) {
       case Op_ModL: body_size += 30; break;
       case Op_DivL: body_size += 30; break;
       case Op_MulL: body_size += 10; break;
+      case Op_ReverseV: body_size += 50; break;
       case Op_StrComp:
       case Op_StrEquals:
       case Op_StrIndexOf:

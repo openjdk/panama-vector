@@ -322,4 +322,21 @@ public:
   void evpternlog(XMMRegister dst, int func, KRegister mask, XMMRegister src2, Address src3,
                   bool merge, BasicType bt, int vlen_enc);
 
+  void vector_reverse_byte_avx(BasicType bt, XMMRegister dst, XMMRegister src,
+                               XMMRegister xtmp, int vec_enc);
+
+  void vector_reverse_byte_evex(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                XMMRegister xtmp2, Register rtmp, int vec_enc);
+
+#ifdef _LP64
+  void vector_reverse_bit_gfni(BasicType bt, XMMRegister dst, XMMRegister src,
+                               XMMRegister xtmp, Register rtmp, int vec_enc);
+#endif
+
+  void vector_reverse_bit_avx(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                              XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc);
+
+  void vector_reverse_bit_evex(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                               XMMRegister xtmp2, Register rtmp, int vec_enc);
+
 #endif // CPU_X86_C2_MACROASSEMBLER_X86_HPP

@@ -1669,4 +1669,12 @@ public:
   virtual int Opcode() const;
   Node* Ideal(PhaseGVN* phase, bool can_reshape);
 };
+
+class ReverseVNode : public VectorNode {
+public:
+  ReverseVNode(Node* in, const TypeVect* vt)
+  : VectorNode(in, vt) {}
+
+  virtual int Opcode() const;
+};
 #endif // SHARE_OPTO_VECTORNODE_HPP
