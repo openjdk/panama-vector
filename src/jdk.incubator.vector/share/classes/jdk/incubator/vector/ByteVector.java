@@ -664,7 +664,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             case VECTOR_OP_REVERSE: return (v0, m) ->
                     v0.uOp(m, (i, a) -> reverse(a));
             case VECTOR_OP_REVERSE_BYTES: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (byte) a);
+                    v0.uOp(m, (i, a) -> a);
             default: return null;
         }
     }
