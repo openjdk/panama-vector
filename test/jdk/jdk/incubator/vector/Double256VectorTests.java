@@ -4681,6 +4681,12 @@ public class Double256VectorTests extends AbstractVectorTest {
 
 
 
+
+
+
+
+
+
     @Test(dataProvider = "doubleCompareOpProvider")
     static void ltDouble256VectorTestsBroadcastSmokeTest(IntFunction<double[]> fa, IntFunction<double[]> fb) {
         double[] a = fa.apply(SPECIES.length());

@@ -2234,5 +2234,9 @@ public class IntMaxVector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
+
+
+
+
 }
 

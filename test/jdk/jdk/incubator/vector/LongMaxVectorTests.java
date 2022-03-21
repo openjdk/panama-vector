@@ -1208,10 +1208,6 @@ public class LongMaxVectorTests extends AbstractVectorTest {
     static long REVERSE_scalar(long a) {
         return Long.reverse(a);
     }
-
-    static long REVERSE_BYTES_scalar(long a) {
-        return Long.reverseBytes(a);
-    }
     static boolean eq(long a, long b) {
         return a == b;
     }
@@ -5376,7 +5372,7 @@ public class LongMaxVectorTests extends AbstractVectorTest {
 
 
     static long REVERSE_BYTES(long a) {
-        return (long)(REVERSE_BYTES_scalar(a));
+        return (long)(Long.reverseBytes(a));
     }
 
 
@@ -5415,6 +5411,12 @@ public class LongMaxVectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, mask, LongMaxVectorTests::REVERSE_BYTES);
     }
+
+
+
+
+
+
 
 
     @Test(dataProvider = "longCompareOpProvider")

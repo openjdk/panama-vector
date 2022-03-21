@@ -664,7 +664,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             case VECTOR_OP_REVERSE: return (v0, m) ->
                     v0.uOp(m, (i, a) -> reverse(a));
             case VECTOR_OP_REVERSE_BYTES: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) reverseBytes(a));
+                    v0.uOp(m, (i, a) -> (short) Short.reverseBytes(a));
             default: return null;
         }
     }
@@ -1809,9 +1809,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
         b = (short) (((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
         b = (short) (((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
         return b;
-    }
-    static int reverseBytes(short a) {
-        return (short) ((a << 8) | (a >>> 8));
     }
 
     // not (~)

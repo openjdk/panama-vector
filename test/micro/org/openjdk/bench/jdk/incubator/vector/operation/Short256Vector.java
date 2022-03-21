@@ -2200,6 +2200,8 @@ public class Short256Vector extends AbstractVectorBenchmark {
 
 
 
+
+
     @Benchmark
     public void REVERSE_BYTES(Blackhole bh) {
         short[] a = fa.apply(SPECIES.length());
@@ -2233,6 +2235,8 @@ public class Short256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
+
+
 
 }
 

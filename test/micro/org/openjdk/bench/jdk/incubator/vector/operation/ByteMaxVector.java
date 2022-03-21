@@ -2200,6 +2200,10 @@ public class ByteMaxVector extends AbstractVectorBenchmark {
 
 
 
+
+
+
+
     @Benchmark
     public void REVERSE_BYTES(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());

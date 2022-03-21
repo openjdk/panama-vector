@@ -190,16 +190,4 @@ public class $Type$Scalar extends AbstractVectorBenchmark {
 #end[short]
 #end[intOrLong]
     }
-
-    static $type$ REVERSE_BYTES_scalar($type$ a) {
-#if[intOrLong]
-        return $Wideboxtype$.reverseBytes(a);
-#else[intOrLong]
-#if[short]
-        return (short) ((a << 8) | (a >>> 8));
-#else[short]
-        return (byte) a;
-#end[short]
-#end[intOrLong]
-    }
 #end[BITWISE]

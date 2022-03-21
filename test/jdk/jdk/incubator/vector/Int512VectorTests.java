@@ -1181,10 +1181,6 @@ public class Int512VectorTests extends AbstractVectorTest {
     static int REVERSE_scalar(int a) {
         return Integer.reverse(a);
     }
-
-    static int REVERSE_BYTES_scalar(int a) {
-        return Integer.reverseBytes(a);
-    }
     static boolean eq(int a, int b) {
         return a == b;
     }
@@ -5421,7 +5417,7 @@ public class Int512VectorTests extends AbstractVectorTest {
 
 
     static int REVERSE_BYTES(int a) {
-        return (int)(REVERSE_BYTES_scalar(a));
+        return (int)(Integer.reverseBytes(a));
     }
 
 
@@ -5460,6 +5456,12 @@ public class Int512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, mask, Int512VectorTests::REVERSE_BYTES);
     }
+
+
+
+
+
+
 
 
     @Test(dataProvider = "intCompareOpProvider")

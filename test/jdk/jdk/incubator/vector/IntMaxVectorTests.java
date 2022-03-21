@@ -1186,10 +1186,6 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     static int REVERSE_scalar(int a) {
         return Integer.reverse(a);
     }
-
-    static int REVERSE_BYTES_scalar(int a) {
-        return Integer.reverseBytes(a);
-    }
     static boolean eq(int a, int b) {
         return a == b;
     }
@@ -5426,7 +5422,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int REVERSE_BYTES(int a) {
-        return (int)(REVERSE_BYTES_scalar(a));
+        return (int)(Integer.reverseBytes(a));
     }
 
 
@@ -5465,6 +5461,12 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, mask, IntMaxVectorTests::REVERSE_BYTES);
     }
+
+
+
+
+
+
 
 
     @Test(dataProvider = "intCompareOpProvider")

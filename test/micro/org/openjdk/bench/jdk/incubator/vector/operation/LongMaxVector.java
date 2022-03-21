@@ -2234,5 +2234,9 @@ public class LongMaxVector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
+
+
+
+
 }
 

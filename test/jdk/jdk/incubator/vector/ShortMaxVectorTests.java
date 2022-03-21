@@ -1220,10 +1220,6 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         b = (short) (((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
         return b;
     }
-
-    static short REVERSE_BYTES_scalar(short a) {
-        return (short) ((a << 8) | (a >>> 8));
-    }
     static boolean eq(short a, short b) {
         return a == b;
     }
@@ -5454,8 +5450,11 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
 
 
 
+
+
+
     static short REVERSE_BYTES(short a) {
-        return (short)(REVERSE_BYTES_scalar(a));
+        return (short)(Short.reverseBytes(a));
     }
 
 
@@ -5494,6 +5493,9 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, mask, ShortMaxVectorTests::REVERSE_BYTES);
     }
+
+
+
 
 
     @Test(dataProvider = "shortCompareOpProvider")

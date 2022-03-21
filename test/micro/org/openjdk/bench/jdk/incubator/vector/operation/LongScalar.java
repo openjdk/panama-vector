@@ -141,10 +141,6 @@ public class LongScalar extends AbstractVectorBenchmark {
         return Long.reverse(a);
     }
 
-    static long REVERSE_BYTES_scalar(long a) {
-        return Long.reverseBytes(a);
-    }
-
     @Benchmark
     public void ADD(Blackhole bh) {
         long[] as = fa.apply(size);
@@ -1832,7 +1828,7 @@ public class LongScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 long a = as[i];
-                rs[i] = (long)(REVERSE_BYTES_scalar(a));
+                rs[i] = (long)(Long.reverseBytes(a));
             }
         }
 
@@ -1851,12 +1847,16 @@ public class LongScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 long a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (long)(REVERSE_BYTES_scalar(a)) : a);
+                rs[i] = (m ? (long)(Long.reverseBytes(a)) : a);
             }
         }
 
         bh.consume(rs);
     }
+
+
+
+
 
 }
 

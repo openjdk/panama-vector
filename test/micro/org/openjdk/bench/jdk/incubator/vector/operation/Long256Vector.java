@@ -2234,5 +2234,9 @@ public class Long256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
+
+
+
+
 }
 

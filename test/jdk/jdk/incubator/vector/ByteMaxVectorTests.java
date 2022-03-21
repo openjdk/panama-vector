@@ -1229,10 +1229,6 @@ public class ByteMaxVectorTests extends AbstractVectorTest {
         b = (byte) (((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
         return b;
     }
-
-    static byte REVERSE_BYTES_scalar(byte a) {
-        return (byte) a;
-    }
     static boolean eq(byte a, byte b) {
         return a == b;
     }
@@ -5463,8 +5459,14 @@ public class ByteMaxVectorTests extends AbstractVectorTest {
 
 
 
+
+
+
+
+
+
     static byte REVERSE_BYTES(byte a) {
-        return (byte)(REVERSE_BYTES_scalar(a));
+        return (byte)(a);
     }
 
 
