@@ -1499,6 +1499,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
 #end[short]
 #end[intOrLong]
     }
+
 #end[BITWISE]
     static boolean eq($type$ a, $type$ b) {
         return a == b;

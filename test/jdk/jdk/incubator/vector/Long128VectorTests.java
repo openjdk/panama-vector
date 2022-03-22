@@ -1203,6 +1203,7 @@ public class Long128VectorTests extends AbstractVectorTest {
     static long REVERSE_scalar(long a) {
         return Long.reverse(a);
     }
+
     static boolean eq(long a, long b) {
         return a == b;
     }

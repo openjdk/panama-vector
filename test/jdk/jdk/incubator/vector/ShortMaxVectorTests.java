@@ -1220,6 +1220,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         b = (short) (((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
         return b;
     }
+
     static boolean eq(short a, short b) {
         return a == b;
     }

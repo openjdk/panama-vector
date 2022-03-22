@@ -1186,6 +1186,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     static int REVERSE_scalar(int a) {
         return Integer.reverse(a);
     }
+
     static boolean eq(int a, int b) {
         return a == b;
     }

@@ -1224,6 +1224,7 @@ public class Byte64VectorTests extends AbstractVectorTest {
         b = (byte) (((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
         return b;
     }
+
     static boolean eq(byte a, byte b) {
         return a == b;
     }
