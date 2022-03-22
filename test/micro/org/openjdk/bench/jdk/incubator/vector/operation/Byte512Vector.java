@@ -1265,7 +1265,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
 
 
-
     @Benchmark
     public Object LT() {
         byte[] a = fa.apply(size);
@@ -1285,7 +1284,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object GT() {
         byte[] a = fa.apply(size);
@@ -1305,7 +1303,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object EQ() {
         byte[] a = fa.apply(size);
@@ -1325,7 +1322,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object NE() {
         byte[] a = fa.apply(size);
@@ -1345,7 +1341,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object LE() {
         byte[] a = fa.apply(size);
@@ -1365,7 +1360,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object GE() {
         byte[] a = fa.apply(size);
@@ -1386,7 +1380,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         return m;
     }
 
-
     @Benchmark
     public Object UNSIGNED_LT() {
         byte[] a = fa.apply(size);
@@ -1406,7 +1399,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
 
 
     @Benchmark
@@ -1430,7 +1422,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
     }
 
 
-
     @Benchmark
     public Object UNSIGNED_LE() {
         byte[] a = fa.apply(size);
@@ -1450,7 +1441,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
 
 
     @Benchmark
@@ -1508,7 +1498,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
     @Benchmark
     public Object compress() {
         byte[] a = fa.apply(size);
@@ -1558,7 +1547,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return rs;
     }
-
 
     @Benchmark
     public void laneextract(Blackhole bh) {

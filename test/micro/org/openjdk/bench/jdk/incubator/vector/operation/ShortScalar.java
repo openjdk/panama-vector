@@ -1536,7 +1536,6 @@ public class ShortScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
-
     @Benchmark
     public void NEG(Blackhole bh) {
         short[] as = fa.apply(size);
@@ -1568,7 +1567,6 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
     @Benchmark
     public void ABS(Blackhole bh) {
         short[] as = fa.apply(size);
@@ -1600,7 +1598,6 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
 
     @Benchmark
     public void NOT(Blackhole bh) {
@@ -1635,7 +1632,6 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
 
 
     @Benchmark
@@ -1679,7 +1675,6 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
 
 
-
     @Benchmark
     public void BIT_COUNT(Blackhole bh) {
         short[] as = fa.apply(size);
@@ -1713,7 +1708,6 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
 
 
     @Benchmark
@@ -1751,7 +1745,6 @@ public class ShortScalar extends AbstractVectorBenchmark {
     }
 
 
-
     @Benchmark
     public void LEADING_ZEROS_COUNT(Blackhole bh) {
         short[] as = fa.apply(size);
@@ -1787,7 +1780,6 @@ public class ShortScalar extends AbstractVectorBenchmark {
     }
 
 
-
     @Benchmark
     public void REVERSE(Blackhole bh) {
         short[] as = fa.apply(size);
@@ -1821,7 +1813,6 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
 
 
 

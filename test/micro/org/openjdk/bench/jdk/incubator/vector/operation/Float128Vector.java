@@ -647,7 +647,6 @@ public class Float128Vector extends AbstractVectorBenchmark {
         return m;
     }
 
-
     @Benchmark
     public Object LT() {
         float[] a = fa.apply(size);
@@ -667,7 +666,6 @@ public class Float128Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object GT() {
         float[] a = fa.apply(size);
@@ -687,7 +685,6 @@ public class Float128Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object EQ() {
         float[] a = fa.apply(size);
@@ -707,7 +704,6 @@ public class Float128Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object NE() {
         float[] a = fa.apply(size);
@@ -727,7 +723,6 @@ public class Float128Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object LE() {
         float[] a = fa.apply(size);
@@ -747,7 +742,6 @@ public class Float128Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object GE() {
         float[] a = fa.apply(size);
@@ -806,7 +800,6 @@ public class Float128Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
     @Benchmark
     public Object compress() {
         float[] a = fa.apply(size);
@@ -856,7 +849,6 @@ public class Float128Vector extends AbstractVectorBenchmark {
 
         return rs;
     }
-
 
     @Benchmark
     public void laneextract(Blackhole bh) {

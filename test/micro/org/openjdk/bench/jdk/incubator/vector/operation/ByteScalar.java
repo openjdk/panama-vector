@@ -1535,7 +1535,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
-
     @Benchmark
     public void NEG(Blackhole bh) {
         byte[] as = fa.apply(size);
@@ -1567,7 +1566,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
     @Benchmark
     public void ABS(Blackhole bh) {
         byte[] as = fa.apply(size);
@@ -1599,7 +1597,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
 
     @Benchmark
     public void NOT(Blackhole bh) {
@@ -1636,7 +1633,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
     }
 
 
-
     @Benchmark
     public void ZOMO(Blackhole bh) {
         byte[] as = fa.apply(size);
@@ -1670,7 +1666,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
 
 
 
@@ -1714,7 +1709,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
 
 
-
     @Benchmark
     public void TRAILING_ZEROS_COUNT(Blackhole bh) {
         byte[] as = fa.apply(size);
@@ -1748,7 +1742,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
 
 
     @Benchmark
@@ -1786,7 +1779,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
     }
 
 
-
     @Benchmark
     public void REVERSE(Blackhole bh) {
         byte[] as = fa.apply(size);
@@ -1820,7 +1812,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
 
 
 

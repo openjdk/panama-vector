@@ -1148,7 +1148,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
 
 
-
     @Benchmark
     public void NEG(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -1180,7 +1179,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
     @Benchmark
     public void ABS(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -1212,7 +1210,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
 
 
 
