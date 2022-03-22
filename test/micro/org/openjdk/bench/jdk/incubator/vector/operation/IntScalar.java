@@ -1818,5 +1818,45 @@ public class IntScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
+
+
+    @Benchmark
+    public void REVERSE_BYTES(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                rs[i] = (int)(Integer.reverseBytes(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void REVERSE_BYTESMasked(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (int)(Integer.reverseBytes(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+
+
 }
 

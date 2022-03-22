@@ -1822,5 +1822,45 @@ public class ShortScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
+
+
+
+
+    @Benchmark
+    public void REVERSE_BYTES(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                rs[i] = (short)(Short.reverseBytes(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void REVERSE_BYTESMasked(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (short)(Short.reverseBytes(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
 }
 

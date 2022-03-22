@@ -701,6 +701,15 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             case VECTOR_OP_REVERSE: return (v0, m) ->
                     v0.uOp(m, (i, a) -> reverse(a));
 #end[intOrLong]
+#if[BITWISE]
+#if[byte]
+            case VECTOR_OP_REVERSE_BYTES: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> a);
+#else[byte]
+            case VECTOR_OP_REVERSE_BYTES: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> ($type$) $Boxtype$.reverseBytes(a));
+#end[byte]
+#end[BITWISE]
 #end[!FP]
 #if[FP]
             case VECTOR_OP_SIN: return (v0, m) ->

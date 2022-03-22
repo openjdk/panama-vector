@@ -4646,6 +4646,15 @@ public class Float64VectorTests extends AbstractVectorTest {
 
 
 
+
+
+
+
+
+
+
+
+
     @Test(dataProvider = "floatCompareOpProvider")
     static void ltFloat64VectorTestsBroadcastSmokeTest(IntFunction<float[]> fa, IntFunction<float[]> fb) {
         float[] a = fa.apply(SPECIES.length());

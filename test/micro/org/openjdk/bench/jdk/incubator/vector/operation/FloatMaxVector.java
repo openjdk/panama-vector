@@ -1620,5 +1620,11 @@ public class FloatMaxVector extends AbstractVectorBenchmark {
 
 
 
+
+
+
+
+
+
 }
 

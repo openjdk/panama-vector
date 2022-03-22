@@ -1264,5 +1264,11 @@ public class FloatScalar extends AbstractVectorBenchmark {
 
 
 
+
+
+
+
+
+
 }
 
