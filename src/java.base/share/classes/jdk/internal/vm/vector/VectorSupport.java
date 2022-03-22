@@ -88,6 +88,7 @@ public class VectorSupport {
 
     // Reverse operation
     public static final int VECTOR_OP_REVERSE   = 31;
+    public static final int VECTOR_OP_REVERSE_BYTES = 32;
 
     // Math routines
     public static final int VECTOR_OP_TAN = 101;

@@ -5872,3 +5872,79 @@ instruct vmask_tolong16B(iRegLNoSp dst, vecX src) %{
   %}
   ins_pipe(pipe_slow);
 %}
+
+//------------------------- CountLeadingZerosV -----------------------------
+
+instruct countLeadingZerosVD(vecD dst, vecD src) %{
+  predicate(n->as_Vector()->length_in_bytes() == 8);
+  match(Set dst (CountLeadingZerosV src));
+  ins_cost(INSN_COST);
+  format %{ "countLeadingZerosV $dst, $src\t# vector (8B/4H/2S)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_Arrangement size = __ esize2arrangement((unsigned)type2aelembytes(bt), false);
+    __ clz(as_FloatRegister($dst$$reg), size, as_FloatRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct countLeadingZerosVX(vecX dst, vecX src) %{
+  predicate(n->as_Vector()->length_in_bytes() == 16);
+  match(Set dst (CountLeadingZerosV src));
+  ins_cost(INSN_COST);
+  format %{ "countLeadingZerosV $dst, $src\t# vector (16B/8H/4S/2D)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_Arrangement size = __ esize2arrangement((unsigned)type2aelembytes(bt), true);
+    if (bt != T_LONG) {
+      __ clz(as_FloatRegister($dst$$reg), size, as_FloatRegister($src$$reg));
+    } else {
+      __ umov(rscratch1, as_FloatRegister($src$$reg), __ D, 0);
+      __ clz(rscratch1, rscratch1);
+      __ mov(as_FloatRegister($dst$$reg), __ D, 0, rscratch1);
+      __ umov(rscratch1, as_FloatRegister($src$$reg), __ D, 1);
+      __ clz(rscratch1, rscratch1);
+      __ mov(as_FloatRegister($dst$$reg), __ D, 1, rscratch1);
+    }
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+//------------------------- CountTrailingZerosV ----------------------------
+
+instruct countTrailingZerosVD(vecD dst, vecD src) %{
+  predicate(n->as_Vector()->length_in_bytes() == 8);
+  match(Set dst (CountTrailingZerosV src));
+  ins_cost(3 * INSN_COST);
+  format %{ "countTrailingZerosV $dst, $src\t# vector (8B/4H/2S)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_Arrangement size = __ esize2arrangement((unsigned)type2aelembytes(bt), false);
+    __ neon_reverse_bits(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), bt, false);
+    __ clz(as_FloatRegister($dst$$reg), size, as_FloatRegister($dst$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct countTrailingZerosVX(vecX dst, vecX src) %{
+  predicate(n->as_Vector()->length_in_bytes() == 16);
+  match(Set dst (CountTrailingZerosV src));
+  ins_cost(3 * INSN_COST);
+  format %{ "countTrailingZerosV $dst, $src\t# vector (16B/8H/4S/2D)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_Arrangement size = __ esize2arrangement((unsigned)type2aelembytes(bt), true);
+    __ neon_reverse_bits(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), bt, true);
+    if (bt != T_LONG) {
+      __ clz(as_FloatRegister($dst$$reg), size, as_FloatRegister($dst$$reg));
+    } else {
+      __ umov(rscratch1, as_FloatRegister($dst$$reg), __ D, 0);
+      __ clz(rscratch1, rscratch1);
+      __ mov(as_FloatRegister($dst$$reg), __ D, 0, rscratch1);
+      __ umov(rscratch1, as_FloatRegister($dst$$reg), __ D, 1);
+      __ clz(rscratch1, rscratch1);
+      __ mov(as_FloatRegister($dst$$reg), __ D, 1, rscratch1);
+    }
+  %}
+  ins_pipe(pipe_slow);
+%}

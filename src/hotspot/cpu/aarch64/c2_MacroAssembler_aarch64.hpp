@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -122,5 +122,7 @@
   void sve_compress_short(FloatRegister dst, FloatRegister src, PRegister mask,
                           FloatRegister vtmp1, FloatRegister vtmp2,
                           PRegister pgtmp);
+
+  void neon_reverse_bits(FloatRegister dst, FloatRegister src, BasicType bt, bool isQ);
 
 #endif // CPU_AARCH64_C2_MACROASSEMBLER_AARCH64_HPP

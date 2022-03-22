@@ -663,6 +663,8 @@ public abstract class ShortVector extends AbstractVector<Short> {
                     v0.uOp(m, (i, a) -> (short) numberOfLeadingZeros(a));
             case VECTOR_OP_REVERSE: return (v0, m) ->
                     v0.uOp(m, (i, a) -> reverse(a));
+            case VECTOR_OP_REVERSE_BYTES: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (short) Short.reverseBytes(a));
             default: return null;
         }
     }

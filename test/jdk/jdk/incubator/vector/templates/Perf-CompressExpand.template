@@ -1,4 +1,3 @@
-
     @Benchmark
     public Object compress[[TEST_TYPE]][[OP_NAME]]() {
         $type$[] a = fa.apply(size);
@@ -48,4 +47,3 @@
 
         return rs;
     }
-

@@ -621,6 +621,8 @@ public abstract class LongVector extends AbstractVector<Long> {
                     v0.uOp(m, (i, a) -> (long) Long.numberOfLeadingZeros(a));
             case VECTOR_OP_REVERSE: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (long) Long.reverse(a));
+            case VECTOR_OP_REVERSE_BYTES: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (long) Long.reverseBytes(a));
             default: return null;
         }
     }

@@ -5370,6 +5370,55 @@ public class Long512VectorTests extends AbstractVectorTest {
     }
 
 
+
+    static long REVERSE_BYTES(long a) {
+        return (long)(Long.reverseBytes(a));
+    }
+
+
+
+    @Test(dataProvider = "longUnaryOpProvider")
+    static void REVERSE_BYTESLong512VectorTests(IntFunction<long[]> fa) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE_BYTES).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Long512VectorTests::REVERSE_BYTES);
+    }
+
+
+
+    @Test(dataProvider = "longUnaryOpMaskProvider")
+    static void REVERSE_BYTESMaskedLong512VectorTests(IntFunction<long[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE_BYTES, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Long512VectorTests::REVERSE_BYTES);
+    }
+
+
+
+
+
+
+
+
     @Test(dataProvider = "longCompareOpProvider")
     static void ltLong512VectorTestsBroadcastSmokeTest(IntFunction<long[]> fa, IntFunction<long[]> fb) {
         long[] a = fa.apply(SPECIES.length());
