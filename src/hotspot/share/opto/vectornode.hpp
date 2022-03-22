@@ -1669,4 +1669,21 @@ public:
   virtual int Opcode() const;
   Node* Ideal(PhaseGVN* phase, bool can_reshape);
 };
+
+class CountLeadingZerosVNode : public VectorNode {
+ public:
+  CountLeadingZerosVNode(Node* in, const TypeVect* vt)
+  : VectorNode(in, vt) {}
+
+  virtual int Opcode() const;
+};
+
+class CountTrailingZerosVNode : public VectorNode {
+ public:
+  CountTrailingZerosVNode(Node* in, const TypeVect* vt)
+  : VectorNode(in, vt) {}
+
+  virtual int Opcode() const;
+};
+
 #endif // SHARE_OPTO_VECTORNODE_HPP

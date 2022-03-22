@@ -1856,6 +1856,8 @@
   declare_c2_type(VectorUnboxNode, VectorNode)                            \
   declare_c2_type(VectorReinterpretNode, VectorNode)                      \
   declare_c2_type(VectorMaskCastNode, VectorNode)                         \
+  declare_c2_type(CountLeadingZerosVNode, VectorNode)                     \
+  declare_c2_type(CountTrailingZerosVNode, VectorNode)                    \
   declare_c2_type(MaskAllNode, VectorNode)                                \
   declare_c2_type(AndVMaskNode, VectorNode)                               \
   declare_c2_type(OrVMaskNode, VectorNode)                                \
