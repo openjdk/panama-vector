@@ -3633,19 +3633,21 @@ public class ByteMaxVectorTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "byteTestOpMaskProvider")
-    static void IS_DEFAULTMaskedByteMaxVectorTestsSmokeTest(IntFunction<byte[]> fa,
+    static void IS_DEFAULTMaskedByteMaxVectorTests(IntFunction<byte[]> fa,
                                           IntFunction<boolean[]> fm) {
         byte[] a = fa.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
-        for (int i = 0; i < a.length; i += SPECIES.length()) {
-            ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-            VectorMask<Byte> mv = av.test(VectorOperators.IS_DEFAULT, vmask);
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                VectorMask<Byte> mv = av.test(VectorOperators.IS_DEFAULT, vmask);
 
-            // Check results as part of computation.
-            for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_DEFAULT(a[i + j]));
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_DEFAULT(a[i + j]));
+                }
             }
         }
     }
@@ -3671,19 +3673,21 @@ public class ByteMaxVectorTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "byteTestOpMaskProvider")
-    static void IS_NEGATIVEMaskedByteMaxVectorTestsSmokeTest(IntFunction<byte[]> fa,
+    static void IS_NEGATIVEMaskedByteMaxVectorTests(IntFunction<byte[]> fa,
                                           IntFunction<boolean[]> fm) {
         byte[] a = fa.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
-        for (int i = 0; i < a.length; i += SPECIES.length()) {
-            ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-            VectorMask<Byte> mv = av.test(VectorOperators.IS_NEGATIVE, vmask);
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                VectorMask<Byte> mv = av.test(VectorOperators.IS_NEGATIVE, vmask);
 
-            // Check results as part of computation.
-            for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_NEGATIVE(a[i + j]));
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_NEGATIVE(a[i + j]));
+                }
             }
         }
     }
@@ -5456,6 +5460,55 @@ public class ByteMaxVectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(r, a, mask, ByteMaxVectorTests::REVERSE);
+    }
+
+
+
+
+
+
+
+
+
+    static byte REVERSE_BYTES(byte a) {
+        return (byte)(a);
+    }
+
+
+
+    @Test(dataProvider = "byteUnaryOpProvider")
+    static void REVERSE_BYTESByteMaxVectorTests(IntFunction<byte[]> fa) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE_BYTES).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, ByteMaxVectorTests::REVERSE_BYTES);
+    }
+
+
+
+    @Test(dataProvider = "byteUnaryOpMaskProvider")
+    static void REVERSE_BYTESMaskedByteMaxVectorTests(IntFunction<byte[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE_BYTES, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, ByteMaxVectorTests::REVERSE_BYTES);
     }
 
 

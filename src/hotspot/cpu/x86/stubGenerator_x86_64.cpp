@@ -795,6 +795,21 @@ class StubGenerator: public StubCodeGenerator {
     return start;
   }
 
+  address generate_popcount_avx_lut(const char *stub_name) {
+    __ align64();
+    StubCodeMark mark(this, "StubRoutines", stub_name);
+    address start = __ pc();
+    __ emit_data64(0x0302020102010100, relocInfo::none);
+    __ emit_data64(0x0403030203020201, relocInfo::none);
+    __ emit_data64(0x0302020102010100, relocInfo::none);
+    __ emit_data64(0x0403030203020201, relocInfo::none);
+    __ emit_data64(0x0302020102010100, relocInfo::none);
+    __ emit_data64(0x0403030203020201, relocInfo::none);
+    __ emit_data64(0x0302020102010100, relocInfo::none);
+    __ emit_data64(0x0403030203020201, relocInfo::none);
+    return start;
+  }
+
   address generate_iota_indices(const char *stub_name) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", stub_name);
@@ -7760,6 +7775,11 @@ address generate_avx_ghash_processBlocks() {
     StubRoutines::x86::_vector_reverse_byte_perm_mask_long = generate_vector_reverse_byte_perm_mask_long("perm_mask_long");
     StubRoutines::x86::_vector_reverse_byte_perm_mask_int = generate_vector_reverse_byte_perm_mask_int("perm_mask_int");
     StubRoutines::x86::_vector_reverse_byte_perm_mask_short = generate_vector_reverse_byte_perm_mask_short("perm_mask_short");
+
+    if (UsePopCountInstruction && VM_Version::supports_avx2() && !VM_Version::supports_avx512_vpopcntdq()) {
+      // lut implementation influenced by counting 1s algorithm from section 5-1 of Hackers' Delight.
+      StubRoutines::x86::_vector_popcount_lut = generate_popcount_avx_lut("popcount_lut");
+    }
 
     // support for verify_oop (must happen after universe_init)
     if (VerifyOops) {

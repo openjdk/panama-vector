@@ -243,6 +243,12 @@ int VectorNode::opcode(int sopc, BasicType bt) {
     return Op_VectorCastF2X;
   case Op_ConvD2L:
     return Op_VectorCastD2X;
+  case Op_CountLeadingZerosI:
+  case Op_CountLeadingZerosL:
+    return Op_CountLeadingZerosV;
+  case Op_CountTrailingZerosI:
+  case Op_CountTrailingZerosL:
+    return Op_CountTrailingZerosV;
 
   default:
     return 0; // Unimplemented
@@ -584,6 +590,8 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt, b
   case Op_ExpandV: return new ExpandVNode(n1, n2, vt);
   case Op_CompressV: return new CompressVNode(n1, n2, vt);
   case Op_CompressM: assert(n1 == NULL, ""); return new CompressMNode(n2, vt);
+  case Op_CountLeadingZerosV: return new CountLeadingZerosVNode(n1, vt);
+  case Op_CountTrailingZerosV: return new CountTrailingZerosVNode(n1, vt);
   default:
     fatal("Missed vector creation for '%s'", NodeClassNames[vopc]);
     return NULL;

@@ -663,6 +663,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                     v0.uOp(m, (i, a) -> (byte) numberOfLeadingZeros(a));
             case VECTOR_OP_REVERSE: return (v0, m) ->
                     v0.uOp(m, (i, a) -> reverse(a));
+            case VECTOR_OP_REVERSE_BYTES: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> a);
             default: return null;
         }
     }
@@ -1912,12 +1914,11 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     M testTemplate(Class<M> maskType, Test op) {
         ByteSpecies vsp = vspecies();
         if (opKind(op, VO_SPECIAL)) {
-            ByteVector bits = this.viewAsIntegralLanes();
             VectorMask<Byte> m;
             if (op == IS_DEFAULT) {
-                m = bits.compare(EQ, (byte) 0);
+                m = compare(EQ, (byte) 0);
             } else if (op == IS_NEGATIVE) {
-                m = bits.compare(LT, (byte) 0);
+                m = compare(LT, (byte) 0);
             }
             else {
                 throw new AssertionError(op);
@@ -1932,11 +1933,31 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      * {@inheritDoc} <!--workaround-->
      */
     @Override
-    @ForceInline
-    public final
+    public abstract
     VectorMask<Byte> test(VectorOperators.Test op,
-                                  VectorMask<Byte> m) {
-        return test(op).and(m);
+                                  VectorMask<Byte> m);
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Byte>>
+    M testTemplate(Class<M> maskType, Test op, M mask) {
+        ByteSpecies vsp = vspecies();
+        mask.check(maskType, this);
+        if (opKind(op, VO_SPECIAL)) {
+            VectorMask<Byte> m = mask;
+            if (op == IS_DEFAULT) {
+                m = compare(EQ, (byte) 0, m);
+            } else if (op == IS_NEGATIVE) {
+                m = compare(LT, (byte) 0, m);
+            }
+            else {
+                throw new AssertionError(op);
+            }
+            return maskType.cast(m);
+        }
+        int opc = opCode(op);
+        throw new AssertionError(op);
     }
 
     /**
@@ -4411,12 +4432,12 @@ public abstract class ByteVector extends AbstractVector<Byte> {
      */
     static ByteSpecies species(VectorShape s) {
         Objects.requireNonNull(s);
-        switch (s) {
-            case S_64_BIT: return (ByteSpecies) SPECIES_64;
-            case S_128_BIT: return (ByteSpecies) SPECIES_128;
-            case S_256_BIT: return (ByteSpecies) SPECIES_256;
-            case S_512_BIT: return (ByteSpecies) SPECIES_512;
-            case S_Max_BIT: return (ByteSpecies) SPECIES_MAX;
+        switch (s.switchKey) {
+            case VectorShape.SK_64_BIT: return (ByteSpecies) SPECIES_64;
+            case VectorShape.SK_128_BIT: return (ByteSpecies) SPECIES_128;
+            case VectorShape.SK_256_BIT: return (ByteSpecies) SPECIES_256;
+            case VectorShape.SK_512_BIT: return (ByteSpecies) SPECIES_512;
+            case VectorShape.SK_Max_BIT: return (ByteSpecies) SPECIES_MAX;
             default: throw new IllegalArgumentException("Bad shape: " + s);
         }
     }

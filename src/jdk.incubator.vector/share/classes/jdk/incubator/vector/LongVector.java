@@ -621,6 +621,8 @@ public abstract class LongVector extends AbstractVector<Long> {
                     v0.uOp(m, (i, a) -> (long) Long.numberOfLeadingZeros(a));
             case VECTOR_OP_REVERSE: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (long) Long.reverse(a));
+            case VECTOR_OP_REVERSE_BYTES: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (long) Long.reverseBytes(a));
             default: return null;
         }
     }
@@ -1806,12 +1808,11 @@ public abstract class LongVector extends AbstractVector<Long> {
     M testTemplate(Class<M> maskType, Test op) {
         LongSpecies vsp = vspecies();
         if (opKind(op, VO_SPECIAL)) {
-            LongVector bits = this.viewAsIntegralLanes();
             VectorMask<Long> m;
             if (op == IS_DEFAULT) {
-                m = bits.compare(EQ, (long) 0);
+                m = compare(EQ, (long) 0);
             } else if (op == IS_NEGATIVE) {
-                m = bits.compare(LT, (long) 0);
+                m = compare(LT, (long) 0);
             }
             else {
                 throw new AssertionError(op);
@@ -1826,11 +1827,31 @@ public abstract class LongVector extends AbstractVector<Long> {
      * {@inheritDoc} <!--workaround-->
      */
     @Override
-    @ForceInline
-    public final
+    public abstract
     VectorMask<Long> test(VectorOperators.Test op,
-                                  VectorMask<Long> m) {
-        return test(op).and(m);
+                                  VectorMask<Long> m);
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Long>>
+    M testTemplate(Class<M> maskType, Test op, M mask) {
+        LongSpecies vsp = vspecies();
+        mask.check(maskType, this);
+        if (opKind(op, VO_SPECIAL)) {
+            VectorMask<Long> m = mask;
+            if (op == IS_DEFAULT) {
+                m = compare(EQ, (long) 0, m);
+            } else if (op == IS_NEGATIVE) {
+                m = compare(LT, (long) 0, m);
+            }
+            else {
+                throw new AssertionError(op);
+            }
+            return maskType.cast(m);
+        }
+        int opc = opCode(op);
+        throw new AssertionError(op);
     }
 
     /**
@@ -4044,12 +4065,12 @@ public abstract class LongVector extends AbstractVector<Long> {
      */
     static LongSpecies species(VectorShape s) {
         Objects.requireNonNull(s);
-        switch (s) {
-            case S_64_BIT: return (LongSpecies) SPECIES_64;
-            case S_128_BIT: return (LongSpecies) SPECIES_128;
-            case S_256_BIT: return (LongSpecies) SPECIES_256;
-            case S_512_BIT: return (LongSpecies) SPECIES_512;
-            case S_Max_BIT: return (LongSpecies) SPECIES_MAX;
+        switch (s.switchKey) {
+            case VectorShape.SK_64_BIT: return (LongSpecies) SPECIES_64;
+            case VectorShape.SK_128_BIT: return (LongSpecies) SPECIES_128;
+            case VectorShape.SK_256_BIT: return (LongSpecies) SPECIES_256;
+            case VectorShape.SK_512_BIT: return (LongSpecies) SPECIES_512;
+            case VectorShape.SK_Max_BIT: return (LongSpecies) SPECIES_MAX;
             default: throw new IllegalArgumentException("Bad shape: " + s);
         }
     }

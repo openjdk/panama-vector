@@ -3617,19 +3617,21 @@ public class LongMaxVectorTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "longTestOpMaskProvider")
-    static void IS_DEFAULTMaskedLongMaxVectorTestsSmokeTest(IntFunction<long[]> fa,
+    static void IS_DEFAULTMaskedLongMaxVectorTests(IntFunction<long[]> fa,
                                           IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
-        for (int i = 0; i < a.length; i += SPECIES.length()) {
-            LongVector av = LongVector.fromArray(SPECIES, a, i);
-            VectorMask<Long> mv = av.test(VectorOperators.IS_DEFAULT, vmask);
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                VectorMask<Long> mv = av.test(VectorOperators.IS_DEFAULT, vmask);
 
-            // Check results as part of computation.
-            for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_DEFAULT(a[i + j]));
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_DEFAULT(a[i + j]));
+                }
             }
         }
     }
@@ -3655,19 +3657,21 @@ public class LongMaxVectorTests extends AbstractVectorTest {
     }
 
     @Test(dataProvider = "longTestOpMaskProvider")
-    static void IS_NEGATIVEMaskedLongMaxVectorTestsSmokeTest(IntFunction<long[]> fa,
+    static void IS_NEGATIVEMaskedLongMaxVectorTests(IntFunction<long[]> fa,
                                           IntFunction<boolean[]> fm) {
         long[] a = fa.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
-        for (int i = 0; i < a.length; i += SPECIES.length()) {
-            LongVector av = LongVector.fromArray(SPECIES, a, i);
-            VectorMask<Long> mv = av.test(VectorOperators.IS_NEGATIVE, vmask);
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                VectorMask<Long> mv = av.test(VectorOperators.IS_NEGATIVE, vmask);
 
-            // Check results as part of computation.
-            for (int j = 0; j < SPECIES.length(); j++) {
-                Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_NEGATIVE(a[i + j]));
+                // Check results as part of computation.
+                for (int j = 0; j < SPECIES.length(); j++) {
+                    Assert.assertEquals(mv.laneIsSet(j),  vmask.laneIsSet(j) && testIS_NEGATIVE(a[i + j]));
+                }
             }
         }
     }
@@ -5369,6 +5373,55 @@ public class LongMaxVectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, mask, LongMaxVectorTests::REVERSE);
     }
+
+
+
+    static long REVERSE_BYTES(long a) {
+        return (long)(Long.reverseBytes(a));
+    }
+
+
+
+    @Test(dataProvider = "longUnaryOpProvider")
+    static void REVERSE_BYTESLongMaxVectorTests(IntFunction<long[]> fa) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE_BYTES).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, LongMaxVectorTests::REVERSE_BYTES);
+    }
+
+
+
+    @Test(dataProvider = "longUnaryOpMaskProvider")
+    static void REVERSE_BYTESMaskedLongMaxVectorTests(IntFunction<long[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE_BYTES, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, LongMaxVectorTests::REVERSE_BYTES);
+    }
+
+
+
+
+
+
 
 
     @Test(dataProvider = "longCompareOpProvider")

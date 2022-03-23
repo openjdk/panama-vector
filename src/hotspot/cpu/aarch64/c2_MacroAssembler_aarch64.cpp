@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1379,4 +1379,29 @@ void C2_MacroAssembler::sve_compress_byte(FloatRegister dst, FloatRegister src, 
   // Combine the compressed high(after shifted) with the compressed low.
   // dst = 00 00 00 88 55 44 22 11
   sve_orr(dst, dst, vtmp1);
+}
+
+void C2_MacroAssembler::neon_reverse_bits(FloatRegister dst, FloatRegister src, BasicType bt, bool isQ) {
+  assert(bt == T_BYTE || bt == T_SHORT || bt == T_INT || bt == T_LONG, "unsupported basic type");
+  SIMD_Arrangement size = isQ ? T16B : T8B;
+  switch (bt) {
+    case T_BYTE:
+      rbit(dst, size, src);
+      break;
+    case T_SHORT:
+      rev16(dst, size, src);
+      rbit(dst, size, dst);
+      break;
+    case T_INT:
+      rev32(dst, size, src);
+      rbit(dst, size, dst);
+      break;
+    case T_LONG:
+      rev64(dst, size, src);
+      rbit(dst, size, dst);
+      break;
+    default:
+      assert(false, "unsupported");
+      ShouldNotReachHere();
+  }
 }
