@@ -978,7 +978,7 @@ bool IdealLoopTree::policy_unroll(PhaseIdealLoop *phase) {
       case Op_ReverseV: {
         const TypeVect* vt = n->bottom_type()->is_vect();
         body_size += Matcher::vector_op_pre_select_sz_estimate(n->Opcode(), vt->element_basic_type(), vt->length());
-      } break; 
+      } break;
       case Op_StrComp:
       case Op_StrEquals:
       case Op_StrIndexOf:
