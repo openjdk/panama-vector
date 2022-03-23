@@ -1694,4 +1694,11 @@ public:
   virtual int Opcode() const;
 };
 
+class ReverseBytesVNode : public VectorNode {
+public:
+  ReverseBytesVNode(Node* in, const TypeVect* vt)
+  : VectorNode(in, vt) {}
+
+  virtual int Opcode() const;
+};
 #endif // SHARE_OPTO_VECTORNODE_HPP

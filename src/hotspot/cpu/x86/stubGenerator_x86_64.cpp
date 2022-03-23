@@ -825,18 +825,33 @@ class StubGenerator: public StubCodeGenerator {
     return start;
   }
 
+  address generate_vector_reverse_bit_lut(const char *stub_name) {
+    __ align(CodeEntryAlignment);
+    StubCodeMark mark(this, "StubRoutines", stub_name);
+    address start = __ pc();
+    __ emit_data64(0x0E060A020C040800, relocInfo::none);
+    __ emit_data64(0x0F070B030D050901, relocInfo::none);
+    __ emit_data64(0x0E060A020C040800, relocInfo::none);
+    __ emit_data64(0x0F070B030D050901, relocInfo::none);
+    __ emit_data64(0x0E060A020C040800, relocInfo::none);
+    __ emit_data64(0x0F070B030D050901, relocInfo::none);
+    __ emit_data64(0x0E060A020C040800, relocInfo::none);
+    __ emit_data64(0x0F070B030D050901, relocInfo::none);
+    return start;
+  }
+
   address generate_vector_reverse_byte_perm_mask_long(const char *stub_name) {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", stub_name);
     address start = __ pc();
     __ emit_data64(0x0001020304050607, relocInfo::none);
     __ emit_data64(0x08090A0B0C0D0E0F, relocInfo::none);
-    __ emit_data64(0x1011121314151617, relocInfo::none);
-    __ emit_data64(0x18191A1B1C1D1E1F, relocInfo::none);
-    __ emit_data64(0x2021222324252627, relocInfo::none);
-    __ emit_data64(0x28292A2B2C2D2E2F, relocInfo::none);
-    __ emit_data64(0x3031323334353637, relocInfo::none);
-    __ emit_data64(0x38393A3B3C3D3E3F, relocInfo::none);
+    __ emit_data64(0x0001020304050607, relocInfo::none);
+    __ emit_data64(0x08090A0B0C0D0E0F, relocInfo::none);
+    __ emit_data64(0x0001020304050607, relocInfo::none);
+    __ emit_data64(0x08090A0B0C0D0E0F, relocInfo::none);
+    __ emit_data64(0x0001020304050607, relocInfo::none);
+    __ emit_data64(0x08090A0B0C0D0E0F, relocInfo::none);
     return start;
   }
 
@@ -846,12 +861,12 @@ class StubGenerator: public StubCodeGenerator {
     address start = __ pc();
     __ emit_data64(0x0405060700010203, relocInfo::none);
     __ emit_data64(0x0C0D0E0F08090A0B, relocInfo::none);
-    __ emit_data64(0x1415161710111213, relocInfo::none);
-    __ emit_data64(0x1C1D1E1F18191A1B, relocInfo::none);
-    __ emit_data64(0x2425262720212223, relocInfo::none);
-    __ emit_data64(0x2C2D2E2F28292A2B, relocInfo::none);
-    __ emit_data64(0x3435363730313233, relocInfo::none);
-    __ emit_data64(0x3C3D3E3F38393A3B, relocInfo::none);
+    __ emit_data64(0x0405060700010203, relocInfo::none);
+    __ emit_data64(0x0C0D0E0F08090A0B, relocInfo::none);
+    __ emit_data64(0x0405060700010203, relocInfo::none);
+    __ emit_data64(0x0C0D0E0F08090A0B, relocInfo::none);
+    __ emit_data64(0x0405060700010203, relocInfo::none);
+    __ emit_data64(0x0C0D0E0F08090A0B, relocInfo::none);
     return start;
   }
 
@@ -861,12 +876,12 @@ class StubGenerator: public StubCodeGenerator {
     address start = __ pc();
     __ emit_data64(0x0607040502030001, relocInfo::none);
     __ emit_data64(0x0E0F0C0D0A0B0809, relocInfo::none);
-    __ emit_data64(0x1617141512131011, relocInfo::none);
-    __ emit_data64(0x1E1F1C1D1A1B1819, relocInfo::none);
-    __ emit_data64(0x2627242522232021, relocInfo::none);
-    __ emit_data64(0x2E2F2C2D2A2B2829, relocInfo::none);
-    __ emit_data64(0x3637343532333031, relocInfo::none);
-    __ emit_data64(0x3E3F3C3D3A3B3839, relocInfo::none);
+    __ emit_data64(0x0607040502030001, relocInfo::none);
+    __ emit_data64(0x0E0F0C0D0A0B0809, relocInfo::none);
+    __ emit_data64(0x0607040502030001, relocInfo::none);
+    __ emit_data64(0x0E0F0C0D0A0B0809, relocInfo::none);
+    __ emit_data64(0x0607040502030001, relocInfo::none);
+    __ emit_data64(0x0E0F0C0D0A0B0809, relocInfo::none);
     return start;
   }
 
@@ -7772,6 +7787,7 @@ address generate_avx_ghash_processBlocks() {
     StubRoutines::x86::_vector_long_shuffle_mask = generate_vector_mask("vector_long_shuffle_mask", 0x0000000100000000);
     StubRoutines::x86::_vector_long_sign_mask = generate_vector_mask("vector_long_sign_mask", 0x8000000000000000);
     StubRoutines::x86::_vector_iota_indices = generate_iota_indices("iota_indices");
+    StubRoutines::x86::_vector_reverse_bit_lut = generate_vector_reverse_bit_lut("reverse_bit_lut");
     StubRoutines::x86::_vector_reverse_byte_perm_mask_long = generate_vector_reverse_byte_perm_mask_long("perm_mask_long");
     StubRoutines::x86::_vector_reverse_byte_perm_mask_int = generate_vector_reverse_byte_perm_mask_int("perm_mask_int");
     StubRoutines::x86::_vector_reverse_byte_perm_mask_short = generate_vector_reverse_byte_perm_mask_short("perm_mask_short");

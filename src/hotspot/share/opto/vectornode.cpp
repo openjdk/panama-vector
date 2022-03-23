@@ -165,6 +165,16 @@ int VectorNode::opcode(int sopc, BasicType bt) {
     case T_LONG:   return Op_ReverseV;
     default:       return 0;
     }
+  case Op_ReverseBytesS:
+  case Op_ReverseBytesI:
+  case Op_ReverseBytesL:
+    switch (bt) {
+    case T_BYTE:
+    case T_SHORT:
+    case T_INT:
+    case T_LONG:   return Op_ReverseBytesV;
+    default:       return 0;
+    }
   case Op_LShiftI:
     switch (bt) {
     case T_BOOLEAN:
@@ -555,6 +565,7 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt, b
   case Op_NegVD: return new NegVDNode(n1, vt);
 
   case Op_ReverseV: return new ReverseVNode(n1, vt);
+  case Op_ReverseBytesV: return new ReverseBytesVNode(n1, vt);
 
   case Op_SqrtVF: return new SqrtVFNode(n1, vt);
   case Op_SqrtVD: return new SqrtVDNode(n1, vt);
