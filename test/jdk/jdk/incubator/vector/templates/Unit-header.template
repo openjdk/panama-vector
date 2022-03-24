@@ -1500,6 +1500,47 @@ public class $vectorteststype$ extends AbstractVectorTest {
 #end[intOrLong]
     }
 
+    static $type$ COMPRESSBITS_scalar($type$ a, $type$ b) {
+        $type$ prefix_mask, move_mask, temp;
+        a = ($type$) (a & b);
+        $type$ count_mask = ($type$) (~b << 1);
+        $type$ mp, mv, t;
+#if[intOrLong]
+#if[int]
+        int iters = 5;
+#else[int]
+        int iters = 6;
+#end[int]
+#end[intOrLong]
+#if[short]
+        int iters = 4;
+#end[short]
+#if[byte]
+        int iters = 3;
+#end[byte]
+
+        for (int i = 0; i < iters; i++) {
+            prefix_mask = ($type$) (count_mask  ^ (count_mask  << 1));
+            prefix_mask = ($type$) (prefix_mask ^ (prefix_mask << 2));
+            prefix_mask = ($type$) (prefix_mask ^ (prefix_mask << 4));
+#if[!byte]
+            prefix_mask = ($type$) (prefix_mask ^ (prefix_mask << 8));
+#end[!byte]
+#if[intOrLong]
+            prefix_mask = ($type$) (prefix_mask ^ (prefix_mask << 16));
+#if[long]
+            prefix_mask = ($type$) (prefix_mask ^ (prefix_mask << 32));
+#end[long]
+#end[intOrLong]
+            move_mask = ($type$) (prefix_mask & b);
+            b = ($type$)(b ^ move_mask | (move_mask >> (1 << i)));
+            temp = ($type$) (a & move_mask);
+            a = ($type$) (a ^ temp | (temp >> (1 << i)));
+            count_mask = ($type$) (count_mask & ~prefix_mask);
+        }
+        return a;
+    }
+
 #end[BITWISE]
     static boolean eq($type$ a, $type$ b) {
         return a == b;

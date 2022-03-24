@@ -1204,6 +1204,29 @@ public class Long256VectorTests extends AbstractVectorTest {
         return Long.reverse(a);
     }
 
+    static long COMPRESSBITS_scalar(long a, long b) {
+        long prefix_mask, move_mask, temp;
+        a = (long) (a & b);
+        long count_mask = (long) (~b << 1);
+        long mp, mv, t;
+        int iters = 6;
+
+        for (int i = 0; i < iters; i++) {
+            prefix_mask = (long) (count_mask  ^ (count_mask  << 1));
+            prefix_mask = (long) (prefix_mask ^ (prefix_mask << 2));
+            prefix_mask = (long) (prefix_mask ^ (prefix_mask << 4));
+            prefix_mask = (long) (prefix_mask ^ (prefix_mask << 8));
+            prefix_mask = (long) (prefix_mask ^ (prefix_mask << 16));
+            prefix_mask = (long) (prefix_mask ^ (prefix_mask << 32));
+            move_mask = (long) (prefix_mask & b);
+            b = (long)(b ^ move_mask | (move_mask >> (1 << i)));
+            temp = (long) (a & move_mask);
+            a = (long) (a ^ temp | (temp >> (1 << i)));
+            count_mask = (long) (count_mask & ~prefix_mask);
+        }
+        return a;
+    }
+
     static boolean eq(long a, long b) {
         return a == b;
     }
@@ -1930,6 +1953,50 @@ public class Long256VectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(r, a, b, mask, Long256VectorTests::XOR);
+    }
+
+
+    static long COMPRESS_BITS(long a, long b) {
+        return (long)(COMPRESSBITS_scalar(a,b));
+    }
+
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void COMPRESS_BITSLong256VectorTests(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.COMPRESS_BITS, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, Long256VectorTests::COMPRESS_BITS);
+    }
+
+
+
+    @Test(dataProvider = "longBinaryOpMaskProvider")
+    static void COMPRESS_BITSLong256VectorTestsMasked(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.COMPRESS_BITS, bv, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, mask, Long256VectorTests::COMPRESS_BITS);
     }
 
 

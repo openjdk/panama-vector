@@ -457,6 +457,53 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         return ($type$)((((($type$)a) & $Boxtype$.toUnsignedInt(($type$)-1)) >>> (n & $Boxtype$.SIZE-1)) | (((($type$)a) & $Boxtype$.toUnsignedInt(($type$)-1)) << ($Boxtype$.SIZE - (n & $Boxtype$.SIZE-1))));
 #end[intOrLong]
     }
+
+    /* Implementation note: The implementation is based on Compress or Generalized Extract mentioned in
+     * Henry S. Warren, Jr's Hackers Delight, Addison Wesley, 2002.
+     */
+    static $type$ compressBits($type$ a, $type$ bitmask) {
+        a = ($type$) (a & bitmask); // Clear irrelevant bits
+        $type$ count_mask = ($type$) (~bitmask << 1); // Count 0's to right
+
+        // Prefix mask identifies bits of bitmask that have odd number of 0's to the right
+        // Move mask identifies the bits to be moved
+        // temp identifies the bits of the given number to be moved
+        $type$ prefix_mask, move_mask, temp;
+#if[intOrLong]
+#if[int]
+        int iters = 5;
+#else[int]
+        int iters = 6;
+#end[int]
+#end[intOrLong]
+#if[short]
+        int iters = 4;
+#end[short]
+#if[byte]
+        int iters = 3;
+#end[byte]
+
+        for (int i = 0; i < iters; i++) {
+            prefix_mask = ($type$) (count_mask  ^ (count_mask  << 1)); // Parallel prefix
+            prefix_mask = ($type$) (prefix_mask ^ (prefix_mask << 2));
+            prefix_mask = ($type$) (prefix_mask ^ (prefix_mask << 4));
+#if[!byte]
+            prefix_mask = ($type$) (prefix_mask ^ (prefix_mask << 8));
+#end[!byte]
+#if[intOrLong]
+            prefix_mask = ($type$) (prefix_mask ^ (prefix_mask << 16));
+#if[long]
+            prefix_mask = ($type$) (prefix_mask ^ (prefix_mask << 32));
+#end[long]
+#end[intOrLong]
+            move_mask = ($type$) (prefix_mask & bitmask); // Bits to move
+            bitmask = ($type$)(bitmask ^ move_mask | (move_mask >> (1 << i))); // Compress bitmask
+            temp = ($type$) (a & move_mask); // Bits of the number a to be moved.
+            a = ($type$) (a ^ temp | (temp >> (1 << i))); // Compress a
+            count_mask = ($type$) (count_mask & ~prefix_mask); // adjust count_mask by identifying bits that have 0 to the right
+        }
+        return a;
+    }
 #end[BITWISE]
 
     /*package-private*/
@@ -904,6 +951,8 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                     v0.bOp(v1, vm, (i, a, n) -> rotateLeft(a, (int)n));
             case VECTOR_OP_RROTATE: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, n) -> rotateRight(a, (int)n));
+            case VECTOR_OP_COMPRESS_BITS: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, n) -> compressBits(a, n));
 #end[BITWISE]
 #if[FP]
             case VECTOR_OP_OR: return (v0, v1, vm) ->

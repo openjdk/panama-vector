@@ -529,6 +529,16 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
       }
       break;
     }
+    case VECTOR_OP_COMPRESS_BITS: {
+     switch (bt) {
+        case T_BYTE: // Returning Op_CompressBits for
+        case T_SHORT:// all types temporarily.
+        case T_INT:
+        case T_LONG: return Op_CompressBits;
+        default: fatal("COMPRESS_BITS: %s", type2name(bt));
+      }
+      break;
+    }
 
     case VECTOR_OP_TAN:
     case VECTOR_OP_TANH:

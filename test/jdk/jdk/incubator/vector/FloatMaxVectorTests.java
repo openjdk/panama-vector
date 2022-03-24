@@ -1817,6 +1817,8 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
 
 
 
+
+
     @Test(dataProvider = "floatBinaryOpProvider")
     static void addFloatMaxVectorTestsBroadcastSmokeTest(IntFunction<float[]> fa, IntFunction<float[]> fb) {
         float[] a = fa.apply(SPECIES.length());

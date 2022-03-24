@@ -1,0 +1,3240 @@
+/*
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
+ */
+
+package org.openjdk.bench.jdk.incubator.vector.operation;
+
+#warn This file is preprocessed before being compiled
+
+import java.util.concurrent.TimeUnit;
+import java.util.function.IntFunction;
+
+import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.infra.Blackhole;
+
+@BenchmarkMode(Mode.Throughput)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@State(Scope.Benchmark)
+@Warmup(iterations = 3, time = 1)
+@Measurement(iterations = 5, time = 1)
+@Fork(value = 1, jvmArgsPrepend = {"--add-modules=jdk.incubator.vector"})
+public class $Type$Scalar extends AbstractVectorBenchmark {
+    static final int INVOC_COUNT = 1; // To align with vector benchmarks.
+
+    @Param("1024")
+    int size;
+
+    $type$[] fill(IntFunction<$Wideboxtype$> f) {
+        $type$[] array = new $type$[size];
+        for (int i = 0; i < array.length; i++) {
+            array[i] = f.apply(i);
+        }
+        return array;
+    }
+
+    static $bitstype$ bits($type$ e) {
+        return {#if[FP]?$Type$.$type$To$Bitstype$Bits(e):e};
+    }
+
+    $type$[] as, bs, cs, rs;
+    boolean[] ms, mt, rms;
+    int[] ss;
+
+    @Setup
+    public void init() {
+        as = fill(i -> ($type$)(2*i));
+        bs = fill(i -> ($type$)(i+1));
+        cs = fill(i -> ($type$)(i+5));
+        rs = fill(i -> ($type$)0);
+        ms = fillMask(size, i -> (i % 2) == 0);
+        mt = fillMask(size, i -> true);
+        rms = fillMask(size, i -> false);
+
+        ss = fillInt(size, i -> RANDOM.nextInt(Math.max(i,1)));
+    }
+
+    final IntFunction<$type$[]> fa = vl -> as;
+    final IntFunction<$type$[]> fb = vl -> bs;
+    final IntFunction<$type$[]> fc = vl -> cs;
+    final IntFunction<$type$[]> fr = vl -> rs;
+    final IntFunction<boolean[]> fm = vl -> ms;
+    final IntFunction<boolean[]> fmt = vl -> mt;
+    final IntFunction<boolean[]> fmr = vl -> rms;
+    final IntFunction<int[]> fs = vl -> ss;
+
+    static boolean eq($type$ a, $type$ b) {
+        return a == b;
+    }
+
+    static boolean neq($type$ a, $type$ b) {
+        return a != b;
+    }
+
+    static boolean lt($type$ a, $type$ b) {
+        return a < b;
+    }
+
+    static boolean le($type$ a, $type$ b) {
+        return a <= b;
+    }
+
+    static boolean gt($type$ a, $type$ b) {
+        return a > b;
+    }
+
+    static boolean ge($type$ a, $type$ b) {
+        return a >= b;
+    }
+
+#if[!FP]
+    static boolean ult($type$ a, $type$ b) {
+        return $Boxtype$.compareUnsigned(a, b) < 0;
+    }
+
+    static boolean ule($type$ a, $type$ b) {
+        return $Boxtype$.compareUnsigned(a, b) <= 0;
+    }
+
+    static boolean ugt($type$ a, $type$ b) {
+        return $Boxtype$.compareUnsigned(a, b) > 0;
+    }
+
+    static boolean uge($type$ a, $type$ b) {
+        return $Boxtype$.compareUnsigned(a, b) >= 0;
+    }
+#end[!FP]
+
+#if[BITWISE]
+    static $type$ ROL_scalar($type$ a, $type$ b) {
+#if[intOrLong]
+        return $Wideboxtype$.rotateLeft(a, ((int)b));
+#else[intOrLong]
+#if[short]
+        return (short)(((((short)a) & 0xFFFF) << (b & 15)) | ((((short)a) & 0xFFFF) >>> (16 - (b & 15))));
+#else[short]
+        return (byte)(((((byte)a) & 0xFF) << (b & 7)) | ((((byte)a) & 0xFF) >>> (8 - (b & 7))));
+#end[short]
+#end[intOrLong]
+    }
+
+    static $type$ ROR_scalar($type$ a, $type$ b) {
+#if[intOrLong]
+        return $Wideboxtype$.rotateRight(a, ((int)b));
+#else[intOrLong]
+#if[short]
+        return (short)(((((short)a) & 0xFFFF) >>> (b & 15)) | ((((short)a) & 0xFFFF) << (16 - (b & 15))));
+#else[short]
+        return (byte)(((((byte)a) & 0xFF) >>> (b & 7)) | ((((byte)a) & 0xFF) << (8 - (b & 7))));
+#end[short]
+#end[intOrLong]
+    }
+
+    static $type$ TRAILING_ZEROS_COUNT_scalar($type$ a) {
+#if[intOrLong]
+        return $Wideboxtype$.numberOfTrailingZeros(a);
+#else[intOrLong]
+#if[short]
+        return (short) (a != 0 ? Integer.numberOfTrailingZeros(a) : 16);
+#else[short]
+        return (byte) (a != 0 ? Integer.numberOfTrailingZeros(a) : 8);
+#end[short]
+#end[intOrLong]
+    }
+
+    static $type$ LEADING_ZEROS_COUNT_scalar($type$ a) {
+#if[intOrLong]
+        return $Wideboxtype$.numberOfLeadingZeros(a);
+#else[intOrLong]
+#if[short]
+        return (short) (a >= 0 ? Integer.numberOfLeadingZeros(a) - 16 : 0);
+#else[short]
+        return (byte) (a >= 0 ? Integer.numberOfLeadingZeros(a) - 24 : 0);
+#end[short]
+#end[intOrLong]
+    }
+
+    static $type$ REVERSE_scalar($type$ a) {
+#if[intOrLong]
+        return $Wideboxtype$.reverse(a);
+#else[intOrLong]
+#if[short]
+        $type$ b = ROL_scalar(a, ($type$) 8);
+        b = (short)(((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
+        b = (short)(((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
+        b = (short)(((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
+        return b;
+#else[short]
+        $type$ b = ROL_scalar(a, ($type$) 4);
+        b = (byte)(((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
+        b = (byte)(((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
+        return b;
+#end[short]
+#end[intOrLong]
+    }
+#end[BITWISE]
+
+    @Benchmark
+    public void ADD(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(a + b);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void ADDMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)(a + b);
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void SUB(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(a - b);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void SUBMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)(a - b);
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void MUL(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(a * b);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void MULMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)(a * b);
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#if[FP]
+
+
+    @Benchmark
+    public void DIV(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(a / b);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void DIVMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)(a / b);
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[FP]
+
+
+    @Benchmark
+    public void FIRST_NONZERO(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)({#if[FP]?Double.doubleToLongBits}(a)!=0?a:b);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void FIRST_NONZEROMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)({#if[FP]?Double.doubleToLongBits}(a)!=0?a:b);
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#if[BITWISE]
+
+
+    @Benchmark
+    public void AND(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(a & b);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void ANDMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)(a & b);
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void AND_NOT(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(a & ~b);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void AND_NOTMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)(a & ~b);
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void OR(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(a | b);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void ORMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)(a | b);
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void XOR(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(a ^ b);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void XORMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)(a ^ b);
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void COMPRESS_BITS(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(COMPRESSBITS_scalar(a,b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void COMPRESS_BITSMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)(COMPRESSBITS_scalar(a,b));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void LSHL(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)((a << b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void LSHLMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)((a << b));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[byte]
+
+
+    @Benchmark
+    public void LSHL(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)((a << (b & 0x7)));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[byte]
+
+#if[byte]
+
+
+    @Benchmark
+    public void LSHLMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)((a << (b & 0x7)));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[byte]
+
+#if[short]
+
+
+    @Benchmark
+    public void LSHL(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)((a << (b & 0xF)));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[short]
+
+
+    @Benchmark
+    public void LSHLMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)((a << (b & 0xF)));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void ASHR(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)((a >> b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void ASHRMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)((a >> b));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[byte]
+
+
+    @Benchmark
+    public void ASHR(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)((a >> (b & 0x7)));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[byte]
+
+#if[byte]
+
+
+    @Benchmark
+    public void ASHRMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)((a >> (b & 0x7)));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[byte]
+
+#if[short]
+
+
+    @Benchmark
+    public void ASHR(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)((a >> (b & 0xF)));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[short]
+
+
+    @Benchmark
+    public void ASHRMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)((a >> (b & 0xF)));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void LSHR(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)((a >>> b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void LSHRMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)((a >>> b));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[byte]
+
+
+    @Benchmark
+    public void LSHR(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(((a & 0xFF) >>> (b & 0x7)));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[byte]
+
+#if[byte]
+
+
+    @Benchmark
+    public void LSHRMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)(((a & 0xFF) >>> (b & 0x7)));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[byte]
+
+#if[short]
+
+
+    @Benchmark
+    public void LSHR(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(((a & 0xFFFF) >>> (b & 0xF)));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[short]
+
+
+    @Benchmark
+    public void LSHRMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)(((a & 0xFFFF) >>> (b & 0xF)));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void LSHLShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)((a << b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void LSHLMaskedShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)((a << b)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[byte]
+
+
+    @Benchmark
+    public void LSHLShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)((a << (b & 7)));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[byte]
+
+#if[byte]
+
+
+    @Benchmark
+    public void LSHLMaskedShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)((a << (b & 7))) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[byte]
+
+#if[short]
+
+
+    @Benchmark
+    public void LSHLShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)((a << (b & 15)));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[short]
+
+
+    @Benchmark
+    public void LSHLMaskedShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)((a << (b & 15))) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void LSHRShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)((a >>> b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void LSHRMaskedShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)((a >>> b)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[byte]
+
+
+    @Benchmark
+    public void LSHRShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(((a & 0xFF) >>> (b & 7)));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[byte]
+
+#if[byte]
+
+
+    @Benchmark
+    public void LSHRMaskedShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)(((a & 0xFF) >>> (b & 7))) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[byte]
+
+#if[short]
+
+
+    @Benchmark
+    public void LSHRShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(((a & 0xFFFF) >>> (b & 15)));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[short]
+
+
+    @Benchmark
+    public void LSHRMaskedShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)(((a & 0xFFFF) >>> (b & 15))) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void ASHRShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)((a >> b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void ASHRMaskedShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)((a >> b)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[byte]
+
+
+    @Benchmark
+    public void ASHRShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)((a >> (b & 7)));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[byte]
+
+#if[byte]
+
+
+    @Benchmark
+    public void ASHRMaskedShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)((a >> (b & 7))) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[byte]
+
+#if[short]
+
+
+    @Benchmark
+    public void ASHRShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)((a >> (b & 15)));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[short]
+
+
+    @Benchmark
+    public void ASHRMaskedShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)((a >> (b & 15))) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void ROR(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(ROR_scalar(a,b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void RORMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)(ROR_scalar(a,b));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void ROL(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(ROL_scalar(a,b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void ROLMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)(ROL_scalar(a,b));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void RORShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(ROR_scalar(a,b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void RORMaskedShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)(ROR_scalar(a,b)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void ROLShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(ROL_scalar(a,b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void ROLMaskedShift(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)(ROL_scalar(a,b)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+
+    @Benchmark
+    public void MIN(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(Math.min(a, b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void MAX(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(Math.max(a, b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#if[BITWISE]
+
+
+    @Benchmark
+    public void ANDLanes(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$ r = -1;
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            r = -1;
+            for (int i = 0; i < as.length; i++) {
+                r &= as[i];
+            }
+        }
+        bh.consume(r);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void ANDMaskedLanes(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        boolean[] ms = fm.apply(size);
+        $type$ r = -1;
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            r = -1;
+            for (int i = 0; i < as.length; i++) {
+                if (ms[i % ms.length])
+                    r &= as[i];
+            }
+        }
+        bh.consume(r);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void ORLanes(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$ r = 0;
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            r = 0;
+            for (int i = 0; i < as.length; i++) {
+                r |= as[i];
+            }
+        }
+        bh.consume(r);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void ORMaskedLanes(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        boolean[] ms = fm.apply(size);
+        $type$ r = 0;
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            r = 0;
+            for (int i = 0; i < as.length; i++) {
+                if (ms[i % ms.length])
+                    r |= as[i];
+            }
+        }
+        bh.consume(r);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void XORLanes(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$ r = 0;
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            r = 0;
+            for (int i = 0; i < as.length; i++) {
+                r ^= as[i];
+            }
+        }
+        bh.consume(r);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void XORMaskedLanes(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        boolean[] ms = fm.apply(size);
+        $type$ r = 0;
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            r = 0;
+            for (int i = 0; i < as.length; i++) {
+                if (ms[i % ms.length])
+                    r ^= as[i];
+            }
+        }
+        bh.consume(r);
+    }
+#end[BITWISE]
+
+
+    @Benchmark
+    public void ADDLanes(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$ r = 0;
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            r = 0;
+            for (int i = 0; i < as.length; i++) {
+                r += as[i];
+            }
+        }
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void ADDMaskedLanes(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        boolean[] ms = fm.apply(size);
+        $type$ r = 0;
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            r = 0;
+            for (int i = 0; i < as.length; i++) {
+                if (ms[i % ms.length])
+                    r += as[i];
+            }
+        }
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void MULLanes(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$ r = 1;
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            r = 1;
+            for (int i = 0; i < as.length; i++) {
+                r *= as[i];
+            }
+        }
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void MULMaskedLanes(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        boolean[] ms = fm.apply(size);
+        $type$ r = 1;
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            r = 1;
+            for (int i = 0; i < as.length; i++) {
+                if (ms[i % ms.length])
+                    r *= as[i];
+            }
+        }
+        bh.consume(r);
+    }
+#if[BITWISE]
+
+
+    @Benchmark
+    public void anyTrue(Blackhole bh) {
+        boolean[] ms = fm.apply(size);
+        boolean r = false;
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            r = false;
+            for (int i = 0; i < ms.length; i++) {
+                r |= ms[i];
+            }
+        }
+        bh.consume(r);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void allTrue(Blackhole bh) {
+        boolean[] ms = fm.apply(size);
+        boolean r = true;
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            r = true;
+            for (int i = 0; i < ms.length; i++) {
+                r &= ms[i];
+            }
+        }
+        bh.consume(r);
+    }
+#end[BITWISE]
+
+
+    @Benchmark
+    public void IS_DEFAULT(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                r &= (bits(a)==0); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void IS_NEGATIVE(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                r &= (bits(a)<0); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+#if[FP]
+
+
+    @Benchmark
+    public void IS_FINITE(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                r &= ($Boxtype$.isFinite(a)); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void IS_NAN(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                r &= ($Boxtype$.isNaN(a)); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void IS_INFINITE(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                r &= ($Boxtype$.isInfinite(a)); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+#end[FP]
+
+
+    @Benchmark
+    public void LT(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                r &= lt(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void GT(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                r &= gt(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void EQ(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                r &= eq(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void NE(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                r &= neq(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void LE(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                r &= le(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void GE(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                r &= ge(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+#if[BITWISE]
+
+
+    @Benchmark
+    public void UNSIGNED_LT(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                r &= ult(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void UNSIGNED_GT(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                r &= ugt(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void UNSIGNED_LE(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                r &= ule(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void UNSIGNED_GE(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        boolean r = true;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                r &= uge(as[i], bs[i]); // accumulate so JIT can't eliminate the computation
+            }
+        }
+
+        bh.consume(r);
+    }
+#end[BITWISE]
+
+
+    @Benchmark
+    public void blend(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? b : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+    void rearrangeShared(int window, Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        int[] order = fs.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i += window) {
+                for (int j = 0; j < window; j++) {
+                    $type$ a = as[i+j];
+                    int pos = order[j];
+                    rs[i + pos] = a;
+                }
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void rearrange064(Blackhole bh) {
+        int window = 64 / $Wideboxtype$.SIZE;
+        rearrangeShared(window, bh);
+    }
+
+    @Benchmark
+    public void rearrange128(Blackhole bh) {
+        int window = 128 / $Wideboxtype$.SIZE;
+        rearrangeShared(window, bh);
+    }
+
+    @Benchmark
+    public void rearrange256(Blackhole bh) {
+        int window = 256 / $Wideboxtype$.SIZE;
+        rearrangeShared(window, bh);
+    }
+
+    @Benchmark
+    public void rearrange512(Blackhole bh) {
+        int window = 512 / $Wideboxtype$.SIZE;
+        rearrangeShared(window, bh);
+    }
+
+    @Benchmark
+    public void compressScalar(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = new $type$[size];
+        boolean[] im = fmt.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0, j = 0; i < as.length; i++) {
+                if (im[i]) {
+                    rs[j++] = as[i];
+                }
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void expandScalar(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = new $type$[size];
+        boolean[] im = fmt.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0, j = 0; i < as.length; i++) {
+                if (im[i]) {
+                    rs[i++] = as[j++];
+                }
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void maskCompressScalar(Blackhole bh) {
+        boolean[] im = fmt.apply(size);
+        boolean[] rm = new boolean[size];
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0, j = 0; i < im.length; i++) {
+                if (im[i]) {
+                    rm[j++] = im[i];
+                }
+            }
+        }
+
+        bh.consume(rm);
+    }
+    void broadcastShared(int window, Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i += window) {
+                int idx = i;
+                for (int j = 0; j < window; j++) {
+                    rs[j] = as[idx];
+                }
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void broadcast064(Blackhole bh) {
+        int window = 64 / $Wideboxtype$.SIZE;
+        broadcastShared(window, bh);
+    }
+
+    @Benchmark
+    public void broadcast128(Blackhole bh) {
+        int window = 128 / $Wideboxtype$.SIZE;
+        broadcastShared(window, bh);
+    }
+
+    @Benchmark
+    public void broadcast256(Blackhole bh) {
+        int window = 256 / $Wideboxtype$.SIZE;
+        broadcastShared(window, bh);
+    }
+
+    @Benchmark
+    public void broadcast512(Blackhole bh) {
+        int window = 512 / $Wideboxtype$.SIZE;
+        broadcastShared(window, bh);
+    }
+
+    @Benchmark
+    public void zero(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                as[i] = ($type$)0;
+            }
+        }
+
+        bh.consume(as);
+    }
+#if[FP]
+
+
+    @Benchmark
+    public void SIN(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.sin((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void EXP(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.exp((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void LOG1P(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.log1p((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void LOG(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.log((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void LOG10(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.log10((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void EXPM1(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.expm1((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void COS(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.cos((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void TAN(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.tan((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void SINH(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.sinh((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void COSH(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.cosh((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void TANH(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.tanh((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void ASIN(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.asin((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void ACOS(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.acos((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void ATAN(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.atan((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void CBRT(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.cbrt((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void HYPOT(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(Math.hypot((double)a, (double)b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void POW(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(Math.pow((double)a, (double)b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void ATAN2(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(Math.atan2((double)a, (double)b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void FMA(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] cs = fc.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                $type$ c = cs[i];
+                rs[i] = ($type$)(Math.fma(a, b, c));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void FMAMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] cs = fc.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                $type$ c = cs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)(Math.fma(a, b, c));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void BITWISE_BLEND(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] cs = fc.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                $type$ c = cs[i];
+                rs[i] = ($type$)((a&~(c))|(b&c));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void BITWISE_BLENDMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] cs = fc.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                $type$ c = cs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)((a&~(c))|(b&c));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+    @Benchmark
+    public void NEG(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(-(($type$)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void NEGMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)(-(($type$)a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+    @Benchmark
+    public void ABS(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.abs(($type$)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void ABSMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)(Math.abs(($type$)a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#if[BITWISE]
+
+    @Benchmark
+    public void NOT(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(~(($type$)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void NOTMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)(~(($type$)a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+    @Benchmark
+    public void ZOMO(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)((a==0?0:-1));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void ZOMOMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)((a==0?0:-1)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[FP]
+
+    @Benchmark
+    public void SQRT(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Math.sqrt((double)a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[FP]
+
+
+    @Benchmark
+    public void SQRTMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)(Math.sqrt((double)a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[FP]
+
+#if[intOrLong]
+
+    @Benchmark
+    public void BIT_COUNT(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)($Boxtype$.bitCount(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void BIT_COUNTMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)($Boxtype$.bitCount(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[byte]
+
+    @Benchmark
+    public void BIT_COUNT(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Integer.bitCount((int)a & 0xFF));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[byte]
+
+#if[byte]
+
+
+    @Benchmark
+    public void BIT_COUNTMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)(Integer.bitCount((int)a & 0xFF)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[byte]
+
+#if[short]
+
+    @Benchmark
+    public void BIT_COUNT(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(Integer.bitCount((int)a & 0xFFFF));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[short]
+
+
+    @Benchmark
+    public void BIT_COUNTMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)(Integer.bitCount((int)a & 0xFFFF)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[BITWISE]
+
+    @Benchmark
+    public void TRAILING_ZEROS_COUNT(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(TRAILING_ZEROS_COUNT_scalar(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void TRAILING_ZEROS_COUNTMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)(TRAILING_ZEROS_COUNT_scalar(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+    @Benchmark
+    public void LEADING_ZEROS_COUNT(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(LEADING_ZEROS_COUNT_scalar(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void LEADING_ZEROS_COUNTMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)(LEADING_ZEROS_COUNT_scalar(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+    @Benchmark
+    public void REVERSE(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(REVERSE_scalar(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[BITWISE]
+
+
+    @Benchmark
+    public void REVERSEMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)(REVERSE_scalar(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[BITWISE]
+
+#if[intOrLong]
+
+    @Benchmark
+    public void REVERSE_BYTES(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)($Boxtype$.reverseBytes(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void REVERSE_BYTESMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)($Boxtype$.reverseBytes(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[short]
+
+    @Benchmark
+    public void REVERSE_BYTES(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)($Boxtype$.reverseBytes(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[short]
+
+
+    @Benchmark
+    public void REVERSE_BYTESMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)($Boxtype$.reverseBytes(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[short]
+
+#if[byte]
+
+    @Benchmark
+    public void REVERSE_BYTES(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                rs[i] = ($type$)(a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[byte]
+
+#if[byte]
+
+
+    @Benchmark
+    public void REVERSE_BYTESMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? ($type$)(a) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[byte]
+
+}
+

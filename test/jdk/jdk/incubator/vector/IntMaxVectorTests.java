@@ -1187,6 +1187,28 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         return Integer.reverse(a);
     }
 
+    static int COMPRESSBITS_scalar(int a, int b) {
+        int prefix_mask, move_mask, temp;
+        a = (int) (a & b);
+        int count_mask = (int) (~b << 1);
+        int mp, mv, t;
+        int iters = 5;
+
+        for (int i = 0; i < iters; i++) {
+            prefix_mask = (int) (count_mask  ^ (count_mask  << 1));
+            prefix_mask = (int) (prefix_mask ^ (prefix_mask << 2));
+            prefix_mask = (int) (prefix_mask ^ (prefix_mask << 4));
+            prefix_mask = (int) (prefix_mask ^ (prefix_mask << 8));
+            prefix_mask = (int) (prefix_mask ^ (prefix_mask << 16));
+            move_mask = (int) (prefix_mask & b);
+            b = (int)(b ^ move_mask | (move_mask >> (1 << i)));
+            temp = (int) (a & move_mask);
+            a = (int) (a ^ temp | (temp >> (1 << i)));
+            count_mask = (int) (count_mask & ~prefix_mask);
+        }
+        return a;
+    }
+
     static boolean eq(int a, int b) {
         return a == b;
     }
@@ -1913,6 +1935,50 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(r, a, b, mask, IntMaxVectorTests::XOR);
+    }
+
+
+    static int COMPRESS_BITS(int a, int b) {
+        return (int)(COMPRESSBITS_scalar(a,b));
+    }
+
+    @Test(dataProvider = "intBinaryOpProvider")
+    static void COMPRESS_BITSIntMaxVectorTests(IntFunction<int[]> fa, IntFunction<int[]> fb) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] b = fb.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                IntVector bv = IntVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.COMPRESS_BITS, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, IntMaxVectorTests::COMPRESS_BITS);
+    }
+
+
+
+    @Test(dataProvider = "intBinaryOpMaskProvider")
+    static void COMPRESS_BITSIntMaxVectorTestsMasked(IntFunction<int[]> fa, IntFunction<int[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] b = fb.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                IntVector bv = IntVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.COMPRESS_BITS, bv, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, mask, IntMaxVectorTests::COMPRESS_BITS);
     }
 
 
