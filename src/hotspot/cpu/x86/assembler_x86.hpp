@@ -1865,6 +1865,8 @@ private:
   void popcntl(Register dst, Address src);
   void popcntl(Register dst, Register src);
 
+  void vpopcntb(XMMRegister dst, XMMRegister src, int vector_len);
+  void vpopcntw(XMMRegister dst, XMMRegister src, int vector_len);
   void vpopcntd(XMMRegister dst, XMMRegister src, int vector_len);
   void vpopcntq(XMMRegister dst, XMMRegister src, int vector_len);
 

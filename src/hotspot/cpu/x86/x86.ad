@@ -1894,8 +1894,9 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       }
       break;
     case Op_PopCountVI:
-      if (!VM_Version::supports_avx512_vpopcntdq() &&
-          (vlen == 16) && !VM_Version::supports_avx512bw()) {
+      if (((bt == T_INT && !VM_Version::supports_avx512_vpopcntdq()) ||
+           (is_subword_type(bt) && !VM_Version::supports_avx512_bitalg())) &&
+           (size_in_bits == 512) && !VM_Version::supports_avx512bw()) {
         return false;
       }
       break;
@@ -8616,27 +8617,31 @@ instruct vmuladdaddS2I_reg(vec dst, vec src1, vec src2) %{
 // --------------------------------- PopCount --------------------------------------
 
 instruct vpopcountI_popcntd(vec dst, vec src) %{
-  predicate(VM_Version::supports_avx512_vpopcntdq());
+  predicate((VM_Version::supports_avx512_vpopcntdq() && Matcher::vector_element_basic_type(n->in(1)) == T_INT) ||
+            (VM_Version::supports_avx512_bitalg() && is_subword_type(Matcher::vector_element_basic_type(n->in(1)))));
   match(Set dst (PopCountVI src));
   format %{ "vector_popcount_int $dst, $src\t! vector popcount packedI" %}
   ins_encode %{
     assert(UsePopCountInstruction, "not enabled");
+    BasicType bt = Matcher::vector_element_basic_type(this);
     int vlen_enc = vector_length_encoding(this);
-    __ vector_popcount_int($dst$$XMMRegister, $src$$XMMRegister, xnoreg, xnoreg, xnoreg, noreg, vlen_enc);
+    __ vector_popcount_integral(bt, $dst$$XMMRegister, $src$$XMMRegister, xnoreg, xnoreg, noreg, vlen_enc);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vpopcountI(vec dst, vec src, vec xtmp1, vec xtmp2, vec xtmp3, rRegP rtmp, rFlagsReg cc) %{
-  predicate(!VM_Version::supports_avx512_vpopcntdq());
+instruct vpopcountI(vec dst, vec src, vec xtmp1, vec xtmp2, rRegP rtmp, rFlagsReg cc) %{
+  predicate((!VM_Version::supports_avx512_vpopcntdq() && Matcher::vector_element_basic_type(n->in(1)) == T_INT) ||
+            (!VM_Version::supports_avx512_bitalg() && is_subword_type(Matcher::vector_element_basic_type(n->in(1)))));
   match(Set dst (PopCountVI src));
-  effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP xtmp3, TEMP rtmp, KILL cc);
-  format %{ "vector_popcount_int  $dst, $src\t! using $xtmp1, $xtmp2, $xtmp3, and $rtmp as TEMP" %}
+  effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP rtmp, KILL cc);
+  format %{ "vector_popcount_int  $dst, $src\t! using $xtmp1, $xtmp2 and $rtmp as TEMP" %}
   ins_encode %{
     assert(UsePopCountInstruction, "not enabled");
+    BasicType bt = Matcher::vector_element_basic_type(this);
     int vlen_enc = vector_length_encoding(this);
-    __ vector_popcount_int($dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister, $xtmp2$$XMMRegister,
-                           $xtmp3$$XMMRegister, $rtmp$$Register, vlen_enc);
+    __ vector_popcount_integral(bt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
+                                $xtmp2$$XMMRegister, $rtmp$$Register, vlen_enc);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -8648,8 +8653,8 @@ instruct vpopcountL_popcntd(vec dst, vec src) %{
   ins_encode %{
     assert(UsePopCountInstruction, "not enabled");
     int vlen_enc = vector_length_encoding(this, $src);
-    BasicType bt = Matcher::vector_element_basic_type(this);
-    __ vector_popcount_long(bt, $dst$$XMMRegister, $src$$XMMRegister, xnoreg, xnoreg, xnoreg, noreg, vlen_enc);
+    BasicType rbt = Matcher::vector_element_basic_type(this);
+    __ vector_popcount_long(rbt, $dst$$XMMRegister, $src$$XMMRegister, xnoreg, xnoreg, noreg, vlen_enc);
   %}
   ins_pipe( pipe_slow );
 %}
@@ -8662,9 +8667,9 @@ instruct vpopcountL(vec dst, vec src, vec xtmp1, vec xtmp2, vec xtmp3, rRegP rtm
   ins_encode %{
     assert(UsePopCountInstruction, "not enabled");
     int vlen_enc = vector_length_encoding(this, $src);
-    BasicType bt = Matcher::vector_element_basic_type(this);
-    __ vector_popcount_long(bt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister, $xtmp2$$XMMRegister,
-                            $xtmp3$$XMMRegister, $rtmp$$Register, vlen_enc);
+    BasicType rbt = Matcher::vector_element_basic_type(this);
+    __ vector_popcount_long(rbt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
+                            $xtmp2$$XMMRegister, $rtmp$$Register, vlen_enc);
   %}
   ins_pipe( pipe_slow );
 %}

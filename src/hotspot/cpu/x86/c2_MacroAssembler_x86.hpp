@@ -322,10 +322,20 @@ public:
                   bool merge, BasicType bt, int vlen_enc);
 
   void vector_popcount_int(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
-                           XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp,
-                           int vec_enc);
+                           XMMRegister xtmp2, Register rtmp, int vec_enc);
 
-  void vector_popcount_long(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
-                            XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc);
+  void vector_popcount_long(BasicType rbt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                            XMMRegister xtmp2, Register rtmp, int vec_enc);
+
+  void vector_popcount_short(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                             XMMRegister xtmp2, Register rtmp, int vec_enc);
+
+  void vector_popcount_byte(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                            XMMRegister xtmp2, Register rtmp, int vec_enc);
+
+  void vector_popcount_integral(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                XMMRegister xtmp2, Register rtmp, int vec_enc);
+
+  void vbroadcastd(XMMRegister dst, Register rtmp, int imm32, int vec_enc);
 
 #endif // CPU_X86_C2_MACROASSEMBLER_X86_HPP

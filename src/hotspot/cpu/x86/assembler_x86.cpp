@@ -4861,6 +4861,22 @@ void Assembler::popcntl(Register dst, Register src) {
   emit_int24(0x0F, (unsigned char)0xB8, (0xC0 | encode));
 }
 
+void Assembler::vpopcntb(XMMRegister dst, XMMRegister src, int vector_len) {
+  assert(VM_Version::supports_avx512_bitalg(), "must support avx512bitalg feature");
+  InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ true, /* uses_vl */ true);
+  attributes.set_is_evex_instruction();
+  int encode = vex_prefix_and_encode(dst->encoding(), 0, src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
+  emit_int16(0x54, (0xC0 | encode));
+}
+
+void Assembler::vpopcntw(XMMRegister dst, XMMRegister src, int vector_len) {
+  assert(VM_Version::supports_avx512_bitalg(), "must support avx512bitalg feature");
+  InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ true, /* uses_vl */ true);
+  attributes.set_is_evex_instruction();
+  int encode = vex_prefix_and_encode(dst->encoding(), 0, src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
+  emit_int16(0x54, (0xC0 | encode));
+}
+
 void Assembler::vpopcntd(XMMRegister dst, XMMRegister src, int vector_len) {
   assert(VM_Version::supports_avx512_vpopcntdq(), "must support vpopcntdq feature");
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ true, /* uses_vl */ true);
