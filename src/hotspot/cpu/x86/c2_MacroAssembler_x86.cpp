@@ -4532,7 +4532,7 @@ void C2_MacroAssembler::vector_maskall_operation32(KRegister dst, Register src, 
 
 void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                                            XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc) {
-  if (VM_Version::supports_avx512bw()) {
+  if (VM_Version::supports_avx512vlbw()) {
     vmovdqu(xtmp1, ExternalAddress(StubRoutines::x86::vector_reverse_bit_lut()), rtmp, vec_enc);
     movl(rtmp, 0x0F0F0F0F);
     evpbroadcastd(xtmp2, rtmp, vec_enc);
@@ -4549,7 +4549,7 @@ void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMReg
     vporq(xtmp2, dst, xtmp2, vec_enc);
     vector_reverse_byte(bt, dst, xtmp2, rtmp, vec_enc);
 
-  } else if(!VM_Version::supports_avx512bw() && vec_enc == Assembler::AVX_512bit) {
+  } else if(!VM_Version::supports_avx512vlbw() && vec_enc == Assembler::AVX_512bit) {
 
     assert(bt == T_LONG || bt == T_INT, "");
     // Shift based bit reversal.
@@ -4585,7 +4585,6 @@ void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMReg
     vector_reverse_byte64(bt, dst, xtmp1, xtmp1, xtmp2, rtmp, vec_enc);
 
   } else {
-
     vmovdqu(xtmp1, ExternalAddress(StubRoutines::x86::vector_reverse_bit_lut()), rtmp, vec_enc);
     movl(rtmp, 0x0F0F0F0F);
     movdl(xtmp2, rtmp);

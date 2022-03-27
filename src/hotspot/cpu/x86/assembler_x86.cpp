@@ -9966,9 +9966,8 @@ void Assembler::evpternlogq(XMMRegister dst, int imm8, KRegister mask, XMMRegist
 
 void Assembler::vgf2p8affineqb(XMMRegister dst, int imm8, XMMRegister src2, XMMRegister src3, int vector_len) {
   assert(VM_Version::supports_gfni(), "requires GFNI support");
-  assert(VM_Version::supports_avx(), "");
+  assert(VM_Version::supports_sse(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ true, /* uses_vl */ true);
-  attributes.set_is_evex_instruction();
   int encode = vex_prefix_and_encode(dst->encoding(), src2->encoding(), src3->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_3A, &attributes);
   emit_int24((unsigned char)0xCE, (unsigned char)(0xC0 | encode), imm8);
 }
