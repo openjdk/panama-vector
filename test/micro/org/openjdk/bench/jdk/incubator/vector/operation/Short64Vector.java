@@ -1265,7 +1265,6 @@ public class Short64Vector extends AbstractVectorBenchmark {
 
 
 
-
     @Benchmark
     public Object LT() {
         short[] a = fa.apply(size);
@@ -1285,7 +1284,6 @@ public class Short64Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object GT() {
         short[] a = fa.apply(size);
@@ -1305,7 +1303,6 @@ public class Short64Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object EQ() {
         short[] a = fa.apply(size);
@@ -1325,7 +1322,6 @@ public class Short64Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object NE() {
         short[] a = fa.apply(size);
@@ -1345,7 +1341,6 @@ public class Short64Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object LE() {
         short[] a = fa.apply(size);
@@ -1365,7 +1360,6 @@ public class Short64Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object GE() {
         short[] a = fa.apply(size);
@@ -1386,7 +1380,6 @@ public class Short64Vector extends AbstractVectorBenchmark {
         return m;
     }
 
-
     @Benchmark
     public Object UNSIGNED_LT() {
         short[] a = fa.apply(size);
@@ -1406,7 +1399,6 @@ public class Short64Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
 
 
     @Benchmark
@@ -1430,7 +1422,6 @@ public class Short64Vector extends AbstractVectorBenchmark {
     }
 
 
-
     @Benchmark
     public Object UNSIGNED_LE() {
         short[] a = fa.apply(size);
@@ -1450,7 +1441,6 @@ public class Short64Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
 
 
     @Benchmark
@@ -1508,7 +1498,6 @@ public class Short64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
     @Benchmark
     public Object compress() {
         short[] a = fa.apply(size);
@@ -1558,7 +1547,6 @@ public class Short64Vector extends AbstractVectorBenchmark {
 
         return rs;
     }
-
 
     @Benchmark
     public void laneextract(Blackhole bh) {
@@ -2161,6 +2149,82 @@ public class Short64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
+
+
+
+    @Benchmark
+    public void REVERSE(Blackhole bh) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+
+
+    @Benchmark
+    public void REVERSEMasked(Blackhole bh) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+
+
+
+
+    @Benchmark
+    public void REVERSE_BYTES(Blackhole bh) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE_BYTES).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+
+
+    @Benchmark
+    public void REVERSE_BYTESMasked(Blackhole bh) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE_BYTES, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+
 
 }
 

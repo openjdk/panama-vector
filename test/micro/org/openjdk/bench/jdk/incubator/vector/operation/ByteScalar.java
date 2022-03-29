@@ -137,6 +137,12 @@ public class ByteScalar extends AbstractVectorBenchmark {
         return (byte) (a >= 0 ? Integer.numberOfLeadingZeros(a) - 24 : 0);
     }
 
+    static byte REVERSE_scalar(byte a) {
+        byte b = ROL_scalar(a, (byte) 4);
+        b = (byte)(((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
+        b = (byte)(((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
+        return b;
+    }
 
     @Benchmark
     public void ADD(Blackhole bh) {
@@ -1529,7 +1535,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
-
     @Benchmark
     public void NEG(Blackhole bh) {
         byte[] as = fa.apply(size);
@@ -1561,7 +1566,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
     @Benchmark
     public void ABS(Blackhole bh) {
         byte[] as = fa.apply(size);
@@ -1593,7 +1597,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
 
     @Benchmark
     public void NOT(Blackhole bh) {
@@ -1630,7 +1633,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
     }
 
 
-
     @Benchmark
     public void ZOMO(Blackhole bh) {
         byte[] as = fa.apply(size);
@@ -1664,7 +1666,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
 
 
 
@@ -1708,7 +1709,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
 
 
-
     @Benchmark
     public void TRAILING_ZEROS_COUNT(Blackhole bh) {
         byte[] as = fa.apply(size);
@@ -1744,7 +1744,6 @@ public class ByteScalar extends AbstractVectorBenchmark {
     }
 
 
-
     @Benchmark
     public void LEADING_ZEROS_COUNT(Blackhole bh) {
         byte[] as = fa.apply(size);
@@ -1773,6 +1772,80 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 boolean m = ms[i % ms.length];
                 rs[i] = (m ? (byte)(LEADING_ZEROS_COUNT_scalar(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+    @Benchmark
+    public void REVERSE(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                rs[i] = (byte)(REVERSE_scalar(a));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void REVERSEMasked(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (byte)(REVERSE_scalar(a)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+
+
+
+    @Benchmark
+    public void REVERSE_BYTES(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                rs[i] = (byte)(a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void REVERSE_BYTESMasked(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (byte)(a) : a);
             }
         }
 

@@ -396,8 +396,8 @@ public abstract class ShortVector extends AbstractVector<Short> {
         if (m.allTrue()) {
             return vi;
         }
-        for(int i = 0,j = 0; i < vsp.length(); i++) {
-            if(m.laneIsSet(i)) {
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
+            if (m.laneIsSet(i)) {
                 r = r.withLane(i, vi.lane(j++));
             }
         }
@@ -411,7 +411,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
         if (m.allTrue()) {
             return vi;
         }
-        for(int i = 0, j = 0; i < vsp.length(); i++) {
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
             if (m.laneIsSet(i)) {
                 r = r.withLane(j++, vi.lane(i));
             }
@@ -729,6 +729,10 @@ public abstract class ShortVector extends AbstractVector<Short> {
                     v0.uOp(m, (i, a) -> (short) numberOfTrailingZeros(a));
             case VECTOR_OP_LZ_COUNT: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (short) numberOfLeadingZeros(a));
+            case VECTOR_OP_REVERSE: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> reverse(a));
+            case VECTOR_OP_REVERSE_BYTES: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (short) Short.reverseBytes(a));
             default: return null;
         }
     }
@@ -1865,6 +1869,16 @@ public abstract class ShortVector extends AbstractVector<Short> {
         return a >= 0 ? Integer.numberOfLeadingZeros(a) - 16 : 0;
     }
 
+    static short reverse(short a) {
+        if (a == 0 || a == -1) return a;
+
+        short b = rotateLeft(a, 8);
+        b = (short) (((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
+        b = (short) (((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
+        b = (short) (((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
+        return b;
+    }
+
     // not (~)
     /**
      * Computes the bitwise logical complement ({@code ~})
@@ -1969,12 +1983,11 @@ public abstract class ShortVector extends AbstractVector<Short> {
     M testTemplate(Class<M> maskType, Test op) {
         ShortSpecies vsp = vspecies();
         if (opKind(op, VO_SPECIAL)) {
-            ShortVector bits = this.viewAsIntegralLanes();
             VectorMask<Short> m;
             if (op == IS_DEFAULT) {
-                m = bits.compare(EQ, (short) 0);
+                m = compare(EQ, (short) 0);
             } else if (op == IS_NEGATIVE) {
-                m = bits.compare(LT, (short) 0);
+                m = compare(LT, (short) 0);
             }
             else {
                 throw new AssertionError(op);
@@ -1989,11 +2002,31 @@ public abstract class ShortVector extends AbstractVector<Short> {
      * {@inheritDoc} <!--workaround-->
      */
     @Override
-    @ForceInline
-    public final
+    public abstract
     VectorMask<Short> test(VectorOperators.Test op,
-                                  VectorMask<Short> m) {
-        return test(op).and(m);
+                                  VectorMask<Short> m);
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Short>>
+    M testTemplate(Class<M> maskType, Test op, M mask) {
+        ShortSpecies vsp = vspecies();
+        mask.check(maskType, this);
+        if (opKind(op, VO_SPECIAL)) {
+            VectorMask<Short> m = mask;
+            if (op == IS_DEFAULT) {
+                m = compare(EQ, (short) 0, m);
+            } else if (op == IS_NEGATIVE) {
+                m = compare(LT, (short) 0, m);
+            }
+            else {
+                throw new AssertionError(op);
+            }
+            return maskType.cast(m);
+        }
+        int opc = opCode(op);
+        throw new AssertionError(op);
     }
 
     /**
@@ -4710,12 +4743,12 @@ public abstract class ShortVector extends AbstractVector<Short> {
      */
     static ShortSpecies species(VectorShape s) {
         Objects.requireNonNull(s);
-        switch (s) {
-            case S_64_BIT: return (ShortSpecies) SPECIES_64;
-            case S_128_BIT: return (ShortSpecies) SPECIES_128;
-            case S_256_BIT: return (ShortSpecies) SPECIES_256;
-            case S_512_BIT: return (ShortSpecies) SPECIES_512;
-            case S_Max_BIT: return (ShortSpecies) SPECIES_MAX;
+        switch (s.switchKey) {
+            case VectorShape.SK_64_BIT: return (ShortSpecies) SPECIES_64;
+            case VectorShape.SK_128_BIT: return (ShortSpecies) SPECIES_128;
+            case VectorShape.SK_256_BIT: return (ShortSpecies) SPECIES_256;
+            case VectorShape.SK_512_BIT: return (ShortSpecies) SPECIES_512;
+            case VectorShape.SK_Max_BIT: return (ShortSpecies) SPECIES_MAX;
             default: throw new IllegalArgumentException("Bad shape: " + s);
         }
     }

@@ -396,8 +396,8 @@ public abstract class IntVector extends AbstractVector<Integer> {
         if (m.allTrue()) {
             return vi;
         }
-        for(int i = 0,j = 0; i < vsp.length(); i++) {
-            if(m.laneIsSet(i)) {
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
+            if (m.laneIsSet(i)) {
                 r = r.withLane(i, vi.lane(j++));
             }
         }
@@ -411,7 +411,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         if (m.allTrue()) {
             return vi;
         }
-        for(int i = 0, j = 0; i < vsp.length(); i++) {
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
             if (m.laneIsSet(i)) {
                 r = r.withLane(j++, vi.lane(i));
             }
@@ -729,6 +729,10 @@ public abstract class IntVector extends AbstractVector<Integer> {
                     v0.uOp(m, (i, a) -> (int) Integer.numberOfTrailingZeros(a));
             case VECTOR_OP_LZ_COUNT: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (int) Integer.numberOfLeadingZeros(a));
+            case VECTOR_OP_REVERSE: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (int) Integer.reverse(a));
+            case VECTOR_OP_REVERSE_BYTES: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> (int) Integer.reverseBytes(a));
             default: return null;
         }
     }
@@ -1959,12 +1963,11 @@ public abstract class IntVector extends AbstractVector<Integer> {
     M testTemplate(Class<M> maskType, Test op) {
         IntSpecies vsp = vspecies();
         if (opKind(op, VO_SPECIAL)) {
-            IntVector bits = this.viewAsIntegralLanes();
             VectorMask<Integer> m;
             if (op == IS_DEFAULT) {
-                m = bits.compare(EQ, (int) 0);
+                m = compare(EQ, (int) 0);
             } else if (op == IS_NEGATIVE) {
-                m = bits.compare(LT, (int) 0);
+                m = compare(LT, (int) 0);
             }
             else {
                 throw new AssertionError(op);
@@ -1979,11 +1982,31 @@ public abstract class IntVector extends AbstractVector<Integer> {
      * {@inheritDoc} <!--workaround-->
      */
     @Override
-    @ForceInline
-    public final
+    public abstract
     VectorMask<Integer> test(VectorOperators.Test op,
-                                  VectorMask<Integer> m) {
-        return test(op).and(m);
+                                  VectorMask<Integer> m);
+
+    /*package-private*/
+    @ForceInline
+    final
+    <M extends VectorMask<Integer>>
+    M testTemplate(Class<M> maskType, Test op, M mask) {
+        IntSpecies vsp = vspecies();
+        mask.check(maskType, this);
+        if (opKind(op, VO_SPECIAL)) {
+            VectorMask<Integer> m = mask;
+            if (op == IS_DEFAULT) {
+                m = compare(EQ, (int) 0, m);
+            } else if (op == IS_NEGATIVE) {
+                m = compare(LT, (int) 0, m);
+            }
+            else {
+                throw new AssertionError(op);
+            }
+            return maskType.cast(m);
+        }
+        int opc = opCode(op);
+        throw new AssertionError(op);
     }
 
     /**
@@ -4432,12 +4455,12 @@ public abstract class IntVector extends AbstractVector<Integer> {
      */
     static IntSpecies species(VectorShape s) {
         Objects.requireNonNull(s);
-        switch (s) {
-            case S_64_BIT: return (IntSpecies) SPECIES_64;
-            case S_128_BIT: return (IntSpecies) SPECIES_128;
-            case S_256_BIT: return (IntSpecies) SPECIES_256;
-            case S_512_BIT: return (IntSpecies) SPECIES_512;
-            case S_Max_BIT: return (IntSpecies) SPECIES_MAX;
+        switch (s.switchKey) {
+            case VectorShape.SK_64_BIT: return (IntSpecies) SPECIES_64;
+            case VectorShape.SK_128_BIT: return (IntSpecies) SPECIES_128;
+            case VectorShape.SK_256_BIT: return (IntSpecies) SPECIES_256;
+            case VectorShape.SK_512_BIT: return (IntSpecies) SPECIES_512;
+            case VectorShape.SK_Max_BIT: return (IntSpecies) SPECIES_MAX;
             default: throw new IllegalArgumentException("Bad shape: " + s);
         }
     }

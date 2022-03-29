@@ -509,6 +509,27 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
       }
       break;
     }
+    case VECTOR_OP_REVERSE: {
+     switch (bt) {
+        case T_BYTE:  // Temporarily returning
+        case T_SHORT: // Op_ReverseI for byte and short
+        case T_INT:   return Op_ReverseI;
+        case T_LONG:  return Op_ReverseL;
+        default: fatal("REVERSE: %s", type2name(bt));
+      }
+      break;
+    }
+    case VECTOR_OP_REVERSE_BYTES: {
+     switch (bt) {
+        case T_BYTE:
+        case T_SHORT:
+        case T_INT:   return Op_ReverseBytesI;
+        case T_LONG:  return Op_ReverseBytesL;
+        default: fatal("REVERSE_BYTES: %s", type2name(bt));
+      }
+      break;
+    }
+
     case VECTOR_OP_TAN:
     case VECTOR_OP_TANH:
     case VECTOR_OP_SIN:

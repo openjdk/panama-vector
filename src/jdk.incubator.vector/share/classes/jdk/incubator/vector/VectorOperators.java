@@ -456,6 +456,10 @@ public abstract class VectorOperators {
     public static final Unary TRAILING_ZEROS_COUNT = unary("TRAILING_ZEROS_COUNT", "numberOfTrailingZeros", VectorSupport.VECTOR_OP_TZ_COUNT, VO_NOFP);
     /** Produce {@code numberOfLeadingZeros(a)} */
     public static final Unary LEADING_ZEROS_COUNT = unary("LEADING_ZEROS_COUNT", "numberOfLeadingZeros", VectorSupport.VECTOR_OP_LZ_COUNT, VO_NOFP);
+    /** Produce {@code reverse(a)} */
+    public static final Unary REVERSE = unary("REVERSE", "reverse", VectorSupport.VECTOR_OP_REVERSE, VO_NOFP);
+    /** Produce {@code reverseBytes(a)} */
+    public static final Unary REVERSE_BYTES = unary("REVERSE_BYTES", "reverseBytes", VectorSupport.VECTOR_OP_REVERSE_BYTES, VO_NOFP);
 
     /** Produce {@code sin(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above

@@ -1148,7 +1148,6 @@ public class FloatScalar extends AbstractVectorBenchmark {
 
 
 
-
     @Benchmark
     public void NEG(Blackhole bh) {
         float[] as = fa.apply(size);
@@ -1180,7 +1179,6 @@ public class FloatScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
     @Benchmark
     public void ABS(Blackhole bh) {
         float[] as = fa.apply(size);
@@ -1212,7 +1210,6 @@ public class FloatScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
 
 
 
@@ -1251,6 +1248,14 @@ public class FloatScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
+
+
+
+
+
+
+
+
 
 
 
