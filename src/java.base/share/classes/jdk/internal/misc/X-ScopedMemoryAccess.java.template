@@ -383,7 +383,7 @@ public class ScopedMemoryAccess {
                           S s,
                           VectorSupport.LoadOperation<ByteBuffer, V, S> defaultImpl) {
         try {
-            return loadFromByteBufferScoped(
+            return loadFromByteBufferScopedInternal(
                     BufferAccess.scope(bb),
                     vmClass, e, length,
                     bb, offset,
@@ -398,11 +398,11 @@ public class ScopedMemoryAccess {
     @ForceInline
     private static
     <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>>
-    V loadFromByteBufferScoped(ScopedMemoryAccess.Scope scope,
-                          Class<? extends V> vmClass, Class<E> e, int length,
-                          ByteBuffer bb, int offset,
-                          S s,
-                          VectorSupport.LoadOperation<ByteBuffer, V, S> defaultImpl) {
+    V loadFromByteBufferScopedInternal(ScopedMemoryAccess.Scope scope,
+                                       Class<? extends V> vmClass, Class<E> e, int length,
+                                       ByteBuffer bb, int offset,
+                                       S s,
+                                       VectorSupport.LoadOperation<ByteBuffer, V, S> defaultImpl) {
         try {
             if (scope != null) {
                 scope.checkValidState();
@@ -427,7 +427,7 @@ public class ScopedMemoryAccess {
                                int length, ByteBuffer bb, int offset, M m, S s,
                                VectorSupport.LoadVectorMaskedOperation<ByteBuffer, V, S, M> defaultImpl) {
         try {
-            return loadFromByteBufferMaskedScoped(
+            return loadFromByteBufferMaskedScopedInternal(
                     BufferAccess.scope(bb),
                     vmClass, maskClass, e, length,
                     bb, offset, m,
@@ -443,11 +443,11 @@ public class ScopedMemoryAccess {
     private static
     <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>,
      M extends VectorSupport.VectorMask<E>>
-    V loadFromByteBufferMaskedScoped(ScopedMemoryAccess.Scope scope, Class<? extends V> vmClass,
-                                     Class<M> maskClass, Class<E> e, int length,
-                                     ByteBuffer bb, int offset, M m,
-                                     S s,
-                                     VectorSupport.LoadVectorMaskedOperation<ByteBuffer, V, S, M> defaultImpl) {
+    V loadFromByteBufferMaskedScopedInternal(ScopedMemoryAccess.Scope scope, Class<? extends V> vmClass,
+                                             Class<M> maskClass, Class<E> e, int length,
+                                             ByteBuffer bb, int offset, M m,
+                                             S s,
+                                             VectorSupport.LoadVectorMaskedOperation<ByteBuffer, V, S, M> defaultImpl) {
         try {
             if (scope != null) {
                 scope.checkValidState();
@@ -470,7 +470,7 @@ public class ScopedMemoryAccess {
                              ByteBuffer bb, int offset,
                              VectorSupport.StoreVectorOperation<ByteBuffer, V> defaultImpl) {
         try {
-            storeIntoByteBufferScoped(
+            storeIntoByteBufferScopedInternal(
                     BufferAccess.scope(bb),
                     vmClass, e, length,
                     v,
@@ -485,11 +485,11 @@ public class ScopedMemoryAccess {
     @ForceInline
     private static
     <V extends VectorSupport.Vector<E>, E>
-    void storeIntoByteBufferScoped(ScopedMemoryAccess.Scope scope,
-                                   Class<? extends V> vmClass, Class<E> e, int length,
-                                   V v,
-                                   ByteBuffer bb, int offset,
-                                   VectorSupport.StoreVectorOperation<ByteBuffer, V> defaultImpl) {
+    void storeIntoByteBufferScopedInternal(ScopedMemoryAccess.Scope scope,
+                                           Class<? extends V> vmClass, Class<E> e, int length,
+                                           V v,
+                                           ByteBuffer bb, int offset,
+                                           VectorSupport.StoreVectorOperation<ByteBuffer, V> defaultImpl) {
         try {
             if (scope != null) {
                 scope.checkValidState();
@@ -515,7 +515,7 @@ public class ScopedMemoryAccess {
                                    ByteBuffer bb, int offset,
                                    VectorSupport.StoreVectorMaskedOperation<ByteBuffer, V, M> defaultImpl) {
         try {
-            storeIntoByteBufferMaskedScoped(
+            storeIntoByteBufferMaskedScopedInternal(
                     BufferAccess.scope(bb),
                     vmClass, maskClass, e, length,
                     v, m,
@@ -530,11 +530,11 @@ public class ScopedMemoryAccess {
     @ForceInline
     private static
     <V extends VectorSupport.Vector<E>, E, M extends VectorSupport.VectorMask<E>>
-    void storeIntoByteBufferMaskedScoped(ScopedMemoryAccess.Scope scope,
-                                         Class<? extends V> vmClass, Class<M> maskClass,
-                                         Class<E> e, int length, V v, M m,
-                                         ByteBuffer bb, int offset,
-                                         VectorSupport.StoreVectorMaskedOperation<ByteBuffer, V, M> defaultImpl) {
+    void storeIntoByteBufferMaskedScopedInternal(ScopedMemoryAccess.Scope scope,
+                                                 Class<? extends V> vmClass, Class<M> maskClass,
+                                                 Class<E> e, int length, V v, M m,
+                                                 ByteBuffer bb, int offset,
+                                                 VectorSupport.StoreVectorMaskedOperation<ByteBuffer, V, M> defaultImpl) {
         try {
             if (scope != null) {
                 scope.checkValidState();
@@ -565,7 +565,7 @@ public class ScopedMemoryAccess {
         }
 
         try {
-            return loadFromMemorySegmentScoped(
+            return loadFromMemorySegmentScopedInternal(
                     msp.scope(),
                     vmClass, e, length,
                     msp, offset,
@@ -580,11 +580,11 @@ public class ScopedMemoryAccess {
     @ForceInline
     private static
     <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>>
-    V loadFromMemorySegmentScoped(ScopedMemoryAccess.Scope scope,
-                                  Class<? extends V> vmClass, Class<E> e, int length,
-                                  MemorySegmentProxy msp, long offset,
-                                  S s,
-                                  VectorSupport.LoadOperation<MemorySegmentProxy, V, S> defaultImpl) {
+    V loadFromMemorySegmentScopedInternal(ScopedMemoryAccess.Scope scope,
+                                          Class<? extends V> vmClass, Class<E> e, int length,
+                                          MemorySegmentProxy msp, long offset,
+                                          S s,
+                                          VectorSupport.LoadOperation<MemorySegmentProxy, V, S> defaultImpl) {
         try {
             scope.checkValidState();
 
@@ -610,7 +610,7 @@ public class ScopedMemoryAccess {
         }
 
         try {
-            return loadFromMemorySegmentMaskedScoped(
+            return loadFromMemorySegmentMaskedScopedInternal(
                     msp.scope(),
                     vmClass, maskClass, e, length,
                     msp, offset, m,
@@ -626,11 +626,11 @@ public class ScopedMemoryAccess {
     private static
     <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>,
      M extends VectorSupport.VectorMask<E>>
-    V loadFromMemorySegmentMaskedScoped(ScopedMemoryAccess.Scope scope, Class<? extends V> vmClass,
-                                        Class<M> maskClass, Class<E> e, int length,
-                                        MemorySegmentProxy msp, long offset, M m,
-                                        S s,
-                                        VectorSupport.LoadVectorMaskedOperation<MemorySegmentProxy, V, S, M> defaultImpl) {
+    V loadFromMemorySegmentMaskedScopedInternal(ScopedMemoryAccess.Scope scope, Class<? extends V> vmClass,
+                                                Class<M> maskClass, Class<E> e, int length,
+                                                MemorySegmentProxy msp, long offset, M m,
+                                                S s,
+                                                VectorSupport.LoadVectorMaskedOperation<MemorySegmentProxy, V, S, M> defaultImpl) {
         try {
             scope.checkValidState();
 
@@ -656,7 +656,7 @@ public class ScopedMemoryAccess {
         }
 
         try {
-            storeIntoMemorySegmentScoped(
+            storeIntoMemorySegmentScopedInternal(
                     msp.scope(),
                     vmClass, e, length,
                     v,
@@ -671,11 +671,11 @@ public class ScopedMemoryAccess {
     @ForceInline
     private static
     <V extends VectorSupport.Vector<E>, E>
-    void storeIntoMemorySegmentScoped(ScopedMemoryAccess.Scope scope,
-                                      Class<? extends V> vmClass, Class<E> e, int length,
-                                      V v,
-                                      MemorySegmentProxy msp, long offset,
-                                      VectorSupport.StoreVectorOperation<MemorySegmentProxy, V> defaultImpl) {
+    void storeIntoMemorySegmentScopedInternal(ScopedMemoryAccess.Scope scope,
+                                              Class<? extends V> vmClass, Class<E> e, int length,
+                                              V v,
+                                              MemorySegmentProxy msp, long offset,
+                                              VectorSupport.StoreVectorOperation<MemorySegmentProxy, V> defaultImpl) {
         try {
             scope.checkValidState();
 
@@ -702,7 +702,7 @@ public class ScopedMemoryAccess {
         }
 
         try {
-            storeIntoMemorySegmentMaskedScoped(
+            storeIntoMemorySegmentMaskedScopedInternal(
                     msp.scope(),
                     vmClass, maskClass, e, length,
                     v, m,
@@ -717,11 +717,11 @@ public class ScopedMemoryAccess {
     @ForceInline
     private static
     <V extends VectorSupport.Vector<E>, E, M extends VectorSupport.VectorMask<E>>
-    void storeIntoMemorySegmentMaskedScoped(ScopedMemoryAccess.Scope scope,
-                                           Class<? extends V> vmClass, Class<M> maskClass,
-                                           Class<E> e, int length, V v, M m,
-                                           MemorySegmentProxy msp, long offset,
-                                           VectorSupport.StoreVectorMaskedOperation<MemorySegmentProxy, V, M> defaultImpl) {
+    void storeIntoMemorySegmentMaskedScopedInternal(ScopedMemoryAccess.Scope scope,
+                                                    Class<? extends V> vmClass, Class<M> maskClass,
+                                                    Class<E> e, int length, V v, M m,
+                                                    MemorySegmentProxy msp, long offset,
+                                                    VectorSupport.StoreVectorMaskedOperation<MemorySegmentProxy, V, M> defaultImpl) {
         try {
             scope.checkValidState();
 
