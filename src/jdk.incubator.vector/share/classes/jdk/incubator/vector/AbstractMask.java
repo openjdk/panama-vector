@@ -204,6 +204,15 @@ abstract class AbstractMask<E> extends VectorMask<E> {
         return this.andNot(badMask);
     }
 
+    @Override
+    @ForceInline
+    public VectorMask<E> indexInRange(long offset, long limit) {
+        int vlength = length();
+        Vector<E> iota = vectorSpecies().zero().addIndex(1);
+        VectorMask<E> badMask = checkIndex0(offset, limit, iota, vlength);
+        return this.andNot(badMask);
+    }
+
     /*package-private*/
     @ForceInline
     AbstractVector<E>
