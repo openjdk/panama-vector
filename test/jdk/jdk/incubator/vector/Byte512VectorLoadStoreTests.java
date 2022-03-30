@@ -966,31 +966,27 @@ public class Byte512VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
                                                ByteOrder bo) {
         MemorySegment a = toSegment(fa.apply(SPECIES.length()), fb).asReadOnly();
 
-        try {
-            SPECIES.zero().intoMemorySegment(a, 0, bo);
-            Assert.fail("UnsupportedOperationException expected");
-        } catch (UnsupportedOperationException e) {
-        }
+        Assert.assertThrows(
+                UnsupportedOperationException.class,
+                () -> SPECIES.zero().intoMemorySegment(a, 0, bo)
+        );
 
-        try {
-            SPECIES.zero().intoMemorySegment(a, 0, bo, SPECIES.maskAll(true));
-            Assert.fail("UnsupportedOperationException expected");
-        } catch (UnsupportedOperationException e) {
-        }
+        Assert.assertThrows(
+                UnsupportedOperationException.class,
+                () -> SPECIES.zero().intoMemorySegment(a, 0, bo, SPECIES.maskAll(true))
+        );
 
-        try {
-            SPECIES.zero().intoMemorySegment(a, 0, bo, SPECIES.maskAll(false));
-            Assert.fail("UnsupportedOperationException expected");
-        } catch (UnsupportedOperationException e) {
-        }
+        Assert.assertThrows(
+                UnsupportedOperationException.class,
+                () -> SPECIES.zero().intoMemorySegment(a, 0, bo, SPECIES.maskAll(false))
+        );
 
-        try {
-            VectorMask<Byte> m = SPECIES.shuffleFromOp(i -> i % 2 == 0 ? 1 : -1)
-                    .laneIsValid();
-            SPECIES.zero().intoMemorySegment(a, 0, bo, m);
-            Assert.fail("UnsupportedOperationException expected");
-        } catch (UnsupportedOperationException e) {
-        }
+        VectorMask<Byte> m = SPECIES.shuffleFromOp(i -> i % 2 == 0 ? 1 : -1)
+                .laneIsValid();
+        Assert.assertThrows(
+                UnsupportedOperationException.class,
+                () -> SPECIES.zero().intoMemorySegment(a, 0, bo, m)
+        );
     }
 
 
