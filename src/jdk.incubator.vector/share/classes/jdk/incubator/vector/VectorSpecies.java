@@ -149,7 +149,7 @@ public interface VectorSpecies<E> {
      * @return the largest multiple of the vector length not greater
      *         than the given length
      * @throws IllegalArgumentException if the {@code length} is
-               negative and the result would overflow to a positive value
+     *         negative and the result would overflow to a positive value
      * @see Math#floorMod(int, int)
      */
     int loopBound(int length);
@@ -174,7 +174,7 @@ public interface VectorSpecies<E> {
      * @return the largest multiple of the vector length not greater
      *         than the given length
      * @throws IllegalArgumentException if the {@code length} is
-    negative and the result would overflow to a positive value
+     *         negative and the result would overflow to a positive value
      * @see Math#floorMod(long, int)
      */
     long loopBound(long length);
