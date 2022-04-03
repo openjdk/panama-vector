@@ -324,7 +324,7 @@ public:
   void vector_popcount_int(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                            XMMRegister xtmp2, Register rtmp, int vec_enc);
 
-  void vector_popcount_long(BasicType rbt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+  void vector_popcount_long(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                             XMMRegister xtmp2, Register rtmp, int vec_enc);
 
   void vector_popcount_short(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
@@ -335,6 +335,9 @@ public:
 
   void vector_popcount_integral(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                                 XMMRegister xtmp2, Register rtmp, int vec_enc);
+
+  void vector_popcount_integral_evex(BasicType bt, XMMRegister dst, XMMRegister src,
+                                     KRegister mask, bool merge, int vec_enc);
 
   void vbroadcastd(XMMRegister dst, Register rtmp, int imm32, int vec_enc);
 

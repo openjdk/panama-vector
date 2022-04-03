@@ -2050,6 +2050,19 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
       }
       return true;
 
+    case Op_PopCountVI:
+      if ((is_subword_type(bt) && !VM_Version::supports_avx512_bitalg()) ||
+          ((bt == T_INT) && !VM_Version::supports_avx512_vpopcntdq())) {
+        return false;
+      }
+      return true;
+
+    case Op_PopCountVL:
+      if ((bt == T_LONG) && !VM_Version::supports_avx512_vpopcntdq()) {
+        return false;
+      }
+      return true;
+
     case Op_MaskAll:
       return true;
 
@@ -8616,21 +8629,59 @@ instruct vmuladdaddS2I_reg(vec dst, vec src1, vec src2) %{
 
 // --------------------------------- PopCount --------------------------------------
 
-instruct vpopcountI_popcntd(vec dst, vec src) %{
-  predicate((VM_Version::supports_avx512_vpopcntdq() && Matcher::vector_element_basic_type(n->in(1)) == T_INT) ||
-            (VM_Version::supports_avx512_bitalg() && is_subword_type(Matcher::vector_element_basic_type(n->in(1)))));
+instruct vpopcount_integral_reg_evex(vec dst, vec src) %{
+  predicate((((Matcher::vector_element_basic_type(n->in(1)) == T_INT ||
+               Matcher::vector_element_basic_type(n->in(1)) == T_LONG)) &&
+             VM_Version::supports_avx512_vpopcntdq()) ||
+            (is_subword_type(Matcher::vector_element_basic_type(n->in(1))) &&
+             VM_Version::supports_avx512_bitalg()));
   match(Set dst (PopCountVI src));
-  format %{ "vector_popcount_int $dst, $src\t! vector popcount packedI" %}
+  match(Set dst (PopCountVL src));
+  ins_cost(400);
+  format %{ "vector_popcount_integral_evex $dst, $src" %}
   ins_encode %{
     assert(UsePopCountInstruction, "not enabled");
-    BasicType bt = Matcher::vector_element_basic_type(this);
-    int vlen_enc = vector_length_encoding(this);
-    __ vector_popcount_integral(bt, $dst$$XMMRegister, $src$$XMMRegister, xnoreg, xnoreg, noreg, vlen_enc);
+    int opcode = this->ideal_Opcode();
+    int vlen_enc = vector_length_encoding(this, $src);
+    BasicType bt = Matcher::vector_element_basic_type(this, $src);
+    __ vector_popcount_integral_evex(bt, $dst$$XMMRegister, $src$$XMMRegister, k0, true, vlen_enc);
+    // TODO: Once auto-vectorizer supports ConvL2I operation, PopCountVL
+    // should be succeeded by its corresponding vector IR and following
+    // special handling should be removed.
+    if (opcode == Op_PopCountVL && Matcher::vector_element_basic_type(this) == T_INT) {
+      __ evpmovqd($dst$$XMMRegister, $dst$$XMMRegister, vlen_enc);
+    }
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct vpopcountI(vec dst, vec src, vec xtmp1, vec xtmp2, rRegP rtmp, rFlagsReg cc) %{
+instruct vpopcount_integral_reg_evex_masked(vec dst, vec src, kReg mask) %{
+  predicate((((Matcher::vector_element_basic_type(n->in(1)) == T_INT ||
+               Matcher::vector_element_basic_type(n->in(1)) == T_LONG)) &&
+             VM_Version::supports_avx512_vpopcntdq()) ||
+            (is_subword_type(Matcher::vector_element_basic_type(n->in(1))) &&
+             VM_Version::supports_avx512_bitalg()));
+  match(Set dst (PopCountVI src mask));
+  match(Set dst (PopCountVL src mask));
+  format %{ "vector_popcount_integral_evex_masked $dst, $src, $mask" %}
+  ins_encode %{
+    assert(UsePopCountInstruction, "not enabled");
+    int opcode = this->ideal_Opcode();
+    int vlen_enc = vector_length_encoding(this, $src);
+    BasicType bt = Matcher::vector_element_basic_type(this, $src);
+    __ evmovdquq($dst$$XMMRegister, $src$$XMMRegister, vlen_enc);
+    __ vector_popcount_integral_evex(bt, $dst$$XMMRegister, $src$$XMMRegister, $mask$$KRegister, true, vlen_enc);
+    // TODO: Once auto-vectorizer supports ConvL2I operation, PopCountVL
+    // should be succeeded by its corresponding vector IR and following
+    // special handling should be removed.
+    if (opcode == Op_PopCountVL && Matcher::vector_element_basic_type(this) == T_INT) {
+      __ evpmovqd($dst$$XMMRegister, $dst$$XMMRegister, vlen_enc);
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vpopcountI_avx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, rRegP rtmp, rFlagsReg cc) %{
   predicate((!VM_Version::supports_avx512_vpopcntdq() && Matcher::vector_element_basic_type(n->in(1)) == T_INT) ||
             (!VM_Version::supports_avx512_bitalg() && is_subword_type(Matcher::vector_element_basic_type(n->in(1)))));
   match(Set dst (PopCountVI src));
@@ -8646,20 +8697,7 @@ instruct vpopcountI(vec dst, vec src, vec xtmp1, vec xtmp2, rRegP rtmp, rFlagsRe
   ins_pipe( pipe_slow );
 %}
 
-instruct vpopcountL_popcntd(vec dst, vec src) %{
-  predicate(VM_Version::supports_avx512_vpopcntdq());
-  match(Set dst (PopCountVL src));
-  format %{ "vector_popcount_long  $dst, $src\t! vector popcount packedL" %}
-  ins_encode %{
-    assert(UsePopCountInstruction, "not enabled");
-    int vlen_enc = vector_length_encoding(this, $src);
-    BasicType rbt = Matcher::vector_element_basic_type(this);
-    __ vector_popcount_long(rbt, $dst$$XMMRegister, $src$$XMMRegister, xnoreg, xnoreg, noreg, vlen_enc);
-  %}
-  ins_pipe( pipe_slow );
-%}
-
-instruct vpopcountL(vec dst, vec src, vec xtmp1, vec xtmp2, vec xtmp3, rRegP rtmp, rFlagsReg cc) %{
+instruct vpopcountL_avx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, vec xtmp3, rRegP rtmp, rFlagsReg cc) %{
   predicate(!VM_Version::supports_avx512_vpopcntdq());
   match(Set dst (PopCountVL src));
   effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP xtmp3, TEMP rtmp, KILL cc);
@@ -8667,9 +8705,15 @@ instruct vpopcountL(vec dst, vec src, vec xtmp1, vec xtmp2, vec xtmp3, rRegP rtm
   ins_encode %{
     assert(UsePopCountInstruction, "not enabled");
     int vlen_enc = vector_length_encoding(this, $src);
-    BasicType rbt = Matcher::vector_element_basic_type(this);
-    __ vector_popcount_long(rbt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ vector_popcount_long($dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
                             $xtmp2$$XMMRegister, $rtmp$$Register, vlen_enc);
+    // TODO: Once auto-vectorizer supports ConvL2I operation, PopCountVL
+    // should be succeeded by its corresponding vector IR and following
+    // special handling should be removed.
+    if (bt == T_INT) {
+      __ evpmovqd($dst$$XMMRegister, $dst$$XMMRegister, vlen_enc);
+    }
   %}
   ins_pipe( pipe_slow );
 %}
