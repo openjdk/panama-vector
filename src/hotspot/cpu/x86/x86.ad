@@ -8681,11 +8681,11 @@ instruct vpopcount_integral_reg_evex_masked(vec dst, vec src, kReg mask) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vpopcountI_avx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, rRegP rtmp, rFlagsReg cc) %{
+instruct vpopcountI_avx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, rRegP rtmp) %{
   predicate((!VM_Version::supports_avx512_vpopcntdq() && Matcher::vector_element_basic_type(n->in(1)) == T_INT) ||
             (!VM_Version::supports_avx512_bitalg() && is_subword_type(Matcher::vector_element_basic_type(n->in(1)))));
   match(Set dst (PopCountVI src));
-  effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP rtmp, KILL cc);
+  effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP rtmp);
   format %{ "vector_popcount_int  $dst, $src\t! using $xtmp1, $xtmp2 and $rtmp as TEMP" %}
   ins_encode %{
     assert(UsePopCountInstruction, "not enabled");
@@ -8697,10 +8697,10 @@ instruct vpopcountI_avx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, rRegP rtmp, 
   ins_pipe( pipe_slow );
 %}
 
-instruct vpopcountL_avx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, vec xtmp3, rRegP rtmp, rFlagsReg cc) %{
+instruct vpopcountL_avx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, vec xtmp3, rRegP rtmp) %{
   predicate(!VM_Version::supports_avx512_vpopcntdq());
   match(Set dst (PopCountVL src));
-  effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP xtmp3, TEMP rtmp, KILL cc);
+  effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP xtmp3, TEMP rtmp);
   format %{ "vector_popcount_long  $dst, $src\t! using $xtmp1, $xtmp2, $xtmp3, and $rtmp as TEMP" %}
   ins_encode %{
     assert(UsePopCountInstruction, "not enabled");
