@@ -8671,12 +8671,6 @@ instruct vpopcount_integral_reg_evex_masked(vec dst, vec src, kReg mask) %{
     BasicType bt = Matcher::vector_element_basic_type(this, $src);
     __ evmovdquq($dst$$XMMRegister, $src$$XMMRegister, vlen_enc);
     __ vector_popcount_integral_evex(bt, $dst$$XMMRegister, $src$$XMMRegister, $mask$$KRegister, true, vlen_enc);
-    // TODO: Once auto-vectorizer supports ConvL2I operation, PopCountVL
-    // should be succeeded by its corresponding vector IR and following
-    // special handling should be removed.
-    if (opcode == Op_PopCountVL && Matcher::vector_element_basic_type(this) == T_INT) {
-      __ evpmovqd($dst$$XMMRegister, $dst$$XMMRegister, vlen_enc);
-    }
   %}
   ins_pipe( pipe_slow );
 %}
