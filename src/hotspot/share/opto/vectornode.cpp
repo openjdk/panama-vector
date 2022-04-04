@@ -158,23 +158,11 @@ int VectorNode::opcode(int sopc, BasicType bt) {
     return Op_PopCountVL;
   case Op_ReverseI:
   case Op_ReverseL:
-    switch (bt) {
-    case T_BYTE:
-    case T_SHORT:
-    case T_INT:
-    case T_LONG:   return Op_ReverseV;
-    default:       return 0;
-    }
+    return (is_integral_type(bt) ? Op_ReverseV : 0);
   case Op_ReverseBytesS:
   case Op_ReverseBytesI:
   case Op_ReverseBytesL:
-    switch (bt) {
-    case T_BYTE:
-    case T_SHORT:
-    case T_INT:
-    case T_LONG:   return Op_ReverseBytesV;
-    default:       return 0;
-    }
+    return (is_integral_type(bt) ? Op_ReverseBytesV : 0);
   case Op_LShiftI:
     switch (bt) {
     case T_BOOLEAN:

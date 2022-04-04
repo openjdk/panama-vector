@@ -9964,7 +9964,7 @@ void Assembler::evpternlogq(XMMRegister dst, int imm8, KRegister mask, XMMRegist
   emit_int8(imm8);
 }
 
-void Assembler::vgf2p8affineqb(XMMRegister dst, int imm8, XMMRegister src2, XMMRegister src3, int vector_len) {
+void Assembler::vgf2p8affineqb(XMMRegister dst, XMMRegister src2, XMMRegister src3, int imm8, int vector_len) {
   assert(VM_Version::supports_gfni(), "requires GFNI support");
   assert(VM_Version::supports_sse(), "");
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ true, /* uses_vl */ true);

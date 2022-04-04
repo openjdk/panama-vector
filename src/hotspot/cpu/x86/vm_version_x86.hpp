@@ -362,7 +362,7 @@ protected:
     decl(AVX512_VBMI,       "avx512_vbmi",       45) /* Vector BMI instructions */ \
     decl(HV,                "hv",                46) /* Hypervisor instructions */ \
     decl(SERIALIZE,         "serialize",         47) /* CPU SERIALIZE */ \
-    decl(GFNI,              "gfni",              48) /* Vector AES instruction */
+    decl(GFNI,              "gfni",              48) /* Vector GFNI instructions */
 
 #define DECLARE_CPU_FEATURE_FLAG(id, name, bit) CPU_##id = (1ULL << bit),
     CPU_FEATURE_FLAGS(DECLARE_CPU_FEATURE_FLAG)
