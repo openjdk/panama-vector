@@ -149,10 +149,35 @@ public interface VectorSpecies<E> {
      * @return the largest multiple of the vector length not greater
      *         than the given length
      * @throws IllegalArgumentException if the {@code length} is
-               negative and the result would overflow to a positive value
+     *         negative and the result would overflow to a positive value
      * @see Math#floorMod(int, int)
      */
     int loopBound(int length);
+
+    /**
+     * Loop control function which returns the largest multiple of
+     * {@code VLENGTH} that is less than or equal to the given
+     * {@code length} value.
+     * Here, {@code VLENGTH} is the result of {@code this.length()},
+     * and {@code length} is interpreted as a number of lanes.
+     * The resulting value {@code R} satisfies this inequality:
+     * <pre>{@code R <= length < R+VLENGTH}
+     * </pre>
+     * <p> Specifically, this method computes
+     * {@code length - floorMod(length, VLENGTH)}, where
+     * {@link Math#floorMod(long,int) floorMod} computes a remainder
+     * value by rounding its quotient toward negative infinity.
+     * As long as {@code VLENGTH} is a power of two, then the result
+     * is also equal to {@code length & ~(VLENGTH - 1)}.
+     *
+     * @param length the input length
+     * @return the largest multiple of the vector length not greater
+     *         than the given length
+     * @throws IllegalArgumentException if the {@code length} is
+     *         negative and the result would overflow to a positive value
+     * @see Math#floorMod(long, int)
+     */
+    long loopBound(long length);
 
     /**
      * Returns a mask of this species where only
@@ -170,6 +195,23 @@ public interface VectorSpecies<E> {
      * @see VectorMask#indexInRange(int, int)
      */
     VectorMask<E> indexInRange(int offset, int limit);
+
+    /**
+     * Returns a mask of this species where only
+     * the lanes at index N such that the adjusted index
+     * {@code N+offset} is in the range {@code [0..limit-1]}
+     * are set.
+     *
+     * <p>
+     * This method returns the value of the expression
+     * {@code maskAll(true).indexInRange(offset, limit)}
+     *
+     * @param offset the starting index
+     * @param limit the upper-bound (exclusive) of index range
+     * @return a mask with out-of-range lanes unset
+     * @see VectorMask#indexInRange(long, long)
+     */
+    VectorMask<E> indexInRange(long offset, long limit);
 
     /**
      * Checks that this species has the given element type,

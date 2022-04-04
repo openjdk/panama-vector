@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
+import jdk.incubator.foreign.MemorySegment;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
 
@@ -887,6 +888,20 @@ final class Double256Vector extends DoubleVector {
     @ForceInline
     @Override
     final
+    DoubleVector fromMemorySegment0(MemorySegment ms, long offset) {
+        return super.fromMemorySegment0Template(ms, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    DoubleVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Double> m) {
+        return super.fromMemorySegment0Template(Double256Mask.class, ms, offset, (Double256Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
     void intoArray0(double[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
     }
@@ -925,6 +940,13 @@ final class Double256Vector extends DoubleVector {
     final
     void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Double> m) {
         super.intoByteBuffer0Template(Double256Mask.class, bb, offset, (Double256Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Double> m) {
+        super.intoMemorySegment0Template(Double256Mask.class, ms, offset, (Double256Mask) m);
     }
 
 
