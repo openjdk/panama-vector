@@ -4537,7 +4537,7 @@ void C2_MacroAssembler::vector_maskall_operation32(KRegister dst, Register src, 
 // is obtained by swapping the reverse bit sequences of upper and lower
 // nibble of a byte.
 void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
-                                           XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc) {
+                                           XMMRegister xtmp2, Register rtmp, int vec_enc) {
   if (VM_Version::supports_avx512vlbw()) {
 
     // Get the reverse bit sequence of lower nibble of each byte.
@@ -4549,8 +4549,7 @@ void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMReg
     vpsllq(dst, dst, 4, vec_enc);
 
     // Get the reverse bit sequence of upper nibble of each byte.
-    vpternlogd(xtmp2, 0x1, xtmp2, xtmp2, vec_enc);
-    vpandq(xtmp2, src, xtmp2, vec_enc);
+    vpandn(xtmp2, xtmp2, src, vec_enc);
     vpsrlq(xtmp2, xtmp2, 4, vec_enc);
     vpshufb(xtmp2, xtmp1, xtmp2, vec_enc);
 
@@ -4565,12 +4564,11 @@ void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMReg
     assert(bt == T_LONG || bt == T_INT, "");
     movl(rtmp, 0x0f0f0f0f);
     evpbroadcastd(xtmp1, rtmp, vec_enc);
-    vpternlogd(xtmp2, 0x11, xtmp1, xtmp1, vec_enc);
 
     // Swap lower and upper nibble of each byte.
     vpandq(dst, xtmp1, src, vec_enc);
     vpsllq(dst, dst, 4, vec_enc);
-    vpandq(xtmp2, xtmp2, src, vec_enc);
+    vpandn(xtmp2, xtmp1, src, vec_enc);
     vpsrlq(xtmp2, xtmp2, 4, vec_enc);
     vporq(xtmp1, dst, xtmp2, vec_enc);
 
@@ -4608,9 +4606,7 @@ void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMReg
     vpsllq(dst, dst, 4, vec_enc);
 
     // Get the reverse bit sequence of upper nibble of each byte.
-    vpcmpeqd(xtmp3, xtmp3, xtmp3, vec_enc);
-    vpxor(xtmp3, xtmp2, xtmp3, vec_enc);
-    vpand(xtmp2, src, xtmp3, vec_enc);
+    vpandn(xtmp2, xtmp2, src, vec_enc);
     vpsrlq(xtmp2, xtmp2, 4, vec_enc);
     vpshufb(xtmp2, xtmp1, xtmp2, vec_enc);
 

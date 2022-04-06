@@ -322,7 +322,7 @@ public:
                   bool merge, BasicType bt, int vlen_enc);
 
   void vector_reverse_bit(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
-                          XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc);
+                          XMMRegister xtmp2, Register rtmp, int vec_enc);
 
   void vector_reverse_bit_gfni(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp,
                                AddressLiteral mask, Register rtmp, int vec_enc);

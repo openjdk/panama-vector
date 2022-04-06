@@ -8979,22 +8979,9 @@ instruct vcompress_mask_reg_evex(kReg dst, kReg mask, rRegL rtmp1, rRegL rtmp2, 
 #endif // _LP64
 
 // -------------------------------- Bit and Byte Reversal Vector Operations ------------------------
-instruct vreverse_reg_avx(vec dst, vec src, vec xtmp1, vec xtmp2, vec xtmp3, rRegI rtmp) %{
-  predicate(!VM_Version::supports_avx512vlbw() && Matcher::vector_length_in_bytes(n) < 64  && !VM_Version::supports_gfni());
-  match(Set dst (ReverseV src));
-  effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP xtmp3, TEMP rtmp);
-  format %{ "vector_reverse_bit_avx $dst, $src!\t using $xtmp1, $xtmp2, $xtmp3 and $rtmp as TEMP" %}
-  ins_encode %{
-    int vec_enc = vector_length_encoding(this);
-    BasicType bt = Matcher::vector_element_basic_type(this);
-    __ vector_reverse_bit(bt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
-                          $xtmp2$$XMMRegister, $xtmp3$$XMMRegister, $rtmp$$Register, vec_enc);
-  %}
-  ins_pipe( pipe_slow );
-%}
 
-instruct vreverse_reg_evex(vec dst, vec src, vec xtmp1, vec xtmp2, rRegI rtmp) %{
-  predicate((VM_Version::supports_avx512vlbw() || Matcher::vector_length_in_bytes(n) == 64) && !VM_Version::supports_gfni());
+instruct vreverse_reg(vec dst, vec src, vec xtmp1, vec xtmp2, rRegI rtmp) %{
+  predicate(!VM_Version::supports_gfni());
   match(Set dst (ReverseV src));
   effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP rtmp);
   format %{ "vector_reverse_bit_evex $dst, $src!\t using $xtmp1, $xtmp2 and $rtmp as TEMP" %}
@@ -9002,7 +8989,7 @@ instruct vreverse_reg_evex(vec dst, vec src, vec xtmp1, vec xtmp2, rRegI rtmp) %
     int vec_enc = vector_length_encoding(this);
     BasicType bt = Matcher::vector_element_basic_type(this);
     __ vector_reverse_bit(bt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
-                          $xtmp2$$XMMRegister, xnoreg, $rtmp$$Register, vec_enc);
+                          $xtmp2$$XMMRegister, $rtmp$$Register, vec_enc);
   %}
   ins_pipe( pipe_slow );
 %}
