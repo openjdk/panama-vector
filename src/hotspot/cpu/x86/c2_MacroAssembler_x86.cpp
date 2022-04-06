@@ -4527,10 +4527,12 @@ void C2_MacroAssembler::vector_popcount_integral(BasicType bt, XMMRegister dst, 
     case T_INT:
       vector_popcount_int(dst, src, xtmp1, xtmp2, rtmp, vec_enc);
       break;
+    case T_CHAR:
     case T_SHORT:
       vector_popcount_short(dst, src, xtmp1, xtmp2, rtmp, vec_enc);
       break;
     case T_BYTE:
+    case T_BOOLEAN:
       vector_popcount_byte(dst, src, xtmp1, xtmp2, rtmp, vec_enc);
       break;
     default:
@@ -4551,11 +4553,13 @@ void C2_MacroAssembler::vector_popcount_integral_evex(BasicType bt, XMMRegister 
       assert(VM_Version::supports_avx512_vpopcntdq(), "");
       evpopcntd(dst, mask, src, merge, vec_enc);
       break;
+    case T_CHAR:
     case T_SHORT:
       assert(VM_Version::supports_avx512_bitalg(), "");
       evpopcntw(dst, mask, src, merge, vec_enc);
       break;
     case T_BYTE:
+    case T_BOOLEAN:
       assert(VM_Version::supports_avx512_bitalg(), "");
       evpopcntb(dst, mask, src, merge, vec_enc);
       break;
