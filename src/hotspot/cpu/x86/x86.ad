@@ -1905,6 +1905,11 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
         return false;
       }
       break;
+    case Op_CountLeadingZerosV:
+      if (UseAVX < 2) {
+        return false;
+      }
+      break;
   }
   return true;  // Per default match rules are supported.
 }
@@ -2052,6 +2057,10 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
     case Op_MaskAll:
       return true;
 
+    case Op_CountLeadingZerosV:
+      if ((bt == T_INT || bt == T_LONG) && VM_Version::supports_avx512cd()) {
+        return true;
+      }
     default:
       return false;
   }
@@ -8972,6 +8981,101 @@ instruct vcompress_mask_reg_evex(kReg dst, kReg mask, rRegL rtmp1, rRegL rtmp2, 
 %}
 
 #endif // _LP64
+
+// ---------------------------------- Vector Count Leading Zeros -----------------------------------
+
+instruct vcount_leading_zeros_IL_reg_evex(vec dst, vec src) %{
+  predicate((Matcher::vector_element_basic_type(n->in(1)) == T_INT ||
+             Matcher::vector_element_basic_type(n->in(1)) == T_LONG) &&
+             VM_Version::supports_avx512cd() &&
+             (VM_Version::supports_avx512vl() || Matcher::vector_length_in_bytes(n) == 64));
+  match(Set dst (CountLeadingZerosV src));
+  format %{ "vector_count_leading_zeros $dst, $src" %}
+  ins_encode %{
+    int vlen_enc = vector_length_encoding(this, $src);
+    BasicType bt = Matcher::vector_element_basic_type(this, $src);
+    BasicType rbt = Matcher::vector_element_basic_type(this);
+    __ vector_count_leading_zeros_evex(bt, $dst$$XMMRegister, $src$$XMMRegister, xnoreg,
+                                       xnoreg, xnoreg, k0, noreg, true, vlen_enc);
+    // TODO: Once auto-vectorizer supports ConvL2I operation, CountLeadingZerosV
+    // should be succeeded by its corresponding vector IR and following
+    // special handling should be removed.
+    if (rbt == T_INT && bt == T_LONG) {
+      __ evpmovqd($dst$$XMMRegister, $dst$$XMMRegister, vlen_enc);
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vcount_leading_zeros_IL_reg_evex_masked(vec dst, vec src, kReg mask) %{
+  predicate((Matcher::vector_element_basic_type(n->in(1)) == T_INT ||
+             Matcher::vector_element_basic_type(n->in(1)) == T_LONG) &&
+             VM_Version::supports_avx512cd() &&
+             (VM_Version::supports_avx512vl() || Matcher::vector_length_in_bytes(n) == 64));
+  match(Set dst (CountLeadingZerosV src mask));
+  format %{ "vector_count_leading_zeros $dst, $src, $mask" %}
+  ins_encode %{
+    int vlen_enc = vector_length_encoding(this, $src);
+    BasicType bt = Matcher::vector_element_basic_type(this, $src);
+    __ evmovdquq($dst$$XMMRegister, $src$$XMMRegister, vlen_enc);
+    __ vector_count_leading_zeros_evex(bt, $dst$$XMMRegister, $src$$XMMRegister, xnoreg, xnoreg,
+                                       xnoreg, $mask$$KRegister, noreg, true, vlen_enc);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vcount_leading_zeros_short_reg_evex(vec dst, vec src, vec xtmp1, vec xtmp2) %{
+  predicate(Matcher::vector_element_basic_type(n->in(1)) == T_SHORT &&
+             VM_Version::supports_avx512cd() &&
+             (VM_Version::supports_avx512vl() || Matcher::vector_length_in_bytes(n) == 64));
+  match(Set dst (CountLeadingZerosV src));
+  effect(TEMP dst, TEMP xtmp1, TEMP xtmp2);
+  format %{ "vector_count_leading_zeros $dst, $src!\t using $xtmp1 and $xtmp2 as TEMP" %}
+  ins_encode %{
+    int vlen_enc = vector_length_encoding(this, $src);
+    BasicType bt = Matcher::vector_element_basic_type(this, $src);
+    __ vector_count_leading_zeros_evex(bt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
+                                       $xtmp2$$XMMRegister, xnoreg, knoreg, noreg, true, vlen_enc);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vcount_leading_zeros_byte_reg_evex(vec dst, vec src, vec xtmp1, vec xtmp2, vec xtmp3, kReg ktmp, rRegP rtmp) %{
+  predicate(Matcher::vector_element_basic_type(n->in(1)) == T_BYTE &&
+             (VM_Version::supports_avx512vl() || Matcher::vector_length_in_bytes(n) == 64));
+  match(Set dst (CountLeadingZerosV src));
+  effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP xtmp3, TEMP ktmp, TEMP rtmp);
+  format %{ "vector_count_leading_zeros $dst, $src!\t using $xtmp1, $xtmp2, $xtmp3, $ktmp and $rtmp as TEMP" %}
+  ins_encode %{
+    int vlen_enc = vector_length_encoding(this, $src);
+    BasicType bt = Matcher::vector_element_basic_type(this, $src);
+    __ vector_count_leading_zeros_evex(bt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
+                                       $xtmp2$$XMMRegister, $xtmp3$$XMMRegister, $ktmp$$KRegister,
+                                       $rtmp$$Register, true, vlen_enc);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vcount_leading_zeros_reg_avx(vec dst, vec src, vec xtmp1, vec xtmp2, vec xtmp3, rRegP rtmp) %{
+  predicate(!VM_Version::supports_avx512vl() && Matcher::vector_length_in_bytes(n->in(1)) < 64);
+  match(Set dst (CountLeadingZerosV src));
+  effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP xtmp3, TEMP rtmp);
+  format %{ "vector_count_leading_zeros $dst, $src\t! using $xtmp1, $xtmp2, $xtmp3, and $rtmp as TEMP" %}
+  ins_encode %{
+    int vlen_enc = vector_length_encoding(this, $src);
+    BasicType bt = Matcher::vector_element_basic_type(this, $src);
+    BasicType rbt = Matcher::vector_element_basic_type(this);
+    __ vector_count_leading_zeros_avx(bt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
+                                      $xtmp2$$XMMRegister, $xtmp3$$XMMRegister, $rtmp$$Register, vlen_enc);
+    // TODO: Once auto-vectorizer supports ConvL2I operation, CountLeadingZerosV
+    // should be succeeded by its corresponding vector IR and following
+    // special handling should be removed.
+    if (rbt == T_INT && bt == T_LONG) {
+      __ evpmovqd($dst$$XMMRegister, $dst$$XMMRegister, vlen_enc);
+    }
+  %}
+  ins_pipe( pipe_slow );
+%}
 
 // ---------------------------------- Vector Masked Operations ------------------------------------
 

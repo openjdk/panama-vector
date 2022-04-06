@@ -328,4 +328,12 @@ public:
   void vector_popcount_long(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                             XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc);
 
+  void vector_count_leading_zeros_evex(BasicType bt, XMMRegister dst, XMMRegister src,
+                                       XMMRegister xtmp1, XMMRegister xtmp2, XMMRegister xtmp3,
+                                       KRegister ktmp, Register rtmp, bool merge, int vec_enc);
+
+  void vector_count_leading_zeros_avx(BasicType bt, XMMRegister dst, XMMRegister src,
+                                      XMMRegister xtmp1, XMMRegister xtmp2, XMMRegister xtmp3,
+                                      Register rtmp, int vec_enc);
+
 #endif // CPU_X86_C2_MACROASSEMBLER_X86_HPP

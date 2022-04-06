@@ -2563,7 +2563,8 @@ bool SuperWord::output() {
                  opc == Op_AbsF || opc == Op_AbsD ||
                  opc == Op_AbsI || opc == Op_AbsL ||
                  opc == Op_NegF || opc == Op_NegD ||
-                 opc == Op_PopCountI || opc == Op_PopCountL) {
+                 opc == Op_PopCountI || opc == Op_PopCountL ||
+                 opc == Op_CountLeadingZerosI || opc == Op_CountLeadingZerosL) {
         assert(n->req() == 2, "only one input expected");
         Node* in = vector_opd(p, 1);
         vn = VectorNode::make(opc, in, NULL, vlen, velt_basic_type(n));
@@ -2955,9 +2956,9 @@ bool SuperWord::is_vector_use(Node* use, int u_idx) {
     return true;
   }
 
-  if (VectorNode::is_vpopcnt_long(use)) {
-    // VPOPCNT_LONG takes long and produces int - hence the special checks
-    // on alignment and size.
+  if (VectorNode::is_downcasting_l2i_candidate(use)) {
+    // PopCountL/CountLeadingZerosL takes long and produces
+    // int - hence the special checks on alignment and size.
     if (u_pk->size() != d_pk->size()) {
       return false;
     }

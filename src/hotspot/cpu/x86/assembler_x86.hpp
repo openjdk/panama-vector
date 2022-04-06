@@ -1932,6 +1932,12 @@ private:
   void punpckldq(XMMRegister dst, Address src);
   void vpunpckldq(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
 
+  // Interleave High Word
+  void vpunpckhwd(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+
+  // Interleave Low Word
+  void vpunpcklwd(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+
   // Interleave High Doublewords
   void vpunpckhdq(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
 
@@ -2423,6 +2429,8 @@ private:
   void evpternlogq(XMMRegister dst, int imm8, KRegister mask, XMMRegister src2, XMMRegister src3, bool merge, int vector_len);
   void evpternlogq(XMMRegister dst, int imm8, KRegister mask, XMMRegister src2, Address src3, bool merge, int vector_len);
 
+  void evplzcntd(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
+  void evplzcntq(XMMRegister dst, KRegister mask, XMMRegister src, bool merge, int vector_len);
 
   // Sub packed integers
   void psubb(XMMRegister dst, XMMRegister src);

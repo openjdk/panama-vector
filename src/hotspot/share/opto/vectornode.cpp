@@ -311,15 +311,15 @@ bool VectorNode::is_muladds2i(Node* n) {
   return false;
 }
 
-bool VectorNode::is_vpopcnt_long(Node* n) {
-  if (n->Opcode() == Op_PopCountL) {
-    return true;
+bool VectorNode::is_downcasting_l2i_candidate(Node* n) {
+  switch(n->Opcode()) {
+    case Op_PopCountL:
+    case Op_CountLeadingZerosL:
+       return true;
+    default:
+       return false;
   }
-  return false;
 }
-
-
-
 
 bool VectorNode::is_roundopD(Node* n) {
   if (n->Opcode() == Op_RoundDoubleMode) {
