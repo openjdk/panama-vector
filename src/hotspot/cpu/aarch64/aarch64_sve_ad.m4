@@ -3359,52 +3359,77 @@ instruct vmask_gen(pRegGov pg, iRegL len, rFlagsReg cr) %{
 %}
 
 dnl
-dnl CLTZ($1     )
-dnl CLTZ(op_name)
-define(`CLTZ', `
-instruct count$1(vReg dst, vReg src) %{
+dnl BITWISE_UNARY($1,        $2,      $3  )
+dnl BITWISE_UNARY(insn_name, op_name, insn)
+define(`BITWISE_UNARY', `
+instruct $1(vReg dst, vReg src) %{
   predicate(UseSVE > 0 &&
             !n->as_Vector()->is_predicated_vector());
-  match(Set dst (Count$1 src));
-  ins_cost(ifelse($1, `TrailingZerosV', `2 * ', `')SVE_COST);
-  format %{ "count$1 $dst, $src\t# vector (sve)" %}
+  match(Set dst ($2 src));
+  ins_cost(ifelse($2, `CountTrailingZerosV', `2 * ', `')SVE_COST);
+  format %{ ifelse($2, `CountTrailingZerosV', `"sve_rbit $dst, $src\n\t"
+            "$3  $dst, $dst', `"$3 $dst, $src')\t# vector (sve)" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);dnl
-ifelse($1, `TrailingZerosV', `
-    __ sve_rbit(as_FloatRegister($dst$$reg), size, ptrue, as_FloatRegister($src$$reg));', `')
-    __ sve_clz(as_FloatRegister($dst$$reg), size, ptrue, as_FloatRegister($ifelse($1, `LeadingZerosV', src, dst)$$reg));
+ifelse($2, `CountTrailingZerosV', `
+    __ sve_rbit(as_FloatRegister($dst$$reg), size, ptrue, as_FloatRegister($src$$reg));', `')dnl
+ifelse($2, `ReverseBytesV', `
+    if (bt == T_BYTE) {
+      if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
+        __ sve_orr(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), as_FloatRegister($src$$reg));
+      }
+    } else {
+      __ $3(as_FloatRegister($dst$$reg), size, ptrue, as_FloatRegister($src$$reg));
+    }', `
+    __ $3(as_FloatRegister($dst$$reg), size, ptrue, as_FloatRegister($ifelse($2, `CountTrailingZerosV', dst, src)$$reg));')
   %}
   ins_pipe(pipe_slow);
 %}')dnl
 dnl
-dnl
-dnl CLTZ_PREDICATE($1     )
-dnl CLTZ_PREDICATE(op_name)
-define(`CLTZ_PREDICATE', `
+dnl BITWISE_UNARY_PREDICATE($1,        $2,      $3  )
+dnl BITWISE_UNARY_PREDICATE(insn_name, op_name, insn)
+define(`BITWISE_UNARY_PREDICATE', `
 // The dst and src should use the same register to make sure the
 // inactive lanes in dst save the same elements as src.
-instruct count$1_masked(vReg dst_src, pRegGov pg) %{
+instruct $1_masked(vReg dst_src, pRegGov pg) %{
   predicate(UseSVE > 0);
-  match(Set dst_src (Count$1 dst_src pg));
-  ins_cost(ifelse($1, `TrailingZerosV', `2 * ', `')SVE_COST);
-  format %{ "count$1 $dst_src, $pg, $dst_src\t# vector (sve)" %}
+  match(Set dst_src ($2 dst_src pg));
+  ins_cost(ifelse($2, `CountTrailingZerosV', `2 * ', `')SVE_COST);
+  format %{ ifelse($2, `CountTrailingZerosV', `"sve_rbit $dst_src, $pg, $dst_src\n\t"
+            "$3  $dst_src, $pg, $dst_src', `"$3 $dst_src, $pg, $dst_src')\t# vector (sve)" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);dnl
-ifelse($1, `TrailingZerosV', `
+ifelse($2, `CountTrailingZerosV', `
     __ sve_rbit(as_FloatRegister($dst_src$$reg), size,
-        as_PRegister($pg$$reg), as_FloatRegister($dst_src$$reg));', `')
-    __ sve_clz(as_FloatRegister($dst_src$$reg), size,
-        as_PRegister($pg$$reg), as_FloatRegister($dst_src$$reg));
+        as_PRegister($pg$$reg), as_FloatRegister($dst_src$$reg));', `')dnl
+ifelse($2, `ReverseBytesV', `
+    if (bt == T_BYTE) {
+      // do nothing
+    } else {
+      __ $3(as_FloatRegister($dst_src$$reg), size,
+          as_PRegister($pg$$reg), as_FloatRegister($dst_src$$reg));
+    }', `
+    __ $3(as_FloatRegister($dst_src$$reg), size,
+        as_PRegister($pg$$reg), as_FloatRegister($dst_src$$reg));')
   %}
   ins_pipe(pipe_slow);
 %}')dnl
 dnl
 // ------------------------------ CountLeadingZerosV ------------------------------
-CLTZ(LeadingZerosV)
-CLTZ_PREDICATE(LeadingZerosV)
+BITWISE_UNARY(vcountLeadingZeros, CountLeadingZerosV, sve_clz)
+BITWISE_UNARY_PREDICATE(vcountLeadingZeros, CountLeadingZerosV, sve_clz)
 
 // ------------------------------ CountTrailingZerosV -----------------------------
-CLTZ(TrailingZerosV)
-CLTZ_PREDICATE(TrailingZerosV)
+BITWISE_UNARY(vcountTrailingZeros, CountTrailingZerosV, sve_clz)
+BITWISE_UNARY_PREDICATE(vcountTrailingZeros, CountTrailingZerosV, sve_clz)
+
+// ---------------------------------- ReverseV ------------------------------------
+BITWISE_UNARY(vreverse, ReverseV, sve_rbit)
+BITWISE_UNARY_PREDICATE(vreverse, ReverseV, sve_rbit)
+
+// -------------------------------- ReverseBytesV ---------------------------------
+BITWISE_UNARY(vreverseBytes, ReverseBytesV, sve_revb)
+BITWISE_UNARY_PREDICATE(vreverseBytes, ReverseBytesV, sve_revb)
+

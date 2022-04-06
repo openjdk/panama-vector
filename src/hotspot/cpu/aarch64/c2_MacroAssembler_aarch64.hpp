@@ -125,4 +125,6 @@
 
   void neon_reverse_bits(FloatRegister dst, FloatRegister src, BasicType bt, bool isQ);
 
+  void neon_reverse_bytes(FloatRegister dst, FloatRegister src, BasicType bt, bool isQ);
+
 #endif // CPU_AARCH64_C2_MACROASSEMBLER_AARCH64_HPP
