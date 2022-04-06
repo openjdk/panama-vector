@@ -4574,21 +4574,19 @@ void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMReg
 
     // Swap two least and most significant bits of each nibble.
     movl(rtmp, 0x33333333);
-    evpbroadcastd(dst, rtmp, vec_enc);
-    vpternlogd(xtmp2, 0x11, dst, dst, vec_enc);
-    vpandq(dst, dst, xtmp1, vec_enc);
+    evpbroadcastd(xtmp2, rtmp, vec_enc);
+    vpandq(dst, xtmp2, xtmp1, vec_enc);
     vpsllq(dst, dst, 2, vec_enc);
-    vpandq(xtmp2, xtmp2, xtmp1, vec_enc);
+    vpandn(xtmp2, xtmp2, xtmp1, vec_enc);
     vpsrlq(xtmp2, xtmp2, 2, vec_enc);
     vporq(xtmp1, dst, xtmp2, vec_enc);
 
     // Swap adjacent pair of bits.
     movl(rtmp, 0x55555555);
-    evpbroadcastd(dst, rtmp, vec_enc);
-    vpternlogd(xtmp2, 0x11, dst, dst, vec_enc);
-    vpandq(dst, dst, xtmp1, vec_enc);
+    evpbroadcastd(xtmp2, rtmp, vec_enc);
+    vpandq(dst, xtmp2, xtmp1, vec_enc);
     vpsllq(dst, dst, 1, vec_enc);
-    vpandq(xtmp2, xtmp2, xtmp1, vec_enc);
+    vpandn(xtmp2, xtmp2, xtmp1, vec_enc);
     vpsrlq(xtmp2, xtmp2, 1, vec_enc);
     vporq(xtmp1, dst, xtmp2, vec_enc);
 
@@ -4619,8 +4617,7 @@ void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMReg
 
 void C2_MacroAssembler::vector_reverse_bit_gfni(BasicType bt, XMMRegister dst, XMMRegister src,
                                                 XMMRegister xtmp, AddressLiteral mask, Register rtmp, int vec_enc) {
-  // Galois field instruction based bit reversal.
-  // Please refer to following link for details on the algorithm.
+  // Galois field instruction based bit reversal based on following algorithm.
   // http://0x80.pl/articles/avx512-galois-field-for-bit-shuffling.html
   assert(VM_Version::supports_gfni(), "");
   vpbroadcastq(xtmp, mask, vec_enc, rtmp);
@@ -4646,10 +4643,7 @@ void C2_MacroAssembler::vector_reverse_byte64(BasicType bt, XMMRegister dst, XMM
       evpbroadcastd(dst, rtmp, vec_enc);
       vpandq(xtmp2, dst, xtmp1, vec_enc);
       vpsllq(xtmp2, xtmp2, 8, vec_enc);
-      // Flip the bits of mask by performing a logical NOT operation
-      // implemented using ternary operation.
-      vpternlogd(dst, 0x1, dst, dst, vec_enc);
-      vpandq(xtmp1, dst, xtmp1, vec_enc);
+      vpandn(xtmp1, dst, xtmp1, vec_enc);
       vpsrlq(dst, xtmp1, 8, vec_enc);
       vporq(dst, dst, xtmp2, vec_enc);
       break;
