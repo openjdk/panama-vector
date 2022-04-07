@@ -4575,3 +4575,157 @@ void C2_MacroAssembler::vector_maskall_operation32(KRegister dst, Register src, 
   kunpckdql(dst, tmp, tmp);
 }
 #endif
+
+// Bit reversal algorithm first reverses the bits of each byte followed by
+// a byte level reversal for multi-byte primitive types (short/int/long).
+// Algorithm performs a lookup table access to get reverse bit sequence
+// corresponding to a 4 bit value. Thus a reverse bit sequence for a byte
+// is obtained by swapping the reverse bit sequences of upper and lower
+// nibble of a byte.
+void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                           XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  if (VM_Version::supports_avx512vlbw()) {
+
+    // Get the reverse bit sequence of lower nibble of each byte.
+    vmovdqu(xtmp1, ExternalAddress(StubRoutines::x86::vector_reverse_bit_lut()), rtmp, vec_enc);
+    movl(rtmp, 0x0F0F0F0F);
+    evpbroadcastd(xtmp2, rtmp, vec_enc);
+    vpandq(dst, xtmp2, src, vec_enc);
+    vpshufb(dst, xtmp1, dst, vec_enc);
+    vpsllq(dst, dst, 4, vec_enc);
+
+    // Get the reverse bit sequence of upper nibble of each byte.
+    vpandn(xtmp2, xtmp2, src, vec_enc);
+    vpsrlq(xtmp2, xtmp2, 4, vec_enc);
+    vpshufb(xtmp2, xtmp1, xtmp2, vec_enc);
+
+    // Perform logical OR operation b/w left shifted reverse bit sequence of lower nibble and
+    // right shifted reverse bit sequence of upper nibble to obtain the reverse bit sequence of each byte.
+    vporq(xtmp2, dst, xtmp2, vec_enc);
+    vector_reverse_byte(bt, dst, xtmp2, rtmp, vec_enc);
+
+  } else if(!VM_Version::supports_avx512vlbw() && vec_enc == Assembler::AVX_512bit) {
+
+    // Shift based bit reversal.
+    assert(bt == T_LONG || bt == T_INT, "");
+    movl(rtmp, 0x0f0f0f0f);
+    evpbroadcastd(xtmp1, rtmp, vec_enc);
+
+    // Swap lower and upper nibble of each byte.
+    vpandq(dst, xtmp1, src, vec_enc);
+    vpsllq(dst, dst, 4, vec_enc);
+    vpandn(xtmp2, xtmp1, src, vec_enc);
+    vpsrlq(xtmp2, xtmp2, 4, vec_enc);
+    vporq(xtmp1, dst, xtmp2, vec_enc);
+
+    // Swap two least and most significant bits of each nibble.
+    movl(rtmp, 0x33333333);
+    evpbroadcastd(xtmp2, rtmp, vec_enc);
+    vpandq(dst, xtmp2, xtmp1, vec_enc);
+    vpsllq(dst, dst, 2, vec_enc);
+    vpandn(xtmp2, xtmp2, xtmp1, vec_enc);
+    vpsrlq(xtmp2, xtmp2, 2, vec_enc);
+    vporq(xtmp1, dst, xtmp2, vec_enc);
+
+    // Swap adjacent pair of bits.
+    movl(rtmp, 0x55555555);
+    evpbroadcastd(xtmp2, rtmp, vec_enc);
+    vpandq(dst, xtmp2, xtmp1, vec_enc);
+    vpsllq(dst, dst, 1, vec_enc);
+    vpandn(xtmp2, xtmp2, xtmp1, vec_enc);
+    vpsrlq(xtmp2, xtmp2, 1, vec_enc);
+    vporq(xtmp1, dst, xtmp2, vec_enc);
+
+    vector_reverse_byte64(bt, dst, xtmp1, xtmp1, xtmp2, rtmp, vec_enc);
+
+  } else {
+    vmovdqu(xtmp1, ExternalAddress(StubRoutines::x86::vector_reverse_bit_lut()), rtmp, vec_enc);
+    movl(rtmp, 0x0F0F0F0F);
+    movdl(xtmp2, rtmp);
+    vpbroadcastd(xtmp2, xtmp2, vec_enc);
+
+    // Get the reverse bit sequence of lower nibble of each byte.
+    vpand(dst, xtmp2, src, vec_enc);
+    vpshufb(dst, xtmp1, dst, vec_enc);
+    vpsllq(dst, dst, 4, vec_enc);
+
+    // Get the reverse bit sequence of upper nibble of each byte.
+    vpandn(xtmp2, xtmp2, src, vec_enc);
+    vpsrlq(xtmp2, xtmp2, 4, vec_enc);
+    vpshufb(xtmp2, xtmp1, xtmp2, vec_enc);
+
+    // Perform logical OR operation b/w left shifted reverse bit sequence of lower nibble and
+    // right shifted reverse bit sequence of upper nibble to obtain the reverse bit sequence of each byte.
+    vpor(xtmp2, dst, xtmp2, vec_enc);
+    vector_reverse_byte(bt, dst, xtmp2, rtmp, vec_enc);
+  }
+}
+
+void C2_MacroAssembler::vector_reverse_bit_gfni(BasicType bt, XMMRegister dst, XMMRegister src,
+                                                XMMRegister xtmp, AddressLiteral mask, Register rtmp, int vec_enc) {
+  // Galois field instruction based bit reversal based on following algorithm.
+  // http://0x80.pl/articles/avx512-galois-field-for-bit-shuffling.html
+  assert(VM_Version::supports_gfni(), "");
+  vpbroadcastq(xtmp, mask, vec_enc, rtmp);
+  vgf2p8affineqb(xtmp, src, xtmp, 0, vec_enc);
+  vector_reverse_byte(bt, dst, xtmp, rtmp, vec_enc);
+}
+
+void C2_MacroAssembler::vector_reverse_byte64(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                              XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  // Shift based bit reversal.
+  assert(VM_Version::supports_evex(), "");
+  evmovdqul(xtmp1, k0, src, true, vec_enc);
+  switch(bt) {
+    case T_LONG:
+      // Swap upper and lower double word of each quad word.
+      evprorq(xtmp1, k0, xtmp1, 32, true, vec_enc);
+    case T_INT:
+      // Swap upper and lower word of each double word.
+      evprord(xtmp1, k0, xtmp1, 16, true, vec_enc);
+    case T_SHORT:
+      // Swap upper and lower byte of each word.
+      movl(rtmp, 0x00FF00FF);
+      evpbroadcastd(dst, rtmp, vec_enc);
+      vpandq(xtmp2, dst, xtmp1, vec_enc);
+      vpsllq(xtmp2, xtmp2, 8, vec_enc);
+      vpandn(xtmp1, dst, xtmp1, vec_enc);
+      vpsrlq(dst, xtmp1, 8, vec_enc);
+      vporq(dst, dst, xtmp2, vec_enc);
+      break;
+    case T_BYTE:
+      evmovdquq(dst, k0, src, true, vec_enc);
+      break;
+    default:
+      fatal("Unsupported type");
+      break;
+  }
+}
+
+void C2_MacroAssembler::vector_reverse_byte(BasicType bt, XMMRegister dst, XMMRegister src, Register rtmp, int vec_enc) {
+  if (bt == T_BYTE) {
+    if (VM_Version::supports_avx512vl() || vec_enc == Assembler::AVX_512bit) {
+      evmovdquq(dst, k0, src, true, vec_enc);
+    } else {
+      vmovdqu(dst, src);
+    }
+    return;
+  }
+  // Perform byte reversal by shuffling the bytes of a multi-byte primitive type using
+  // pre-computed shuffle indices.
+  switch(bt) {
+    case T_LONG:
+      vmovdqu(dst, ExternalAddress(StubRoutines::x86::vector_reverse_byte_perm_mask_long()), rtmp, vec_enc);
+      break;
+    case T_INT:
+      vmovdqu(dst, ExternalAddress(StubRoutines::x86::vector_reverse_byte_perm_mask_int()), rtmp, vec_enc);
+      break;
+    case T_SHORT:
+      vmovdqu(dst, ExternalAddress(StubRoutines::x86::vector_reverse_byte_perm_mask_short()), rtmp, vec_enc);
+      break;
+    default:
+      fatal("Unsupported type");
+      break;
+  }
+  vpshufb(dst, src, dst, vec_enc);
+}

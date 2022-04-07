@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
+import jdk.incubator.foreign.MemorySegment;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
 
@@ -903,6 +904,20 @@ final class IntMaxVector extends IntVector {
     @ForceInline
     @Override
     final
+    IntVector fromMemorySegment0(MemorySegment ms, long offset) {
+        return super.fromMemorySegment0Template(ms, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    IntVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Integer> m) {
+        return super.fromMemorySegment0Template(IntMaxMask.class, ms, offset, (IntMaxMask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
     void intoArray0(int[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
     }
@@ -941,6 +956,13 @@ final class IntMaxVector extends IntVector {
     final
     void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Integer> m) {
         super.intoByteBuffer0Template(IntMaxMask.class, bb, offset, (IntMaxMask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Integer> m) {
+        super.intoMemorySegment0Template(IntMaxMask.class, ms, offset, (IntMaxMask) m);
     }
 
 

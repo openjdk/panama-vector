@@ -1906,6 +1906,11 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
         return false;
       }
       break;
+    case Op_ReverseV:
+    case Op_ReverseBytesV:
+      if (UseAVX < 2) {
+        return false;
+      }
   }
   return true;  // Per default match rules are supported.
 }
@@ -9015,6 +9020,64 @@ instruct vcompress_mask_reg_evex(kReg dst, kReg mask, rRegL rtmp1, rRegL rtmp2, 
 %}
 
 #endif // _LP64
+
+// -------------------------------- Bit and Byte Reversal Vector Operations ------------------------
+
+instruct vreverse_reg(vec dst, vec src, vec xtmp1, vec xtmp2, rRegI rtmp) %{
+  predicate(!VM_Version::supports_gfni());
+  match(Set dst (ReverseV src));
+  effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP rtmp);
+  format %{ "vector_reverse_bit_evex $dst, $src!\t using $xtmp1, $xtmp2 and $rtmp as TEMP" %}
+  ins_encode %{
+    int vec_enc = vector_length_encoding(this);
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ vector_reverse_bit(bt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
+                          $xtmp2$$XMMRegister, $rtmp$$Register, vec_enc);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vreverse_reg_gfni(vec dst, vec src, vec xtmp, rRegI rtmp) %{
+  predicate(VM_Version::supports_gfni());
+  match(Set dst (ReverseV src));
+  effect(TEMP dst, TEMP xtmp, TEMP rtmp);
+  format %{ "vector_reverse_bit_gfni $dst, $src!\t using $rtmp and $xtmp as TEMP" %}
+  ins_encode %{
+    int vec_enc = vector_length_encoding(this);
+    BasicType bt  = Matcher::vector_element_basic_type(this);
+    InternalAddress addr = $constantaddress(T_LONG, vreplicate_imm(T_LONG, 0x8040201008040201L, 1));
+    __ vector_reverse_bit_gfni(bt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp$$XMMRegister,
+                               addr, $rtmp$$Register, vec_enc);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vreverse_byte_reg(vec dst, vec src, rRegI rtmp) %{
+  predicate(VM_Version::supports_avx512bw() || Matcher::vector_length_in_bytes(n) < 64);
+  match(Set dst (ReverseBytesV src));
+  effect(TEMP dst, TEMP rtmp);
+  format %{ "vector_reverse_byte $dst, $src!\t using $rtmp as TEMP" %}
+  ins_encode %{
+    int vec_enc = vector_length_encoding(this);
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ vector_reverse_byte(bt, $dst$$XMMRegister, $src$$XMMRegister, $rtmp$$Register, vec_enc);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct vreverse_byte64_reg(vec dst, vec src, vec xtmp1, vec xtmp2, rRegI rtmp) %{
+  predicate(!VM_Version::supports_avx512bw() && Matcher::vector_length_in_bytes(n) == 64);
+  match(Set dst (ReverseBytesV src));
+  effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP rtmp);
+  format %{ "vector_reverse_byte $dst, $src!\t using $xtmp1, $xtmp2 and $rtmp as TEMP" %}
+  ins_encode %{
+    int vec_enc = vector_length_encoding(this);
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ vector_reverse_byte64(bt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
+                             $xtmp2$$XMMRegister, $rtmp$$Register, vec_enc);
+  %}
+  ins_pipe( pipe_slow );
+%}
 
 // ---------------------------------- Vector Masked Operations ------------------------------------
 

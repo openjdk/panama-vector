@@ -192,6 +192,7 @@
            (is_subword_type(ety) && VM_Version::supports_avx512_bitalg())) ? 0 : 50;
       case Op_PopCountVL:
         return VM_Version::supports_avx512_vpopcntdq() ? 0 : 40;
+      case Op_ReverseV:  return VM_Version::supports_gfni() ? 0 : 30;
     }
   }
 

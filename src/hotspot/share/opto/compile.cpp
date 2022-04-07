@@ -548,7 +548,13 @@ void Compile::print_ideal_ir(const char* phase_name) {
                is_osr_compilation() ? " compile_kind='osr'" : "",
                phase_name);
   }
-  root()->dump(9999);
+  if (_output == nullptr) {
+    root()->dump(9999);
+  } else {
+    // Dump the node blockwise if we have a scheduling
+    _output->print_scheduling();
+  }
+
   if (xtty != NULL) {
     xtty->tail("ideal");
   }
@@ -624,7 +630,8 @@ Compile::Compile( ciEnv* ci_env, ciMethod* target, int osr_bci,
                   _replay_inline_data(NULL),
                   _java_calls(0),
                   _inner_loops(0),
-                  _interpreter_frame_size(0)
+                  _interpreter_frame_size(0),
+                  _output(NULL)
 #ifndef PRODUCT
                   , _in_dump_cnt(0)
 #endif
@@ -898,6 +905,7 @@ Compile::Compile( ciEnv* ci_env,
     _java_calls(0),
     _inner_loops(0),
     _interpreter_frame_size(0),
+    _output(NULL),
 #ifndef PRODUCT
     _in_dump_cnt(0),
 #endif
@@ -3399,6 +3407,21 @@ void Compile::final_graph_reshaping_main_switch(Node* n, Final_Reshape_Counts& f
     }
     if (in1->outcnt() == 0) {
       in1->disconnect_inputs(this);
+    }
+    break;
+  }
+
+  case Op_ReverseBytesV:
+  case Op_ReverseV: {
+    if ((uint)n->in(1)->Opcode() == nop) {
+      if (n->is_predicated_vector() && n->in(1)->is_predicated_vector() &&
+          n->in(2) == n->in(1)->in(2)) {
+        // Node (Node X , Mask) Mask => X
+        n->subsume_by(n->in(1)->in(1), this);
+      } else if (!n->is_predicated_using_blend() && !n->in(1)->is_predicated_using_blend()) {
+        // Node (Node X) =>  X
+        n->subsume_by(n->in(1)->in(1), this);
+      }
     }
     break;
   }
