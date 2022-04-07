@@ -793,6 +793,7 @@ public:
     Flag_is_predicated_vector        = 1 << 15,
     Flag_for_post_loop_opts_igvn     = 1 << 16,
     Flag_is_removed_by_peephole      = 1 << 17,
+    Flag_is_predicated_using_blend   = 1 << 18,
     _last_flag                       = Flag_is_removed_by_peephole
   };
 
@@ -1009,6 +1010,8 @@ public:
   bool is_reduction() const { return (_flags & Flag_is_reduction) != 0; }
 
   bool is_predicated_vector() const { return (_flags & Flag_is_predicated_vector) != 0; }
+
+  bool is_predicated_using_blend() const { return (_flags & Flag_is_predicated_using_blend) != 0; }
 
   // The node is a CountedLoopEnd with a mask annotation so as to emit a restore context
   bool has_vector_mask_set() const { return (_flags & Flag_has_vector_mask_set) != 0; }

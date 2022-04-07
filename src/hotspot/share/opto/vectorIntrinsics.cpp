@@ -546,6 +546,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
       operation->add_flag(Node::Flag_is_predicated_vector);
     } else {
       operation = gvn().transform(operation);
+      operation->add_flag(Node::Flag_is_predicated_using_blend);
       operation = new VectorBlendNode(opd1, operation, mask);
     }
   }

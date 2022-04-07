@@ -3403,22 +3403,16 @@ void Compile::final_graph_reshaping_main_switch(Node* n, Final_Reshape_Counts& f
     break;
   }
 
+  case Op_ReverseBytesV:
   case Op_ReverseV: {
-    if (n->in(1)->Opcode() == Op_ReverseV) {
+    if ((uint)n->in(1)->Opcode() == nop) {
       if (n->is_predicated_vector() && n->in(1)->is_predicated_vector() &&
           n->in(2) == n->in(1)->in(2)) {
+        // Node (Node X , Mask) Mask => X
         n->subsume_by(n->in(1)->in(1), this);
-      } else {
-        bool is_user_blend = false;
-        for (DUIterator_Fast imax, i = n->fast_outs(imax); i < imax; i++) {
-          if (n->fast_out(i)->Opcode() == Op_VectorBlend) {
-            is_user_blend = true;
-            break;
-          }
-        }
-        if (!is_user_blend) {
-          n->subsume_by(n->in(1)->in(1), this);
-        }
+      } else if (!n->is_predicated_using_blend() && !n->in(1)->is_predicated_using_blend()) {
+        // Node (Node X) =>  X
+        n->subsume_by(n->in(1)->in(1), this);
       }
     }
     break;
