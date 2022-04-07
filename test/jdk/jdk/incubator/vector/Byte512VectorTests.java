@@ -1225,25 +1225,6 @@ public class Byte512VectorTests extends AbstractVectorTest {
         return b;
     }
 
-    static byte COMPRESSBITS_scalar(byte a, byte b) {
-        byte prefix_mask, move_mask, temp;
-        a = (byte) (a & b);
-        byte count_mask = (byte) (~b << 1);
-        byte mp, mv, t;
-        int iters = 3;
-
-        for (int i = 0; i < iters; i++) {
-            prefix_mask = (byte) (count_mask  ^ (count_mask  << 1));
-            prefix_mask = (byte) (prefix_mask ^ (prefix_mask << 2));
-            prefix_mask = (byte) (prefix_mask ^ (prefix_mask << 4));
-            move_mask = (byte) (prefix_mask & b);
-            b = (byte)(b ^ move_mask | (move_mask >> (1 << i)));
-            temp = (byte) (a & move_mask);
-            a = (byte) (a ^ temp | (temp >> (1 << i)));
-            count_mask = (byte) (count_mask & ~prefix_mask);
-        }
-        return a;
-    }
 
     static boolean eq(byte a, byte b) {
         return a == b;
@@ -1969,48 +1950,8 @@ public class Byte512VectorTests extends AbstractVectorTest {
     }
 
 
-    static byte COMPRESS_BITS(byte a, byte b) {
-        return (byte)(COMPRESSBITS_scalar(a,b));
-    }
-
-    @Test(dataProvider = "byteBinaryOpProvider")
-    static void COMPRESS_BITSByte512VectorTests(IntFunction<byte[]> fa, IntFunction<byte[]> fb) {
-        byte[] a = fa.apply(SPECIES.length());
-        byte[] b = fb.apply(SPECIES.length());
-        byte[] r = fr.apply(SPECIES.length());
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
-                av.lanewise(VectorOperators.COMPRESS_BITS, bv).intoArray(r, i);
-            }
-        }
-
-        assertArraysEquals(r, a, b, Byte512VectorTests::COMPRESS_BITS);
-    }
 
 
-
-    @Test(dataProvider = "byteBinaryOpMaskProvider")
-    static void COMPRESS_BITSByte512VectorTestsMasked(IntFunction<byte[]> fa, IntFunction<byte[]> fb,
-                                          IntFunction<boolean[]> fm) {
-        byte[] a = fa.apply(SPECIES.length());
-        byte[] b = fb.apply(SPECIES.length());
-        byte[] r = fr.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
-                av.lanewise(VectorOperators.COMPRESS_BITS, bv, vmask).intoArray(r, i);
-            }
-        }
-
-        assertArraysEquals(r, a, b, mask, Byte512VectorTests::COMPRESS_BITS);
-    }
 
 
     @Test(dataProvider = "byteBinaryOpProvider")

@@ -468,45 +468,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
 
 
-    @Benchmark
-    public void COMPRESS_BITS(Blackhole bh) {
-        short[] as = fa.apply(size);
-        short[] bs = fb.apply(size);
-        short[] rs = fr.apply(size);
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < as.length; i++) {
-                short a = as[i];
-                short b = bs[i];
-                rs[i] = (short)(COMPRESSBITS_scalar(a,b));
-            }
-        }
-
-        bh.consume(rs);
-    }
-
-
-
-    @Benchmark
-    public void COMPRESS_BITSMasked(Blackhole bh) {
-        short[] as = fa.apply(size);
-        short[] bs = fb.apply(size);
-        short[] rs = fr.apply(size);
-        boolean[] ms = fm.apply(size);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < as.length; i++) {
-                short a = as[i];
-                short b = bs[i];
-                if (ms[i % ms.length]) {
-                    rs[i] = (short)(COMPRESSBITS_scalar(a,b));
-                } else {
-                    rs[i] = a;
-                }
-            }
-        }
-        bh.consume(rs);
-    }
 
 
 

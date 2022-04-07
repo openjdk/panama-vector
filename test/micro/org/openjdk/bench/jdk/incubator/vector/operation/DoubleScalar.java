@@ -355,6 +355,8 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
 
 
+
+
     @Benchmark
     public void MIN(Blackhole bh) {
         double[] as = fa.apply(size);

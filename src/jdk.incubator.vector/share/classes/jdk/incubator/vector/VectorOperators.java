@@ -564,8 +564,10 @@ public abstract class VectorOperators {
     public static final /*bitwise*/ Binary ROL = binary("ROL", "rotateLeft", VectorSupport.VECTOR_OP_LROTATE, VO_SHIFT);
     /** Produce {@code rotateRight(a,n)}.  Integral only. */
     public static final /*bitwise*/ Binary ROR = binary("ROR", "rotateRight", VectorSupport.VECTOR_OP_RROTATE, VO_SHIFT);
-    /** Produce {@code compressBits(a,n)}. Integral Only. */
+    /** Produce {@code compressBits(a,n)}. Integral only. */
     public static final /*bitwise*/ Binary COMPRESS_BITS = binary("COMPRESS_BITS", "compressBits", VectorSupport.VECTOR_OP_COMPRESS_BITS, VO_NOFP);
+    /** Produce {@code expandBits(a,n)}. Integral only. */
+    public static final /*bitwise*/ Binary EXPAND_BITS = binary("EXPAND_BITS", "expandBits", VectorSupport.VECTOR_OP_EXPAND_BITS, VO_NOFP);
 
     /** Produce {@code atan2(a,b)}. See  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above

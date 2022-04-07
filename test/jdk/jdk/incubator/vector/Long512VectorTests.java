@@ -1205,26 +1205,51 @@ public class Long512VectorTests extends AbstractVectorTest {
     }
 
     static long COMPRESSBITS_scalar(long a, long b) {
-        long prefix_mask, move_mask, temp;
-        a = (long) (a & b);
-        long count_mask = (long) (~b << 1);
-        long mp, mv, t;
+        a = a & b;
+        long maskCount = ~b << 1;
         int iters = 6;
 
         for (int i = 0; i < iters; i++) {
-            prefix_mask = (long) (count_mask  ^ (count_mask  << 1));
-            prefix_mask = (long) (prefix_mask ^ (prefix_mask << 2));
-            prefix_mask = (long) (prefix_mask ^ (prefix_mask << 4));
-            prefix_mask = (long) (prefix_mask ^ (prefix_mask << 8));
-            prefix_mask = (long) (prefix_mask ^ (prefix_mask << 16));
-            prefix_mask = (long) (prefix_mask ^ (prefix_mask << 32));
-            move_mask = (long) (prefix_mask & b);
-            b = (long)(b ^ move_mask | (move_mask >> (1 << i)));
-            temp = (long) (a & move_mask);
-            a = (long) (a ^ temp | (temp >> (1 << i)));
-            count_mask = (long) (count_mask & ~prefix_mask);
+            long maskPrefix = maskCount  ^ (maskCount << 1);
+            maskPrefix = maskPrefix ^ (maskPrefix << 2);
+            maskPrefix = maskPrefix ^ (maskPrefix << 4);
+            maskPrefix = maskPrefix ^ (maskPrefix << 8);
+            maskPrefix = maskPrefix ^ (maskPrefix << 16);
+            maskPrefix = maskPrefix ^ (maskPrefix << 32);
+            long maskMove = maskPrefix & b;
+            b = (b ^ maskMove) | (maskMove >>> (1 << i));
+            long t = a & maskMove;
+            a = (a ^ t) | (t >>> (1 << i));
+            maskCount = maskCount & ~maskPrefix;
         }
         return a;
+    }
+
+    static long EXPANDBITS_scalar(long a, long b) {
+        long originalMask = b;
+        long maskCount = ~b << 1;
+        long[] array = new long[6];
+        int iters = 6;
+
+        for (int j = 0; j < iters; j++) {
+            long maskPrefix = maskCount  ^ (maskCount  << 1);
+            maskPrefix = maskPrefix ^ (maskPrefix << 2);
+            maskPrefix = maskPrefix ^ (maskPrefix << 4);
+            maskPrefix = maskPrefix ^ (maskPrefix << 8);
+            maskPrefix = maskPrefix ^ (maskPrefix << 16);
+            maskPrefix = maskPrefix ^ (maskPrefix << 32);
+            long maskMove = maskPrefix & b;
+            array[j] = maskMove;
+            b = (b ^ maskMove) | (maskMove >>> (1 << j));
+            maskCount = maskCount & ~maskPrefix;
+        }
+
+        for (int j = iters-1; j >= 0; j--) {
+            long maskMove = array[j];
+            long t = a << (1 << j);
+            a = (a & ~maskMove) | (t & maskMove);
+        }
+        return (a & originalMask);
     }
 
     static boolean eq(long a, long b) {
@@ -1997,6 +2022,50 @@ public class Long512VectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(r, a, b, mask, Long512VectorTests::COMPRESS_BITS);
+    }
+
+
+    static long EXPAND_BITS(long a, long b) {
+        return (long)(EXPANDBITS_scalar(a,b));
+    }
+
+    @Test(dataProvider = "longBinaryOpProvider")
+    static void EXPAND_BITSLong512VectorTests(IntFunction<long[]> fa, IntFunction<long[]> fb) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.EXPAND_BITS, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, Long512VectorTests::EXPAND_BITS);
+    }
+
+
+
+    @Test(dataProvider = "longBinaryOpMaskProvider")
+    static void EXPAND_BITSLong512VectorTestsMasked(IntFunction<long[]> fa, IntFunction<long[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        long[] a = fa.apply(SPECIES.length());
+        long[] b = fb.apply(SPECIES.length());
+        long[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                LongVector av = LongVector.fromArray(SPECIES, a, i);
+                LongVector bv = LongVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.EXPAND_BITS, bv, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, mask, Long512VectorTests::EXPAND_BITS);
     }
 
 

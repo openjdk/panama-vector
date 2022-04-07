@@ -393,7 +393,15 @@ public:
 // CompressBits placeholder node
 class CompressBitsNode : public Node {
 public:
-  CompressBitsNode( Node *in1, Node *in2 ) : Node(0,in1,in2) {}
+  CompressBitsNode(Node *in1, Node *in2) : Node(0,in1,in2) {}
+  virtual int Opcode() const;
+};
+
+//------------------------------ExpandBitsNode---------------------------------
+// ExpandBits placeholder node
+class ExpandBitsNode : public Node {
+public:
+  ExpandBitsNode(Node *in1, Node *in2) : Node(0,in1,in2) {}
   virtual int Opcode() const;
 };
 

@@ -355,6 +355,8 @@ public class FloatScalar extends AbstractVectorBenchmark {
 
 
 
+
+
     @Benchmark
     public void MIN(Blackhole bh) {
         float[] as = fa.apply(size);

@@ -90,8 +90,9 @@ public class VectorSupport {
     public static final int VECTOR_OP_REVERSE   = 31;
     public static final int VECTOR_OP_REVERSE_BYTES = 32;
 
-    // Compress Bits operation
+    // Compress and Expand Bits operation
     public static final int VECTOR_OP_COMPRESS_BITS = 33;
+    public static final int VECTOR_OP_EXPAND_BITS = 34;
 
     // Math routines
     public static final int VECTOR_OP_TAN = 101;

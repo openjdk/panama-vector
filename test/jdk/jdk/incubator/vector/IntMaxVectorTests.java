@@ -1188,25 +1188,49 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     }
 
     static int COMPRESSBITS_scalar(int a, int b) {
-        int prefix_mask, move_mask, temp;
-        a = (int) (a & b);
-        int count_mask = (int) (~b << 1);
-        int mp, mv, t;
+        a = a & b;
+        int maskCount = ~b << 1;
         int iters = 5;
 
         for (int i = 0; i < iters; i++) {
-            prefix_mask = (int) (count_mask  ^ (count_mask  << 1));
-            prefix_mask = (int) (prefix_mask ^ (prefix_mask << 2));
-            prefix_mask = (int) (prefix_mask ^ (prefix_mask << 4));
-            prefix_mask = (int) (prefix_mask ^ (prefix_mask << 8));
-            prefix_mask = (int) (prefix_mask ^ (prefix_mask << 16));
-            move_mask = (int) (prefix_mask & b);
-            b = (int)(b ^ move_mask | (move_mask >> (1 << i)));
-            temp = (int) (a & move_mask);
-            a = (int) (a ^ temp | (temp >> (1 << i)));
-            count_mask = (int) (count_mask & ~prefix_mask);
+            int maskPrefix = maskCount  ^ (maskCount << 1);
+            maskPrefix = maskPrefix ^ (maskPrefix << 2);
+            maskPrefix = maskPrefix ^ (maskPrefix << 4);
+            maskPrefix = maskPrefix ^ (maskPrefix << 8);
+            maskPrefix = maskPrefix ^ (maskPrefix << 16);
+            int maskMove = maskPrefix & b;
+            b = (b ^ maskMove) | (maskMove >>> (1 << i));
+            int t = a & maskMove;
+            a = (a ^ t) | (t >>> (1 << i));
+            maskCount = maskCount & ~maskPrefix;
         }
         return a;
+    }
+
+    static int EXPANDBITS_scalar(int a, int b) {
+        int originalMask = b;
+        int maskCount = ~b << 1;
+        int[] array = new int[5];
+        int iters = 5;
+
+        for (int j = 0; j < iters; j++) {
+            int maskPrefix = maskCount  ^ (maskCount  << 1);
+            maskPrefix = maskPrefix ^ (maskPrefix << 2);
+            maskPrefix = maskPrefix ^ (maskPrefix << 4);
+            maskPrefix = maskPrefix ^ (maskPrefix << 8);
+            maskPrefix = maskPrefix ^ (maskPrefix << 16);
+            int maskMove = maskPrefix & b;
+            array[j] = maskMove;
+            b = (b ^ maskMove) | (maskMove >>> (1 << j));
+            maskCount = maskCount & ~maskPrefix;
+        }
+
+        for (int j = iters-1; j >= 0; j--) {
+            int maskMove = array[j];
+            int t = a << (1 << j);
+            a = (a & ~maskMove) | (t & maskMove);
+        }
+        return (a & originalMask);
     }
 
     static boolean eq(int a, int b) {
@@ -1979,6 +2003,50 @@ public class IntMaxVectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(r, a, b, mask, IntMaxVectorTests::COMPRESS_BITS);
+    }
+
+
+    static int EXPAND_BITS(int a, int b) {
+        return (int)(EXPANDBITS_scalar(a,b));
+    }
+
+    @Test(dataProvider = "intBinaryOpProvider")
+    static void EXPAND_BITSIntMaxVectorTests(IntFunction<int[]> fa, IntFunction<int[]> fb) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] b = fb.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                IntVector bv = IntVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.EXPAND_BITS, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, IntMaxVectorTests::EXPAND_BITS);
+    }
+
+
+
+    @Test(dataProvider = "intBinaryOpMaskProvider")
+    static void EXPAND_BITSIntMaxVectorTestsMasked(IntFunction<int[]> fa, IntFunction<int[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] b = fb.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                IntVector bv = IntVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.EXPAND_BITS, bv, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, mask, IntMaxVectorTests::EXPAND_BITS);
     }
 
 

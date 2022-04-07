@@ -1809,6 +1809,8 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
 
 
 
+
+
     @Test(dataProvider = "doubleBinaryOpProvider")
     static void addDoubleMaxVectorTestsBroadcastSmokeTest(IntFunction<double[]> fa, IntFunction<double[]> fb) {
         double[] a = fa.apply(SPECIES.length());

@@ -480,7 +480,7 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
       break;
     }
     case VECTOR_OP_BIT_COUNT: {
-     switch (bt) {
+      switch (bt) {
         case T_BYTE:  // Returning Op_PopCountI
         case T_SHORT: // for byte and short types temporarily
         case T_INT:   return Op_PopCountI;
@@ -490,7 +490,7 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
       break;
     }
     case VECTOR_OP_TZ_COUNT: {
-     switch (bt) {
+      switch (bt) {
         case T_BYTE:
         case T_SHORT:
         case T_INT:   return Op_CountTrailingZerosI;
@@ -500,7 +500,7 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
       break;
     }
     case VECTOR_OP_LZ_COUNT: {
-     switch (bt) {
+      switch (bt) {
         case T_BYTE:
         case T_SHORT:
         case T_INT:   return Op_CountLeadingZerosI;
@@ -510,7 +510,7 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
       break;
     }
     case VECTOR_OP_REVERSE: {
-     switch (bt) {
+      switch (bt) {
         case T_BYTE:  // Temporarily returning
         case T_SHORT: // Op_ReverseI for byte and short
         case T_INT:   return Op_ReverseI;
@@ -520,7 +520,7 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
       break;
     }
     case VECTOR_OP_REVERSE_BYTES: {
-     switch (bt) {
+      switch (bt) {
         case T_BYTE:
         case T_SHORT:
         case T_INT:   return Op_ReverseBytesI;
@@ -530,12 +530,18 @@ int VectorSupport::vop2ideal(jint id, BasicType bt) {
       break;
     }
     case VECTOR_OP_COMPRESS_BITS: {
-     switch (bt) {
-        case T_BYTE: // Returning Op_CompressBits for
-        case T_SHORT:// all types temporarily.
+      switch (bt) {
         case T_INT:
         case T_LONG: return Op_CompressBits;
         default: fatal("COMPRESS_BITS: %s", type2name(bt));
+      }
+      break;
+    }
+    case VECTOR_OP_EXPAND_BITS: {
+      switch (bt) {
+        case T_INT:
+        case T_LONG: return Op_ExpandBits;
+        default: fatal("EXPAND_BITS: %s", type2name(bt));
       }
       break;
     }

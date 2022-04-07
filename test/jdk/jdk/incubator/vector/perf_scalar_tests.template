@@ -573,7 +573,7 @@ public class $Type$Scalar extends AbstractVectorBenchmark {
     }
 #end[BITWISE]
 
-#if[BITWISE]
+#if[intOrLong]
 
 
     @Benchmark
@@ -592,9 +592,9 @@ public class $Type$Scalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-#end[BITWISE]
+#end[intOrLong]
 
-#if[BITWISE]
+#if[intOrLong]
 
 
     @Benchmark
@@ -617,7 +617,53 @@ public class $Type$Scalar extends AbstractVectorBenchmark {
         }
         bh.consume(rs);
     }
-#end[BITWISE]
+#end[intOrLong]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void EXPAND_BITS(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                rs[i] = ($type$)(EXPANDBITS_scalar(a,b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+#end[intOrLong]
+
+#if[intOrLong]
+
+
+    @Benchmark
+    public void EXPAND_BITSMasked(Blackhole bh) {
+        $type$[] as = fa.apply(size);
+        $type$[] bs = fb.apply(size);
+        $type$[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                $type$ a = as[i];
+                $type$ b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = ($type$)(EXPANDBITS_scalar(a,b));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+#end[intOrLong]
 
 #if[intOrLong]
 

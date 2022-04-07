@@ -1216,26 +1216,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         return b;
     }
 
-    static short COMPRESSBITS_scalar(short a, short b) {
-        short prefix_mask, move_mask, temp;
-        a = (short) (a & b);
-        short count_mask = (short) (~b << 1);
-        short mp, mv, t;
-        int iters = 4;
-
-        for (int i = 0; i < iters; i++) {
-            prefix_mask = (short) (count_mask  ^ (count_mask  << 1));
-            prefix_mask = (short) (prefix_mask ^ (prefix_mask << 2));
-            prefix_mask = (short) (prefix_mask ^ (prefix_mask << 4));
-            prefix_mask = (short) (prefix_mask ^ (prefix_mask << 8));
-            move_mask = (short) (prefix_mask & b);
-            b = (short)(b ^ move_mask | (move_mask >> (1 << i)));
-            temp = (short) (a & move_mask);
-            a = (short) (a ^ temp | (temp >> (1 << i)));
-            count_mask = (short) (count_mask & ~prefix_mask);
-        }
-        return a;
-    }
 
     static boolean eq(short a, short b) {
         return a == b;
@@ -1961,48 +1941,8 @@ public class Short256VectorTests extends AbstractVectorTest {
     }
 
 
-    static short COMPRESS_BITS(short a, short b) {
-        return (short)(COMPRESSBITS_scalar(a,b));
-    }
-
-    @Test(dataProvider = "shortBinaryOpProvider")
-    static void COMPRESS_BITSShort256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
-        short[] a = fa.apply(SPECIES.length());
-        short[] b = fb.apply(SPECIES.length());
-        short[] r = fr.apply(SPECIES.length());
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                ShortVector bv = ShortVector.fromArray(SPECIES, b, i);
-                av.lanewise(VectorOperators.COMPRESS_BITS, bv).intoArray(r, i);
-            }
-        }
-
-        assertArraysEquals(r, a, b, Short256VectorTests::COMPRESS_BITS);
-    }
 
 
-
-    @Test(dataProvider = "shortBinaryOpMaskProvider")
-    static void COMPRESS_BITSShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
-                                          IntFunction<boolean[]> fm) {
-        short[] a = fa.apply(SPECIES.length());
-        short[] b = fb.apply(SPECIES.length());
-        short[] r = fr.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                ShortVector bv = ShortVector.fromArray(SPECIES, b, i);
-                av.lanewise(VectorOperators.COMPRESS_BITS, bv, vmask).intoArray(r, i);
-            }
-        }
-
-        assertArraysEquals(r, a, b, mask, Short256VectorTests::COMPRESS_BITS);
-    }
 
 
     @Test(dataProvider = "shortBinaryOpProvider")

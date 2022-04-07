@@ -337,6 +337,8 @@ public class FloatMaxVector extends AbstractVectorBenchmark {
 
 
 
+
+
     @Benchmark
     public void MIN(Blackhole bh) {
         float[] a = fa.apply(SPECIES.length());

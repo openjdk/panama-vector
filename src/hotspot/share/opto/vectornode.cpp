@@ -165,6 +165,9 @@ int VectorNode::opcode(int sopc, BasicType bt) {
   case Op_CompressBits:
     // Not implemented. Returning 0 temporarily
     return 0;
+  case Op_ExpandBits:
+    // Not implemented. Returning 0 temporarily
+    return 0;
   case Op_LShiftI:
     switch (bt) {
     case T_BOOLEAN:

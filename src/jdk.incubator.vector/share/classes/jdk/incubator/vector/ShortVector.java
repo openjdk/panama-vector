@@ -445,32 +445,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
         return (short)(((((short)a) & Short.toUnsignedInt((short)-1)) >>> (n & Short.SIZE-1)) | ((((short)a) & Short.toUnsignedInt((short)-1)) << (Short.SIZE - (n & Short.SIZE-1))));
     }
 
-    /* Implementation note: The implementation is based on Compress or Generalized Extract mentioned in
-     * Henry S. Warren, Jr's Hackers Delight, Addison Wesley, 2002.
-     */
-    static short compressBits(short a, short bitmask) {
-        a = (short) (a & bitmask); // Clear irrelevant bits
-        short count_mask = (short) (~bitmask << 1); // Count 0's to right
-
-        // Prefix mask identifies bits of bitmask that have odd number of 0's to the right
-        // Move mask identifies the bits to be moved
-        // temp identifies the bits of the given number to be moved
-        short prefix_mask, move_mask, temp;
-        int iters = 4;
-
-        for (int i = 0; i < iters; i++) {
-            prefix_mask = (short) (count_mask  ^ (count_mask  << 1)); // Parallel prefix
-            prefix_mask = (short) (prefix_mask ^ (prefix_mask << 2));
-            prefix_mask = (short) (prefix_mask ^ (prefix_mask << 4));
-            prefix_mask = (short) (prefix_mask ^ (prefix_mask << 8));
-            move_mask = (short) (prefix_mask & bitmask); // Bits to move
-            bitmask = (short)(bitmask ^ move_mask | (move_mask >> (1 << i))); // Compress bitmask
-            temp = (short) (a & move_mask); // Bits of the number a to be moved.
-            a = (short) (a ^ temp | (temp >> (1 << i))); // Compress a
-            count_mask = (short) (count_mask & ~prefix_mask); // adjust count_mask by identifying bits that have 0 to the right
-        }
-        return a;
-    }
 
     /*package-private*/
     @Override
@@ -832,8 +806,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
                     v0.bOp(v1, vm, (i, a, n) -> rotateLeft(a, (int)n));
             case VECTOR_OP_RROTATE: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, n) -> rotateRight(a, (int)n));
-            case VECTOR_OP_COMPRESS_BITS: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, n) -> compressBits(a, n));
             default: return null;
         }
     }
