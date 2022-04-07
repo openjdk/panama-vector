@@ -24,7 +24,6 @@
  */
 package jdk.incubator.vector;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
@@ -868,34 +867,6 @@ final class Double512Vector extends DoubleVector {
     @ForceInline
     @Override
     final
-    DoubleVector fromByteArray0(byte[] a, int offset) {
-        return super.fromByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    DoubleVector fromByteArray0(byte[] a, int offset, VectorMask<Double> m) {
-        return super.fromByteArray0Template(Double512Mask.class, a, offset, (Double512Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    DoubleVector fromByteBuffer0(ByteBuffer bb, int offset) {
-        return super.fromByteBuffer0Template(bb, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    DoubleVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Double> m) {
-        return super.fromByteBuffer0Template(Double512Mask.class, bb, offset, (Double512Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
     DoubleVector fromMemorySegment0(MemorySegment ms, long offset) {
         return super.fromMemorySegment0Template(ms, offset);  // specialize
     }
@@ -928,27 +899,6 @@ final class Double512Vector extends DoubleVector {
         super.intoArray0Template(Double512Mask.class, a, offset, indexMap, mapOffset, (Double512Mask) m);
     }
 
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset) {
-        super.intoByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset, VectorMask<Double> m) {
-        super.intoByteArray0Template(Double512Mask.class, a, offset, (Double512Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Double> m) {
-        super.intoByteBuffer0Template(Double512Mask.class, bb, offset, (Double512Mask) m);
-    }
 
     @ForceInline
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,6 +23,8 @@
  * questions.
  */
 package jdk.incubator.vector;
+
+import jdk.incubator.foreign.MemorySegment;
 
 import java.nio.ByteOrder;
 import java.util.function.IntUnaryOperator;
@@ -474,32 +476,31 @@ public interface VectorSpecies<E> {
     Vector<E> fromArray(Object a, int offset);
     // Defined when ETYPE is known.
 
-    /**
-     * Loads a vector of this species from a byte array starting
-     * at an offset.
+     /**
+     * Loads a vector of this species from a {@linkplain MemorySegment memory segment}
+     * starting at an offset into the memory segment.
      * Bytes are composed into primitive lane elements according
      * to the specified byte order.
      * The vector is arranged into lanes according to
      * <a href="Vector.html#lane-order">memory ordering</a>.
      * <p>
      * Equivalent to
-     * {@code IntVector.fromByteArray(this,a,offset,bo)}
-     * or an equivalent {@code fromByteArray} method,
+     * {@code IntVector.fromMemorySegment(this,ms,offset,bo)},
      * on the vector type corresponding to
      * this species.
      *
-     * @param a a byte array
-     * @param offset the index of the first byte to load
+     * @param ms the memory segment
+     * @param offset the offset into the memory segment
      * @param bo the intended byte order
-     * @return a vector of the given species filled from the byte array
+     * @return a vector of the given species filled from the memory segment
      * @throws IndexOutOfBoundsException
      *         if {@code offset+N*ESIZE < 0}
      *         or {@code offset+(N+1)*ESIZE > a.length}
      *         for any lane {@code N} in the vector
-     * @see IntVector#fromByteArray(VectorSpecies,byte[],int,ByteOrder)
-     * @see FloatVector#fromByteArray(VectorSpecies,byte[],int,ByteOrder)
+     * @see IntVector#fromMemorySegment(VectorSpecies, jdk.incubator.foreign.MemorySegment, long, java.nio.ByteOrder)
+     * @see FloatVector#fromMemorySegment(VectorSpecies, jdk.incubator.foreign.MemorySegment, long, java.nio.ByteOrder)
      */
-    Vector<E> fromByteArray(byte[] a, int offset, ByteOrder bo);
+    Vector<E> fromMemorySegment(MemorySegment ms, long offset, ByteOrder bo);
 
     /**
      * Returns a mask of this species

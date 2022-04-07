@@ -24,13 +24,10 @@
  */
 package jdk.incubator.vector;
 
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.ReadOnlyBufferException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
 import jdk.incubator.foreign.MemorySegment;
 import jdk.incubator.foreign.ValueLayout;
@@ -59,6 +56,8 @@ public abstract class ShortVector extends AbstractVector<Short> {
     }
 
     static final int FORBID_OPCODE_KIND = VO_ONLYFP;
+
+    static final ValueLayout.OfShort ELEMENT_LAYOUT = ValueLayout.JAVA_SHORT.withBitAlignment(8);
 
     @ForceInline
     static int opCode(Operator op) {
@@ -355,15 +354,15 @@ public abstract class ShortVector extends AbstractVector<Short> {
     }
 
     /*package-private*/
-    interface FLdLongOp<M> {
-        short apply(M memory, long offset, int i);
+    interface FLdLongOp {
+        short apply(MemorySegment memory, long offset, int i);
     }
 
     /*package-private*/
     @ForceInline
     final
-    <M> ShortVector ldLongOp(M memory, long offset,
-                                  FLdLongOp<M> f) {
+    ShortVector ldLongOp(MemorySegment memory, long offset,
+                                  FLdLongOp f) {
         //dummy; no vec = vec();
         short[] res = new short[length()];
         for (int i = 0; i < res.length; i++) {
@@ -375,9 +374,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
     /*package-private*/
     @ForceInline
     final
-    <M> ShortVector ldLongOp(M memory, long offset,
+    ShortVector ldLongOp(MemorySegment memory, long offset,
                                   VectorMask<Short> m,
-                                  FLdLongOp<M> f) {
+                                  FLdLongOp f) {
         //short[] vec = vec();
         short[] res = new short[length()];
         boolean[] mbits = ((AbstractMask<Short>)m).getBits();
@@ -389,34 +388,8 @@ public abstract class ShortVector extends AbstractVector<Short> {
         return vectorFactory(res);
     }
 
-    static ShortVector expandHelper(Vector<Short> v, VectorMask<Short> m) {
-        VectorSpecies<Short> vsp = m.vectorSpecies();
-        ShortVector r  = (ShortVector) vsp.zero();
-        ShortVector vi = (ShortVector) v;
-        if (m.allTrue()) {
-            return vi;
-        }
-        for (int i = 0, j = 0; i < vsp.length(); i++) {
-            if (m.laneIsSet(i)) {
-                r = r.withLane(i, vi.lane(j++));
-            }
-        }
-        return r;
-    }
-
-    static ShortVector compressHelper(Vector<Short> v, VectorMask<Short> m) {
-        VectorSpecies<Short> vsp = m.vectorSpecies();
-        ShortVector r  = (ShortVector) vsp.zero();
-        ShortVector vi = (ShortVector) v;
-        if (m.allTrue()) {
-            return vi;
-        }
-        for (int i = 0, j = 0; i < vsp.length(); i++) {
-            if (m.laneIsSet(i)) {
-                r = r.withLane(j++, vi.lane(i));
-            }
-        }
-        return r;
+    static short memorySegmentGet(MemorySegment ms, long o, int i) {
+        return ms.get(ELEMENT_LAYOUT, o + i * 2L);
     }
 
     interface FStOp<M> {
@@ -449,15 +422,15 @@ public abstract class ShortVector extends AbstractVector<Short> {
         }
     }
 
-    interface FStLongOp<M> {
-        void apply(M memory, long offset, int i, short a);
+    interface FStLongOp {
+        void apply(MemorySegment memory, long offset, int i, short a);
     }
 
     /*package-private*/
     @ForceInline
     final
-    <M> void stLongOp(M memory, long offset,
-                  FStLongOp<M> f) {
+    void stLongOp(MemorySegment memory, long offset,
+                  FStLongOp f) {
         short[] vec = vec();
         for (int i = 0; i < vec.length; i++) {
             f.apply(memory, offset, i, vec[i]);
@@ -467,9 +440,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
     /*package-private*/
     @ForceInline
     final
-    <M> void stLongOp(M memory, long offset,
+    void stLongOp(MemorySegment memory, long offset,
                   VectorMask<Short> m,
-                  FStLongOp<M> f) {
+                  FStLongOp f) {
         short[] vec = vec();
         boolean[] mbits = ((AbstractMask<Short>)m).getBits();
         for (int i = 0; i < vec.length; i++) {
@@ -477,6 +450,10 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 f.apply(memory, offset, i, vec[i]);
             }
         }
+    }
+
+    static void memorySegmentSet(MemorySegment ms, long o, int i, short e) {
+        ms.set(ELEMENT_LAYOUT, o + i * 2L, e);
     }
 
     // Binary test
@@ -527,6 +504,36 @@ public abstract class ShortVector extends AbstractVector<Short> {
     @ForceInline
     static short fromBits(long bits) {
         return ((short)bits);
+    }
+
+    static ShortVector expandHelper(Vector<Short> v, VectorMask<Short> m) {
+        VectorSpecies<Short> vsp = m.vectorSpecies();
+        ShortVector r  = (ShortVector) vsp.zero();
+        ShortVector vi = (ShortVector) v;
+        if (m.allTrue()) {
+            return vi;
+        }
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
+            if (m.laneIsSet(i)) {
+                r = r.withLane(i, vi.lane(j++));
+            }
+        }
+        return r;
+    }
+
+    static ShortVector compressHelper(Vector<Short> v, VectorMask<Short> m) {
+        VectorSpecies<Short> vsp = m.vectorSpecies();
+        ShortVector r  = (ShortVector) vsp.zero();
+        ShortVector vi = (ShortVector) v;
+        if (m.allTrue()) {
+            return vi;
+        }
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
+            if (m.laneIsSet(i)) {
+                r = r.withLane(j++, vi.lane(i));
+            }
+        }
+        return r;
     }
 
     // Static factories (other than memory operations)
@@ -2955,90 +2962,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
     }
 
     /**
-     * Loads a vector from a byte array starting at an offset.
-     * Bytes are composed into primitive lane elements according
-     * to the specified byte order.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it returns the result of calling
-     * {@link #fromByteBuffer(VectorSpecies,ByteBuffer,int,ByteOrder,VectorMask)
-     * fromByteBuffer()} as follows:
-     * <pre>{@code
-     * var bb = ByteBuffer.wrap(a);
-     * var m = species.maskAll(true);
-     * return fromByteBuffer(species, bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param species species of desired vector
-     * @param a the byte array
-     * @param offset the offset into the array
-     * @param bo the intended byte order
-     * @return a vector loaded from a byte array
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*ESIZE < 0}
-     *         or {@code offset+(N+1)*ESIZE > a.length}
-     *         for any lane {@code N} in the vector
-     */
-    @ForceInline
-    public static
-    ShortVector fromByteArray(VectorSpecies<Short> species,
-                                       byte[] a, int offset,
-                                       ByteOrder bo) {
-        offset = checkFromIndexSize(offset, species.vectorByteSize(), a.length);
-        ShortSpecies vsp = (ShortSpecies) species;
-        return vsp.dummyVector().fromByteArray0(a, offset).maybeSwap(bo);
-    }
-
-    /**
-     * Loads a vector from a byte array starting at an offset
-     * and using a mask.
-     * Lanes where the mask is unset are filled with the default
-     * value of {@code short} (zero).
-     * Bytes are composed into primitive lane elements according
-     * to the specified byte order.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it returns the result of calling
-     * {@link #fromByteBuffer(VectorSpecies,ByteBuffer,int,ByteOrder,VectorMask)
-     * fromByteBuffer()} as follows:
-     * <pre>{@code
-     * var bb = ByteBuffer.wrap(a);
-     * return fromByteBuffer(species, bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param species species of desired vector
-     * @param a the byte array
-     * @param offset the offset into the array
-     * @param bo the intended byte order
-     * @param m the mask controlling lane selection
-     * @return a vector loaded from a byte array
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*ESIZE < 0}
-     *         or {@code offset+(N+1)*ESIZE > a.length}
-     *         for any lane {@code N} in the vector
-     *         where the mask is set
-     */
-    @ForceInline
-    public static
-    ShortVector fromByteArray(VectorSpecies<Short> species,
-                                       byte[] a, int offset,
-                                       ByteOrder bo,
-                                       VectorMask<Short> m) {
-        ShortSpecies vsp = (ShortSpecies) species;
-        if (offset >= 0 && offset <= (a.length - species.vectorByteSize())) {
-            return vsp.dummyVector().fromByteArray0(a, offset, m).maybeSwap(bo);
-        }
-
-        // FIXME: optimize
-        checkMaskFromIndexSize(offset, vsp, m, 2, a.length);
-        ByteBuffer wb = wrapper(a, bo);
-        return vsp.ldOp(wb, offset, (AbstractMask<Short>)m,
-                   (wb_, o, i)  -> wb_.getShort(o + i * 2));
-    }
-
-    /**
      * Loads a vector from an array of type {@code short[]}
      * starting at an offset.
      * For each vector lane, where {@code N} is the vector lane index, the
@@ -3337,104 +3260,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
 
 
     /**
-     * Loads a vector from a {@linkplain ByteBuffer byte buffer}
-     * starting at an offset into the byte buffer.
-     * Bytes are composed into primitive lane elements according
-     * to the specified byte order.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it returns the result of calling
-     * {@link #fromByteBuffer(VectorSpecies,ByteBuffer,int,ByteOrder,VectorMask)
-     * fromByteBuffer()} as follows:
-     * <pre>{@code
-     * var m = species.maskAll(true);
-     * return fromByteBuffer(species, bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param species species of desired vector
-     * @param bb the byte buffer
-     * @param offset the offset into the byte buffer
-     * @param bo the intended byte order
-     * @return a vector loaded from a byte buffer
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*2 < 0}
-     *         or {@code offset+N*2 >= bb.limit()}
-     *         for any lane {@code N} in the vector
-     */
-    @ForceInline
-    public static
-    ShortVector fromByteBuffer(VectorSpecies<Short> species,
-                                        ByteBuffer bb, int offset,
-                                        ByteOrder bo) {
-        offset = checkFromIndexSize(offset, species.vectorByteSize(), bb.limit());
-        ShortSpecies vsp = (ShortSpecies) species;
-        return vsp.dummyVector().fromByteBuffer0(bb, offset).maybeSwap(bo);
-    }
-
-    /**
-     * Loads a vector from a {@linkplain ByteBuffer byte buffer}
-     * starting at an offset into the byte buffer
-     * and using a mask.
-     * Lanes where the mask is unset are filled with the default
-     * value of {@code short} (zero).
-     * Bytes are composed into primitive lane elements according
-     * to the specified byte order.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * The following pseudocode illustrates the behavior:
-     * <pre>{@code
-     * ShortBuffer eb = bb.duplicate()
-     *     .position(offset)
-     *     .order(bo).asShortBuffer();
-     * short[] ar = new short[species.length()];
-     * for (int n = 0; n < ar.length; n++) {
-     *     if (m.laneIsSet(n)) {
-     *         ar[n] = eb.get(n);
-     *     }
-     * }
-     * ShortVector r = ShortVector.fromArray(species, ar, 0);
-     * }</pre>
-     * @implNote
-     * This operation is likely to be more efficient if
-     * the specified byte order is the same as
-     * {@linkplain ByteOrder#nativeOrder()
-     * the platform native order},
-     * since this method will not need to reorder
-     * the bytes of lane values.
-     *
-     * @param species species of desired vector
-     * @param bb the byte buffer
-     * @param offset the offset into the byte buffer
-     * @param bo the intended byte order
-     * @param m the mask controlling lane selection
-     * @return a vector loaded from a byte buffer
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*2 < 0}
-     *         or {@code offset+N*2 >= bb.limit()}
-     *         for any lane {@code N} in the vector
-     *         where the mask is set
-     */
-    @ForceInline
-    public static
-    ShortVector fromByteBuffer(VectorSpecies<Short> species,
-                                        ByteBuffer bb, int offset,
-                                        ByteOrder bo,
-                                        VectorMask<Short> m) {
-        ShortSpecies vsp = (ShortSpecies) species;
-        if (offset >= 0 && offset <= (bb.limit() - species.vectorByteSize())) {
-            return vsp.dummyVector().fromByteBuffer0(bb, offset, m).maybeSwap(bo);
-        }
-
-        // FIXME: optimize
-        checkMaskFromIndexSize(offset, vsp, m, 2, bb.limit());
-        ByteBuffer wb = wrapper(bb, bo);
-        return vsp.ldOp(wb, offset, (AbstractMask<Short>)m,
-                   (wb_, o, i)  -> wb_.getShort(o + i * 2));
-    }
-
-    /**
      * Loads a vector from a {@linkplain MemorySegment memory segment}
      * starting at an offset into the memory segment.
      * Bytes are composed into primitive lane elements according
@@ -3533,9 +3358,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
 
         // FIXME: optimize
         checkMaskFromIndexSize(offset, vsp, m, 2, ms.byteSize());
-        var layout = ValueLayout.JAVA_SHORT.withBitAlignment(8);
-        return vsp.ldLongOp(ms, offset, (AbstractMask<Short>)m,
-                   (ms_, o, i)  -> ms_.get(layout, o + i * 2L));
+        return vsp.ldLongOp(ms, offset, m, ShortVector::memorySegmentGet);
     }
 
     // Memory store operations
@@ -3845,72 +3668,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
     @Override
     @ForceInline
     public final
-    void intoByteArray(byte[] a, int offset,
-                       ByteOrder bo) {
-        offset = checkFromIndexSize(offset, byteSize(), a.length);
-        maybeSwap(bo).intoByteArray0(a, offset);
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    void intoByteArray(byte[] a, int offset,
-                       ByteOrder bo,
-                       VectorMask<Short> m) {
-        if (m.allTrue()) {
-            intoByteArray(a, offset, bo);
-        } else {
-            ShortSpecies vsp = vspecies();
-            checkMaskFromIndexSize(offset, vsp, m, 2, a.length);
-            maybeSwap(bo).intoByteArray0(a, offset, m);
-        }
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    void intoByteBuffer(ByteBuffer bb, int offset,
-                        ByteOrder bo) {
-        if (ScopedMemoryAccess.isReadOnly(bb)) {
-            throw new ReadOnlyBufferException();
-        }
-        offset = checkFromIndexSize(offset, byteSize(), bb.limit());
-        maybeSwap(bo).intoByteBuffer0(bb, offset);
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    void intoByteBuffer(ByteBuffer bb, int offset,
-                        ByteOrder bo,
-                        VectorMask<Short> m) {
-        if (m.allTrue()) {
-            intoByteBuffer(bb, offset, bo);
-        } else {
-            if (bb.isReadOnly()) {
-                throw new ReadOnlyBufferException();
-            }
-            ShortSpecies vsp = vspecies();
-            checkMaskFromIndexSize(offset, vsp, m, 2, bb.limit());
-            maybeSwap(bo).intoByteBuffer0(bb, offset, m);
-        }
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
     void intoMemorySegment(MemorySegment ms, long offset,
                            ByteOrder bo) {
         if (ms.isReadOnly()) {
@@ -4027,77 +3784,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
     }
 
 
-    @Override
-    abstract
-    ShortVector fromByteArray0(byte[] a, int offset);
-    @ForceInline
-    final
-    ShortVector fromByteArray0Template(byte[] a, int offset) {
-        ShortSpecies vsp = vspecies();
-        return VectorSupport.load(
-            vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-            a, byteArrayAddress(a, offset),
-            a, offset, vsp,
-            (arr, off, s) -> {
-                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
-                return s.ldOp(wb, (int) off,
-                        (wb_, o, i) -> wb_.getShort(o + i * 2));
-            });
-    }
-
-    abstract
-    ShortVector fromByteArray0(byte[] a, int offset, VectorMask<Short> m);
-    @ForceInline
-    final
-    <M extends VectorMask<Short>>
-    ShortVector fromByteArray0Template(Class<M> maskClass, byte[] a, int offset, M m) {
-        ShortSpecies vsp = vspecies();
-        m.check(vsp);
-        return VectorSupport.loadMasked(
-            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-            a, byteArrayAddress(a, offset), m,
-            a, offset, vsp,
-            (arr, off, s, vm) -> {
-                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
-                return s.ldOp(wb, (int) off, vm,
-                        (wb_, o, i) -> wb_.getShort(o + i * 2));
-            });
-    }
-
-    abstract
-    ShortVector fromByteBuffer0(ByteBuffer bb, int offset);
-    @ForceInline
-    final
-    ShortVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
-        ShortSpecies vsp = vspecies();
-        return ScopedMemoryAccess.loadFromByteBuffer(
-                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                bb, offset, vsp,
-                (buf, off, s) -> {
-                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    return s.ldOp(wb, (int) off,
-                            (wb_, o, i) -> wb_.getShort(o + i * 2));
-                });
-    }
-
-    abstract
-    ShortVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Short> m);
-    @ForceInline
-    final
-    <M extends VectorMask<Short>>
-    ShortVector fromByteBuffer0Template(Class<M> maskClass, ByteBuffer bb, int offset, M m) {
-        ShortSpecies vsp = vspecies();
-        m.check(vsp);
-        return ScopedMemoryAccess.loadFromByteBufferMasked(
-                vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-                bb, offset, m, vsp,
-                (buf, off, s, vm) -> {
-                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    return s.ldOp(wb, (int) off, vm,
-                            (wb_, o, i) -> wb_.getShort(o + i * 2));
-                });
-    }
-
     abstract
     ShortVector fromMemorySegment0(MemorySegment bb, long offset);
     @ForceInline
@@ -4108,9 +3794,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
                 (MemorySegmentProxy) ms, offset, vsp,
                 (msp, off, s) -> {
-                    var layout = ValueLayout.JAVA_SHORT.withBitAlignment(8);
-                    return s.ldLongOp((MemorySegment) msp, off,
-                            (ms_, o, i) -> ms_.get(layout, o + i * 2L));
+                    return s.ldLongOp((MemorySegment) msp, off, ShortVector::memorySegmentGet);
                 });
     }
 
@@ -4126,9 +3810,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
                 (MemorySegmentProxy) ms, offset, m, vsp,
                 (msp, off, s, vm) -> {
-                    var layout = ValueLayout.JAVA_SHORT.withBitAlignment(8);
-                    return s.ldLongOp((MemorySegment) msp, off, vm,
-                            (ms_, o, i) -> ms_.get(layout, o + i * 2L));
+                    return s.ldLongOp((MemorySegment) msp, off, vm, ShortVector::memorySegmentGet);
                 });
     }
 
@@ -4170,74 +3852,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
 
 
 
-    abstract
-    void intoByteArray0(byte[] a, int offset);
-    @ForceInline
-    final
-    void intoByteArray0Template(byte[] a, int offset) {
-        ShortSpecies vsp = vspecies();
-        VectorSupport.store(
-            vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-            a, byteArrayAddress(a, offset),
-            this, a, offset,
-            (arr, off, v) -> {
-                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
-                v.stOp(wb, (int) off,
-                        (tb_, o, i, e) -> tb_.putShort(o + i * 2, e));
-            });
-    }
-
-    abstract
-    void intoByteArray0(byte[] a, int offset, VectorMask<Short> m);
-    @ForceInline
-    final
-    <M extends VectorMask<Short>>
-    void intoByteArray0Template(Class<M> maskClass, byte[] a, int offset, M m) {
-        ShortSpecies vsp = vspecies();
-        m.check(vsp);
-        VectorSupport.storeMasked(
-            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-            a, byteArrayAddress(a, offset),
-            this, m, a, offset,
-            (arr, off, v, vm) -> {
-                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
-                v.stOp(wb, (int) off, vm,
-                        (tb_, o, i, e) -> tb_.putShort(o + i * 2, e));
-            });
-    }
-
-    @ForceInline
-    final
-    void intoByteBuffer0(ByteBuffer bb, int offset) {
-        ShortSpecies vsp = vspecies();
-        ScopedMemoryAccess.storeIntoByteBuffer(
-                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                this, bb, offset,
-                (buf, off, v) -> {
-                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    v.stOp(wb, (int) off,
-                            (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
-                });
-    }
-
-    abstract
-    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Short> m);
-    @ForceInline
-    final
-    <M extends VectorMask<Short>>
-    void intoByteBuffer0Template(Class<M> maskClass, ByteBuffer bb, int offset, M m) {
-        ShortSpecies vsp = vspecies();
-        m.check(vsp);
-        ScopedMemoryAccess.storeIntoByteBufferMasked(
-                vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-                this, m, bb, offset,
-                (buf, off, v, vm) -> {
-                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    v.stOp(wb, (int) off, vm,
-                            (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
-                });
-    }
-
     @ForceInline
     final
     void intoMemorySegment0(MemorySegment ms, long offset) {
@@ -4247,9 +3861,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 this,
                 (MemorySegmentProxy) ms, offset,
                 (msp, off, v) -> {
-                    var layout = ValueLayout.JAVA_SHORT.withBitAlignment(8);
-                    v.stLongOp((MemorySegment) msp, off,
-                            (ms_, o, i, e) -> ms_.set(layout, o + i * 2L, e));
+                    v.stLongOp((MemorySegment) msp, off, ShortVector::memorySegmentSet);
                 });
     }
 
@@ -4266,9 +3878,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 this, m,
                 (MemorySegmentProxy) ms, offset,
                 (msp, off, v, vm) -> {
-                    var layout = ValueLayout.JAVA_SHORT.withBitAlignment(8);
-                    v.stLongOp((MemorySegment) msp, off, vm,
-                            (ms_, o, i, e) -> ms_.set(layout, o + i * 2L, e));
+                    v.stLongOp((MemorySegment) msp, off, vm, ShortVector::memorySegmentSet);
                 });
     }
 
@@ -4641,16 +4251,16 @@ public abstract class ShortVector extends AbstractVector<Short> {
 
         /*package-private*/
         @ForceInline
-        <M> ShortVector ldLongOp(M memory, long offset,
-                                      FLdLongOp<M> f) {
+        ShortVector ldLongOp(MemorySegment memory, long offset,
+                                      FLdLongOp f) {
             return dummyVector().ldLongOp(memory, offset, f);
         }
 
         /*package-private*/
         @ForceInline
-        <M> ShortVector ldLongOp(M memory, long offset,
+        ShortVector ldLongOp(MemorySegment memory, long offset,
                                       VectorMask<Short> m,
-                                      FLdLongOp<M> f) {
+                                      FLdLongOp f) {
             return dummyVector().ldLongOp(memory, offset, m, f);
         }
 
@@ -4670,15 +4280,15 @@ public abstract class ShortVector extends AbstractVector<Short> {
 
         /*package-private*/
         @ForceInline
-        <M> void stLongOp(M memory, long offset, FStLongOp<M> f) {
+        void stLongOp(MemorySegment memory, long offset, FStLongOp f) {
             dummyVector().stLongOp(memory, offset, f);
         }
 
         /*package-private*/
         @ForceInline
-        <M> void stLongOp(M memory, long offset,
+        void stLongOp(MemorySegment memory, long offset,
                       AbstractMask<Short> m,
-                      FStLongOp<M> f) {
+                      FStLongOp f) {
             dummyVector().stLongOp(memory, offset, m, f);
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,6 +23,7 @@
 
 package org.openjdk.bench.jdk.incubator.vector.crypto;
 
+import jdk.incubator.foreign.MemorySegment;
 import org.openjdk.jmh.annotations.*;
 import jdk.incubator.vector.*;
 
@@ -288,9 +289,10 @@ public class Poly1305Bench {
             IntVector r5Up3_int = rUp3_int.mul(5);
             IntVector r5Up4_int = rUp4_int.mul(5);
 
-            LongVector longMsg0 = LongVector.fromByteArray(longSpecies, msg, 0, ByteOrder.LITTLE_ENDIAN);
+            MemorySegment msMsg = MemorySegment.ofArray(msg);
+            LongVector longMsg0 = LongVector.fromMemorySegment(longSpecies, msMsg, 0, ByteOrder.LITTLE_ENDIAN);
             LongVector longMsg1 =
-                LongVector.fromByteArray(longSpecies, msg, vectorWidth * 8, ByteOrder.LITTLE_ENDIAN);
+                LongVector.fromMemorySegment(longSpecies, msMsg, vectorWidth * 8L, ByteOrder.LITTLE_ENDIAN);
 
             LongVector inAlign0 =
             longMsg0.rearrange(inShuffle0).blend(longMsg1.rearrange(inShuffle0), inMask);
@@ -373,9 +375,9 @@ public class Poly1305Bench {
                 // fromByteArray and add next part of message
                 int start = parBlockCount * (i + 1);
 
-                longMsg0 = LongVector.fromByteArray(longSpecies, msg, start, ByteOrder.LITTLE_ENDIAN);
-                longMsg1 = LongVector.fromByteArray(longSpecies, msg,
-                    start + vectorWidth * 8, ByteOrder.LITTLE_ENDIAN);
+                longMsg0 = LongVector.fromMemorySegment(longSpecies, msMsg, start, ByteOrder.LITTLE_ENDIAN);
+                longMsg1 = LongVector.fromMemorySegment(longSpecies, msMsg,
+                    start + vectorWidth * 8L, ByteOrder.LITTLE_ENDIAN);
 
                 inAlign0 =
                         longMsg0.rearrange(inShuffle0).blend(longMsg1.rearrange(inShuffle0), inMask);

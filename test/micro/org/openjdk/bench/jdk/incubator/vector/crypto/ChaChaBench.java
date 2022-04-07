@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,7 @@
 package org.openjdk.bench.jdk.incubator.vector.crypto;
 
 import org.openjdk.jmh.annotations.*;
+import jdk.incubator.foreign.MemorySegment;
 import jdk.incubator.vector.*;
 
 import java.nio.ByteOrder;
@@ -43,9 +44,9 @@ public class ChaChaBench {
     private ChaChaVector cc20_S256 = makeCC20(VectorShape.S_256_BIT);
     private ChaChaVector cc20_S512 = makeCC20(VectorShape.S_512_BIT);
  
-    private byte[] in;
-    private byte[] out;
-    
+    private MemorySegment in;
+    private MemorySegment out;
+
     private byte[] key = new byte[32];
     private byte[] nonce = new byte[12];
     private long counter = 0;
@@ -58,9 +59,8 @@ public class ChaChaBench {
 
     @Setup
     public void setup() {
-        
-        in = new byte[dataSize];
-        out = new byte[dataSize];
+        in = MemorySegment.ofArray(new byte[dataSize]);
+        out = MemorySegment.ofArray(new byte[dataSize]);
     }
 
     @Benchmark
@@ -221,7 +221,7 @@ public class ChaChaBench {
         }
 
         public void chacha20(byte[] key, byte[] nonce, long counter,
-            byte[] in, byte[] out) {
+            MemorySegment in, MemorySegment out) {
 
             makeState(key, nonce, counter, state);
 
@@ -233,7 +233,7 @@ public class ChaChaBench {
             IntVector sd = IntVector.fromArray(intSpecies, state, 3 * len);
 
             int stateLenBytes = state.length * 4;
-            int numStates = (in.length + stateLenBytes - 1) / stateLenBytes;
+            int numStates = (((int) in.byteSize()) + stateLenBytes - 1) / stateLenBytes;
             for (int j = 0; j < numStates; j++){
 
                 IntVector a = sa;
@@ -340,15 +340,15 @@ public class ChaChaBench {
 
                 // xor keystream with input
                 int inOff = stateLenBytes * j;
-                IntVector ina = IntVector.fromByteArray(intSpecies, in, inOff, ByteOrder.LITTLE_ENDIAN);
-                IntVector inb = IntVector.fromByteArray(intSpecies, in, inOff + 4 * len, ByteOrder.LITTLE_ENDIAN);
-                IntVector inc = IntVector.fromByteArray(intSpecies, in, inOff + 8 * len, ByteOrder.LITTLE_ENDIAN);
-                IntVector ind = IntVector.fromByteArray(intSpecies, in, inOff + 12 * len, ByteOrder.LITTLE_ENDIAN);
+                IntVector ina = IntVector.fromMemorySegment(intSpecies, in, inOff, ByteOrder.LITTLE_ENDIAN);
+                IntVector inb = IntVector.fromMemorySegment(intSpecies, in, inOff + 4L * len, ByteOrder.LITTLE_ENDIAN);
+                IntVector inc = IntVector.fromMemorySegment(intSpecies, in, inOff + 8L * len, ByteOrder.LITTLE_ENDIAN);
+                IntVector ind = IntVector.fromMemorySegment(intSpecies, in, inOff + 12L * len, ByteOrder.LITTLE_ENDIAN);
 
-                ina.lanewise(VectorOperators.XOR, a).intoByteArray(out, inOff, ByteOrder.LITTLE_ENDIAN);
-                inb.lanewise(VectorOperators.XOR, b).intoByteArray(out, inOff + 4 * len, ByteOrder.LITTLE_ENDIAN);
-                inc.lanewise(VectorOperators.XOR, c).intoByteArray(out, inOff + 8 * len, ByteOrder.LITTLE_ENDIAN);
-                ind.lanewise(VectorOperators.XOR, d).intoByteArray(out, inOff + 12 * len, ByteOrder.LITTLE_ENDIAN);
+                ina.lanewise(VectorOperators.XOR, a).intoMemorySegment(out, inOff, ByteOrder.LITTLE_ENDIAN);
+                inb.lanewise(VectorOperators.XOR, b).intoMemorySegment(out, inOff + 4L * len, ByteOrder.LITTLE_ENDIAN);
+                inc.lanewise(VectorOperators.XOR, c).intoMemorySegment(out, inOff + 8L * len, ByteOrder.LITTLE_ENDIAN);
+                ind.lanewise(VectorOperators.XOR, d).intoMemorySegment(out, inOff + 12L * len, ByteOrder.LITTLE_ENDIAN);
 
                 // increment counter
                 sd = sd.add(counterAdd);
@@ -385,7 +385,7 @@ public class ChaChaBench {
         in = Arrays.copyOf(in, length);
         byte[] out = new byte[length];
 
-        cc20.chacha20(key, nonce, counter, in, out);
+        cc20.chacha20(key, nonce, counter, MemorySegment.ofArray(in), MemorySegment.ofArray(out));
 
         byte[] actOut = new byte[expOut.length];
         System.arraycopy(out, 0, actOut, 0, expOut.length);

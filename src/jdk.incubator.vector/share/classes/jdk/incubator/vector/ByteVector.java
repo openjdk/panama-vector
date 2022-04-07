@@ -24,13 +24,10 @@
  */
 package jdk.incubator.vector;
 
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.ReadOnlyBufferException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
 import jdk.incubator.foreign.MemorySegment;
 import jdk.incubator.foreign.ValueLayout;
@@ -59,6 +56,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     }
 
     static final int FORBID_OPCODE_KIND = VO_ONLYFP;
+
+    static final ValueLayout.OfByte ELEMENT_LAYOUT = ValueLayout.JAVA_BYTE.withBitAlignment(8);
 
     @ForceInline
     static int opCode(Operator op) {
@@ -355,15 +354,15 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     }
 
     /*package-private*/
-    interface FLdLongOp<M> {
-        byte apply(M memory, long offset, int i);
+    interface FLdLongOp {
+        byte apply(MemorySegment memory, long offset, int i);
     }
 
     /*package-private*/
     @ForceInline
     final
-    <M> ByteVector ldLongOp(M memory, long offset,
-                                  FLdLongOp<M> f) {
+    ByteVector ldLongOp(MemorySegment memory, long offset,
+                                  FLdLongOp f) {
         //dummy; no vec = vec();
         byte[] res = new byte[length()];
         for (int i = 0; i < res.length; i++) {
@@ -375,9 +374,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     /*package-private*/
     @ForceInline
     final
-    <M> ByteVector ldLongOp(M memory, long offset,
+    ByteVector ldLongOp(MemorySegment memory, long offset,
                                   VectorMask<Byte> m,
-                                  FLdLongOp<M> f) {
+                                  FLdLongOp f) {
         //byte[] vec = vec();
         byte[] res = new byte[length()];
         boolean[] mbits = ((AbstractMask<Byte>)m).getBits();
@@ -389,34 +388,8 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         return vectorFactory(res);
     }
 
-    static ByteVector expandHelper(Vector<Byte> v, VectorMask<Byte> m) {
-        VectorSpecies<Byte> vsp = m.vectorSpecies();
-        ByteVector r  = (ByteVector) vsp.zero();
-        ByteVector vi = (ByteVector) v;
-        if (m.allTrue()) {
-            return vi;
-        }
-        for (int i = 0, j = 0; i < vsp.length(); i++) {
-            if (m.laneIsSet(i)) {
-                r = r.withLane(i, vi.lane(j++));
-            }
-        }
-        return r;
-    }
-
-    static ByteVector compressHelper(Vector<Byte> v, VectorMask<Byte> m) {
-        VectorSpecies<Byte> vsp = m.vectorSpecies();
-        ByteVector r  = (ByteVector) vsp.zero();
-        ByteVector vi = (ByteVector) v;
-        if (m.allTrue()) {
-            return vi;
-        }
-        for (int i = 0, j = 0; i < vsp.length(); i++) {
-            if (m.laneIsSet(i)) {
-                r = r.withLane(j++, vi.lane(i));
-            }
-        }
-        return r;
+    static byte memorySegmentGet(MemorySegment ms, long o, int i) {
+        return ms.get(ELEMENT_LAYOUT, o + i * 1L);
     }
 
     interface FStOp<M> {
@@ -449,15 +422,15 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         }
     }
 
-    interface FStLongOp<M> {
-        void apply(M memory, long offset, int i, byte a);
+    interface FStLongOp {
+        void apply(MemorySegment memory, long offset, int i, byte a);
     }
 
     /*package-private*/
     @ForceInline
     final
-    <M> void stLongOp(M memory, long offset,
-                  FStLongOp<M> f) {
+    void stLongOp(MemorySegment memory, long offset,
+                  FStLongOp f) {
         byte[] vec = vec();
         for (int i = 0; i < vec.length; i++) {
             f.apply(memory, offset, i, vec[i]);
@@ -467,9 +440,9 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     /*package-private*/
     @ForceInline
     final
-    <M> void stLongOp(M memory, long offset,
+    void stLongOp(MemorySegment memory, long offset,
                   VectorMask<Byte> m,
-                  FStLongOp<M> f) {
+                  FStLongOp f) {
         byte[] vec = vec();
         boolean[] mbits = ((AbstractMask<Byte>)m).getBits();
         for (int i = 0; i < vec.length; i++) {
@@ -477,6 +450,10 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 f.apply(memory, offset, i, vec[i]);
             }
         }
+    }
+
+    static void memorySegmentSet(MemorySegment ms, long o, int i, byte e) {
+        ms.set(ELEMENT_LAYOUT, o + i * 1L, e);
     }
 
     // Binary test
@@ -527,6 +504,36 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     @ForceInline
     static byte fromBits(long bits) {
         return ((byte)bits);
+    }
+
+    static ByteVector expandHelper(Vector<Byte> v, VectorMask<Byte> m) {
+        VectorSpecies<Byte> vsp = m.vectorSpecies();
+        ByteVector r  = (ByteVector) vsp.zero();
+        ByteVector vi = (ByteVector) v;
+        if (m.allTrue()) {
+            return vi;
+        }
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
+            if (m.laneIsSet(i)) {
+                r = r.withLane(i, vi.lane(j++));
+            }
+        }
+        return r;
+    }
+
+    static ByteVector compressHelper(Vector<Byte> v, VectorMask<Byte> m) {
+        VectorSpecies<Byte> vsp = m.vectorSpecies();
+        ByteVector r  = (ByteVector) vsp.zero();
+        ByteVector vi = (ByteVector) v;
+        if (m.allTrue()) {
+            return vi;
+        }
+        for (int i = 0, j = 0; i < vsp.length(); i++) {
+            if (m.laneIsSet(i)) {
+                r = r.withLane(j++, vi.lane(i));
+            }
+        }
+        return r;
     }
 
     // Static factories (other than memory operations)
@@ -2954,90 +2961,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     }
 
     /**
-     * Loads a vector from a byte array starting at an offset.
-     * Bytes are composed into primitive lane elements according
-     * to the specified byte order.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it returns the result of calling
-     * {@link #fromByteBuffer(VectorSpecies,ByteBuffer,int,ByteOrder,VectorMask)
-     * fromByteBuffer()} as follows:
-     * <pre>{@code
-     * var bb = ByteBuffer.wrap(a);
-     * var m = species.maskAll(true);
-     * return fromByteBuffer(species, bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param species species of desired vector
-     * @param a the byte array
-     * @param offset the offset into the array
-     * @param bo the intended byte order
-     * @return a vector loaded from a byte array
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*ESIZE < 0}
-     *         or {@code offset+(N+1)*ESIZE > a.length}
-     *         for any lane {@code N} in the vector
-     */
-    @ForceInline
-    public static
-    ByteVector fromByteArray(VectorSpecies<Byte> species,
-                                       byte[] a, int offset,
-                                       ByteOrder bo) {
-        offset = checkFromIndexSize(offset, species.vectorByteSize(), a.length);
-        ByteSpecies vsp = (ByteSpecies) species;
-        return vsp.dummyVector().fromByteArray0(a, offset).maybeSwap(bo);
-    }
-
-    /**
-     * Loads a vector from a byte array starting at an offset
-     * and using a mask.
-     * Lanes where the mask is unset are filled with the default
-     * value of {@code byte} (zero).
-     * Bytes are composed into primitive lane elements according
-     * to the specified byte order.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it returns the result of calling
-     * {@link #fromByteBuffer(VectorSpecies,ByteBuffer,int,ByteOrder,VectorMask)
-     * fromByteBuffer()} as follows:
-     * <pre>{@code
-     * var bb = ByteBuffer.wrap(a);
-     * return fromByteBuffer(species, bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param species species of desired vector
-     * @param a the byte array
-     * @param offset the offset into the array
-     * @param bo the intended byte order
-     * @param m the mask controlling lane selection
-     * @return a vector loaded from a byte array
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*ESIZE < 0}
-     *         or {@code offset+(N+1)*ESIZE > a.length}
-     *         for any lane {@code N} in the vector
-     *         where the mask is set
-     */
-    @ForceInline
-    public static
-    ByteVector fromByteArray(VectorSpecies<Byte> species,
-                                       byte[] a, int offset,
-                                       ByteOrder bo,
-                                       VectorMask<Byte> m) {
-        ByteSpecies vsp = (ByteSpecies) species;
-        if (offset >= 0 && offset <= (a.length - species.vectorByteSize())) {
-            return vsp.dummyVector().fromByteArray0(a, offset, m).maybeSwap(bo);
-        }
-
-        // FIXME: optimize
-        checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
-        ByteBuffer wb = wrapper(a, bo);
-        return vsp.ldOp(wb, offset, (AbstractMask<Byte>)m,
-                   (wb_, o, i)  -> wb_.get(o + i * 1));
-    }
-
-    /**
      * Loads a vector from an array of type {@code byte[]}
      * starting at an offset.
      * For each vector lane, where {@code N} is the vector lane index, the
@@ -3343,98 +3266,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     }
 
     /**
-     * Loads a vector from a {@linkplain ByteBuffer byte buffer}
-     * starting at an offset into the byte buffer.
-     * Bytes are composed into primitive lane elements according
-     * to the specified byte order.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * This method behaves as if it returns the result of calling
-     * {@link #fromByteBuffer(VectorSpecies,ByteBuffer,int,ByteOrder,VectorMask)
-     * fromByteBuffer()} as follows:
-     * <pre>{@code
-     * var m = species.maskAll(true);
-     * return fromByteBuffer(species, bb, offset, bo, m);
-     * }</pre>
-     *
-     * @param species species of desired vector
-     * @param bb the byte buffer
-     * @param offset the offset into the byte buffer
-     * @param bo the intended byte order
-     * @return a vector loaded from a byte buffer
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*1 < 0}
-     *         or {@code offset+N*1 >= bb.limit()}
-     *         for any lane {@code N} in the vector
-     */
-    @ForceInline
-    public static
-    ByteVector fromByteBuffer(VectorSpecies<Byte> species,
-                                        ByteBuffer bb, int offset,
-                                        ByteOrder bo) {
-        offset = checkFromIndexSize(offset, species.vectorByteSize(), bb.limit());
-        ByteSpecies vsp = (ByteSpecies) species;
-        return vsp.dummyVector().fromByteBuffer0(bb, offset).maybeSwap(bo);
-    }
-
-    /**
-     * Loads a vector from a {@linkplain ByteBuffer byte buffer}
-     * starting at an offset into the byte buffer
-     * and using a mask.
-     * Lanes where the mask is unset are filled with the default
-     * value of {@code byte} (zero).
-     * Bytes are composed into primitive lane elements according
-     * to the specified byte order.
-     * The vector is arranged into lanes according to
-     * <a href="Vector.html#lane-order">memory ordering</a>.
-     * <p>
-     * The following pseudocode illustrates the behavior:
-     * <pre>{@code
-     * ByteBuffer eb = bb.duplicate()
-     *     .position(offset);
-     * byte[] ar = new byte[species.length()];
-     * for (int n = 0; n < ar.length; n++) {
-     *     if (m.laneIsSet(n)) {
-     *         ar[n] = eb.get(n);
-     *     }
-     * }
-     * ByteVector r = ByteVector.fromArray(species, ar, 0);
-     * }</pre>
-     * @implNote
-     * The byte order argument is ignored.
-     *
-     * @param species species of desired vector
-     * @param bb the byte buffer
-     * @param offset the offset into the byte buffer
-     * @param bo the intended byte order
-     * @param m the mask controlling lane selection
-     * @return a vector loaded from a byte buffer
-     * @throws IndexOutOfBoundsException
-     *         if {@code offset+N*1 < 0}
-     *         or {@code offset+N*1 >= bb.limit()}
-     *         for any lane {@code N} in the vector
-     *         where the mask is set
-     */
-    @ForceInline
-    public static
-    ByteVector fromByteBuffer(VectorSpecies<Byte> species,
-                                        ByteBuffer bb, int offset,
-                                        ByteOrder bo,
-                                        VectorMask<Byte> m) {
-        ByteSpecies vsp = (ByteSpecies) species;
-        if (offset >= 0 && offset <= (bb.limit() - species.vectorByteSize())) {
-            return vsp.dummyVector().fromByteBuffer0(bb, offset, m).maybeSwap(bo);
-        }
-
-        // FIXME: optimize
-        checkMaskFromIndexSize(offset, vsp, m, 1, bb.limit());
-        ByteBuffer wb = wrapper(bb, bo);
-        return vsp.ldOp(wb, offset, (AbstractMask<Byte>)m,
-                   (wb_, o, i)  -> wb_.get(o + i * 1));
-    }
-
-    /**
      * Loads a vector from a {@linkplain MemorySegment memory segment}
      * starting at an offset into the memory segment.
      * Bytes are composed into primitive lane elements according
@@ -3528,9 +3359,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
 
         // FIXME: optimize
         checkMaskFromIndexSize(offset, vsp, m, 1, ms.byteSize());
-        var layout = ValueLayout.JAVA_BYTE.withBitAlignment(8);
-        return vsp.ldLongOp(ms, offset, (AbstractMask<Byte>)m,
-                   (ms_, o, i)  -> ms_.get(layout, o + i * 1L));
+        return vsp.ldLongOp(ms, offset, m, ByteVector::memorySegmentGet);
     }
 
     // Memory store operations
@@ -3853,72 +3682,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
     @Override
     @ForceInline
     public final
-    void intoByteArray(byte[] a, int offset,
-                       ByteOrder bo) {
-        offset = checkFromIndexSize(offset, byteSize(), a.length);
-        maybeSwap(bo).intoByteArray0(a, offset);
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    void intoByteArray(byte[] a, int offset,
-                       ByteOrder bo,
-                       VectorMask<Byte> m) {
-        if (m.allTrue()) {
-            intoByteArray(a, offset, bo);
-        } else {
-            ByteSpecies vsp = vspecies();
-            checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
-            maybeSwap(bo).intoByteArray0(a, offset, m);
-        }
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    void intoByteBuffer(ByteBuffer bb, int offset,
-                        ByteOrder bo) {
-        if (ScopedMemoryAccess.isReadOnly(bb)) {
-            throw new ReadOnlyBufferException();
-        }
-        offset = checkFromIndexSize(offset, byteSize(), bb.limit());
-        maybeSwap(bo).intoByteBuffer0(bb, offset);
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
-    void intoByteBuffer(ByteBuffer bb, int offset,
-                        ByteOrder bo,
-                        VectorMask<Byte> m) {
-        if (m.allTrue()) {
-            intoByteBuffer(bb, offset, bo);
-        } else {
-            if (bb.isReadOnly()) {
-                throw new ReadOnlyBufferException();
-            }
-            ByteSpecies vsp = vspecies();
-            checkMaskFromIndexSize(offset, vsp, m, 1, bb.limit());
-            maybeSwap(bo).intoByteBuffer0(bb, offset, m);
-        }
-    }
-
-    /**
-     * {@inheritDoc} <!--workaround-->
-     */
-    @Override
-    @ForceInline
-    public final
     void intoMemorySegment(MemorySegment ms, long offset,
                            ByteOrder bo) {
         if (ms.isReadOnly()) {
@@ -4035,77 +3798,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                                         (arr_, off_, i) -> (byte) (arr_[off_ + i] ? 1 : 0)));
     }
 
-    @Override
-    abstract
-    ByteVector fromByteArray0(byte[] a, int offset);
-    @ForceInline
-    final
-    ByteVector fromByteArray0Template(byte[] a, int offset) {
-        ByteSpecies vsp = vspecies();
-        return VectorSupport.load(
-            vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-            a, byteArrayAddress(a, offset),
-            a, offset, vsp,
-            (arr, off, s) -> {
-                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
-                return s.ldOp(wb, (int) off,
-                        (wb_, o, i) -> wb_.get(o + i * 1));
-            });
-    }
-
-    abstract
-    ByteVector fromByteArray0(byte[] a, int offset, VectorMask<Byte> m);
-    @ForceInline
-    final
-    <M extends VectorMask<Byte>>
-    ByteVector fromByteArray0Template(Class<M> maskClass, byte[] a, int offset, M m) {
-        ByteSpecies vsp = vspecies();
-        m.check(vsp);
-        return VectorSupport.loadMasked(
-            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-            a, byteArrayAddress(a, offset), m,
-            a, offset, vsp,
-            (arr, off, s, vm) -> {
-                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
-                return s.ldOp(wb, (int) off, vm,
-                        (wb_, o, i) -> wb_.get(o + i * 1));
-            });
-    }
-
-    abstract
-    ByteVector fromByteBuffer0(ByteBuffer bb, int offset);
-    @ForceInline
-    final
-    ByteVector fromByteBuffer0Template(ByteBuffer bb, int offset) {
-        ByteSpecies vsp = vspecies();
-        return ScopedMemoryAccess.loadFromByteBuffer(
-                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                bb, offset, vsp,
-                (buf, off, s) -> {
-                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    return s.ldOp(wb, (int) off,
-                            (wb_, o, i) -> wb_.get(o + i * 1));
-                });
-    }
-
-    abstract
-    ByteVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Byte> m);
-    @ForceInline
-    final
-    <M extends VectorMask<Byte>>
-    ByteVector fromByteBuffer0Template(Class<M> maskClass, ByteBuffer bb, int offset, M m) {
-        ByteSpecies vsp = vspecies();
-        m.check(vsp);
-        return ScopedMemoryAccess.loadFromByteBufferMasked(
-                vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-                bb, offset, m, vsp,
-                (buf, off, s, vm) -> {
-                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    return s.ldOp(wb, (int) off, vm,
-                            (wb_, o, i) -> wb_.get(o + i * 1));
-                });
-    }
-
     abstract
     ByteVector fromMemorySegment0(MemorySegment bb, long offset);
     @ForceInline
@@ -4116,9 +3808,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
                 (MemorySegmentProxy) ms, offset, vsp,
                 (msp, off, s) -> {
-                    var layout = ValueLayout.JAVA_BYTE.withBitAlignment(8);
-                    return s.ldLongOp((MemorySegment) msp, off,
-                            (ms_, o, i) -> ms_.get(layout, o + i * 1L));
+                    return s.ldLongOp((MemorySegment) msp, off, ByteVector::memorySegmentGet);
                 });
     }
 
@@ -4134,9 +3824,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
                 (MemorySegmentProxy) ms, offset, m, vsp,
                 (msp, off, s, vm) -> {
-                    var layout = ValueLayout.JAVA_BYTE.withBitAlignment(8);
-                    return s.ldLongOp((MemorySegment) msp, off, vm,
-                            (ms_, o, i) -> ms_.get(layout, o + i * 1L));
+                    return s.ldLongOp((MemorySegment) msp, off, vm, ByteVector::memorySegmentGet);
                 });
     }
 
@@ -4195,74 +3883,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                       (arr_, off_, i, e) -> arr_[off_ + i] = (e & 1) != 0));
     }
 
-    abstract
-    void intoByteArray0(byte[] a, int offset);
-    @ForceInline
-    final
-    void intoByteArray0Template(byte[] a, int offset) {
-        ByteSpecies vsp = vspecies();
-        VectorSupport.store(
-            vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-            a, byteArrayAddress(a, offset),
-            this, a, offset,
-            (arr, off, v) -> {
-                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
-                v.stOp(wb, (int) off,
-                        (tb_, o, i, e) -> tb_.put(o + i * 1, e));
-            });
-    }
-
-    abstract
-    void intoByteArray0(byte[] a, int offset, VectorMask<Byte> m);
-    @ForceInline
-    final
-    <M extends VectorMask<Byte>>
-    void intoByteArray0Template(Class<M> maskClass, byte[] a, int offset, M m) {
-        ByteSpecies vsp = vspecies();
-        m.check(vsp);
-        VectorSupport.storeMasked(
-            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-            a, byteArrayAddress(a, offset),
-            this, m, a, offset,
-            (arr, off, v, vm) -> {
-                ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
-                v.stOp(wb, (int) off, vm,
-                        (tb_, o, i, e) -> tb_.put(o + i * 1, e));
-            });
-    }
-
-    @ForceInline
-    final
-    void intoByteBuffer0(ByteBuffer bb, int offset) {
-        ByteSpecies vsp = vspecies();
-        ScopedMemoryAccess.storeIntoByteBuffer(
-                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                this, bb, offset,
-                (buf, off, v) -> {
-                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    v.stOp(wb, (int) off,
-                            (wb_, o, i, e) -> wb_.put(o + i * 1, e));
-                });
-    }
-
-    abstract
-    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Byte> m);
-    @ForceInline
-    final
-    <M extends VectorMask<Byte>>
-    void intoByteBuffer0Template(Class<M> maskClass, ByteBuffer bb, int offset, M m) {
-        ByteSpecies vsp = vspecies();
-        m.check(vsp);
-        ScopedMemoryAccess.storeIntoByteBufferMasked(
-                vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-                this, m, bb, offset,
-                (buf, off, v, vm) -> {
-                    ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
-                    v.stOp(wb, (int) off, vm,
-                            (wb_, o, i, e) -> wb_.put(o + i * 1, e));
-                });
-    }
-
     @ForceInline
     final
     void intoMemorySegment0(MemorySegment ms, long offset) {
@@ -4272,9 +3892,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 this,
                 (MemorySegmentProxy) ms, offset,
                 (msp, off, v) -> {
-                    var layout = ValueLayout.JAVA_BYTE.withBitAlignment(8);
-                    v.stLongOp((MemorySegment) msp, off,
-                            (ms_, o, i, e) -> ms_.set(layout, o + i * 1L, e));
+                    v.stLongOp((MemorySegment) msp, off, ByteVector::memorySegmentSet);
                 });
     }
 
@@ -4291,9 +3909,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 this, m,
                 (MemorySegmentProxy) ms, offset,
                 (msp, off, v, vm) -> {
-                    var layout = ValueLayout.JAVA_BYTE.withBitAlignment(8);
-                    v.stLongOp((MemorySegment) msp, off, vm,
-                            (ms_, o, i, e) -> ms_.set(layout, o + i * 1L, e));
+                    v.stLongOp((MemorySegment) msp, off, vm, ByteVector::memorySegmentSet);
                 });
     }
 
@@ -4641,16 +4257,16 @@ public abstract class ByteVector extends AbstractVector<Byte> {
 
         /*package-private*/
         @ForceInline
-        <M> ByteVector ldLongOp(M memory, long offset,
-                                      FLdLongOp<M> f) {
+        ByteVector ldLongOp(MemorySegment memory, long offset,
+                                      FLdLongOp f) {
             return dummyVector().ldLongOp(memory, offset, f);
         }
 
         /*package-private*/
         @ForceInline
-        <M> ByteVector ldLongOp(M memory, long offset,
+        ByteVector ldLongOp(MemorySegment memory, long offset,
                                       VectorMask<Byte> m,
-                                      FLdLongOp<M> f) {
+                                      FLdLongOp f) {
             return dummyVector().ldLongOp(memory, offset, m, f);
         }
 
@@ -4670,15 +4286,15 @@ public abstract class ByteVector extends AbstractVector<Byte> {
 
         /*package-private*/
         @ForceInline
-        <M> void stLongOp(M memory, long offset, FStLongOp<M> f) {
+        void stLongOp(MemorySegment memory, long offset, FStLongOp f) {
             dummyVector().stLongOp(memory, offset, f);
         }
 
         /*package-private*/
         @ForceInline
-        <M> void stLongOp(M memory, long offset,
+        void stLongOp(MemorySegment memory, long offset,
                       AbstractMask<Byte> m,
-                      FStLongOp<M> f) {
+                      FStLongOp f) {
             dummyVector().stLongOp(memory, offset, m, f);
         }
 

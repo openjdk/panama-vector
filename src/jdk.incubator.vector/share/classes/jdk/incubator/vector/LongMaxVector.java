@@ -24,7 +24,6 @@
  */
 package jdk.incubator.vector;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
@@ -855,34 +854,6 @@ final class LongMaxVector extends LongVector {
     @ForceInline
     @Override
     final
-    LongVector fromByteArray0(byte[] a, int offset) {
-        return super.fromByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    LongVector fromByteArray0(byte[] a, int offset, VectorMask<Long> m) {
-        return super.fromByteArray0Template(LongMaxMask.class, a, offset, (LongMaxMask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    LongVector fromByteBuffer0(ByteBuffer bb, int offset) {
-        return super.fromByteBuffer0Template(bb, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    LongVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Long> m) {
-        return super.fromByteBuffer0Template(LongMaxMask.class, bb, offset, (LongMaxMask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
     LongVector fromMemorySegment0(MemorySegment ms, long offset) {
         return super.fromMemorySegment0Template(ms, offset);  // specialize
     }
@@ -915,27 +886,6 @@ final class LongMaxVector extends LongVector {
         super.intoArray0Template(LongMaxMask.class, a, offset, indexMap, mapOffset, (LongMaxMask) m);
     }
 
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset) {
-        super.intoByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset, VectorMask<Long> m) {
-        super.intoByteArray0Template(LongMaxMask.class, a, offset, (LongMaxMask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Long> m) {
-        super.intoByteBuffer0Template(LongMaxMask.class, bb, offset, (LongMaxMask) m);
-    }
 
     @ForceInline
     @Override
