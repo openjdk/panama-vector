@@ -72,8 +72,8 @@ public class MemorySegmentVectorAccess {
     nativeIn = MemorySegment.allocateNative(size, ResourceScope.newImplicitScope());
     nativeOut = MemorySegment.allocateNative(size, ResourceScope.newImplicitScope());
 
-    byte[] byteIn = new byte[size];
-    byte[] byteOut = new byte[size];
+    byteIn = new byte[size];
+    byteOut = new byte[size];
 
     heapIn = MemorySegment.ofArray(byteIn);
     heapOut = MemorySegment.ofArray(byteOut);
@@ -86,23 +86,23 @@ public class MemorySegmentVectorAccess {
   }
 
   @Benchmark
-  public void directBuffers() {
+  public void directSegments() {
     copyMemory(nativeIn, nativeOut);
   }
 
   @Benchmark
-  public void heapBuffers() {
+  public void heapSegments() {
     copyMemory(heapIn, heapOut);
   }
 
   @Benchmark
-  public void pollutedBuffers2() {
+  public void pollutedSegments2() {
     copyIntoNotInlined(nativeIn, nativeOut);
     copyIntoNotInlined(heapIn, heapOut);
   }
 
   @Benchmark
-  public void pollutedBuffers3() {
+  public void pollutedSegments3() {
     copyIntoNotInlined(nativeIn, nativeOut);
     copyIntoNotInlined(heapIn, heapOut);
 
@@ -111,7 +111,7 @@ public class MemorySegmentVectorAccess {
   }
 
   @Benchmark
-  public void pollutedBuffers4() {
+  public void pollutedSegments4() {
     copyIntoNotInlined(nativeIn, heapOut); // Pollute if unswitch on 2nd param
     copyIntoNotInlined(heapIn, heapOut);
 
@@ -123,7 +123,7 @@ public class MemorySegmentVectorAccess {
   boolean readOnlyException;
 
   @Benchmark
-  public void pollutedBuffers5() {
+  public void pollutedSegments5() {
     copyIntoNotInlined(nativeIn, heapOut);
     copyIntoNotInlined(heapIn, heapOut);
 
