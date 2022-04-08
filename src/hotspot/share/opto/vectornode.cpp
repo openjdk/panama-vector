@@ -151,9 +151,6 @@ int VectorNode::opcode(int sopc, BasicType bt) {
   case Op_SqrtD:
     return (bt == T_DOUBLE ? Op_SqrtVD : 0);
   case Op_PopCountI:
-    case T_BYTE:
-    case T_SHORT:
-    case T_INT:
     return Op_PopCountVI;
   case Op_PopCountL:
     return Op_PopCountVL;

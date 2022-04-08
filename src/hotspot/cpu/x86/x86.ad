@@ -2063,7 +2063,7 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
       return true;
 
     case Op_PopCountVL:
-      if ((bt == T_LONG) && !VM_Version::supports_avx512_vpopcntdq()) {
+      if (!VM_Version::supports_avx512_vpopcntdq()) {
         return false;
       }
       return true;
@@ -8711,7 +8711,13 @@ instruct vpopcountL_avx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, vec xtmp3, r
     // should be succeeded by its corresponding vector IR and following
     // special handling should be removed.
     if (bt == T_INT) {
-      __ evpmovqd($dst$$XMMRegister, $dst$$XMMRegister, vlen_enc);
+      if (VM_Version::supports_avx512vl()) {
+        __ evpmovqd($dst$$XMMRegister, $dst$$XMMRegister, vlen_enc);
+      } else {
+        assert(VM_Version::supports_avx2(), "");
+        __ vpshufd($dst$$XMMRegister, $dst$$XMMRegister, 8, vlen_enc);
+        __ vpermq($dst$$XMMRegister, $dst$$XMMRegister, 8, vlen_enc);
+      }
     }
   %}
   ins_pipe( pipe_slow );

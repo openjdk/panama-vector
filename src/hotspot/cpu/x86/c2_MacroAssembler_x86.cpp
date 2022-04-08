@@ -4433,7 +4433,7 @@ void C2_MacroAssembler::vector_maskall_operation(KRegister dst, Register src, in
   }
 }
 
-void C2_MacroAssembler::vbroadcastd(XMMRegister dst, Register rtmp, int imm32, int vec_enc) {
+void C2_MacroAssembler::vbroadcastd(XMMRegister dst, int imm32, Register rtmp, int vec_enc) {
   if (VM_Version::supports_avx512vl()) {
     movl(rtmp, imm32);
     evpbroadcastd(dst, rtmp, vec_enc);
@@ -4474,9 +4474,23 @@ void C2_MacroAssembler::vbroadcastd(XMMRegister dst, Register rtmp, int imm32, i
 //  g. Pack the bitset count of quadwords back to double word.
 //  h. Unpacking and packing operations are not needed for 64bit vector lane.
 
+void C2_MacroAssembler::vector_popcount_byte(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                             XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  assert((vec_enc == Assembler::AVX_512bit && VM_Version::supports_avx512bw()) || VM_Version::supports_avx2(), "");
+  vbroadcastd(xtmp1, 0x0F0F0F0F, rtmp, vec_enc);
+  vpsrlw(dst, src, 4, vec_enc);
+  vpand(dst, dst, xtmp1, vec_enc);
+  vpand(xtmp1, src, xtmp1, vec_enc);
+  vmovdqu(xtmp2, ExternalAddress(StubRoutines::x86::vector_popcount_lut()), rtmp, vec_enc);
+  vpshufb(xtmp1, xtmp2, xtmp1, vec_enc);
+  vpshufb(dst, xtmp2, dst, vec_enc);
+  vpaddb(dst, dst, xtmp1, vec_enc);
+}
+
 void C2_MacroAssembler::vector_popcount_int(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                                             XMMRegister xtmp2, Register rtmp, int vec_enc) {
   vector_popcount_byte(xtmp1, src, dst, xtmp2, rtmp, vec_enc);
+  // Following code is as per steps e,f,g and h of above algorithm.
   vpxor(xtmp2, xtmp2, xtmp2, vec_enc);
   vpunpckhdq(dst, xtmp1, xtmp2, vec_enc);
   vpsadbw(dst, dst, xtmp2, vec_enc);
@@ -4488,37 +4502,18 @@ void C2_MacroAssembler::vector_popcount_int(XMMRegister dst, XMMRegister src, XM
 void C2_MacroAssembler::vector_popcount_short(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                                               XMMRegister xtmp2, Register rtmp, int vec_enc) {
   vector_popcount_byte(xtmp1, src, dst, xtmp2, rtmp, vec_enc);
-  vbroadcastd(xtmp2, rtmp, 0x00FF00FF, vec_enc);
+  // Add the popcount of upper and lower bytes of word.
+  vbroadcastd(xtmp2, 0x00FF00FF, rtmp, vec_enc);
   vpsrlw(dst, xtmp1, 8, vec_enc);
   vpand(xtmp1, xtmp1, xtmp2, vec_enc);
   vpaddw(dst, dst, xtmp1, vec_enc);
 }
 
-void C2_MacroAssembler::vector_popcount_byte(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
-                                             XMMRegister xtmp2, Register rtmp, int vec_enc) {
-  assert((vec_enc == Assembler::AVX_512bit && VM_Version::supports_avx512bw()) || VM_Version::supports_avx2(), "");
-  vbroadcastd(xtmp1, rtmp, 0x0F0F0F0F, vec_enc);
-  vpsrlw(dst, src, 4, vec_enc);
-  vpand(dst, dst, xtmp1, vec_enc);
-  vpand(xtmp1, src, xtmp1, vec_enc);
-  vmovdqu(xtmp2, ExternalAddress(StubRoutines::x86::vector_popcount_lut()), rtmp, vec_enc);
-  vpshufb(xtmp1, xtmp2, xtmp1, vec_enc);
-  vpshufb(dst, xtmp2, dst, vec_enc);
-  vpaddb(dst, dst, xtmp1, vec_enc);
-}
-
 void C2_MacroAssembler::vector_popcount_long(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                                              XMMRegister xtmp2, Register rtmp, int vec_enc) {
-  if (vec_enc == Assembler::AVX_512bit) {
-    vector_popcount_byte(xtmp1, src, dst, xtmp2, rtmp, vec_enc);
-    vpxorq(xtmp2, xtmp2, xtmp2, vec_enc);
-    vpsadbw(dst, xtmp1, xtmp2, vec_enc);
-  } else {
-    // We do not see any performance benefit of running
-    // above instruction sequence on 256 bit vector which
-    // can operate over maximum 4 long elements.
-    ShouldNotReachHere();
-  }
+  vector_popcount_byte(xtmp1, src, dst, xtmp2, rtmp, vec_enc);
+  vpxorq(xtmp2, xtmp2, xtmp2, vec_enc);
+  vpsadbw(dst, xtmp1, xtmp2, vec_enc);
 }
 
 void C2_MacroAssembler::vector_popcount_integral(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,

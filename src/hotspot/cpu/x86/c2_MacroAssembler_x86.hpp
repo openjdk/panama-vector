@@ -347,7 +347,7 @@ public:
   void vector_popcount_integral_evex(BasicType bt, XMMRegister dst, XMMRegister src,
                                      KRegister mask, bool merge, int vec_enc);
 
-  void vbroadcastd(XMMRegister dst, Register rtmp, int imm32, int vec_enc);
+  void vbroadcastd(XMMRegister dst, int imm32, Register rtmp, int vec_enc);
 
   void vector_reverse_byte64(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                              XMMRegister xtmp2, Register rtmp, int vec_enc);
