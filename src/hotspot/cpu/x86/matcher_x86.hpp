@@ -189,6 +189,7 @@
       default: return 0;
       case Op_PopCountVI: return VM_Version::supports_avx512_vpopcntdq() ? 0 : 50;
       case Op_PopCountVL: return VM_Version::supports_avx512_vpopcntdq() ? 0 : 40;
+      case Op_ReverseV:  return VM_Version::supports_gfni() ? 0 : 30;
     }
   }
 

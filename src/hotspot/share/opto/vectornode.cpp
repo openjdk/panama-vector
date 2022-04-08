@@ -157,11 +157,12 @@ int VectorNode::opcode(int sopc, BasicType bt) {
   case Op_PopCountL:
     return Op_PopCountVL;
   case Op_ReverseI:
-    // Not implemented. Returning 0 temporarily
-    return 0;
   case Op_ReverseL:
-    // Not implemented. Returning 0 temporarily
-    return 0;
+    return (is_integral_type(bt) ? Op_ReverseV : 0);
+  case Op_ReverseBytesS:
+  case Op_ReverseBytesI:
+  case Op_ReverseBytesL:
+    return (is_integral_type(bt) ? Op_ReverseBytesV : 0);
   case Op_LShiftI:
     switch (bt) {
     case T_BOOLEAN:
@@ -550,6 +551,9 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt, b
   case Op_NegVI: return new NegVINode(n1, vt);
   case Op_NegVF: return new NegVFNode(n1, vt);
   case Op_NegVD: return new NegVDNode(n1, vt);
+
+  case Op_ReverseV: return new ReverseVNode(n1, vt);
+  case Op_ReverseBytesV: return new ReverseBytesVNode(n1, vt);
 
   case Op_SqrtVF: return new SqrtVFNode(n1, vt);
   case Op_SqrtVD: return new SqrtVDNode(n1, vt);
