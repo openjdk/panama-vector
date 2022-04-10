@@ -4512,7 +4512,7 @@ void C2_MacroAssembler::vector_popcount_short(XMMRegister dst, XMMRegister src, 
 void C2_MacroAssembler::vector_popcount_long(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                                              XMMRegister xtmp2, Register rtmp, int vec_enc) {
   vector_popcount_byte(xtmp1, src, dst, xtmp2, rtmp, vec_enc);
-  vpxorq(xtmp2, xtmp2, xtmp2, vec_enc);
+  vpxor(xtmp2, xtmp2, xtmp2, vec_enc);
   vpsadbw(dst, xtmp1, xtmp2, vec_enc);
 }
 
@@ -4535,10 +4535,10 @@ void C2_MacroAssembler::vector_popcount_integral(BasicType bt, XMMRegister dst, 
   }
 }
 
-
 void C2_MacroAssembler::vector_popcount_integral_evex(BasicType bt, XMMRegister dst, XMMRegister src,
                                                       KRegister mask, bool merge, int vec_enc) {
   assert(VM_Version::supports_avx512vl() || vec_enc == Assembler::AVX_512bit, "");
+  assert(UsePopCountInstruction, "");
   switch(bt) {
     case T_LONG:
       assert(VM_Version::supports_avx512_vpopcntdq(), "");

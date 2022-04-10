@@ -1702,7 +1702,7 @@ void VM_Version::get_processor_features() {
   }
 
   // Use population count instruction if available.
-  if (supports_popcnt()) {
+  if (supports_popcnt() || supports_avx512_vpopcntdq() || supports_avx512_bitalg()) {
     if (FLAG_IS_DEFAULT(UsePopCountInstruction)) {
       UsePopCountInstruction = true;
     }

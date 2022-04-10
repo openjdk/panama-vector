@@ -1405,12 +1405,12 @@ const bool Matcher::match_rule_supported(int opcode) {
       }
       break;
     case Op_PopCountVI:
-      if (!UsePopCountInstruction || (UseAVX < 2)) {
+      if (UseAVX < 2) {
         return false;
       }
       break;
     case Op_PopCountVL:
-      if (!UsePopCountInstruction || (UseAVX <= 2)) {
+      if (UseAVX < 2) {
         return false;
       }
       break;
@@ -1640,6 +1640,11 @@ const bool Matcher::match_rule_supported(int opcode) {
 }
 
 //------------------------------------------------------------------------
+
+static inline bool is_pop_count_instr_target(BasicType bt) {
+  return (is_subword_type(bt) && VM_Version::supports_avx512_bitalg()) ||
+         (is_non_subword_integral_type(bt) && VM_Version::supports_avx512_vpopcntdq());
+}
 
 // Identify extra cases that we might want to provide match rules for vector nodes and
 // other intrinsics guarded with vector length (vlen) and element type (bt).
@@ -1894,16 +1899,11 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
       }
       break;
     case Op_PopCountVI:
-      if (((bt == T_INT && !VM_Version::supports_avx512_vpopcntdq()) ||
-           (is_subword_type(bt) && !VM_Version::supports_avx512_bitalg())) &&
-           (size_in_bits == 512) && !VM_Version::supports_avx512bw()) {
-        return false;
-      }
-      break;
-    case Op_PopCountVL:
-      if (!VM_Version::supports_avx512_vpopcntdq() &&
-          ((vlen <= 4) || ((vlen == 8) && !VM_Version::supports_avx512bw()))) {
-        return false;
+    case Op_PopCountVL: {
+        if (!is_pop_count_instr_target(bt) &&
+            (size_in_bits == 512) && !VM_Version::supports_avx512bw()) {
+          return false;
+        }
       }
       break;
     case Op_ReverseV:
@@ -2056,14 +2056,8 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
       return true;
 
     case Op_PopCountVI:
-      if ((is_subword_type(bt) && !VM_Version::supports_avx512_bitalg()) ||
-          ((bt == T_INT) && !VM_Version::supports_avx512_vpopcntdq())) {
-        return false;
-      }
-      return true;
-
     case Op_PopCountVL:
-      if (!VM_Version::supports_avx512_vpopcntdq()) {
+      if (!is_pop_count_instr_target(bt)) {
         return false;
       }
       return true;
@@ -8633,19 +8627,17 @@ instruct vmuladdaddS2I_reg(vec dst, vec src1, vec src2) %{
 %}
 
 // --------------------------------- PopCount --------------------------------------
-
 instruct vpopcount_integral_reg_evex(vec dst, vec src) %{
-  predicate((((Matcher::vector_element_basic_type(n->in(1)) == T_INT ||
-               Matcher::vector_element_basic_type(n->in(1)) == T_LONG)) &&
-             VM_Version::supports_avx512_vpopcntdq()) ||
-            (is_subword_type(Matcher::vector_element_basic_type(n->in(1))) &&
-             VM_Version::supports_avx512_bitalg()));
+  predicate(UsePopCountInstruction &&
+            ((is_subword_type(Matcher::vector_element_basic_type(n->in(1))) &&
+              VM_Version::supports_avx512_bitalg()) ||
+             (is_non_subword_integral_type(Matcher::vector_element_basic_type(n->in(1))) &&
+              VM_Version::supports_avx512_vpopcntdq())));
   match(Set dst (PopCountVI src));
   match(Set dst (PopCountVL src));
   ins_cost(400);
   format %{ "vector_popcount_integral_evex $dst, $src" %}
   ins_encode %{
-    assert(UsePopCountInstruction, "not enabled");
     int opcode = this->ideal_Opcode();
     int vlen_enc = vector_length_encoding(this, $src);
     BasicType bt = Matcher::vector_element_basic_type(this, $src);
@@ -8661,16 +8653,15 @@ instruct vpopcount_integral_reg_evex(vec dst, vec src) %{
 %}
 
 instruct vpopcount_integral_reg_evex_masked(vec dst, vec src, kReg mask) %{
-  predicate((((Matcher::vector_element_basic_type(n->in(1)) == T_INT ||
-               Matcher::vector_element_basic_type(n->in(1)) == T_LONG)) &&
-             VM_Version::supports_avx512_vpopcntdq()) ||
-            (is_subword_type(Matcher::vector_element_basic_type(n->in(1))) &&
-             VM_Version::supports_avx512_bitalg()));
+  predicate(UsePopCountInstruction &&
+            ((is_subword_type(Matcher::vector_element_basic_type(n->in(1))) &&
+              VM_Version::supports_avx512_bitalg()) ||
+             (is_non_subword_integral_type(Matcher::vector_element_basic_type(n->in(1))) &&
+              VM_Version::supports_avx512_vpopcntdq())));
   match(Set dst (PopCountVI src mask));
   match(Set dst (PopCountVL src mask));
   format %{ "vector_popcount_integral_evex_masked $dst, $src, $mask" %}
   ins_encode %{
-    assert(UsePopCountInstruction, "not enabled");
     int opcode = this->ideal_Opcode();
     int vlen_enc = vector_length_encoding(this, $src);
     BasicType bt = Matcher::vector_element_basic_type(this, $src);
@@ -8681,13 +8672,13 @@ instruct vpopcount_integral_reg_evex_masked(vec dst, vec src, kReg mask) %{
 %}
 
 instruct vpopcountI_avx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, rRegP rtmp) %{
-  predicate((!VM_Version::supports_avx512_vpopcntdq() && Matcher::vector_element_basic_type(n->in(1)) == T_INT) ||
+  predicate(!UsePopCountInstruction ||
+            (!VM_Version::supports_avx512_vpopcntdq() && Matcher::vector_element_basic_type(n->in(1)) == T_INT) ||
             (!VM_Version::supports_avx512_bitalg() && is_subword_type(Matcher::vector_element_basic_type(n->in(1)))));
   match(Set dst (PopCountVI src));
   effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP rtmp);
   format %{ "vector_popcount_int  $dst, $src\t! using $xtmp1, $xtmp2 and $rtmp as TEMP" %}
   ins_encode %{
-    assert(UsePopCountInstruction, "not enabled");
     BasicType bt = Matcher::vector_element_basic_type(this);
     int vlen_enc = vector_length_encoding(this);
     __ vector_popcount_integral(bt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
@@ -8697,12 +8688,11 @@ instruct vpopcountI_avx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, rRegP rtmp) 
 %}
 
 instruct vpopcountL_avx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, vec xtmp3, rRegP rtmp) %{
-  predicate(!VM_Version::supports_avx512_vpopcntdq());
+  predicate(!UsePopCountInstruction || !VM_Version::supports_avx512_vpopcntdq());
   match(Set dst (PopCountVL src));
   effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP xtmp3, TEMP rtmp);
   format %{ "vector_popcount_long  $dst, $src\t! using $xtmp1, $xtmp2, $xtmp3, and $rtmp as TEMP" %}
   ins_encode %{
-    assert(UsePopCountInstruction, "not enabled");
     int vlen_enc = vector_length_encoding(this, $src);
     BasicType bt = Matcher::vector_element_basic_type(this);
     __ vector_popcount_long($dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
