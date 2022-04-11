@@ -4433,6 +4433,16 @@ void C2_MacroAssembler::vector_maskall_operation(KRegister dst, Register src, in
   }
 }
 
+void C2_MacroAssembler::vbroadcastd(XMMRegister dst, int imm32, Register rtmp, int vec_enc) {
+  if (VM_Version::supports_avx512vl()) {
+    movl(rtmp, imm32);
+    evpbroadcastd(dst, rtmp, vec_enc);
+  } else {
+    movl(rtmp, imm32);
+    movdl(dst, rtmp);
+    vpbroadcastd(dst, dst, vec_enc);
+  }
+}
 
 //
 // Following is lookup table based popcount computation algorithm:-
@@ -4463,62 +4473,92 @@ void C2_MacroAssembler::vector_maskall_operation(KRegister dst, Register src, in
 //  f. Perform step e. for upper 128bit vector lane.
 //  g. Pack the bitset count of quadwords back to double word.
 //  h. Unpacking and packing operations are not needed for 64bit vector lane.
+
+void C2_MacroAssembler::vector_popcount_byte(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                             XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  assert((vec_enc == Assembler::AVX_512bit && VM_Version::supports_avx512bw()) || VM_Version::supports_avx2(), "");
+  vbroadcastd(xtmp1, 0x0F0F0F0F, rtmp, vec_enc);
+  vpsrlw(dst, src, 4, vec_enc);
+  vpand(dst, dst, xtmp1, vec_enc);
+  vpand(xtmp1, src, xtmp1, vec_enc);
+  vmovdqu(xtmp2, ExternalAddress(StubRoutines::x86::vector_popcount_lut()), rtmp, vec_enc);
+  vpshufb(xtmp1, xtmp2, xtmp1, vec_enc);
+  vpshufb(dst, xtmp2, dst, vec_enc);
+  vpaddb(dst, dst, xtmp1, vec_enc);
+}
+
 void C2_MacroAssembler::vector_popcount_int(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
-                                            XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp,
-                                            int vec_enc) {
-  if (VM_Version::supports_avx512_vpopcntdq()) {
-    vpopcntd(dst, src, vec_enc);
-  } else {
-    assert((vec_enc == Assembler::AVX_512bit && VM_Version::supports_avx512bw()) || VM_Version::supports_avx2(), "");
-    movl(rtmp, 0x0F0F0F0F);
-    movdl(xtmp1, rtmp);
-    vpbroadcastd(xtmp1, xtmp1, vec_enc);
-    if (Assembler::AVX_512bit == vec_enc) {
-      evmovdqul(xtmp2, k0, ExternalAddress(StubRoutines::x86::vector_popcount_lut()), false, vec_enc, rtmp);
-    } else {
-      vmovdqu(xtmp2, ExternalAddress(StubRoutines::x86::vector_popcount_lut()), rtmp);
-    }
-    vpand(xtmp3, src, xtmp1, vec_enc);
-    vpshufb(xtmp3, xtmp2, xtmp3, vec_enc);
-    vpsrlw(dst, src, 4, vec_enc);
-    vpand(dst, dst, xtmp1, vec_enc);
-    vpshufb(dst, xtmp2, dst, vec_enc);
-    vpaddb(xtmp3, dst, xtmp3, vec_enc);
-    vpxor(xtmp1, xtmp1, xtmp1, vec_enc);
-    vpunpckhdq(dst, xtmp3, xtmp1, vec_enc);
-    vpsadbw(dst, dst, xtmp1, vec_enc);
-    vpunpckldq(xtmp2, xtmp3, xtmp1, vec_enc);
-    vpsadbw(xtmp2, xtmp2, xtmp1, vec_enc);
-    vpackuswb(dst, xtmp2, dst, vec_enc);
+                                            XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  vector_popcount_byte(xtmp1, src, dst, xtmp2, rtmp, vec_enc);
+  // Following code is as per steps e,f,g and h of above algorithm.
+  vpxor(xtmp2, xtmp2, xtmp2, vec_enc);
+  vpunpckhdq(dst, xtmp1, xtmp2, vec_enc);
+  vpsadbw(dst, dst, xtmp2, vec_enc);
+  vpunpckldq(xtmp1, xtmp1, xtmp2, vec_enc);
+  vpsadbw(xtmp1, xtmp1, xtmp2, vec_enc);
+  vpackuswb(dst, xtmp1, dst, vec_enc);
+}
+
+void C2_MacroAssembler::vector_popcount_short(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                              XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  vector_popcount_byte(xtmp1, src, dst, xtmp2, rtmp, vec_enc);
+  // Add the popcount of upper and lower bytes of word.
+  vbroadcastd(xtmp2, 0x00FF00FF, rtmp, vec_enc);
+  vpsrlw(dst, xtmp1, 8, vec_enc);
+  vpand(xtmp1, xtmp1, xtmp2, vec_enc);
+  vpaddw(dst, dst, xtmp1, vec_enc);
+}
+
+void C2_MacroAssembler::vector_popcount_long(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                             XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  vector_popcount_byte(xtmp1, src, dst, xtmp2, rtmp, vec_enc);
+  vpxor(xtmp2, xtmp2, xtmp2, vec_enc);
+  vpsadbw(dst, xtmp1, xtmp2, vec_enc);
+}
+
+void C2_MacroAssembler::vector_popcount_integral(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                                 XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  switch(bt) {
+    case T_INT:
+      vector_popcount_int(dst, src, xtmp1, xtmp2, rtmp, vec_enc);
+      break;
+    case T_CHAR:
+    case T_SHORT:
+      vector_popcount_short(dst, src, xtmp1, xtmp2, rtmp, vec_enc);
+      break;
+    case T_BYTE:
+    case T_BOOLEAN:
+      vector_popcount_byte(dst, src, xtmp1, xtmp2, rtmp, vec_enc);
+      break;
+    default:
+      ShouldNotReachHere();
   }
 }
 
-void C2_MacroAssembler::vector_popcount_long(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
-                                             XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc) {
-  if (VM_Version::supports_avx512_vpopcntdq()) {
-    vpopcntq(dst, src, vec_enc);
-  } else if (vec_enc == Assembler::AVX_512bit) {
-    assert(VM_Version::supports_avx512bw(), "");
-    movl(rtmp, 0x0F0F0F0F);
-    movdl(xtmp1, rtmp);
-    vpbroadcastd(xtmp1, xtmp1, vec_enc);
-    evmovdqul(xtmp2, k0, ExternalAddress(StubRoutines::x86::vector_popcount_lut()), true, vec_enc, rtmp);
-    vpandq(xtmp3, src, xtmp1, vec_enc);
-    vpshufb(xtmp3, xtmp2, xtmp3, vec_enc);
-    vpsrlw(dst, src, 4, vec_enc);
-    vpandq(dst, dst, xtmp1, vec_enc);
-    vpshufb(dst, xtmp2, dst, vec_enc);
-    vpaddb(xtmp3, dst, xtmp3, vec_enc);
-    vpxorq(xtmp1, xtmp1, xtmp1, vec_enc);
-    vpsadbw(dst, xtmp3, xtmp1, vec_enc);
-  } else {
-    // We do not see any performance benefit of running
-    // above instruction sequence on 256 bit vector which
-    // can operate over maximum 4 long elements.
-    ShouldNotReachHere();
-  }
-  if (bt == T_INT) {
-    evpmovqd(dst, dst, vec_enc);
+void C2_MacroAssembler::vector_popcount_integral_evex(BasicType bt, XMMRegister dst, XMMRegister src,
+                                                      KRegister mask, bool merge, int vec_enc) {
+  assert(VM_Version::supports_avx512vl() || vec_enc == Assembler::AVX_512bit, "");
+  switch(bt) {
+    case T_LONG:
+      assert(VM_Version::supports_avx512_vpopcntdq(), "");
+      evpopcntq(dst, mask, src, merge, vec_enc);
+      break;
+    case T_INT:
+      assert(VM_Version::supports_avx512_vpopcntdq(), "");
+      evpopcntd(dst, mask, src, merge, vec_enc);
+      break;
+    case T_CHAR:
+    case T_SHORT:
+      assert(VM_Version::supports_avx512_bitalg(), "");
+      evpopcntw(dst, mask, src, merge, vec_enc);
+      break;
+    case T_BYTE:
+    case T_BOOLEAN:
+      assert(VM_Version::supports_avx512_bitalg(), "");
+      evpopcntb(dst, mask, src, merge, vec_enc);
+      break;
+    default:
+      ShouldNotReachHere();
   }
 }
 
@@ -4529,6 +4569,160 @@ void C2_MacroAssembler::vector_maskall_operation32(KRegister dst, Register src, 
   kunpckdql(dst, tmp, tmp);
 }
 #endif
+
+// Bit reversal algorithm first reverses the bits of each byte followed by
+// a byte level reversal for multi-byte primitive types (short/int/long).
+// Algorithm performs a lookup table access to get reverse bit sequence
+// corresponding to a 4 bit value. Thus a reverse bit sequence for a byte
+// is obtained by swapping the reverse bit sequences of upper and lower
+// nibble of a byte.
+void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                           XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  if (VM_Version::supports_avx512vlbw()) {
+
+    // Get the reverse bit sequence of lower nibble of each byte.
+    vmovdqu(xtmp1, ExternalAddress(StubRoutines::x86::vector_reverse_bit_lut()), rtmp, vec_enc);
+    movl(rtmp, 0x0F0F0F0F);
+    evpbroadcastd(xtmp2, rtmp, vec_enc);
+    vpandq(dst, xtmp2, src, vec_enc);
+    vpshufb(dst, xtmp1, dst, vec_enc);
+    vpsllq(dst, dst, 4, vec_enc);
+
+    // Get the reverse bit sequence of upper nibble of each byte.
+    vpandn(xtmp2, xtmp2, src, vec_enc);
+    vpsrlq(xtmp2, xtmp2, 4, vec_enc);
+    vpshufb(xtmp2, xtmp1, xtmp2, vec_enc);
+
+    // Perform logical OR operation b/w left shifted reverse bit sequence of lower nibble and
+    // right shifted reverse bit sequence of upper nibble to obtain the reverse bit sequence of each byte.
+    vporq(xtmp2, dst, xtmp2, vec_enc);
+    vector_reverse_byte(bt, dst, xtmp2, rtmp, vec_enc);
+
+  } else if(!VM_Version::supports_avx512vlbw() && vec_enc == Assembler::AVX_512bit) {
+
+    // Shift based bit reversal.
+    assert(bt == T_LONG || bt == T_INT, "");
+    movl(rtmp, 0x0f0f0f0f);
+    evpbroadcastd(xtmp1, rtmp, vec_enc);
+
+    // Swap lower and upper nibble of each byte.
+    vpandq(dst, xtmp1, src, vec_enc);
+    vpsllq(dst, dst, 4, vec_enc);
+    vpandn(xtmp2, xtmp1, src, vec_enc);
+    vpsrlq(xtmp2, xtmp2, 4, vec_enc);
+    vporq(xtmp1, dst, xtmp2, vec_enc);
+
+    // Swap two least and most significant bits of each nibble.
+    movl(rtmp, 0x33333333);
+    evpbroadcastd(xtmp2, rtmp, vec_enc);
+    vpandq(dst, xtmp2, xtmp1, vec_enc);
+    vpsllq(dst, dst, 2, vec_enc);
+    vpandn(xtmp2, xtmp2, xtmp1, vec_enc);
+    vpsrlq(xtmp2, xtmp2, 2, vec_enc);
+    vporq(xtmp1, dst, xtmp2, vec_enc);
+
+    // Swap adjacent pair of bits.
+    movl(rtmp, 0x55555555);
+    evpbroadcastd(xtmp2, rtmp, vec_enc);
+    vpandq(dst, xtmp2, xtmp1, vec_enc);
+    vpsllq(dst, dst, 1, vec_enc);
+    vpandn(xtmp2, xtmp2, xtmp1, vec_enc);
+    vpsrlq(xtmp2, xtmp2, 1, vec_enc);
+    vporq(xtmp1, dst, xtmp2, vec_enc);
+
+    vector_reverse_byte64(bt, dst, xtmp1, xtmp1, xtmp2, rtmp, vec_enc);
+
+  } else {
+    vmovdqu(xtmp1, ExternalAddress(StubRoutines::x86::vector_reverse_bit_lut()), rtmp, vec_enc);
+    movl(rtmp, 0x0F0F0F0F);
+    movdl(xtmp2, rtmp);
+    vpbroadcastd(xtmp2, xtmp2, vec_enc);
+
+    // Get the reverse bit sequence of lower nibble of each byte.
+    vpand(dst, xtmp2, src, vec_enc);
+    vpshufb(dst, xtmp1, dst, vec_enc);
+    vpsllq(dst, dst, 4, vec_enc);
+
+    // Get the reverse bit sequence of upper nibble of each byte.
+    vpandn(xtmp2, xtmp2, src, vec_enc);
+    vpsrlq(xtmp2, xtmp2, 4, vec_enc);
+    vpshufb(xtmp2, xtmp1, xtmp2, vec_enc);
+
+    // Perform logical OR operation b/w left shifted reverse bit sequence of lower nibble and
+    // right shifted reverse bit sequence of upper nibble to obtain the reverse bit sequence of each byte.
+    vpor(xtmp2, dst, xtmp2, vec_enc);
+    vector_reverse_byte(bt, dst, xtmp2, rtmp, vec_enc);
+  }
+}
+
+void C2_MacroAssembler::vector_reverse_bit_gfni(BasicType bt, XMMRegister dst, XMMRegister src,
+                                                XMMRegister xtmp, AddressLiteral mask, Register rtmp, int vec_enc) {
+  // Galois field instruction based bit reversal based on following algorithm.
+  // http://0x80.pl/articles/avx512-galois-field-for-bit-shuffling.html
+  assert(VM_Version::supports_gfni(), "");
+  vpbroadcastq(xtmp, mask, vec_enc, rtmp);
+  vgf2p8affineqb(xtmp, src, xtmp, 0, vec_enc);
+  vector_reverse_byte(bt, dst, xtmp, rtmp, vec_enc);
+}
+
+void C2_MacroAssembler::vector_reverse_byte64(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                              XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  // Shift based bit reversal.
+  assert(VM_Version::supports_evex(), "");
+  evmovdqul(xtmp1, k0, src, true, vec_enc);
+  switch(bt) {
+    case T_LONG:
+      // Swap upper and lower double word of each quad word.
+      evprorq(xtmp1, k0, xtmp1, 32, true, vec_enc);
+    case T_INT:
+      // Swap upper and lower word of each double word.
+      evprord(xtmp1, k0, xtmp1, 16, true, vec_enc);
+    case T_SHORT:
+      // Swap upper and lower byte of each word.
+      movl(rtmp, 0x00FF00FF);
+      evpbroadcastd(dst, rtmp, vec_enc);
+      vpandq(xtmp2, dst, xtmp1, vec_enc);
+      vpsllq(xtmp2, xtmp2, 8, vec_enc);
+      vpandn(xtmp1, dst, xtmp1, vec_enc);
+      vpsrlq(dst, xtmp1, 8, vec_enc);
+      vporq(dst, dst, xtmp2, vec_enc);
+      break;
+    case T_BYTE:
+      evmovdquq(dst, k0, src, true, vec_enc);
+      break;
+    default:
+      fatal("Unsupported type");
+      break;
+  }
+}
+
+void C2_MacroAssembler::vector_reverse_byte(BasicType bt, XMMRegister dst, XMMRegister src, Register rtmp, int vec_enc) {
+  if (bt == T_BYTE) {
+    if (VM_Version::supports_avx512vl() || vec_enc == Assembler::AVX_512bit) {
+      evmovdquq(dst, k0, src, true, vec_enc);
+    } else {
+      vmovdqu(dst, src);
+    }
+    return;
+  }
+  // Perform byte reversal by shuffling the bytes of a multi-byte primitive type using
+  // pre-computed shuffle indices.
+  switch(bt) {
+    case T_LONG:
+      vmovdqu(dst, ExternalAddress(StubRoutines::x86::vector_reverse_byte_perm_mask_long()), rtmp, vec_enc);
+      break;
+    case T_INT:
+      vmovdqu(dst, ExternalAddress(StubRoutines::x86::vector_reverse_byte_perm_mask_int()), rtmp, vec_enc);
+      break;
+    case T_SHORT:
+      vmovdqu(dst, ExternalAddress(StubRoutines::x86::vector_reverse_byte_perm_mask_short()), rtmp, vec_enc);
+      break;
+    default:
+      fatal("Unsupported type");
+      break;
+  }
+  vpshufb(dst, src, dst, vec_enc);
+}
 
 void C2_MacroAssembler::vector_count_leading_zeros_evex(BasicType bt, XMMRegister dst, XMMRegister src,
                                                         XMMRegister xtmp1, XMMRegister xtmp2, XMMRegister xtmp3,

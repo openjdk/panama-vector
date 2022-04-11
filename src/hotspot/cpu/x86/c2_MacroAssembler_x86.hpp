@@ -321,12 +321,37 @@ public:
   void evpternlog(XMMRegister dst, int func, KRegister mask, XMMRegister src2, Address src3,
                   bool merge, BasicType bt, int vlen_enc);
 
-  void vector_popcount_int(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
-                           XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp,
-                           int vec_enc);
+  void vector_reverse_bit(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                          XMMRegister xtmp2, Register rtmp, int vec_enc);
 
-  void vector_popcount_long(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
-                            XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc);
+  void vector_reverse_bit_gfni(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp,
+                               AddressLiteral mask, Register rtmp, int vec_enc);
+
+  void vector_reverse_byte(BasicType bt, XMMRegister dst, XMMRegister src, Register rtmp, int vec_enc);
+
+  void vector_popcount_int(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                           XMMRegister xtmp2, Register rtmp, int vec_enc);
+
+  void vector_popcount_long(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                            XMMRegister xtmp2, Register rtmp, int vec_enc);
+
+  void vector_popcount_short(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                             XMMRegister xtmp2, Register rtmp, int vec_enc);
+
+  void vector_popcount_byte(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                            XMMRegister xtmp2, Register rtmp, int vec_enc);
+
+  void vector_popcount_integral(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                XMMRegister xtmp2, Register rtmp, int vec_enc);
+
+  void vector_popcount_integral_evex(BasicType bt, XMMRegister dst, XMMRegister src,
+                                     KRegister mask, bool merge, int vec_enc);
+
+  void vbroadcastd(XMMRegister dst, int imm32, Register rtmp, int vec_enc);
+
+  void vector_reverse_byte64(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                             XMMRegister xtmp2, Register rtmp, int vec_enc);
+
 
   void vector_count_leading_zeros_evex(BasicType bt, XMMRegister dst, XMMRegister src,
                                        XMMRegister xtmp1, XMMRegister xtmp2, XMMRegister xtmp3,

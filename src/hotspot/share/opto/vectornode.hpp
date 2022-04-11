@@ -1686,4 +1686,19 @@ class CountTrailingZerosVNode : public VectorNode {
   virtual int Opcode() const;
 };
 
+class ReverseVNode : public VectorNode {
+public:
+  ReverseVNode(Node* in, const TypeVect* vt)
+  : VectorNode(in, vt) {}
+
+  virtual int Opcode() const;
+};
+
+class ReverseBytesVNode : public VectorNode {
+public:
+  ReverseBytesVNode(Node* in, const TypeVect* vt)
+  : VectorNode(in, vt) {}
+
+  virtual int Opcode() const;
+};
 #endif // SHARE_OPTO_VECTORNODE_HPP
