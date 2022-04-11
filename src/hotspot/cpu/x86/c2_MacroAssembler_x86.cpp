@@ -4538,7 +4538,6 @@ void C2_MacroAssembler::vector_popcount_integral(BasicType bt, XMMRegister dst, 
 void C2_MacroAssembler::vector_popcount_integral_evex(BasicType bt, XMMRegister dst, XMMRegister src,
                                                       KRegister mask, bool merge, int vec_enc) {
   assert(VM_Version::supports_avx512vl() || vec_enc == Assembler::AVX_512bit, "");
-  assert(UsePopCountInstruction, "");
   switch(bt) {
     case T_LONG:
       assert(VM_Version::supports_avx512_vpopcntdq(), "");

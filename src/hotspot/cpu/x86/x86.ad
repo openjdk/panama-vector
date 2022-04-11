@@ -8628,11 +8628,10 @@ instruct vmuladdaddS2I_reg(vec dst, vec src1, vec src2) %{
 
 // --------------------------------- PopCount --------------------------------------
 instruct vpopcount_integral_reg_evex(vec dst, vec src) %{
-  predicate(UsePopCountInstruction &&
-            ((is_subword_type(Matcher::vector_element_basic_type(n->in(1))) &&
+  predicate((is_subword_type(Matcher::vector_element_basic_type(n->in(1))) &&
               VM_Version::supports_avx512_bitalg()) ||
              (is_non_subword_integral_type(Matcher::vector_element_basic_type(n->in(1))) &&
-              VM_Version::supports_avx512_vpopcntdq())));
+              VM_Version::supports_avx512_vpopcntdq()));
   match(Set dst (PopCountVI src));
   match(Set dst (PopCountVL src));
   ins_cost(400);
@@ -8653,11 +8652,10 @@ instruct vpopcount_integral_reg_evex(vec dst, vec src) %{
 %}
 
 instruct vpopcount_integral_reg_evex_masked(vec dst, vec src, kReg mask) %{
-  predicate(UsePopCountInstruction &&
-            ((is_subword_type(Matcher::vector_element_basic_type(n->in(1))) &&
+  predicate((is_subword_type(Matcher::vector_element_basic_type(n->in(1))) &&
               VM_Version::supports_avx512_bitalg()) ||
              (is_non_subword_integral_type(Matcher::vector_element_basic_type(n->in(1))) &&
-              VM_Version::supports_avx512_vpopcntdq())));
+              VM_Version::supports_avx512_vpopcntdq()));
   match(Set dst (PopCountVI src mask));
   match(Set dst (PopCountVL src mask));
   format %{ "vector_popcount_integral_evex_masked $dst, $src, $mask" %}
@@ -8672,8 +8670,7 @@ instruct vpopcount_integral_reg_evex_masked(vec dst, vec src, kReg mask) %{
 %}
 
 instruct vpopcountI_avx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, rRegP rtmp) %{
-  predicate(!UsePopCountInstruction ||
-            (!VM_Version::supports_avx512_vpopcntdq() && Matcher::vector_element_basic_type(n->in(1)) == T_INT) ||
+  predicate((!VM_Version::supports_avx512_vpopcntdq() && Matcher::vector_element_basic_type(n->in(1)) == T_INT) ||
             (!VM_Version::supports_avx512_bitalg() && is_subword_type(Matcher::vector_element_basic_type(n->in(1)))));
   match(Set dst (PopCountVI src));
   effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP rtmp);
@@ -8688,7 +8685,7 @@ instruct vpopcountI_avx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, rRegP rtmp) 
 %}
 
 instruct vpopcountL_avx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, vec xtmp3, rRegP rtmp) %{
-  predicate(!UsePopCountInstruction || !VM_Version::supports_avx512_vpopcntdq());
+  predicate(!VM_Version::supports_avx512_vpopcntdq());
   match(Set dst (PopCountVL src));
   effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP xtmp3, TEMP rtmp);
   format %{ "vector_popcount_long  $dst, $src\t! using $xtmp1, $xtmp2, $xtmp3, and $rtmp as TEMP" %}
