@@ -2956,7 +2956,7 @@ bool SuperWord::is_vector_use(Node* use, int u_idx) {
     return true;
   }
 
-  if (VectorNode::is_downcasting_l2i_candidate(use)) {
+  if (VectorNode::is_type_transition_long_to_int(use)) {
     // PopCountL/CountLeadingZerosL takes long and produces
     // int - hence the special checks on alignment and size.
     if (u_pk->size() != d_pk->size()) {

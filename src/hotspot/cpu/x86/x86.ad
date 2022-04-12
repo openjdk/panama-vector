@@ -1245,6 +1245,11 @@ static inline bool is_unsigned_booltest_pred(int bt) {
   return  ((bt & BoolTest::unsigned_compare) == BoolTest::unsigned_compare);
 }
 
+static inline bool is_clz_evex_predicate(BasicType bt, int vlen_bytes) {
+  return is_non_subword_integral_type(bt) && VM_Version::supports_avx512cd() &&
+           (VM_Version::supports_avx512vl() || vlen_bytes == 64);
+}
+
 class Node::PD {
 public:
   enum NodeFlags {
@@ -1252,6 +1257,7 @@ public:
     _last_flag             = Flag_intel_jcc_erratum
   };
 };
+
 
 %} // end source_hpp
 
@@ -9085,10 +9091,7 @@ instruct vreverse_byte64_reg(vec dst, vec src, vec xtmp1, vec xtmp2, rRegI rtmp)
 // ---------------------------------- Vector Count Leading Zeros -----------------------------------
 
 instruct vcount_leading_zeros_IL_reg_evex(vec dst, vec src) %{
-  predicate((Matcher::vector_element_basic_type(n->in(1)) == T_INT ||
-             Matcher::vector_element_basic_type(n->in(1)) == T_LONG) &&
-             VM_Version::supports_avx512cd() &&
-             (VM_Version::supports_avx512vl() || Matcher::vector_length_in_bytes(n) == 64));
+  predicate(is_clz_evex_predicate(Matcher::vector_element_basic_type(n->in(1)), Matcher::vector_length_in_bytes(n)));
   match(Set dst (CountLeadingZerosV src));
   format %{ "vector_count_leading_zeros $dst, $src" %}
   ins_encode %{
@@ -9108,10 +9111,7 @@ instruct vcount_leading_zeros_IL_reg_evex(vec dst, vec src) %{
 %}
 
 instruct vcount_leading_zeros_IL_reg_evex_masked(vec dst, vec src, kReg mask) %{
-  predicate((Matcher::vector_element_basic_type(n->in(1)) == T_INT ||
-             Matcher::vector_element_basic_type(n->in(1)) == T_LONG) &&
-             VM_Version::supports_avx512cd() &&
-             (VM_Version::supports_avx512vl() || Matcher::vector_length_in_bytes(n) == 64));
+  predicate(is_clz_evex_predicate(Matcher::vector_element_basic_type(n->in(1)), Matcher::vector_length_in_bytes(n)));
   match(Set dst (CountLeadingZerosV src mask));
   format %{ "vector_count_leading_zeros $dst, $src, $mask" %}
   ins_encode %{
@@ -9156,8 +9156,24 @@ instruct vcount_leading_zeros_byte_reg_evex(vec dst, vec src, vec xtmp1, vec xtm
   ins_pipe( pipe_slow );
 %}
 
+instruct vcount_leading_zeros_int_reg_avx(vec dst, vec src, vec xtmp1, vec xtmp2, vec xtmp3) %{
+  predicate(Matcher::vector_element_basic_type(n->in(1)) == T_INT &&
+            !VM_Version::supports_avx512vl() && Matcher::vector_length_in_bytes(n->in(1)) < 64);
+  match(Set dst (CountLeadingZerosV src));
+  effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP xtmp3);
+  format %{ "vector_count_leading_zeros $dst, $src\t! using $xtmp1, $xtmp2 and $xtmp3 as TEMP" %}
+  ins_encode %{
+    int vlen_enc = vector_length_encoding(this, $src);
+    BasicType bt = Matcher::vector_element_basic_type(this, $src);
+    __ vector_count_leading_zeros_avx(bt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
+                                      $xtmp2$$XMMRegister, $xtmp3$$XMMRegister, noreg, vlen_enc);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 instruct vcount_leading_zeros_reg_avx(vec dst, vec src, vec xtmp1, vec xtmp2, vec xtmp3, rRegP rtmp) %{
-  predicate(!VM_Version::supports_avx512vl() && Matcher::vector_length_in_bytes(n->in(1)) < 64);
+  predicate(Matcher::vector_element_basic_type(n->in(1)) != T_INT &&
+            !VM_Version::supports_avx512vl() && Matcher::vector_length_in_bytes(n->in(1)) < 64);
   match(Set dst (CountLeadingZerosV src));
   effect(TEMP dst, TEMP xtmp1, TEMP xtmp2, TEMP xtmp3, TEMP rtmp);
   format %{ "vector_count_leading_zeros $dst, $src\t! using $xtmp1, $xtmp2, $xtmp3, and $rtmp as TEMP" %}

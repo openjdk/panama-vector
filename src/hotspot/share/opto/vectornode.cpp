@@ -310,7 +310,7 @@ bool VectorNode::is_muladds2i(Node* n) {
   return false;
 }
 
-bool VectorNode::is_downcasting_l2i_candidate(Node* n) {
+bool VectorNode::is_type_transition_long_to_int(Node* n) {
   switch(n->Opcode()) {
     case Op_PopCountL:
     case Op_CountLeadingZerosL:
