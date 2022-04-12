@@ -151,9 +151,7 @@ int VectorNode::opcode(int sopc, BasicType bt) {
   case Op_SqrtD:
     return (bt == T_DOUBLE ? Op_SqrtVD : 0);
   case Op_PopCountI:
-    // Unimplemented for subword types since bit count changes
-    // depending on size of lane (and sign bit).
-    return (bt == T_INT ? Op_PopCountVI : 0);
+    return Op_PopCountVI;
   case Op_PopCountL:
     return Op_PopCountVL;
   case Op_ReverseI:

@@ -7792,7 +7792,7 @@ address generate_avx_ghash_processBlocks() {
     StubRoutines::x86::_vector_reverse_byte_perm_mask_int = generate_vector_reverse_byte_perm_mask_int("perm_mask_int");
     StubRoutines::x86::_vector_reverse_byte_perm_mask_short = generate_vector_reverse_byte_perm_mask_short("perm_mask_short");
 
-    if (UsePopCountInstruction && VM_Version::supports_avx2() && !VM_Version::supports_avx512_vpopcntdq()) {
+    if (VM_Version::supports_avx2() && !VM_Version::supports_avx512_vpopcntdq()) {
       // lut implementation influenced by counting 1s algorithm from section 5-1 of Hackers' Delight.
       StubRoutines::x86::_vector_popcount_lut = generate_popcount_avx_lut("popcount_lut");
     }

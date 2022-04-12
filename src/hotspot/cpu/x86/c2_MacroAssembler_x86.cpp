@@ -4433,6 +4433,16 @@ void C2_MacroAssembler::vector_maskall_operation(KRegister dst, Register src, in
   }
 }
 
+void C2_MacroAssembler::vbroadcastd(XMMRegister dst, int imm32, Register rtmp, int vec_enc) {
+  if (VM_Version::supports_avx512vl()) {
+    movl(rtmp, imm32);
+    evpbroadcastd(dst, rtmp, vec_enc);
+  } else {
+    movl(rtmp, imm32);
+    movdl(dst, rtmp);
+    vpbroadcastd(dst, dst, vec_enc);
+  }
+}
 
 //
 // Following is lookup table based popcount computation algorithm:-
@@ -4463,62 +4473,92 @@ void C2_MacroAssembler::vector_maskall_operation(KRegister dst, Register src, in
 //  f. Perform step e. for upper 128bit vector lane.
 //  g. Pack the bitset count of quadwords back to double word.
 //  h. Unpacking and packing operations are not needed for 64bit vector lane.
+
+void C2_MacroAssembler::vector_popcount_byte(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                             XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  assert((vec_enc == Assembler::AVX_512bit && VM_Version::supports_avx512bw()) || VM_Version::supports_avx2(), "");
+  vbroadcastd(xtmp1, 0x0F0F0F0F, rtmp, vec_enc);
+  vpsrlw(dst, src, 4, vec_enc);
+  vpand(dst, dst, xtmp1, vec_enc);
+  vpand(xtmp1, src, xtmp1, vec_enc);
+  vmovdqu(xtmp2, ExternalAddress(StubRoutines::x86::vector_popcount_lut()), rtmp, vec_enc);
+  vpshufb(xtmp1, xtmp2, xtmp1, vec_enc);
+  vpshufb(dst, xtmp2, dst, vec_enc);
+  vpaddb(dst, dst, xtmp1, vec_enc);
+}
+
 void C2_MacroAssembler::vector_popcount_int(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
-                                            XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp,
-                                            int vec_enc) {
-  if (VM_Version::supports_avx512_vpopcntdq()) {
-    vpopcntd(dst, src, vec_enc);
-  } else {
-    assert((vec_enc == Assembler::AVX_512bit && VM_Version::supports_avx512bw()) || VM_Version::supports_avx2(), "");
-    movl(rtmp, 0x0F0F0F0F);
-    movdl(xtmp1, rtmp);
-    vpbroadcastd(xtmp1, xtmp1, vec_enc);
-    if (Assembler::AVX_512bit == vec_enc) {
-      evmovdqul(xtmp2, k0, ExternalAddress(StubRoutines::x86::vector_popcount_lut()), false, vec_enc, rtmp);
-    } else {
-      vmovdqu(xtmp2, ExternalAddress(StubRoutines::x86::vector_popcount_lut()), rtmp);
-    }
-    vpand(xtmp3, src, xtmp1, vec_enc);
-    vpshufb(xtmp3, xtmp2, xtmp3, vec_enc);
-    vpsrlw(dst, src, 4, vec_enc);
-    vpand(dst, dst, xtmp1, vec_enc);
-    vpshufb(dst, xtmp2, dst, vec_enc);
-    vpaddb(xtmp3, dst, xtmp3, vec_enc);
-    vpxor(xtmp1, xtmp1, xtmp1, vec_enc);
-    vpunpckhdq(dst, xtmp3, xtmp1, vec_enc);
-    vpsadbw(dst, dst, xtmp1, vec_enc);
-    vpunpckldq(xtmp2, xtmp3, xtmp1, vec_enc);
-    vpsadbw(xtmp2, xtmp2, xtmp1, vec_enc);
-    vpackuswb(dst, xtmp2, dst, vec_enc);
+                                            XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  vector_popcount_byte(xtmp1, src, dst, xtmp2, rtmp, vec_enc);
+  // Following code is as per steps e,f,g and h of above algorithm.
+  vpxor(xtmp2, xtmp2, xtmp2, vec_enc);
+  vpunpckhdq(dst, xtmp1, xtmp2, vec_enc);
+  vpsadbw(dst, dst, xtmp2, vec_enc);
+  vpunpckldq(xtmp1, xtmp1, xtmp2, vec_enc);
+  vpsadbw(xtmp1, xtmp1, xtmp2, vec_enc);
+  vpackuswb(dst, xtmp1, dst, vec_enc);
+}
+
+void C2_MacroAssembler::vector_popcount_short(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                              XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  vector_popcount_byte(xtmp1, src, dst, xtmp2, rtmp, vec_enc);
+  // Add the popcount of upper and lower bytes of word.
+  vbroadcastd(xtmp2, 0x00FF00FF, rtmp, vec_enc);
+  vpsrlw(dst, xtmp1, 8, vec_enc);
+  vpand(xtmp1, xtmp1, xtmp2, vec_enc);
+  vpaddw(dst, dst, xtmp1, vec_enc);
+}
+
+void C2_MacroAssembler::vector_popcount_long(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                             XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  vector_popcount_byte(xtmp1, src, dst, xtmp2, rtmp, vec_enc);
+  vpxor(xtmp2, xtmp2, xtmp2, vec_enc);
+  vpsadbw(dst, xtmp1, xtmp2, vec_enc);
+}
+
+void C2_MacroAssembler::vector_popcount_integral(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                                 XMMRegister xtmp2, Register rtmp, int vec_enc) {
+  switch(bt) {
+    case T_INT:
+      vector_popcount_int(dst, src, xtmp1, xtmp2, rtmp, vec_enc);
+      break;
+    case T_CHAR:
+    case T_SHORT:
+      vector_popcount_short(dst, src, xtmp1, xtmp2, rtmp, vec_enc);
+      break;
+    case T_BYTE:
+    case T_BOOLEAN:
+      vector_popcount_byte(dst, src, xtmp1, xtmp2, rtmp, vec_enc);
+      break;
+    default:
+      ShouldNotReachHere();
   }
 }
 
-void C2_MacroAssembler::vector_popcount_long(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
-                                             XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc) {
-  if (VM_Version::supports_avx512_vpopcntdq()) {
-    vpopcntq(dst, src, vec_enc);
-  } else if (vec_enc == Assembler::AVX_512bit) {
-    assert(VM_Version::supports_avx512bw(), "");
-    movl(rtmp, 0x0F0F0F0F);
-    movdl(xtmp1, rtmp);
-    vpbroadcastd(xtmp1, xtmp1, vec_enc);
-    evmovdqul(xtmp2, k0, ExternalAddress(StubRoutines::x86::vector_popcount_lut()), true, vec_enc, rtmp);
-    vpandq(xtmp3, src, xtmp1, vec_enc);
-    vpshufb(xtmp3, xtmp2, xtmp3, vec_enc);
-    vpsrlw(dst, src, 4, vec_enc);
-    vpandq(dst, dst, xtmp1, vec_enc);
-    vpshufb(dst, xtmp2, dst, vec_enc);
-    vpaddb(xtmp3, dst, xtmp3, vec_enc);
-    vpxorq(xtmp1, xtmp1, xtmp1, vec_enc);
-    vpsadbw(dst, xtmp3, xtmp1, vec_enc);
-  } else {
-    // We do not see any performance benefit of running
-    // above instruction sequence on 256 bit vector which
-    // can operate over maximum 4 long elements.
-    ShouldNotReachHere();
-  }
-  if (bt == T_INT) {
-    evpmovqd(dst, dst, vec_enc);
+void C2_MacroAssembler::vector_popcount_integral_evex(BasicType bt, XMMRegister dst, XMMRegister src,
+                                                      KRegister mask, bool merge, int vec_enc) {
+  assert(VM_Version::supports_avx512vl() || vec_enc == Assembler::AVX_512bit, "");
+  switch(bt) {
+    case T_LONG:
+      assert(VM_Version::supports_avx512_vpopcntdq(), "");
+      evpopcntq(dst, mask, src, merge, vec_enc);
+      break;
+    case T_INT:
+      assert(VM_Version::supports_avx512_vpopcntdq(), "");
+      evpopcntd(dst, mask, src, merge, vec_enc);
+      break;
+    case T_CHAR:
+    case T_SHORT:
+      assert(VM_Version::supports_avx512_bitalg(), "");
+      evpopcntw(dst, mask, src, merge, vec_enc);
+      break;
+    case T_BYTE:
+    case T_BOOLEAN:
+      assert(VM_Version::supports_avx512_bitalg(), "");
+      evpopcntb(dst, mask, src, merge, vec_enc);
+      break;
+    default:
+      ShouldNotReachHere();
   }
 }
 
