@@ -113,7 +113,7 @@ public class LongMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
             })
     );
 
-    // Relative to byte[] array.length or ByteBuffer.limit()
+    // Relative to byte[] array.length or MemorySegment.byteSize()
     static final List<IntFunction<Integer>> BYTE_INDEX_GENERATORS = List.of(
             withToString("-1", (int l) -> {
                 return -1;
@@ -461,8 +461,6 @@ public class LongMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     }
 
 
-
-
     @Test(dataProvider = "longMemorySegmentProvider")
     static void loadStoreMemorySegment(IntFunction<long[]> fa,
                                        IntFunction<MemorySegment> fb,
@@ -668,6 +666,7 @@ public class LongMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         );
     }
 
+
     @Test(dataProvider = "maskProvider")
     static void loadStoreMask(IntFunction<boolean[]> fm) {
         boolean[] a = fm.apply(SPECIES.length());
@@ -681,6 +680,7 @@ public class LongMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         }
         Assert.assertEquals(r, a);
     }
+
 
     @Test
     static void loadStoreShuffle() {

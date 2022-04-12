@@ -106,7 +106,7 @@ public class Byte256VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
             })
     );
 
-    // Relative to byte[] array.length or ByteBuffer.limit()
+    // Relative to byte[] array.length or MemorySegment.byteSize()
     static final List<IntFunction<Integer>> BYTE_INDEX_GENERATORS = List.of(
             withToString("-1", (int l) -> {
                 return -1;
@@ -454,8 +454,6 @@ public class Byte256VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     }
 
 
-
-
     @Test(dataProvider = "byteMemorySegmentProvider")
     static void loadStoreMemorySegment(IntFunction<byte[]> fa,
                                        IntFunction<MemorySegment> fb,
@@ -661,6 +659,7 @@ public class Byte256VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         );
     }
 
+
     @Test(dataProvider = "maskProvider")
     static void loadStoreMask(IntFunction<boolean[]> fm) {
         boolean[] a = fm.apply(SPECIES.length());
@@ -674,6 +673,7 @@ public class Byte256VectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         }
         Assert.assertEquals(r, a);
     }
+
 
     @Test
     static void loadStoreShuffle() {
