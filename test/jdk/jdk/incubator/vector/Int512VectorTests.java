@@ -37,6 +37,7 @@ import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.Vector;
 
 import jdk.incubator.vector.IntVector;
+import compress.CompressExpandTest;
 
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -1182,51 +1183,6 @@ public class Int512VectorTests extends AbstractVectorTest {
         return Integer.reverse(a);
     }
 
-    static int COMPRESSBITS_scalar(int a, int b) {
-        a = a & b;
-        int maskCount = ~b << 1;
-        int iters = 5;
-
-        for (int i = 0; i < iters; i++) {
-            int maskPrefix = maskCount  ^ (maskCount << 1);
-            maskPrefix = maskPrefix ^ (maskPrefix << 2);
-            maskPrefix = maskPrefix ^ (maskPrefix << 4);
-            maskPrefix = maskPrefix ^ (maskPrefix << 8);
-            maskPrefix = maskPrefix ^ (maskPrefix << 16);
-            int maskMove = maskPrefix & b;
-            b = (b ^ maskMove) | (maskMove >>> (1 << i));
-            int t = a & maskMove;
-            a = (a ^ t) | (t >>> (1 << i));
-            maskCount = maskCount & ~maskPrefix;
-        }
-        return a;
-    }
-
-    static int EXPANDBITS_scalar(int a, int b) {
-        int originalMask = b;
-        int maskCount = ~b << 1;
-        int[] array = new int[5];
-        int iters = 5;
-
-        for (int j = 0; j < iters; j++) {
-            int maskPrefix = maskCount  ^ (maskCount  << 1);
-            maskPrefix = maskPrefix ^ (maskPrefix << 2);
-            maskPrefix = maskPrefix ^ (maskPrefix << 4);
-            maskPrefix = maskPrefix ^ (maskPrefix << 8);
-            maskPrefix = maskPrefix ^ (maskPrefix << 16);
-            int maskMove = maskPrefix & b;
-            array[j] = maskMove;
-            b = (b ^ maskMove) | (maskMove >>> (1 << j));
-            maskCount = maskCount & ~maskPrefix;
-        }
-
-        for (int j = iters-1; j >= 0; j--) {
-            int maskMove = array[j];
-            int t = a << (1 << j);
-            a = (a & ~maskMove) | (t & maskMove);
-        }
-        return (a & originalMask);
-    }
 
     static boolean eq(int a, int b) {
         return a == b;
@@ -1958,7 +1914,7 @@ public class Int512VectorTests extends AbstractVectorTest {
 
 
     static int COMPRESS_BITS(int a, int b) {
-        return (int)(COMPRESSBITS_scalar(a,b));
+        return (int)(CompressExpandTest.compress(a,b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2002,7 +1958,7 @@ public class Int512VectorTests extends AbstractVectorTest {
 
 
     static int EXPAND_BITS(int a, int b) {
-        return (int)(EXPANDBITS_scalar(a,b));
+        return (int)(CompressExpandTest.expand(a,b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")

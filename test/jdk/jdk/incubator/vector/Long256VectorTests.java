@@ -37,6 +37,7 @@ import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.Vector;
 
 import jdk.incubator.vector.LongVector;
+import compress.CompressExpandTest;
 
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -1204,53 +1205,6 @@ public class Long256VectorTests extends AbstractVectorTest {
         return Long.reverse(a);
     }
 
-    static long COMPRESSBITS_scalar(long a, long b) {
-        a = a & b;
-        long maskCount = ~b << 1;
-        int iters = 6;
-
-        for (int i = 0; i < iters; i++) {
-            long maskPrefix = maskCount  ^ (maskCount << 1);
-            maskPrefix = maskPrefix ^ (maskPrefix << 2);
-            maskPrefix = maskPrefix ^ (maskPrefix << 4);
-            maskPrefix = maskPrefix ^ (maskPrefix << 8);
-            maskPrefix = maskPrefix ^ (maskPrefix << 16);
-            maskPrefix = maskPrefix ^ (maskPrefix << 32);
-            long maskMove = maskPrefix & b;
-            b = (b ^ maskMove) | (maskMove >>> (1 << i));
-            long t = a & maskMove;
-            a = (a ^ t) | (t >>> (1 << i));
-            maskCount = maskCount & ~maskPrefix;
-        }
-        return a;
-    }
-
-    static long EXPANDBITS_scalar(long a, long b) {
-        long originalMask = b;
-        long maskCount = ~b << 1;
-        long[] array = new long[6];
-        int iters = 6;
-
-        for (int j = 0; j < iters; j++) {
-            long maskPrefix = maskCount  ^ (maskCount  << 1);
-            maskPrefix = maskPrefix ^ (maskPrefix << 2);
-            maskPrefix = maskPrefix ^ (maskPrefix << 4);
-            maskPrefix = maskPrefix ^ (maskPrefix << 8);
-            maskPrefix = maskPrefix ^ (maskPrefix << 16);
-            maskPrefix = maskPrefix ^ (maskPrefix << 32);
-            long maskMove = maskPrefix & b;
-            array[j] = maskMove;
-            b = (b ^ maskMove) | (maskMove >>> (1 << j));
-            maskCount = maskCount & ~maskPrefix;
-        }
-
-        for (int j = iters-1; j >= 0; j--) {
-            long maskMove = array[j];
-            long t = a << (1 << j);
-            a = (a & ~maskMove) | (t & maskMove);
-        }
-        return (a & originalMask);
-    }
 
     static boolean eq(long a, long b) {
         return a == b;
@@ -1982,7 +1936,7 @@ public class Long256VectorTests extends AbstractVectorTest {
 
 
     static long COMPRESS_BITS(long a, long b) {
-        return (long)(COMPRESSBITS_scalar(a,b));
+        return (long)(CompressExpandTest.compress(a,b));
     }
 
     @Test(dataProvider = "longBinaryOpProvider")
@@ -2026,7 +1980,7 @@ public class Long256VectorTests extends AbstractVectorTest {
 
 
     static long EXPAND_BITS(long a, long b) {
-        return (long)(EXPANDBITS_scalar(a,b));
+        return (long)(CompressExpandTest.expand(a,b));
     }
 
     @Test(dataProvider = "longBinaryOpProvider")

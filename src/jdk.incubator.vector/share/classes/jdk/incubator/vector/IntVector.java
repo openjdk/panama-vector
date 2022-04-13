@@ -513,67 +513,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
         return Integer.rotateRight(a, n);
     }
 
-    /* Implementation note: The implementation is based on Compress or Generalized Extract mentioned in
-     * Henry S. Warren, Jr's Hackers Delight, Addison Wesley, 2002.
-     */
-    static int compressBits(int a, int mask) {
-        a = a & mask; // Clear irrelevant bits
-        int maskCount = ~mask << 1; // Count 0's to right
-        int iters = 5;
-
-        for (int j = 0; j < iters; j++) {
-            // Parallel prefix
-            // maskPrefix identifies bits of the mask that have odd number of 0's to the right
-            int maskPrefix = maskCount  ^ (maskCount  << 1);
-            maskPrefix = maskPrefix ^ (maskPrefix << 2);
-            maskPrefix = maskPrefix ^ (maskPrefix << 4);
-            maskPrefix = maskPrefix ^ (maskPrefix << 8);
-            maskPrefix = maskPrefix ^ (maskPrefix << 16);
-            // Bits to move
-            int maskMove = maskPrefix & mask;
-            // Compress mask
-            mask = (mask ^ maskMove) | (maskMove >>> (1 << j));
-            // Bits of a to be moved
-            int t = a & maskMove;
-            // Compress a
-            a = (a ^ t) | (t >>> (1 << j));
-            // Adjust the countMask by identifying the bits that have 0 to the right
-            maskCount = maskCount & ~maskPrefix;
-        }
-        return a;
-    }
-
-    static int expandBits(int a, int mask) {
-        int originalMask = mask; // Save original mask
-        int maskCount = ~mask << 1; // Count 0's to right
-        int[] array = new int[5];
-        int iters = 5;
-
-        for (int j = 0; j < iters; j++) {
-            // Parallel prefix
-            int maskPrefix = maskCount  ^ (maskCount  << 1);
-            maskPrefix = maskPrefix ^ (maskPrefix << 2);
-            maskPrefix = maskPrefix ^ (maskPrefix << 4);
-            maskPrefix = maskPrefix ^ (maskPrefix << 8);
-            maskPrefix = maskPrefix ^ (maskPrefix << 16);
-            // Bits to move
-            int maskMove = maskPrefix & mask;
-            array[j] = maskMove;
-            // Compress mask
-            mask = (mask ^ maskMove) | (maskMove >>> (1 << j));
-            // Adjust the countMask by identifying the bits that have 0 to the right
-            maskCount = maskCount & ~maskPrefix;
-        }
-
-        for (int j = iters-1; j >= 0; j--) {
-            int maskMove = array[j];
-            int t = a << (1 << j);
-            a = (a & ~maskMove) | (t & maskMove);
-        }
-
-        // Clear irrelevant bits
-        return (a & originalMask);
-    }
 
     /*package-private*/
     @Override
@@ -936,9 +875,9 @@ public abstract class IntVector extends AbstractVector<Integer> {
             case VECTOR_OP_RROTATE: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, n) -> rotateRight(a, (int)n));
             case VECTOR_OP_COMPRESS_BITS: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, n) -> compressBits(a, n));
+                    v0.bOp(v1, vm, (i, a, n) -> CompressExpand.compress(a, n));
             case VECTOR_OP_EXPAND_BITS: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, n) -> expandBits(a, n));
+                    v0.bOp(v1, vm, (i, a, n) -> CompressExpand.expand(a, n));
             default: return null;
         }
     }

@@ -474,7 +474,7 @@ public class IntScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 int a = as[i];
                 int b = bs[i];
-                rs[i] = (int)(COMPRESSBITS_scalar(a,b));
+                rs[i] = (int)(CompressExpandTest.compress(a,b));
             }
         }
 
@@ -495,7 +495,7 @@ public class IntScalar extends AbstractVectorBenchmark {
                 int a = as[i];
                 int b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (int)(COMPRESSBITS_scalar(a,b));
+                    rs[i] = (int)(CompressExpandTest.compress(a,b));
                 } else {
                     rs[i] = a;
                 }
@@ -516,7 +516,7 @@ public class IntScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 int a = as[i];
                 int b = bs[i];
-                rs[i] = (int)(EXPANDBITS_scalar(a,b));
+                rs[i] = (int)(CompressExpandTest.expand(a,b));
             }
         }
 
@@ -537,7 +537,7 @@ public class IntScalar extends AbstractVectorBenchmark {
                 int a = as[i];
                 int b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (int)(EXPANDBITS_scalar(a,b));
+                    rs[i] = (int)(CompressExpandTest.expand(a,b));
                 } else {
                     rs[i] = a;
                 }

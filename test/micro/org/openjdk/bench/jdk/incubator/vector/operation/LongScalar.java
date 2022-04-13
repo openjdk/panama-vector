@@ -474,7 +474,7 @@ public class LongScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 long a = as[i];
                 long b = bs[i];
-                rs[i] = (long)(COMPRESSBITS_scalar(a,b));
+                rs[i] = (long)(CompressExpandTest.compress(a,b));
             }
         }
 
@@ -495,7 +495,7 @@ public class LongScalar extends AbstractVectorBenchmark {
                 long a = as[i];
                 long b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (long)(COMPRESSBITS_scalar(a,b));
+                    rs[i] = (long)(CompressExpandTest.compress(a,b));
                 } else {
                     rs[i] = a;
                 }
@@ -516,7 +516,7 @@ public class LongScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 long a = as[i];
                 long b = bs[i];
-                rs[i] = (long)(EXPANDBITS_scalar(a,b));
+                rs[i] = (long)(CompressExpandTest.expand(a,b));
             }
         }
 
@@ -537,7 +537,7 @@ public class LongScalar extends AbstractVectorBenchmark {
                 long a = as[i];
                 long b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (long)(EXPANDBITS_scalar(a,b));
+                    rs[i] = (long)(CompressExpandTest.expand(a,b));
                 } else {
                     rs[i] = a;
                 }
