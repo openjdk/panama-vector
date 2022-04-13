@@ -5140,6 +5140,20 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         }
     }
 
+    @Test(dataProvider = "offsetProvider")
+    static void indexInRangeLongDoubleMaxVectorTestsSmokeTest(int offset) {
+        long limit = SPECIES.length() * BUFFER_REPS;
+        for (long i = 0; i < limit; i += SPECIES.length()) {
+            var actualMask = SPECIES.indexInRange(i + offset, limit);
+            var expectedMask = SPECIES.maskAll(true).indexInRange(i + offset, limit);
+            assert(actualMask.equals(expectedMask));
+            for (int j = 0; j < SPECIES.length(); j++)  {
+                long index = i + j + offset;
+                Assert.assertEquals(actualMask.laneIsSet(j), index >= 0 && index < limit);
+            }
+        }
+    }
+
     @DataProvider
     public static Object[][] lengthProvider() {
         return new Object[][]{
@@ -5157,6 +5171,14 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
     static void loopBoundDoubleMaxVectorTestsSmokeTest(int length) {
         int actualLoopBound = SPECIES.loopBound(length);
         int expectedLoopBound = length - Math.floorMod(length, SPECIES.length());
+        Assert.assertEquals(actualLoopBound, expectedLoopBound);
+    }
+
+    @Test(dataProvider = "lengthProvider")
+    static void loopBoundLongDoubleMaxVectorTestsSmokeTest(int _length) {
+        long length = _length;
+        long actualLoopBound = SPECIES.loopBound(length);
+        long expectedLoopBound = length - Math.floorMod(length, SPECIES.length());
         Assert.assertEquals(actualLoopBound, expectedLoopBound);
     }
 

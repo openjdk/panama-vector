@@ -904,7 +904,7 @@ class methodHandle;
                                      "Ljava/lang/Object;"                                                                                      \
                                      "J"                                                                                                       \
                                      "Ljava/lang/Object;"                                                                                      \
-                                     "I"                                                                                                       \
+                                     "J"                                                                                                       \
                                      "Ljdk/internal/vm/vector/VectorSupport$VectorSpecies;"                                                    \
                                      "Ljdk/internal/vm/vector/VectorSupport$LoadOperation;)"                                                   \
                                      "Ljdk/internal/vm/vector/VectorSupport$VectorPayload;")                                                   \
@@ -919,7 +919,7 @@ class methodHandle;
                                             "J"                                                                                                \
                                             "Ljdk/internal/vm/vector/VectorSupport$VectorMask;"                                                \
                                             "Ljava/lang/Object;"                                                                               \
-                                            "I"                                                                                                \
+                                            "J"                                                                                                \
                                             "Ljdk/internal/vm/vector/VectorSupport$VectorSpecies;"                                             \
                                             "Ljdk/internal/vm/vector/VectorSupport$LoadVectorMaskedOperation;)"                                \
                                             "Ljdk/internal/vm/vector/VectorSupport$Vector;")                                                   \
@@ -932,7 +932,9 @@ class methodHandle;
                                       "Ljava/lang/Object;"                                                                                     \
                                       "J"                                                                                                      \
                                       "Ljdk/internal/vm/vector/VectorSupport$VectorPayload;"                                                   \
-                                      "Ljava/lang/Object;ILjdk/internal/vm/vector/VectorSupport$StoreVectorOperation;)"                        \
+                                      "Ljava/lang/Object;"                                                                                     \
+                                      "J"                                                                                                      \
+                                      "Ljdk/internal/vm/vector/VectorSupport$StoreVectorOperation;)"                                           \
                                       "V")                                                                                                     \
    do_name(vector_store_op_name,     "store")                                                                                                  \
                                                                                                                                                \
@@ -946,7 +948,7 @@ class methodHandle;
                                              "Ljdk/internal/vm/vector/VectorSupport$Vector;"                                                   \
                                              "Ljdk/internal/vm/vector/VectorSupport$VectorMask;"                                               \
                                              "Ljava/lang/Object;"                                                                              \
-                                             "I"                                                                                               \
+                                             "J"                                                                                               \
                                              "Ljdk/internal/vm/vector/VectorSupport$StoreVectorMaskedOperation;)"                              \
                                              "V")                                                                                              \
    do_name(vector_store_masked_op_name,     "storeMasked")                                                                                     \

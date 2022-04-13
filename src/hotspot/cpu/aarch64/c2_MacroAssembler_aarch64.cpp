@@ -1070,10 +1070,12 @@ void C2_MacroAssembler::sve_vector_narrow(FloatRegister dst, SIMD_RegVariant dst
       sve_uzp1(dst, S, src, tmp);
       break;
     case H:
+      assert_different_registers(dst, tmp);
       sve_uzp1(dst, S, src, tmp);
       sve_uzp1(dst, H, dst, tmp);
       break;
     case B:
+      assert_different_registers(dst, tmp);
       sve_uzp1(dst, S, src, tmp);
       sve_uzp1(dst, H, dst, tmp);
       sve_uzp1(dst, B, dst, tmp);
@@ -1085,6 +1087,7 @@ void C2_MacroAssembler::sve_vector_narrow(FloatRegister dst, SIMD_RegVariant dst
     if (dst_size == H) {
       sve_uzp1(dst, H, src, tmp);
     } else { // B
+      assert_different_registers(dst, tmp);
       sve_uzp1(dst, H, src, tmp);
       sve_uzp1(dst, B, dst, tmp);
     }

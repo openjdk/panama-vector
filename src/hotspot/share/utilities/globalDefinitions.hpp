@@ -721,6 +721,10 @@ inline bool is_integral_type(BasicType t) {
   return is_subword_type(t) || t == T_INT || t == T_LONG;
 }
 
+inline bool is_non_subword_integral_type(BasicType t) {
+  return t == T_INT || t == T_LONG;
+}
+
 inline bool is_floating_point_type(BasicType t) {
   return (t == T_FLOAT || t == T_DOUBLE);
 }
@@ -1219,5 +1223,9 @@ template<typename K> bool primitive_equals(const K& k0, const K& k1) {
   return k0 == k1;
 }
 
+//----------------------------------------------------------------------------------------------------
+
+// Allow use of C++ thread_local when approved - see JDK-8282469.
+#define APPROVED_CPP_THREAD_LOCAL thread_local
 
 #endif // SHARE_UTILITIES_GLOBALDEFINITIONS_HPP

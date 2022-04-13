@@ -546,6 +546,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
       operation->add_flag(Node::Flag_is_predicated_vector);
     } else {
       operation = gvn().transform(operation);
+      operation->add_flag(Node::Flag_is_predicated_using_blend);
       operation = new VectorBlendNode(opd1, operation, mask);
     }
   }
@@ -914,7 +915,7 @@ static bool elem_consistent_with_arr(BasicType elem_bt, const TypeAryPtr* arr_ty
 //  S extends VectorSpecies<E>>
 // VM load(Class<? extends VM> vmClass, Class<E> elementType, int length,
 //         Object base, long offset,    // Unsafe addressing
-//         C container, int index, S s,     // Arguments for default implementation
+//         C container, long index, S s,     // Arguments for default implementation
 //         LoadOperation<C, VM, E, S> defaultImpl)
 //
 // public static
@@ -923,7 +924,7 @@ static bool elem_consistent_with_arr(BasicType elem_bt, const TypeAryPtr* arr_ty
 // void store(Class<?> vectorClass, Class<?> elementType, int length,
 //            Object base, long offset,    // Unsafe addressing
 //            V v,
-//            C container, int index,      // Arguments for default implementation
+//            C container, long index,      // Arguments for default implementation
 //            StoreVectorOperation<C, V> defaultImpl)
 
 bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
@@ -1107,7 +1108,7 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
 //  M extends VectorMask<E>>
 // V loadMasked(Class<? extends V> vectorClass, Class<M> maskClass, Class<E> elementType,
 //              int length, Object base, long offset, M m,
-//              C container, int index, S s,  // Arguments for default implementation
+//              C container, long index, S s,  // Arguments for default implementation
 //              LoadVectorMaskedOperation<C, V, S, M> defaultImpl) {
 //
 // public static
@@ -1118,7 +1119,7 @@ bool LibraryCallKit::inline_vector_mem_operation(bool is_store) {
 // void storeMasked(Class<? extends V> vectorClass, Class<M> maskClass, Class<E> elementType,
 //                  int length, Object base, long offset,
 //                  V v, M m,
-//                  C container, int index,  // Arguments for default implementation
+//                  C container, long index,  // Arguments for default implementation
 //                  StoreVectorMaskedOperation<C, V, M, E> defaultImpl) {
 //
 bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
