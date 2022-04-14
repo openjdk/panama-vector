@@ -1935,7 +1935,7 @@ public class Long128VectorTests extends AbstractVectorTest {
 
 
     static long COMPRESS_BITS(long a, long b) {
-        return (long)(CompressExpandTest.compress(a,b));
+        return (long)(CompressExpandTest.compress(a, b));
     }
 
     @Test(dataProvider = "longBinaryOpProvider")
@@ -1979,7 +1979,7 @@ public class Long128VectorTests extends AbstractVectorTest {
 
 
     static long EXPAND_BITS(long a, long b) {
-        return (long)(CompressExpandTest.expand(a,b));
+        return (long)(CompressExpandTest.expand(a, b));
     }
 
     @Test(dataProvider = "longBinaryOpProvider")

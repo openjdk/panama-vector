@@ -1940,7 +1940,7 @@ public class LongMaxVectorTests extends AbstractVectorTest {
 
 
     static long COMPRESS_BITS(long a, long b) {
-        return (long)(CompressExpandTest.compress(a,b));
+        return (long)(CompressExpandTest.compress(a, b));
     }
 
     @Test(dataProvider = "longBinaryOpProvider")
@@ -1984,7 +1984,7 @@ public class LongMaxVectorTests extends AbstractVectorTest {
 
 
     static long EXPAND_BITS(long a, long b) {
-        return (long)(CompressExpandTest.expand(a,b));
+        return (long)(CompressExpandTest.expand(a, b));
     }
 
     @Test(dataProvider = "longBinaryOpProvider")

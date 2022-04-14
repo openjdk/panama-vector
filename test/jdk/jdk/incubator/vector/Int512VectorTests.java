@@ -1913,7 +1913,7 @@ public class Int512VectorTests extends AbstractVectorTest {
 
 
     static int COMPRESS_BITS(int a, int b) {
-        return (int)(CompressExpandTest.compress(a,b));
+        return (int)(CompressExpandTest.compress(a, b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -1957,7 +1957,7 @@ public class Int512VectorTests extends AbstractVectorTest {
 
 
     static int EXPAND_BITS(int a, int b) {
-        return (int)(CompressExpandTest.expand(a,b));
+        return (int)(CompressExpandTest.expand(a, b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
