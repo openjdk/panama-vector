@@ -873,6 +873,10 @@ public abstract class IntVector extends AbstractVector<Integer> {
                     v0.bOp(v1, vm, (i, a, n) -> rotateLeft(a, (int)n));
             case VECTOR_OP_RROTATE: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, n) -> rotateRight(a, (int)n));
+            case VECTOR_OP_COMPRESS_BITS: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, n) -> CompressExpand.compress(a, n));
+            case VECTOR_OP_EXPAND_BITS: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, n) -> CompressExpand.expand(a, n));
             default: return null;
         }
     }

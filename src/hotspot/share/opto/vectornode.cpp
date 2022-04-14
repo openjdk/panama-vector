@@ -161,6 +161,12 @@ int VectorNode::opcode(int sopc, BasicType bt) {
   case Op_ReverseBytesI:
   case Op_ReverseBytesL:
     return (is_integral_type(bt) ? Op_ReverseBytesV : 0);
+  case Op_CompressBits:
+    // Not implemented. Returning 0 temporarily
+    return 0;
+  case Op_ExpandBits:
+    // Not implemented. Returning 0 temporarily
+    return 0;
   case Op_LShiftI:
     switch (bt) {
     case T_BOOLEAN:

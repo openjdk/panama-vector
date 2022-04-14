@@ -467,6 +467,10 @@ public class Short256Vector extends AbstractVectorBenchmark {
 
 
 
+
+
+
+
     @Benchmark
     public void LSHL(Blackhole bh) {
         short[] a = fa.apply(SPECIES.length());

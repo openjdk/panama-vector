@@ -98,6 +98,8 @@ class VectorSupport : AllStatic {
     VECTOR_OP_LZ_COUNT = 30,
     VECTOR_OP_REVERSE  = 31,
     VECTOR_OP_REVERSE_BYTES = 32,
+    VECTOR_OP_COMPRESS_BITS = 33,
+    VECTOR_OP_EXPAND_BITS = 34,
 
     // Vector Math Library
     VECTOR_OP_TAN   = 101,

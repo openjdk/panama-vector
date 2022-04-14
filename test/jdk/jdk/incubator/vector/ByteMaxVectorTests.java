@@ -1954,6 +1954,10 @@ public class ByteMaxVectorTests extends AbstractVectorTest {
     }
 
 
+
+
+
+
     @Test(dataProvider = "byteBinaryOpProvider")
     static void addByteMaxVectorTestsBroadcastSmokeTest(IntFunction<byte[]> fa, IntFunction<byte[]> fb) {
         byte[] a = fa.apply(SPECIES.length());

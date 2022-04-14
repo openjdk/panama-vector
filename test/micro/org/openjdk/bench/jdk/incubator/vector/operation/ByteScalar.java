@@ -469,6 +469,10 @@ public class ByteScalar extends AbstractVectorBenchmark {
 
 
 
+
+
+
+
     @Benchmark
     public void LSHL(Blackhole bh) {
         byte[] as = fa.apply(size);

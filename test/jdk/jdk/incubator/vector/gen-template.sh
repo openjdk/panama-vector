@@ -403,6 +403,8 @@ gen_binary_alu_op "AND_NOT" "a \& ~b" "BITWISE"
 gen_binary_alu_op "OR+or"    "a | b"   "BITWISE"
 # Missing:        "OR_UNCHECKED"
 gen_binary_alu_op "XOR"   "a ^ b"   "BITWISE"
+gen_binary_alu_op "COMPRESS_BITS" "CompressExpandTest.compress(a, b)" "intOrLong"
+gen_binary_alu_op "EXPAND_BITS" "CompressExpandTest.expand(a, b)" "intOrLong"
 # Generate the broadcast versions
 gen_binary_alu_bcst_op "add+withMask" "a + b"
 gen_binary_alu_bcst_op "sub+withMask" "a - b"

@@ -1949,6 +1949,10 @@ public class Byte64VectorTests extends AbstractVectorTest {
     }
 
 
+
+
+
+
     @Test(dataProvider = "byteBinaryOpProvider")
     static void addByte64VectorTestsBroadcastSmokeTest(IntFunction<byte[]> fa, IntFunction<byte[]> fb) {
         byte[] a = fa.apply(SPECIES.length());

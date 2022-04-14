@@ -335,6 +335,10 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
 
 
+
+
+
+
     @Benchmark
     public void MIN(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
