@@ -21,7 +21,7 @@
  * questions.
  */
 
-package compress;
+package org.openjdk.bench.jdk.incubator.vector.operation;
 
 public class CompressExpandTest {
     public static int compress(int i, int mask) {
