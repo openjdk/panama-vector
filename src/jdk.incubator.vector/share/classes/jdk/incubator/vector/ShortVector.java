@@ -513,7 +513,6 @@ public abstract class ShortVector extends AbstractVector<Short> {
         return (short)(((((short)a) & Short.toUnsignedInt((short)-1)) >>> (n & Short.SIZE-1)) | ((((short)a) & Short.toUnsignedInt((short)-1)) << (Short.SIZE - (n & Short.SIZE-1))));
     }
 
-
     /*package-private*/
     @Override
     abstract ShortSpecies vspecies();

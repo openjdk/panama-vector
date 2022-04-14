@@ -525,7 +525,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         return ($type$)((((($type$)a) & $Boxtype$.toUnsignedInt(($type$)-1)) >>> (n & $Boxtype$.SIZE-1)) | (((($type$)a) & $Boxtype$.toUnsignedInt(($type$)-1)) << ($Boxtype$.SIZE - (n & $Boxtype$.SIZE-1))));
 #end[intOrLong]
     }
-
 #end[BITWISE]
 
     /*package-private*/

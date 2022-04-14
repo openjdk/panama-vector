@@ -513,7 +513,6 @@ public abstract class LongVector extends AbstractVector<Long> {
         return Long.rotateRight(a, n);
     }
 
-
     /*package-private*/
     @Override
     abstract LongSpecies vspecies();

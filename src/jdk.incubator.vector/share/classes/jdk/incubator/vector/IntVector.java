@@ -513,7 +513,6 @@ public abstract class IntVector extends AbstractVector<Integer> {
         return Integer.rotateRight(a, n);
     }
 
-
     /*package-private*/
     @Override
     abstract IntSpecies vspecies();

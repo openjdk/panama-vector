@@ -513,7 +513,6 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         return (byte)(((((byte)a) & Byte.toUnsignedInt((byte)-1)) >>> (n & Byte.SIZE-1)) | ((((byte)a) & Byte.toUnsignedInt((byte)-1)) << (Byte.SIZE - (n & Byte.SIZE-1))));
     }
 
-
     /*package-private*/
     @Override
     abstract ByteSpecies vspecies();
