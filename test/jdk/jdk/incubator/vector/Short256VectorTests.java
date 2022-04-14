@@ -1216,7 +1216,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         return b;
     }
 
-
     static boolean eq(short a, short b) {
         return a == b;
     }

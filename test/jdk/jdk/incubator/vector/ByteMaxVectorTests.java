@@ -1230,7 +1230,6 @@ public class ByteMaxVectorTests extends AbstractVectorTest {
         return b;
     }
 
-
     static boolean eq(byte a, byte b) {
         return a == b;
     }

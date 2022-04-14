@@ -1221,7 +1221,6 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         return b;
     }
 
-
     static boolean eq(short a, short b) {
         return a == b;
     }

@@ -1210,7 +1210,6 @@ public class LongMaxVectorTests extends AbstractVectorTest {
         return Long.reverse(a);
     }
 
-
     static boolean eq(long a, long b) {
         return a == b;
     }

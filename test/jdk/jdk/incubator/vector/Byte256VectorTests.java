@@ -1225,7 +1225,6 @@ public class Byte256VectorTests extends AbstractVectorTest {
         return b;
     }
 
-
     static boolean eq(byte a, byte b) {
         return a == b;
     }

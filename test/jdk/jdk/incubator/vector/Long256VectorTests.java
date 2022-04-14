@@ -1205,7 +1205,6 @@ public class Long256VectorTests extends AbstractVectorTest {
         return Long.reverse(a);
     }
 
-
     static boolean eq(long a, long b) {
         return a == b;
     }
