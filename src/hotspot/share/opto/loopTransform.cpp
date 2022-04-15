@@ -970,13 +970,11 @@ bool IdealLoopTree::policy_unroll(PhaseIdealLoop *phase) {
       case Op_ModL: body_size += 30; break;
       case Op_DivL: body_size += 30; break;
       case Op_MulL: body_size += 10; break;
+      case Op_CountTrailingZerosV:
+      case Op_CountLeadingZerosV:
+      case Op_ReverseV:
       case Op_PopCountVI:
       case Op_PopCountVL: {
-        const TypeVect* vt = n->bottom_type()->is_vect();
-        body_size += Matcher::vector_op_pre_select_sz_estimate(n->Opcode(), vt->element_basic_type(), vt->length());
-      } break;
-      case Op_CountLeadingZerosV:
-      case Op_ReverseV: {
         const TypeVect* vt = n->bottom_type()->is_vect();
         body_size += Matcher::vector_op_pre_select_sz_estimate(n->Opcode(), vt->element_basic_type(), vt->length());
       } break;

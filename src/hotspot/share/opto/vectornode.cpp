@@ -314,6 +314,7 @@ bool VectorNode::is_type_transition_long_to_int(Node* n) {
   switch(n->Opcode()) {
     case Op_PopCountL:
     case Op_CountLeadingZerosL:
+    case Op_CountTrailingZerosL:
        return true;
     default:
        return false;

@@ -4433,14 +4433,30 @@ void C2_MacroAssembler::vector_maskall_operation(KRegister dst, Register src, in
   }
 }
 
-void C2_MacroAssembler::vbroadcastd(XMMRegister dst, int imm32, Register rtmp, int vec_enc) {
-  if (VM_Version::supports_avx512vl()) {
-    movl(rtmp, imm32);
-    evpbroadcastd(dst, rtmp, vec_enc);
+void C2_MacroAssembler::vbroadcast(BasicType bt, XMMRegister dst, int imm32, Register rtmp, int vec_enc) {
+  int lane_size = type2aelembytes(bt);
+  bool is_LP64 = LP64_ONLY(true) NOT_LP64(false);
+  if ((is_LP64 || lane_size < 8) &&
+      ((is_non_subword_integral_type(bt) && VM_Version::supports_avx512vl()) ||
+       (is_subword_type(bt) && VM_Version::supports_avx512bw()))) {
+    movptr(rtmp, imm32);
+    switch(lane_size) {
+      case 1 : evpbroadcastb(dst, rtmp, vec_enc); break;
+      case 2 : evpbroadcastw(dst, rtmp, vec_enc); break;
+      case 4 : evpbroadcastd(dst, rtmp, vec_enc); break;
+      case 8 : evpbroadcastq(dst, rtmp, vec_enc); break;
+      default : ShouldNotReachHere(); break;
+    }
   } else {
-    movl(rtmp, imm32);
-    movdl(dst, rtmp);
-    vpbroadcastd(dst, dst, vec_enc);
+    movptr(rtmp, imm32);
+    LP64_ONLY(movq(dst, rtmp)) NOT_LP64(movdl(dst, rtmp));
+    switch(lane_size) {
+      case 1 : vpbroadcastb(dst, dst, vec_enc); break;
+      case 2 : vpbroadcastw(dst, dst, vec_enc); break;
+      case 4 : vpbroadcastd(dst, dst, vec_enc); break;
+      case 8 : vpbroadcastq(dst, dst, vec_enc); break;
+      default : ShouldNotReachHere(); break;
+    }
   }
 }
 
@@ -4477,7 +4493,7 @@ void C2_MacroAssembler::vbroadcastd(XMMRegister dst, int imm32, Register rtmp, i
 void C2_MacroAssembler::vector_popcount_byte(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                                              XMMRegister xtmp2, Register rtmp, int vec_enc) {
   assert((vec_enc == Assembler::AVX_512bit && VM_Version::supports_avx512bw()) || VM_Version::supports_avx2(), "");
-  vbroadcastd(xtmp1, 0x0F0F0F0F, rtmp, vec_enc);
+  vbroadcast(T_INT, xtmp1, 0x0F0F0F0F, rtmp, vec_enc);
   vpsrlw(dst, src, 4, vec_enc);
   vpand(dst, dst, xtmp1, vec_enc);
   vpand(xtmp1, src, xtmp1, vec_enc);
@@ -4503,7 +4519,7 @@ void C2_MacroAssembler::vector_popcount_short(XMMRegister dst, XMMRegister src, 
                                               XMMRegister xtmp2, Register rtmp, int vec_enc) {
   vector_popcount_byte(xtmp1, src, dst, xtmp2, rtmp, vec_enc);
   // Add the popcount of upper and lower bytes of word.
-  vbroadcastd(xtmp2, 0x00FF00FF, rtmp, vec_enc);
+  vbroadcast(T_INT, xtmp2, 0x00FF00FF, rtmp, vec_enc);
   vpsrlw(dst, xtmp1, 8, vec_enc);
   vpand(xtmp1, xtmp1, xtmp2, vec_enc);
   vpaddw(dst, dst, xtmp1, vec_enc);
@@ -4519,6 +4535,9 @@ void C2_MacroAssembler::vector_popcount_long(XMMRegister dst, XMMRegister src, X
 void C2_MacroAssembler::vector_popcount_integral(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                                                  XMMRegister xtmp2, Register rtmp, int vec_enc) {
   switch(bt) {
+    case T_LONG:
+      vector_popcount_long(dst, src, xtmp1, xtmp2, rtmp, vec_enc);
+      break;
     case T_INT:
       vector_popcount_int(dst, src, xtmp1, xtmp2, rtmp, vec_enc);
       break;
@@ -4582,8 +4601,7 @@ void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMReg
 
     // Get the reverse bit sequence of lower nibble of each byte.
     vmovdqu(xtmp1, ExternalAddress(StubRoutines::x86::vector_reverse_bit_lut()), rtmp, vec_enc);
-    movl(rtmp, 0x0F0F0F0F);
-    evpbroadcastd(xtmp2, rtmp, vec_enc);
+    vbroadcast(T_INT, xtmp2, 0x0F0F0F0F, rtmp, vec_enc);
     vpandq(dst, xtmp2, src, vec_enc);
     vpshufb(dst, xtmp1, dst, vec_enc);
     vpsllq(dst, dst, 4, vec_enc);
@@ -4602,8 +4620,7 @@ void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMReg
 
     // Shift based bit reversal.
     assert(bt == T_LONG || bt == T_INT, "");
-    movl(rtmp, 0x0f0f0f0f);
-    evpbroadcastd(xtmp1, rtmp, vec_enc);
+    vbroadcast(T_INT, xtmp1, 0x0F0F0F0F, rtmp, vec_enc);
 
     // Swap lower and upper nibble of each byte.
     vpandq(dst, xtmp1, src, vec_enc);
@@ -4613,8 +4630,7 @@ void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMReg
     vporq(xtmp1, dst, xtmp2, vec_enc);
 
     // Swap two least and most significant bits of each nibble.
-    movl(rtmp, 0x33333333);
-    evpbroadcastd(xtmp2, rtmp, vec_enc);
+    vbroadcast(T_INT, xtmp2, 0x33333333, rtmp, vec_enc);
     vpandq(dst, xtmp2, xtmp1, vec_enc);
     vpsllq(dst, dst, 2, vec_enc);
     vpandn(xtmp2, xtmp2, xtmp1, vec_enc);
@@ -4622,8 +4638,7 @@ void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMReg
     vporq(xtmp1, dst, xtmp2, vec_enc);
 
     // Swap adjacent pair of bits.
-    movl(rtmp, 0x55555555);
-    evpbroadcastd(xtmp2, rtmp, vec_enc);
+    vbroadcast(T_INT, xtmp2, 0x55555555, rtmp, vec_enc);
     vpandq(dst, xtmp2, xtmp1, vec_enc);
     vpsllq(dst, dst, 1, vec_enc);
     vpandn(xtmp2, xtmp2, xtmp1, vec_enc);
@@ -4634,9 +4649,7 @@ void C2_MacroAssembler::vector_reverse_bit(BasicType bt, XMMRegister dst, XMMReg
 
   } else {
     vmovdqu(xtmp1, ExternalAddress(StubRoutines::x86::vector_reverse_bit_lut()), rtmp, vec_enc);
-    movl(rtmp, 0x0F0F0F0F);
-    movdl(xtmp2, rtmp);
-    vpbroadcastd(xtmp2, xtmp2, vec_enc);
+    vbroadcast(T_INT, xtmp2, 0x0F0F0F0F, rtmp, vec_enc);
 
     // Get the reverse bit sequence of lower nibble of each byte.
     vpand(dst, xtmp2, src, vec_enc);
@@ -4679,8 +4692,7 @@ void C2_MacroAssembler::vector_reverse_byte64(BasicType bt, XMMRegister dst, XMM
       evprord(xtmp1, k0, xtmp1, 16, true, vec_enc);
     case T_SHORT:
       // Swap upper and lower byte of each word.
-      movl(rtmp, 0x00FF00FF);
-      evpbroadcastd(dst, rtmp, vec_enc);
+      vbroadcast(T_INT, dst, 0x00FF00FF, rtmp, vec_enc);
       vpandq(xtmp2, dst, xtmp1, vec_enc);
       vpsllq(xtmp2, xtmp2, 8, vec_enc);
       vpandn(xtmp1, dst, xtmp1, vec_enc);
@@ -4754,21 +4766,21 @@ void C2_MacroAssembler::vector_count_leading_zeros_evex(BasicType bt, XMMRegiste
       assert(VM_Version::supports_avx512bw(), "");
       evmovdquq(xtmp1, ExternalAddress(StubRoutines::x86::vector_count_leading_zeros_lut()), vec_enc, rtmp);
       movl(rtmp, 0x0F0F0F0F);
-      evpbroadcastd(xtmp2, rtmp, vec_enc);
-      vpand(dst, xtmp2, src, vec_enc);
-      vpshufb(dst, xtmp1, dst, vec_enc);
+      evpbroadcastd(dst, rtmp, vec_enc);
+      vpand(xtmp2, dst, src, vec_enc);
+      vpshufb(xtmp2, xtmp1, xtmp2, vec_enc);
       vpsrlw(xtmp3, src, 4, vec_enc);
-      vpand(xtmp3, xtmp2, xtmp3, vec_enc);
-      vpshufb(xtmp2, xtmp1, xtmp3, vec_enc);
+      vpand(xtmp3, dst, xtmp3, vec_enc);
+      vpshufb(dst, xtmp1, xtmp3, vec_enc);
       vpxor(xtmp1, xtmp1, xtmp1, vec_enc);
       evpcmpeqb(ktmp, xtmp1, xtmp3, vec_enc);
-      vpaddb(dst, dst, xtmp2, vec_enc);
-      evpblendmb(dst, ktmp, xtmp2, dst, true, vec_enc);
+      evpaddb(dst, ktmp, dst, xtmp2, true, vec_enc);
       break;
     default:
       ShouldNotReachHere();
   }
 }
+
 void C2_MacroAssembler::vector_count_leading_zeros_byte_avx(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                                                             XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc) {
   vmovdqu(xtmp1, ExternalAddress(StubRoutines::x86::vector_count_leading_zeros_lut()));
@@ -4893,4 +4905,79 @@ void C2_MacroAssembler::vector_count_leading_zeros_avx(BasicType bt, XMMRegister
     default:
       ShouldNotReachHere();
   }
+}
+
+void C2_MacroAssembler::vpsub(BasicType bt, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vec_enc) {
+  switch(bt) {
+    case T_BYTE:
+      vpsubb(dst, src1, src2, vec_enc);
+      break;
+    case T_SHORT:
+      vpsubw(dst, src1, src2, vec_enc);
+      break;
+    case T_INT:
+      vpsubd(dst, src1, src2, vec_enc);
+      break;
+    case T_LONG:
+      vpsubq(dst, src1, src2, vec_enc);
+      break;
+    default:
+      ShouldNotReachHere();
+  }
+}
+
+void C2_MacroAssembler::vpadd(BasicType bt, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vec_enc) {
+  switch(bt) {
+    case T_BYTE:
+      vpaddb(dst, src1, src2, vec_enc);
+      break;
+    case T_SHORT:
+      vpaddw(dst, src1, src2, vec_enc);
+      break;
+    case T_INT:
+      vpaddd(dst, src1, src2, vec_enc);
+      break;
+    case T_LONG:
+      vpaddq(dst, src1, src2, vec_enc);
+      break;
+    default:
+      ShouldNotReachHere();
+  }
+}
+
+// Trailing zero count computation is based on leading zero count operation as per
+// following equation. All AVX3 targets support AVX512CD feature which offers
+// direct vector instruction to compute leading zero count.
+//      CTZ = PRIM_TYPE_WIDHT - CLZ((x - 1) & ~x)
+void C2_MacroAssembler::vector_count_trailing_zeros_evex(BasicType bt, XMMRegister dst, XMMRegister src,
+                                                         XMMRegister xtmp1, XMMRegister xtmp2, XMMRegister xtmp3,
+                                                         XMMRegister xtmp4, KRegister ktmp, Register rtmp, int vec_enc) {
+  assert(is_integral_type(bt), "");
+  int bcast_value [] = { 0x8, 0x10, 0, 0x20, 0, 0, 0, 0x40 };
+  // xtmp = -1
+  vpternlogd(xtmp4, 0xff, xtmp4, xtmp4, vec_enc);
+  // xtmp = xtmp + src
+  vpadd(bt, xtmp4, xtmp4, src, vec_enc);
+  // xtmp = xtmp & ~src
+  vpternlogd(xtmp4, 0x40, xtmp4, src, vec_enc);
+  vector_count_leading_zeros_evex(bt, dst, xtmp4, xtmp1, xtmp2, xtmp3, ktmp, rtmp, true, vec_enc);
+  vbroadcast(bt, xtmp4, bcast_value[type2aelembytes(bt) - 1], rtmp, vec_enc);
+  vpsub(bt, dst, xtmp4, dst, vec_enc);
+}
+
+// Trailing zero count computation for AVX2 targets is based on popcount operation as per following equation
+//      CTZ = PRIM_TYPE_WIDHT - POPC(x | -x)
+void C2_MacroAssembler::vector_count_trailing_zeros_avx(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                                        XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc) {
+  assert(is_integral_type(bt), "");
+  int bcast_value [] = { 0x8, 0x10, 0, 0x20, 0, 0, 0, 0x40 };
+  // xtmp = 0
+  vpxor(xtmp3 , xtmp3, xtmp3, vec_enc);
+  // xtmp = 0 - src
+  vpsub(bt, xtmp3, xtmp3, src, vec_enc);
+  // xtmp = xtmp | src
+  vpor(xtmp3, xtmp3, src, vec_enc);
+  vector_popcount_integral(bt, dst, xtmp3, xtmp1, xtmp2, rtmp, vec_enc);
+  vbroadcast(bt, xtmp1, bcast_value[type2aelembytes(bt) - 1], rtmp, vec_enc);
+  vpsub(bt, dst, xtmp1, dst, vec_enc);
 }

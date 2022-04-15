@@ -347,7 +347,7 @@ public:
   void vector_popcount_integral_evex(BasicType bt, XMMRegister dst, XMMRegister src,
                                      KRegister mask, bool merge, int vec_enc);
 
-  void vbroadcastd(XMMRegister dst, int imm32, Register rtmp, int vec_enc);
+  void vbroadcast(BasicType bt, XMMRegister dst, int imm32, Register rtmp, int vec_enc);
 
   void vector_reverse_byte64(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                              XMMRegister xtmp2, Register rtmp, int vec_enc);
@@ -371,5 +371,16 @@ public:
 
   void vector_count_leading_zeros_avx(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                                       XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc);
+
+  void vpadd(BasicType bt, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vec_enc);
+
+  void vpsub(BasicType bt, XMMRegister dst, XMMRegister src1, XMMRegister src2, int vec_enc);
+
+  void vector_count_trailing_zeros_evex(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                        XMMRegister xtmp2, XMMRegister xtmp3, XMMRegister xtmp4, KRegister ktmp,
+                                        Register rtmp, int vec_enc);
+
+  void vector_count_trailing_zeros_avx(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
+                                       XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc);
 
 #endif // CPU_X86_C2_MACROASSEMBLER_X86_HPP
