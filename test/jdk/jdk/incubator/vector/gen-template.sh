@@ -236,7 +236,6 @@ function gen_op_tmpl {
     if [ -f $perf_vector_filename ]; then
       replace_variables $perf_vector_filename  $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
     elif [ -f $kernel_filename ]; then
-      echo XXX $kernel_filename $perf_vector_filename
       replace_variables $perf_wrapper_filename $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
     elif [[ $template != *"-Scalar-"* ]] && [[ $template != "Get-op" ]] && [[ $template != "With-Op" ]]; then
       echo "Warning: missing perf: $@"
