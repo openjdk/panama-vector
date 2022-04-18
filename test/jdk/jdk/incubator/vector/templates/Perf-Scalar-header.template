@@ -40,6 +40,8 @@ import org.openjdk.jmh.infra.Blackhole;
 public class $Type$Scalar extends AbstractVectorBenchmark {
     static final int INVOC_COUNT = 1; // To align with vector benchmarks.
 
+    private static final $type$ CONST_SHIFT = $Boxtype$.SIZE / 2;
+
     @Param("1024")
     int size;
 

@@ -40,6 +40,8 @@ import org.openjdk.jmh.infra.Blackhole;
 public class IntScalar extends AbstractVectorBenchmark {
     static final int INVOC_COUNT = 1; // To align with vector benchmarks.
 
+    private static final int CONST_SHIFT = Integer.SIZE / 2;
+
     @Param("1024")
     int size;
 
@@ -474,7 +476,7 @@ public class IntScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 int a = as[i];
                 int b = bs[i];
-                rs[i] = (int)(CompressExpandTest.compress(a, b));
+                rs[i] = (int)(Integer.compress(a, b));
             }
         }
 
@@ -495,7 +497,7 @@ public class IntScalar extends AbstractVectorBenchmark {
                 int a = as[i];
                 int b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (int)(CompressExpandTest.compress(a, b));
+                    rs[i] = (int)(Integer.compress(a, b));
                 } else {
                     rs[i] = a;
                 }
@@ -516,7 +518,7 @@ public class IntScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 int a = as[i];
                 int b = bs[i];
-                rs[i] = (int)(CompressExpandTest.expand(a, b));
+                rs[i] = (int)(Integer.expand(a, b));
             }
         }
 
@@ -537,7 +539,7 @@ public class IntScalar extends AbstractVectorBenchmark {
                 int a = as[i];
                 int b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (int)(CompressExpandTest.expand(a, b));
+                    rs[i] = (int)(Integer.expand(a, b));
                 } else {
                     rs[i] = a;
                 }
@@ -912,7 +914,7 @@ public class IntScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 int a = as[i];
                 int b = bs[i];
-                rs[i] = (int)(ROR_scalar(a,b));
+                rs[i] = (int)(ROR_scalar(a, b));
             }
         }
 
@@ -933,7 +935,7 @@ public class IntScalar extends AbstractVectorBenchmark {
                 int a = as[i];
                 int b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (int)(ROR_scalar(a,b)) : a);
+                rs[i] = (m ? (int)(ROR_scalar(a, b)) : a);
             }
         }
 
@@ -952,7 +954,7 @@ public class IntScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 int a = as[i];
                 int b = bs[i];
-                rs[i] = (int)(ROL_scalar(a,b));
+                rs[i] = (int)(ROL_scalar(a, b));
             }
         }
 
@@ -973,7 +975,211 @@ public class IntScalar extends AbstractVectorBenchmark {
                 int a = as[i];
                 int b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (int)(ROL_scalar(a,b)) : a);
+                rs[i] = (m ? (int)(ROL_scalar(a, b)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void LSHRShiftConst(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] bs = fb.apply(size);
+        int[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                int b = bs[i];
+                rs[i] = (int)((a >>> CONST_SHIFT));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void LSHRMaskedShiftConst(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] bs = fb.apply(size);
+        int[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                int b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (int)((a >>> CONST_SHIFT)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+
+
+
+
+    @Benchmark
+    public void LSHLShiftConst(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] bs = fb.apply(size);
+        int[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                int b = bs[i];
+                rs[i] = (int)((a << CONST_SHIFT));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void LSHLMaskedShiftConst(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] bs = fb.apply(size);
+        int[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                int b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (int)((a << CONST_SHIFT)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void ASHRShiftConst(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] bs = fb.apply(size);
+        int[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                int b = bs[i];
+                rs[i] = (int)((a >> CONST_SHIFT));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void ASHRMaskedShiftConst(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] bs = fb.apply(size);
+        int[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                int b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (int)((a >> CONST_SHIFT)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void RORShiftConst(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] bs = fb.apply(size);
+        int[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                int b = bs[i];
+                rs[i] = (int)(ROR_scalar(a, CONST_SHIFT));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void RORMaskedShiftConst(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] bs = fb.apply(size);
+        int[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                int b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (int)(ROR_scalar(a, CONST_SHIFT)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void ROLShiftConst(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] bs = fb.apply(size);
+        int[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                int b = bs[i];
+                rs[i] = (int)(ROL_scalar(a, CONST_SHIFT));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void ROLMaskedShiftConst(Blackhole bh) {
+        int[] as = fa.apply(size);
+        int[] bs = fb.apply(size);
+        int[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                int a = as[i];
+                int b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (int)(ROL_scalar(a, CONST_SHIFT)) : a);
             }
         }
 

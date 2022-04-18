@@ -40,6 +40,8 @@ import org.openjdk.jmh.infra.Blackhole;
 public class FloatScalar extends AbstractVectorBenchmark {
     static final int INVOC_COUNT = 1; // To align with vector benchmarks.
 
+    private static final float CONST_SHIFT = Float.SIZE / 2;
+
     @Param("1024")
     int size;
 
@@ -300,6 +302,20 @@ public class FloatScalar extends AbstractVectorBenchmark {
         }
         bh.consume(rs);
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

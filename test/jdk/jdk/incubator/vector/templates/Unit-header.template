@@ -44,7 +44,6 @@ import jdk.incubator.vector.FloatVector;
 #end[Float]
 #if[Int]
 import jdk.incubator.vector.IntVector;
-import compress.CompressExpandTest;
 #end[Int]
 #if[Double]
 import jdk.incubator.vector.DoubleVector;
@@ -54,7 +53,6 @@ import jdk.incubator.vector.ShortVector;
 #end[Short]
 #if[Long]
 import jdk.incubator.vector.LongVector;
-import compress.CompressExpandTest;
 #end[Long]
 
 import org.testng.Assert;

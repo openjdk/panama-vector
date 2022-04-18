@@ -1,0 +1,6 @@
+
+    @Benchmark
+    public void [[TEST]][[TEST_TYPE]][[OP_NAME]]Const(Blackhole bh) {
+[[KERNEL]]
+        bh.consume(r);
+    }

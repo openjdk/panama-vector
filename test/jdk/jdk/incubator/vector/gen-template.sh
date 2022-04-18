@@ -236,6 +236,7 @@ function gen_op_tmpl {
     if [ -f $perf_vector_filename ]; then
       replace_variables $perf_vector_filename  $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
     elif [ -f $kernel_filename ]; then
+      echo XXX $kernel_filename $perf_vector_filename
       replace_variables $perf_wrapper_filename $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
     elif [[ $template != *"-Scalar-"* ]] && [[ $template != "Get-op" ]] && [[ $template != "With-Op" ]]; then
       echo "Warning: missing perf: $@"
@@ -411,8 +412,8 @@ gen_binary_alu_op "AND_NOT" "a \& ~b" "BITWISE"
 gen_binary_alu_op "OR+or"    "a | b"   "BITWISE"
 # Missing:        "OR_UNCHECKED"
 gen_binary_alu_op "XOR"   "a ^ b"   "BITWISE"
-gen_binary_alu_op "COMPRESS_BITS" "CompressExpandTest.compress(a, b)" "intOrLong"
-gen_binary_alu_op "EXPAND_BITS" "CompressExpandTest.expand(a, b)" "intOrLong"
+gen_binary_alu_op "COMPRESS_BITS" "\$Boxtype\$.compress(a, b)" "intOrLong"
+gen_binary_alu_op "EXPAND_BITS" "\$Boxtype\$.expand(a, b)" "intOrLong"
 # Generate the broadcast versions
 gen_binary_alu_bcst_op "add+withMask" "a + b"
 gen_binary_alu_bcst_op "sub+withMask" "a - b"

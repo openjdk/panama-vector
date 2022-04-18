@@ -37,7 +37,6 @@ import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.Vector;
 
 import jdk.incubator.vector.LongVector;
-import compress.CompressExpandTest;
 
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -1981,7 +1980,7 @@ public class Long256VectorTests extends AbstractVectorTest {
 
 
     static long COMPRESS_BITS(long a, long b) {
-        return (long)(CompressExpandTest.compress(a, b));
+        return (long)(Long.compress(a, b));
     }
 
     @Test(dataProvider = "longBinaryOpProvider")
@@ -2025,7 +2024,7 @@ public class Long256VectorTests extends AbstractVectorTest {
 
 
     static long EXPAND_BITS(long a, long b) {
-        return (long)(CompressExpandTest.expand(a, b));
+        return (long)(Long.expand(a, b));
     }
 
     @Test(dataProvider = "longBinaryOpProvider")
