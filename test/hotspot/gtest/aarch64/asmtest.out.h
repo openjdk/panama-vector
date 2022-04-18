@@ -1162,27 +1162,30 @@
     __ sve_fmad(z20, __ S, p3, z16, z29);              //       fmad    z20.s, p3/m, z16.s, z29.s
     __ sve_fmla(z3, __ S, p0, z22, z9);                //       fmla    z3.s, p0/m, z22.s, z9.s
     __ sve_fmls(z24, __ D, p7, z3, z19);               //       fmls    z24.d, p7/m, z3.d, z19.d
-    __ sve_fnmla(z7, __ S, p6, z21, z13);              //       fnmla   z7.s, p6/m, z21.s, z13.s
-    __ sve_fnmls(z7, __ D, p6, z5, z21);               //       fnmls   z7.d, p6/m, z5.d, z21.d
-    __ sve_mla(z17, __ S, p0, z3, z9);                 //       mla     z17.s, p0/m, z3.s, z9.s
-    __ sve_mls(z11, __ S, p2, z11, z14);               //       mls     z11.s, p2/m, z11.s, z14.s
-    __ sve_and(z17, z11, z13);                         //       and     z17.d, z11.d, z13.d
-    __ sve_eor(z17, z30, z17);                         //       eor     z17.d, z30.d, z17.d
-    __ sve_orr(z15, z14, z26);                         //       orr     z15.d, z14.d, z26.d
-    __ sve_bic(z27, z22, z7);                          //       bic     z27.d, z22.d, z7.d
-    __ sve_uzp1(z5, __ H, z27, z27);                   //       uzp1    z5.h, z27.h, z27.h
-    __ sve_uzp2(z0, __ S, z14, z24);                   //       uzp2    z0.s, z14.s, z24.s
+    __ sve_fmsb(z7, __ S, p6, z21, z13);               //       fmsb    z7.s, p6/m, z21.s, z13.s
+    __ sve_fnmad(z7, __ D, p6, z5, z21);               //       fnmad   z7.d, p6/m, z5.d, z21.d
+    __ sve_fnmsb(z17, __ D, p0, z3, z9);               //       fnmsb   z17.d, p0/m, z3.d, z9.d
+    __ sve_fnmla(z11, __ D, p2, z11, z14);             //       fnmla   z11.d, p2/m, z11.d, z14.d
+    __ sve_fnmls(z17, __ D, p2, z13, z24);             //       fnmls   z17.d, p2/m, z13.d, z24.d
+    __ sve_mla(z30, __ H, p4, z8, z15);                //       mla     z30.h, p4/m, z8.h, z15.h
+    __ sve_mls(z26, __ H, p5, z27, z22);               //       mls     z26.h, p5/m, z27.h, z22.h
+    __ sve_and(z8, z5, z27);                           //       and     z8.d, z5.d, z27.d
+    __ sve_eor(z10, z0, z14);                          //       eor     z10.d, z0.d, z14.d
+    __ sve_orr(z21, z20, z0);                          //       orr     z21.d, z20.d, z0.d
+    __ sve_bic(z22, z25, z5);                          //       bic     z22.d, z25.d, z5.d
+    __ sve_uzp1(z29, __ B, z17, z17);                  //       uzp1    z29.b, z17.b, z17.b
+    __ sve_uzp2(z12, __ H, z14, z29);                  //       uzp2    z12.h, z14.h, z29.h
 
 // SVEReductionOp
-    __ sve_andv(v20, __ S, p0, z3);                    //       andv s20, p0, z3.s
-    __ sve_orv(v25, __ D, p1, z25);                    //       orv d25, p1, z25.d
-    __ sve_eorv(v17, __ H, p4, z1);                    //       eorv h17, p4, z1.h
-    __ sve_smaxv(v14, __ B, p7, z13);                  //       smaxv b14, p7, z13.b
-    __ sve_sminv(v17, __ S, p0, z30);                  //       sminv s17, p0, z30.s
-    __ sve_fminv(v22, __ S, p5, z29);                  //       fminv s22, p5, z29.s
-    __ sve_fmaxv(v8, __ S, p0, z0);                    //       fmaxv s8, p0, z0.s
-    __ sve_fadda(v23, __ D, p5, z0);                   //       fadda d23, p5, d23, z0.d
-    __ sve_uaddv(v25, __ H, p6, z23);                  //       uaddv d25, p6, z23.h
+    __ sve_andv(v0, __ D, p4, z2);                     //       andv d0, p4, z2.d
+    __ sve_orv(v20, __ D, p5, z21);                    //       orv d20, p5, z21.d
+    __ sve_eorv(v12, __ B, p2, z2);                    //       eorv b12, p2, z2.b
+    __ sve_smaxv(v14, __ B, p5, z22);                  //       smaxv b14, p5, z22.b
+    __ sve_sminv(v19, __ D, p6, z26);                  //       sminv d19, p6, z26.d
+    __ sve_fminv(v12, __ S, p5, z21);                  //       fminv s12, p5, z21.s
+    __ sve_fmaxv(v1, __ S, p2, z19);                   //       fmaxv s1, p2, z19.s
+    __ sve_fadda(v19, __ S, p6, z23);                  //       fadda s19, p6, s19, z23.s
+    __ sve_uaddv(v30, __ S, p4, z19);                  //       uaddv d30, p4, z19.s
 
     __ bind(forth);
 
@@ -1201,30 +1204,30 @@
     0x9101a1a0,     0xb10a5cc8,     0xd10810aa,     0xf10fd061,
     0x120cb166,     0x321764bc,     0x52174681,     0x720c0227,
     0x9241018e,     0xb25a2969,     0xd278b411,     0xf26aad01,
-    0x14000000,     0x17ffffd7,     0x140003db,     0x94000000,
-    0x97ffffd4,     0x940003d8,     0x3400000a,     0x34fffa2a,
-    0x34007aaa,     0x35000008,     0x35fff9c8,     0x35007a48,
-    0xb400000b,     0xb4fff96b,     0xb40079eb,     0xb500001d,
-    0xb5fff91d,     0xb500799d,     0x10000013,     0x10fff8b3,
-    0x10007933,     0x90000013,     0x36300016,     0x3637f836,
-    0x363078b6,     0x3758000c,     0x375ff7cc,     0x3758784c,
+    0x14000000,     0x17ffffd7,     0x140003de,     0x94000000,
+    0x97ffffd4,     0x940003db,     0x3400000a,     0x34fffa2a,
+    0x34007b0a,     0x35000008,     0x35fff9c8,     0x35007aa8,
+    0xb400000b,     0xb4fff96b,     0xb4007a4b,     0xb500001d,
+    0xb5fff91d,     0xb50079fd,     0x10000013,     0x10fff8b3,
+    0x10007993,     0x90000013,     0x36300016,     0x3637f836,
+    0x36307916,     0x3758000c,     0x375ff7cc,     0x375878ac,
     0x128313a0,     0x528a32c7,     0x7289173b,     0x92ab3acc,
     0xd2a0bf94,     0xf2c285e8,     0x9358722f,     0x330e652f,
     0x53067f3b,     0x93577c53,     0xb34a1aac,     0xd35a4016,
     0x13946c63,     0x93c3dbc8,     0x54000000,     0x54fff5a0,
-    0x54007620,     0x54000001,     0x54fff541,     0x540075c1,
-    0x54000002,     0x54fff4e2,     0x54007562,     0x54000002,
-    0x54fff482,     0x54007502,     0x54000003,     0x54fff423,
-    0x540074a3,     0x54000003,     0x54fff3c3,     0x54007443,
-    0x54000004,     0x54fff364,     0x540073e4,     0x54000005,
-    0x54fff305,     0x54007385,     0x54000006,     0x54fff2a6,
-    0x54007326,     0x54000007,     0x54fff247,     0x540072c7,
-    0x54000008,     0x54fff1e8,     0x54007268,     0x54000009,
-    0x54fff189,     0x54007209,     0x5400000a,     0x54fff12a,
-    0x540071aa,     0x5400000b,     0x54fff0cb,     0x5400714b,
-    0x5400000c,     0x54fff06c,     0x540070ec,     0x5400000d,
-    0x54fff00d,     0x5400708d,     0x5400000e,     0x54ffefae,
-    0x5400702e,     0x5400000f,     0x54ffef4f,     0x54006fcf,
+    0x54007680,     0x54000001,     0x54fff541,     0x54007621,
+    0x54000002,     0x54fff4e2,     0x540075c2,     0x54000002,
+    0x54fff482,     0x54007562,     0x54000003,     0x54fff423,
+    0x54007503,     0x54000003,     0x54fff3c3,     0x540074a3,
+    0x54000004,     0x54fff364,     0x54007444,     0x54000005,
+    0x54fff305,     0x540073e5,     0x54000006,     0x54fff2a6,
+    0x54007386,     0x54000007,     0x54fff247,     0x54007327,
+    0x54000008,     0x54fff1e8,     0x540072c8,     0x54000009,
+    0x54fff189,     0x54007269,     0x5400000a,     0x54fff12a,
+    0x5400720a,     0x5400000b,     0x54fff0cb,     0x540071ab,
+    0x5400000c,     0x54fff06c,     0x5400714c,     0x5400000d,
+    0x54fff00d,     0x540070ed,     0x5400000e,     0x54ffefae,
+    0x5400708e,     0x5400000f,     0x54ffef4f,     0x5400702f,
     0xd40658e1,     0xd4014d22,     0xd4046543,     0xd4273f60,
     0xd44cad80,     0xd503201f,     0xd503203f,     0xd503205f,
     0xd503209f,     0xd50320bf,     0xd503219f,     0xd50323bf,
@@ -1443,12 +1446,12 @@
     0x6580801a,     0x65cd9d53,     0x65c694e3,     0x65878ebc,
     0x65c28e3a,     0x04ddac51,     0x6582b690,     0x65c0a033,
     0x65c1aa11,     0x658da095,     0x65818cd7,     0x65bd8e14,
-    0x65a902c3,     0x65f33c78,     0x65ad5aa7,     0x65f578a7,
-    0x04894071,     0x048e696b,     0x042d3171,     0x04b133d1,
-    0x047a31cf,     0x04e732db,     0x057b6b65,     0x05b86dc0,
-    0x049a2074,     0x04d82739,     0x04593031,     0x04083dae,
-    0x048a23d1,     0x658737b6,     0x65862008,     0x65d83417,
-    0x04413af9,
+    0x65a902c3,     0x65f33c78,     0x65adbaa7,     0x65f5d8a7,
+    0x65e9e071,     0x65ee496b,     0x65f869b1,     0x044f511e,
+    0x0456777a,     0x043b30a8,     0x04ae300a,     0x04603295,
+    0x04e53336,     0x05316a3d,     0x057d6dcc,     0x04da3040,
+    0x04d836b4,     0x0419284c,     0x040836ce,     0x04ca3b53,
+    0x658736ac,     0x65862a61,     0x65983af3,     0x0481327e,
+
   };
 // END  Generated code -- do not edit
-
