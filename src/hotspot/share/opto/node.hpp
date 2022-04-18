@@ -794,7 +794,7 @@ public:
     Flag_for_post_loop_opts_igvn     = 1 << 16,
     Flag_is_removed_by_peephole      = 1 << 17,
     Flag_is_predicated_using_blend   = 1 << 18,
-    _last_flag                       = Flag_is_removed_by_peephole
+    _last_flag                       = Flag_is_predicated_using_blend
   };
 
   class PD;

@@ -6000,3 +6000,55 @@ instruct countTrailingZerosVX(vecX dst, vecX src) %{
   %}
   ins_pipe(pipe_slow);
 %}
+
+//------------------------------ ReverseV -----------------------------------
+
+instruct vreverseD(vecD dst, vecD src) %{
+  predicate(n->as_Vector()->length_in_bytes() == 8);
+  match(Set dst (ReverseV src));
+  ins_cost(2 * INSN_COST);
+  format %{ "ReverseV $dst, $src\t# vector (D)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ neon_reverse_bits(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), bt, false);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vreverseX(vecX dst, vecX src) %{
+  predicate(n->as_Vector()->length_in_bytes() == 16);
+  match(Set dst (ReverseV src));
+  ins_cost(2 * INSN_COST);
+  format %{ "ReverseV $dst, $src\t# vector (X)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ neon_reverse_bits(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), bt, true);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+//---------------------------- ReverseBytesV --------------------------------
+
+instruct vreverseBytesD(vecD dst, vecD src) %{
+  predicate(n->as_Vector()->length_in_bytes() == 8);
+  match(Set dst (ReverseBytesV src));
+  ins_cost(INSN_COST);
+  format %{ "ReverseBytesV $dst, $src\t# vector (D)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ neon_reverse_bytes(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), bt, false);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vreverseBytesX(vecX dst, vecX src) %{
+  predicate(n->as_Vector()->length_in_bytes() == 16);
+  match(Set dst (ReverseBytesV src));
+  ins_cost(INSN_COST);
+  format %{ "ReverseBytesV $dst, $src\t# vector (X)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ neon_reverse_bytes(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), bt, true);
+  %}
+  ins_pipe(pipe_slow);
+%}

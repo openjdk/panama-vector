@@ -2664,3 +2664,27 @@ CLTZ_X(LeadingZerosV)
 //------------------------- CountTrailingZerosV ----------------------------
 CLTZ_D(TrailingZerosV)
 CLTZ_X(TrailingZerosV)
+
+dnl
+dnl REVERSE($1,        $2,      $3,   $4  )
+dnl REVERSE(insn_name, op_name, type, insn)
+define(`REVERSE', `
+instruct $1(vec$3 dst, vec$3 src) %{
+  predicate(n->as_Vector()->length_in_bytes() == ifelse($3, D, 8, 16));
+  match(Set dst ($2 src));
+  ins_cost(ifelse($2, `ReverseV', `2 * ', `')INSN_COST);
+  format %{ "$2 $dst, $src\t# vector ($3)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    __ $4(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), bt, ifelse($3, D, false, true));
+  %}
+  ins_pipe(pipe_slow);
+%}')dnl
+dnl
+//------------------------------ ReverseV -----------------------------------
+REVERSE(vreverseD, ReverseV, D, neon_reverse_bits)
+REVERSE(vreverseX, ReverseV, X, neon_reverse_bits)
+
+//---------------------------- ReverseBytesV --------------------------------
+REVERSE(vreverseBytesD, ReverseBytesV, D, neon_reverse_bytes)
+REVERSE(vreverseBytesX, ReverseBytesV, X, neon_reverse_bytes)

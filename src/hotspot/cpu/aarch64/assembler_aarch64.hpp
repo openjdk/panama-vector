@@ -3128,7 +3128,6 @@ public:
   INSN(sve_not,  0b00000100, 0b011110101); // bitwise invert vector, unary
   INSN(sve_orr,  0b00000100, 0b011000000); // vector or
   INSN(sve_orv,  0b00000100, 0b011000001); // bitwise or reduction to scalar
-  INSN(sve_rbit, 0b00000101, 0b100111100); // vector reverse bits
   INSN(sve_smax, 0b00000100, 0b001000000); // signed maximum vectors
   INSN(sve_smaxv, 0b00000100, 0b001000001); // signed maximum reduction to scalar
   INSN(sve_smin,  0b00000100, 0b001010000); // signed minimum vectors
@@ -3730,6 +3729,19 @@ void sve_cmp(Condition cond, PRegister Pd, SIMD_RegVariant T,
 
   INSN(sve_lasta, 0b0);
   INSN(sve_lastb, 0b1);
+#undef INSN
+
+// SVE reverse within elements
+#define INSN(NAME, opc, cond)                                                        \
+  void NAME(FloatRegister Zd, SIMD_RegVariant T, PRegister Pg,  FloatRegister Zn) {  \
+    starti;                                                                          \
+    assert(cond, "invalid size");                                                    \
+    f(0b00000101, 31, 24), f(T, 23, 22), f(0b1001, 21, 18), f(opc, 17, 16);          \
+    f(0b100, 15, 13), pgrf(Pg, 10), rf(Zn, 5), rf(Zd, 0);                            \
+  }
+
+  INSN(sve_revb, 0b00, T == H || T == S || T == D);
+  INSN(sve_rbit, 0b11, T != Q);
 #undef INSN
 
   // SVE Index Generation:

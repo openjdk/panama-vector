@@ -5901,12 +5901,12 @@ instruct vmask_gen(pRegGov pg, iRegL len, rFlagsReg cr) %{
 
 // ------------------------------ CountLeadingZerosV ------------------------------
 
-instruct countLeadingZerosV(vReg dst, vReg src) %{
+instruct vcountLeadingZeros(vReg dst, vReg src) %{
   predicate(UseSVE > 0 &&
             !n->as_Vector()->is_predicated_vector());
   match(Set dst (CountLeadingZerosV src));
   ins_cost(SVE_COST);
-  format %{ "countLeadingZerosV $dst, $src\t# vector (sve)" %}
+  format %{ "sve_clz $dst, $src\t# vector (sve)" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
@@ -5917,11 +5917,11 @@ instruct countLeadingZerosV(vReg dst, vReg src) %{
 
 // The dst and src should use the same register to make sure the
 // inactive lanes in dst save the same elements as src.
-instruct countLeadingZerosV_masked(vReg dst_src, pRegGov pg) %{
+instruct vcountLeadingZeros_masked(vReg dst_src, pRegGov pg) %{
   predicate(UseSVE > 0);
   match(Set dst_src (CountLeadingZerosV dst_src pg));
   ins_cost(SVE_COST);
-  format %{ "countLeadingZerosV $dst_src, $pg, $dst_src\t# vector (sve)" %}
+  format %{ "sve_clz $dst_src, $pg, $dst_src\t# vector (sve)" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
@@ -5933,12 +5933,13 @@ instruct countLeadingZerosV_masked(vReg dst_src, pRegGov pg) %{
 
 // ------------------------------ CountTrailingZerosV -----------------------------
 
-instruct countTrailingZerosV(vReg dst, vReg src) %{
+instruct vcountTrailingZeros(vReg dst, vReg src) %{
   predicate(UseSVE > 0 &&
             !n->as_Vector()->is_predicated_vector());
   match(Set dst (CountTrailingZerosV src));
   ins_cost(2 * SVE_COST);
-  format %{ "countTrailingZerosV $dst, $src\t# vector (sve)" %}
+  format %{ "sve_rbit $dst, $src\n\t"
+            "sve_clz  $dst, $dst\t# vector (sve)" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
@@ -5950,11 +5951,12 @@ instruct countTrailingZerosV(vReg dst, vReg src) %{
 
 // The dst and src should use the same register to make sure the
 // inactive lanes in dst save the same elements as src.
-instruct countTrailingZerosV_masked(vReg dst_src, pRegGov pg) %{
+instruct vcountTrailingZeros_masked(vReg dst_src, pRegGov pg) %{
   predicate(UseSVE > 0);
   match(Set dst_src (CountTrailingZerosV dst_src pg));
   ins_cost(2 * SVE_COST);
-  format %{ "countTrailingZerosV $dst_src, $pg, $dst_src\t# vector (sve)" %}
+  format %{ "sve_rbit $dst_src, $pg, $dst_src\n\t"
+            "sve_clz  $dst_src, $pg, $dst_src\t# vector (sve)" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
@@ -5965,3 +5967,78 @@ instruct countTrailingZerosV_masked(vReg dst_src, pRegGov pg) %{
   %}
   ins_pipe(pipe_slow);
 %}
+
+// ---------------------------------- ReverseV ------------------------------------
+
+instruct vreverse(vReg dst, vReg src) %{
+  predicate(UseSVE > 0 &&
+            !n->as_Vector()->is_predicated_vector());
+  match(Set dst (ReverseV src));
+  ins_cost(SVE_COST);
+  format %{ "sve_rbit $dst, $src\t# vector (sve)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
+    __ sve_rbit(as_FloatRegister($dst$$reg), size, ptrue, as_FloatRegister($src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// The dst and src should use the same register to make sure the
+// inactive lanes in dst save the same elements as src.
+instruct vreverse_masked(vReg dst_src, pRegGov pg) %{
+  predicate(UseSVE > 0);
+  match(Set dst_src (ReverseV dst_src pg));
+  ins_cost(SVE_COST);
+  format %{ "sve_rbit $dst_src, $pg, $dst_src\t# vector (sve)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
+    __ sve_rbit(as_FloatRegister($dst_src$$reg), size,
+        as_PRegister($pg$$reg), as_FloatRegister($dst_src$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// -------------------------------- ReverseBytesV ---------------------------------
+
+instruct vreverseBytes(vReg dst, vReg src) %{
+  predicate(UseSVE > 0 &&
+            !n->as_Vector()->is_predicated_vector());
+  match(Set dst (ReverseBytesV src));
+  ins_cost(SVE_COST);
+  format %{ "sve_revb $dst, $src\t# vector (sve)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
+    if (bt == T_BYTE) {
+      if (as_FloatRegister($dst$$reg) != as_FloatRegister($src$$reg)) {
+        __ sve_orr(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), as_FloatRegister($src$$reg));
+      }
+    } else {
+      __ sve_revb(as_FloatRegister($dst$$reg), size, ptrue, as_FloatRegister($src$$reg));
+    }
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+// The dst and src should use the same register to make sure the
+// inactive lanes in dst save the same elements as src.
+instruct vreverseBytes_masked(vReg dst_src, pRegGov pg) %{
+  predicate(UseSVE > 0);
+  match(Set dst_src (ReverseBytesV dst_src pg));
+  ins_cost(SVE_COST);
+  format %{ "sve_revb $dst_src, $pg, $dst_src\t# vector (sve)" %}
+  ins_encode %{
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
+    if (bt == T_BYTE) {
+      // do nothing
+    } else {
+      __ sve_revb(as_FloatRegister($dst_src$$reg), size,
+          as_PRegister($pg$$reg), as_FloatRegister($dst_src$$reg));
+    }
+  %}
+  ins_pipe(pipe_slow);
+%}
+
