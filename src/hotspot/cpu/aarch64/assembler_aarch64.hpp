@@ -3128,7 +3128,6 @@ public:
   INSN(sve_not,  0b00000100, 0b011110101); // bitwise invert vector, unary
   INSN(sve_orr,  0b00000100, 0b011000000); // vector or
   INSN(sve_orv,  0b00000100, 0b011000001); // bitwise or reduction to scalar
-  INSN(sve_rbit, 0b00000101, 0b100111100); // vector reverse bits
   INSN(sve_smax, 0b00000100, 0b001000000); // signed maximum vectors
   INSN(sve_smaxv, 0b00000100, 0b001000001); // signed maximum reduction to scalar
   INSN(sve_smin,  0b00000100, 0b001010000); // signed minimum vectors
@@ -3175,8 +3174,11 @@ public:
   INSN(sve_fnmla, 0b01100101, 1, 0b010); // floating-point negated fused multiply-add: Zda = -Zda + -Zn * Zm
   INSN(sve_fnmls, 0b01100101, 1, 0b011); // floating-point negated fused multiply-subtract: Zda = -Zda + Zn * Zm
   INSN(sve_fmad,  0b01100101, 1, 0b100); // floating-point fused multiply-add, writing multiplicand: Zda = Zm + Zda * Zn
-  INSN(sve_mla,   0b00000100, 0, 0b010); // multiply-add: Zda = Zda + Zn*Zm
-  INSN(sve_mls,   0b00000100, 0, 0b011); // multiply-subtract: Zda = Zda + -Zn*Zm
+  INSN(sve_fmsb,  0b01100101, 1, 0b101); // floating-point fused multiply-subtract, writing multiplicand: Zda = Zm + -Zda * Zn
+  INSN(sve_fnmad, 0b01100101, 1, 0b110); // floating-point negated fused multiply-add, writing multiplicand: Zda = -Zm + -Zda * Zn
+  INSN(sve_fnmsb, 0b01100101, 1, 0b111); // floating-point negated fused multiply-subtract, writing multiplicand: Zda = -Zm + Zda * Zn
+  INSN(sve_mla,   0b00000100, 0, 0b010); // multiply-add, writing addend: Zda = Zda + Zn*Zm
+  INSN(sve_mls,   0b00000100, 0, 0b011); // multiply-subtract, writing addend: Zda = Zda + -Zn*Zm
 #undef INSN
 
 // SVE bitwise logical - unpredicated
@@ -3732,6 +3734,19 @@ void sve_cmp(Condition cond, PRegister Pd, SIMD_RegVariant T,
   INSN(sve_lastb, 0b1);
 #undef INSN
 
+// SVE reverse within elements
+#define INSN(NAME, opc, cond)                                                        \
+  void NAME(FloatRegister Zd, SIMD_RegVariant T, PRegister Pg,  FloatRegister Zn) {  \
+    starti;                                                                          \
+    assert(cond, "invalid size");                                                    \
+    f(0b00000101, 31, 24), f(T, 23, 22), f(0b1001, 21, 18), f(opc, 17, 16);          \
+    f(0b100, 15, 13), pgrf(Pg, 10), rf(Zn, 5), rf(Zd, 0);                            \
+  }
+
+  INSN(sve_revb, 0b00, T == H || T == S || T == D);
+  INSN(sve_rbit, 0b11, T != Q);
+#undef INSN
+
   // SVE Index Generation:
   // Create index starting from and incremented by immediate
   void sve_index(FloatRegister Zd, SIMD_RegVariant T, int imm1, int imm2) {
@@ -3779,6 +3794,7 @@ void sve_cmp(Condition cond, PRegister Pd, SIMD_RegVariant T,
   static bool operand_valid_for_add_sub_immediate(int64_t imm);
   static bool operand_valid_for_sve_add_sub_immediate(int64_t imm);
   static bool operand_valid_for_float_immediate(double imm);
+  static int  operand_valid_for_movi_immediate(uint64_t imm64, SIMD_Arrangement T);
 
   void emit_data64(jlong data, relocInfo::relocType rtype, int format = 0);
   void emit_data64(jlong data, RelocationHolder const& rspec, int format = 0);

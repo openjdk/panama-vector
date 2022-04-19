@@ -472,6 +472,10 @@ public class ShortScalar extends AbstractVectorBenchmark {
 
 
 
+
+
+
+
     @Benchmark
     public void LSHL(Blackhole bh) {
         short[] as = fa.apply(size);

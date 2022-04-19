@@ -465,6 +465,10 @@ public class Byte64Vector extends AbstractVectorBenchmark {
 
 
 
+
+
+
+
     @Benchmark
     public void LSHL(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());

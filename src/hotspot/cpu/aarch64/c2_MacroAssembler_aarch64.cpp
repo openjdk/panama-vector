@@ -1070,10 +1070,12 @@ void C2_MacroAssembler::sve_vector_narrow(FloatRegister dst, SIMD_RegVariant dst
       sve_uzp1(dst, S, src, tmp);
       break;
     case H:
+      assert_different_registers(dst, tmp);
       sve_uzp1(dst, S, src, tmp);
       sve_uzp1(dst, H, dst, tmp);
       break;
     case B:
+      assert_different_registers(dst, tmp);
       sve_uzp1(dst, S, src, tmp);
       sve_uzp1(dst, H, dst, tmp);
       sve_uzp1(dst, B, dst, tmp);
@@ -1085,6 +1087,7 @@ void C2_MacroAssembler::sve_vector_narrow(FloatRegister dst, SIMD_RegVariant dst
     if (dst_size == H) {
       sve_uzp1(dst, H, src, tmp);
     } else { // B
+      assert_different_registers(dst, tmp);
       sve_uzp1(dst, H, src, tmp);
       sve_uzp1(dst, B, dst, tmp);
     }
@@ -1384,21 +1387,31 @@ void C2_MacroAssembler::sve_compress_byte(FloatRegister dst, FloatRegister src, 
 void C2_MacroAssembler::neon_reverse_bits(FloatRegister dst, FloatRegister src, BasicType bt, bool isQ) {
   assert(bt == T_BYTE || bt == T_SHORT || bt == T_INT || bt == T_LONG, "unsupported basic type");
   SIMD_Arrangement size = isQ ? T16B : T8B;
+  if (bt == T_BYTE) {
+    rbit(dst, size, src);
+  } else {
+    neon_reverse_bytes(dst, src, bt, isQ);
+    rbit(dst, size, dst);
+  }
+}
+
+void C2_MacroAssembler::neon_reverse_bytes(FloatRegister dst, FloatRegister src, BasicType bt, bool isQ) {
+  assert(bt == T_BYTE || bt == T_SHORT || bt == T_INT || bt == T_LONG, "unsupported basic type");
+  SIMD_Arrangement size = isQ ? T16B : T8B;
   switch (bt) {
     case T_BYTE:
-      rbit(dst, size, src);
+      if (dst != src) {
+        orr(dst, size, src, src);
+      }
       break;
     case T_SHORT:
       rev16(dst, size, src);
-      rbit(dst, size, dst);
       break;
     case T_INT:
       rev32(dst, size, src);
-      rbit(dst, size, dst);
       break;
     case T_LONG:
       rev64(dst, size, src);
-      rbit(dst, size, dst);
       break;
     default:
       assert(false, "unsupported");

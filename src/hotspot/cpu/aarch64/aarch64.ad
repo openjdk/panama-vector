@@ -1279,12 +1279,12 @@ class HandlerImpl {
   static int emit_deopt_handler(CodeBuffer& cbuf);
 
   static uint size_exception_handler() {
-    return MacroAssembler::far_branch_size();
+    return MacroAssembler::far_codestub_branch_size();
   }
 
   static uint size_deopt_handler() {
     // count one adr and one far branch instruction
-    return 4 * NativeInstruction::instruction_size;
+    return NativeInstruction::instruction_size + MacroAssembler::far_codestub_branch_size();
   }
 };
 
@@ -2398,7 +2398,7 @@ int HandlerImpl::emit_deopt_handler(CodeBuffer& cbuf)
   __ adr(lr, __ pc());
   __ far_jump(RuntimeAddress(SharedRuntime::deopt_blob()->unpack()));
 
-  assert(__ offset() - offset <= (int) size_deopt_handler(), "overflow");
+  assert(__ offset() - offset == (int) size_deopt_handler(), "overflow");
   __ end_a_stub();
   return offset;
 }
@@ -2431,6 +2431,14 @@ const bool Matcher::match_rule_supported(int opcode) {
     case Op_OrVMask:
     case Op_XorVMask:
       if (UseSVE == 0) {
+        ret_value = false;
+      }
+      break;
+    case Op_PopCountI:
+    case Op_PopCountL:
+    case Op_PopCountVI:
+    case Op_PopCountVL:
+      if (!UsePopCountInstruction) {
         ret_value = false;
       }
       break;
@@ -8639,7 +8647,6 @@ instruct countTrailingZerosL(iRegINoSp dst, iRegL src) %{
 //
 
 instruct popCountI(iRegINoSp dst, iRegIorL2I src, vRegF tmp) %{
-  predicate(UsePopCountInstruction);
   match(Set dst (PopCountI src));
   effect(TEMP tmp);
   ins_cost(INSN_COST * 13);
@@ -8650,6 +8657,7 @@ instruct popCountI(iRegINoSp dst, iRegIorL2I src, vRegF tmp) %{
             "addv   $tmp, $tmp\t# vector (8B)\n\t"
             "mov    $dst, $tmp\t# vector (1D)" %}
   ins_encode %{
+    assert(UsePopCountInstruction, "unsupported");
     __ movw($src$$Register, $src$$Register); // ensure top 32 bits 0
     __ mov($tmp$$FloatRegister, __ D, 0, $src$$Register);
     __ cnt($tmp$$FloatRegister, __ T8B, $tmp$$FloatRegister);
@@ -8661,7 +8669,6 @@ instruct popCountI(iRegINoSp dst, iRegIorL2I src, vRegF tmp) %{
 %}
 
 instruct popCountI_mem(iRegINoSp dst, memory4 mem, vRegF tmp) %{
-  predicate(UsePopCountInstruction);
   match(Set dst (PopCountI (LoadI mem)));
   effect(TEMP tmp);
   ins_cost(INSN_COST * 13);
@@ -8671,6 +8678,7 @@ instruct popCountI_mem(iRegINoSp dst, memory4 mem, vRegF tmp) %{
             "addv   $tmp, $tmp\t# vector (8B)\n\t"
             "mov    $dst, $tmp\t# vector (1D)" %}
   ins_encode %{
+    assert(UsePopCountInstruction, "unsupported");
     FloatRegister tmp_reg = as_FloatRegister($tmp$$reg);
     loadStore(C2_MacroAssembler(&cbuf), &MacroAssembler::ldrs, tmp_reg, $mem->opcode(),
               as_Register($mem$$base), $mem$$index, $mem$$scale, $mem$$disp, 4);
@@ -8684,7 +8692,6 @@ instruct popCountI_mem(iRegINoSp dst, memory4 mem, vRegF tmp) %{
 
 // Note: Long.bitCount(long) returns an int.
 instruct popCountL(iRegINoSp dst, iRegL src, vRegD tmp) %{
-  predicate(UsePopCountInstruction);
   match(Set dst (PopCountL src));
   effect(TEMP tmp);
   ins_cost(INSN_COST * 13);
@@ -8694,6 +8701,7 @@ instruct popCountL(iRegINoSp dst, iRegL src, vRegD tmp) %{
             "addv   $tmp, $tmp\t# vector (8B)\n\t"
             "mov    $dst, $tmp\t# vector (1D)" %}
   ins_encode %{
+    assert(UsePopCountInstruction, "unsupported");
     __ mov($tmp$$FloatRegister, __ D, 0, $src$$Register);
     __ cnt($tmp$$FloatRegister, __ T8B, $tmp$$FloatRegister);
     __ addv($tmp$$FloatRegister, __ T8B, $tmp$$FloatRegister);
@@ -8704,7 +8712,6 @@ instruct popCountL(iRegINoSp dst, iRegL src, vRegD tmp) %{
 %}
 
 instruct popCountL_mem(iRegINoSp dst, memory8 mem, vRegD tmp) %{
-  predicate(UsePopCountInstruction);
   match(Set dst (PopCountL (LoadL mem)));
   effect(TEMP tmp);
   ins_cost(INSN_COST * 13);
@@ -8714,6 +8721,7 @@ instruct popCountL_mem(iRegINoSp dst, memory8 mem, vRegD tmp) %{
             "addv   $tmp, $tmp\t# vector (8B)\n\t"
             "mov    $dst, $tmp\t# vector (1D)" %}
   ins_encode %{
+    assert(UsePopCountInstruction, "unsupported");
     FloatRegister tmp_reg = as_FloatRegister($tmp$$reg);
     loadStore(C2_MacroAssembler(&cbuf), &MacroAssembler::ldrd, tmp_reg, $mem->opcode(),
               as_Register($mem$$base), $mem$$index, $mem$$scale, $mem$$disp, 8);
@@ -11596,6 +11604,108 @@ instruct regI_not_reg(iRegINoSp dst,
   %}
 
   ins_pipe(ialu_reg);
+%}
+
+// This pattern is automatically generated from aarch64_ad.m4
+// DO NOT EDIT ANYTHING IN THIS SECTION OF THE FILE
+instruct NegI_reg_URShift_reg(iRegINoSp dst,
+                              immI0 zero, iRegIorL2I src1, immI src2) %{
+  match(Set dst (SubI zero (URShiftI src1 src2)));
+
+  ins_cost(1.9 * INSN_COST);
+  format %{ "negw  $dst, $src1, LSR $src2" %}
+
+  ins_encode %{
+    __ negw(as_Register($dst$$reg), as_Register($src1$$reg),
+            Assembler::LSR, $src2$$constant & 0x1f);
+  %}
+
+  ins_pipe(ialu_reg_shift);
+%}
+
+// This pattern is automatically generated from aarch64_ad.m4
+// DO NOT EDIT ANYTHING IN THIS SECTION OF THE FILE
+instruct NegI_reg_RShift_reg(iRegINoSp dst,
+                              immI0 zero, iRegIorL2I src1, immI src2) %{
+  match(Set dst (SubI zero (RShiftI src1 src2)));
+
+  ins_cost(1.9 * INSN_COST);
+  format %{ "negw  $dst, $src1, ASR $src2" %}
+
+  ins_encode %{
+    __ negw(as_Register($dst$$reg), as_Register($src1$$reg),
+            Assembler::ASR, $src2$$constant & 0x1f);
+  %}
+
+  ins_pipe(ialu_reg_shift);
+%}
+
+// This pattern is automatically generated from aarch64_ad.m4
+// DO NOT EDIT ANYTHING IN THIS SECTION OF THE FILE
+instruct NegI_reg_LShift_reg(iRegINoSp dst,
+                              immI0 zero, iRegIorL2I src1, immI src2) %{
+  match(Set dst (SubI zero (LShiftI src1 src2)));
+
+  ins_cost(1.9 * INSN_COST);
+  format %{ "negw  $dst, $src1, LSL $src2" %}
+
+  ins_encode %{
+    __ negw(as_Register($dst$$reg), as_Register($src1$$reg),
+            Assembler::LSL, $src2$$constant & 0x1f);
+  %}
+
+  ins_pipe(ialu_reg_shift);
+%}
+
+// This pattern is automatically generated from aarch64_ad.m4
+// DO NOT EDIT ANYTHING IN THIS SECTION OF THE FILE
+instruct NegL_reg_URShift_reg(iRegLNoSp dst,
+                              immL0 zero, iRegL src1, immI src2) %{
+  match(Set dst (SubL zero (URShiftL src1 src2)));
+
+  ins_cost(1.9 * INSN_COST);
+  format %{ "neg  $dst, $src1, LSR $src2" %}
+
+  ins_encode %{
+    __ neg(as_Register($dst$$reg), as_Register($src1$$reg),
+            Assembler::LSR, $src2$$constant & 0x3f);
+  %}
+
+  ins_pipe(ialu_reg_shift);
+%}
+
+// This pattern is automatically generated from aarch64_ad.m4
+// DO NOT EDIT ANYTHING IN THIS SECTION OF THE FILE
+instruct NegL_reg_RShift_reg(iRegLNoSp dst,
+                              immL0 zero, iRegL src1, immI src2) %{
+  match(Set dst (SubL zero (RShiftL src1 src2)));
+
+  ins_cost(1.9 * INSN_COST);
+  format %{ "neg  $dst, $src1, ASR $src2" %}
+
+  ins_encode %{
+    __ neg(as_Register($dst$$reg), as_Register($src1$$reg),
+            Assembler::ASR, $src2$$constant & 0x3f);
+  %}
+
+  ins_pipe(ialu_reg_shift);
+%}
+
+// This pattern is automatically generated from aarch64_ad.m4
+// DO NOT EDIT ANYTHING IN THIS SECTION OF THE FILE
+instruct NegL_reg_LShift_reg(iRegLNoSp dst,
+                              immL0 zero, iRegL src1, immI src2) %{
+  match(Set dst (SubL zero (LShiftL src1 src2)));
+
+  ins_cost(1.9 * INSN_COST);
+  format %{ "neg  $dst, $src1, LSL $src2" %}
+
+  ins_encode %{
+    __ neg(as_Register($dst$$reg), as_Register($src1$$reg),
+            Assembler::LSL, $src2$$constant & 0x3f);
+  %}
+
+  ins_pipe(ialu_reg_shift);
 %}
 
 // This pattern is automatically generated from aarch64_ad.m4

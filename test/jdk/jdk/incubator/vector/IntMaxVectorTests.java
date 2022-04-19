@@ -37,6 +37,7 @@ import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.Vector;
 
 import jdk.incubator.vector.IntVector;
+import compress.CompressExpandTest;
 
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -64,6 +65,8 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     }
 
     private static final int Max = 256;  // juts so we can do N/Max
+
+    private static final int CONST_SHIFT = Integer.SIZE / 2;
 
     static final int BUFFER_REPS = Integer.getInteger("jdk.incubator.vector.test.buffer-vectors", 25000 / Max);
 
@@ -511,6 +514,50 @@ public class IntMaxVectorTests extends AbstractVectorTest {
             }
         } catch (AssertionError err) {
             Assert.assertEquals(r[i+j], f.apply(a[i+j], b[j], mask[i]), "at index #" + i + ", input1 = " + a[i+j] + ", input2 = " + b[j] + ", mask = " + mask[i]);
+        }
+    }
+
+    interface FBinConstOp {
+        int apply(int a);
+    }
+
+    interface FBinConstMaskOp {
+        int apply(int a, boolean m);
+
+        static FBinConstMaskOp lift(FBinConstOp f) {
+            return (a, m) -> m ? f.apply(a) : a;
+        }
+    }
+
+    static void assertShiftConstEquals(int[] r, int[] a, FBinConstOp f) {
+        int i = 0;
+        int j = 0;
+        try {
+            for (; j < a.length; j += SPECIES.length()) {
+                for (i = 0; i < SPECIES.length(); i++) {
+                    Assert.assertEquals(r[i+j], f.apply(a[i+j]));
+                }
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i+j], f.apply(a[i+j]), "at index #" + i + ", " + j);
+        }
+    }
+
+    static void assertShiftConstEquals(int[] r, int[] a, boolean[] mask, FBinConstOp f) {
+        assertShiftConstEquals(r, a, mask, FBinConstMaskOp.lift(f));
+    }
+
+    static void assertShiftConstEquals(int[] r, int[] a, boolean[] mask, FBinConstMaskOp f) {
+        int i = 0;
+        int j = 0;
+        try {
+            for (; j < a.length; j += SPECIES.length()) {
+                for (i = 0; i < SPECIES.length(); i++) {
+                    Assert.assertEquals(r[i+j], f.apply(a[i+j], mask[i]));
+                }
+            }
+        } catch (AssertionError err) {
+            Assert.assertEquals(r[i+j], f.apply(a[i+j], mask[i]), "at index #" + i + ", input1 = " + a[i+j] + ", mask = " + mask[i]);
         }
     }
 
@@ -1916,6 +1963,94 @@ public class IntMaxVectorTests extends AbstractVectorTest {
     }
 
 
+    static int COMPRESS_BITS(int a, int b) {
+        return (int)(CompressExpandTest.compress(a, b));
+    }
+
+    @Test(dataProvider = "intBinaryOpProvider")
+    static void COMPRESS_BITSIntMaxVectorTests(IntFunction<int[]> fa, IntFunction<int[]> fb) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] b = fb.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                IntVector bv = IntVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.COMPRESS_BITS, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, IntMaxVectorTests::COMPRESS_BITS);
+    }
+
+
+
+    @Test(dataProvider = "intBinaryOpMaskProvider")
+    static void COMPRESS_BITSIntMaxVectorTestsMasked(IntFunction<int[]> fa, IntFunction<int[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] b = fb.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                IntVector bv = IntVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.COMPRESS_BITS, bv, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, mask, IntMaxVectorTests::COMPRESS_BITS);
+    }
+
+
+    static int EXPAND_BITS(int a, int b) {
+        return (int)(CompressExpandTest.expand(a, b));
+    }
+
+    @Test(dataProvider = "intBinaryOpProvider")
+    static void EXPAND_BITSIntMaxVectorTests(IntFunction<int[]> fa, IntFunction<int[]> fb) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] b = fb.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                IntVector bv = IntVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.EXPAND_BITS, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, IntMaxVectorTests::EXPAND_BITS);
+    }
+
+
+
+    @Test(dataProvider = "intBinaryOpMaskProvider")
+    static void EXPAND_BITSIntMaxVectorTestsMasked(IntFunction<int[]> fa, IntFunction<int[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] b = fb.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                IntVector bv = IntVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.EXPAND_BITS, bv, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, mask, IntMaxVectorTests::EXPAND_BITS);
+    }
+
+
     @Test(dataProvider = "intBinaryOpProvider")
     static void addIntMaxVectorTestsBroadcastSmokeTest(IntFunction<int[]> fa, IntFunction<int[]> fb) {
         int[] a = fa.apply(SPECIES.length());
@@ -2585,7 +2720,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int ROR_unary(int a, int b) {
-        return (int)(ROR_scalar(a,b));
+        return (int)(ROR_scalar(a, b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2627,7 +2762,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int ROL_unary(int a, int b) {
-        return (int)(ROL_scalar(a,b));
+        return (int)(ROL_scalar(a, b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2666,6 +2801,215 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
         assertShiftArraysEquals(r, a, b, mask, IntMaxVectorTests::ROL_unary);
     }
+
+
+    static int LSHR_binary_const(int a) {
+        return (int)((a >>> CONST_SHIFT));
+    }
+
+    @Test(dataProvider = "intUnaryOpProvider")
+    static void LSHRIntMaxVectorTestsScalarShiftConst(IntFunction<int[]> fa) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LSHR, CONST_SHIFT).intoArray(r, i);
+            }
+        }
+
+        assertShiftConstEquals(r, a, IntMaxVectorTests::LSHR_binary_const);
+    }
+
+
+
+    @Test(dataProvider = "intUnaryOpMaskProvider")
+    static void LSHRIntMaxVectorTestsScalarShiftMaskedConst(IntFunction<int[]> fa,
+                                          IntFunction<boolean[]> fm) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LSHR, CONST_SHIFT, vmask).intoArray(r, i);
+            }
+        }
+
+        assertShiftConstEquals(r, a, mask, IntMaxVectorTests::LSHR_binary_const);
+    }
+
+
+
+
+
+
+
+    static int LSHL_binary_const(int a) {
+        return (int)((a << CONST_SHIFT));
+    }
+
+    @Test(dataProvider = "intUnaryOpProvider")
+    static void LSHLIntMaxVectorTestsScalarShiftConst(IntFunction<int[]> fa) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LSHL, CONST_SHIFT).intoArray(r, i);
+            }
+        }
+
+        assertShiftConstEquals(r, a, IntMaxVectorTests::LSHL_binary_const);
+    }
+
+
+
+    @Test(dataProvider = "intUnaryOpMaskProvider")
+    static void LSHLIntMaxVectorTestsScalarShiftMaskedConst(IntFunction<int[]> fa,
+                                          IntFunction<boolean[]> fm) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LSHL, CONST_SHIFT, vmask).intoArray(r, i);
+            }
+        }
+
+        assertShiftConstEquals(r, a, mask, IntMaxVectorTests::LSHL_binary_const);
+    }
+
+
+
+    static int ASHR_binary_const(int a) {
+        return (int)((a >> CONST_SHIFT));
+    }
+
+    @Test(dataProvider = "intUnaryOpProvider")
+    static void ASHRIntMaxVectorTestsScalarShiftConst(IntFunction<int[]> fa) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ASHR, CONST_SHIFT).intoArray(r, i);
+            }
+        }
+
+        assertShiftConstEquals(r, a, IntMaxVectorTests::ASHR_binary_const);
+    }
+
+
+
+    @Test(dataProvider = "intUnaryOpMaskProvider")
+    static void ASHRIntMaxVectorTestsScalarShiftMaskedConst(IntFunction<int[]> fa,
+                                          IntFunction<boolean[]> fm) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ASHR, CONST_SHIFT, vmask).intoArray(r, i);
+            }
+        }
+
+        assertShiftConstEquals(r, a, mask, IntMaxVectorTests::ASHR_binary_const);
+    }
+
+
+
+    static int ROR_binary_const(int a) {
+        return (int)(ROR_scalar(a, CONST_SHIFT));
+    }
+
+    @Test(dataProvider = "intUnaryOpProvider")
+    static void RORIntMaxVectorTestsScalarShiftConst(IntFunction<int[]> fa) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ROR, CONST_SHIFT).intoArray(r, i);
+            }
+        }
+
+        assertShiftConstEquals(r, a, IntMaxVectorTests::ROR_binary_const);
+    }
+
+
+
+    @Test(dataProvider = "intUnaryOpMaskProvider")
+    static void RORIntMaxVectorTestsScalarShiftMaskedConst(IntFunction<int[]> fa,
+                                          IntFunction<boolean[]> fm) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ROR, CONST_SHIFT, vmask).intoArray(r, i);
+            }
+        }
+
+        assertShiftConstEquals(r, a, mask, IntMaxVectorTests::ROR_binary_const);
+    }
+
+
+
+    static int ROL_binary_const(int a) {
+        return (int)(ROL_scalar(a, CONST_SHIFT));
+    }
+
+    @Test(dataProvider = "intUnaryOpProvider")
+    static void ROLIntMaxVectorTestsScalarShiftConst(IntFunction<int[]> fa) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ROL, CONST_SHIFT).intoArray(r, i);
+            }
+        }
+
+        assertShiftConstEquals(r, a, IntMaxVectorTests::ROL_binary_const);
+    }
+
+
+
+    @Test(dataProvider = "intUnaryOpMaskProvider")
+    static void ROLIntMaxVectorTestsScalarShiftMaskedConst(IntFunction<int[]> fa,
+                                          IntFunction<boolean[]> fm) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ROL, CONST_SHIFT, vmask).intoArray(r, i);
+            }
+        }
+
+        assertShiftConstEquals(r, a, mask, IntMaxVectorTests::ROL_binary_const);
+    }
+
 
     static int MIN(int a, int b) {
         return (int)(Math.min(a, b));
