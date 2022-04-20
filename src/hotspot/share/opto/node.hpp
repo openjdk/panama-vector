@@ -180,12 +180,6 @@ class ExpandVNode;
 class CompressVNode;
 class CompressMNode;
 
-// The type of all node counts and indexes.
-// It must hold at least 16 bits, but must also be fast to load and store.
-// This type, if less than 32 bits, could limit the number of possible nodes.
-// (To make this type platform-specific, move to globalDefinitions_xxx.hpp.)
-typedef unsigned int node_idx_t;
-
 
 #ifndef OPTO_DU_ITERATOR_ASSERT
 #ifdef ASSERT
@@ -794,7 +788,7 @@ public:
     Flag_for_post_loop_opts_igvn     = 1 << 16,
     Flag_is_removed_by_peephole      = 1 << 17,
     Flag_is_predicated_using_blend   = 1 << 18,
-    _last_flag                       = Flag_is_removed_by_peephole
+    _last_flag                       = Flag_is_predicated_using_blend
   };
 
   class PD;
@@ -1868,6 +1862,14 @@ Op_IL(URShift)
 Op_IL(LShift)
 Op_IL(Xor)
 Op_IL(Cmp)
+
+inline int Op_ConIL(BasicType bt) {
+  assert(bt == T_INT || bt == T_LONG, "only for int or longs");
+  if (bt == T_INT) {
+    return Op_ConI;
+  }
+  return Op_ConL;
+}
 
 inline int Op_Cmp_unsigned(BasicType bt) {
   assert(bt == T_INT || bt == T_LONG, "only for int or longs");

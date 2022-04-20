@@ -335,6 +335,10 @@ public class DoubleMaxVector extends AbstractVectorBenchmark {
 
 
 
+
+
+
+
     @Benchmark
     public void MIN(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
