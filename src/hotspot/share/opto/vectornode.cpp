@@ -173,11 +173,9 @@ int VectorNode::opcode(int sopc, BasicType bt) {
   case Op_ReverseBytesL:
     return (is_integral_type(bt) ? Op_ReverseBytesV : 0);
   case Op_CompressBits:
-    // Not implemented. Returning 0 temporarily
-    return 0;
+    return (bt == T_INT || bt == T_LONG ? Op_CompressBitsV : 0);
   case Op_ExpandBits:
-    // Not implemented. Returning 0 temporarily
-    return 0;
+    return (bt == T_INT || bt == T_LONG ? Op_ExpandBitsV : 0);
   case Op_LShiftI:
     switch (bt) {
     case T_BOOLEAN:
@@ -436,6 +434,16 @@ bool VectorNode::is_rotate_opcode(int opc) {
   switch (opc) {
   case Op_RotateRight:
   case Op_RotateLeft:
+    return true;
+  default:
+    return false;
+  }
+}
+
+bool VectorNode::is_bitshuffle_opcode(int opc) {
+  switch (opc) {
+  case Op_CompressBitsV:
+  case Op_ExpandBitsV:
     return true;
   default:
     return false;

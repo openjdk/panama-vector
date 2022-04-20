@@ -67,6 +67,20 @@ static bool is_vector_shuffle(ciKlass* klass) {
   return klass->is_subclass_of(ciEnv::current()->vector_VectorShuffle_klass());
 }
 
+bool LibraryCallKit::arch_supports_vector_bitshuffle(int opc, int num_elem, BasicType elem_bt) {
+  // Currently Vectorized bit compression and expansion may be supported through their
+  // scalar counterparts using lane exaction and insertion operations.
+  int eopc = ExtractNode::opcode(elem_bt);
+  int sopc = opc == Op_CompressBitsV ? Op_CompressBits : Op_ExpandBits;
+  if (!Matcher::match_rule_supported_vector(opc, num_elem, elem_bt) &&
+      (!Matcher::match_rule_supported_vector(sopc, num_elem, elem_bt) ||
+       !Matcher::match_rule_supported_vector(eopc, num_elem, elem_bt) ||
+       !Matcher::match_rule_supported_vector(Op_VectorInsert, num_elem, elem_bt))) {
+    return false;
+  }
+  return true;
+}
+
 bool LibraryCallKit::arch_supports_vector_rotate(int opc, int num_elem, BasicType elem_bt,
                                                  VectorMaskUseType mask_use_type, bool has_scalar_args) {
   bool is_supported = true;
@@ -203,6 +217,16 @@ bool LibraryCallKit::arch_supports_vector(int sopc, int num_elem, BasicType type
 #endif
       return false;
     }
+  } else if (VectorNode::is_bitshuffle_opcode(sopc)) {
+    if(!arch_supports_vector_bitshuffle(sopc, num_elem, type)) {
+#ifndef PRODUCT
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** Rejected vector op (%s,%s,%d) because architecture does not support variable vector shifts",
+                      NodeClassNames[sopc], type2name(type), num_elem);
+      }
+#endif
+      return false;
+    }
   } else if (VectorNode::is_vector_integral_negate(sopc)) {
     if (!VectorNode::is_vector_integral_negate_supported(sopc, num_elem, type, false)) {
 #ifndef PRODUCT
@@ -320,6 +344,24 @@ static bool is_klass_initialized(const TypeInstPtr* vec_klass) {
   assert(vec_klass->const_oop()->as_instance()->java_lang_Class_klass() != NULL, "klass instance expected");
   ciInstanceKlass* klass =  vec_klass->const_oop()->as_instance()->java_lang_Class_klass()->as_instance_klass();
   return klass->is_initialized();
+}
+
+Node* LibraryCallKit::gen_bitshuffle_operation(int voper, BasicType elem_bt, int num_elem, Node* opd1, Node* opd2) {
+  // Vectorized bit compression and expansion operations are supported using their
+  // scalar counterparts, lane exaction and insertion operations.
+  assert(elem_bt == T_INT || elem_bt == T_LONG, "");
+  const Type* type_bt = Type::get_const_basic_type(elem_bt);
+  Node* dst = VectorNode::scalar2vector(gvn().zerocon(elem_bt), num_elem, type_bt);
+  for(int i = 0; i < num_elem; i++) {
+    dst = gvn().transform(dst);
+    Node* src_elem = gvn().transform(ExtractNode::make(opd1, i, elem_bt));
+    Node* mask_elem = gvn().transform(ExtractNode::make(opd2, i, elem_bt));
+    Node* oper = voper == Op_CompressBits ? (Node*)new CompressBitsNode(src_elem, mask_elem, type_bt)
+                                          : (Node*)new ExpandBitsNode(src_elem, mask_elem, type_bt);
+    oper = gvn().transform(oper);
+    dst = VectorInsertNode::make(dst, oper, i);
+  }
+  return dst;
 }
 
 // public static
@@ -542,6 +584,8 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
       }
       return false;
      }
+  } else if (VectorNode::is_bitshuffle_opcode(sopc) && !Matcher::match_rule_supported_vector(sopc, num_elem, elem_bt)) {
+    operation = gen_bitshuffle_operation(opc, elem_bt, num_elem, opd1, opd2);
   } else {
     const TypeVect* vt = TypeVect::make(elem_bt, num_elem, is_vector_mask(vbox_klass));
     switch (n) {

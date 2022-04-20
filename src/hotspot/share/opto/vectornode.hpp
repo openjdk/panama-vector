@@ -85,6 +85,8 @@ class VectorNode : public TypeNode {
 
   static bool is_rotate_opcode(int opc);
 
+  static bool is_bitshuffle_opcode(int opc);
+
   static int  opcode(int opc, BasicType bt);
   static int replicate_opcode(BasicType bt);
   static bool implemented(int opc, uint vlen, BasicType bt);
@@ -1725,6 +1727,22 @@ class ReverseBytesVNode : public VectorNode {
 public:
   ReverseBytesVNode(Node* in, const TypeVect* vt)
   : VectorNode(in, vt) {}
+
+  virtual int Opcode() const;
+};
+
+class ExpandBitsVNode : public VectorNode {
+public:
+  ExpandBitsVNode(Node* in, Node* mask, const TypeVect* vt)
+  : VectorNode(in, mask, vt) {}
+
+  virtual int Opcode() const;
+};
+
+class CompressBitsVNode : public VectorNode {
+public:
+  CompressBitsVNode(Node* in, Node* mask, const TypeVect* vt)
+  : VectorNode(in, mask, vt) {}
 
   virtual int Opcode() const;
 };
