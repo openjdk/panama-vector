@@ -149,6 +149,8 @@ source %{
       case Op_LoadVector:
       case Op_StoreVector:
         return Matcher::vector_size_supported(bt, vlen);
+      case Op_ExpandV:
+        if (UseSVE < 2 || is_subword_type(bt)) return false;
       default:
         break;
     }
@@ -5529,17 +5531,17 @@ instruct vloadmask_extend(pRegGov dst, vReg src, vReg tmp, rFlagsReg cr) %{
 
 // ---------------------------- Compress/Expand Operations ---------------------------
 
-instruct mcompress(pReg dst, pReg mask, rFlagsReg cr) %{
+instruct mcompress(pReg dst, pReg pg, rFlagsReg cr) %{
   predicate(UseSVE > 0);
-  match(Set dst (CompressM mask));
+  match(Set dst (CompressM pg));
   effect(KILL cr);
   ins_cost(2 * SVE_COST);
-  format %{ "sve_cntp rscratch1, $mask\n\t"
+  format %{ "sve_cntp rscratch1, $pg\n\t"
             "sve_whilelo $dst, zr, rscratch1\t# mask compress (B/H/S/D)" %}
   ins_encode %{
     BasicType bt = Matcher::vector_element_basic_type(this);
     Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
-    __ sve_cntp(rscratch1, size, ptrue, as_PRegister($mask$$reg));
+    __ sve_cntp(rscratch1, size, ptrue, as_PRegister($pg$$reg));
     __ sve_whilelo(as_PRegister($dst$$reg), size, zr, rscratch1);
   %}
   ins_pipe(pipe_slow);
@@ -5562,15 +5564,15 @@ instruct vcompress(vReg dst, vReg src, pRegGov pg) %{
   ins_pipe(pipe_slow);
 %}
 
-instruct vcompressB(vReg dst, vReg src, pReg mask, vReg vtmp1, vReg vtmp2, vReg vtmp3, vReg vtmp4,
+instruct vcompressB(vReg dst, vReg src, pReg pg, vReg vtmp1, vReg vtmp2, vReg vtmp3, vReg vtmp4,
                     pReg ptmp, pRegGov pgtmp) %{
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->element_basic_type() == T_BYTE);
   effect(TEMP_DEF dst, TEMP vtmp1, TEMP vtmp2, TEMP vtmp3, TEMP vtmp4, TEMP ptmp, TEMP pgtmp);
-  match(Set dst (CompressV src mask));
+  match(Set dst (CompressV src pg));
   ins_cost(13 * SVE_COST);
-  format %{ "sve_compact $dst, $src, $mask\t# vector compress (B)" %}
+  format %{ "sve_compact $dst, $src, $pg\t# vector compress (B)" %}
   ins_encode %{
-    __ sve_compress_byte(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), as_PRegister($mask$$reg),
+    __ sve_compress_byte(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), as_PRegister($pg$$reg),
                          as_FloatRegister($vtmp1$$reg),as_FloatRegister($vtmp2$$reg),
                          as_FloatRegister($vtmp3$$reg),as_FloatRegister($vtmp4$$reg),
                          as_PRegister($ptmp$$reg), as_PRegister($pgtmp$$reg));
@@ -5578,15 +5580,49 @@ instruct vcompressB(vReg dst, vReg src, pReg mask, vReg vtmp1, vReg vtmp2, vReg 
   ins_pipe(pipe_slow);
 %}
 
-instruct vcompressS(vReg dst, vReg src, pReg mask, vReg vtmp1, vReg vtmp2, pRegGov pgtmp) %{
+instruct vcompressS(vReg dst, vReg src, pReg pg, vReg vtmp1, vReg vtmp2, pRegGov pgtmp) %{
   predicate(UseSVE > 0 && n->bottom_type()->is_vect()->element_basic_type() == T_SHORT);
   effect(TEMP_DEF dst, TEMP vtmp1, TEMP vtmp2, TEMP pgtmp);
-  match(Set dst (CompressV src mask));
+  match(Set dst (CompressV src pg));
   ins_cost(38 * SVE_COST);
-  format %{ "sve_compact $dst, $src, $mask\t# vector compress (H)" %}
+  format %{ "sve_compact $dst, $src, $pg\t# vector compress (H)" %}
   ins_encode %{
-    __ sve_compress_short(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), as_PRegister($mask$$reg),
+    __ sve_compress_short(as_FloatRegister($dst$$reg), as_FloatRegister($src$$reg), as_PRegister($pg$$reg),
                           as_FloatRegister($vtmp1$$reg),as_FloatRegister($vtmp2$$reg), as_PRegister($pgtmp$$reg));
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vexpand(vReg dst, vReg src, pRegGov pg) %{
+  match(Set dst (ExpandV src pg));
+  effect(TEMP_DEF dst);
+  ins_cost(4 * SVE_COST);
+  format %{ "sve_dup $dst, S/D, 0\n\t"
+            "sve_histcnt $dst, S/D, $pg, $dst, $dst\n\t"
+            "sve_sub $dst, S/D, 1\n\t"
+            "sve_tbl $dst, S/D, $src, $dst\t# vector expand (S/D)" %}
+  ins_encode %{
+    // Example input:   src   = 1 2 3 4 5 6 7 8
+    //                  pg    = 1 0 0 1 1 0 1 1
+    // Expected result: dst   = 4 0 0 5 6 0 7 8
+
+    // The basic idea is to use TBL which can shuffle the elements in the given
+    // vector flexibly. HISTCNT + SUB is used to generate the second source input
+    // for TBL whose value is used to select the indexed element from src vector.
+
+    BasicType bt = Matcher::vector_element_basic_type(this);
+    assert(UseSVE == 2 && !is_subword_type(bt), "unsupported");
+    Assembler::SIMD_RegVariant size = __ elemType_to_regVariant(bt);
+    // dst = 0 0 0 0 0 0 0 0
+    __ sve_dup(as_FloatRegister($dst$$reg), size, 0);
+    // dst = 5 0 0 4 3 0 2 1
+    __ sve_histcnt(as_FloatRegister($dst$$reg), size, as_PRegister($pg$$reg),
+                   as_FloatRegister($dst$$reg), as_FloatRegister($dst$$reg));
+    // dst = 4 -1 -1 3 2 -1 1 0
+    __ sve_sub(as_FloatRegister($dst$$reg), size, 1);
+    // dst = 4 0 0 5 6 0 7 8
+    __ sve_tbl(as_FloatRegister($dst$$reg), size, as_FloatRegister($src$$reg),
+               as_FloatRegister($dst$$reg));
   %}
   ins_pipe(pipe_slow);
 %}

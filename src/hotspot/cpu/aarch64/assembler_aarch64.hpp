@@ -3783,6 +3783,15 @@ void sve_cmp(Condition cond, PRegister Pd, SIMD_RegVariant T,
     pgrf(Pg, 10), rf(Zn, 5), rf(Zd, 0);
   }
 
+  // SVE2 Count matching elements in vector
+  void sve_histcnt(FloatRegister Zd, SIMD_RegVariant T, PRegister Pg,
+                   FloatRegister Zn, FloatRegister Zm) {
+    starti;
+    assert(T == S || T == D, "invalid size");
+    f(0b01000101, 31, 24), f(T, 23, 22), f(0b1, 21), rf(Zm, 16);
+    f(0b110, 15, 13), pgrf(Pg, 10), rf(Zn, 5), rf(Zd, 0);
+  }
+
   Assembler(CodeBuffer* code) : AbstractAssembler(code) {
   }
 
