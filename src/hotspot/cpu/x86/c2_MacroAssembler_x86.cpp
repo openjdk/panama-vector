@@ -4509,7 +4509,7 @@ void C2_MacroAssembler::vbroadcast(BasicType bt, XMMRegister dst, int imm32, Reg
   bool is_LP64 = LP64_ONLY(true) NOT_LP64(false);
   if ((is_LP64 || lane_size < 8) &&
       ((is_non_subword_integral_type(bt) && VM_Version::supports_avx512vl()) ||
-       (is_subword_type(bt) && VM_Version::supports_avx512bw()))) {
+       (is_subword_type(bt) && VM_Version::supports_avx512vlbw()))) {
     movptr(rtmp, imm32);
     switch(lane_size) {
       case 1 : evpbroadcastb(dst, rtmp, vec_enc); break;
@@ -4823,9 +4823,9 @@ void C2_MacroAssembler::vector_count_leading_zeros_evex(BasicType bt, XMMRegiste
     case T_SHORT:
       vpternlogd(xtmp1, 0xff, xtmp1, xtmp1, vec_enc);
       vpunpcklwd(xtmp2, xtmp1, src, vec_enc);
-      evplzcntd(xtmp2, k0, xtmp2, merge, vec_enc);
+      evplzcntd(xtmp2, ktmp, xtmp2, merge, vec_enc);
       vpunpckhwd(dst, xtmp1, src, vec_enc);
-      evplzcntd(dst, k0, dst, merge, vec_enc);
+      evplzcntd(dst, ktmp, dst, merge, vec_enc);
       vpackusdw(dst, xtmp2, dst, vec_enc);
       break;
     case T_BYTE:
@@ -4836,8 +4836,7 @@ void C2_MacroAssembler::vector_count_leading_zeros_evex(BasicType bt, XMMRegiste
       // Add T1 to T2 if 4 MSB bits of byte are all zeros.
       assert(VM_Version::supports_avx512bw(), "");
       evmovdquq(xtmp1, ExternalAddress(StubRoutines::x86::vector_count_leading_zeros_lut()), vec_enc, rtmp);
-      movl(rtmp, 0x0F0F0F0F);
-      evpbroadcastd(dst, rtmp, vec_enc);
+      vbroadcast(T_INT, dst, 0x0F0F0F0F, rtmp, vec_enc);
       vpand(xtmp2, dst, src, vec_enc);
       vpshufb(xtmp2, xtmp1, xtmp2, vec_enc);
       vpsrlw(xtmp3, src, 4, vec_enc);
@@ -4854,10 +4853,8 @@ void C2_MacroAssembler::vector_count_leading_zeros_evex(BasicType bt, XMMRegiste
 
 void C2_MacroAssembler::vector_count_leading_zeros_byte_avx(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                                                             XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc) {
-  vmovdqu(xtmp1, ExternalAddress(StubRoutines::x86::vector_count_leading_zeros_lut()));
-  movl(rtmp, 0x0F0F0F0F);
-  movdl(xtmp2, rtmp);
-  vpbroadcastd(xtmp2, xtmp2, vec_enc);
+  vmovdqu(xtmp1, ExternalAddress(StubRoutines::x86::vector_count_leading_zeros_lut()), rtmp);
+  vbroadcast(T_INT, xtmp2, 0x0F0F0F0F, rtmp, vec_enc);
   // T1 = Compute leading zero counts of 4 LSB bits of each byte by
   // accessing the lookup table.
   vpand(dst, xtmp2, src, vec_enc);
@@ -4876,62 +4873,63 @@ void C2_MacroAssembler::vector_count_leading_zeros_byte_avx(XMMRegister dst, XMM
 
 void C2_MacroAssembler::vector_count_leading_zeros_short_avx(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                                                              XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc) {
-   vector_count_leading_zeros_byte_avx(dst, src, xtmp1, xtmp2, xtmp3, rtmp, vec_enc);
-   // Add zero counts of lower byte and upper byte of a word if
-   // upper byte holds a zero value.
-   vpsrlw(xtmp3, src, 8, vec_enc);
-   vpcmpeqw(xtmp3, xtmp1, xtmp3, vec_enc);
-   vpsllw(xtmp2, dst, 8, vec_enc);
-   vpaddw(xtmp2, xtmp2, dst, vec_enc);
-   vpblendvb(dst, dst, xtmp2, xtmp3, vec_enc);
-   vpsrlw(dst, dst, 8, vec_enc);
+  vector_count_leading_zeros_byte_avx(dst, src, xtmp1, xtmp2, xtmp3, rtmp, vec_enc);
+  // Add zero counts of lower byte and upper byte of a word if
+  // upper byte holds a zero value.
+  vpsrlw(xtmp3, src, 8, vec_enc);
+  // xtmp1 is set to all zeros by vector_count_leading_zeros_byte_avx.
+  vpcmpeqw(xtmp3, xtmp1, xtmp3, vec_enc);
+  vpsllw(xtmp2, dst, 8, vec_enc);
+  vpaddw(xtmp2, xtmp2, dst, vec_enc);
+  vpblendvb(dst, dst, xtmp2, xtmp3, vec_enc);
+  vpsrlw(dst, dst, 8, vec_enc);
 }
 
 void C2_MacroAssembler::vector_count_leading_zeros_int_avx(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                                                            XMMRegister xtmp2, XMMRegister xtmp3, int vec_enc) {
-   // Since IEEE 754 floating point format represents mantissa in 1.0 format
-   // hence biased exponent can be used to compute leading zero count as per
-   // following formula:-
-   // LZCNT = 32 - (biased_exp - 127)
-   // Special handling has been introduced for Zero, Max_Int and -ve source values.
+  // Since IEEE 754 floating point format represents mantissa in 1.0 format
+  // hence biased exponent can be used to compute leading zero count as per
+  // following formula:-
+  // LZCNT = 32 - (biased_exp - 127)
+  // Special handling has been introduced for Zero, Max_Int and -ve source values.
 
-   // Broadcast 0xFF
-   vpcmpeqd(xtmp1, xtmp1, xtmp1, vec_enc);
-   vpsrld(xtmp1, xtmp1, 24, vec_enc);
+  // Broadcast 0xFF
+  vpcmpeqd(xtmp1, xtmp1, xtmp1, vec_enc);
+  vpsrld(xtmp1, xtmp1, 24, vec_enc);
 
-   // Extract biased exponent.
-   vcvtdq2ps(dst, src, vec_enc);
-   vpsrld(dst, dst, 23, vec_enc);
-   vpand(dst, dst, xtmp1, vec_enc);
+  // Extract biased exponent.
+  vcvtdq2ps(dst, src, vec_enc);
+  vpsrld(dst, dst, 23, vec_enc);
+  vpand(dst, dst, xtmp1, vec_enc);
 
-   // Broadcast 127.
-   vpsrld(xtmp1, xtmp1, 1, vec_enc);
-   // Exponent = biased_exp - 127
-   vpsubd(dst, dst, xtmp1, vec_enc);
+  // Broadcast 127.
+  vpsrld(xtmp1, xtmp1, 1, vec_enc);
+  // Exponent = biased_exp - 127
+  vpsubd(dst, dst, xtmp1, vec_enc);
 
-   // Exponent = Exponent  + 1
-   vpsrld(xtmp3, xtmp1, 6, vec_enc);
-   vpaddd(dst, dst, xtmp3, vec_enc);
+  // Exponent = Exponent  + 1
+  vpsrld(xtmp3, xtmp1, 6, vec_enc);
+  vpaddd(dst, dst, xtmp3, vec_enc);
 
-   // Replace -ve exponent with zero, exponent is -ve when src
-   // lane contains a zero value.
-   vpxor(xtmp2, xtmp2, xtmp2, vec_enc);
-   vblendvps(dst, dst, xtmp2, dst, vec_enc);
+  // Replace -ve exponent with zero, exponent is -ve when src
+  // lane contains a zero value.
+  vpxor(xtmp2, xtmp2, xtmp2, vec_enc);
+  vblendvps(dst, dst, xtmp2, dst, vec_enc);
 
-   // Rematerialize broadcast 32.
-   vpslld(xtmp1, xtmp3, 5, vec_enc);
-   // Exponent is 32 if corresponding source lane contains max_int value.
-   vpcmpeqd(xtmp2, dst, xtmp1, vec_enc);
-   // LZCNT = 32 - exponent
-   vpsubd(dst, xtmp1, dst, vec_enc);
+  // Rematerialize broadcast 32.
+  vpslld(xtmp1, xtmp3, 5, vec_enc);
+  // Exponent is 32 if corresponding source lane contains max_int value.
+  vpcmpeqd(xtmp2, dst, xtmp1, vec_enc);
+  // LZCNT = 32 - exponent
+  vpsubd(dst, xtmp1, dst, vec_enc);
 
-   // Replace LZCNT with a value 1 if corresponding source lane
-   // contains max_int value.
-   vpblendvb(dst, dst, xtmp3, xtmp2, vec_enc);
+  // Replace LZCNT with a value 1 if corresponding source lane
+  // contains max_int value.
+  vpblendvb(dst, dst, xtmp3, xtmp2, vec_enc);
 
-   // Replace biased_exp with 0 if source lane value is less than zero.
-   vpxor(xtmp2, xtmp2, xtmp2, vec_enc);
-   vblendvps(dst, dst, xtmp2, src, vec_enc);
+  // Replace biased_exp with 0 if source lane value is less than zero.
+  vpxor(xtmp2, xtmp2, xtmp2, vec_enc);
+  vblendvps(dst, dst, xtmp2, src, vec_enc);
 }
 
 void C2_MacroAssembler::vector_count_leading_zeros_long_avx(XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
@@ -4940,6 +4938,7 @@ void C2_MacroAssembler::vector_count_leading_zeros_long_avx(XMMRegister dst, XMM
   // Add zero counts of lower word and upper word of a double word if
   // upper word holds a zero value.
   vpsrld(xtmp3, src, 16, vec_enc);
+  // xtmp1 is set to all zeros by vector_count_leading_zeros_byte_avx.
   vpcmpeqd(xtmp3, xtmp1, xtmp3, vec_enc);
   vpslld(xtmp2, dst, 16, vec_enc);
   vpaddd(xtmp2, xtmp2, dst, vec_enc);
@@ -5024,7 +5023,6 @@ void C2_MacroAssembler::vector_count_trailing_zeros_evex(BasicType bt, XMMRegist
                                                          XMMRegister xtmp1, XMMRegister xtmp2, XMMRegister xtmp3,
                                                          XMMRegister xtmp4, KRegister ktmp, Register rtmp, int vec_enc) {
   assert(is_integral_type(bt), "");
-  int bcast_value [] = { 0x8, 0x10, 0, 0x20, 0, 0, 0, 0x40 };
   // xtmp = -1
   vpternlogd(xtmp4, 0xff, xtmp4, xtmp4, vec_enc);
   // xtmp = xtmp + src
@@ -5032,7 +5030,7 @@ void C2_MacroAssembler::vector_count_trailing_zeros_evex(BasicType bt, XMMRegist
   // xtmp = xtmp & ~src
   vpternlogd(xtmp4, 0x40, xtmp4, src, vec_enc);
   vector_count_leading_zeros_evex(bt, dst, xtmp4, xtmp1, xtmp2, xtmp3, ktmp, rtmp, true, vec_enc);
-  vbroadcast(bt, xtmp4, bcast_value[type2aelembytes(bt) - 1], rtmp, vec_enc);
+  vbroadcast(bt, xtmp4, 8 * type2aelembytes(bt), rtmp, vec_enc);
   vpsub(bt, dst, xtmp4, dst, vec_enc);
 }
 
@@ -5041,7 +5039,6 @@ void C2_MacroAssembler::vector_count_trailing_zeros_evex(BasicType bt, XMMRegist
 void C2_MacroAssembler::vector_count_trailing_zeros_avx(BasicType bt, XMMRegister dst, XMMRegister src, XMMRegister xtmp1,
                                                         XMMRegister xtmp2, XMMRegister xtmp3, Register rtmp, int vec_enc) {
   assert(is_integral_type(bt), "");
-  int bcast_value [] = { 0x8, 0x10, 0, 0x20, 0, 0, 0, 0x40 };
   // xtmp = 0
   vpxor(xtmp3 , xtmp3, xtmp3, vec_enc);
   // xtmp = 0 - src
@@ -5049,7 +5046,7 @@ void C2_MacroAssembler::vector_count_trailing_zeros_avx(BasicType bt, XMMRegiste
   // xtmp = xtmp | src
   vpor(xtmp3, xtmp3, src, vec_enc);
   vector_popcount_integral(bt, dst, xtmp3, xtmp1, xtmp2, rtmp, vec_enc);
-  vbroadcast(bt, xtmp1, bcast_value[type2aelembytes(bt) - 1], rtmp, vec_enc);
+  vbroadcast(bt, xtmp1, 8 * type2aelembytes(bt), rtmp, vec_enc);
   vpsub(bt, dst, xtmp1, dst, vec_enc);
 }
 

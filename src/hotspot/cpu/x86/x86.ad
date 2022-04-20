@@ -8739,7 +8739,7 @@ instruct vpopcount_integral_reg_evex_masked(vec dst, vec src, kReg mask) %{
   ins_pipe( pipe_slow );
 %}
 
-instruct vpopcount_evx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, rRegP rtmp) %{
+instruct vpopcount_avx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, rRegP rtmp) %{
   predicate(!is_vector_popcount_predicate(Matcher::vector_element_basic_type(n->in(1))));
   match(Set dst (PopCountVI src));
   match(Set dst (PopCountVL src));
@@ -8748,7 +8748,7 @@ instruct vpopcount_evx_reg(vec dst, vec src, vec xtmp1, vec xtmp2, rRegP rtmp) %
   ins_encode %{
     int opcode = this->ideal_Opcode();
     int vlen_enc = vector_length_encoding(this, $src);
-    BasicType bt = Matcher::vector_element_basic_type(this);
+    BasicType bt = Matcher::vector_element_basic_type(this, $src);
     __ vector_popcount_integral(bt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
                                 $xtmp2$$XMMRegister, $rtmp$$Register, vlen_enc);
     // TODO: Once auto-vectorizer supports ConvL2I operation, PopCountVL
@@ -9264,7 +9264,7 @@ instruct vcount_leading_zeros_short_reg_evex(vec dst, vec src, vec xtmp1, vec xt
     int vlen_enc = vector_length_encoding(this, $src);
     BasicType bt = Matcher::vector_element_basic_type(this, $src);
     __ vector_count_leading_zeros_evex(bt, $dst$$XMMRegister, $src$$XMMRegister, $xtmp1$$XMMRegister,
-                                       $xtmp2$$XMMRegister, xnoreg, knoreg, noreg, true, vlen_enc);
+                                       $xtmp2$$XMMRegister, xnoreg, k0, noreg, true, vlen_enc);
   %}
   ins_pipe( pipe_slow );
 %}
