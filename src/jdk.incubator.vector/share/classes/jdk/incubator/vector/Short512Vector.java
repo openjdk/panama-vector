@@ -24,7 +24,6 @@
  */
 package jdk.incubator.vector;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
@@ -934,34 +933,6 @@ final class Short512Vector extends ShortVector {
     @ForceInline
     @Override
     final
-    ShortVector fromByteArray0(byte[] a, int offset) {
-        return super.fromByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    ShortVector fromByteArray0(byte[] a, int offset, VectorMask<Short> m) {
-        return super.fromByteArray0Template(Short512Mask.class, a, offset, (Short512Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    ShortVector fromByteBuffer0(ByteBuffer bb, int offset) {
-        return super.fromByteBuffer0Template(bb, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    ShortVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Short> m) {
-        return super.fromByteBuffer0Template(Short512Mask.class, bb, offset, (Short512Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
     ShortVector fromMemorySegment0(MemorySegment ms, long offset) {
         return super.fromMemorySegment0Template(ms, offset);  // specialize
     }
@@ -988,27 +959,6 @@ final class Short512Vector extends ShortVector {
     }
 
 
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset) {
-        super.intoByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset, VectorMask<Short> m) {
-        super.intoByteArray0Template(Short512Mask.class, a, offset, (Short512Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Short> m) {
-        super.intoByteBuffer0Template(Short512Mask.class, bb, offset, (Short512Mask) m);
-    }
 
     @ForceInline
     @Override

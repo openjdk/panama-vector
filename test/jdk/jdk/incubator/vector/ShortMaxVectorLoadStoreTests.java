@@ -44,12 +44,7 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
-import java.nio.ByteBuffer;
-import java.nio.ShortBuffer;
 import java.nio.ByteOrder;
-import java.nio.ReadOnlyBufferException;
 import java.util.List;
 import java.util.function.*;
 
@@ -76,17 +71,6 @@ public class ShortMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
             }
         } catch (AssertionError e) {
             Assert.assertEquals(r[i], mask[i % SPECIES.length()] ? a[i] : (short) 0, "at index #" + i);
-        }
-    }
-
-    static void assertArraysEquals(byte[] r, byte[] a, boolean[] mask) {
-        int i = 0;
-        try {
-            for (; i < a.length; i++) {
-                Assert.assertEquals(r[i], mask[(i*8/SPECIES.elementSize()) % SPECIES.length()] ? a[i] : (byte) 0);
-            }
-        } catch (AssertionError e) {
-            Assert.assertEquals(r[i], mask[(i*8/SPECIES.elementSize()) % SPECIES.length()] ? a[i] : (byte) 0, "at index #" + i);
         }
     }
 
@@ -129,7 +113,7 @@ public class ShortMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
             })
     );
 
-    // Relative to byte[] array.length or ByteBuffer.limit()
+    // Relative to byte[] array.length or MemorySegment.byteSize()
     static final List<IntFunction<Integer>> BYTE_INDEX_GENERATORS = List.of(
             withToString("-1", (int l) -> {
                 return -1;
@@ -200,27 +184,6 @@ public class ShortMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     }
 
     @DataProvider
-    public Object[][] shortByteBufferProvider() {
-        return SHORT_GENERATORS.stream().
-                flatMap(fa -> BYTE_BUFFER_GENERATORS.stream().
-                        flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
-                            return new Object[]{fa, fb, bo};
-                        }))).
-                toArray(Object[][]::new);
-    }
-
-    @DataProvider
-    public Object[][] shortByteBufferMaskProvider() {
-        return BOOLEAN_MASK_GENERATORS.stream().
-                flatMap(fm -> SHORT_GENERATORS.stream().
-                        flatMap(fa -> BYTE_BUFFER_GENERATORS.stream().
-                                flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
-                            return new Object[]{fa, fb, fm, bo};
-                        })))).
-                toArray(Object[][]::new);
-    }
-
-    @DataProvider
     public Object[][] shortMemorySegmentProvider() {
         return SHORT_GENERATORS.stream().
                 flatMap(fa -> MEMORY_SEGMENT_GENERATORS.stream().
@@ -238,25 +201,6 @@ public class ShortMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
                                 flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
                             return new Object[]{fa, fb, fm, bo};
                         })))).
-                toArray(Object[][]::new);
-    }
-
-    @DataProvider
-    public Object[][] shortByteArrayProvider() {
-        return SHORT_GENERATORS.stream().
-                flatMap(fa -> BYTE_ORDER_VALUES.stream().map(bo -> {
-                    return new Object[]{fa, bo};
-                })).
-                toArray(Object[][]::new);
-    }
-
-    @DataProvider
-    public Object[][] shortByteArrayMaskProvider() {
-        return BOOLEAN_MASK_GENERATORS.stream().
-                flatMap(fm -> SHORT_GENERATORS.stream().
-                    flatMap(fa -> BYTE_ORDER_VALUES.stream().map(bo -> {
-                        return new Object[]{fa, fm, bo};
-                    }))).
                 toArray(Object[][]::new);
     }
 
@@ -279,21 +223,6 @@ public class ShortMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
                 toArray(Object[][]::new);
     }
 
-    static ByteBuffer toBuffer(short[] a, IntFunction<ByteBuffer> fb) {
-        ByteBuffer bb = fb.apply(a.length * SPECIES.elementSize() / 8);
-        for (short v : a) {
-            bb.putShort(v);
-        }
-        return bb.clear();
-    }
-
-    static short[] bufferToArray(ByteBuffer bb) {
-        ShortBuffer db = bb.asShortBuffer();
-        short[] d = new short[db.capacity()];
-        db.get(0, d);
-        return d;
-    }
-
     static MemorySegment toSegment(short[] a, IntFunction<MemorySegment> fb) {
         MemorySegment ms = fb.apply(a.length * SPECIES.elementSize() / 8);
         for (int i = 0; i < a.length; i++) {
@@ -304,15 +233,6 @@ public class ShortMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
 
     static short[] segmentToArray(MemorySegment ms) {
         return ms.toArray(ValueLayout.JAVA_SHORT);
-    }
-
-    static byte[] toByteArray(short[] a, IntFunction<byte[]> fb, ByteOrder bo) {
-        byte[] b = fb.apply(a.length * SPECIES.elementSize() / 8);
-        ShortBuffer bb = ByteBuffer.wrap(b, 0, b.length).order(bo).asShortBuffer();
-        for (short v : a) {
-            bb.put(v);
-        }
-        return b;
     }
 
 
@@ -349,46 +269,6 @@ public class ShortMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     @DontInline
     static void intoArray(ShortVector v, short[] a, int i, VectorMask<Short> m) {
         v.intoArray(a, i, m);
-    }
-
-    @DontInline
-    static ShortVector fromByteArray(byte[] a, int i, ByteOrder bo) {
-        return ShortVector.fromByteArray(SPECIES, a, i, bo);
-    }
-
-    @DontInline
-    static ShortVector fromByteArray(byte[] a, int i, ByteOrder bo, VectorMask<Short> m) {
-        return ShortVector.fromByteArray(SPECIES, a, i, bo, m);
-    }
-
-    @DontInline
-    static void intoByteArray(ShortVector v, byte[] a, int i, ByteOrder bo) {
-        v.intoByteArray(a, i, bo);
-    }
-
-    @DontInline
-    static void intoByteArray(ShortVector v, byte[] a, int i, ByteOrder bo, VectorMask<Short> m) {
-        v.intoByteArray(a, i, bo, m);
-    }
-
-    @DontInline
-    static ShortVector fromByteBuffer(ByteBuffer a, int i, ByteOrder bo) {
-        return ShortVector.fromByteBuffer(SPECIES, a, i, bo);
-    }
-
-    @DontInline
-    static ShortVector fromByteBuffer(ByteBuffer a, int i, ByteOrder bo, VectorMask<Short> m) {
-        return ShortVector.fromByteBuffer(SPECIES, a, i, bo, m);
-    }
-
-    @DontInline
-    static void intoByteBuffer(ShortVector v, ByteBuffer a, int i, ByteOrder bo) {
-        v.intoByteBuffer(a, i, bo);
-    }
-
-    @DontInline
-    static void intoByteBuffer(ShortVector v, ByteBuffer a, int i, ByteOrder bo, VectorMask<Short> m) {
-        v.intoByteBuffer(a, i, bo, m);
     }
 
     @DontInline
@@ -578,229 +458,6 @@ public class ShortMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
             }
         }
         Assert.assertEquals(r, mask);
-    }
-
-
-    @Test(dataProvider = "shortByteBufferProvider")
-    static void loadStoreByteBuffer(IntFunction<short[]> fa,
-                                    IntFunction<ByteBuffer> fb,
-                                    ByteOrder bo) {
-        ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), fb);
-        ByteBuffer r = fb.apply(a.limit());
-
-        int l = a.limit();
-        int s = SPECIES.vectorByteSize();
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, i, bo);
-                av.intoByteBuffer(r, i, bo);
-            }
-        }
-        Assert.assertEquals(a.position(), 0, "Input buffer position changed");
-        Assert.assertEquals(a.limit(), l, "Input buffer limit changed");
-        Assert.assertEquals(r.position(), 0, "Result buffer position changed");
-        Assert.assertEquals(r.limit(), l, "Result buffer limit changed");
-        Assert.assertEquals(r, a, "Buffers not equal");
-    }
-
-    @Test(dataProvider = "shortByteProviderForIOOBE")
-    static void loadByteBufferIOOBE(IntFunction<short[]> fa, IntFunction<Integer> fi) {
-        ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), ByteBuffer::allocateDirect);
-        ByteBuffer r = ByteBuffer.allocateDirect(a.limit());
-
-        int l = a.limit();
-        int s = SPECIES.vectorByteSize();
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < l; i += s) {
-                ShortVector av = fromByteBuffer(a, i, ByteOrder.nativeOrder());
-                av.intoByteBuffer(r, i, ByteOrder.nativeOrder());
-            }
-        }
-
-        int index = fi.apply(a.limit());
-        boolean shouldFail = isIndexOutOfBounds(SPECIES.vectorByteSize(), index, a.limit());
-        try {
-            fromByteBuffer(a, index, ByteOrder.nativeOrder());
-            if (shouldFail) {
-                Assert.fail("Failed to throw IndexOutOfBoundsException");
-            }
-        } catch (IndexOutOfBoundsException e) {
-            if (!shouldFail) {
-                Assert.fail("Unexpected IndexOutOfBoundsException");
-            }
-        }
-    }
-
-    @Test(dataProvider = "shortByteProviderForIOOBE")
-    static void storeByteBufferIOOBE(IntFunction<short[]> fa, IntFunction<Integer> fi) {
-        ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), ByteBuffer::allocateDirect);
-        ByteBuffer r = ByteBuffer.allocateDirect(a.limit());
-
-        int l = a.limit();
-        int s = SPECIES.vectorByteSize();
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, i, ByteOrder.nativeOrder());
-                intoByteBuffer(av, r, i, ByteOrder.nativeOrder());
-            }
-        }
-
-        int index = fi.apply(a.limit());
-        boolean shouldFail = isIndexOutOfBounds(SPECIES.vectorByteSize(), index, a.limit());
-        try {
-            ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, 0, ByteOrder.nativeOrder());
-            intoByteBuffer(av, r, index, ByteOrder.nativeOrder());
-            if (shouldFail) {
-                Assert.fail("Failed to throw IndexOutOfBoundsException");
-            }
-        } catch (IndexOutOfBoundsException e) {
-            if (!shouldFail) {
-                Assert.fail("Unexpected IndexOutOfBoundsException");
-            }
-        }
-    }
-
-
-    @Test(dataProvider = "shortByteBufferMaskProvider")
-    static void loadStoreByteBufferMask(IntFunction<short[]> fa,
-                                        IntFunction<ByteBuffer> fb,
-                                        IntFunction<boolean[]> fm,
-                                        ByteOrder bo) {
-        short[] _a = fa.apply(SPECIES.length());
-        ByteBuffer a = toBuffer(_a, fb);
-        ByteBuffer r = fb.apply(a.limit());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Short> vmask = VectorMask.fromValues(SPECIES, mask);
-
-        int l = a.limit();
-        int s = SPECIES.vectorByteSize();
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, i, bo, vmask);
-                av.intoByteBuffer(r, i, bo);
-            }
-        }
-        Assert.assertEquals(a.position(), 0, "Input buffer position changed");
-        Assert.assertEquals(a.limit(), l, "Input buffer limit changed");
-        Assert.assertEquals(r.position(), 0, "Result buffer position changed");
-        Assert.assertEquals(r.limit(), l, "Result buffer limit changed");
-        assertArraysEquals(bufferToArray(r), _a, mask);
-
-
-        r = fb.apply(a.limit());
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, i, bo);
-                av.intoByteBuffer(r, i, bo, vmask);
-            }
-        }
-        Assert.assertEquals(a.position(), 0, "Input buffer position changed");
-        Assert.assertEquals(a.limit(), l, "Input buffer limit changed");
-        Assert.assertEquals(r.position(), 0, "Result buffer position changed");
-        Assert.assertEquals(r.limit(), l, "Result buffer limit changed");
-        assertArraysEquals(bufferToArray(r), _a, mask);
-    }
-
-    @Test(dataProvider = "shortByteMaskProviderForIOOBE")
-    static void loadByteBufferMaskIOOBE(IntFunction<short[]> fa, IntFunction<Integer> fi, IntFunction<boolean[]> fm) {
-        ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), ByteBuffer::allocateDirect);
-        ByteBuffer r = ByteBuffer.allocateDirect(a.limit());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Short> vmask = VectorMask.fromValues(SPECIES, mask);
-
-        int l = a.limit();
-        int s = SPECIES.vectorByteSize();
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < l; i += s) {
-                ShortVector av = fromByteBuffer(a, i, ByteOrder.nativeOrder(), vmask);
-                av.intoByteBuffer(r, i, ByteOrder.nativeOrder());
-            }
-        }
-
-        int index = fi.apply(a.limit());
-        boolean shouldFail = isIndexOutOfBoundsForMask(mask, index, a.limit(), SPECIES.elementSize() / 8);
-        try {
-            fromByteBuffer(a, index, ByteOrder.nativeOrder(), vmask);
-            if (shouldFail) {
-                Assert.fail("Failed to throw IndexOutOfBoundsException");
-            }
-        } catch (IndexOutOfBoundsException e) {
-            if (!shouldFail) {
-                Assert.fail("Unexpected IndexOutOfBoundsException");
-            }
-        }
-    }
-
-    @Test(dataProvider = "shortByteMaskProviderForIOOBE")
-    static void storeByteBufferMaskIOOBE(IntFunction<short[]> fa, IntFunction<Integer> fi, IntFunction<boolean[]> fm) {
-        ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), ByteBuffer::allocateDirect);
-        ByteBuffer r = ByteBuffer.allocateDirect(a.limit());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Short> vmask = VectorMask.fromValues(SPECIES, mask);
-
-        int l = a.limit();
-        int s = SPECIES.vectorByteSize();
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, i, ByteOrder.nativeOrder());
-                intoByteBuffer(av, r, i, ByteOrder.nativeOrder(), vmask);
-            }
-        }
-
-        int index = fi.apply(a.limit());
-        boolean shouldFail = isIndexOutOfBoundsForMask(mask, index, a.limit(), SPECIES.elementSize() / 8);
-        try {
-            ShortVector av = ShortVector.fromByteBuffer(SPECIES, a, 0, ByteOrder.nativeOrder());
-            intoByteBuffer(av, a, index, ByteOrder.nativeOrder(), vmask);
-            if (shouldFail) {
-                Assert.fail("Failed to throw IndexOutOfBoundsException");
-            }
-        } catch (IndexOutOfBoundsException e) {
-            if (!shouldFail) {
-                Assert.fail("Unexpected IndexOutOfBoundsException");
-            }
-        }
-    }
-
-
-    @Test(dataProvider = "shortByteBufferProvider")
-    static void loadStoreReadonlyByteBuffer(IntFunction<short[]> fa,
-                                    IntFunction<ByteBuffer> fb,
-                                    ByteOrder bo) {
-        ByteBuffer a = toBuffer(fa.apply(SPECIES.length()), fb).asReadOnlyBuffer();
-
-        try {
-            SPECIES.zero().intoByteBuffer(a, 0, bo);
-            Assert.fail("ReadOnlyBufferException expected");
-        } catch (ReadOnlyBufferException e) {
-        }
-
-        try {
-            SPECIES.zero().intoByteBuffer(a, 0, bo, SPECIES.maskAll(true));
-            Assert.fail("ReadOnlyBufferException expected");
-        } catch (ReadOnlyBufferException e) {
-        }
-
-        try {
-            SPECIES.zero().intoByteBuffer(a, 0, bo, SPECIES.maskAll(false));
-            Assert.fail("ReadOnlyBufferException expected");
-        } catch (ReadOnlyBufferException e) {
-        }
-
-        try {
-            VectorMask<Short> m = SPECIES.shuffleFromOp(i -> i % 2 == 0 ? 1 : -1)
-                    .laneIsValid();
-            SPECIES.zero().intoByteBuffer(a, 0, bo, m);
-            Assert.fail("ReadOnlyBufferException expected");
-        } catch (ReadOnlyBufferException e) {
-        }
     }
 
 
@@ -1010,179 +667,6 @@ public class ShortMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
     }
 
 
-    @Test(dataProvider = "shortByteArrayProvider")
-    static void loadStoreByteArray(IntFunction<short[]> fa,
-                                    ByteOrder bo) {
-        byte[] a = toByteArray(fa.apply(SPECIES.length()), byte[]::new, bo);
-        byte[] r = new byte[a.length];
-
-        int s = SPECIES.vectorByteSize();
-        int l = a.length;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteArray(SPECIES, a, i, bo);
-                av.intoByteArray(r, i, bo);
-            }
-        }
-        Assert.assertEquals(r, a, "Byte arrays not equal");
-    }
-
-    @Test(dataProvider = "shortByteProviderForIOOBE")
-    static void loadByteArrayIOOBE(IntFunction<short[]> fa, IntFunction<Integer> fi) {
-        byte[] a = toByteArray(fa.apply(SPECIES.length()), byte[]::new, ByteOrder.nativeOrder());
-        byte[] r = new byte[a.length];
-
-        int s = SPECIES.vectorByteSize();
-        int l = a.length;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < l; i += s) {
-                ShortVector av = fromByteArray(a, i, ByteOrder.nativeOrder());
-                av.intoByteArray(r, i, ByteOrder.nativeOrder());
-            }
-        }
-
-        int index = fi.apply(a.length);
-        boolean shouldFail = isIndexOutOfBounds(SPECIES.vectorByteSize(), index, a.length);
-        try {
-            fromByteArray(a, index, ByteOrder.nativeOrder());
-            if (shouldFail) {
-                Assert.fail("Failed to throw IndexOutOfBoundsException");
-            }
-        } catch (IndexOutOfBoundsException e) {
-            if (!shouldFail) {
-                Assert.fail("Unexpected IndexOutOfBoundsException");
-            }
-        }
-    }
-
-    @Test(dataProvider = "shortByteProviderForIOOBE")
-    static void storeByteArrayIOOBE(IntFunction<short[]> fa, IntFunction<Integer> fi) {
-        byte[] a = toByteArray(fa.apply(SPECIES.length()), byte[]::new, ByteOrder.nativeOrder());
-        byte[] r = new byte[a.length];
-
-        int s = SPECIES.vectorByteSize();
-        int l = a.length;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteArray(SPECIES, a, i, ByteOrder.nativeOrder());
-                intoByteArray(av, r, i, ByteOrder.nativeOrder());
-            }
-        }
-
-        int index = fi.apply(a.length);
-        boolean shouldFail = isIndexOutOfBounds(SPECIES.vectorByteSize(), index, a.length);
-        try {
-            ShortVector av = ShortVector.fromByteArray(SPECIES, a, 0, ByteOrder.nativeOrder());
-            intoByteArray(av, r, index, ByteOrder.nativeOrder());
-            if (shouldFail) {
-                Assert.fail("Failed to throw IndexOutOfBoundsException");
-            }
-        } catch (IndexOutOfBoundsException e) {
-            if (!shouldFail) {
-                Assert.fail("Unexpected IndexOutOfBoundsException");
-            }
-        }
-    }
-
-
-    @Test(dataProvider = "shortByteArrayMaskProvider")
-    static void loadStoreByteArrayMask(IntFunction<short[]> fa,
-                                  IntFunction<boolean[]> fm,
-                                  ByteOrder bo) {
-        byte[] a = toByteArray(fa.apply(SPECIES.length()), byte[]::new, bo);
-        byte[] r = new byte[a.length];
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Short> vmask = VectorMask.fromValues(SPECIES, mask);
-
-        int s = SPECIES.vectorByteSize();
-        int l = a.length;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-          for (int i = 0; i < l; i += s) {
-              ShortVector av = ShortVector.fromByteArray(SPECIES, a, i, bo, vmask);
-              av.intoByteArray(r, i, bo);
-          }
-        }
-        assertArraysEquals(r, a, mask);
-
-
-        r = new byte[a.length];
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteArray(SPECIES, a, i, bo);
-                av.intoByteArray(r, i, bo, vmask);
-            }
-        }
-        assertArraysEquals(r, a, mask);
-    }
-
-    @Test(dataProvider = "shortByteMaskProviderForIOOBE")
-    static void loadByteArrayMaskIOOBE(IntFunction<short[]> fa, IntFunction<Integer> fi, IntFunction<boolean[]> fm) {
-        byte[] a = toByteArray(fa.apply(SPECIES.length()), byte[]::new, ByteOrder.nativeOrder());
-        byte[] r = new byte[a.length];
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Short> vmask = VectorMask.fromValues(SPECIES, mask);
-
-        int s = SPECIES.vectorByteSize();
-        int l = a.length;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < l; i += s) {
-                ShortVector av = fromByteArray(a, i, ByteOrder.nativeOrder(), vmask);
-                av.intoByteArray(r, i, ByteOrder.nativeOrder());
-            }
-        }
-
-        int index = fi.apply(a.length);
-        boolean shouldFail = isIndexOutOfBoundsForMask(mask, index, a.length, SPECIES.elementSize() / 8);
-        try {
-            fromByteArray(a, index, ByteOrder.nativeOrder(), vmask);
-            if (shouldFail) {
-                Assert.fail("Failed to throw IndexOutOfBoundsException");
-            }
-        } catch (IndexOutOfBoundsException e) {
-            if (!shouldFail) {
-                Assert.fail("Unexpected IndexOutOfBoundsException");
-            }
-        }
-    }
-
-    @Test(dataProvider = "shortByteMaskProviderForIOOBE")
-    static void storeByteArrayMaskIOOBE(IntFunction<short[]> fa, IntFunction<Integer> fi, IntFunction<boolean[]> fm) {
-        byte[] a = toByteArray(fa.apply(SPECIES.length()), byte[]::new, ByteOrder.nativeOrder());
-        byte[] r = new byte[a.length];
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Short> vmask = VectorMask.fromValues(SPECIES, mask);
-
-        int s = SPECIES.vectorByteSize();
-        int l = a.length;
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < l; i += s) {
-                ShortVector av = ShortVector.fromByteArray(SPECIES, a, i, ByteOrder.nativeOrder());
-                intoByteArray(av, r, i, ByteOrder.nativeOrder(), vmask);
-            }
-        }
-
-        int index = fi.apply(a.length);
-        boolean shouldFail = isIndexOutOfBoundsForMask(mask, index, a.length, SPECIES.elementSize() / 8);
-        try {
-            ShortVector av = ShortVector.fromByteArray(SPECIES, a, 0, ByteOrder.nativeOrder());
-            intoByteArray(av, a, index, ByteOrder.nativeOrder(), vmask);
-            if (shouldFail) {
-                Assert.fail("Failed to throw IndexOutOfBoundsException");
-            }
-        } catch (IndexOutOfBoundsException e) {
-            if (!shouldFail) {
-                Assert.fail("Unexpected IndexOutOfBoundsException");
-            }
-        }
-    }
-
     @Test(dataProvider = "maskProvider")
     static void loadStoreMask(IntFunction<boolean[]> fm) {
         boolean[] a = fm.apply(SPECIES.length());
@@ -1196,6 +680,7 @@ public class ShortMaxVectorLoadStoreTests extends AbstractVectorLoadStoreTest {
         }
         Assert.assertEquals(r, a);
     }
+
 
     @Test
     static void loadStoreShuffle() {

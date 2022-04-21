@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ *  Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
  *  Copyright (c) 2021, Rado Smogura. All rights reserved.
  *
  *  DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -25,9 +25,10 @@
  */
 package org.openjdk.bench.jdk.incubator.vector;
 
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.TimeUnit;
+import jdk.incubator.foreign.MemorySegment;
+import jdk.incubator.foreign.ResourceScope;
 import jdk.incubator.vector.ByteVector;
 import jdk.incubator.vector.VectorSpecies;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -51,81 +52,87 @@ import org.openjdk.jmh.annotations.Warmup;
     "--add-modules=jdk.incubator.foreign,jdk.incubator.vector",
     "-Dforeign.restricted=permit",
     "--enable-native-access", "ALL-UNNAMED"})
-public class ByteBufferVectorAccess {
+public class MemorySegmentVectorAccess {
   private static final VectorSpecies<Byte> SPECIES = VectorSpecies.ofLargestShape(byte.class);
 
   @Param("1024")
   private int size;
 
-  ByteBuffer directIn, directOut;
-  ByteBuffer heapIn, heapOut;
+  byte[] byteIn;
+  byte[] byteOut;
 
-  ByteBuffer directInRo, directOutRo;
-  ByteBuffer heapInRo, heapOutRo;
+  MemorySegment nativeIn, nativeOut;
+  MemorySegment heapIn, heapOut;
+
+  MemorySegment nativeInRo, nativeOutRo;
+  MemorySegment heapInRo, heapOutRo;
 
   @Setup
   public void setup() {
-    directIn = ByteBuffer.allocateDirect(size);
-    directOut = ByteBuffer.allocateDirect(size);
+    nativeIn = MemorySegment.allocateNative(size, ResourceScope.newImplicitScope());
+    nativeOut = MemorySegment.allocateNative(size, ResourceScope.newImplicitScope());
 
-    heapIn = ByteBuffer.wrap(new byte[size]);
-    heapOut = ByteBuffer.wrap(new byte[size]);
+    byteIn = new byte[size];
+    byteOut = new byte[size];
 
-    directInRo = directIn.asReadOnlyBuffer();
-    directOutRo = directOut.asReadOnlyBuffer();
+    heapIn = MemorySegment.ofArray(byteIn);
+    heapOut = MemorySegment.ofArray(byteOut);
 
-    heapInRo = heapIn.asReadOnlyBuffer();
-    heapOutRo = heapOut.asReadOnlyBuffer();
+    nativeInRo = nativeIn.asReadOnly();
+    nativeOutRo = nativeOut.asReadOnly();
+
+    heapInRo = heapIn.asReadOnly();
+    heapOutRo = heapOut.asReadOnly();
   }
 
   @Benchmark
-  public void directBuffers() {
-    copyMemory(directIn, directOut);
+  public void directSegments() {
+    copyMemory(nativeIn, nativeOut);
   }
 
   @Benchmark
-  public void heapBuffers() {
+  public void heapSegments() {
     copyMemory(heapIn, heapOut);
   }
 
   @Benchmark
-  public void pollutedBuffers2() {
-    copyIntoNotInlined(directIn, directOut);
+  public void pollutedSegments2() {
+    copyIntoNotInlined(nativeIn, nativeOut);
     copyIntoNotInlined(heapIn, heapOut);
   }
 
   @Benchmark
-  public void pollutedBuffers3() {
-    copyIntoNotInlined(directIn, directOut);
+  public void pollutedSegments3() {
+    copyIntoNotInlined(nativeIn, nativeOut);
     copyIntoNotInlined(heapIn, heapOut);
 
-    copyIntoNotInlined(directInRo, directOut);
+    copyIntoNotInlined(nativeInRo, nativeOut);
     copyIntoNotInlined(heapInRo, heapOut);
   }
 
   @Benchmark
-  public void pollutedBuffers4() {
-    copyIntoNotInlined(directIn, heapOut); // Pollute if unswitch on 2nd param
+  public void pollutedSegments4() {
+    copyIntoNotInlined(nativeIn, heapOut); // Pollute if unswitch on 2nd param
     copyIntoNotInlined(heapIn, heapOut);
 
-    copyIntoNotInlined(heapIn, directIn); // Pollute if unswitch on 1st param
-    copyIntoNotInlined(heapIn, directOut);
+    copyIntoNotInlined(heapIn, nativeIn); // Pollute if unswitch on 1st param
+    copyIntoNotInlined(heapIn, nativeOut);
   }
 
 
   boolean readOnlyException;
 
   @Benchmark
-  public void pollutedBuffers5() {
-    copyIntoNotInlined(directIn, heapOut);
+  public void pollutedSegments5() {
+    copyIntoNotInlined(nativeIn, heapOut);
     copyIntoNotInlined(heapIn, heapOut);
 
-    copyIntoNotInlined(heapIn, directIn);
-    copyIntoNotInlined(heapIn, directOut);
+    copyIntoNotInlined(heapIn, nativeIn);
+    copyIntoNotInlined(heapIn, nativeOut);
 
     if (readOnlyException) {
       try {
-        copyIntoNotInlined(heapIn, directOutRo);
+        copyIntoNotInlined(heapIn, nativeOutRo);
       } catch (Exception ignored) {}
       readOnlyException = !readOnlyException;
     }
@@ -133,25 +140,25 @@ public class ByteBufferVectorAccess {
 
   @Benchmark
   public void arrayCopy() {
-    byte[] in = heapIn.array();
-    byte[] out = heapOut.array();
+    byte[] in = byteIn;
+    byte[] out = byteOut;
 
-    for (int i=0; i < SPECIES.loopBound(in.length); i += SPECIES.vectorByteSize()) {
+    for (int i = 0; i < SPECIES.loopBound(in.length); i += SPECIES.vectorByteSize()) {
       final var v = ByteVector.fromArray(SPECIES, in, i);
       v.intoArray(out, i);
     }
   }
 
   @CompilerControl(CompilerControl.Mode.DONT_INLINE)
-  protected void copyIntoNotInlined(ByteBuffer in, ByteBuffer out) {
+  protected void copyIntoNotInlined(MemorySegment in, MemorySegment out) {
     copyMemory(in, out);
   }
 
   @CompilerControl(CompilerControl.Mode.INLINE)
-  protected void copyMemory(ByteBuffer in, ByteBuffer out) {
-    for (int i=0; i < SPECIES.loopBound(in.limit()); i += SPECIES.vectorByteSize()) {
-      final var v = ByteVector.fromByteBuffer(SPECIES, in, i, ByteOrder.nativeOrder());
-      v.intoByteBuffer(out, i, ByteOrder.nativeOrder());
+  protected void copyMemory(MemorySegment in, MemorySegment out) {
+    for (long i = 0; i < SPECIES.loopBound(in.byteSize()); i += SPECIES.vectorByteSize()) {
+      final var v = ByteVector.fromMemorySegment(SPECIES, in, i, ByteOrder.nativeOrder());
+      v.intoMemorySegment(out, i, ByteOrder.nativeOrder());
     }
   }
 }

@@ -24,7 +24,6 @@
  */
 package jdk.incubator.vector;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
@@ -860,34 +859,6 @@ final class Float128Vector extends FloatVector {
     @ForceInline
     @Override
     final
-    FloatVector fromByteArray0(byte[] a, int offset) {
-        return super.fromByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    FloatVector fromByteArray0(byte[] a, int offset, VectorMask<Float> m) {
-        return super.fromByteArray0Template(Float128Mask.class, a, offset, (Float128Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    FloatVector fromByteBuffer0(ByteBuffer bb, int offset) {
-        return super.fromByteBuffer0Template(bb, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    FloatVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Float> m) {
-        return super.fromByteBuffer0Template(Float128Mask.class, bb, offset, (Float128Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
     FloatVector fromMemorySegment0(MemorySegment ms, long offset) {
         return super.fromMemorySegment0Template(ms, offset);  // specialize
     }
@@ -920,27 +891,6 @@ final class Float128Vector extends FloatVector {
         super.intoArray0Template(Float128Mask.class, a, offset, indexMap, mapOffset, (Float128Mask) m);
     }
 
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset) {
-        super.intoByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset, VectorMask<Float> m) {
-        super.intoByteArray0Template(Float128Mask.class, a, offset, (Float128Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Float> m) {
-        super.intoByteBuffer0Template(Float128Mask.class, bb, offset, (Float128Mask) m);
-    }
 
     @ForceInline
     @Override

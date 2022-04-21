@@ -24,7 +24,6 @@
  */
 package jdk.incubator.vector;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
@@ -871,34 +870,6 @@ final class Int128Vector extends IntVector {
     @ForceInline
     @Override
     final
-    IntVector fromByteArray0(byte[] a, int offset) {
-        return super.fromByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    IntVector fromByteArray0(byte[] a, int offset, VectorMask<Integer> m) {
-        return super.fromByteArray0Template(Int128Mask.class, a, offset, (Int128Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    IntVector fromByteBuffer0(ByteBuffer bb, int offset) {
-        return super.fromByteBuffer0Template(bb, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    IntVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Integer> m) {
-        return super.fromByteBuffer0Template(Int128Mask.class, bb, offset, (Int128Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
     IntVector fromMemorySegment0(MemorySegment ms, long offset) {
         return super.fromMemorySegment0Template(ms, offset);  // specialize
     }
@@ -931,27 +902,6 @@ final class Int128Vector extends IntVector {
         super.intoArray0Template(Int128Mask.class, a, offset, indexMap, mapOffset, (Int128Mask) m);
     }
 
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset) {
-        super.intoByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset, VectorMask<Integer> m) {
-        super.intoByteArray0Template(Int128Mask.class, a, offset, (Int128Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Integer> m) {
-        super.intoByteBuffer0Template(Int128Mask.class, bb, offset, (Int128Mask) m);
-    }
 
     @ForceInline
     @Override

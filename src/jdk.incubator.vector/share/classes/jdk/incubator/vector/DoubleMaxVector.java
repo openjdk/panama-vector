@@ -24,7 +24,6 @@
  */
 package jdk.incubator.vector;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
@@ -853,34 +852,6 @@ final class DoubleMaxVector extends DoubleVector {
     @ForceInline
     @Override
     final
-    DoubleVector fromByteArray0(byte[] a, int offset) {
-        return super.fromByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    DoubleVector fromByteArray0(byte[] a, int offset, VectorMask<Double> m) {
-        return super.fromByteArray0Template(DoubleMaxMask.class, a, offset, (DoubleMaxMask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    DoubleVector fromByteBuffer0(ByteBuffer bb, int offset) {
-        return super.fromByteBuffer0Template(bb, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    DoubleVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Double> m) {
-        return super.fromByteBuffer0Template(DoubleMaxMask.class, bb, offset, (DoubleMaxMask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
     DoubleVector fromMemorySegment0(MemorySegment ms, long offset) {
         return super.fromMemorySegment0Template(ms, offset);  // specialize
     }
@@ -913,27 +884,6 @@ final class DoubleMaxVector extends DoubleVector {
         super.intoArray0Template(DoubleMaxMask.class, a, offset, indexMap, mapOffset, (DoubleMaxMask) m);
     }
 
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset) {
-        super.intoByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset, VectorMask<Double> m) {
-        super.intoByteArray0Template(DoubleMaxMask.class, a, offset, (DoubleMaxMask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Double> m) {
-        super.intoByteBuffer0Template(DoubleMaxMask.class, bb, offset, (DoubleMaxMask) m);
-    }
 
     @ForceInline
     @Override

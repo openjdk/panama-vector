@@ -24,7 +24,6 @@
  */
 package jdk.incubator.vector;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
@@ -1185,34 +1184,6 @@ final class $vectortype$ extends $abstractvectortype$ {
     @ForceInline
     @Override
     final
-    $abstractvectortype$ fromByteArray0(byte[] a, int offset) {
-        return super.fromByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    $abstractvectortype$ fromByteArray0(byte[] a, int offset, VectorMask<$Boxtype$> m) {
-        return super.fromByteArray0Template($masktype$.class, a, offset, ($masktype$) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    $abstractvectortype$ fromByteBuffer0(ByteBuffer bb, int offset) {
-        return super.fromByteBuffer0Template(bb, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    $abstractvectortype$ fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<$Boxtype$> m) {
-        return super.fromByteBuffer0Template($masktype$.class, bb, offset, ($masktype$) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
     $abstractvectortype$ fromMemorySegment0(MemorySegment ms, long offset) {
         return super.fromMemorySegment0Template(ms, offset);  // specialize
     }
@@ -1255,27 +1226,6 @@ final class $vectortype$ extends $abstractvectortype$ {
         super.intoBooleanArray0Template($masktype$.class, a, offset, ($masktype$) m);
     }
 #end[byte]
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset) {
-        super.intoByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset, VectorMask<$Boxtype$> m) {
-        super.intoByteArray0Template($masktype$.class, a, offset, ($masktype$) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<$Boxtype$> m) {
-        super.intoByteBuffer0Template($masktype$.class, bb, offset, ($masktype$) m);
-    }
 
     @ForceInline
     @Override
