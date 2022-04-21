@@ -40,7 +40,6 @@ import org.openjdk.jmh.infra.Blackhole;
 public class DoubleScalar extends AbstractVectorBenchmark {
     static final int INVOC_COUNT = 1; // To align with vector benchmarks.
 
-    private static final double CONST_SHIFT = Double.SIZE / 2;
 
     @Param("1024")
     int size;

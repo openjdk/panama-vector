@@ -56,7 +56,6 @@ public class Float64Vector extends AbstractVectorBenchmark {
         return Float.compare(a, (float) 0) != 0 ? a : b;
     }
 
-    private static final float CONST_SHIFT = Float.SIZE / 2;
 
     @Param("1024")
     int size;

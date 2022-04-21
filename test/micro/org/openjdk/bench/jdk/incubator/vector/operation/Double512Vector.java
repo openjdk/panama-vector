@@ -56,7 +56,6 @@ public class Double512Vector extends AbstractVectorBenchmark {
         return Double.compare(a, (double) 0) != 0 ? a : b;
     }
 
-    private static final double CONST_SHIFT = Double.SIZE / 2;
 
     @Param("1024")
     int size;
