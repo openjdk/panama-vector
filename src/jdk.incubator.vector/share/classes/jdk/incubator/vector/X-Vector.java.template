@@ -976,9 +976,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                     v0.bOp(v1, vm, (i, a, n) -> rotateRight(a, (int)n));
 #if[intOrLong]
             case VECTOR_OP_COMPRESS_BITS: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, n) -> CompressExpand.compress(a, n));
+                    v0.bOp(v1, vm, (i, a, n) -> $Boxtype$.compress(a, n));
             case VECTOR_OP_EXPAND_BITS: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, n) -> CompressExpand.expand(a, n));
+                    v0.bOp(v1, vm, (i, a, n) -> $Boxtype$.expand(a, n));
 #end[intOrLong]
 #end[BITWISE]
 #if[FP]

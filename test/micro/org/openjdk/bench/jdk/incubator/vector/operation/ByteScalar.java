@@ -40,6 +40,8 @@ import org.openjdk.jmh.infra.Blackhole;
 public class ByteScalar extends AbstractVectorBenchmark {
     static final int INVOC_COUNT = 1; // To align with vector benchmarks.
 
+    private static final byte CONST_SHIFT = Byte.SIZE / 2;
+
     @Param("1024")
     int size;
 
@@ -835,7 +837,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(ROR_scalar(a,b));
+                rs[i] = (byte)(ROR_scalar(a, b));
             }
         }
 
@@ -856,7 +858,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)(ROR_scalar(a,b)) : a);
+                rs[i] = (m ? (byte)(ROR_scalar(a, b)) : a);
             }
         }
 
@@ -875,7 +877,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 byte a = as[i];
                 byte b = bs[i];
-                rs[i] = (byte)(ROL_scalar(a,b));
+                rs[i] = (byte)(ROL_scalar(a, b));
             }
         }
 
@@ -896,7 +898,211 @@ public class ByteScalar extends AbstractVectorBenchmark {
                 byte a = as[i];
                 byte b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (byte)(ROL_scalar(a,b)) : a);
+                rs[i] = (m ? (byte)(ROL_scalar(a, b)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+
+
+    @Benchmark
+    public void LSHRShiftConst(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] bs = fb.apply(size);
+        byte[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                byte b = bs[i];
+                rs[i] = (byte)(((a & 0xFF) >>> CONST_SHIFT));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void LSHRMaskedShiftConst(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] bs = fb.apply(size);
+        byte[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                byte b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (byte)(((a & 0xFF) >>> CONST_SHIFT)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+
+
+    @Benchmark
+    public void LSHLShiftConst(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] bs = fb.apply(size);
+        byte[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                byte b = bs[i];
+                rs[i] = (byte)((a << CONST_SHIFT));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void LSHLMaskedShiftConst(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] bs = fb.apply(size);
+        byte[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                byte b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (byte)((a << CONST_SHIFT)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void ASHRShiftConst(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] bs = fb.apply(size);
+        byte[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                byte b = bs[i];
+                rs[i] = (byte)((a >> CONST_SHIFT));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void ASHRMaskedShiftConst(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] bs = fb.apply(size);
+        byte[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                byte b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (byte)((a >> CONST_SHIFT)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void RORShiftConst(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] bs = fb.apply(size);
+        byte[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                byte b = bs[i];
+                rs[i] = (byte)(ROR_scalar(a, CONST_SHIFT));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void RORMaskedShiftConst(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] bs = fb.apply(size);
+        byte[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                byte b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (byte)(ROR_scalar(a, CONST_SHIFT)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void ROLShiftConst(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] bs = fb.apply(size);
+        byte[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                byte b = bs[i];
+                rs[i] = (byte)(ROL_scalar(a, CONST_SHIFT));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void ROLMaskedShiftConst(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] bs = fb.apply(size);
+        byte[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                byte b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (byte)(ROL_scalar(a, CONST_SHIFT)) : a);
             }
         }
 

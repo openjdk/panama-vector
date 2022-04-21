@@ -37,7 +37,6 @@ import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.Vector;
 
 import jdk.incubator.vector.IntVector;
-import compress.CompressExpandTest;
 
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -1964,7 +1963,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int COMPRESS_BITS(int a, int b) {
-        return (int)(CompressExpandTest.compress(a, b));
+        return (int)(Integer.compress(a, b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")
@@ -2008,7 +2007,7 @@ public class IntMaxVectorTests extends AbstractVectorTest {
 
 
     static int EXPAND_BITS(int a, int b) {
-        return (int)(CompressExpandTest.expand(a, b));
+        return (int)(Integer.expand(a, b));
     }
 
     @Test(dataProvider = "intBinaryOpProvider")

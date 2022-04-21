@@ -56,6 +56,7 @@ public class Double64Vector extends AbstractVectorBenchmark {
         return Double.compare(a, (double) 0) != 0 ? a : b;
     }
 
+
     @Param("1024")
     int size;
 
@@ -282,6 +283,20 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

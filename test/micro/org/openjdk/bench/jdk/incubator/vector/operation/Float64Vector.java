@@ -56,6 +56,7 @@ public class Float64Vector extends AbstractVectorBenchmark {
         return Float.compare(a, (float) 0) != 0 ? a : b;
     }
 
+
     @Param("1024")
     int size;
 
@@ -282,6 +283,20 @@ public class Float64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

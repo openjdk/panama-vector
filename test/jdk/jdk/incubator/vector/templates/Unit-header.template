@@ -44,7 +44,6 @@ import jdk.incubator.vector.FloatVector;
 #end[Float]
 #if[Int]
 import jdk.incubator.vector.IntVector;
-import compress.CompressExpandTest;
 #end[Int]
 #if[Double]
 import jdk.incubator.vector.DoubleVector;
@@ -54,7 +53,6 @@ import jdk.incubator.vector.ShortVector;
 #end[Short]
 #if[Long]
 import jdk.incubator.vector.LongVector;
-import compress.CompressExpandTest;
 #end[Long]
 
 import org.testng.Assert;
@@ -91,7 +89,9 @@ public class $vectorteststype$ extends AbstractVectorTest {
     private static final int Max = 256;  // juts so we can do N/$bits$
 #end[MaxBit]
 
+#if[BITWISE]
     private static final $type$ CONST_SHIFT = $Boxtype$.SIZE / 2;
+#end[BITWISE]
 
     static final int BUFFER_REPS = Integer.getInteger("jdk.incubator.vector.test.buffer-vectors", 25000 / $bits$);
 

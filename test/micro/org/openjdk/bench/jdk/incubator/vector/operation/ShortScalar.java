@@ -40,6 +40,8 @@ import org.openjdk.jmh.infra.Blackhole;
 public class ShortScalar extends AbstractVectorBenchmark {
     static final int INVOC_COUNT = 1; // To align with vector benchmarks.
 
+    private static final short CONST_SHIFT = Short.SIZE / 2;
+
     @Param("1024")
     int size;
 
@@ -836,7 +838,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short)(ROR_scalar(a,b));
+                rs[i] = (short)(ROR_scalar(a, b));
             }
         }
 
@@ -857,7 +859,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short)(ROR_scalar(a,b)) : a);
+                rs[i] = (m ? (short)(ROR_scalar(a, b)) : a);
             }
         }
 
@@ -876,7 +878,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short)(ROL_scalar(a,b));
+                rs[i] = (short)(ROL_scalar(a, b));
             }
         }
 
@@ -897,7 +899,211 @@ public class ShortScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short)(ROL_scalar(a,b)) : a);
+                rs[i] = (m ? (short)(ROL_scalar(a, b)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+
+
+
+
+    @Benchmark
+    public void LSHRShiftConst(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        short[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                short b = bs[i];
+                rs[i] = (short)(((a & 0xFFFF) >>> CONST_SHIFT));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void LSHRMaskedShiftConst(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        short[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                short b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (short)(((a & 0xFFFF) >>> CONST_SHIFT)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void LSHLShiftConst(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        short[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                short b = bs[i];
+                rs[i] = (short)((a << CONST_SHIFT));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void LSHLMaskedShiftConst(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        short[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                short b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (short)((a << CONST_SHIFT)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void ASHRShiftConst(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        short[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                short b = bs[i];
+                rs[i] = (short)((a >> CONST_SHIFT));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void ASHRMaskedShiftConst(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        short[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                short b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (short)((a >> CONST_SHIFT)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void RORShiftConst(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        short[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                short b = bs[i];
+                rs[i] = (short)(ROR_scalar(a, CONST_SHIFT));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void RORMaskedShiftConst(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        short[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                short b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (short)(ROR_scalar(a, CONST_SHIFT)) : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void ROLShiftConst(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        short[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                short b = bs[i];
+                rs[i] = (short)(ROL_scalar(a, CONST_SHIFT));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+
+
+    @Benchmark
+    public void ROLMaskedShiftConst(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        short[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                short b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? (short)(ROL_scalar(a, CONST_SHIFT)) : a);
             }
         }
 
