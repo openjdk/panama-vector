@@ -40,8 +40,6 @@ import compiler.lib.ir_framework.*;
 import jdk.test.lib.Utils;
 import java.util.Random;
 
-import jdk.incubator.vector.*;
-
 public class TestBitShuffleOpers {
     int [] ri;
     int [] ai;
