@@ -157,18 +157,11 @@ Node* CompressBitsNode::Ideal(PhaseGVN* phase, bool can_reshape) {
 }
 
 Node* compress_expand_identity(PhaseGVN* phase, Node* n) {
-  if (n->bottom_type()->isa_int()) {
-    // compress(x, 0) == 0
-    if(phase->type(n->in(2))->higher_equal(TypeInt::ZERO)) return n->in(2);
-    // compress(x, -1) == x
-    if(phase->type(n->in(2))->higher_equal( TypeInt::MINUS_1)) return n->in(1);
-  } else {
-    assert(n->bottom_type()->isa_long(), "");
-    // compress(x, 0) == 0
-    if(phase->type(n->in(2))->higher_equal(TypeLong::ZERO)) return n->in(2);
-    // compress(x, -1) == x
-    if(phase->type(n->in(2))->higher_equal( TypeLong::MINUS_1)) return n->in(1);
-  }
+  BasicType bt = n->bottom_type()->array_element_basic_type();
+  // compress(x, 0) == 0
+  if(phase->type(n->in(2))->higher_equal(TypeInteger::zero(bt)) return n->in(2);
+  // compress(x, -1) == x
+  if(phase->type(n->in(2))->higher_equal(TypeInteger::minus_1(bt)) return n->in(1);
   return n;
 }
 

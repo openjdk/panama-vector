@@ -261,6 +261,7 @@ class SignumFNode : public Node {
   virtual const Type* bottom_type() const { return Type::FLOAT; }
   virtual uint ideal_reg() const { return Op_RegF; }
 };
+
 //----------------------------CompressBits/ExpandBits---------------------------
 class CompressBitsNode : public TypeNode {
  public:
@@ -282,7 +283,6 @@ class ExpandBitsNode : public TypeNode {
   virtual int Opcode() const;
   virtual Node* Ideal(PhaseGVN* phase, bool can_reshape);
   virtual Node* Identity(PhaseGVN* phase);
-
 };
 
 #endif // SHARE_OPTO_INTRINSICNODE_HPP

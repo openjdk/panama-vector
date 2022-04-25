@@ -221,7 +221,7 @@ bool LibraryCallKit::arch_supports_vector(int sopc, int num_elem, BasicType type
     if(!arch_supports_vector_bitshuffle(sopc, num_elem, type)) {
 #ifndef PRODUCT
       if (C->print_intrinsics()) {
-        tty->print_cr("  ** Rejected vector op (%s,%s,%d) because architecture does not support variable vector shifts",
+        tty->print_cr("  ** Rejected vector op (%s,%s,%d) because architecture does not support bitshuffle operations",
                       NodeClassNames[sopc], type2name(type), num_elem);
       }
 #endif
@@ -346,18 +346,19 @@ static bool is_klass_initialized(const TypeInstPtr* vec_klass) {
   return klass->is_initialized();
 }
 
-Node* LibraryCallKit::gen_bitshuffle_operation(int voper, BasicType elem_bt, int num_elem, Node* opd1, Node* opd2) {
+Node* LibraryCallKit::gen_bitshuffle_operation(int opc, BasicType elem_bt, int num_elem, Node* opd1, Node* opd2) {
   // Vectorized bit compression and expansion operations are supported using their
   // scalar counterparts, lane exaction and insertion operations.
   assert(elem_bt == T_INT || elem_bt == T_LONG, "");
+  assert(opc == Op_CompressBits || opc == Op_ExpandBits, "");
   const Type* type_bt = Type::get_const_basic_type(elem_bt);
   Node* dst = VectorNode::scalar2vector(gvn().zerocon(elem_bt), num_elem, type_bt);
   for(int i = 0; i < num_elem; i++) {
     dst = gvn().transform(dst);
     Node* src_elem = gvn().transform(ExtractNode::make(opd1, i, elem_bt));
     Node* mask_elem = gvn().transform(ExtractNode::make(opd2, i, elem_bt));
-    Node* oper = voper == Op_CompressBits ? (Node*)new CompressBitsNode(src_elem, mask_elem, type_bt)
-                                          : (Node*)new ExpandBitsNode(src_elem, mask_elem, type_bt);
+    Node* oper = opc == Op_CompressBits ? (Node*)new CompressBitsNode(src_elem, mask_elem, type_bt)
+                                        : (Node*)new ExpandBitsNode(src_elem, mask_elem, type_bt);
     oper = gvn().transform(oper);
     dst = VectorInsertNode::make(dst, oper, i);
   }
