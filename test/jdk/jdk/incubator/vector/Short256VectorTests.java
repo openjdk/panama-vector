@@ -933,7 +933,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
 
-
     static short bits(short e) {
         return  e;
     }
@@ -1028,8 +1027,6 @@ public class Short256VectorTests extends AbstractVectorTest {
                 toArray(Object[][]::new);
     }
 
-
-
     @DataProvider
     public Object[][] maskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
@@ -1104,7 +1101,6 @@ public class Short256VectorTests extends AbstractVectorTest {
                 }))).
                 toArray(Object[][]::new);
     }
-
 
     static final List<IntFunction<short[]>> SHORT_COMPARE_GENERATORS = List.of(
             withToString("short[i]", (int s) -> {
@@ -1411,6 +1407,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         } catch (ArithmeticException e) {
         }
     }
+
     static short ADD(short a, short b) {
         return (short)(a + b);
     }
@@ -1431,6 +1428,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short256VectorTests::ADD);
     }
+
     static short add(short a, short b) {
         return (short)(a + b);
     }
@@ -1487,6 +1485,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short256VectorTests::add);
     }
+
     static short SUB(short a, short b) {
         return (short)(a - b);
     }
@@ -1507,6 +1506,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short256VectorTests::SUB);
     }
+
     static short sub(short a, short b) {
         return (short)(a - b);
     }
@@ -1563,6 +1563,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short256VectorTests::sub);
     }
+
     static short MUL(short a, short b) {
         return (short)(a * b);
     }
@@ -1583,6 +1584,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short256VectorTests::MUL);
     }
+
     static short mul(short a, short b) {
         return (short)(a * b);
     }
@@ -1640,8 +1642,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, mask, Short256VectorTests::mul);
     }
 
-
-
     static short DIV(short a, short b) {
         return (short)(a / b);
     }
@@ -1664,6 +1664,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short256VectorTests::DIV);
     }
+
     static short div(short a, short b) {
         return (short)(a / b);
     }
@@ -1686,8 +1687,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short256VectorTests::div);
     }
-
-
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void DIVShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -1794,6 +1793,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short256VectorTests::AND);
     }
+
     static short and(short a, short b) {
         return (short)(a & b);
     }
@@ -1812,8 +1812,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short256VectorTests::and);
     }
-
-
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ANDShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -1834,7 +1832,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short256VectorTests::AND);
     }
-
 
     static short AND_NOT(short a, short b) {
         return (short)(a & ~b);
@@ -1857,8 +1854,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::AND_NOT);
     }
 
-
-
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void AND_NOTShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -1878,7 +1873,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short256VectorTests::AND_NOT);
     }
-
 
     static short OR(short a, short b) {
         return (short)(a | b);
@@ -1900,6 +1894,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short256VectorTests::OR);
     }
+
     static short or(short a, short b) {
         return (short)(a | b);
     }
@@ -1918,8 +1913,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short256VectorTests::or);
     }
-
-
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ORShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -1940,7 +1933,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short256VectorTests::OR);
     }
-
 
     static short XOR(short a, short b) {
         return (short)(a ^ b);
@@ -1963,8 +1955,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::XOR);
     }
 
-
-
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void XORShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -1984,11 +1974,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short256VectorTests::XOR);
     }
-
-
-
-
-
 
     @Test(dataProvider = "shortBinaryOpProvider")
     static void addShort256VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -2083,9 +2068,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertBroadcastArraysEquals(r, a, b, mask, Short256VectorTests::mul);
     }
 
-
-
-
     @Test(dataProvider = "shortBinaryOpProvider")
     static void divShort256VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -2101,8 +2083,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertBroadcastArraysEquals(r, a, b, Short256VectorTests::div);
     }
-
-
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void divShort256VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -2122,8 +2102,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertBroadcastArraysEquals(r, a, b, mask, Short256VectorTests::div);
     }
-
-
 
     @Test(dataProvider = "shortBinaryOpProvider")
     static void ORShort256VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -2153,8 +2131,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertBroadcastArraysEquals(r, a, b, Short256VectorTests::or);
     }
 
-
-
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ORShort256VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2171,8 +2147,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertBroadcastArraysEquals(r, a, b, mask, Short256VectorTests::OR);
     }
-
-
 
     @Test(dataProvider = "shortBinaryOpProvider")
     static void ANDShort256VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -2202,8 +2176,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertBroadcastArraysEquals(r, a, b, Short256VectorTests::and);
     }
 
-
-
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ANDShort256VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2221,8 +2193,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertBroadcastArraysEquals(r, a, b, mask, Short256VectorTests::AND);
     }
 
-
-
     @Test(dataProvider = "shortBinaryOpProvider")
     static void ORShort256VectorTestsBroadcastLongSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -2236,8 +2206,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertBroadcastLongArraysEquals(r, a, b, Short256VectorTests::OR);
     }
-
-
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ORShort256VectorTestsBroadcastMaskedLongSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -2255,7 +2223,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertBroadcastLongArraysEquals(r, a, b, mask, Short256VectorTests::OR);
     }
-
 
     @Test(dataProvider = "shortBinaryOpProvider")
     static void ADDShort256VectorTestsBroadcastLongSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -2288,10 +2255,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertBroadcastLongArraysEquals(r, a, b, mask, Short256VectorTests::ADD);
     }
 
-
-
-
-
     static short LSHL(short a, short b) {
         return (short)((a << (b & 0xF)));
     }
@@ -2313,8 +2276,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::LSHL);
     }
 
-
-
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void LSHLShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2334,11 +2295,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short256VectorTests::LSHL);
     }
-
-
-
-
-
 
     static short ASHR(short a, short b) {
         return (short)((a >> (b & 0xF)));
@@ -2361,8 +2317,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::ASHR);
     }
 
-
-
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ASHRShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2382,11 +2336,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short256VectorTests::ASHR);
     }
-
-
-
-
-
 
     static short LSHR(short a, short b) {
         return (short)(((a & 0xFFFF) >>> (b & 0xF)));
@@ -2409,8 +2358,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::LSHR);
     }
 
-
-
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void LSHRShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2430,11 +2377,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short256VectorTests::LSHR);
     }
-
-
-
-
-
 
     static short LSHL_unary(short a, short b) {
         return (short)((a << (b & 15)));
@@ -2456,8 +2398,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertShiftArraysEquals(r, a, b, Short256VectorTests::LSHL_unary);
     }
 
-
-
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void LSHLShort256VectorTestsScalarShiftMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2476,11 +2416,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertShiftArraysEquals(r, a, b, mask, Short256VectorTests::LSHL_unary);
     }
-
-
-
-
-
 
     static short LSHR_unary(short a, short b) {
         return (short)(((a & 0xFFFF) >>> (b & 15)));
@@ -2502,8 +2437,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertShiftArraysEquals(r, a, b, Short256VectorTests::LSHR_unary);
     }
 
-
-
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void LSHRShort256VectorTestsScalarShiftMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2522,11 +2455,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertShiftArraysEquals(r, a, b, mask, Short256VectorTests::LSHR_unary);
     }
-
-
-
-
-
 
     static short ASHR_unary(short a, short b) {
         return (short)((a >> (b & 15)));
@@ -2548,8 +2476,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertShiftArraysEquals(r, a, b, Short256VectorTests::ASHR_unary);
     }
 
-
-
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ASHRShort256VectorTestsScalarShiftMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2568,7 +2494,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertShiftArraysEquals(r, a, b, mask, Short256VectorTests::ASHR_unary);
     }
-
 
     static short ROR(short a, short b) {
         return (short)(ROR_scalar(a,b));
@@ -2591,8 +2516,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::ROR);
     }
 
-
-
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void RORShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2612,7 +2535,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short256VectorTests::ROR);
     }
-
 
     static short ROL(short a, short b) {
         return (short)(ROL_scalar(a,b));
@@ -2635,8 +2557,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short256VectorTests::ROL);
     }
 
-
-
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ROLShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2656,7 +2576,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short256VectorTests::ROL);
     }
-
 
     static short ROR_unary(short a, short b) {
         return (short)(ROR_scalar(a, b));
@@ -2678,8 +2597,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertShiftArraysEquals(r, a, b, Short256VectorTests::ROR_unary);
     }
 
-
-
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void RORShort256VectorTestsScalarShiftMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2698,7 +2615,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertShiftArraysEquals(r, a, b, mask, Short256VectorTests::ROR_unary);
     }
-
 
     static short ROL_unary(short a, short b) {
         return (short)(ROL_scalar(a, b));
@@ -2720,8 +2636,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertShiftArraysEquals(r, a, b, Short256VectorTests::ROL_unary);
     }
 
-
-
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ROLShort256VectorTestsScalarShiftMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2740,12 +2654,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertShiftArraysEquals(r, a, b, mask, Short256VectorTests::ROL_unary);
     }
-
-
-
-
-
-
     static short LSHR_binary_const(short a) {
         return (short)(((a & 0xFFFF) >>> CONST_SHIFT));
     }
@@ -2765,8 +2673,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertShiftConstEquals(r, a, Short256VectorTests::LSHR_binary_const);
     }
 
-
-
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void LSHRShort256VectorTestsScalarShiftMaskedConst(IntFunction<short[]> fa,
                                           IntFunction<boolean[]> fm) {
@@ -2784,8 +2690,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertShiftConstEquals(r, a, mask, Short256VectorTests::LSHR_binary_const);
     }
-
-
 
     static short LSHL_binary_const(short a) {
         return (short)((a << CONST_SHIFT));
@@ -2806,8 +2710,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertShiftConstEquals(r, a, Short256VectorTests::LSHL_binary_const);
     }
 
-
-
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void LSHLShort256VectorTestsScalarShiftMaskedConst(IntFunction<short[]> fa,
                                           IntFunction<boolean[]> fm) {
@@ -2825,8 +2727,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertShiftConstEquals(r, a, mask, Short256VectorTests::LSHL_binary_const);
     }
-
-
 
     static short ASHR_binary_const(short a) {
         return (short)((a >> CONST_SHIFT));
@@ -2847,8 +2747,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertShiftConstEquals(r, a, Short256VectorTests::ASHR_binary_const);
     }
 
-
-
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void ASHRShort256VectorTestsScalarShiftMaskedConst(IntFunction<short[]> fa,
                                           IntFunction<boolean[]> fm) {
@@ -2866,8 +2764,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertShiftConstEquals(r, a, mask, Short256VectorTests::ASHR_binary_const);
     }
-
-
 
     static short ROR_binary_const(short a) {
         return (short)(ROR_scalar(a, CONST_SHIFT));
@@ -2888,8 +2784,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertShiftConstEquals(r, a, Short256VectorTests::ROR_binary_const);
     }
 
-
-
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void RORShort256VectorTestsScalarShiftMaskedConst(IntFunction<short[]> fa,
                                           IntFunction<boolean[]> fm) {
@@ -2907,8 +2801,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertShiftConstEquals(r, a, mask, Short256VectorTests::ROR_binary_const);
     }
-
-
 
     static short ROL_binary_const(short a) {
         return (short)(ROL_scalar(a, CONST_SHIFT));
@@ -2928,8 +2820,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertShiftConstEquals(r, a, Short256VectorTests::ROL_binary_const);
     }
-
-
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void ROLShort256VectorTestsScalarShiftMaskedConst(IntFunction<short[]> fa,
@@ -2970,6 +2860,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short256VectorTests::MIN);
     }
+
     static short min(short a, short b) {
         return (short)(Math.min(a, b));
     }
@@ -2988,6 +2879,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short256VectorTests::min);
     }
+
     static short MAX(short a, short b) {
         return (short)(Math.max(a, b));
     }
@@ -3008,6 +2900,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short256VectorTests::MAX);
     }
+
     static short max(short a, short b) {
         return (short)(Math.max(a, b));
     }
@@ -3101,7 +2994,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         return res;
     }
 
-
     @Test(dataProvider = "shortUnaryOpProvider")
     static void ANDReduceShort256VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -3127,7 +3019,6 @@ public class Short256VectorTests extends AbstractVectorTest {
                 Short256VectorTests::ANDReduce, Short256VectorTests::ANDReduceAll);
     }
 
-
     static short ANDReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = -1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3146,7 +3037,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void ANDReduceShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
@@ -3175,7 +3065,6 @@ public class Short256VectorTests extends AbstractVectorTest {
                 Short256VectorTests::ANDReduceMasked, Short256VectorTests::ANDReduceAllMasked);
     }
 
-
     static short ORReduce(short[] a, int idx) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3193,7 +3082,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
 
     @Test(dataProvider = "shortUnaryOpProvider")
     static void ORReduceShort256VectorTests(IntFunction<short[]> fa) {
@@ -3220,7 +3108,6 @@ public class Short256VectorTests extends AbstractVectorTest {
                 Short256VectorTests::ORReduce, Short256VectorTests::ORReduceAll);
     }
 
-
     static short ORReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3239,7 +3126,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void ORReduceShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
@@ -3268,7 +3154,6 @@ public class Short256VectorTests extends AbstractVectorTest {
                 Short256VectorTests::ORReduceMasked, Short256VectorTests::ORReduceAllMasked);
     }
 
-
     static short XORReduce(short[] a, int idx) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3286,7 +3171,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
 
     @Test(dataProvider = "shortUnaryOpProvider")
     static void XORReduceShort256VectorTests(IntFunction<short[]> fa) {
@@ -3313,7 +3197,6 @@ public class Short256VectorTests extends AbstractVectorTest {
                 Short256VectorTests::XORReduce, Short256VectorTests::XORReduceAll);
     }
 
-
     static short XORReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3332,7 +3215,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void XORReduceShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
@@ -3378,6 +3260,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
     @Test(dataProvider = "shortUnaryOpProvider")
     static void ADDReduceShort256VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -3402,6 +3285,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertReductionArraysEquals(r, ra, a,
                 Short256VectorTests::ADDReduce, Short256VectorTests::ADDReduceAll);
     }
+
     static short ADDReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3420,6 +3304,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void ADDReduceShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
@@ -3446,6 +3331,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertReductionArraysEqualsMasked(r, ra, a, mask,
                 Short256VectorTests::ADDReduceMasked, Short256VectorTests::ADDReduceAllMasked);
     }
+
     static short MULReduce(short[] a, int idx) {
         short res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3463,6 +3349,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
     @Test(dataProvider = "shortUnaryOpProvider")
     static void MULReduceShort256VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -3487,6 +3374,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertReductionArraysEquals(r, ra, a,
                 Short256VectorTests::MULReduce, Short256VectorTests::MULReduceAll);
     }
+
     static short MULReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3505,6 +3393,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void MULReduceShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
@@ -3531,6 +3420,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertReductionArraysEqualsMasked(r, ra, a, mask,
                 Short256VectorTests::MULReduceMasked, Short256VectorTests::MULReduceAllMasked);
     }
+
     static short MINReduce(short[] a, int idx) {
         short res = Short.MAX_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3548,6 +3438,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
     @Test(dataProvider = "shortUnaryOpProvider")
     static void MINReduceShort256VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -3572,6 +3463,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertReductionArraysEquals(r, ra, a,
                 Short256VectorTests::MINReduce, Short256VectorTests::MINReduceAll);
     }
+
     static short MINReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = Short.MAX_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3590,6 +3482,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void MINReduceShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
@@ -3616,6 +3509,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertReductionArraysEqualsMasked(r, ra, a, mask,
                 Short256VectorTests::MINReduceMasked, Short256VectorTests::MINReduceAllMasked);
     }
+
     static short MAXReduce(short[] a, int idx) {
         short res = Short.MIN_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3633,6 +3527,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
     @Test(dataProvider = "shortUnaryOpProvider")
     static void MAXReduceShort256VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -3657,6 +3552,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertReductionArraysEquals(r, ra, a,
                 Short256VectorTests::MAXReduce, Short256VectorTests::MAXReduceAll);
     }
+
     static short MAXReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = Short.MIN_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3675,6 +3571,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void MAXReduceShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
@@ -3701,6 +3598,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertReductionArraysEqualsMasked(r, ra, a, mask,
                 Short256VectorTests::MAXReduceMasked, Short256VectorTests::MAXReduceAllMasked);
     }
+
     static short FIRST_NONZEROReduce(short[] a, int idx) {
         short res = (short) 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3718,6 +3616,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
     @Test(dataProvider = "shortUnaryOpProvider")
     static void FIRST_NONZEROReduceShort256VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -3742,6 +3641,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertReductionArraysEquals(r, ra, a,
                 Short256VectorTests::FIRST_NONZEROReduce, Short256VectorTests::FIRST_NONZEROReduceAll);
     }
+
     static short FIRST_NONZEROReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = (short) 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3760,6 +3660,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void FIRST_NONZEROReduceShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
@@ -3796,7 +3697,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         return res;
     }
 
-
     @Test(dataProvider = "boolUnaryOpProvider")
     static void anyTrueShort256VectorTests(IntFunction<boolean[]> fm) {
         boolean[] mask = fm.apply(SPECIES.length());
@@ -3812,7 +3712,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertReductionBoolArraysEquals(r, mask, Short256VectorTests::anyTrue);
     }
 
-
     static boolean allTrue(boolean[] a, int idx) {
         boolean res = true;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3821,7 +3720,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
 
     @Test(dataProvider = "boolUnaryOpProvider")
     static void allTrueShort256VectorTests(IntFunction<boolean[]> fm) {
@@ -3837,7 +3735,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertReductionBoolArraysEquals(r, mask, Short256VectorTests::allTrue);
     }
-
 
     @Test(dataProvider = "shortUnaryOpProvider")
     static void withShort256VectorTests(IntFunction<short []> fa) {
@@ -3856,6 +3753,7 @@ public class Short256VectorTests extends AbstractVectorTest {
             assertInsertArraysEquals(r, a, (short)(65535+i), (j++ & (SPECIES.length()-1)), i , i + SPECIES.length());
         }
     }
+
     static boolean testIS_DEFAULT(short a) {
         return bits(a)==0;
     }
@@ -3896,6 +3794,7 @@ public class Short256VectorTests extends AbstractVectorTest {
             }
         }
     }
+
     static boolean testIS_NEGATIVE(short a) {
         return bits(a)<0;
     }
@@ -3937,9 +3836,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
 
-
-
-
     @Test(dataProvider = "shortCompareOpProvider")
     static void LTShort256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -3958,7 +3854,6 @@ public class Short256VectorTests extends AbstractVectorTest {
             }
         }
     }
-
 
     @Test(dataProvider = "shortCompareOpProvider")
     static void ltShort256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -4002,7 +3897,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
 
-
     @Test(dataProvider = "shortCompareOpProvider")
     static void GTShort256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4045,7 +3939,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
 
-
     @Test(dataProvider = "shortCompareOpProvider")
     static void EQShort256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4064,7 +3957,6 @@ public class Short256VectorTests extends AbstractVectorTest {
             }
         }
     }
-
 
     @Test(dataProvider = "shortCompareOpProvider")
     static void eqShort256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -4108,7 +4000,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
 
-
     @Test(dataProvider = "shortCompareOpProvider")
     static void NEShort256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4150,7 +4041,6 @@ public class Short256VectorTests extends AbstractVectorTest {
             }
         }
     }
-
 
     @Test(dataProvider = "shortCompareOpProvider")
     static void LEShort256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -4194,7 +4084,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
 
-
     @Test(dataProvider = "shortCompareOpProvider")
     static void GEShort256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4237,8 +4126,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
 
-
-
     @Test(dataProvider = "shortCompareOpProvider")
     static void UNSIGNED_LTShort256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4257,8 +4144,6 @@ public class Short256VectorTests extends AbstractVectorTest {
             }
         }
     }
-
-
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void UNSIGNED_LTShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -4283,9 +4168,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
 
-
-
-
     @Test(dataProvider = "shortCompareOpProvider")
     static void UNSIGNED_GTShort256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4304,8 +4186,6 @@ public class Short256VectorTests extends AbstractVectorTest {
             }
         }
     }
-
-
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void UNSIGNED_GTShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -4330,9 +4210,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
 
-
-
-
     @Test(dataProvider = "shortCompareOpProvider")
     static void UNSIGNED_LEShort256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4351,8 +4228,6 @@ public class Short256VectorTests extends AbstractVectorTest {
             }
         }
     }
-
-
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void UNSIGNED_LEShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -4377,9 +4252,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
 
-
-
-
     @Test(dataProvider = "shortCompareOpProvider")
     static void UNSIGNED_GEShort256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4398,8 +4270,6 @@ public class Short256VectorTests extends AbstractVectorTest {
             }
         }
     }
-
-
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void UNSIGNED_GEShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -4424,8 +4294,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
 
-
-
     @Test(dataProvider = "shortCompareOpProvider")
     static void LTShort256VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4441,7 +4309,6 @@ public class Short256VectorTests extends AbstractVectorTest {
             }
         }
     }
-
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void LTShort256VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa,
@@ -4479,7 +4346,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
 
-
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void LTShort256VectorTestsBroadcastLongMaskedSmokeTest(IntFunction<short[]> fa,
                                 IntFunction<short[]> fb, IntFunction<boolean[]> fm) {
@@ -4516,7 +4382,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
 
-
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void EQShort256VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa,
                                 IntFunction<short[]> fb, IntFunction<boolean[]> fm) {
@@ -4552,7 +4417,6 @@ public class Short256VectorTests extends AbstractVectorTest {
             }
         }
     }
-
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void EQShort256VectorTestsBroadcastLongMaskedSmokeTest(IntFunction<short[]> fa,
@@ -4668,6 +4532,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertexpandArraysEquals(r, a, mask, SPECIES.length());
     }
+
     @Test(dataProvider = "shortUnaryOpProvider")
     static void getShort256VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -4838,10 +4703,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertBroadcastArraysEquals(r, a);
     }
 
-
-
-
-
     @Test(dataProvider = "shortUnaryOpProvider")
     static void ZeroShort256VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -4855,9 +4716,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         Assert.assertEquals(a, r);
     }
-
-
-
 
     static short[] sliceUnary(short[] a, int origin, int idx) {
         short[] res = new short[SPECIES.length()];
@@ -4884,6 +4742,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, origin, Short256VectorTests::sliceUnary);
     }
+
     static short[] sliceBinary(short[] a, short[] b, int origin, int idx) {
         short[] res = new short[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
@@ -4913,6 +4772,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, origin, Short256VectorTests::sliceBinary);
     }
+
     static short[] slice(short[] a, short[] b, int origin, boolean[] mask, int idx) {
         short[] res = new short[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
@@ -4946,6 +4806,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, origin, mask, Short256VectorTests::slice);
     }
+
     static short[] unsliceUnary(short[] a, int origin, int idx) {
         short[] res = new short[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
@@ -4973,6 +4834,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, origin, Short256VectorTests::unsliceUnary);
     }
+
     static short[] unsliceBinary(short[] a, short[] b, int origin, int part, int idx) {
         short[] res = new short[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
@@ -5012,6 +4874,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, origin, part, Short256VectorTests::unsliceBinary);
     }
+
     static short[] unslice(short[] a, short[] b, int origin, int part, boolean[] mask, int idx) {
         short[] res = new short[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
@@ -5069,35 +4932,13 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, origin, part, mask, Short256VectorTests::unslice);
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     static short BITWISE_BLEND(short a, short b, short c) {
         return (short)((a&~(c))|(b&c));
     }
+
     static short bitwiseBlend(short a, short b, short c) {
         return (short)((a&~(c))|(b&c));
     }
-
 
     @Test(dataProvider = "shortTernaryOpProvider")
     static void BITWISE_BLENDShort256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
@@ -5117,6 +4958,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, c, Short256VectorTests::BITWISE_BLEND);
     }
+
     @Test(dataProvider = "shortTernaryOpProvider")
     static void bitwiseBlendShort256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
         short[] a = fa.apply(SPECIES.length());
@@ -5133,7 +4975,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, c, Short256VectorTests::bitwiseBlend);
     }
-
 
     @Test(dataProvider = "shortTernaryOpMaskProvider")
     static void BITWISE_BLENDShort256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -5156,9 +4997,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, c, mask, Short256VectorTests::BITWISE_BLEND);
     }
-
-
-
 
     @Test(dataProvider = "shortTernaryOpProvider")
     static void BITWISE_BLENDShort256VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
@@ -5189,6 +5027,7 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
         assertAltBroadcastArraysEquals(r, a, b, c, Short256VectorTests::BITWISE_BLEND);
     }
+
     @Test(dataProvider = "shortTernaryOpProvider")
     static void bitwiseBlendShort256VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
         short[] a = fa.apply(SPECIES.length());
@@ -5218,7 +5057,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
         assertAltBroadcastArraysEquals(r, a, b, c, Short256VectorTests::bitwiseBlend);
     }
-
 
     @Test(dataProvider = "shortTernaryOpMaskProvider")
     static void BITWISE_BLENDShort256VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -5258,9 +5096,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertAltBroadcastArraysEquals(r, a, b, c, mask, Short256VectorTests::BITWISE_BLEND);
     }
 
-
-
-
     @Test(dataProvider = "shortTernaryOpProvider")
     static void BITWISE_BLENDShort256VectorTestsDoubleBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
         short[] a = fa.apply(SPECIES.length());
@@ -5275,6 +5110,7 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertDoubleBroadcastArraysEquals(r, a, b, c, Short256VectorTests::BITWISE_BLEND);
     }
+
     @Test(dataProvider = "shortTernaryOpProvider")
     static void bitwiseBlendShort256VectorTestsDoubleBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
         short[] a = fa.apply(SPECIES.length());
@@ -5289,7 +5125,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertDoubleBroadcastArraysEquals(r, a, b, c, Short256VectorTests::bitwiseBlend);
     }
-
 
     @Test(dataProvider = "shortTernaryOpMaskProvider")
     static void BITWISE_BLENDShort256VectorTestsDoubleBroadcastMaskedSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -5308,7 +5143,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertDoubleBroadcastArraysEquals(r, a, b, c, mask, Short256VectorTests::BITWISE_BLEND);
     }
-
 
     static short NEG(short a) {
         return (short)(-((short)a));
@@ -5422,7 +5256,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, mask, Short256VectorTests::ABS);
     }
 
-
     static short NOT(short a) {
         return (short)(~((short)a));
     }
@@ -5430,8 +5263,6 @@ public class Short256VectorTests extends AbstractVectorTest {
     static short not(short a) {
         return (short)(~((short)a));
     }
-
-
 
     @Test(dataProvider = "shortUnaryOpProvider")
     static void NOTShort256VectorTests(IntFunction<short[]> fa) {
@@ -5463,8 +5294,6 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, Short256VectorTests::not);
     }
 
-
-
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void NOTMaskedShort256VectorTests(IntFunction<short[]> fa,
                                                 IntFunction<boolean[]> fm) {
@@ -5483,13 +5312,9 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, mask, Short256VectorTests::NOT);
     }
 
-
-
     static short ZOMO(short a) {
         return (short)((a==0?0:-1));
     }
-
-
 
     @Test(dataProvider = "shortUnaryOpProvider")
     static void ZOMOShort256VectorTests(IntFunction<short[]> fa) {
@@ -5505,8 +5330,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, Short256VectorTests::ZOMO);
     }
-
-
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void ZOMOMaskedShort256VectorTests(IntFunction<short[]> fa,
@@ -5526,22 +5349,9 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, mask, Short256VectorTests::ZOMO);
     }
 
-
-
-
-
-
-
-
-
-
-
-
     static short BIT_COUNT(short a) {
         return (short)(Integer.bitCount((int)a & 0xFFFF));
     }
-
-
 
     @Test(dataProvider = "shortUnaryOpProvider")
     static void BIT_COUNTShort256VectorTests(IntFunction<short[]> fa) {
@@ -5557,8 +5367,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, Short256VectorTests::BIT_COUNT);
     }
-
-
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void BIT_COUNTMaskedShort256VectorTests(IntFunction<short[]> fa,
@@ -5578,13 +5386,9 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, mask, Short256VectorTests::BIT_COUNT);
     }
 
-
-
     static short TRAILING_ZEROS_COUNT(short a) {
         return (short)(TRAILING_ZEROS_COUNT_scalar(a));
     }
-
-
 
     @Test(dataProvider = "shortUnaryOpProvider")
     static void TRAILING_ZEROS_COUNTShort256VectorTests(IntFunction<short[]> fa) {
@@ -5600,8 +5404,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, Short256VectorTests::TRAILING_ZEROS_COUNT);
     }
-
-
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void TRAILING_ZEROS_COUNTMaskedShort256VectorTests(IntFunction<short[]> fa,
@@ -5621,13 +5423,9 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, mask, Short256VectorTests::TRAILING_ZEROS_COUNT);
     }
 
-
-
     static short LEADING_ZEROS_COUNT(short a) {
         return (short)(LEADING_ZEROS_COUNT_scalar(a));
     }
-
-
 
     @Test(dataProvider = "shortUnaryOpProvider")
     static void LEADING_ZEROS_COUNTShort256VectorTests(IntFunction<short[]> fa) {
@@ -5643,8 +5441,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, Short256VectorTests::LEADING_ZEROS_COUNT);
     }
-
-
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void LEADING_ZEROS_COUNTMaskedShort256VectorTests(IntFunction<short[]> fa,
@@ -5664,13 +5460,9 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, mask, Short256VectorTests::LEADING_ZEROS_COUNT);
     }
 
-
-
     static short REVERSE(short a) {
         return (short)(REVERSE_scalar(a));
     }
-
-
 
     @Test(dataProvider = "shortUnaryOpProvider")
     static void REVERSEShort256VectorTests(IntFunction<short[]> fa) {
@@ -5686,8 +5478,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, Short256VectorTests::REVERSE);
     }
-
-
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void REVERSEMaskedShort256VectorTests(IntFunction<short[]> fa,
@@ -5707,16 +5497,9 @@ public class Short256VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, mask, Short256VectorTests::REVERSE);
     }
 
-
-
-
-
-
     static short REVERSE_BYTES(short a) {
         return (short)(Short.reverseBytes(a));
     }
-
-
 
     @Test(dataProvider = "shortUnaryOpProvider")
     static void REVERSE_BYTESShort256VectorTests(IntFunction<short[]> fa) {
@@ -5732,8 +5515,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, Short256VectorTests::REVERSE_BYTES);
     }
-
-
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void REVERSE_BYTESMaskedShort256VectorTests(IntFunction<short[]> fa,
@@ -5752,10 +5533,6 @@ public class Short256VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, mask, Short256VectorTests::REVERSE_BYTES);
     }
-
-
-
-
 
     @Test(dataProvider = "shortCompareOpProvider")
     static void ltShort256VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -6321,4 +6098,3 @@ public class Short256VectorTests extends AbstractVectorTest {
         }
     }
 }
-

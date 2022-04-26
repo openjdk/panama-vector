@@ -206,7 +206,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
     @Benchmark
     public void DIV(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
@@ -223,8 +222,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void DIVMasked(Blackhole bh) {
@@ -244,9 +241,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
-
 
     @Benchmark
     public void FIRST_NONZERO(Blackhole bh) {
@@ -284,76 +278,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     @Benchmark
     public void MIN(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
@@ -387,12 +311,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
-
-
-
-
 
     @Benchmark
     public void ADDLanes(Blackhole bh) {
@@ -554,8 +472,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         bh.consume(ra);
     }
 
-
-
     @Benchmark
     public void withLane(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
@@ -607,7 +523,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         return m;
     }
 
-
     @Benchmark
     public Object IS_FINITE() {
         double[] a = fa.apply(size);
@@ -625,8 +540,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
-
 
     @Benchmark
     public Object IS_NAN() {
@@ -646,8 +559,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         return m;
     }
 
-
-
     @Benchmark
     public Object IS_INFINITE() {
         double[] a = fa.apply(size);
@@ -665,7 +576,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object LT() {
         double[] a = fa.apply(size);
@@ -780,10 +690,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
-
-
-
 
     @Benchmark
     public void blend(Blackhole bh) {
@@ -1158,7 +1064,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
     @Benchmark
     public void SIN(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
@@ -1173,8 +1078,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void EXP(Blackhole bh) {
@@ -1191,8 +1094,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void LOG1P(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
@@ -1207,8 +1108,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void LOG(Blackhole bh) {
@@ -1225,8 +1124,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void LOG10(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
@@ -1241,8 +1138,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void EXPM1(Blackhole bh) {
@@ -1259,8 +1154,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void COS(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
@@ -1275,8 +1168,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void TAN(Blackhole bh) {
@@ -1293,8 +1184,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void SINH(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
@@ -1309,8 +1198,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void COSH(Blackhole bh) {
@@ -1327,8 +1214,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void TANH(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
@@ -1343,8 +1228,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ASIN(Blackhole bh) {
@@ -1361,8 +1244,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void ACOS(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
@@ -1377,8 +1258,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ATAN(Blackhole bh) {
@@ -1395,8 +1274,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void CBRT(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
@@ -1411,8 +1288,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void HYPOT(Blackhole bh) {
@@ -1431,8 +1306,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void POW(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
@@ -1450,8 +1323,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void ATAN2(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
@@ -1468,8 +1339,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void FMA(Blackhole bh) {
@@ -1489,8 +1358,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void FMAMasked(Blackhole bh) {
@@ -1512,9 +1379,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
-
 
     @Benchmark
     public void NEG(Blackhole bh) {
@@ -1580,11 +1444,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
     @Benchmark
     public void SQRT(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
@@ -1599,8 +1458,6 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void SQRTMasked(Blackhole bh) {
@@ -1618,24 +1475,4 @@ public class Double64Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
-

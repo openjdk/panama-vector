@@ -1,3 +1,4 @@
+
     void rearrangeShared(int window, Blackhole bh) {
         $type$[] as = fa.apply(size);
         int[] order = fs.apply(size);
