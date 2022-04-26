@@ -146,7 +146,7 @@ function replace_variables {
 
   # Guard the test if necessary
   if [ "$guard" != "" ]; then
-    echo -e "#if[${guard}]\n" >> $output
+    echo -e "#if[${guard}]" >> $output
   fi
   if [ "$test" != "" ]; then
     sed -e "$sed_prog" < ${filename}.current >> $output
@@ -167,7 +167,7 @@ function replace_variables {
     fi
   fi
   if [ "$guard" != "" ]; then
-    echo -e "#end[${guard}]\n" >> $output
+    echo -e "#end[${guard}]" >> $output
   fi
 
   rm -f ${filename}.current

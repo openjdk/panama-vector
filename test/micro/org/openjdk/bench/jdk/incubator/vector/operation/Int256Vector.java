@@ -222,9 +222,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
     @Benchmark
     public void DIV(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -243,8 +240,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void DIVMasked(Blackhole bh) {
@@ -266,7 +261,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
 
     @Benchmark
     public void FIRST_NONZERO(Blackhole bh) {
@@ -304,7 +298,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
     @Benchmark
     public void AND(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -321,8 +314,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ANDMasked(Blackhole bh) {
@@ -343,8 +334,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void AND_NOT(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -361,8 +350,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void AND_NOTMasked(Blackhole bh) {
@@ -383,8 +370,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void OR(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -401,8 +386,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ORMasked(Blackhole bh) {
@@ -423,8 +406,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void XOR(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -441,8 +422,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void XORMasked(Blackhole bh) {
@@ -463,8 +442,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void COMPRESS_BITS(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -481,8 +458,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void COMPRESS_BITSMasked(Blackhole bh) {
@@ -503,8 +478,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void EXPAND_BITS(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -521,8 +494,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void EXPAND_BITSMasked(Blackhole bh) {
@@ -543,8 +514,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void LSHL(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -561,8 +530,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void LSHLMasked(Blackhole bh) {
@@ -583,12 +550,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
     @Benchmark
     public void ASHR(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -605,8 +566,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ASHRMasked(Blackhole bh) {
@@ -627,12 +586,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
     @Benchmark
     public void LSHR(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -649,8 +602,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void LSHRMasked(Blackhole bh) {
@@ -671,12 +622,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
     @Benchmark
     public void LSHLShift(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -692,8 +637,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void LSHLMaskedShift(Blackhole bh) {
@@ -713,12 +656,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
     @Benchmark
     public void LSHRShift(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -734,8 +671,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void LSHRMaskedShift(Blackhole bh) {
@@ -755,12 +690,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
     @Benchmark
     public void ASHRShift(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -776,8 +705,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ASHRMaskedShift(Blackhole bh) {
@@ -797,12 +724,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
     @Benchmark
     public void ROR(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -819,8 +740,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void RORMasked(Blackhole bh) {
@@ -841,8 +760,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void ROL(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -859,8 +776,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ROLMasked(Blackhole bh) {
@@ -881,8 +796,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void RORShift(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -898,8 +811,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void RORMaskedShift(Blackhole bh) {
@@ -919,8 +830,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void ROLShift(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -936,8 +845,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ROLMaskedShift(Blackhole bh) {
@@ -957,8 +864,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void LSHRShiftConst(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -973,8 +878,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void LSHRMaskedShiftConst(Blackhole bh) {
@@ -993,12 +896,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
     @Benchmark
     public void LSHLShiftConst(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -1013,8 +910,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void LSHLMaskedShiftConst(Blackhole bh) {
@@ -1033,8 +928,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void ASHRShiftConst(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -1049,8 +942,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ASHRMaskedShiftConst(Blackhole bh) {
@@ -1069,8 +960,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void RORShiftConst(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -1085,8 +974,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void RORMaskedShiftConst(Blackhole bh) {
@@ -1105,8 +992,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void ROLShiftConst(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -1121,8 +1006,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ROLMaskedShiftConst(Blackhole bh) {
@@ -1140,7 +1023,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
 
     @Benchmark
     public void MIN(Blackhole bh) {
@@ -1176,7 +1058,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
     @Benchmark
     public void ANDLanes(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -1191,8 +1072,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         }
         bh.consume(ra);
     }
-
-
 
     @Benchmark
     public void ANDMaskedLanes(Blackhole bh) {
@@ -1211,8 +1090,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(ra);
     }
 
-
-
     @Benchmark
     public void ORLanes(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -1227,8 +1104,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         }
         bh.consume(ra);
     }
-
-
 
     @Benchmark
     public void ORMaskedLanes(Blackhole bh) {
@@ -1247,8 +1122,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(ra);
     }
 
-
-
     @Benchmark
     public void XORLanes(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -1263,8 +1136,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         }
         bh.consume(ra);
     }
-
-
 
     @Benchmark
     public void XORMaskedLanes(Blackhole bh) {
@@ -1282,7 +1153,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         }
         bh.consume(ra);
     }
-
 
     @Benchmark
     public void ADDLanes(Blackhole bh) {
@@ -1444,7 +1314,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(ra);
     }
 
-
     @Benchmark
     public void anyTrue(Blackhole bh) {
         boolean[] mask = fm.apply(SPECIES.length());
@@ -1460,8 +1329,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void allTrue(Blackhole bh) {
         boolean[] mask = fm.apply(SPECIES.length());
@@ -1476,7 +1343,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
 
     @Benchmark
     public void withLane(Blackhole bh) {
@@ -1528,9 +1394,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
-
-
     @Benchmark
     public Object LT() {
         int[] a = fa.apply(size);
@@ -1645,7 +1508,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object UNSIGNED_LT() {
         int[] a = fa.apply(size);
@@ -1665,8 +1527,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
-
     @Benchmark
     public Object UNSIGNED_GT() {
         int[] a = fa.apply(size);
@@ -1686,8 +1546,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
-
     @Benchmark
     public Object UNSIGNED_LE() {
         int[] a = fa.apply(size);
@@ -1707,8 +1565,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
-
     @Benchmark
     public Object UNSIGNED_GE() {
         int[] a = fa.apply(size);
@@ -1728,7 +1584,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
 
     @Benchmark
     public void blend(Blackhole bh) {
@@ -2103,27 +1958,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     @Benchmark
     public void BITWISE_BLEND(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -2142,8 +1976,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void BITWISE_BLENDMasked(Blackhole bh) {
@@ -2165,7 +1997,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
 
     @Benchmark
     public void NEG(Blackhole bh) {
@@ -2231,7 +2062,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
     @Benchmark
     public void NOT(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -2246,8 +2076,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void NOTMasked(Blackhole bh) {
@@ -2266,8 +2094,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void ZOMO(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -2282,8 +2108,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ZOMOMasked(Blackhole bh) {
@@ -2302,10 +2126,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
     @Benchmark
     public void BIT_COUNT(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -2320,8 +2140,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void BIT_COUNTMasked(Blackhole bh) {
@@ -2340,12 +2158,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
     @Benchmark
     public void TRAILING_ZEROS_COUNT(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -2360,8 +2172,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void TRAILING_ZEROS_COUNTMasked(Blackhole bh) {
@@ -2380,8 +2190,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void LEADING_ZEROS_COUNT(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -2396,8 +2204,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void LEADING_ZEROS_COUNTMasked(Blackhole bh) {
@@ -2416,8 +2222,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void REVERSE(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -2432,8 +2236,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void REVERSEMasked(Blackhole bh) {
@@ -2452,8 +2254,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void REVERSE_BYTES(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
@@ -2468,8 +2268,6 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void REVERSE_BYTESMasked(Blackhole bh) {
@@ -2487,10 +2285,4 @@ public class Int256Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
-
-
-
 }
-
