@@ -1786,6 +1786,9 @@ generate(SpecialCases, [["ccmn",   "__ ccmn(zr, zr, 3u, Assembler::LE);",       
                         ["punpkhi", "__ sve_punpkhi(p1, p0);",                            "punpkhi\tp1.h, p0.b"],
                         ["compact", "__ sve_compact(z16, __ S, z16, p1);",                "compact\tz16.s, p1, z16.s"],
                         ["compact", "__ sve_compact(z16, __ D, z16, p1);",                "compact\tz16.d, p1, z16.d"],
+                        # SVE2 instructions
+                        ["histcnt", "__ sve_histcnt(z16, __ S, p0, z16, z16);",           "histcnt\tz16.s, p0/z, z16.s, z16.s"],
+                        ["histcnt", "__ sve_histcnt(z17, __ D, p0, z17, z17);",           "histcnt\tz17.d, p0/z, z17.d, z17.d"],
 ])
 
 print "\n// FloatImmediateOp"
@@ -1871,6 +1874,8 @@ generate(SVEVectorOp, [["add", "ZZZ"],
                        ["bic", "ZZZ"],
                        ["uzp1", "ZZZ"],
                        ["uzp2", "ZZZ"],
+                       # SVE2 instructions
+                       ["histcnt", "ZPZZ", "z"],
                       ])
 
 generate(SVEReductionOp, [["andv", 0], ["orv", 0], ["eorv", 0], ["smaxv", 0], ["sminv", 0],
@@ -1881,8 +1886,9 @@ outfile.write("forth:\n")
 
 outfile.close()
 
-# compile for sve with 8.3 and sha3 because of SHA3 crypto extension.
-subprocess.check_call([AARCH64_AS, "-march=armv8.3-a+sha3+sve", "aarch64ops.s", "-o", "aarch64ops.o"])
+# compile for sve with armv9-a+sha3 because of SHA3 crypto extension and SVE2 instructions.
+# armv9-a enables sve and sve2 by default.
+subprocess.check_call([AARCH64_AS, "-march=armv9-a+sha3", "aarch64ops.s", "-o", "aarch64ops.o"])
 
 print
 print "/*"
