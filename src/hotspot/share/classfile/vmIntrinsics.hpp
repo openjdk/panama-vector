@@ -1080,11 +1080,10 @@ class methodHandle;
                                      "Ljdk/internal/vm/vector/VectorSupport$Vector;"                                                           \
                                      "Ljdk/internal/vm/vector/VectorSupport$VectorMask;"                                                       \
                                      "Ljava/lang/Object;"                                                                                      \
-                                     "I[II"                                                                                                    \
                                      "Ljdk/internal/vm/vector/VectorSupport$VectorSpecies;"                                                    \
-                                     "Ljdk/internal/vm/vector/VectorSupport$LoadVectorOperationWithMap;)"                                      \
+                                     "Ljdk/internal/vm/vector/VectorSupport$LoadVectorOperationWithIndexMap;)"                                 \
                                      "Ljdk/internal/vm/vector/VectorSupport$Vector;")                                                          \
-    do_name(vector_gather_name, "loadWithMap")                                                                                                 \
+    do_name(vector_gather_name, "loadWithIndexMap")                                                                                            \
                                                                                                                                                \
    do_intrinsic(_VectorScatterOp, jdk_internal_vm_vector_VectorSupport, vector_scatter_name, vector_scatter_sig, F_S)                          \
     do_signature(vector_scatter_sig, "(Ljava/lang/Class;"                                                                                      \

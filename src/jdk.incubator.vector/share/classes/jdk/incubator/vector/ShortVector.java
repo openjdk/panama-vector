@@ -3018,6 +3018,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
         return vsp.vOp(m, i -> a[offset + i]);
     }
 
+
     /**
      * Gathers a new vector composed of elements from an array of type
      * {@code short[]},
@@ -3057,6 +3058,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
         ShortSpecies vsp = (ShortSpecies) species;
         return vsp.vOp(n -> a[offset + indexMap[mapOffset + n]]);
     }
+
 
     /**
      * Gathers a new vector composed of elements from an array of type

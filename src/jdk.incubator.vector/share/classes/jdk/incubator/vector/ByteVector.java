@@ -3017,6 +3017,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         return vsp.vOp(m, i -> a[offset + i]);
     }
 
+
     /**
      * Gathers a new vector composed of elements from an array of type
      * {@code byte[]},
@@ -3056,6 +3057,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         ByteSpecies vsp = (ByteSpecies) species;
         return vsp.vOp(n -> a[offset + indexMap[mapOffset + n]]);
     }
+
 
     /**
      * Gathers a new vector composed of elements from an array of type

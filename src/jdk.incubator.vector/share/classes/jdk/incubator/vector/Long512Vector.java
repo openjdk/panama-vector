@@ -859,8 +859,8 @@ final class Long512Vector extends LongVector {
     @ForceInline
     @Override
     final
-    LongVector fromArray0(long[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Long> m) {
-        return super.fromArray0Template(Long512Mask.class, a, offset, indexMap, mapOffset, (Long512Mask) m);
+    LongVector fromArray0(long[] a, Vector<Integer> indexVector, VectorMask<Long> m) {
+        return super.fromArray0Template(Long512Mask.class, a, indexVector, (Long512Mask) m);
     }
 
 

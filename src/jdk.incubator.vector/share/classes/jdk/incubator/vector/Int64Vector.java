@@ -857,8 +857,8 @@ final class Int64Vector extends IntVector {
     @ForceInline
     @Override
     final
-    IntVector fromArray0(int[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Integer> m) {
-        return super.fromArray0Template(Int64Mask.class, a, offset, indexMap, mapOffset, (Int64Mask) m);
+    IntVector fromArray0(int[] a, Vector<Integer> indexVector, VectorMask<Integer> m) {
+        return super.fromArray0Template(Int64Mask.class, a, indexVector, (Int64Mask) m);
     }
 
 

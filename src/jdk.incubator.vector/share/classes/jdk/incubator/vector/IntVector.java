@@ -2998,6 +2998,48 @@ public abstract class IntVector extends AbstractVector<Integer> {
     /**
      * Gathers a new vector composed of elements from an array of type
      * {@code int[]},
+     * using indexes obtained from an <em>index vector</em>.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * the lane is loaded from the array
+     * element {@code a[index]}, where {@code index} is the lane element
+     * at lane index {@code N} of <em>index vector</em>.
+     *
+     * @param species species of desired vector
+     * @param a the array
+     * @param indexVector the index vector
+     * @return the vector loaded from the indexed elements of the array
+     * @throws IndexOutOfBoundsException
+     *         if {@code index < 0} or {@code index >= a.length}
+     *         for any lane element {@code index} at lane index {@code N}
+     *         in the index vector
+     * @throws IllegalArgumentException
+     *         if index vector length and species length differ
+     */
+    @ForceInline
+    public static
+    IntVector fromArray(VectorSpecies<Integer> species,
+                                   int[] a, Vector<Integer> indexVector) {
+        IntVector vix = (IntVector) indexVector;
+        IntSpecies vsp = (IntSpecies) species;
+        VectorSpecies<Integer> isp = vix.species();
+        Class<? extends IntVector> vectorType = vsp.vectorType();
+
+        Objects.requireNonNull(a);
+        VectorIntrinsics.requireLength(vix.length(), species.length());
+        vix = VectorIntrinsics.checkIndex(vix, a.length);
+
+        return VectorSupport.loadWithIndexMap(
+            vectorType, null, int.class, vsp.laneCount(),
+            isp.vectorType(),
+            a, ARRAY_BASE, vix, null,
+            a, vsp,
+            (c, iv, s, vm) -> s.vOp(iv, id -> c[id]));
+    }
+
+    /**
+     * Gathers a new vector composed of elements from an array of type
+     * {@code int[]},
      * using indexes obtained by adding a fixed {@code offset} to a
      * series of secondary offsets from an <em>index map</em>.
      * The index map is a contiguous sequence of {@code VLENGTH}
@@ -3035,22 +3077,56 @@ public abstract class IntVector extends AbstractVector<Integer> {
         IntVector.IntSpecies isp = IntVector.species(vsp.indexShape());
         Objects.requireNonNull(a);
         Objects.requireNonNull(indexMap);
-        Class<? extends IntVector> vectorType = vsp.vectorType();
 
         // Index vector: vix[0:n] = k -> offset + indexMap[mapOffset + k]
         IntVector vix = IntVector
             .fromArray(isp, indexMap, mapOffset)
             .add(offset);
 
-        vix = VectorIntrinsics.checkIndex(vix, a.length);
+        return fromArray(species, a, vix);
+    }
 
-        return VectorSupport.loadWithMap(
-            vectorType, null, int.class, vsp.laneCount(),
-            isp.vectorType(),
-            a, ARRAY_BASE, vix, null,
-            a, offset, indexMap, mapOffset, vsp,
-            (c, idx, iMap, idy, s, vm) ->
-            s.vOp(n -> c[idx + iMap[idy+n]]));
+    /**
+     * Gathers a new vector composed of elements from an array of type
+     * {@code int[]},
+     * under the control of a mask, and
+     * using indexes obtained from an <em>index vector</em>.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * if the lane is set in the mask,
+     * the lane is loaded from the array
+     * element {@code a[index]}, where {@code index} is the lane element
+     * at lane index {@code N} of <em>index vector</em>.
+     * Unset lanes in the resulting vector are set to zero.
+     *
+     * @param species species of desired vector
+     * @param a the array
+     * @param indexVector the index vector
+     * @param m the mask controlling lane selection
+     * @return the vector loaded from the indexed elements of the array
+     * @throws IndexOutOfBoundsException
+     *         if {@code index < 0} or {@code index >= a.length}
+     *         for any lane element {@code index} at lane index {@code N}
+     *         in the index vector
+     *         where the mask is set
+     * @throws IllegalArgumentException
+     *         if index vector length and species length differ
+     */
+    @ForceInline
+    public static
+    IntVector fromArray(VectorSpecies<Integer> species,
+                                   int[] a, Vector<Integer> indexVector,
+                                   VectorMask<Integer> m) {
+        if (m.allTrue()) {
+            return fromArray(species, a, indexVector);
+        } else {
+            IntSpecies vsp = (IntSpecies) species;
+            Objects.requireNonNull(a);
+            m.check(vsp);
+            VectorIntrinsics.requireLength(indexVector.length(), vsp.length());
+
+            return vsp.dummyVector().fromArray0(a, indexVector, m);
+        }
     }
 
     /**
@@ -3097,10 +3173,18 @@ public abstract class IntVector extends AbstractVector<Integer> {
                                    VectorMask<Integer> m) {
         if (m.allTrue()) {
             return fromArray(species, a, offset, indexMap, mapOffset);
-        }
-        else {
+        } else {
             IntSpecies vsp = (IntSpecies) species;
-            return vsp.dummyVector().fromArray0(a, offset, indexMap, mapOffset, m);
+            IntVector.IntSpecies isp = IntVector.species(vsp.indexShape());
+            Objects.requireNonNull(a);
+            Objects.requireNonNull(indexMap);
+            m.check(vsp);
+            // Index vector: vix[0:n] = k -> offset + indexMap[mapOffset + k]
+            IntVector vix = IntVector
+                .fromArray(isp, indexMap, mapOffset)
+                .add(offset);
+
+            return vsp.dummyVector().fromArray0(a, vix, m);
         }
     }
 
@@ -3468,36 +3552,27 @@ public abstract class IntVector extends AbstractVector<Integer> {
 
     /*package-private*/
     abstract
-    IntVector fromArray0(int[] a, int offset,
-                                    int[] indexMap, int mapOffset,
+    IntVector fromArray0(int[] a, Vector<Integer> indexVector,
                                     VectorMask<Integer> m);
     @ForceInline
     final
     <M extends VectorMask<Integer>>
-    IntVector fromArray0Template(Class<M> maskClass, int[] a, int offset,
-                                            int[] indexMap, int mapOffset, M m) {
+    IntVector fromArray0Template(Class<M> maskClass, int[] a,
+                                            Vector<Integer> indexVector, M m) {
+        IntVector vix = (IntVector) indexVector;
         IntSpecies vsp = vspecies();
-        IntVector.IntSpecies isp = IntVector.species(vsp.indexShape());
-        Objects.requireNonNull(a);
-        Objects.requireNonNull(indexMap);
-        m.check(vsp);
+        VectorSpecies<Integer> isp = vix.species();
         Class<? extends IntVector> vectorType = vsp.vectorType();
-
-        // Index vector: vix[0:n] = k -> offset + indexMap[mapOffset + k]
-        IntVector vix = IntVector
-            .fromArray(isp, indexMap, mapOffset)
-            .add(offset);
 
         // FIXME: Check index under mask controlling.
         vix = VectorIntrinsics.checkIndex(vix, a.length);
 
-        return VectorSupport.loadWithMap(
+        return VectorSupport.loadWithIndexMap(
             vectorType, maskClass, int.class, vsp.laneCount(),
             isp.vectorType(),
             a, ARRAY_BASE, vix, m,
-            a, offset, indexMap, mapOffset, vsp,
-            (c, idx, iMap, idy, s, vm) ->
-            s.vOp(vm, n -> c[idx + iMap[idy+n]]));
+            a, vsp,
+            (c, iv, s, vm) -> s.vOp(iv, vm, id -> c[id]));
     }
 
 
@@ -3932,10 +4007,23 @@ public abstract class IntVector extends AbstractVector<Integer> {
             return dummyVector().vectorFactory(res);
         }
 
-        IntVector vOp(FVOp f) {
+        IntVector vOp(Vector<Integer> iv, FVOp f) {
+            int[] indexMap = ((IntVector)iv).vec();
             int[] res = new int[laneCount()];
             for (int i = 0; i < res.length; i++) {
-                res[i] = f.apply(i);
+                res[i] = f.apply(indexMap[i]);
+            }
+            return dummyVector().vectorFactory(res);
+        }
+
+        IntVector vOp(Vector<Integer> iv, VectorMask<Integer> m, FVOp f) {
+            int[] indexMap = ((IntVector)iv).vec();
+            int[] res = new int[laneCount()];
+            boolean[] mbits = ((AbstractMask<Integer>)m).getBits();
+            for (int i = 0; i < res.length; i++) {
+                if (mbits[i]) {
+                    res[i] = f.apply(indexMap[i]);
+                }
             }
             return dummyVector().vectorFactory(res);
         }

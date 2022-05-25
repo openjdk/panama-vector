@@ -843,8 +843,8 @@ final class DoubleMaxVector extends DoubleVector {
     @ForceInline
     @Override
     final
-    DoubleVector fromArray0(double[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Double> m) {
-        return super.fromArray0Template(DoubleMaxMask.class, a, offset, indexMap, mapOffset, (DoubleMaxMask) m);
+    DoubleVector fromArray0(double[] a, Vector<Integer> indexVector, VectorMask<Double> m) {
+        return super.fromArray0Template(DoubleMaxMask.class, a, indexVector, (DoubleMaxMask) m);
     }
 
 

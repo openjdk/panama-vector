@@ -845,8 +845,8 @@ final class LongMaxVector extends LongVector {
     @ForceInline
     @Override
     final
-    LongVector fromArray0(long[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Long> m) {
-        return super.fromArray0Template(LongMaxMask.class, a, offset, indexMap, mapOffset, (LongMaxMask) m);
+    LongVector fromArray0(long[] a, Vector<Integer> indexVector, VectorMask<Long> m) {
+        return super.fromArray0Template(LongMaxMask.class, a, indexVector, (LongMaxMask) m);
     }
 
 

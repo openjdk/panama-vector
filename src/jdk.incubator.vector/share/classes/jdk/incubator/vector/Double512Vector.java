@@ -858,8 +858,8 @@ final class Double512Vector extends DoubleVector {
     @ForceInline
     @Override
     final
-    DoubleVector fromArray0(double[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Double> m) {
-        return super.fromArray0Template(Double512Mask.class, a, offset, indexMap, mapOffset, (Double512Mask) m);
+    DoubleVector fromArray0(double[] a, Vector<Integer> indexVector, VectorMask<Double> m) {
+        return super.fromArray0Template(Double512Mask.class, a, indexVector, (Double512Mask) m);
     }
 
 

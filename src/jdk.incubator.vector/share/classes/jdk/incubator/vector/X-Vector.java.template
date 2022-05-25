@@ -3592,6 +3592,50 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         return vsp.vOp(m, i -> a[offset + i]);
     }
 
+#if[!byteOrShort]
+    /**
+     * Gathers a new vector composed of elements from an array of type
+     * {@code $type$[]},
+     * using indexes obtained from an <em>index vector</em>.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * the lane is loaded from the array
+     * element {@code a[index]}, where {@code index} is the lane element
+     * at lane index {@code N} of <em>index vector</em>.
+     *
+     * @param species species of desired vector
+     * @param a the array
+     * @param indexVector the index vector
+     * @return the vector loaded from the indexed elements of the array
+     * @throws IndexOutOfBoundsException
+     *         if {@code index < 0} or {@code index >= a.length}
+     *         for any lane element {@code index} at lane index {@code N}
+     *         in the index vector
+     * @throws IllegalArgumentException
+     *         if index vector length and species length differ
+     */
+    @ForceInline
+    public static
+    $abstractvectortype$ fromArray(VectorSpecies<$Boxtype$> species,
+                                   $type$[] a, Vector<Integer> indexVector) {
+        IntVector vix = (IntVector) indexVector;
+        $Type$Species vsp = ($Type$Species) species;
+        VectorSpecies<Integer> isp = vix.species();
+        Class<? extends $abstractvectortype$> vectorType = vsp.vectorType();
+
+        Objects.requireNonNull(a);
+        VectorIntrinsics.requireLength(vix.length(), species.length());
+        vix = VectorIntrinsics.checkIndex(vix, a.length);
+
+        return VectorSupport.loadWithIndexMap(
+            vectorType, null, $type$.class, vsp.laneCount(),
+            isp.vectorType(),
+            a, ARRAY_BASE, vix, null,
+            a, vsp,
+            (c, iv, s, vm) -> s.vOp(iv, id -> c[id]));
+    }
+#end[!byteOrShort]
+
     /**
      * Gathers a new vector composed of elements from an array of type
      * {@code $type$[]},
@@ -3642,7 +3686,6 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         IntVector.IntSpecies isp = IntVector.species(vsp.indexShape());
         Objects.requireNonNull(a);
         Objects.requireNonNull(indexMap);
-        Class<? extends $abstractvectortype$> vectorType = vsp.vectorType();
 
 #if[longOrDouble]
         if (vsp.laneCount() == 1) {
@@ -3674,15 +3717,52 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             .add(offset);
 #end[longOrDouble]
 
-        vix = VectorIntrinsics.checkIndex(vix, a.length);
+        return fromArray(species, a, vix);
+    }
+#end[byteOrShort]
 
-        return VectorSupport.loadWithMap(
-            vectorType, null, $type$.class, vsp.laneCount(),
-            isp.vectorType(),
-            a, ARRAY_BASE, vix, null,
-            a, offset, indexMap, mapOffset, vsp,
-            (c, idx, iMap, idy, s, vm) ->
-            s.vOp(n -> c[idx + iMap[idy+n]]));
+#if[!byteOrShort]
+    /**
+     * Gathers a new vector composed of elements from an array of type
+     * {@code $type$[]},
+     * under the control of a mask, and
+     * using indexes obtained from an <em>index vector</em>.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * if the lane is set in the mask,
+     * the lane is loaded from the array
+     * element {@code a[index]}, where {@code index} is the lane element
+     * at lane index {@code N} of <em>index vector</em>.
+     * Unset lanes in the resulting vector are set to zero.
+     *
+     * @param species species of desired vector
+     * @param a the array
+     * @param indexVector the index vector
+     * @param m the mask controlling lane selection
+     * @return the vector loaded from the indexed elements of the array
+     * @throws IndexOutOfBoundsException
+     *         if {@code index < 0} or {@code index >= a.length}
+     *         for any lane element {@code index} at lane index {@code N}
+     *         in the index vector
+     *         where the mask is set
+     * @throws IllegalArgumentException
+     *         if index vector length and species length differ
+     */
+    @ForceInline
+    public static
+    $abstractvectortype$ fromArray(VectorSpecies<$Boxtype$> species,
+                                   $type$[] a, Vector<Integer> indexVector,
+                                   VectorMask<$Boxtype$> m) {
+        if (m.allTrue()) {
+            return fromArray(species, a, indexVector);
+        } else {
+            $Type$Species vsp = ($Type$Species) species;
+            Objects.requireNonNull(a);
+            m.check(vsp);
+            VectorIntrinsics.requireLength(indexVector.length(), vsp.length());
+
+            return vsp.dummyVector().fromArray0(a, indexVector, m);
+        }
     }
 #end[byteOrShort]
 
@@ -3741,10 +3821,43 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                                    VectorMask<$Boxtype$> m) {
         if (m.allTrue()) {
             return fromArray(species, a, offset, indexMap, mapOffset);
-        }
-        else {
+        } else {
             $Type$Species vsp = ($Type$Species) species;
-            return vsp.dummyVector().fromArray0(a, offset, indexMap, mapOffset, m);
+            IntVector.IntSpecies isp = IntVector.species(vsp.indexShape());
+            Objects.requireNonNull(a);
+            Objects.requireNonNull(indexMap);
+            m.check(vsp);
+#if[longOrDouble]
+            if (vsp.laneCount() == 1) {
+                return $abstractvectortype$.fromArray(vsp, a, offset + indexMap[mapOffset], m);
+            }
+
+            // Index vector: vix[0:n] = k -> offset + indexMap[mapOffset + k]
+            IntVector vix;
+            if (isp.laneCount() != vsp.laneCount()) {
+                // For $Type$MaxVector,  if vector length is non-power-of-two or
+                // 2048 bits, indexShape of $Type$ species is S_MAX_BIT.
+                // Assume that vector length is 2048, then the lane count of $Type$
+                // vector is 32. When converting $Type$ species to int species,
+                // indexShape is still S_MAX_BIT, but the lane count of int vector
+                // is 64. So when loading index vector (IntVector), only lower half
+                // of index data is needed.
+                vix = IntVector
+                    .fromArray(isp, indexMap, mapOffset, IntMaxVector.IntMaxMask.LOWER_HALF_TRUE_MASK)
+                    .add(offset);
+            } else {
+                vix = IntVector
+                    .fromArray(isp, indexMap, mapOffset)
+                    .add(offset);
+            }
+#else[longOrDouble]
+            // Index vector: vix[0:n] = k -> offset + indexMap[mapOffset + k]
+            IntVector vix = IntVector
+                .fromArray(isp, indexMap, mapOffset)
+                .add(offset);
+#end[longOrDouble]
+
+            return vsp.dummyVector().fromArray0(a, vix, m);
         }
     }
 #end[byteOrShort]
@@ -4803,61 +4916,27 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 #if[!byteOrShort]
     /*package-private*/
     abstract
-    $abstractvectortype$ fromArray0($type$[] a, int offset,
-                                    int[] indexMap, int mapOffset,
+    $abstractvectortype$ fromArray0($type$[] a, Vector<Integer> indexVector,
                                     VectorMask<$Boxtype$> m);
     @ForceInline
     final
     <M extends VectorMask<$Boxtype$>>
-    $abstractvectortype$ fromArray0Template(Class<M> maskClass, $type$[] a, int offset,
-                                            int[] indexMap, int mapOffset, M m) {
+    $abstractvectortype$ fromArray0Template(Class<M> maskClass, $type$[] a,
+                                            Vector<Integer> indexVector, M m) {
+        IntVector vix = (IntVector) indexVector;
         $Type$Species vsp = vspecies();
-        IntVector.IntSpecies isp = IntVector.species(vsp.indexShape());
-        Objects.requireNonNull(a);
-        Objects.requireNonNull(indexMap);
-        m.check(vsp);
+        VectorSpecies<Integer> isp = vix.species();
         Class<? extends $abstractvectortype$> vectorType = vsp.vectorType();
-
-#if[longOrDouble]
-        if (vsp.laneCount() == 1) {
-          return $abstractvectortype$.fromArray(vsp, a, offset + indexMap[mapOffset], m);
-        }
-
-        // Index vector: vix[0:n] = k -> offset + indexMap[mapOffset + k]
-        IntVector vix;
-        if (isp.laneCount() != vsp.laneCount()) {
-            // For $Type$MaxVector,  if vector length is non-power-of-two or
-            // 2048 bits, indexShape of $Type$ species is S_MAX_BIT.
-            // Assume that vector length is 2048, then the lane count of $Type$
-            // vector is 32. When converting $Type$ species to int species,
-            // indexShape is still S_MAX_BIT, but the lane count of int vector
-            // is 64. So when loading index vector (IntVector), only lower half
-            // of index data is needed.
-            vix = IntVector
-                .fromArray(isp, indexMap, mapOffset, IntMaxVector.IntMaxMask.LOWER_HALF_TRUE_MASK)
-                .add(offset);
-        } else {
-            vix = IntVector
-                .fromArray(isp, indexMap, mapOffset)
-                .add(offset);
-        }
-#else[longOrDouble]
-        // Index vector: vix[0:n] = k -> offset + indexMap[mapOffset + k]
-        IntVector vix = IntVector
-            .fromArray(isp, indexMap, mapOffset)
-            .add(offset);
-#end[longOrDouble]
 
         // FIXME: Check index under mask controlling.
         vix = VectorIntrinsics.checkIndex(vix, a.length);
 
-        return VectorSupport.loadWithMap(
+        return VectorSupport.loadWithIndexMap(
             vectorType, maskClass, $type$.class, vsp.laneCount(),
             isp.vectorType(),
             a, ARRAY_BASE, vix, m,
-            a, offset, indexMap, mapOffset, vsp,
-            (c, idx, iMap, idy, s, vm) ->
-            s.vOp(vm, n -> c[idx + iMap[idy+n]]));
+            a, vsp,
+            (c, iv, s, vm) -> s.vOp(iv, vm, id -> c[id]));
     }
 #end[!byteOrShort]
 
@@ -5483,6 +5562,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             return dummyVector().vectorFactory(res);
         }
 
+#if[byteOrShort]
         $Type$Vector vOp(FVOp f) {
             $type$[] res = new $type$[laneCount()];
             for (int i = 0; i < res.length; i++) {
@@ -5490,6 +5570,28 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             }
             return dummyVector().vectorFactory(res);
         }
+#else[byteOrShort]
+        $Type$Vector vOp(Vector<Integer> iv, FVOp f) {
+            int[] indexMap = ((IntVector)iv).vec();
+            $type$[] res = new $type$[laneCount()];
+            for (int i = 0; i < res.length; i++) {
+                res[i] = f.apply(indexMap[i]);
+            }
+            return dummyVector().vectorFactory(res);
+        }
+
+        $Type$Vector vOp(Vector<Integer> iv, VectorMask<$Boxtype$> m, FVOp f) {
+            int[] indexMap = ((IntVector)iv).vec();
+            $type$[] res = new $type$[laneCount()];
+            boolean[] mbits = ((AbstractMask<$Boxtype$>)m).getBits();
+            for (int i = 0; i < res.length; i++) {
+                if (mbits[i]) {
+                    res[i] = f.apply(indexMap[i]);
+                }
+            }
+            return dummyVector().vectorFactory(res);
+        }
+#end[byteOrShort]
 
         $Type$Vector vOp(VectorMask<$Boxtype$> m, FVOp f) {
             $type$[] res = new $type$[laneCount()];

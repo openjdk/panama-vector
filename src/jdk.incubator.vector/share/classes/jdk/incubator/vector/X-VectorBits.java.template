@@ -1144,8 +1144,8 @@ final class $vectortype$ extends $abstractvectortype$ {
     @ForceInline
     @Override
     final
-    $abstractvectortype$ fromArray0($type$[] a, int offset, int[] indexMap, int mapOffset, VectorMask<$Boxtype$> m) {
-        return super.fromArray0Template($masktype$.class, a, offset, indexMap, mapOffset, ($masktype$) m);
+    $abstractvectortype$ fromArray0($type$[] a, Vector<Integer> indexVector, VectorMask<$Boxtype$> m) {
+        return super.fromArray0Template($masktype$.class, a, indexVector, ($masktype$) m);
     }
 #end[!byteOrShort]
 

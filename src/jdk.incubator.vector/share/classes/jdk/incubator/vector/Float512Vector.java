@@ -874,8 +874,8 @@ final class Float512Vector extends FloatVector {
     @ForceInline
     @Override
     final
-    FloatVector fromArray0(float[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Float> m) {
-        return super.fromArray0Template(Float512Mask.class, a, offset, indexMap, mapOffset, (Float512Mask) m);
+    FloatVector fromArray0(float[] a, Vector<Integer> indexVector, VectorMask<Float> m) {
+        return super.fromArray0Template(Float512Mask.class, a, indexVector, (Float512Mask) m);
     }
 
 

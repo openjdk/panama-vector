@@ -845,8 +845,8 @@ final class Long64Vector extends LongVector {
     @ForceInline
     @Override
     final
-    LongVector fromArray0(long[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Long> m) {
-        return super.fromArray0Template(Long64Mask.class, a, offset, indexMap, mapOffset, (Long64Mask) m);
+    LongVector fromArray0(long[] a, Vector<Integer> indexVector, VectorMask<Long> m) {
+        return super.fromArray0Template(Long64Mask.class, a, indexVector, (Long64Mask) m);
     }
 
 

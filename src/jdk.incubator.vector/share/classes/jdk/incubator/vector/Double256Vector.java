@@ -850,8 +850,8 @@ final class Double256Vector extends DoubleVector {
     @ForceInline
     @Override
     final
-    DoubleVector fromArray0(double[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Double> m) {
-        return super.fromArray0Template(Double256Mask.class, a, offset, indexMap, mapOffset, (Double256Mask) m);
+    DoubleVector fromArray0(double[] a, Vector<Integer> indexVector, VectorMask<Double> m) {
+        return super.fromArray0Template(Double256Mask.class, a, indexVector, (Double256Mask) m);
     }
 
 

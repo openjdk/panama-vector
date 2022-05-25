@@ -1361,12 +1361,12 @@ bool LibraryCallKit::inline_vector_mem_masked_operation(bool is_store) {
 //  S extends VectorSpecies<E>,
 //  M extends VectorMask<E>,
 //  E>
-// V loadWithMap(Class<? extends V> vectorClass, Class<M> maskClass, Class<E> elementType, int length,
-//               Class<? extends Vector<Integer>> vectorIndexClass,
-//               Object base, long offset, // Unsafe addressing
-//               W index_vector, M m,
-//               C container, int index, int[] indexMap, int indexM, S s, // Arguments for default implementation
-//               LoadVectorOperationWithMap<C, V, E, S, M> defaultImpl)
+//  V loadWithIndexMap(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass, int length,
+//                     Class<? extends Vector<Integer>> vectorIndexClass,
+//                     Object base, long offset,
+//                     W index_vector, M m,
+//                     C container, S s,
+//                     LoadVectorOperationWithIndexMap<C, V, W, S, M> defaultImpl)
 //
 //  <C,
 //   V extends Vector<E>,
