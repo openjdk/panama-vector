@@ -52,15 +52,7 @@ final class $vectortype$ extends $abstractvectortype$ {
 
     static final int VLENGTH = VSPECIES.laneCount(); // used by the JVM
 
-#if[FP]
-#if[short]
-    static final Class<$Boxtype$> ETYPE = Halffloat.class; // used by the JVM
-#else[short]
-    static final Class<$Boxtype$> ETYPE = $type$.class; // used by the JVM
-#end[short]
-#else[FP]
-    static final Class<$Boxtype$> ETYPE = $type$.class; // used by the JVM
-#end[FP]
+    static final Class<$Boxtype$> ETYPE = $elemtype$.class; // used by the JVM
 
     $vectortype$($type$[] v) {
         super(v);
@@ -96,16 +88,7 @@ final class $vectortype$ extends $abstractvectortype$ {
 
     @ForceInline
     @Override
-#if[FP]
-#if[!short]
-    public final Class<$Boxtype$> elementType() { return $type$.class; }
-#end[!short]
-#if[short]
-    public final Class<Halffloat> elementType() { return Halffloat.class; }
-#end[short]
-#else[FP]
-    public final Class<$Boxtype$> elementType() { return $type$.class; }
-#end[FP]
+    public final Class<$Boxtype$> elementType() { return $elemtype$.class; }
 
     @ForceInline
     @Override
@@ -818,15 +801,7 @@ final class $vectortype$ extends $abstractvectortype$ {
 
     static final class $masktype$ extends AbstractMask<$Boxtype$> {
         static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
-#if[FP]
-#if[short]
-        static final Class<$Boxtype$> ETYPE = Halffloat.class; // used by the JVM
-#else[short]
-        static final Class<$Boxtype$> ETYPE = $type$.class; // used by the JVM
-#end[short]
-#else[FP]
-        static final Class<$Boxtype$> ETYPE = $type$.class; // used by the JVM
-#end[FP]
+        static final Class<$Boxtype$> ETYPE = $elemtype$.class; // used by the JVM
 
         $masktype$(boolean[] bits) {
             this(bits, 0);
@@ -1053,15 +1028,7 @@ final class $vectortype$ extends $abstractvectortype$ {
 
     static final class $shuffletype$ extends AbstractShuffle<$Boxtype$> {
         static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
-#if[FP]
-#if[short]
-        static final Class<$Boxtype$> ETYPE = Halffloat.class; // used by the JVM
-#else[short]
-        static final Class<$Boxtype$> ETYPE = $type$.class; // used by the JVM
-#end[short]
-#else[FP]
-        static final Class<$Boxtype$> ETYPE = $type$.class; // used by the JVM
-#end[FP]
+        static final Class<$Boxtype$> ETYPE = $elemtype$.class; // used by the JVM
 
         $shuffletype$(byte[] reorder) {
             super(VLENGTH, reorder);

@@ -2177,7 +2177,6 @@ public abstract class FloatVector extends AbstractVector<Float> {
         FloatVector r0 =
             VectorSupport.rearrangeOp(
                 getClass(), shuffletype, null, float.class, length(),
-
                 this, ws, null,
                 (v0, s_, m_) -> v0.uOp((i, a) -> {
                     int ei = s_.laneSource(i);

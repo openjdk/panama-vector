@@ -603,38 +603,6 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
                     v0.uOp(m, (i, a) -> (short) -a);
             case VECTOR_OP_ABS: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (short) Math.abs(a));
-            case VECTOR_OP_SIN: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.sin(a));
-            case VECTOR_OP_COS: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.cos(a));
-            case VECTOR_OP_TAN: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.tan(a));
-            case VECTOR_OP_ASIN: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.asin(a));
-            case VECTOR_OP_ACOS: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.acos(a));
-            case VECTOR_OP_ATAN: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.atan(a));
-            case VECTOR_OP_EXP: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.exp(a));
-            case VECTOR_OP_LOG: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.log(a));
-            case VECTOR_OP_LOG10: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.log10(a));
-            case VECTOR_OP_SQRT: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.sqrt(a));
-            case VECTOR_OP_CBRT: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.cbrt(a));
-            case VECTOR_OP_SINH: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.sinh(a));
-            case VECTOR_OP_COSH: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.cosh(a));
-            case VECTOR_OP_TANH: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.tanh(a));
-            case VECTOR_OP_EXPM1: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.expm1(a));
-            case VECTOR_OP_LOG1P: return (v0, m) ->
-                    v0.uOp(m, (i, a) -> (short) Math.log1p(a));
             default: return null;
         }
     }
@@ -3916,7 +3884,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
 
         @Override
         @ForceInline
-        public Class<Halffloat> elementType() {
+        public final Class<Halffloat> elementType() {
             return Halffloat.class;
         }
         @Override

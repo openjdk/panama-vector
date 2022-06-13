@@ -610,21 +610,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         }
         int opc = opCode(op);
         return VectorSupport.unaryOp(
-#if[FP]
-#if[short]
-            opc, getClass(), null, Halffloat.class, length(),
+            opc, getClass(), null, $elemtype$.class, length(),
             this, null,
             UN_IMPL.find(op, opc, $abstractvectortype$::unaryOperations));
-#else[short]
-            opc, getClass(), null, $type$.class, length(),
-            this, null,
-            UN_IMPL.find(op, opc, $abstractvectortype$::unaryOperations));
-#end[short]
-#else[FP]
-            opc, getClass(), null, $type$.class, length(),
-            this, null,
-            UN_IMPL.find(op, opc, $abstractvectortype$::unaryOperations));
-#end[FP]
     }
 
     /**
@@ -654,21 +642,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         }
         int opc = opCode(op);
         return VectorSupport.unaryOp(
-#if[FP]
-#if[short]
-            opc, getClass(), maskClass, Halffloat.class, length(),
+            opc, getClass(), maskClass, $elemtype$.class, length(),
             this, m,
             UN_IMPL.find(op, opc, $abstractvectortype$::unaryOperations));
-#else[short]
-            opc, getClass(), maskClass, $type$.class, length(),
-            this, m,
-            UN_IMPL.find(op, opc, $abstractvectortype$::unaryOperations));
-#end[short]
-#else[FP]
-            opc, getClass(), maskClass, $type$.class, length(),
-            this, m,
-            UN_IMPL.find(op, opc, $abstractvectortype$::unaryOperations));
-#end[FP]
     }
 
     private static final
@@ -682,6 +658,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             case VECTOR_OP_ABS: return (v0, m) ->
                     v0.uOp(m, (i, a) -> ($type$) Math.abs(a));
 #if[FP]
+#if[!short]
             case VECTOR_OP_SIN: return (v0, m) ->
                     v0.uOp(m, (i, a) -> ($type$) Math.sin(a));
             case VECTOR_OP_COS: return (v0, m) ->
@@ -714,6 +691,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                     v0.uOp(m, (i, a) -> ($type$) Math.expm1(a));
             case VECTOR_OP_LOG1P: return (v0, m) ->
                     v0.uOp(m, (i, a) -> ($type$) Math.log1p(a));
+#end[!short]
 #end[FP]
             default: return null;
         }
@@ -774,21 +752,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 
         int opc = opCode(op);
         return VectorSupport.binaryOp(
-#if[FP]
-#if[short]
-            opc, getClass(), null, Halffloat.class, length(),
+            opc, getClass(), null, $elemtype$.class, length(),
             this, that, null,
             BIN_IMPL.find(op, opc, $abstractvectortype$::binaryOperations));
-#else[short]
-            opc, getClass(), null, $type$.class, length(),
-            this, that, null,
-            BIN_IMPL.find(op, opc, $abstractvectortype$::binaryOperations));
-#end[short]
-#else[FP]
-            opc, getClass(), null, $type$.class, length(),
-            this, that, null,
-            BIN_IMPL.find(op, opc, $abstractvectortype$::binaryOperations));
-#end[FP]
     }
 
     /**
@@ -845,24 +811,10 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         }
 
         int opc = opCode(op);
-#if[FP]
-#if[short]
         return VectorSupport.binaryOp(
-            opc, getClass(), maskClass, Halffloat.class, length(),
+            opc, getClass(), maskClass, $elemtype$.class, length(),
             this, that, m,
             BIN_IMPL.find(op, opc, $abstractvectortype$::binaryOperations));
-#else[short]
-        return VectorSupport.binaryOp(
-            opc, getClass(), maskClass, $type$.class, length(),
-            this, that, m,
-            BIN_IMPL.find(op, opc, $abstractvectortype$::binaryOperations));
-#end[short]
-#else[FP]
-        return VectorSupport.binaryOp(
-            opc, getClass(), maskClass, $type$.class, length(),
-            this, that, m,
-            BIN_IMPL.find(op, opc, $abstractvectortype$::binaryOperations));
-#end[FP]
     }
 
     private static final
@@ -1112,21 +1064,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         e &= SHIFT_MASK;
         int opc = opCode(op);
         return VectorSupport.broadcastInt(
-#if[FP]
-#if[short]
-            opc, getClass(), maskClass, Halffloat.class, length(),
+            opc, getClass(), maskClass, $elemtype$.class, length(),
             this, e, m,
             BIN_INT_IMPL.find(op, opc, $abstractvectortype$::broadcastIntOperations));
-#else[short]
-            opc, getClass(), maskClass, $type$.class, length(),
-            this, e, m,
-            BIN_INT_IMPL.find(op, opc, $abstractvectortype$::broadcastIntOperations));
-#end[short]
-#else[FP]
-            opc, getClass(), maskClass, $type$.class, length(),
-            this, e, m,
-            BIN_INT_IMPL.find(op, opc, $abstractvectortype$::broadcastIntOperations));
-#end[FP]
     }
 
     private static final
@@ -1208,21 +1148,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 #end[BITWISE]
         int opc = opCode(op);
         return VectorSupport.ternaryOp(
-#if[FP]
-#if[short]
-            opc, getClass(), null, Halffloat.class, length(),
+            opc, getClass(), null, $elemtype$.class, length(),
             this, that, tother, null,
             TERN_IMPL.find(op, opc, $abstractvectortype$::ternaryOperations));
-#else[short]
-            opc, getClass(), null, $type$.class, length(),
-            this, that, tother, null,
-            TERN_IMPL.find(op, opc, $abstractvectortype$::ternaryOperations));
-#end[short]
-#else[FP]
-            opc, getClass(), null, $type$.class, length(),
-            this, that, tother, null,
-            TERN_IMPL.find(op, opc, $abstractvectortype$::ternaryOperations));
-#end[FP]
     }
 
     /**
@@ -1262,21 +1190,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 #end[BITWISE]
         int opc = opCode(op);
         return VectorSupport.ternaryOp(
-#if[FP]
-#if[short]
-            opc, getClass(), maskClass, Halffloat.class, length(),
+            opc, getClass(), maskClass, $elemtype$.class, length(),
             this, that, tother, m,
             TERN_IMPL.find(op, opc, $abstractvectortype$::ternaryOperations));
-#else[short]
-            opc, getClass(), maskClass, $type$.class, length(),
-            this, that, tother, m,
-            TERN_IMPL.find(op, opc, $abstractvectortype$::ternaryOperations));
-#end[short]
-#else[FP]
-            opc, getClass(), maskClass, $type$.class, length(),
-            this, that, tother, m,
-            TERN_IMPL.find(op, opc, $abstractvectortype$::ternaryOperations));
-#end[FP]
     }
 
     private static final
@@ -2317,15 +2233,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         that.check(this);
         int opc = opCode(op);
         return VectorSupport.compare(
-#if[FP]
-#if[short]
-            opc, getClass(), maskType, Halffloat.class, length(),
-#else[short]
-            opc, getClass(), maskType, $type$.class, length(),
-#end[short]
-#else[FP]
-            opc, getClass(), maskType, $type$.class, length(),
-#end[FP]
+            opc, getClass(), maskType, $elemtype$.class, length(),
             this, that, null,
             (cond, v0, v1, m1) -> {
                 AbstractMask<$Boxtype$> m
@@ -2347,15 +2255,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         m.check(maskType, this);
         int opc = opCode(op);
         return VectorSupport.compare(
-#if[FP]
-#if[short]
-            opc, getClass(), maskType, Halffloat.class, length(),
-#else[short]
-            opc, getClass(), maskType, $type$.class, length(),
-#end[short]
-#else[FP]
-            opc, getClass(), maskType, $type$.class, length(),
-#end[FP]
+            opc, getClass(), maskType, $elemtype$.class, length(),
             this, that, m,
             (cond, v0, v1, m1) -> {
                 AbstractMask<$Boxtype$> cmpM
@@ -2509,15 +2409,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     blendTemplate(Class<M> maskType, $abstractvectortype$ v, M m) {
         v.check(this);
         return VectorSupport.blend(
-#if[FP]
-#if[short]
-            getClass(), maskType, Halffloat.class, length(),
-#else[short]
-            getClass(), maskType, $type$.class, length(),
-#end[short]
-#else[FP]
-            getClass(), maskType, $type$.class, length(),
-#end[FP]
+            getClass(), maskType, $elemtype$.class, length(),
             this, v, m,
             (v0, v1, m_) -> v0.bOp(v1, m_, (i, a, b) -> b));
     }
@@ -2534,15 +2426,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         // make sure VLENGTH*scale doesn't overflow:
         vsp.checkScale(scale);
         return VectorSupport.indexVector(
-#if[FP]
-#if[short]
-            getClass(), Halffloat.class, length(),
-#else[short]
-            getClass(), $type$.class, length(),
-#end[short]
-#else[FP]
-            getClass(), $type$.class, length(),
-#end[FP]
+            getClass(), $elemtype$.class, length(),
             this, scale, vsp,
             (v, scale_, s)
             -> {
@@ -2734,15 +2618,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     $abstractvectortype$ rearrangeTemplate(Class<S> shuffletype, S shuffle) {
         shuffle.checkIndexes();
         return VectorSupport.rearrangeOp(
-#if[FP]
-#if[short]
-            getClass(), shuffletype, null, Halffloat.class, length(),
-#else[short]
-            getClass(), shuffletype, null, $type$.class, length(),
-#end[short]
-#else[FP]
-            getClass(), shuffletype, null, $type$.class, length(),
-#end[FP]
+            getClass(), shuffletype, null, $elemtype$.class, length(),
             this, shuffle, null,
             (v1, s_, m_) -> v1.uOp((i, a) -> {
                 int ei = s_.laneSource(i);
@@ -2774,15 +2650,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             throw new AssertionError();
         }
         return VectorSupport.rearrangeOp(
-#if[FP]
-#if[short]
-                   getClass(), shuffletype, masktype, Halffloat.class, length(),
-#else[short]
-                   getClass(), shuffletype, masktype, $type$.class, length(),
-#end[short]
-#else[FP]
-                   getClass(), shuffletype, masktype, $type$.class, length(),
-#end[FP]
+                   getClass(), shuffletype, masktype, $elemtype$.class, length(),
                    this, shuffle, m,
                    (v1, s_, m_) -> v1.uOp((i, a) -> {
                         int ei = s_.laneSource(i);
@@ -2810,16 +2678,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         S ws = (S) shuffle.wrapIndexes();
         $abstractvectortype$ r0 =
             VectorSupport.rearrangeOp(
-#if[FP]
-#if[short]
-                getClass(), shuffletype, null, Halffloat.class, length(),
-#else[short]
-                getClass(), shuffletype, null, $type$.class, length(),
-
-#end[short]
-#else[FP]
-                getClass(), shuffletype, null, $type$.class, length(),
-#end[FP]
+                getClass(), shuffletype, null, $elemtype$.class, length(),
                 this, ws, null,
                 (v0, s_, m_) -> v0.uOp((i, a) -> {
                     int ei = s_.laneSource(i);
@@ -2827,15 +2686,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 }));
         $abstractvectortype$ r1 =
             VectorSupport.rearrangeOp(
-#if[FP]
-#if[short]
-                getClass(), shuffletype, null, Halffloat.class, length(),
-#else[short]
-                getClass(), shuffletype, null, $type$.class, length(),
-#end[short]
-#else[FP]
-                getClass(), shuffletype, null, $type$.class, length(),
-#end[FP]
+                getClass(), shuffletype, null, $elemtype$.class, length(),
                 v, ws, null,
                 (v1, s_, m_) -> v1.uOp((i, a) -> {
                     int ei = s_.laneSource(i);
@@ -3238,21 +3089,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         }
         int opc = opCode(op);
         return fromBits(VectorSupport.reductionCoerced(
-#if[FP]
-#if[short]
-            opc, getClass(), maskClass, Halffloat.class, length(),
+            opc, getClass(), maskClass, $elemtype$.class, length(),
             this, m,
             REDUCE_IMPL.find(op, opc, $abstractvectortype$::reductionOperations)));
-#else[short]
-            opc, getClass(), maskClass, $type$.class, length(),
-            this, m,
-            REDUCE_IMPL.find(op, opc, $abstractvectortype$::reductionOperations)));
-#end[short]
-#else[FP]
-            opc, getClass(), maskClass, $type$.class, length(),
-            this, m,
-            REDUCE_IMPL.find(op, opc, $abstractvectortype$::reductionOperations)));
-#end[FP]
     }
 
     /*package-private*/
@@ -3267,21 +3106,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         }
         int opc = opCode(op);
         return fromBits(VectorSupport.reductionCoerced(
-#if[FP]
-#if[short]
-            opc, getClass(), null, Halffloat.class, length(),
+            opc, getClass(), null, $elemtype$.class, length(),
             this, null,
             REDUCE_IMPL.find(op, opc, $abstractvectortype$::reductionOperations)));
-#else[short]
-            opc, getClass(), null, $type$.class, length(),
-            this, null,
-            REDUCE_IMPL.find(op, opc, $abstractvectortype$::reductionOperations)));
-#end[short]
-#else[FP]
-            opc, getClass(), null, $type$.class, length(),
-            this, null,
-            REDUCE_IMPL.find(op, opc, $abstractvectortype$::reductionOperations)));
-#end[FP]
     }
 
     private static final
@@ -5654,22 +5481,9 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 
         @Override
         @ForceInline
-#if[FP]
-#if[!short]
         public final Class<$Boxtype$> elementType() {
-            return $type$.class;
+            return $elemtype$.class;
         }
-#end[!short]
-#if[short]
-        public Class<Halffloat> elementType() {
-            return Halffloat.class;
-        }
-#end[short]
-#else[FP]
-        public final Class<$Boxtype$> elementType() {
-            return $type$.class;
-        }
-#end[FP]
         @Override
         @ForceInline
         final Class<$Boxtype$> genericElementType() {
@@ -5695,24 +5509,10 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         @ForceInline
         final $abstractvectortype$ broadcastBits(long bits) {
             return ($abstractvectortype$)
-#if[FP]
-#if[short]
                 VectorSupport.broadcastCoerced(
-                    vectorType, Halffloat.class, laneCount,
+                    vectorType, $elemtype$.class, laneCount,
                     bits, this,
                     (bits_, s_) -> s_.rvOp(i -> bits_));
-#else[short]
-                VectorSupport.broadcastCoerced(
-                    vectorType, $type$.class, laneCount,
-                    bits, this,
-                    (bits_, s_) -> s_.rvOp(i -> bits_));
-#end[short]
-#else[FP]
-                VectorSupport.broadcastCoerced(
-                    vectorType, $type$.class, laneCount,
-                    bits, this,
-                    (bits_, s_) -> s_.rvOp(i -> bits_));
-#end[FP]
         }
 
         /*package-private*/

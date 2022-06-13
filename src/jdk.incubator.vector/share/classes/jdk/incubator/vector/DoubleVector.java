@@ -2165,7 +2165,6 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         DoubleVector r0 =
             VectorSupport.rearrangeOp(
                 getClass(), shuffletype, null, double.class, length(),
-
                 this, ws, null,
                 (v0, s_, m_) -> v0.uOp((i, a) -> {
                     int ei = s_.laneSource(i);
