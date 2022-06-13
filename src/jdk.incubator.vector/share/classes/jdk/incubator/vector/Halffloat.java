@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,23 +33,21 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
  * @version 1.0
  * @since  10/01/2021
  */
-@SuppressWarnings("cast")
-public final class Halffloat {
-   /**
-    * Display here: {@value}
-   */
-    static final short MAX_VALUE = valueOf(0x1.fffffeP+127f);
-    /* Definitions for FP16 */
-    static final short MIN_VALUE = valueOf(0x0.000002P-126f);
-    /* Definitions for FP16 */
-    static final short POSITIVE_INFINITY = valueOf(1.0f/0.0f);
-    /* Definitions for FP16 */
-    static final short NEGATIVE_INFINITY = valueOf(-1.0f/0.0f);
-    /* Definitions for FP16 */
-    static final int SIZE = 16;
-    /* Definitions for FP16 */
-    static final int BYTES = SIZE / Byte.SIZE;
-    /* Definitions for FP16 */
+@SuppressWarnings("serial")
+public final class Halffloat extends Number implements Comparable<Halffloat>{
+   /** Definitions for FP16*/
+    public static final short MAX_VALUE = 0x7bff;
+    /** Definitions for FP16 */
+    public static final short MIN_VALUE = 0x400;
+    /** Definitions for FP16 */
+    public static final short POSITIVE_INFINITY = 0x7c00;
+    /** Definitions for FP16 */
+    public static final short NEGATIVE_INFINITY = (short)0xfc00;
+    /** Definitions for FP16 */
+    public static final int SIZE = 16;
+    /** Definitions for FP16 */
+    public static final int BYTES = SIZE / Byte.SIZE;
+    /** Definitions for FP16 */
     private final short value;
 
      /**
@@ -75,16 +73,44 @@ public final class Halffloat {
         float f = Float.intBitsToFloat(((val&0x8000)<<16) | (((val&0x7c00)+0x1C000)<<13) | ((val&0x03FF)<<13));
         return f;
     }
+
+    /**
+     * Returns true if the number passed is finite
+     * @param f float value to be checked
+     * @return boolean value
+     */
+    public static boolean isFinite(float f) {
+        return Math.abs(f) <= Halffloat.MAX_VALUE;
+    }
+
     /**
      * Returns halffloat value of a given float.
      * @param f float value to be converted into halffloat
      * @return short value of float provided
     */
     public static short valueOf(float f) {
+        if (!isFinite(f)) return Halffloat.POSITIVE_INFINITY;
+
         int val = Float.floatToIntBits(f);
         val = ((((val>>16)&0x8000)|((((val&0x7f800000)-0x38000000)>>13)&0x7c00)|((val>>13)&0x03ff)));
         return (short)val;
     }
+
+    /** doublevalue */
+    public double doubleValue() {
+       return (double) floatValue();
+    }
+
+    /** longValue */
+    public long longValue() {
+       return (long) value;
+    }
+
+    /** IntValue */
+    public int intValue() {
+       return (int) value;
+    }
+
     /**
      * Returns the size, in bits, of vectors of this shape.
      * @param bits the species describing the element type
@@ -108,5 +134,16 @@ public final class Halffloat {
     */
     public static short shortToShortBits(short bits) {
         return bits;
+    }
+
+    /**
+       Compares two halffloats
+     * @param hf value to be compared
+     * @return 0, 1, -1
+    */
+    public int compareTo(Halffloat hf) {
+        float f1 = floatValue();
+        float f2 = hf.floatValue();
+        return Float.compare(f1, f2);
     }
 }
