@@ -82,6 +82,7 @@ do
   Fptype=$Type
   Boxfptype=$Boxtype
   elemtype=$type
+  Elemtype=$Type
 
   case $Type in
     Byte)
@@ -137,6 +138,7 @@ do
       Boxbitstype=Short
       sizeInBytes=2
       elemtype=Halffloat
+      Elemtype=Short
       args="$args -KbyteOrShort -KshortOrFP -KshortOrHalffloat"
       ;;
   esac
@@ -145,7 +147,7 @@ do
   args="$args -Dbitstype=$bitstype -DBitstype=$Bitstype -DBoxbitstype=$Boxbitstype"
   args="$args -Dfptype=$fptype -DFptype=$Fptype -DBoxfptype=$Boxfptype"
   args="$args -DsizeInBytes=$sizeInBytes"
-  args="$args -Delemtype=$elemtype"
+  args="$args -Delemtype=$elemtype -DElemtype=$Elemtype"
 
   abstractvectortype=${typeprefix}${Type}Vector
   abstractbitsvectortype=${typeprefix}${Bitstype}Vector

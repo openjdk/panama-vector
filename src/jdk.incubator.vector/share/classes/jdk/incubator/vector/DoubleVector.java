@@ -2675,8 +2675,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         checkMaskFromIndexSize(offset, vsp, m, 8, a.length);
         ByteBuffer wb = wrapper(a, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Double>)m,
-                   (wb_, o, i) ->
-                        wb_.getDouble(o + i * 8));
+                   (wb_, o, i) -> wb_.getDouble(o + i * 8));
     }
 
     /**
@@ -2963,8 +2962,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         checkMaskFromIndexSize(offset, vsp, m, 8, bb.limit());
         ByteBuffer wb = wrapper(bb, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Double>)m,
-                   (wb_, o, i) ->
-                        wb_.getDouble(o + i * 8));
+                   (wb_, o, i) -> wb_.getDouble(o + i * 8));
     }
 
     // Memory store operations
@@ -3337,8 +3335,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             (arr, off, s) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 return s.ldOp(wb, off,
-                        (wb_, o, i) ->
-                            wb_.getDouble(o + i * 8));
+                        (wb_, o, i) -> wb_.getDouble(o + i * 8));
             });
     }
 
@@ -3357,8 +3354,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             (arr, off, s, vm) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 return s.ldOp(wb, off, vm,
-                        (wb_, o, i) ->
-                            wb_.getDouble(o + i * 8));
+                        (wb_, o, i) -> wb_.getDouble(o + i * 8));
             });
     }
 
@@ -3374,8 +3370,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                 (buf, off, s) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     return s.ldOp(wb, off,
-                            (wb_, o, i) ->
-                                wb_.getDouble(o + i * 8));
+                            (wb_, o, i) -> wb_.getDouble(o + i * 8));
                 });
     }
 
@@ -3393,8 +3388,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                 (buf, off, s, vm) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     return s.ldOp(wb, off, vm,
-                            (wb_, o, i) ->
-                                wb_.getDouble(o + i * 8));
+                            (wb_, o, i) -> wb_.getDouble(o + i * 8));
                 });
     }
 
@@ -3536,8 +3530,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                 (buf, off, v) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     v.stOp(wb, off,
-                            (wb_, o, i, e) ->
-                                wb_.putDouble(o + i * 8, e));
+                            (wb_, o, i, e) -> wb_.putDouble(o + i * 8, e));
                 });
     }
 

@@ -2638,8 +2638,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         checkMaskFromIndexSize(offset, vsp, m, 2, a.length);
         ByteBuffer wb = wrapper(a, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Halffloat>)m,
-                   (wb_, o, i) ->
-                        wb_.getShort(o + i * 2));
+                   (wb_, o, i) -> wb_.getShort(o + i * 2));
     }
 
     /**
@@ -3035,8 +3034,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         checkMaskFromIndexSize(offset, vsp, m, 2, bb.limit());
         ByteBuffer wb = wrapper(bb, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Halffloat>)m,
-                   (wb_, o, i) ->
-                        wb_.getShort(o + i * 2));
+                   (wb_, o, i) -> wb_.getShort(o + i * 2));
     }
 
     // Memory store operations
@@ -3505,8 +3503,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
             (arr, off, s) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 return s.ldOp(wb, off,
-                        (wb_, o, i) ->
-                            wb_.getShort(o + i * 2));
+                        (wb_, o, i) -> wb_.getShort(o + i * 2));
             });
     }
 
@@ -3525,8 +3522,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
             (arr, off, s, vm) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 return s.ldOp(wb, off, vm,
-                        (wb_, o, i) ->
-                            wb_.getShort(o + i * 2));
+                        (wb_, o, i) -> wb_.getShort(o + i * 2));
             });
     }
 
@@ -3542,8 +3538,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
                 (buf, off, s) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     return s.ldOp(wb, off,
-                            (wb_, o, i) ->
-                                wb_.getShort(o + i * 2));
+                            (wb_, o, i) -> wb_.getShort(o + i * 2));
                 });
     }
 
@@ -3561,8 +3556,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
                 (buf, off, s, vm) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     return s.ldOp(wb, off, vm,
-                            (wb_, o, i) ->
-                                wb_.getShort(o + i * 2));
+                            (wb_, o, i) -> wb_.getShort(o + i * 2));
                 });
     }
 
@@ -3652,8 +3646,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
                 (buf, off, v) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     v.stOp(wb, off,
-                            (wb_, o, i, e) ->
-                                wb_.putShort(o + i * 2, e));
+                            (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
                 });
     }
 
@@ -4156,5 +4149,5 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
      * A preferred species is a species of maximal bit-size for the platform.
      */
     public static final VectorSpecies<Halffloat> SPECIES_PREFERRED
-        = VectorSpecies.ofPreferred(Halffloat.class);
+        = (HalffloatSpecies) VectorSpecies.ofPreferred(Halffloat.class);
 }

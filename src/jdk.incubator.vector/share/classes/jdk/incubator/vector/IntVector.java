@@ -2869,8 +2869,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         checkMaskFromIndexSize(offset, vsp, m, 4, a.length);
         ByteBuffer wb = wrapper(a, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Integer>)m,
-                   (wb_, o, i) ->
-                        wb_.getInt(o + i * 4));
+                   (wb_, o, i) -> wb_.getInt(o + i * 4));
     }
 
     /**
@@ -3139,8 +3138,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         checkMaskFromIndexSize(offset, vsp, m, 4, bb.limit());
         ByteBuffer wb = wrapper(bb, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Integer>)m,
-                   (wb_, o, i) ->
-                        wb_.getInt(o + i * 4));
+                   (wb_, o, i) -> wb_.getInt(o + i * 4));
     }
 
     // Memory store operations
@@ -3476,8 +3474,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
             (arr, off, s) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 return s.ldOp(wb, off,
-                        (wb_, o, i) ->
-                            wb_.getInt(o + i * 4));
+                        (wb_, o, i) -> wb_.getInt(o + i * 4));
             });
     }
 
@@ -3496,8 +3493,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
             (arr, off, s, vm) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 return s.ldOp(wb, off, vm,
-                        (wb_, o, i) ->
-                            wb_.getInt(o + i * 4));
+                        (wb_, o, i) -> wb_.getInt(o + i * 4));
             });
     }
 
@@ -3513,8 +3509,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 (buf, off, s) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     return s.ldOp(wb, off,
-                            (wb_, o, i) ->
-                                wb_.getInt(o + i * 4));
+                            (wb_, o, i) -> wb_.getInt(o + i * 4));
                 });
     }
 
@@ -3532,8 +3527,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 (buf, off, s, vm) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     return s.ldOp(wb, off, vm,
-                            (wb_, o, i) ->
-                                wb_.getInt(o + i * 4));
+                            (wb_, o, i) -> wb_.getInt(o + i * 4));
                 });
     }
 
@@ -3656,8 +3650,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 (buf, off, v) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     v.stOp(wb, off,
-                            (wb_, o, i, e) ->
-                                wb_.putInt(o + i * 4, e));
+                            (wb_, o, i, e) -> wb_.putInt(o + i * 4, e));
                 });
     }
 

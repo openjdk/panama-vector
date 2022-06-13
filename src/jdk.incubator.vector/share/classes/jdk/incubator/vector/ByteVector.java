@@ -2877,8 +2877,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
         ByteBuffer wb = wrapper(a, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Byte>)m,
-                   (wb_, o, i) ->
-                        wb_.get(o + i * 1));
+                   (wb_, o, i) -> wb_.get(o + i * 1));
     }
 
     /**
@@ -3275,8 +3274,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
         checkMaskFromIndexSize(offset, vsp, m, 1, bb.limit());
         ByteBuffer wb = wrapper(bb, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Byte>)m,
-                   (wb_, o, i) ->
-                        wb_.get(o + i * 1));
+                   (wb_, o, i) -> wb_.get(o + i * 1));
     }
 
     // Memory store operations
@@ -3758,8 +3756,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             (arr, off, s) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 return s.ldOp(wb, off,
-                        (wb_, o, i) ->
-                            wb_.get(o + i * 1));
+                        (wb_, o, i) -> wb_.get(o + i * 1));
             });
     }
 
@@ -3778,8 +3775,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             (arr, off, s, vm) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 return s.ldOp(wb, off, vm,
-                        (wb_, o, i) ->
-                            wb_.get(o + i * 1));
+                        (wb_, o, i) -> wb_.get(o + i * 1));
             });
     }
 
@@ -3795,8 +3791,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 (buf, off, s) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     return s.ldOp(wb, off,
-                            (wb_, o, i) ->
-                                wb_.get(o + i * 1));
+                            (wb_, o, i) -> wb_.get(o + i * 1));
                 });
     }
 
@@ -3814,8 +3809,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 (buf, off, s, vm) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     return s.ldOp(wb, off, vm,
-                            (wb_, o, i) ->
-                                wb_.get(o + i * 1));
+                            (wb_, o, i) -> wb_.get(o + i * 1));
                 });
     }
 
@@ -3922,8 +3916,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 (buf, off, v) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     v.stOp(wb, off,
-                            (wb_, o, i, e) ->
-                                wb_.put(o + i * 1, e));
+                            (wb_, o, i, e) -> wb_.put(o + i * 1, e));
                 });
     }
 

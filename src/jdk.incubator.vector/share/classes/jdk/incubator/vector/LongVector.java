@@ -2730,8 +2730,7 @@ public abstract class LongVector extends AbstractVector<Long> {
         checkMaskFromIndexSize(offset, vsp, m, 8, a.length);
         ByteBuffer wb = wrapper(a, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Long>)m,
-                   (wb_, o, i) ->
-                        wb_.getLong(o + i * 8));
+                   (wb_, o, i) -> wb_.getLong(o + i * 8));
     }
 
     /**
@@ -3018,8 +3017,7 @@ public abstract class LongVector extends AbstractVector<Long> {
         checkMaskFromIndexSize(offset, vsp, m, 8, bb.limit());
         ByteBuffer wb = wrapper(bb, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Long>)m,
-                   (wb_, o, i) ->
-                        wb_.getLong(o + i * 8));
+                   (wb_, o, i) -> wb_.getLong(o + i * 8));
     }
 
     // Memory store operations
@@ -3392,8 +3390,7 @@ public abstract class LongVector extends AbstractVector<Long> {
             (arr, off, s) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 return s.ldOp(wb, off,
-                        (wb_, o, i) ->
-                            wb_.getLong(o + i * 8));
+                        (wb_, o, i) -> wb_.getLong(o + i * 8));
             });
     }
 
@@ -3412,8 +3409,7 @@ public abstract class LongVector extends AbstractVector<Long> {
             (arr, off, s, vm) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 return s.ldOp(wb, off, vm,
-                        (wb_, o, i) ->
-                            wb_.getLong(o + i * 8));
+                        (wb_, o, i) -> wb_.getLong(o + i * 8));
             });
     }
 
@@ -3429,8 +3425,7 @@ public abstract class LongVector extends AbstractVector<Long> {
                 (buf, off, s) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     return s.ldOp(wb, off,
-                            (wb_, o, i) ->
-                                wb_.getLong(o + i * 8));
+                            (wb_, o, i) -> wb_.getLong(o + i * 8));
                 });
     }
 
@@ -3448,8 +3443,7 @@ public abstract class LongVector extends AbstractVector<Long> {
                 (buf, off, s, vm) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     return s.ldOp(wb, off, vm,
-                            (wb_, o, i) ->
-                                wb_.getLong(o + i * 8));
+                            (wb_, o, i) -> wb_.getLong(o + i * 8));
                 });
     }
 
@@ -3591,8 +3585,7 @@ public abstract class LongVector extends AbstractVector<Long> {
                 (buf, off, v) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     v.stOp(wb, off,
-                            (wb_, o, i, e) ->
-                                wb_.putLong(o + i * 8, e));
+                            (wb_, o, i, e) -> wb_.putLong(o + i * 8, e));
                 });
     }
 
