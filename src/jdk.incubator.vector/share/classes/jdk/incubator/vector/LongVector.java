@@ -2730,7 +2730,7 @@ public abstract class LongVector extends AbstractVector<Long> {
         checkMaskFromIndexSize(offset, vsp, m, 8, a.length);
         ByteBuffer wb = wrapper(a, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Long>)m,
-                   (wb_, o, i) -> wb_.getLong(o + i * 8));
+                   (wb_, o, i)  -> wb_.getLong(o + i * 8));
     }
 
     /**
@@ -3017,7 +3017,7 @@ public abstract class LongVector extends AbstractVector<Long> {
         checkMaskFromIndexSize(offset, vsp, m, 8, bb.limit());
         ByteBuffer wb = wrapper(bb, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Long>)m,
-                   (wb_, o, i) -> wb_.getLong(o + i * 8));
+                   (wb_, o, i)  -> wb_.getLong(o + i * 8));
     }
 
     // Memory store operations
@@ -3550,8 +3550,7 @@ public abstract class LongVector extends AbstractVector<Long> {
             (arr, off, v) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 v.stOp(wb, off,
-                        (tb_, o, i, e) ->
-                            tb_.putLong(o + i * 8, e));
+                        (tb_, o, i, e) -> tb_.putLong(o + i * 8, e));
             });
     }
 
@@ -3786,6 +3785,7 @@ public abstract class LongVector extends AbstractVector<Long> {
         public final Class<Long> elementType() {
             return long.class;
         }
+
         @Override
         @ForceInline
         final Class<Long> genericElementType() {

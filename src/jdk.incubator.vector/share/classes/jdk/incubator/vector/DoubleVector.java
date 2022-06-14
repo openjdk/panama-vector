@@ -2675,7 +2675,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         checkMaskFromIndexSize(offset, vsp, m, 8, a.length);
         ByteBuffer wb = wrapper(a, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Double>)m,
-                   (wb_, o, i) -> wb_.getDouble(o + i * 8));
+                   (wb_, o, i)  -> wb_.getDouble(o + i * 8));
     }
 
     /**
@@ -2962,7 +2962,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         checkMaskFromIndexSize(offset, vsp, m, 8, bb.limit());
         ByteBuffer wb = wrapper(bb, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Double>)m,
-                   (wb_, o, i) -> wb_.getDouble(o + i * 8));
+                   (wb_, o, i)  -> wb_.getDouble(o + i * 8));
     }
 
     // Memory store operations
@@ -3495,8 +3495,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             (arr, off, v) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 v.stOp(wb, off,
-                        (tb_, o, i, e) ->
-                            tb_.putDouble(o + i * 8, e));
+                        (tb_, o, i, e) -> tb_.putDouble(o + i * 8, e));
             });
     }
 
@@ -3731,6 +3730,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         public final Class<Double> elementType() {
             return double.class;
         }
+
         @Override
         @ForceInline
         final Class<Double> genericElementType() {

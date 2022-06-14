@@ -2869,7 +2869,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         checkMaskFromIndexSize(offset, vsp, m, 4, a.length);
         ByteBuffer wb = wrapper(a, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Integer>)m,
-                   (wb_, o, i) -> wb_.getInt(o + i * 4));
+                   (wb_, o, i)  -> wb_.getInt(o + i * 4));
     }
 
     /**
@@ -3138,7 +3138,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         checkMaskFromIndexSize(offset, vsp, m, 4, bb.limit());
         ByteBuffer wb = wrapper(bb, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Integer>)m,
-                   (wb_, o, i) -> wb_.getInt(o + i * 4));
+                   (wb_, o, i)  -> wb_.getInt(o + i * 4));
     }
 
     // Memory store operations
@@ -3615,8 +3615,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
             (arr, off, v) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 v.stOp(wb, off,
-                        (tb_, o, i, e) ->
-                            tb_.putInt(o + i * 4, e));
+                        (tb_, o, i, e) -> tb_.putInt(o + i * 4, e));
             });
     }
 
@@ -3851,6 +3850,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
         public final Class<Integer> elementType() {
             return int.class;
         }
+
         @Override
         @ForceInline
         final Class<Integer> genericElementType() {

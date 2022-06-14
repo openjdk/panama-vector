@@ -3458,7 +3458,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         checkMaskFromIndexSize(offset, vsp, m, $sizeInBytes$, a.length);
         ByteBuffer wb = wrapper(a, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<$Boxtype$>)m,
-                   (wb_, o, i) -> wb_.get{#if[byte]?(:$Elemtype$(}o + i * $sizeInBytes$));
+                   (wb_, o, i)  -> wb_.get{#if[byte]?(:$Elemtype$(}o + i * $sizeInBytes$));
     }
 
     /**
@@ -4092,7 +4092,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         checkMaskFromIndexSize(offset, vsp, m, $sizeInBytes$, bb.limit());
         ByteBuffer wb = wrapper(bb, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<$Boxtype$>)m,
-                   (wb_, o, i) -> wb_.get{#if[byte]?(:$Elemtype$(}o + i * $sizeInBytes$));
+                   (wb_, o, i)  -> wb_.get{#if[byte]?(:$Elemtype$(}o + i * $sizeInBytes$));
     }
 
     // Memory store operations
@@ -5083,16 +5083,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             (arr, off, v) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 v.stOp(wb, off,
-                        (tb_, o, i, e) ->
-#if[FP]
-#if[short]
-                            tb_.put{#if[byte]?(:Short(}o + i * $sizeInBytes$, e));
-#else[short]
-                            tb_.put{#if[byte]?(:$Type$(}o + i * $sizeInBytes$, e));
-#end[short]
-#else[FP]
-                            tb_.put{#if[byte]?(:$Type$(}o + i * $sizeInBytes$, e));
-#end[FP]
+                        (tb_, o, i, e) -> tb_.put{#if[byte]?(:$Elemtype$(}o + i * $sizeInBytes$, e));
             });
     }
 
@@ -5421,6 +5412,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         public final Class<$Boxtype$> elementType() {
             return $elemtype$.class;
         }
+
         @Override
         @ForceInline
         final Class<$Boxtype$> genericElementType() {

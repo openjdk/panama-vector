@@ -2638,7 +2638,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         checkMaskFromIndexSize(offset, vsp, m, 2, a.length);
         ByteBuffer wb = wrapper(a, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Halffloat>)m,
-                   (wb_, o, i) -> wb_.getShort(o + i * 2));
+                   (wb_, o, i)  -> wb_.getShort(o + i * 2));
     }
 
     /**
@@ -3034,7 +3034,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         checkMaskFromIndexSize(offset, vsp, m, 2, bb.limit());
         ByteBuffer wb = wrapper(bb, bo);
         return vsp.ldOp(wb, offset, (AbstractMask<Halffloat>)m,
-                   (wb_, o, i) -> wb_.getShort(o + i * 2));
+                   (wb_, o, i)  -> wb_.getShort(o + i * 2));
     }
 
     // Memory store operations
@@ -3611,8 +3611,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
             (arr, off, v) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 v.stOp(wb, off,
-                        (tb_, o, i, e) ->
-                            tb_.putShort(o + i * 2, e));
+                        (tb_, o, i, e) -> tb_.putShort(o + i * 2, e));
             });
     }
 
@@ -3880,6 +3879,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         public final Class<Halffloat> elementType() {
             return Halffloat.class;
         }
+
         @Override
         @ForceInline
         final Class<Halffloat> genericElementType() {
