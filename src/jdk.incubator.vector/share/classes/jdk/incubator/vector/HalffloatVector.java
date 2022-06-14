@@ -3630,8 +3630,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
             (arr, off, v, vm) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 v.stOp(wb, off, vm,
-                        (tb_, o, i, e) ->
-                            tb_.putShort(o + i * 2, e));
+                        (tb_, o, i, e) -> tb_.putShort(o + i * 2, e));
             });
     }
 
@@ -3663,8 +3662,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
                 (buf, off, v, vm) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     v.stOp(wb, off, vm,
-                            (wb_, o, i, e) ->
-                                wb_.putShort(o + i * 2, e));
+                            (wb_, o, i, e) -> wb_.putShort(o + i * 2, e));
                 });
     }
 

@@ -5102,16 +5102,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             (arr, off, v, vm) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 v.stOp(wb, off, vm,
-                        (tb_, o, i, e) ->
-#if[FP]
-#if[short]
-                            tb_.put{#if[byte]?(:Short(}o + i * $sizeInBytes$, e));
-#else[short]
-                            tb_.put{#if[byte]?(:$Type$(}o + i * $sizeInBytes$, e));
-#end[short]
-#else[FP]
-                            tb_.put{#if[byte]?(:$Type$(}o + i * $sizeInBytes$, e));
-#end[FP]
+                        (tb_, o, i, e) -> tb_.put{#if[byte]?(:$Elemtype$(}o + i * $sizeInBytes$, e));
             });
     }
 
@@ -5143,16 +5134,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 (buf, off, v, vm) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     v.stOp(wb, off, vm,
-                            (wb_, o, i, e) ->
-#if[FP]
-#if[short]
-                                wb_.put{#if[byte]?(:Short(}o + i * $sizeInBytes$, e));
-#else[short]
-                                wb_.put{#if[byte]?(:$Type$(}o + i * $sizeInBytes$, e));
-#end[short]
-#else[FP]
-                                wb_.put{#if[byte]?(:$Type$(}o + i * $sizeInBytes$, e));
-#end[FP]
+                            (wb_, o, i, e) -> wb_.put{#if[byte]?(:$Elemtype$(}o + i * $sizeInBytes$, e));
                 });
     }
 

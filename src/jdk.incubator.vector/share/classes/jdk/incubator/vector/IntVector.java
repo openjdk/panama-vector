@@ -3634,8 +3634,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
             (arr, off, v, vm) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 v.stOp(wb, off, vm,
-                        (tb_, o, i, e) ->
-                            tb_.putInt(o + i * 4, e));
+                        (tb_, o, i, e) -> tb_.putInt(o + i * 4, e));
             });
     }
 
@@ -3667,8 +3666,7 @@ public abstract class IntVector extends AbstractVector<Integer> {
                 (buf, off, v, vm) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     v.stOp(wb, off, vm,
-                            (wb_, o, i, e) ->
-                                wb_.putInt(o + i * 4, e));
+                            (wb_, o, i, e) -> wb_.putInt(o + i * 4, e));
                 });
     }
 

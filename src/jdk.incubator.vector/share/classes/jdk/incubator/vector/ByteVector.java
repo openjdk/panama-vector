@@ -3900,8 +3900,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
             (arr, off, v, vm) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 v.stOp(wb, off, vm,
-                        (tb_, o, i, e) ->
-                            tb_.put(o + i * 1, e));
+                        (tb_, o, i, e) -> tb_.put(o + i * 1, e));
             });
     }
 
@@ -3933,8 +3932,7 @@ public abstract class ByteVector extends AbstractVector<Byte> {
                 (buf, off, v, vm) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     v.stOp(wb, off, vm,
-                            (wb_, o, i, e) ->
-                                wb_.put(o + i * 1, e));
+                            (wb_, o, i, e) -> wb_.put(o + i * 1, e));
                 });
     }
 

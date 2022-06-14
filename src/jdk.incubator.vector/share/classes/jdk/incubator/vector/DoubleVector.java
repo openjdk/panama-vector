@@ -3514,8 +3514,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             (arr, off, v, vm) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 v.stOp(wb, off, vm,
-                        (tb_, o, i, e) ->
-                            tb_.putDouble(o + i * 8, e));
+                        (tb_, o, i, e) -> tb_.putDouble(o + i * 8, e));
             });
     }
 
@@ -3547,8 +3546,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                 (buf, off, v, vm) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     v.stOp(wb, off, vm,
-                            (wb_, o, i, e) ->
-                                wb_.putDouble(o + i * 8, e));
+                            (wb_, o, i, e) -> wb_.putDouble(o + i * 8, e));
                 });
     }
 

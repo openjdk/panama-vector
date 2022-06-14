@@ -3569,8 +3569,7 @@ public abstract class LongVector extends AbstractVector<Long> {
             (arr, off, v, vm) -> {
                 ByteBuffer wb = wrapper(arr, NATIVE_ENDIAN);
                 v.stOp(wb, off, vm,
-                        (tb_, o, i, e) ->
-                            tb_.putLong(o + i * 8, e));
+                        (tb_, o, i, e) -> tb_.putLong(o + i * 8, e));
             });
     }
 
@@ -3602,8 +3601,7 @@ public abstract class LongVector extends AbstractVector<Long> {
                 (buf, off, v, vm) -> {
                     ByteBuffer wb = wrapper(buf, NATIVE_ENDIAN);
                     v.stOp(wb, off, vm,
-                            (wb_, o, i, e) ->
-                                wb_.putLong(o + i * 8, e));
+                            (wb_, o, i, e) -> wb_.putLong(o + i * 8, e));
                 });
     }
 
