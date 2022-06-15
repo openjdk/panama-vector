@@ -43,6 +43,8 @@ public final class Halffloat extends Number implements Comparable<Halffloat>{
     public static final short POSITIVE_INFINITY = 0x7c00;
     /** Definitions for FP16 */
     public static final short NEGATIVE_INFINITY = (short)0xfc00;
+    /** Definitions for FP16*/
+    public static final short NaN = (short)0xffff;
     /** Definitions for FP16 */
     public static final int SIZE = 16;
     /** Definitions for FP16 */
@@ -70,17 +72,22 @@ public final class Halffloat extends Number implements Comparable<Halffloat>{
      */
     public float floatValue() {
         int val = (int)value;
-        float f = Float.intBitsToFloat(((val&0x8000)<<16) | (((val&0x7c00)+0x1C000)<<13) | ((val&0x03FF)<<13));
-        return f;
-    }
-
-    /**
-     * Returns true if the number passed is finite
-     * @param f float value to be checked
-     * @return boolean value
-     */
-    public static boolean isFinite(float f) {
-        return Math.abs(f) <= Halffloat.MAX_VALUE;
+        float result;
+        switch(val) {
+          case Halffloat.POSITIVE_INFINITY:
+               result = Float.POSITIVE_INFINITY;
+               break;
+          case Halffloat.NEGATIVE_INFINITY:
+               result = Float.NEGATIVE_INFINITY;
+               break;
+          case Halffloat.NaN:
+               result = Float.NaN;
+               break;
+          default:
+               result = (Float.intBitsToFloat(((val&0x8000)<<16) | (((val&0x7c00)+0x1C000)<<13) | ((val&0x03FF)<<13)));
+               break;
+       }
+       return result;
     }
 
     /**
@@ -89,7 +96,10 @@ public final class Halffloat extends Number implements Comparable<Halffloat>{
      * @return short value of float provided
     */
     public static short valueOf(float f) {
-        if (!isFinite(f)) return Halffloat.POSITIVE_INFINITY;
+        if (!Float.isFinite(f)) return Halffloat.POSITIVE_INFINITY;
+        if (Float.isNaN(f)) return Halffloat.NaN;
+
+        if (f == Float.NEGATIVE_INFINITY) return Halffloat.NEGATIVE_INFINITY;
 
         int val = Float.floatToIntBits(f);
         val = ((((val>>16)&0x8000)|((((val&0x7f800000)-0x38000000)>>13)&0x7c00)|((val>>13)&0x03ff)));
