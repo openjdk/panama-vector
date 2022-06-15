@@ -35,7 +35,7 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
  */
 @SuppressWarnings("serial")
 public final class Halffloat extends Number implements Comparable<Halffloat>{
-   /** Definitions for FP16*/
+    /** Definitions for FP16*/
     public static final short MAX_VALUE = 0x7bff;
     /** Definitions for FP16 */
     public static final short MIN_VALUE = 0x400;
@@ -45,6 +45,10 @@ public final class Halffloat extends Number implements Comparable<Halffloat>{
     public static final short NEGATIVE_INFINITY = (short)0xfc00;
     /** Definitions for FP16*/
     public static final short NaN = (short)0xffff;
+    /** Definitions for FP16*/
+    private static final float MAX_FLOAT_VALUE = 0x1.ffep+15f;
+    /** Definitions for FP16*/
+    private static final float MIN_FLOAT_VALUE = 0x1.004p-14f;
     /** Definitions for FP16 */
     public static final int SIZE = 16;
     /** Definitions for FP16 */
@@ -52,24 +56,35 @@ public final class Halffloat extends Number implements Comparable<Halffloat>{
     /** Definitions for FP16 */
     private final short value;
 
-     /**
-     * Returns a new Halffloat.
-     * @param f the species describing the element type
-     * @return short value of float provided
-    */    public static Halffloat valueOf(short f) {
+    /**
+    * Returns a new Halffloat.
+    * @param f the species describing the element type
+    * @return short value of float provided
+    */
+    public static Halffloat valueOf(short f) {
         return new Halffloat(f);
     }
+
     /**
-     * Halffloat constructor
-     * @param value short value assigned to halffloat
-     */
-     public Halffloat(short value) {
+    * Halffloat constructor
+    * @param value short value assigned to halffloat
+    */
+    public Halffloat(short value) {
         this.value = value;
     }
-     /**
-     * Returns floatvalue of a given short value.
-     * @return a float value of short provided
-     */
+
+    /**
+    * Halffloat constructor
+    * @param f float value assigned to halffloat
+    */
+    public Halffloat(float f) {
+        this.value = valueOf(f);
+    }
+
+    /**
+    * Returns floatvalue of a given short value.
+    * @return a float value of short provided
+    */
     public float floatValue() {
         int val = (int)value;
         float result;
@@ -96,10 +111,10 @@ public final class Halffloat extends Number implements Comparable<Halffloat>{
      * @return short value of float provided
     */
     public static short valueOf(float f) {
-        if (!Float.isFinite(f)) return Halffloat.POSITIVE_INFINITY;
+        if (f > Halffloat.MAX_FLOAT_VALUE) return Halffloat.POSITIVE_INFINITY;
         if (Float.isNaN(f)) return Halffloat.NaN;
 
-        if (f == Float.NEGATIVE_INFINITY) return Halffloat.NEGATIVE_INFINITY;
+        if (f < Halffloat.MIN_FLOAT_VALUE) return Halffloat.NEGATIVE_INFINITY;
 
         int val = Float.floatToIntBits(f);
         val = ((((val>>16)&0x8000)|((((val&0x7f800000)-0x38000000)>>13)&0x7c00)|((val>>13)&0x03ff)));
