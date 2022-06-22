@@ -255,6 +255,15 @@ abstract class AbstractVector<E> extends Vector<E> {
      */
     @Override
     @ForceInline
+    public HalffloatVector reinterpretAsHalffloats() {
+        return (HalffloatVector) asVectorRaw(LaneType.HALFFLOAT);
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    @ForceInline
     public final <F>
     Vector<F> convert(Conversion<E,F> conv, int part) {
         // Shape invariance is simple to implement.
@@ -521,6 +530,7 @@ abstract class AbstractVector<E> extends Vector<E> {
             return FloatVector.fromByteBuffer(rsp.check(float.class), bb, 0, bo, m.check(float.class)).check0(rsp);
         case LaneType.SK_DOUBLE:
             return DoubleVector.fromByteBuffer(rsp.check(double.class), bb, 0, bo, m.check(double.class)).check0(rsp);
+        // FIXME: Add lanetype for Halffloat
         default:
             throw new AssertionError(rsp.toString());
         }

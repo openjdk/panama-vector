@@ -4028,11 +4028,10 @@ public abstract class ShortVector extends AbstractVector<Short> {
     @ForceInline
     @Override
     public final
-    Vector<?>
+    HalffloatVector
     viewAsFloatingLanes() {
         LaneType flt = LaneType.SHORT.asFloating();
-        // asFloating() will throw UnsupportedOperationException for the unsupported type short
-        throw new AssertionError("Cannot reach here");
+        return (HalffloatVector) asVectorRaw(flt);
     }
 
     // ================================================
