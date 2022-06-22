@@ -530,6 +530,7 @@ abstract class AbstractVector<E> extends Vector<E> {
             return FloatVector.fromByteBuffer(rsp.check(float.class), bb, 0, bo, m.check(float.class)).check0(rsp);
         case LaneType.SK_DOUBLE:
             return DoubleVector.fromByteBuffer(rsp.check(double.class), bb, 0, bo, m.check(double.class)).check0(rsp);
+        // FIXME: Add lanetype for Halffloat
         default:
             throw new AssertionError(rsp.toString());
         }
