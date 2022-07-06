@@ -67,6 +67,12 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         }
     }
 
+    static byte firstNonZero(byte a, byte b) {
+        return Byte.compare(a, (byte) 0) != 0 ? a : b;
+    }
+
+    private static final byte CONST_SHIFT = Byte.SIZE / 2;
+
     @Param("1024")
     int size;
 
@@ -216,9 +222,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
     @Benchmark
     public void DIV(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -237,8 +240,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void DIVMasked(Blackhole bh) {
@@ -260,7 +261,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
 
     @Benchmark
     public void FIRST_NONZERO(Blackhole bh) {
@@ -298,7 +298,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
     @Benchmark
     public void AND(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -315,8 +314,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ANDMasked(Blackhole bh) {
@@ -337,8 +334,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void AND_NOT(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -355,8 +350,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void AND_NOTMasked(Blackhole bh) {
@@ -377,8 +370,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void OR(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -395,8 +386,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ORMasked(Blackhole bh) {
@@ -417,8 +406,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void XOR(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -435,8 +422,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void XORMasked(Blackhole bh) {
@@ -457,10 +442,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
     @Benchmark
     public void LSHL(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -477,8 +458,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void LSHLMasked(Blackhole bh) {
@@ -499,12 +478,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
     @Benchmark
     public void ASHR(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -521,8 +494,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ASHRMasked(Blackhole bh) {
@@ -543,12 +514,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
     @Benchmark
     public void LSHR(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -565,8 +530,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void LSHRMasked(Blackhole bh) {
@@ -587,12 +550,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
     @Benchmark
     public void LSHLShift(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -608,8 +565,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void LSHLMaskedShift(Blackhole bh) {
@@ -629,12 +584,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
     @Benchmark
     public void LSHRShift(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -650,8 +599,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void LSHRMaskedShift(Blackhole bh) {
@@ -671,12 +618,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
     @Benchmark
     public void ASHRShift(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -692,8 +633,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ASHRMaskedShift(Blackhole bh) {
@@ -713,8 +652,305 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
+    @Benchmark
+    public void ROR(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
 
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.ROR, bv).intoArray(r, i);
+            }
+        }
 
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void RORMasked(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.ROR, bv, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void ROL(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.ROL, bv).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void ROLMasked(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                ByteVector bv = ByteVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.ROL, bv, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void RORShift(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ROR, (int)b[i]).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void RORMaskedShift(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ROR, (int)b[i], vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void ROLShift(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ROL, (int)b[i]).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void ROLMaskedShift(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] b = fb.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ROL, (int)b[i], vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void LSHRShiftConst(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LSHR, CONST_SHIFT).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void LSHRMaskedShiftConst(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LSHR, CONST_SHIFT, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void LSHLShiftConst(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LSHL, CONST_SHIFT).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void LSHLMaskedShiftConst(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LSHL, CONST_SHIFT, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void ASHRShiftConst(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ASHR, CONST_SHIFT).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void ASHRMaskedShiftConst(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ASHR, CONST_SHIFT, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void RORShiftConst(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ROR, CONST_SHIFT).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void RORMaskedShiftConst(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ROR, CONST_SHIFT, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void ROLShiftConst(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ROL, CONST_SHIFT).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void ROLMaskedShiftConst(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ROL, CONST_SHIFT, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
 
     @Benchmark
     public void MIN(Blackhole bh) {
@@ -750,7 +986,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
     @Benchmark
     public void ANDLanes(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -765,8 +1000,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         }
         bh.consume(ra);
     }
-
-
 
     @Benchmark
     public void ANDMaskedLanes(Blackhole bh) {
@@ -785,8 +1018,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(ra);
     }
 
-
-
     @Benchmark
     public void ORLanes(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -801,8 +1032,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         }
         bh.consume(ra);
     }
-
-
 
     @Benchmark
     public void ORMaskedLanes(Blackhole bh) {
@@ -821,8 +1050,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(ra);
     }
 
-
-
     @Benchmark
     public void XORLanes(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -837,8 +1064,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         }
         bh.consume(ra);
     }
-
-
 
     @Benchmark
     public void XORMaskedLanes(Blackhole bh) {
@@ -856,7 +1081,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         }
         bh.consume(ra);
     }
-
 
     @Benchmark
     public void ADDLanes(Blackhole bh) {
@@ -931,7 +1155,7 @@ public class Byte512Vector extends AbstractVectorBenchmark {
             ra = Byte.MAX_VALUE;
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                ra = (byte)Math.min(ra, av.reduceLanes(VectorOperators.MIN));
+                ra = (byte) Math.min(ra, av.reduceLanes(VectorOperators.MIN));
             }
         }
         bh.consume(ra);
@@ -948,7 +1172,7 @@ public class Byte512Vector extends AbstractVectorBenchmark {
             ra = Byte.MAX_VALUE;
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                ra = (byte)Math.min(ra, av.reduceLanes(VectorOperators.MIN, vmask));
+                ra = (byte) Math.min(ra, av.reduceLanes(VectorOperators.MIN, vmask));
             }
         }
         bh.consume(ra);
@@ -963,7 +1187,7 @@ public class Byte512Vector extends AbstractVectorBenchmark {
             ra = Byte.MIN_VALUE;
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                ra = (byte)Math.max(ra, av.reduceLanes(VectorOperators.MAX));
+                ra = (byte) Math.max(ra, av.reduceLanes(VectorOperators.MAX));
             }
         }
         bh.consume(ra);
@@ -980,12 +1204,43 @@ public class Byte512Vector extends AbstractVectorBenchmark {
             ra = Byte.MIN_VALUE;
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                ra = (byte)Math.max(ra, av.reduceLanes(VectorOperators.MAX, vmask));
+                ra = (byte) Math.max(ra, av.reduceLanes(VectorOperators.MAX, vmask));
             }
         }
         bh.consume(ra);
     }
 
+    @Benchmark
+    public void FIRST_NONZEROLanes(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte ra = (byte) 0;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            ra = (byte) 0;
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                ra = firstNonZero(ra, av.reduceLanes(VectorOperators.FIRST_NONZERO));
+            }
+        }
+        bh.consume(ra);
+    }
+
+    @Benchmark
+    public void FIRST_NONZEROMaskedLanes(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        byte ra = (byte) 0;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            ra = (byte) 0;
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                ra = firstNonZero(ra, av.reduceLanes(VectorOperators.FIRST_NONZERO, vmask));
+            }
+        }
+        bh.consume(ra);
+    }
 
     @Benchmark
     public void anyTrue(Blackhole bh) {
@@ -1002,8 +1257,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void allTrue(Blackhole bh) {
         boolean[] mask = fm.apply(SPECIES.length());
@@ -1019,16 +1272,15 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
     @Benchmark
     public void withLane(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
         byte[] r = fr.apply(SPECIES.length());
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
+            for (int i = 0, j = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                av.withLane(0, (byte)4).intoArray(r, i);
+                av.withLane((j++ & (SPECIES.length()-1)), (byte)(65535+i)).intoArray(r, i);
             }
         }
 
@@ -1070,10 +1322,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
-
-
-
     @Benchmark
     public Object LT() {
         byte[] a = fa.apply(size);
@@ -1093,7 +1341,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object GT() {
         byte[] a = fa.apply(size);
@@ -1113,7 +1360,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object EQ() {
         byte[] a = fa.apply(size);
@@ -1133,7 +1379,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object NE() {
         byte[] a = fa.apply(size);
@@ -1153,7 +1398,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object LE() {
         byte[] a = fa.apply(size);
@@ -1173,7 +1417,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
     @Benchmark
     public Object GE() {
         byte[] a = fa.apply(size);
@@ -1193,8 +1436,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
-
     @Benchmark
     public Object UNSIGNED_LT() {
         byte[] a = fa.apply(size);
@@ -1214,9 +1455,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
-
-
     @Benchmark
     public Object UNSIGNED_GT() {
         byte[] a = fa.apply(size);
@@ -1236,9 +1474,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
-
-
     @Benchmark
     public Object UNSIGNED_LE() {
         byte[] a = fa.apply(size);
@@ -1258,9 +1493,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
-
-
     @Benchmark
     public Object UNSIGNED_GE() {
         byte[] a = fa.apply(size);
@@ -1280,7 +1512,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         return m;
     }
-
 
     @Benchmark
     public void blend(Blackhole bh) {
@@ -1315,6 +1546,55 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         }
 
         bh.consume(r);
+    }
+    @Benchmark
+    public Object compress() {
+        byte[] a = fa.apply(size);
+        byte[] r = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<Byte> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.compress(m).intoArray(r, i);
+            }
+        }
+
+        return r;
+    }
+
+    @Benchmark
+    public Object expand() {
+        byte[] a = fa.apply(size);
+        byte[] r = fb.apply(size);
+        boolean[] ms = fmt.apply(size);
+        VectorMask<Byte> m = VectorMask.fromArray(SPECIES, ms, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.expand(m).intoArray(r, i);
+            }
+        }
+
+        return r;
+    }
+
+    @Benchmark
+    public Object maskCompress() {
+        boolean[] ms = fmt.apply(size);
+        boolean[] rs = fmt.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0, j = 0; i < ms.length; i += SPECIES.length()) {
+                VectorMask<Byte> m = VectorMask.fromArray(SPECIES, ms, i);
+                m.compress().intoArray(rs, j);
+                j += m.trueCount();
+            }
+        }
+
+        return rs;
     }
 
     @Benchmark
@@ -1606,27 +1886,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     @Benchmark
     public void BITWISE_BLEND(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -1645,8 +1904,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void BITWISE_BLENDMasked(Blackhole bh) {
@@ -1668,7 +1925,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
 
     @Benchmark
     public void NEG(Blackhole bh) {
@@ -1734,7 +1990,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
     @Benchmark
     public void NOT(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -1749,8 +2004,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void NOTMasked(Blackhole bh) {
@@ -1769,8 +2022,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void ZOMO(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
@@ -1785,8 +2036,6 @@ public class Byte512Vector extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void ZOMOMasked(Blackhole bh) {
@@ -1805,53 +2054,15 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
     @Benchmark
-    public void gather(Blackhole bh) {
+    public void BIT_COUNT(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
-        int[] b    = fs.apply(a.length, SPECIES.length());
-        byte[] r = new byte[a.length];
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ByteVector av = ByteVector.fromArray(SPECIES, a, i, b, i);
-                av.intoArray(r, i);
-            }
-        }
-
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void gatherMasked(Blackhole bh) {
-        byte[] a = fa.apply(SPECIES.length());
-        int[] b    = fs.apply(a.length, SPECIES.length());
-        byte[] r = new byte[a.length];
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ByteVector av = ByteVector.fromArray(SPECIES, a, i, b, i, vmask);
-                av.intoArray(r, i);
-            }
-        }
-
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void scatter(Blackhole bh) {
-        byte[] a = fa.apply(SPECIES.length());
-        int[] b = fs.apply(a.length, SPECIES.length());
-        byte[] r = new byte[a.length];
+        byte[] r = fr.apply(SPECIES.length());
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                av.intoArray(r, i, b, i);
+                av.lanewise(VectorOperators.BIT_COUNT).intoArray(r, i);
             }
         }
 
@@ -1859,21 +2070,147 @@ public class Byte512Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void scatterMasked(Blackhole bh) {
+    public void BIT_COUNTMasked(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
-        int[] b = fs.apply(a.length, SPECIES.length());
-        byte[] r = fb.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                av.intoArray(r, i, b, i, vmask);
+                av.lanewise(VectorOperators.BIT_COUNT, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void TRAILING_ZEROS_COUNT(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void TRAILING_ZEROS_COUNTMasked(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void LEADING_ZEROS_COUNT(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void LEADING_ZEROS_COUNTMasked(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void REVERSE(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void REVERSEMasked(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void REVERSE_BYTES(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE_BYTES).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void REVERSE_BYTESMasked(Blackhole bh) {
+        byte[] a = fa.apply(SPECIES.length());
+        byte[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                ByteVector av = ByteVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.REVERSE_BYTES, vmask).intoArray(r, i);
             }
         }
 
         bh.consume(r);
     }
 }
-

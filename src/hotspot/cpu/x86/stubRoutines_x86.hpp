@@ -33,7 +33,7 @@ static bool returns_to_call_stub(address return_pc) { return return_pc == _call_
 
 enum platform_dependent_constants {
   code_size1 = 20000 LP64_ONLY(+10000),         // simply increase if too small (assembler will crash if too small)
-  code_size2 = 35300 LP64_ONLY(+32000)          // simply increase if too small (assembler will crash if too small)
+  code_size2 = 35300 LP64_ONLY(+35000)          // simply increase if too small (assembler will crash if too small)
 };
 
 class x86 {
@@ -137,6 +137,7 @@ class x86 {
 #ifdef _LP64
   static juint    _crc_by128_masks_avx512[];
   static juint    _crc_table_avx512[];
+  static juint    _crc32c_table_avx512[];
   static juint    _shuf_table_crc32_avx512[];
   static juint    _adler32_shuf0_table[];
   static juint    _adler32_shuf1_table[];
@@ -176,6 +177,12 @@ class x86 {
   static address _vector_short_shuffle_mask;
   static address _vector_long_shuffle_mask;
   static address _vector_iota_indices;
+  static address _vector_popcount_lut;
+  static address _vector_count_leading_zeros_lut;
+  static address _vector_reverse_bit_lut;
+  static address _vector_reverse_byte_perm_mask_long;
+  static address _vector_reverse_byte_perm_mask_int;
+  static address _vector_reverse_byte_perm_mask_short;
 #ifdef _LP64
   static juint _k256_W[];
   static address _k256_W_adr;
@@ -256,6 +263,7 @@ class x86 {
   static address crc_by128_masks_avx512_addr()  { return (address)_crc_by128_masks_avx512; }
   static address shuf_table_crc32_avx512_addr()  { return (address)_shuf_table_crc32_avx512; }
   static address crc_table_avx512_addr()  { return (address)_crc_table_avx512; }
+  static address crc32c_table_avx512_addr()  { return (address)_crc32c_table_avx512; }
   static address ghash_polynomial512_addr() { return _ghash_poly512_addr; }
 #endif // _LP64
   static address ghash_long_swap_mask_addr() { return _ghash_long_swap_mask_addr; }
@@ -338,6 +346,29 @@ class x86 {
     return _vector_iota_indices;
   }
 
+  static address vector_count_leading_zeros_lut() {
+    return _vector_count_leading_zeros_lut;
+  }
+
+  static address vector_reverse_bit_lut() {
+    return _vector_reverse_bit_lut;
+  }
+
+  static address vector_reverse_byte_perm_mask_long() {
+    return _vector_reverse_byte_perm_mask_long;
+  }
+
+  static address vector_reverse_byte_perm_mask_int() {
+    return _vector_reverse_byte_perm_mask_int;
+  }
+
+  static address vector_reverse_byte_perm_mask_short() {
+    return _vector_reverse_byte_perm_mask_short;
+  }
+
+  static address vector_popcount_lut() {
+    return _vector_popcount_lut;
+  }
 #ifdef _LP64
   static address k256_W_addr()    { return _k256_W_adr; }
   static address k512_W_addr()    { return _k512_W_addr; }

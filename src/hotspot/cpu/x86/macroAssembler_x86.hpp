@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 #define CPU_X86_MACROASSEMBLER_X86_HPP
 
 #include "asm/assembler.hpp"
+#include "asm/register.hpp"
 #include "code/vmreg.inline.hpp"
 #include "compiler/oopMap.hpp"
 #include "utilities/macros.hpp"
@@ -194,6 +195,7 @@ class MacroAssembler: public Assembler {
   void incrementq(AddressLiteral dst);
 
   // Alignment
+  void align32();
   void align64();
   void align(int modulus);
   void align(int modulus, int target);
@@ -344,14 +346,14 @@ class MacroAssembler: public Assembler {
   void access_load_at(BasicType type, DecoratorSet decorators, Register dst, Address src,
                       Register tmp1, Register thread_tmp);
   void access_store_at(BasicType type, DecoratorSet decorators, Address dst, Register src,
-                       Register tmp1, Register tmp2);
+                       Register tmp1, Register tmp2, Register tmp3);
 
   void load_heap_oop(Register dst, Address src, Register tmp1 = noreg,
                      Register thread_tmp = noreg, DecoratorSet decorators = 0);
   void load_heap_oop_not_null(Register dst, Address src, Register tmp1 = noreg,
                               Register thread_tmp = noreg, DecoratorSet decorators = 0);
   void store_heap_oop(Address dst, Register src, Register tmp1 = noreg,
-                      Register tmp2 = noreg, DecoratorSet decorators = 0);
+                      Register tmp2 = noreg, Register tmp3 = noreg, DecoratorSet decorators = 0);
 
   // Used for storing NULL. All other oop constants should be
   // stored using routines that take a jobject.
@@ -520,9 +522,34 @@ class MacroAssembler: public Assembler {
   // Round up to a power of two
   void round_to(Register reg, int modulus);
 
-  // Callee saved registers handling
-  void push_callee_saved_registers();
-  void pop_callee_saved_registers();
+private:
+  // General purpose and XMM registers potentially clobbered by native code; there
+  // is no need for FPU or AVX opmask related methods because C1/interpreter
+  // - we save/restore FPU state as a whole always
+  // - do not care about AVX-512 opmask
+  static RegSet call_clobbered_gp_registers();
+  static XMMRegSet call_clobbered_xmm_registers();
+
+  void push_set(XMMRegSet set, int offset);
+  void pop_set(XMMRegSet set, int offset);
+
+public:
+  void push_set(RegSet set, int offset = -1);
+  void pop_set(RegSet set, int offset = -1);
+
+  // Push and pop everything that might be clobbered by a native
+  // runtime call.
+  // Only save the lower 64 bits of each vector register.
+  // Additional registers can be excluded in a passed RegSet.
+  void push_call_clobbered_registers_except(RegSet exclude, bool save_fpu = true);
+  void pop_call_clobbered_registers_except(RegSet exclude, bool restore_fpu = true);
+
+  void push_call_clobbered_registers(bool save_fpu = true) {
+    push_call_clobbered_registers_except(RegSet(), save_fpu);
+  }
+  void pop_call_clobbered_registers(bool restore_fpu = true) {
+    pop_call_clobbered_registers_except(RegSet(), restore_fpu);
+  }
 
   // allocation
   void eden_allocate(
@@ -828,14 +855,14 @@ class MacroAssembler: public Assembler {
 
   // Jumps
 
-  // NOTE: these jumps tranfer to the effective address of dst NOT
+  // NOTE: these jumps transfer to the effective address of dst NOT
   // the address contained by dst. This is because this is more natural
   // for jumps/calls.
   void jump(AddressLiteral dst);
   void jump_cc(Condition cc, AddressLiteral dst);
 
   // 32bit can do a case table jump in one instruction but we no longer allow the base
-  // to be installed in the Address class. This jump will tranfers to the address
+  // to be installed in the Address class. This jump will transfer to the address
   // contained in the location described by entry (not the address of entry)
   void jump(ArrayAddress entry);
 
@@ -879,7 +906,7 @@ class MacroAssembler: public Assembler {
   void fld_x(AddressLiteral src);
 
   void ldmxcsr(Address src) { Assembler::ldmxcsr(src); }
-  void ldmxcsr(AddressLiteral src);
+  void ldmxcsr(AddressLiteral src, Register scratchReg = rscratch1);
 
 #ifdef _LP64
  private:
@@ -1116,6 +1143,8 @@ public:
   void vmovdqu(XMMRegister dst, Address src);
   void vmovdqu(XMMRegister dst, XMMRegister src);
   void vmovdqu(XMMRegister dst, AddressLiteral src, Register scratch_reg = rscratch1);
+  void vmovdqu(XMMRegister dst, AddressLiteral src, Register scratch_reg, int vector_len);
+
 
   // AVX512 Unaligned
   void evmovdqu(BasicType type, KRegister kmask, Address dst, XMMRegister src, int vector_len);
@@ -1172,6 +1201,9 @@ public:
   void movsd(Address dst, XMMRegister src)     { Assembler::movsd(dst, src); }
   void movsd(XMMRegister dst, Address src)     { Assembler::movsd(dst, src); }
   void movsd(XMMRegister dst, AddressLiteral src);
+
+  using Assembler::vmovddup;
+  void vmovddup(XMMRegister dst, AddressLiteral src, int vector_len, Register rscratch = rscratch1);
 
   void mulpd(XMMRegister dst, XMMRegister src)    { Assembler::mulpd(dst, src); }
   void mulpd(XMMRegister dst, Address src)        { Assembler::mulpd(dst, src); }
@@ -1281,6 +1313,14 @@ public:
   void vpbroadcastw(XMMRegister dst, XMMRegister src, int vector_len);
   void vpbroadcastw(XMMRegister dst, Address src, int vector_len) { Assembler::vpbroadcastw(dst, src, vector_len); }
 
+  using Assembler::vbroadcastsd;
+  void vbroadcastsd(XMMRegister dst, AddressLiteral src, int vector_len, Register rscratch = rscratch1);
+  void vpbroadcastq(XMMRegister dst, AddressLiteral src, int vector_len, Register rscratch = rscratch1);
+  void vpbroadcastq(XMMRegister dst, XMMRegister src, int vector_len) { Assembler::vpbroadcastq(dst, src, vector_len); }
+  void vpbroadcastq(XMMRegister dst, Address src, int vector_len) { Assembler::vpbroadcastq(dst, src, vector_len); }
+
+
+
   void vpcmpeqb(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
 
   void vpcmpeqw(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
@@ -1304,9 +1344,10 @@ public:
   void evpcmpw(KRegister kdst, KRegister mask, XMMRegister nds, AddressLiteral src,
                int comparison, bool is_signed, int vector_len, Register scratch_reg);
 
+  void evpbroadcast(BasicType type, XMMRegister dst, Register src, int vector_len);
 
   // Emit comparison instruction for the specified comparison predicate.
-  void vpcmpCCW(XMMRegister dst, XMMRegister nds, XMMRegister src, ComparisonPredicate cond, Width width, int vector_len, Register scratch_reg);
+  void vpcmpCCW(XMMRegister dst, XMMRegister nds, XMMRegister src, XMMRegister xtmp, ComparisonPredicate cond, Width width, int vector_len);
   void vpcmpCC(XMMRegister dst, XMMRegister nds, XMMRegister src, int cond_encoding, Width width, int vector_len);
 
   void vpmovzxbw(XMMRegister dst, Address src, int vector_len);
@@ -1485,8 +1526,14 @@ public:
   void vpxor(XMMRegister dst, XMMRegister nds, AddressLiteral src, int vector_len, Register scratch_reg = rscratch1);
 
   // Simple version for AVX2 256bit vectors
-  void vpxor(XMMRegister dst, XMMRegister src) { Assembler::vpxor(dst, dst, src, true); }
-  void vpxor(XMMRegister dst, Address src) { Assembler::vpxor(dst, dst, src, true); }
+  void vpxor(XMMRegister dst, XMMRegister src) {
+    assert(UseAVX >= 2, "Should be at least AVX2");
+    Assembler::vpxor(dst, dst, src, AVX_256bit);
+  }
+  void vpxor(XMMRegister dst, Address src) {
+    assert(UseAVX >= 2, "Should be at least AVX2");
+    Assembler::vpxor(dst, dst, src, AVX_256bit);
+  }
 
   void vpermd(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len) { Assembler::vpermd(dst, nds, src, vector_len); }
   void vpermd(XMMRegister dst, XMMRegister nds, AddressLiteral src, int vector_len, Register scratch_reg);
@@ -1932,23 +1979,28 @@ public:
   void byte_array_inflate(Register src, Register dst, Register len,
                           XMMRegister tmp1, Register tmp2, KRegister mask = knoreg);
 
-  void fill64_masked_avx(uint shift, Register dst, int disp,
+  void fill_masked(BasicType bt, Address dst, XMMRegister xmm, KRegister mask,
+                   Register length, Register temp, int vec_enc);
+
+  void fill64_masked(uint shift, Register dst, int disp,
                          XMMRegister xmm, KRegister mask, Register length,
                          Register temp, bool use64byteVector = false);
 
-  void fill32_masked_avx(uint shift, Register dst, int disp,
+  void fill32_masked(uint shift, Register dst, int disp,
                          XMMRegister xmm, KRegister mask, Register length,
                          Register temp);
 
-  void fill32_avx(Register dst, int disp, XMMRegister xmm);
+  void fill32(Register dst, int disp, XMMRegister xmm);
 
-  void fill64_avx(Register dst, int dis, XMMRegister xmm, bool use64byteVector = false);
+  void fill64(Register dst, int dis, XMMRegister xmm, bool use64byteVector = false);
 
 #ifdef _LP64
   void convert_f2i(Register dst, XMMRegister src);
   void convert_d2i(Register dst, XMMRegister src);
   void convert_f2l(Register dst, XMMRegister src);
   void convert_d2l(Register dst, XMMRegister src);
+  void round_double(Register dst, XMMRegister src, Register rtmp, Register rcx);
+  void round_float(Register dst, XMMRegister src, Register rtmp, Register rcx);
 
   void cache_wb(Address line);
   void cache_wbsync(bool is_pre);
@@ -1979,6 +2031,10 @@ public:
   void copy64_avx(Register dst, Register src, Register index, XMMRegister xmm,
                   bool conjoint, int shift = Address::times_1, int offset = 0,
                   bool use64byteVector = false);
+
+  void generate_fill_avx3(BasicType type, Register to, Register value,
+                          Register count, Register rtmp, XMMRegister xtmp);
+
 #endif // COMPILER2_OR_JVMCI
 
 #endif // _LP64

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,11 +24,11 @@
  */
 package jdk.incubator.vector;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
+import jdk.incubator.foreign.MemorySegment;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
 
@@ -357,6 +357,12 @@ final class Halffloat256Vector extends HalffloatVector {
         return super.testTemplate(Halffloat256Mask.class, op);  // specialize
     }
 
+    @Override
+    @ForceInline
+    public final Halffloat256Mask test(Test op, VectorMask<Halffloat> m) {
+        return super.testTemplate(Halffloat256Mask.class, op, (Halffloat256Mask) m);  // specialize
+    }
+
     // Specialized comparisons
 
     @Override
@@ -453,6 +459,22 @@ final class Halffloat256Vector extends HalffloatVector {
             super.rearrangeTemplate(Halffloat256Shuffle.class,
                                     (Halffloat256Shuffle) s,
                                     (Halffloat256Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Halffloat256Vector compress(VectorMask<Halffloat> m) {
+        return (Halffloat256Vector)
+            super.compressTemplate(Halffloat256Mask.class,
+                                   (Halffloat256Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Halffloat256Vector expand(VectorMask<Halffloat> m) {
+        return (Halffloat256Vector)
+            super.expandTemplate(Halffloat256Mask.class,
+                                   (Halffloat256Mask) m);  // specialize
     }
 
     @Override
@@ -660,6 +682,15 @@ final class Halffloat256Vector extends HalffloatVector {
             return xor(maskAll(true));
         }
 
+        @Override
+        @ForceInline
+        public Halffloat256Mask compress() {
+            return (Halffloat256Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+                Halffloat256Vector.class, Halffloat256Mask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+        }
+
+
         // Binary operations
 
         @Override
@@ -746,9 +777,9 @@ final class Halffloat256Vector extends HalffloatVector {
         @ForceInline
         /*package-private*/
         static Halffloat256Mask maskAll(boolean bit) {
-            return VectorSupport.broadcastCoerced(Halffloat256Mask.class, short.class, VLENGTH,
-                                                  (bit ? -1 : 0), null,
-                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
+            return VectorSupport.fromBitsCoerced(Halffloat256Mask.class, short.class, VLENGTH,
+                                                 (bit ? -1 : 0), MODE_BROADCAST, null,
+                                                 (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
         private static final Halffloat256Mask  TRUE_MASK = new Halffloat256Mask(true);
         private static final Halffloat256Mask FALSE_MASK = new Halffloat256Mask(false);
@@ -859,29 +890,15 @@ final class Halffloat256Vector extends HalffloatVector {
     @ForceInline
     @Override
     final
-    HalffloatVector fromByteArray0(byte[] a, int offset) {
-        return super.fromByteArray0Template(a, offset);  // specialize
+    HalffloatVector fromMemorySegment0(MemorySegment ms, long offset) {
+        return super.fromMemorySegment0Template(ms, offset);  // specialize
     }
 
     @ForceInline
     @Override
     final
-    HalffloatVector fromByteArray0(byte[] a, int offset, VectorMask<Halffloat> m) {
-        return super.fromByteArray0Template(Halffloat256Mask.class, a, offset, (Halffloat256Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    HalffloatVector fromByteBuffer0(ByteBuffer bb, int offset) {
-        return super.fromByteBuffer0Template(bb, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    HalffloatVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Halffloat> m) {
-        return super.fromByteBuffer0Template(Halffloat256Mask.class, bb, offset, (Halffloat256Mask) m);  // specialize
+    HalffloatVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Halffloat> m) {
+        return super.fromMemorySegment0Template(Halffloat256Mask.class, ms, offset, (Halffloat256Mask) m);  // specialize
     }
 
     @ForceInline
@@ -903,22 +920,8 @@ final class Halffloat256Vector extends HalffloatVector {
     @ForceInline
     @Override
     final
-    void intoByteArray0(byte[] a, int offset) {
-        super.intoByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset, VectorMask<Halffloat> m) {
-        super.intoByteArray0Template(Halffloat256Mask.class, a, offset, (Halffloat256Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Halffloat> m) {
-        super.intoByteBuffer0Template(Halffloat256Mask.class, bb, offset, (Halffloat256Mask) m);
+    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Halffloat> m) {
+        super.intoMemorySegment0Template(Halffloat256Mask.class, ms, offset, (Halffloat256Mask) m);
     }
 
     @ForceInline

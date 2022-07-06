@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,11 +24,11 @@
  */
 package jdk.incubator.vector;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
+import jdk.incubator.foreign.MemorySegment;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
 
@@ -370,6 +370,12 @@ final class Byte64Vector extends ByteVector {
         return super.testTemplate(Byte64Mask.class, op);  // specialize
     }
 
+    @Override
+    @ForceInline
+    public final Byte64Mask test(Test op, VectorMask<Byte> m) {
+        return super.testTemplate(Byte64Mask.class, op, (Byte64Mask) m);  // specialize
+    }
+
     // Specialized comparisons
 
     @Override
@@ -466,6 +472,22 @@ final class Byte64Vector extends ByteVector {
             super.rearrangeTemplate(Byte64Shuffle.class,
                                     (Byte64Shuffle) s,
                                     (Byte64Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Byte64Vector compress(VectorMask<Byte> m) {
+        return (Byte64Vector)
+            super.compressTemplate(Byte64Mask.class,
+                                   (Byte64Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Byte64Vector expand(VectorMask<Byte> m) {
+        return (Byte64Vector)
+            super.expandTemplate(Byte64Mask.class,
+                                   (Byte64Mask) m);  // specialize
     }
 
     @Override
@@ -655,6 +677,15 @@ final class Byte64Vector extends ByteVector {
             return xor(maskAll(true));
         }
 
+        @Override
+        @ForceInline
+        public Byte64Mask compress() {
+            return (Byte64Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+                Byte64Vector.class, Byte64Mask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+        }
+
+
         // Binary operations
 
         @Override
@@ -741,9 +772,9 @@ final class Byte64Vector extends ByteVector {
         @ForceInline
         /*package-private*/
         static Byte64Mask maskAll(boolean bit) {
-            return VectorSupport.broadcastCoerced(Byte64Mask.class, byte.class, VLENGTH,
-                                                  (bit ? -1 : 0), null,
-                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
+            return VectorSupport.fromBitsCoerced(Byte64Mask.class, byte.class, VLENGTH,
+                                                 (bit ? -1 : 0), MODE_BROADCAST, null,
+                                                 (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
         private static final Byte64Mask  TRUE_MASK = new Byte64Mask(true);
         private static final Byte64Mask FALSE_MASK = new Byte64Mask(false);
@@ -854,29 +885,15 @@ final class Byte64Vector extends ByteVector {
     @ForceInline
     @Override
     final
-    ByteVector fromByteArray0(byte[] a, int offset) {
-        return super.fromByteArray0Template(a, offset);  // specialize
+    ByteVector fromMemorySegment0(MemorySegment ms, long offset) {
+        return super.fromMemorySegment0Template(ms, offset);  // specialize
     }
 
     @ForceInline
     @Override
     final
-    ByteVector fromByteArray0(byte[] a, int offset, VectorMask<Byte> m) {
-        return super.fromByteArray0Template(Byte64Mask.class, a, offset, (Byte64Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    ByteVector fromByteBuffer0(ByteBuffer bb, int offset) {
-        return super.fromByteBuffer0Template(bb, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    ByteVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Byte> m) {
-        return super.fromByteBuffer0Template(Byte64Mask.class, bb, offset, (Byte64Mask) m);  // specialize
+    ByteVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Byte> m) {
+        return super.fromMemorySegment0Template(Byte64Mask.class, ms, offset, (Byte64Mask) m);  // specialize
     }
 
     @ForceInline
@@ -904,22 +921,8 @@ final class Byte64Vector extends ByteVector {
     @ForceInline
     @Override
     final
-    void intoByteArray0(byte[] a, int offset) {
-        super.intoByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset, VectorMask<Byte> m) {
-        super.intoByteArray0Template(Byte64Mask.class, a, offset, (Byte64Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Byte> m) {
-        super.intoByteBuffer0Template(Byte64Mask.class, bb, offset, (Byte64Mask) m);
+    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Byte> m) {
+        super.intoMemorySegment0Template(Byte64Mask.class, ms, offset, (Byte64Mask) m);
     }
 
 

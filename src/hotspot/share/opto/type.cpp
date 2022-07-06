@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1413,8 +1413,32 @@ const TypeInteger* TypeInteger::bottom(BasicType bt) {
   return TypeLong::LONG;
 }
 
+const TypeInteger* TypeInteger::zero(BasicType bt) {
+  if (bt == T_INT) {
+    return TypeInt::ZERO;
+  }
+  assert(bt == T_LONG, "basic type not an int or long");
+  return TypeLong::ZERO;
+}
+
+const TypeInteger* TypeInteger::one(BasicType bt) {
+  if (bt == T_INT) {
+    return TypeInt::ONE;
+  }
+  assert(bt == T_LONG, "basic type not an int or long");
+  return TypeLong::ONE;
+}
+
+const TypeInteger* TypeInteger::minus_1(BasicType bt) {
+  if (bt == T_INT) {
+    return TypeInt::MINUS_1;
+  }
+  assert(bt == T_LONG, "basic type not an int or long");
+  return TypeLong::MINUS_1;
+}
+
 //=============================================================================
-// Convience common pre-built types.
+// Convenience common pre-built types.
 const TypeInt *TypeInt::MAX;    // INT_MAX
 const TypeInt *TypeInt::MIN;    // INT_MIN
 const TypeInt *TypeInt::MINUS_1;// -1
@@ -1585,7 +1609,7 @@ const Type *TypeInt::narrow( const Type *old ) const {
   if (olo == min_jint && ohi == max_jint)  return this;
 
   if (_lo < olo || _hi > ohi)
-    return this;                // doesn't narrow; pretty wierd
+    return this;                // doesn't narrow; pretty weird
 
   // The new type narrows the old type, so look for a "death march".
   // See comments on PhaseTransform::saturate.
@@ -1851,7 +1875,7 @@ const Type *TypeLong::narrow( const Type *old ) const {
   if (olo == min_jlong && ohi == max_jlong)  return this;
 
   if (_lo < olo || _hi > ohi)
-    return this;                // doesn't narrow; pretty wierd
+    return this;                // doesn't narrow; pretty weird
 
   // The new type narrows the old type, so look for a "death march".
   // See comments on PhaseTransform::saturate.
@@ -2390,8 +2414,7 @@ const TypeVect *TypeVect::makemask(const Type* elem, uint length) {
   BasicType elem_bt = elem->array_element_basic_type();
   if (Matcher::has_predicated_vectors() &&
       Matcher::match_rule_supported_vector_masked(Op_VectorLoadMask, length, elem_bt)) {
-    const TypeVect* mtype = Matcher::predicate_reg_type(elem, length);
-    return (TypeVect*)(const_cast<TypeVect*>(mtype))->hashcons();
+    return TypeVectMask::make(elem, length);
   } else {
     return make(elem, length);
   }
@@ -2503,6 +2526,15 @@ bool TypeVectMask::eq(const Type *t) const {
 
 const Type *TypeVectMask::xdual() const {
   return new TypeVectMask(element_type()->dual(), length());
+}
+
+const TypeVectMask *TypeVectMask::make(const BasicType elem_bt, uint length) {
+  return make(get_const_basic_type(elem_bt), length);
+}
+
+const TypeVectMask *TypeVectMask::make(const Type* elem, uint length) {
+  const TypeVectMask* mtype = Matcher::predicate_reg_type(elem, length);
+  return (TypeVectMask*) const_cast<TypeVectMask*>(mtype)->hashcons();
 }
 
 //=============================================================================
@@ -3422,7 +3454,7 @@ intptr_t TypeOopPtr::get_con() const {
     // code and dereferenced at the time the nmethod is made.  Until that time,
     // it is not reasonable to do arithmetic with the addresses of oops (we don't
     // have access to the addresses!).  This does not seem to currently happen,
-    // but this assertion here is to help prevent its occurence.
+    // but this assertion here is to help prevent its occurrence.
     tty->print_cr("Found oop constant with non-zero offset");
     ShouldNotReachHere();
   }
@@ -4909,7 +4941,7 @@ intptr_t TypeMetadataPtr::get_con() const {
     // code and dereferenced at the time the nmethod is made.  Until that time,
     // it is not reasonable to do arithmetic with the addresses of oops (we don't
     // have access to the addresses!).  This does not seem to currently happen,
-    // but this assertion here is to help prevent its occurence.
+    // but this assertion here is to help prevent its occurrence.
     tty->print_cr("Found oop constant with non-zero offset");
     ShouldNotReachHere();
   }
@@ -5141,7 +5173,7 @@ intptr_t TypeKlassPtr::get_con() const {
     // code and dereferenced at the time the nmethod is made.  Until that time,
     // it is not reasonable to do arithmetic with the addresses of oops (we don't
     // have access to the addresses!).  This does not seem to currently happen,
-    // but this assertion here is to help prevent its occurence.
+    // but this assertion here is to help prevent its occurrence.
     tty->print_cr("Found oop constant with non-zero offset");
     ShouldNotReachHere();
   }
