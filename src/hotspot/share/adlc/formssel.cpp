@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -612,7 +612,7 @@ bool InstructForm::needs_anti_dependence_check(FormDict &globals) const {
         strcmp(_matrule->_rChild->_opType,"StrEquals"  )==0 ||
         strcmp(_matrule->_rChild->_opType,"StrIndexOf" )==0 ||
         strcmp(_matrule->_rChild->_opType,"StrIndexOfChar" )==0 ||
-        strcmp(_matrule->_rChild->_opType,"HasNegatives" )==0 ||
+        strcmp(_matrule->_rChild->_opType,"CountPositives" )==0 ||
         strcmp(_matrule->_rChild->_opType,"AryEq"      )==0 ))
     return true;
 
@@ -902,7 +902,7 @@ uint InstructForm::oper_input_base(FormDict &globals) {
         strcmp(_matrule->_rChild->_opType,"StrCompressedCopy" )==0 ||
         strcmp(_matrule->_rChild->_opType,"StrIndexOf")==0 ||
         strcmp(_matrule->_rChild->_opType,"StrIndexOfChar")==0 ||
-        strcmp(_matrule->_rChild->_opType,"HasNegatives")==0 ||
+        strcmp(_matrule->_rChild->_opType,"CountPositives")==0 ||
         strcmp(_matrule->_rChild->_opType,"EncodeISOArray")==0)) {
         // String.(compareTo/equals/indexOf) and Arrays.equals
         // and sun.nio.cs.iso8859_1$Encoder.EncodeISOArray
@@ -1354,7 +1354,7 @@ void InstructForm::rep_var_format(FILE *fp, const char *rep_var) {
   }
 }
 
-// Seach through operands to determine parameters unique positions.
+// Search through operands to determine parameters unique positions.
 void InstructForm::set_unique_opnds() {
   uint* uniq_idx = NULL;
   uint  nopnds = num_opnds();
@@ -1366,7 +1366,7 @@ void InstructForm::set_unique_opnds() {
     // component back to an index and any DEF always goes at 0 so the
     // length of the array has to be the number of components + 1.
     _uniq_idx_length = _components.count() + 1;
-    uniq_idx = (uint*) AllocateHeap(sizeof(uint) * _uniq_idx_length);
+    uniq_idx = (uint*) AdlAllocateHeap(sizeof(uint) * _uniq_idx_length);
     for (i = 0; i < _uniq_idx_length; i++) {
       uniq_idx[i] = i;
     }
@@ -3476,7 +3476,7 @@ void MatchNode::build_internalop( ) {
   rstr = (_rChild) ? ((_rChild->_internalop) ?
                        _rChild->_internalop : _rChild->_opType) : "";
   len += (int)strlen(lstr) + (int)strlen(rstr);
-  subtree = (char *)AllocateHeap(len);
+  subtree = (char *)AdlAllocateHeap(len);
   sprintf(subtree,"_%s_%s_%s", _opType, lstr, rstr);
   // Hash the subtree string in _internalOps; if a name exists, use it
   iop = (char *)_AD._internalOps[subtree];
@@ -3926,7 +3926,7 @@ void MatchRule::matchrule_swap_commutative_op(const char* instr_ident, int count
   MatchRule* clone = new MatchRule(_AD, this);
   // Swap operands of commutative operation
   ((MatchNode*)clone)->swap_commutative_op(true, count);
-  char* buf = (char*) AllocateHeap(strlen(instr_ident) + 4);
+  char* buf = (char*) AdlAllocateHeap(strlen(instr_ident) + 4);
   sprintf(buf, "%s_%d", instr_ident, match_rules_cnt++);
   clone->_result = buf;
 
@@ -4146,6 +4146,7 @@ bool MatchRule::is_ideal_membar() const {
     !strcmp(_opType,"MemBarReleaseLock") ||
     !strcmp(_opType,"LoadFence" ) ||
     !strcmp(_opType,"StoreFence") ||
+    !strcmp(_opType,"StoreStoreFence") ||
     !strcmp(_opType,"MemBarVolatile") ||
     !strcmp(_opType,"MemBarCPUOrder") ||
     !strcmp(_opType,"MemBarStoreStore") ||
@@ -4211,10 +4212,11 @@ bool MatchRule::is_vector() const {
     "CMoveVD", "CMoveVF",
     "DivVF","DivVD",
     "AbsVB","AbsVS","AbsVI","AbsVL","AbsVF","AbsVD",
-    "NegVF","NegVD","NegVI",
+    "NegVF","NegVD","NegVI","NegVL",
     "SqrtVD","SqrtVF",
     "AndV" ,"XorV" ,"OrV",
     "MaxV", "MinV",
+    "CompressV", "ExpandV", "CompressM",
     "AddReductionVI", "AddReductionVL",
     "AddReductionVF", "AddReductionVD",
     "MulReductionVI", "MulReductionVL",
@@ -4226,17 +4228,20 @@ bool MatchRule::is_vector() const {
     "LShiftVB","LShiftVS","LShiftVI","LShiftVL",
     "RShiftVB","RShiftVS","RShiftVI","RShiftVL",
     "URShiftVB","URShiftVS","URShiftVI","URShiftVL",
-    "ReplicateB","ReplicateS","ReplicateI","ReplicateL","ReplicateF","ReplicateD",
+    "ReplicateB","ReplicateS","ReplicateI","ReplicateL","ReplicateF","ReplicateD", "ReverseV", "ReverseBytesV",
     "RoundDoubleModeV","RotateLeftV" , "RotateRightV", "LoadVector","StoreVector",
     "LoadVectorGather", "StoreVectorScatter", "LoadVectorGatherMasked", "StoreVectorScatterMasked",
     "VectorTest", "VectorLoadMask", "VectorStoreMask", "VectorBlend", "VectorInsert",
     "VectorRearrange","VectorLoadShuffle", "VectorLoadConst",
     "VectorCastB2X", "VectorCastS2X", "VectorCastI2X",
     "VectorCastL2X", "VectorCastF2X", "VectorCastD2X",
-    "VectorMaskWrapper", "VectorMaskCmp", "VectorReinterpret","LoadVectorMasked","StoreVectorMasked",
-    "FmaVD", "FmaVF","PopCountVI",
+    "VectorUCastB2X", "VectorUCastS2X", "VectorUCastI2X",
+    "VectorMaskWrapper","VectorMaskCmp","VectorReinterpret","LoadVectorMasked","StoreVectorMasked",
+    "FmaVD","FmaVF","PopCountVI", "PopCountVL", "VectorLongToMask",
+    "CountLeadingZerosV", "CountTrailingZerosV",
     // Next are vector mask ops.
     "MaskAll", "AndVMask", "OrVMask", "XorVMask", "VectorMaskCast",
+    "RoundVF", "RoundVD",
     // Next are not supported currently.
     "PackB","PackS","PackI","PackL","PackF","PackD","Pack2L","Pack2D",
     "ExtractB","ExtractUB","ExtractC","ExtractS","ExtractI","ExtractL","ExtractF","ExtractD"

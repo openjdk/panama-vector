@@ -147,6 +147,7 @@ public class CachedRowSetWriter implements TransactionalWriter, Serializable {
  *
  * @serial
  */
+    @SuppressWarnings("serial") // Array component type is not Serializable
     private Object[] params;
 
 /**
@@ -275,7 +276,7 @@ public class CachedRowSetWriter implements TransactionalWriter, Serializable {
         // We assume caller is a CachedRowSet
         CachedRowSetImpl crs = (CachedRowSetImpl)caller;
         // crsResolve = new CachedRowSetImpl();
-        this.crsResolve = new CachedRowSetImpl();;
+        this.crsResolve = new CachedRowSetImpl();
 
         // The reader is registered with the writer at design time.
         // This is not required, in general.  The reader has logic

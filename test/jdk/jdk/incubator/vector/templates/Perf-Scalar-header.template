@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,6 +39,10 @@ import org.openjdk.jmh.infra.Blackhole;
 @Fork(value = 1, jvmArgsPrepend = {"--add-modules=jdk.incubator.vector"})
 public class $Type$Scalar extends AbstractVectorBenchmark {
     static final int INVOC_COUNT = 1; // To align with vector benchmarks.
+
+#if[BITWISE]
+    private static final $type$ CONST_SHIFT = $Boxtype$.SIZE / 2;
+#end[BITWISE]
 
     @Param("1024")
     int size;
@@ -122,3 +126,72 @@ public class $Type$Scalar extends AbstractVectorBenchmark {
         return $Boxtype$.compareUnsigned(a, b) >= 0;
     }
 #end[!FP]
+
+#if[BITWISE]
+    static $type$ ROL_scalar($type$ a, $type$ b) {
+#if[intOrLong]
+        return $Wideboxtype$.rotateLeft(a, ((int)b));
+#else[intOrLong]
+#if[short]
+        return (short)(((((short)a) & 0xFFFF) << (b & 15)) | ((((short)a) & 0xFFFF) >>> (16 - (b & 15))));
+#else[short]
+        return (byte)(((((byte)a) & 0xFF) << (b & 7)) | ((((byte)a) & 0xFF) >>> (8 - (b & 7))));
+#end[short]
+#end[intOrLong]
+    }
+
+    static $type$ ROR_scalar($type$ a, $type$ b) {
+#if[intOrLong]
+        return $Wideboxtype$.rotateRight(a, ((int)b));
+#else[intOrLong]
+#if[short]
+        return (short)(((((short)a) & 0xFFFF) >>> (b & 15)) | ((((short)a) & 0xFFFF) << (16 - (b & 15))));
+#else[short]
+        return (byte)(((((byte)a) & 0xFF) >>> (b & 7)) | ((((byte)a) & 0xFF) << (8 - (b & 7))));
+#end[short]
+#end[intOrLong]
+    }
+
+    static $type$ TRAILING_ZEROS_COUNT_scalar($type$ a) {
+#if[intOrLong]
+        return $Wideboxtype$.numberOfTrailingZeros(a);
+#else[intOrLong]
+#if[short]
+        return (short) (a != 0 ? Integer.numberOfTrailingZeros(a) : 16);
+#else[short]
+        return (byte) (a != 0 ? Integer.numberOfTrailingZeros(a) : 8);
+#end[short]
+#end[intOrLong]
+    }
+
+    static $type$ LEADING_ZEROS_COUNT_scalar($type$ a) {
+#if[intOrLong]
+        return $Wideboxtype$.numberOfLeadingZeros(a);
+#else[intOrLong]
+#if[short]
+        return (short) (a >= 0 ? Integer.numberOfLeadingZeros(a) - 16 : 0);
+#else[short]
+        return (byte) (a >= 0 ? Integer.numberOfLeadingZeros(a) - 24 : 0);
+#end[short]
+#end[intOrLong]
+    }
+
+    static $type$ REVERSE_scalar($type$ a) {
+#if[intOrLong]
+        return $Wideboxtype$.reverse(a);
+#else[intOrLong]
+#if[short]
+        $type$ b = ROL_scalar(a, ($type$) 8);
+        b = (short)(((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
+        b = (short)(((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
+        b = (short)(((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
+        return b;
+#else[short]
+        $type$ b = ROL_scalar(a, ($type$) 4);
+        b = (byte)(((b & 0x55) << 1) | ((b & 0xAA) >>> 1));
+        b = (byte)(((b & 0x33) << 2) | ((b & 0xCC) >>> 2));
+        return b;
+#end[short]
+#end[intOrLong]
+    }
+#end[BITWISE]

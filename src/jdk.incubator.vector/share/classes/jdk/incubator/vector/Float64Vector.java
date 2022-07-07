@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,11 +24,11 @@
  */
 package jdk.incubator.vector;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
+import jdk.incubator.foreign.MemorySegment;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
 
@@ -357,6 +357,12 @@ final class Float64Vector extends FloatVector {
         return super.testTemplate(Float64Mask.class, op);  // specialize
     }
 
+    @Override
+    @ForceInline
+    public final Float64Mask test(Test op, VectorMask<Float> m) {
+        return super.testTemplate(Float64Mask.class, op, (Float64Mask) m);  // specialize
+    }
+
     // Specialized comparisons
 
     @Override
@@ -453,6 +459,22 @@ final class Float64Vector extends FloatVector {
             super.rearrangeTemplate(Float64Shuffle.class,
                                     (Float64Shuffle) s,
                                     (Float64Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Float64Vector compress(VectorMask<Float> m) {
+        return (Float64Vector)
+            super.compressTemplate(Float64Mask.class,
+                                   (Float64Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Float64Vector expand(VectorMask<Float> m) {
+        return (Float64Vector)
+            super.expandTemplate(Float64Mask.class,
+                                   (Float64Mask) m);  // specialize
     }
 
     @Override
@@ -632,6 +654,15 @@ final class Float64Vector extends FloatVector {
             return xor(maskAll(true));
         }
 
+        @Override
+        @ForceInline
+        public Float64Mask compress() {
+            return (Float64Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+                Float64Vector.class, Float64Mask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+        }
+
+
         // Binary operations
 
         @Override
@@ -718,9 +749,9 @@ final class Float64Vector extends FloatVector {
         @ForceInline
         /*package-private*/
         static Float64Mask maskAll(boolean bit) {
-            return VectorSupport.broadcastCoerced(Float64Mask.class, int.class, VLENGTH,
-                                                  (bit ? -1 : 0), null,
-                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
+            return VectorSupport.fromBitsCoerced(Float64Mask.class, int.class, VLENGTH,
+                                                 (bit ? -1 : 0), MODE_BROADCAST, null,
+                                                 (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
         private static final Float64Mask  TRUE_MASK = new Float64Mask(true);
         private static final Float64Mask FALSE_MASK = new Float64Mask(false);
@@ -824,29 +855,15 @@ final class Float64Vector extends FloatVector {
     @ForceInline
     @Override
     final
-    FloatVector fromByteArray0(byte[] a, int offset) {
-        return super.fromByteArray0Template(a, offset);  // specialize
+    FloatVector fromMemorySegment0(MemorySegment ms, long offset) {
+        return super.fromMemorySegment0Template(ms, offset);  // specialize
     }
 
     @ForceInline
     @Override
     final
-    FloatVector fromByteArray0(byte[] a, int offset, VectorMask<Float> m) {
-        return super.fromByteArray0Template(Float64Mask.class, a, offset, (Float64Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    FloatVector fromByteBuffer0(ByteBuffer bb, int offset) {
-        return super.fromByteBuffer0Template(bb, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    FloatVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Float> m) {
-        return super.fromByteBuffer0Template(Float64Mask.class, bb, offset, (Float64Mask) m);  // specialize
+    FloatVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Float> m) {
+        return super.fromMemorySegment0Template(Float64Mask.class, ms, offset, (Float64Mask) m);  // specialize
     }
 
     @ForceInline
@@ -874,22 +891,8 @@ final class Float64Vector extends FloatVector {
     @ForceInline
     @Override
     final
-    void intoByteArray0(byte[] a, int offset) {
-        super.intoByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset, VectorMask<Float> m) {
-        super.intoByteArray0Template(Float64Mask.class, a, offset, (Float64Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Float> m) {
-        super.intoByteBuffer0Template(Float64Mask.class, bb, offset, (Float64Mask) m);
+    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Float> m) {
+        super.intoMemorySegment0Template(Float64Mask.class, ms, offset, (Float64Mask) m);
     }
 
 

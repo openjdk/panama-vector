@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -237,7 +237,7 @@ class NativeGSSContext implements GSSContextSpi {
     // Constructor for imported context
     // Warning: called by NativeUtil.c
     NativeGSSContext(long pCtxt, GSSLibStub stub) throws GSSException {
-        assert(pContext != 0);
+        assert(pCtxt != 0);
         pContext = pCtxt;
         cStub = stub;
 
@@ -639,7 +639,7 @@ class NativeGSSContext implements GSSContextSpi {
         return isInitiator;
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings("removal")
     protected void finalize() throws Throwable {
         dispose();
     }

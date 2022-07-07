@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,7 @@ package jdk.javadoc.internal.doclets.toolkit.taglets;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
@@ -51,13 +52,7 @@ import jdk.javadoc.internal.doclets.toolkit.util.Utils;
 
 /**
  * The interface for the taglet writer.
- *
- *  <p><b>This is NOT part of any supported API.
- *  If you write code that depends on this, you do so at your own risk.
- *  This code and its internal interfaces are subject to change or
- *  deletion without notice.</b>
  */
-
 public abstract class TagletWriter {
 
     /**
@@ -181,10 +176,13 @@ public abstract class TagletWriter {
      *
      * @param element    The element that owns the doc comment
      * @param snippetTag the snippet tag
+     * @param id         the value of the id attribute, or null if not defined
+     * @param lang       the value of the lang attribute, or null if not defined
      *
      * @return the output
      */
-    protected abstract Content snippetTagOutput(Element element, SnippetTree snippetTag, StyledText text);
+    protected abstract Content snippetTagOutput(Element element, SnippetTree snippetTag, StyledText text,
+                                                String id, String lang);
 
     /**
      * Returns the output for a {@code {@systemProperty...}} tag.
@@ -235,6 +233,17 @@ public abstract class TagletWriter {
      */
     protected abstract Content valueTagOutput(VariableElement field,
         String constantVal, boolean includeLink);
+
+    /**
+     * Returns the output for an invalid tag. The returned content uses special styling to
+     * highlight the problem. Depending on the presence of the {@code detail} string the method
+     * returns a plain text span or an expandable component.
+     *
+     * @param summary the single-line summary message
+     * @param detail the optional detail message which may contain preformatted text
+     * @return the output
+     */
+    protected abstract Content invalidTagOutput(String summary, Optional<String> detail);
 
     /**
      * Returns the main type element of the current page or null for pages that don't have one.

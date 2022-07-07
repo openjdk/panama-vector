@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -56,11 +56,12 @@
 #include "runtime/orderAccess.hpp"
 #include "runtime/osThread.hpp"
 #include "runtime/perfMemory.hpp"
-#include "runtime/safefetch.inline.hpp"
+#include "runtime/safefetch.hpp"
 #include "runtime/safepointMechanism.hpp"
 #include "runtime/semaphore.inline.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/statSampler.hpp"
+#include "runtime/stubRoutines.hpp"
 #include "runtime/thread.inline.hpp"
 #include "runtime/threadCritical.hpp"
 #include "runtime/timer.hpp"
@@ -529,7 +530,7 @@ static unsigned __stdcall thread_native_entry(Thread* thread) {
     res = 20115;    // java thread
   }
 
-  log_info(os, thread)("Thread is alive (tid: " UINTX_FORMAT ").", os::current_thread_id());
+  log_info(os, thread)("Thread is alive (tid: " UINTX_FORMAT ", stacksize: " SIZE_FORMAT "k).", os::current_thread_id(), thread->stack_size() / 1024);
 
 #ifdef USE_VECTORED_EXCEPTION_HANDLING
   // Any exception is caught by the Vectored Exception Handler, so VM can
@@ -568,7 +569,7 @@ static unsigned __stdcall thread_native_entry(Thread* thread) {
 static OSThread* create_os_thread(Thread* thread, HANDLE thread_handle,
                                   int thread_id) {
   // Allocate the OSThread object
-  OSThread* osthread = new OSThread(NULL, NULL);
+  OSThread* osthread = new OSThread();
   if (osthread == NULL) return NULL;
 
   // Initialize the JDK library's interrupt event.
@@ -671,10 +672,13 @@ bool os::create_thread(Thread* thread, ThreadType thr_type,
   unsigned thread_id;
 
   // Allocate the OSThread object
-  OSThread* osthread = new OSThread(NULL, NULL);
+  OSThread* osthread = new OSThread();
   if (osthread == NULL) {
     return false;
   }
+
+  // Initial state is ALLOCATED but not INITIALIZED
+  osthread->set_state(ALLOCATED);
 
   // Initialize the JDK library's interrupt event.
   // This should really be done when OSThread is constructed,
@@ -777,7 +781,7 @@ bool os::create_thread(Thread* thread, ThreadType thr_type,
   osthread->set_thread_handle(thread_handle);
   osthread->set_thread_id(thread_id);
 
-  // Initial thread state is INITIALIZED, not SUSPENDED
+  // Thread state now is INITIALIZED, not SUSPENDED
   osthread->set_state(INITIALIZED);
 
   // The thread is returned suspended (in state INITIALIZED), and is started higher up in the call chain
@@ -1550,7 +1554,7 @@ void * os::dll_load(const char *name, char *ebuf, int ebuflen) {
      ||
      // Read location of signature
      (sizeof(signature_offset) !=
-     (os::read(fd, (void*)&signature_offset, sizeof(signature_offset))))
+     (::read(fd, (void*)&signature_offset, sizeof(signature_offset))))
      ||
      // Go to COFF File Header in dll
      // that is located after "signature" (4 bytes long)
@@ -1559,7 +1563,7 @@ void * os::dll_load(const char *name, char *ebuf, int ebuflen) {
      ||
      // Read field that contains code of architecture
      // that dll was built for
-     (sizeof(lib_arch) != (os::read(fd, (void*)&lib_arch, sizeof(lib_arch))))
+     (sizeof(lib_arch) != (::read(fd, (void*)&lib_arch, sizeof(lib_arch))))
     );
 
   ::close(fd);
@@ -1858,7 +1862,11 @@ void os::win32::print_windows_version(outputStream* st) {
 
   case 10000:
     if (is_workstation) {
-      st->print("10");
+      if (build_number >= 22000) {
+        st->print("11");
+      } else {
+        st->print("10");
+      }
     } else {
       // distinguish Windows Server by build number
       // - 2016 GA 10/2016 build: 14393
@@ -2486,11 +2494,6 @@ LONG WINAPI topLevelExceptionFilter(struct _EXCEPTION_POINTERS* exceptionInfo) {
   address pc = (address) exceptionInfo->ContextRecord->Eip;
 #endif
   Thread* t = Thread::current_or_null_safe();
-
-  // Handle SafeFetch32 and SafeFetchN exceptions.
-  if (StubRoutines::is_safefetch_fault(pc)) {
-    return Handle_Exception(exceptionInfo, StubRoutines::continuation_for_safefetch_fault(pc));
-  }
 
 #ifndef _WIN64
   // Execution protection violation - win32 running on AMD64 only
@@ -4303,7 +4306,7 @@ jint os::init_2(void) {
 
   JavaThread::set_stack_size_at_create(stack_commit_size);
 
-  // Calculate theoretical max. size of Threads to guard gainst artifical
+  // Calculate theoretical max. size of Threads to guard gainst artificial
   // out-of-memory situations, where all available address-space has been
   // reserved by thread stacks.
   assert(actual_reserve_size != 0, "Must have a stack");
@@ -4451,7 +4454,7 @@ static errno_t get_full_path(LPCWSTR unicode_path, LPWSTR* full_path) {
   return ERROR_SUCCESS;
 }
 
-static void set_path_prefix(char* buf, LPWSTR* prefix, int* prefix_off, bool* needs_fullpath) {
+static void set_path_prefix(char* buf, LPCWSTR* prefix, int* prefix_off, bool* needs_fullpath) {
   *prefix_off = 0;
   *needs_fullpath = true;
 
@@ -4487,7 +4490,7 @@ static wchar_t* wide_abs_unc_path(char const* path, errno_t & err, int additiona
   strncpy(buf, path, buf_len);
   os::native_path(buf);
 
-  LPWSTR prefix = NULL;
+  LPCWSTR prefix = NULL;
   int prefix_off = 0;
   bool needs_fullpath = true;
   set_path_prefix(buf, &prefix, &prefix_off, &needs_fullpath);
@@ -4652,7 +4655,7 @@ jlong os::current_thread_cpu_time(bool user_sys_cpu_time) {
 }
 
 jlong os::thread_cpu_time(Thread* thread, bool user_sys_cpu_time) {
-  // This code is copy from clasic VM -> hpi::sysThreadCPUTime
+  // This code is copy from classic VM -> hpi::sysThreadCPUTime
   // If this function changes, os::is_thread_cpu_time_supported() should too
   FILETIME CreationTime;
   FILETIME ExitTime;
@@ -4698,7 +4701,7 @@ bool os::is_thread_cpu_time_supported() {
   }
 }
 
-// Windows does't provide a loadavg primitive so this is stubbed out for now.
+// Windows doesn't provide a loadavg primitive so this is stubbed out for now.
 // It does have primitives (PDH API) to get CPU usage and run queue length.
 // "\\Processor(_Total)\\% Processor Time", "\\System\\Processor Queue Length"
 // If we wanted to implement loadavg on Windows, we have a few options:
@@ -4747,16 +4750,12 @@ int os::open(const char *path, int oflag, int mode) {
   return fd;
 }
 
-FILE* os::open(int fd, const char* mode) {
+FILE* os::fdopen(int fd, const char* mode) {
   return ::_fdopen(fd, mode);
 }
 
-size_t os::write(int fd, const void *buf, unsigned int nBytes) {
+ssize_t os::write(int fd, const void *buf, unsigned int nBytes) {
   return ::write(fd, buf, nBytes);
-}
-
-int os::close(int fd) {
-  return ::close(fd);
 }
 
 void os::exit(int num) {
@@ -4978,158 +4977,12 @@ int os::get_fileno(FILE* fp) {
   return _fileno(fp);
 }
 
-// This code is a copy of JDK's sysSync
-// from src/windows/hpi/src/sys_api_md.c
-// except for the legacy workaround for a bug in Win 98
-
-int os::fsync(int fd) {
-  HANDLE handle = (HANDLE)::_get_osfhandle(fd);
-
-  if ((!::FlushFileBuffers(handle)) &&
-      (GetLastError() != ERROR_ACCESS_DENIED)) {
-    // from winerror.h
-    return -1;
-  }
-  return 0;
-}
-
-static int nonSeekAvailable(int, long *);
-static int stdinAvailable(int, long *);
-
-// This code is a copy of JDK's sysAvailable
-// from src/windows/hpi/src/sys_api_md.c
-
-int os::available(int fd, jlong *bytes) {
-  jlong cur, end;
-  struct _stati64 stbuf64;
-
-  if (::_fstati64(fd, &stbuf64) >= 0) {
-    int mode = stbuf64.st_mode;
-    if (S_ISCHR(mode) || S_ISFIFO(mode)) {
-      int ret;
-      long lpbytes;
-      if (fd == 0) {
-        ret = stdinAvailable(fd, &lpbytes);
-      } else {
-        ret = nonSeekAvailable(fd, &lpbytes);
-      }
-      (*bytes) = (jlong)(lpbytes);
-      return ret;
-    }
-    if ((cur = ::_lseeki64(fd, 0L, SEEK_CUR)) == -1) {
-      return FALSE;
-    } else if ((end = ::_lseeki64(fd, 0L, SEEK_END)) == -1) {
-      return FALSE;
-    } else if (::_lseeki64(fd, cur, SEEK_SET) == -1) {
-      return FALSE;
-    }
-    *bytes = end - cur;
-    return TRUE;
-  } else {
-    return FALSE;
-  }
-}
-
 void os::flockfile(FILE* fp) {
   _lock_file(fp);
 }
 
 void os::funlockfile(FILE* fp) {
   _unlock_file(fp);
-}
-
-// This code is a copy of JDK's nonSeekAvailable
-// from src/windows/hpi/src/sys_api_md.c
-
-static int nonSeekAvailable(int fd, long *pbytes) {
-  // This is used for available on non-seekable devices
-  // (like both named and anonymous pipes, such as pipes
-  //  connected to an exec'd process).
-  // Standard Input is a special case.
-  HANDLE han;
-
-  if ((han = (HANDLE) ::_get_osfhandle(fd)) == (HANDLE)(-1)) {
-    return FALSE;
-  }
-
-  if (! ::PeekNamedPipe(han, NULL, 0, NULL, (LPDWORD)pbytes, NULL)) {
-    // PeekNamedPipe fails when at EOF.  In that case we
-    // simply make *pbytes = 0 which is consistent with the
-    // behavior we get on Solaris when an fd is at EOF.
-    // The only alternative is to raise an Exception,
-    // which isn't really warranted.
-    //
-    if (::GetLastError() != ERROR_BROKEN_PIPE) {
-      return FALSE;
-    }
-    *pbytes = 0;
-  }
-  return TRUE;
-}
-
-#define MAX_INPUT_EVENTS 2000
-
-// This code is a copy of JDK's stdinAvailable
-// from src/windows/hpi/src/sys_api_md.c
-
-static int stdinAvailable(int fd, long *pbytes) {
-  HANDLE han;
-  DWORD numEventsRead = 0;  // Number of events read from buffer
-  DWORD numEvents = 0;      // Number of events in buffer
-  DWORD i = 0;              // Loop index
-  DWORD curLength = 0;      // Position marker
-  DWORD actualLength = 0;   // Number of bytes readable
-  BOOL error = FALSE;       // Error holder
-  INPUT_RECORD *lpBuffer;   // Pointer to records of input events
-
-  if ((han = ::GetStdHandle(STD_INPUT_HANDLE)) == INVALID_HANDLE_VALUE) {
-    return FALSE;
-  }
-
-  // Construct an array of input records in the console buffer
-  error = ::GetNumberOfConsoleInputEvents(han, &numEvents);
-  if (error == 0) {
-    return nonSeekAvailable(fd, pbytes);
-  }
-
-  // lpBuffer must fit into 64K or else PeekConsoleInput fails
-  if (numEvents > MAX_INPUT_EVENTS) {
-    numEvents = MAX_INPUT_EVENTS;
-  }
-
-  lpBuffer = (INPUT_RECORD *)os::malloc(numEvents * sizeof(INPUT_RECORD), mtInternal);
-  if (lpBuffer == NULL) {
-    return FALSE;
-  }
-
-  error = ::PeekConsoleInput(han, lpBuffer, numEvents, &numEventsRead);
-  if (error == 0) {
-    os::free(lpBuffer);
-    return FALSE;
-  }
-
-  // Examine input records for the number of bytes available
-  for (i=0; i<numEvents; i++) {
-    if (lpBuffer[i].EventType == KEY_EVENT) {
-
-      KEY_EVENT_RECORD *keyRecord = (KEY_EVENT_RECORD *)
-                                      &(lpBuffer[i].Event);
-      if (keyRecord->bKeyDown == TRUE) {
-        CHAR *keyPressed = (CHAR *) &(keyRecord->uChar);
-        curLength++;
-        if (*keyPressed == '\r') {
-          actualLength = curLength;
-        }
-      }
-    }
-  }
-
-  if (lpBuffer != NULL) {
-    os::free(lpBuffer);
-  }
-
-  *pbytes = (long) actualLength;
-  return TRUE;
 }
 
 // Map a block of memory.
@@ -5268,7 +5121,7 @@ bool os::pd_unmap_memory(char* addr, size_t bytes) {
   // Instead, executable region was allocated using VirtualAlloc(). See
   // pd_map_memory() above.
   //
-  // The following flags should match the 'exec_access' flages used for
+  // The following flags should match the 'exec_access' flags used for
   // VirtualProtect() in pd_map_memory().
   if (mem_info.Protect == PAGE_EXECUTE_READ ||
       mem_info.Protect == PAGE_EXECUTE_READWRITE) {
@@ -5280,27 +5133,6 @@ bool os::pd_unmap_memory(char* addr, size_t bytes) {
     return false;
   }
   return true;
-}
-
-void os::pause() {
-  char filename[MAX_PATH];
-  if (PauseAtStartupFile && PauseAtStartupFile[0]) {
-    jio_snprintf(filename, MAX_PATH, "%s", PauseAtStartupFile);
-  } else {
-    jio_snprintf(filename, MAX_PATH, "./vm.paused.%d", current_process_id());
-  }
-
-  int fd = ::open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-  if (fd != -1) {
-    struct stat buf;
-    ::close(fd);
-    while (::stat(filename, &buf) == 0) {
-      Sleep(100);
-    }
-  } else {
-    jio_fprintf(stderr,
-                "Could not open pause file '%s', continuing immediately.\n", filename);
-  }
 }
 
 Thread* os::ThreadCrashProtection::_protected_thread = NULL;
@@ -5488,7 +5320,7 @@ int os::PlatformEvent::park(jlong Millis) {
   _Event = 0;
   // see comment at end of os::PlatformEvent::park() below:
   OrderAccess::fence();
-  // If we encounter a nearly simultanous timeout expiry and unpark()
+  // If we encounter a nearly simultaneous timeout expiry and unpark()
   // we return OS_OK indicating we awoke via unpark().
   // Implementor's license -- returning OS_TIMEOUT would be equally valid, however.
   return (v >= 0) ? OS_OK : OS_TIMEOUT;
@@ -5620,7 +5452,7 @@ int os::PlatformMonitor::wait(jlong millis) {
 
 // Run the specified command in a separate process. Return its exit value,
 // or -1 on failure (e.g. can't create a new process).
-int os::fork_and_exec(const char* cmd, bool dummy /* ignored */) {
+int os::fork_and_exec(const char* cmd) {
   STARTUPINFO si;
   PROCESS_INFORMATION pi;
   DWORD exit_code;
@@ -5716,10 +5548,6 @@ struct hostent* os::get_host_by_name(char* name) {
 
 int os::socket_close(int fd) {
   return ::closesocket(fd);
-}
-
-int os::socket(int domain, int type, int protocol) {
-  return ::socket(domain, type, protocol);
 }
 
 int os::connect(int fd, struct sockaddr* him, socklen_t len) {

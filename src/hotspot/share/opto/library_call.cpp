@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -261,6 +261,7 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_labs:
   case vmIntrinsics::_datan2:
   case vmIntrinsics::_dsqrt:
+  case vmIntrinsics::_dsqrt_strict:
   case vmIntrinsics::_dexp:
   case vmIntrinsics::_dlog:
   case vmIntrinsics::_dlog10:
@@ -268,10 +269,9 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_dcopySign:
   case vmIntrinsics::_fcopySign:
   case vmIntrinsics::_dsignum:
+  case vmIntrinsics::_roundF:
+  case vmIntrinsics::_roundD:
   case vmIntrinsics::_fsignum:                  return inline_math_native(intrinsic_id());
-
-  case vmIntrinsics::_min:
-  case vmIntrinsics::_max:                      return inline_min_max(intrinsic_id());
 
   case vmIntrinsics::_notify:
   case vmIntrinsics::_notifyAll:
@@ -286,6 +286,7 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_multiplyExactI:           return inline_math_multiplyExactI();
   case vmIntrinsics::_multiplyExactL:           return inline_math_multiplyExactL();
   case vmIntrinsics::_multiplyHigh:             return inline_math_multiplyHigh();
+  case vmIntrinsics::_unsignedMultiplyHigh:     return inline_math_unsignedMultiplyHigh();
   case vmIntrinsics::_negateExactI:             return inline_math_negateExactI();
   case vmIntrinsics::_negateExactL:             return inline_math_negateExactL();
   case vmIntrinsics::_subtractExactI:           return inline_math_subtractExactI(false /* subtract */);
@@ -466,6 +467,7 @@ bool LibraryCallKit::try_to_inline(int predicate) {
 
   case vmIntrinsics::_loadFence:
   case vmIntrinsics::_storeFence:
+  case vmIntrinsics::_storeStoreFence:
   case vmIntrinsics::_fullFence:                return inline_unsafe_fence(intrinsic_id());
 
   case vmIntrinsics::_onSpinWait:               return inline_onspinwait();
@@ -524,6 +526,11 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_reverseBytes_l:
   case vmIntrinsics::_reverseBytes_s:
   case vmIntrinsics::_reverseBytes_c:           return inline_number_methods(intrinsic_id());
+
+  case vmIntrinsics::_divideUnsigned_i:
+  case vmIntrinsics::_divideUnsigned_l:
+  case vmIntrinsics::_remainderUnsigned_i:
+  case vmIntrinsics::_remainderUnsigned_l:      return inline_divmod_methods(intrinsic_id());
 
   case vmIntrinsics::_getCallerClass:           return inline_native_Reflection_getCallerClass();
 
@@ -617,8 +624,8 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_isCompileConstant:
     return inline_isCompileConstant();
 
-  case vmIntrinsics::_hasNegatives:
-    return inline_hasNegatives();
+  case vmIntrinsics::_countPositives:
+    return inline_countPositives();
 
   case vmIntrinsics::_fmaD:
   case vmIntrinsics::_fmaF:
@@ -630,11 +637,21 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_isWhitespace:
     return inline_character_compare(intrinsic_id());
 
+  case vmIntrinsics::_min:
+  case vmIntrinsics::_max:
+  case vmIntrinsics::_min_strict:
+  case vmIntrinsics::_max_strict:
+    return inline_min_max(intrinsic_id());
+
   case vmIntrinsics::_maxF:
   case vmIntrinsics::_minF:
   case vmIntrinsics::_maxD:
   case vmIntrinsics::_minD:
-    return inline_fp_min_max(intrinsic_id());
+  case vmIntrinsics::_maxF_strict:
+  case vmIntrinsics::_minF_strict:
+  case vmIntrinsics::_maxD_strict:
+  case vmIntrinsics::_minD_strict:
+      return inline_fp_min_max(intrinsic_id());
 
   case vmIntrinsics::_VectorUnaryOp:
     return inline_vector_nary_operation(1);
@@ -642,8 +659,8 @@ bool LibraryCallKit::try_to_inline(int predicate) {
     return inline_vector_nary_operation(2);
   case vmIntrinsics::_VectorTernaryOp:
     return inline_vector_nary_operation(3);
-  case vmIntrinsics::_VectorBroadcastCoerced:
-    return inline_vector_broadcast_coerced();
+  case vmIntrinsics::_VectorFromBitsCoerced:
+    return inline_vector_frombits_coerced();
   case vmIntrinsics::_VectorShuffleIota:
     return inline_vector_shuffle_iota();
   case vmIntrinsics::_VectorMaskOp:
@@ -680,6 +697,8 @@ bool LibraryCallKit::try_to_inline(int predicate) {
     return inline_vector_insert();
   case vmIntrinsics::_VectorExtract:
     return inline_vector_extract();
+  case vmIntrinsics::_VectorComExp:
+    return inline_vector_compress_expand();
 
   case vmIntrinsics::_getObjectSize:
     return inline_getObjectSize();
@@ -735,7 +754,7 @@ Node* LibraryCallKit::try_to_predicate(int predicate) {
     }
 #endif
     Node* slow_ctl = control();
-    set_control(top()); // No fast path instrinsic
+    set_control(top()); // No fast path intrinsic
     return slow_ctl;
   }
 }
@@ -1001,13 +1020,13 @@ bool LibraryCallKit::inline_array_equals(StrIntrinsicNode::ArgEnc ae) {
   return true;
 }
 
-//------------------------------inline_hasNegatives------------------------------
-bool LibraryCallKit::inline_hasNegatives() {
+//------------------------------inline_countPositives------------------------------
+bool LibraryCallKit::inline_countPositives() {
   if (too_many_traps(Deoptimization::Reason_intrinsic)) {
     return false;
   }
 
-  assert(callee()->signature()->size() == 3, "hasNegatives has 3 parameters");
+  assert(callee()->signature()->size() == 3, "countPositives has 3 parameters");
   // no receiver since it is static method
   Node* ba         = argument(0);
   Node* offset     = argument(1);
@@ -1021,7 +1040,7 @@ bool LibraryCallKit::inline_hasNegatives() {
     return true;
   }
   Node* ba_start = array_element_address(ba, offset, T_BYTE);
-  Node* result = new HasNegativesNode(control(), memory(TypeAryPtr::BYTES), ba_start, len);
+  Node* result = new CountPositivesNode(control(), memory(TypeAryPtr::BYTES), ba_start, len);
   set_result(_gvn.transform(result));
   return true;
 }
@@ -1048,7 +1067,7 @@ bool LibraryCallKit::inline_preconditions_checkIndex(BasicType bt) {
     return true;
   }
 
-  // length is now known postive, add a cast node to make this explicit
+  // length is now known positive, add a cast node to make this explicit
   jlong upper_bound = _gvn.type(length)->is_integer(bt)->hi_as_long();
   Node* casted_length = ConstraintCastNode::make(control(), length, TypeInteger::make(0, upper_bound, Type::WidenMax, bt), bt);
   casted_length = _gvn.transform(casted_length);
@@ -1082,7 +1101,6 @@ bool LibraryCallKit::inline_preconditions_checkIndex(BasicType bt) {
   result = _gvn.transform(result);
   set_result(result);
   replace_in_map(index, result);
-  clear_upper_avx();
   return true;
 }
 
@@ -1570,7 +1588,7 @@ bool LibraryCallKit::inline_string_char_access(bool is_store) {
   if (is_store) {
     access_store_at(value, adr, TypeAryPtr::BYTES, ch, TypeInt::CHAR, T_CHAR, IN_HEAP | MO_UNORDERED | C2_MISMATCHED);
   } else {
-    ch = access_load_at(value, adr, TypeAryPtr::BYTES, TypeInt::CHAR, T_CHAR, IN_HEAP | MO_UNORDERED | C2_MISMATCHED | C2_CONTROL_DEPENDENT_LOAD);
+    ch = access_load_at(value, adr, TypeAryPtr::BYTES, TypeInt::CHAR, T_CHAR, IN_HEAP | MO_UNORDERED | C2_MISMATCHED | C2_CONTROL_DEPENDENT_LOAD | C2_UNKNOWN_CONTROL_LOAD);
     set_result(ch);
   }
   return true;
@@ -1596,15 +1614,19 @@ Node* LibraryCallKit::round_double_node(Node* n) {
 // public static double Math.sqrt(double)
 // public static double Math.log(double)
 // public static double Math.log10(double)
+// public static double Math.round(double)
 bool LibraryCallKit::inline_double_math(vmIntrinsics::ID id) {
   Node* arg = round_double_node(argument(0));
   Node* n = NULL;
   switch (id) {
   case vmIntrinsics::_dabs:   n = new AbsDNode(                arg);  break;
-  case vmIntrinsics::_dsqrt:  n = new SqrtDNode(C, control(),  arg);  break;
+  case vmIntrinsics::_dsqrt:
+  case vmIntrinsics::_dsqrt_strict:
+                              n = new SqrtDNode(C, control(),  arg);  break;
   case vmIntrinsics::_ceil:   n = RoundDoubleModeNode::make(_gvn, arg, RoundDoubleModeNode::rmode_ceil); break;
   case vmIntrinsics::_floor:  n = RoundDoubleModeNode::make(_gvn, arg, RoundDoubleModeNode::rmode_floor); break;
   case vmIntrinsics::_rint:   n = RoundDoubleModeNode::make(_gvn, arg, RoundDoubleModeNode::rmode_rint); break;
+  case vmIntrinsics::_roundD: n = new RoundDNode(arg); break;
   case vmIntrinsics::_dcopySign: n = CopySignDNode::make(_gvn, arg, round_double_node(argument(2))); break;
   case vmIntrinsics::_dsignum: n = SignumDNode::make(_gvn, arg); break;
   default:  fatal_unexpected_iid(id);  break;
@@ -1626,6 +1648,7 @@ bool LibraryCallKit::inline_math(vmIntrinsics::ID id) {
   case vmIntrinsics::_labs:   n = new AbsLNode(                arg);  break;
   case vmIntrinsics::_fcopySign: n = new CopySignFNode(arg, argument(1)); break;
   case vmIntrinsics::_fsignum: n = SignumFNode::make(_gvn, arg); break;
+  case vmIntrinsics::_roundF: n = new RoundFNode(arg); break;
   default:  fatal_unexpected_iid(id);  break;
   }
   set_result(_gvn.transform(n));
@@ -1741,10 +1764,14 @@ bool LibraryCallKit::inline_math_native(vmIntrinsics::ID id) {
       runtime_math(OptoRuntime::Math_D_D_Type(), FN_PTR(SharedRuntime::dlog10), "LOG10");
 
     // These intrinsics are supported on all hardware
+  case vmIntrinsics::_roundD: return Matcher::match_rule_supported(Op_RoundD) ? inline_double_math(id) : false;
   case vmIntrinsics::_ceil:
   case vmIntrinsics::_floor:
   case vmIntrinsics::_rint:   return Matcher::match_rule_supported(Op_RoundDoubleMode) ? inline_double_math(id) : false;
-  case vmIntrinsics::_dsqrt:  return Matcher::match_rule_supported(Op_SqrtD) ? inline_double_math(id) : false;
+
+  case vmIntrinsics::_dsqrt:
+  case vmIntrinsics::_dsqrt_strict:
+                              return Matcher::match_rule_supported(Op_SqrtD) ? inline_double_math(id) : false;
   case vmIntrinsics::_dabs:   return Matcher::has_match_rule(Op_AbsD)   ? inline_double_math(id) : false;
   case vmIntrinsics::_fabs:   return Matcher::match_rule_supported(Op_AbsF)   ? inline_math(id) : false;
   case vmIntrinsics::_iabs:   return Matcher::match_rule_supported(Op_AbsI)   ? inline_math(id) : false;
@@ -1761,6 +1788,7 @@ bool LibraryCallKit::inline_math_native(vmIntrinsics::ID id) {
   case vmIntrinsics::_fcopySign: return inline_math(id);
   case vmIntrinsics::_dsignum: return Matcher::match_rule_supported(Op_SignumD) ? inline_double_math(id) : false;
   case vmIntrinsics::_fsignum: return Matcher::match_rule_supported(Op_SignumF) ? inline_math(id) : false;
+  case vmIntrinsics::_roundF: return Matcher::match_rule_supported(Op_RoundF) ? inline_math(id) : false;
 
    // These intrinsics are not yet correctly implemented
   case vmIntrinsics::_datan2:
@@ -1871,6 +1899,11 @@ bool LibraryCallKit::inline_math_multiplyHigh() {
   return true;
 }
 
+bool LibraryCallKit::inline_math_unsignedMultiplyHigh() {
+  set_result(_gvn.transform(new UMulHiLNode(argument(0), argument(2))));
+  return true;
+}
+
 Node*
 LibraryCallKit::generate_min_max(vmIntrinsics::ID id, Node* x0, Node* y0) {
   // These are the candidate return value:
@@ -1881,7 +1914,7 @@ LibraryCallKit::generate_min_max(vmIntrinsics::ID id, Node* x0, Node* y0) {
     return xvalue;
   }
 
-  bool want_max = (id == vmIntrinsics::_max);
+  bool want_max = (id == vmIntrinsics::_max || id == vmIntrinsics::_max_strict);
 
   const TypeInt* txvalue = _gvn.type(xvalue)->isa_int();
   const TypeInt* tyvalue = _gvn.type(yvalue)->isa_int();
@@ -2162,6 +2195,56 @@ bool LibraryCallKit::inline_number_methods(vmIntrinsics::ID id) {
   return true;
 }
 
+//--------------------------inline_unsigned_divmod_methods-----------------------------
+// inline int Integer.divideUnsigned(int, int)
+// inline int Integer.remainderUnsigned(int, int)
+// inline long Long.divideUnsigned(long, long)
+// inline long Long.remainderUnsigned(long, long)
+bool LibraryCallKit::inline_divmod_methods(vmIntrinsics::ID id) {
+  Node* n = NULL;
+  switch (id) {
+    case vmIntrinsics::_divideUnsigned_i: {
+      zero_check_int(argument(1));
+      // Compile-time detect of null-exception
+      if (stopped()) {
+        return true; // keep the graph constructed so far
+      }
+      n = new UDivINode(control(), argument(0), argument(1));
+      break;
+    }
+    case vmIntrinsics::_divideUnsigned_l: {
+      zero_check_long(argument(2));
+      // Compile-time detect of null-exception
+      if (stopped()) {
+        return true; // keep the graph constructed so far
+      }
+      n = new UDivLNode(control(), argument(0), argument(2));
+      break;
+    }
+    case vmIntrinsics::_remainderUnsigned_i: {
+      zero_check_int(argument(1));
+      // Compile-time detect of null-exception
+      if (stopped()) {
+        return true; // keep the graph constructed so far
+      }
+      n = new UModINode(control(), argument(0), argument(1));
+      break;
+    }
+    case vmIntrinsics::_remainderUnsigned_l: {
+      zero_check_long(argument(2));
+      // Compile-time detect of null-exception
+      if (stopped()) {
+        return true; // keep the graph constructed so far
+      }
+      n = new UModLNode(control(), argument(0), argument(2));
+      break;
+    }
+    default:  fatal_unexpected_iid(id);  break;
+  }
+  set_result(_gvn.transform(n));
+  return true;
+}
+
 //----------------------------inline_unsafe_access----------------------------
 
 const TypeOopPtr* LibraryCallKit::sharpen_unsafe_type(Compile::AliasType* alias_type, const TypePtr *adr_type) {
@@ -2186,7 +2269,7 @@ const TypeOopPtr* LibraryCallKit::sharpen_unsafe_type(Compile::AliasType* alias_
   }
 
   // The sharpened class might be unloaded if there is no class loader
-  // contraint in place.
+  // constraint in place.
   if (sharpened_klass != NULL && sharpened_klass->is_loaded()) {
     const TypeOopPtr* tjp = TypeOopPtr::make_from_klass(sharpened_klass);
 
@@ -2692,6 +2775,9 @@ bool LibraryCallKit::inline_unsafe_fence(vmIntrinsics::ID id) {
       return true;
     case vmIntrinsics::_storeFence:
       insert_mem_bar(Op_StoreFence);
+      return true;
+    case vmIntrinsics::_storeStoreFence:
+      insert_mem_bar(Op_StoreStoreFence);
       return true;
     case vmIntrinsics::_fullFence:
       insert_mem_bar(Op_MemBarVolatile);
@@ -4391,7 +4477,7 @@ bool LibraryCallKit::inline_native_clone(bool is_virtual) {
 // If we have a tightly coupled allocation, the arraycopy may take care
 // of the array initialization. If one of the guards we insert between
 // the allocation and the arraycopy causes a deoptimization, an
-// unitialized array will escape the compiled method. To prevent that
+// uninitialized array will escape the compiled method. To prevent that
 // we set the JVM state for uncommon traps between the allocation and
 // the arraycopy to the state before the allocation so, in case of
 // deoptimization, we'll reexecute the allocation and the
@@ -5405,7 +5491,7 @@ bool LibraryCallKit::inline_vectorizedMismatch() {
         Node* obja_adr_mem = memory(C->get_alias_index(obja_adr_t));
         Node* objb_adr_mem = memory(C->get_alias_index(objb_adr_t));
 
-        Node* vmask      = _gvn.transform(new VectorMaskGenNode(ConvI2X(casted_length), TypeVect::VECTMASK, elem_bt));
+        Node* vmask      = _gvn.transform(VectorMaskGenNode::make(ConvI2X(casted_length), elem_bt));
         Node* vload_obja = _gvn.transform(new LoadVectorMaskedNode(control(), obja_adr_mem, obja_adr, obja_adr_t, vt, vmask));
         Node* vload_objb = _gvn.transform(new LoadVectorMaskedNode(control(), objb_adr_mem, objb_adr, objb_adr_t, vt, vmask));
         Node* result     = _gvn.transform(new VectorCmpMaskedNode(vload_obja, vload_objb, vmask, TypeInt::INT));
@@ -5665,7 +5751,7 @@ bool LibraryCallKit::inline_updateDirectByteBufferCRC32C() {
 // int java.util.zip.Adler32.updateBytes(int crc, byte[] buf, int off, int len)
 //
 bool LibraryCallKit::inline_updateBytesAdler32() {
-  assert(UseAdler32Intrinsics, "Adler32 Instrinsic support need"); // check if we actually need to check this flag or check a different one
+  assert(UseAdler32Intrinsics, "Adler32 Intrinsic support need"); // check if we actually need to check this flag or check a different one
   assert(callee()->signature()->size() == 4, "updateBytes has 4 parameters");
   assert(callee()->holder()->is_loaded(), "Adler32 class must be loaded");
   // no receiver since it is static method
@@ -5711,7 +5797,7 @@ bool LibraryCallKit::inline_updateBytesAdler32() {
 // int java.util.zip.Adler32.updateByteBuffer(int crc, long buf, int off, int len)
 //
 bool LibraryCallKit::inline_updateByteBufferAdler32() {
-  assert(UseAdler32Intrinsics, "Adler32 Instrinsic support need"); // check if we actually need to check this flag or check a different one
+  assert(UseAdler32Intrinsics, "Adler32 Intrinsic support need"); // check if we actually need to check this flag or check a different one
   assert(callee()->signature()->size() == 5, "updateByteBuffer has 4 parameters and one is long");
   assert(callee()->holder()->is_loaded(), "Adler32 class must be loaded");
   // no receiver since it is static method
@@ -6201,7 +6287,7 @@ bool LibraryCallKit::inline_counterMode_AESCrypt(vmIntrinsics::ID id) {
 Node * LibraryCallKit::get_key_start_from_aescrypt_object(Node *aescrypt_object) {
 #if defined(PPC64) || defined(S390)
   // MixColumns for decryption can be reduced by preprocessing MixColumns with round keys.
-  // Intel's extention is based on this optimization and AESCrypt generates round keys by preprocessing MixColumns.
+  // Intel's extension is based on this optimization and AESCrypt generates round keys by preprocessing MixColumns.
   // However, ppc64 vncipher processes MixColumns and requires the same round keys with encryption.
   // The ppc64 stubs of encryption and decryption use the same round keys (sessionK[0]).
   Node* objSessionK = load_field_from_object(aescrypt_object, "sessionK", "[[I");
@@ -6209,7 +6295,7 @@ Node * LibraryCallKit::get_key_start_from_aescrypt_object(Node *aescrypt_object)
   if (objSessionK == NULL) {
     return (Node *) NULL;
   }
-  Node* objAESCryptKey = load_array_element(control(), objSessionK, intcon(0), TypeAryPtr::OOPS);
+  Node* objAESCryptKey = load_array_element(objSessionK, intcon(0), TypeAryPtr::OOPS, /* set_ctrl */ true);
 #else
   Node* objAESCryptKey = load_field_from_object(aescrypt_object, "K", "[I");
 #endif // PPC64
@@ -6534,31 +6620,31 @@ bool LibraryCallKit::inline_digestBase_implCompress(vmIntrinsics::ID id) {
   switch(id) {
   case vmIntrinsics::_md5_implCompress:
     assert(UseMD5Intrinsics, "need MD5 instruction support");
-    state = get_state_from_digest_object(digestBase_obj, "[I");
+    state = get_state_from_digest_object(digestBase_obj, T_INT);
     stubAddr = StubRoutines::md5_implCompress();
     stubName = "md5_implCompress";
     break;
   case vmIntrinsics::_sha_implCompress:
     assert(UseSHA1Intrinsics, "need SHA1 instruction support");
-    state = get_state_from_digest_object(digestBase_obj, "[I");
+    state = get_state_from_digest_object(digestBase_obj, T_INT);
     stubAddr = StubRoutines::sha1_implCompress();
     stubName = "sha1_implCompress";
     break;
   case vmIntrinsics::_sha2_implCompress:
     assert(UseSHA256Intrinsics, "need SHA256 instruction support");
-    state = get_state_from_digest_object(digestBase_obj, "[I");
+    state = get_state_from_digest_object(digestBase_obj, T_INT);
     stubAddr = StubRoutines::sha256_implCompress();
     stubName = "sha256_implCompress";
     break;
   case vmIntrinsics::_sha5_implCompress:
     assert(UseSHA512Intrinsics, "need SHA512 instruction support");
-    state = get_state_from_digest_object(digestBase_obj, "[J");
+    state = get_state_from_digest_object(digestBase_obj, T_LONG);
     stubAddr = StubRoutines::sha512_implCompress();
     stubName = "sha512_implCompress";
     break;
   case vmIntrinsics::_sha3_implCompress:
     assert(UseSHA3Intrinsics, "need SHA3 instruction support");
-    state = get_state_from_digest_object(digestBase_obj, "[B");
+    state = get_state_from_digest_object(digestBase_obj, T_BYTE);
     stubAddr = StubRoutines::sha3_implCompress();
     stubName = "sha3_implCompress";
     digest_length = get_digest_length_from_digest_object(digestBase_obj);
@@ -6622,7 +6708,7 @@ bool LibraryCallKit::inline_digestBase_implCompressMB(int predicate) {
   const char* klass_digestBase_name = NULL;
   const char* stub_name = NULL;
   address     stub_addr = NULL;
-  const char* state_type = "[I";
+  BasicType elem_type = T_INT;
 
   switch (predicate) {
   case 0:
@@ -6651,7 +6737,7 @@ bool LibraryCallKit::inline_digestBase_implCompressMB(int predicate) {
       klass_digestBase_name = "sun/security/provider/SHA5";
       stub_name = "sha512_implCompressMB";
       stub_addr = StubRoutines::sha512_implCompressMB();
-      state_type = "[J";
+      elem_type = T_LONG;
     }
     break;
   case 4:
@@ -6659,7 +6745,7 @@ bool LibraryCallKit::inline_digestBase_implCompressMB(int predicate) {
       klass_digestBase_name = "sun/security/provider/SHA3";
       stub_name = "sha3_implCompressMB";
       stub_addr = StubRoutines::sha3_implCompressMB();
-      state_type = "[B";
+      elem_type = T_BYTE;
     }
     break;
   default:
@@ -6677,21 +6763,21 @@ bool LibraryCallKit::inline_digestBase_implCompressMB(int predicate) {
     ciKlass* klass_digestBase = tinst->klass()->as_instance_klass()->find_klass(ciSymbol::make(klass_digestBase_name));
     assert(klass_digestBase->is_loaded(), "predicate checks that this class is loaded");
     ciInstanceKlass* instklass_digestBase = klass_digestBase->as_instance_klass();
-    return inline_digestBase_implCompressMB(digestBase_obj, instklass_digestBase, state_type, stub_addr, stub_name, src_start, ofs, limit);
+    return inline_digestBase_implCompressMB(digestBase_obj, instklass_digestBase, elem_type, stub_addr, stub_name, src_start, ofs, limit);
   }
   return false;
 }
 
 //------------------------------inline_digestBase_implCompressMB-----------------------
 bool LibraryCallKit::inline_digestBase_implCompressMB(Node* digestBase_obj, ciInstanceKlass* instklass_digestBase,
-                                                      const char* state_type, address stubAddr, const char *stubName,
+                                                      BasicType elem_type, address stubAddr, const char *stubName,
                                                       Node* src_start, Node* ofs, Node* limit) {
   const TypeKlassPtr* aklass = TypeKlassPtr::make(instklass_digestBase);
   const TypeOopPtr* xtype = aklass->as_instance_type()->cast_to_ptr_type(TypePtr::NotNull);
   Node* digest_obj = new CheckCastPPNode(control(), digestBase_obj, xtype);
   digest_obj = _gvn.transform(digest_obj);
 
-  Node* state = get_state_from_digest_object(digest_obj, state_type);
+  Node* state = get_state_from_digest_object(digest_obj, elem_type);
   if (state == NULL) return false;
 
   Node* digest_length = NULL;
@@ -6773,7 +6859,7 @@ bool LibraryCallKit::inline_galoisCounterMode_AESCrypt() {
   Node* state = load_field_from_object(ghash_object, "state", "[J");
 
   if (embeddedCipherObj == NULL || counter == NULL || subkeyHtbl == NULL || state == NULL) {
-      return false;
+    return false;
   }
   // cast it to what we know it will be at runtime
   const TypeInstPtr* tinst = _gvn.type(gctr_object)->isa_instptr();
@@ -6789,33 +6875,22 @@ bool LibraryCallKit::inline_galoisCounterMode_AESCrypt() {
   // we need to get the start of the aescrypt_object's expanded key array
   Node* k_start = get_key_start_from_aescrypt_object(aescrypt_object);
   if (k_start == NULL) return false;
-
   // similarly, get the start address of the r vector
   Node* cnt_start = array_element_address(counter, intcon(0), T_BYTE);
   Node* state_start = array_element_address(state, intcon(0), T_LONG);
   Node* subkeyHtbl_start = array_element_address(subkeyHtbl, intcon(0), T_LONG);
 
-  ciKlass* klass = ciTypeArrayKlass::make(T_LONG);
-  Node* klass_node = makecon(TypeKlassPtr::make(klass));
-
-  // htbl entries is set to 96 only fox x86-64
-  if (Matcher::htbl_entries == -1) return false;
-
-  // new array to hold 48 computed htbl entries
-  Node* subkeyHtbl_48_entries = new_array(klass_node, intcon(Matcher::htbl_entries), 0);
-  if (subkeyHtbl_48_entries == NULL) return false;
-
-  Node* subkeyHtbl_48_entries_start = array_element_address(subkeyHtbl_48_entries, intcon(0), T_LONG);
 
   // Call the stub, passing params
   Node* gcmCrypt = make_runtime_call(RC_LEAF|RC_NO_FP,
                                OptoRuntime::galoisCounterMode_aescrypt_Type(),
                                stubAddr, stubName, TypePtr::BOTTOM,
-                               in_start, len, ct_start, out_start, k_start, state_start, subkeyHtbl_start, subkeyHtbl_48_entries_start, cnt_start);
+                               in_start, len, ct_start, out_start, k_start, state_start, subkeyHtbl_start, cnt_start);
 
   // return cipher length (int)
   Node* retvalue = _gvn.transform(new ProjNode(gcmCrypt, TypeFunc::Parms));
   set_result(retvalue);
+
   return true;
 }
 
@@ -6862,13 +6937,20 @@ Node* LibraryCallKit::inline_galoisCounterMode_AESCrypt_predicate() {
 }
 
 //------------------------------get_state_from_digest_object-----------------------
-Node * LibraryCallKit::get_state_from_digest_object(Node *digest_object, const char *state_type) {
+Node * LibraryCallKit::get_state_from_digest_object(Node *digest_object, BasicType elem_type) {
+  const char* state_type;
+  switch (elem_type) {
+    case T_BYTE: state_type = "[B"; break;
+    case T_INT:  state_type = "[I"; break;
+    case T_LONG: state_type = "[J"; break;
+    default: ShouldNotReachHere();
+  }
   Node* digest_state = load_field_from_object(digest_object, "state", state_type);
   assert (digest_state != NULL, "wrong version of sun.security.provider.MD5/SHA/SHA2/SHA5/SHA3");
   if (digest_state == NULL) return (Node *) NULL;
 
   // now have the array, need to get the start address of the state array
-  Node* state = array_element_address(digest_state, intcon(0), T_INT);
+  Node* state = array_element_address(digest_state, intcon(0), elem_type);
   return state;
 }
 
@@ -7050,12 +7132,16 @@ bool LibraryCallKit::inline_fp_min_max(vmIntrinsics::ID id) {
   switch (id) {
   case vmIntrinsics::_maxF:
   case vmIntrinsics::_minF:
+  case vmIntrinsics::_maxF_strict:
+  case vmIntrinsics::_minF_strict:
     assert(callee()->signature()->size() == 2, "minF/maxF has 2 parameters of size 1 each.");
     a = argument(0);
     b = argument(1);
     break;
   case vmIntrinsics::_maxD:
   case vmIntrinsics::_minD:
+  case vmIntrinsics::_maxD_strict:
+  case vmIntrinsics::_minD_strict:
     assert(callee()->signature()->size() == 4, "minD/maxD has 2 parameters of size 2 each.");
     a = round_double_node(argument(0));
     b = round_double_node(argument(2));
@@ -7065,11 +7151,25 @@ bool LibraryCallKit::inline_fp_min_max(vmIntrinsics::ID id) {
     break;
   }
   switch (id) {
-  case vmIntrinsics::_maxF:  n = new MaxFNode(a, b);  break;
-  case vmIntrinsics::_minF:  n = new MinFNode(a, b);  break;
-  case vmIntrinsics::_maxD:  n = new MaxDNode(a, b);  break;
-  case vmIntrinsics::_minD:  n = new MinDNode(a, b);  break;
-  default:  fatal_unexpected_iid(id);  break;
+  case vmIntrinsics::_maxF:
+  case vmIntrinsics::_maxF_strict:
+    n = new MaxFNode(a, b);
+    break;
+  case vmIntrinsics::_minF:
+  case vmIntrinsics::_minF_strict:
+    n = new MinFNode(a, b);
+    break;
+  case vmIntrinsics::_maxD:
+  case vmIntrinsics::_maxD_strict:
+    n = new MaxDNode(a, b);
+    break;
+  case vmIntrinsics::_minD:
+  case vmIntrinsics::_minD_strict:
+    n = new MinDNode(a, b);
+    break;
+  default:
+    fatal_unexpected_iid(id);
+    break;
   }
   set_result(_gvn.transform(n));
   return true;

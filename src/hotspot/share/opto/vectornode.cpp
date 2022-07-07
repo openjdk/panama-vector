@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -135,7 +135,14 @@ int VectorNode::opcode(int sopc, BasicType bt) {
   case Op_AbsD:
     return (bt == T_DOUBLE ? Op_AbsVD : 0);
   case Op_NegI:
-    return (bt == T_INT ? Op_NegVI : 0);
+    switch (bt) {
+      case T_BYTE:
+      case T_SHORT:
+      case T_INT: return Op_NegVI;
+      default: return 0;
+    }
+  case Op_NegL:
+    return (bt == T_LONG ? Op_NegVL : 0);
   case Op_NegF:
     return (bt == T_FLOAT ? Op_NegVF : 0);
   case Op_NegD:
@@ -150,10 +157,27 @@ int VectorNode::opcode(int sopc, BasicType bt) {
     return (bt == T_FLOAT ? Op_SqrtVF : 0);
   case Op_SqrtD:
     return (bt == T_DOUBLE ? Op_SqrtVD : 0);
+  case Op_RoundF:
+    return (bt == T_INT ? Op_RoundVF : 0);
+  case Op_RoundD:
+    return (bt == T_LONG ? Op_RoundVD : 0);
   case Op_PopCountI:
-    // Unimplemented for subword types since bit count changes
-    // depending on size of lane (and sign bit).
-    return (bt == T_INT ? Op_PopCountVI : 0);
+    return Op_PopCountVI;
+  case Op_PopCountL:
+    return Op_PopCountVL;
+  case Op_ReverseI:
+  case Op_ReverseL:
+    return (is_integral_type(bt) ? Op_ReverseV : 0);
+  case Op_ReverseBytesS:
+  case Op_ReverseBytesI:
+  case Op_ReverseBytesL:
+    return (is_integral_type(bt) ? Op_ReverseBytesV : 0);
+  case Op_CompressBits:
+    // Not implemented. Returning 0 temporarily
+    return 0;
+  case Op_ExpandBits:
+    // Not implemented. Returning 0 temporarily
+    return 0;
   case Op_LShiftI:
     switch (bt) {
     case T_BOOLEAN:
@@ -224,6 +248,20 @@ int VectorNode::opcode(int sopc, BasicType bt) {
     return Op_StoreVector;
   case Op_MulAddS2I:
     return Op_MulAddVS2VI;
+  case Op_ConvI2F:
+    return Op_VectorCastI2X;
+  case Op_ConvL2D:
+    return Op_VectorCastL2X;
+  case Op_ConvF2I:
+    return Op_VectorCastF2X;
+  case Op_ConvD2L:
+    return Op_VectorCastD2X;
+  case Op_CountLeadingZerosI:
+  case Op_CountLeadingZerosL:
+    return Op_CountLeadingZerosV;
+  case Op_CountTrailingZerosI:
+  case Op_CountTrailingZerosL:
+    return Op_CountTrailingZerosV;
 
   default:
     return 0; // Unimplemented
@@ -265,6 +303,9 @@ bool VectorNode::implemented(int opc, uint vlen, BasicType bt) {
     if (VectorNode::is_vector_rotate(vopc)) {
       return is_vector_rotate_supported(vopc, vlen, bt);
     }
+    if (VectorNode::is_vector_integral_negate(vopc)) {
+      return is_vector_integral_negate_supported(vopc, vlen, bt, false);
+    }
     return vopc > 0 && Matcher::match_rule_supported_vector(vopc, vlen, bt);
   }
   return false;
@@ -289,6 +330,17 @@ bool VectorNode::is_muladds2i(Node* n) {
   return false;
 }
 
+bool VectorNode::is_type_transition_long_to_int(Node* n) {
+  switch(n->Opcode()) {
+    case Op_PopCountL:
+    case Op_CountLeadingZerosL:
+    case Op_CountTrailingZerosL:
+       return true;
+    default:
+       return false;
+  }
+}
+
 bool VectorNode::is_roundopD(Node* n) {
   if (n->Opcode() == Op_RoundDoubleMode) {
     return true;
@@ -307,7 +359,7 @@ bool VectorNode::is_vector_rotate_supported(int vopc, uint vlen, BasicType bt) {
 
   // If target does not support variable shift operations then no point
   // in creating a rotate vector node since it will not be disintegratable.
-  // Adding a pessimistic check to avoid complex pattern mathing which
+  // Adding a pessimistic check to avoid complex pattern matching which
   // may not be full proof.
   if (!Matcher::supports_vector_variable_shifts()) {
      return false;
@@ -327,6 +379,38 @@ bool VectorNode::is_vector_rotate_supported(int vopc, uint vlen, BasicType bt) {
       assert(false, "not supported: %s", type2name(bt));
       return false;
   }
+}
+
+// Check whether the architecture supports the vector negate instructions. If not, then check
+// whether the alternative vector nodes used to implement vector negation are supported.
+// Return false if neither of them is supported.
+bool VectorNode::is_vector_integral_negate_supported(int opc, uint vlen, BasicType bt, bool use_predicate) {
+  if (!use_predicate) {
+    // Check whether the NegVI/L is supported by the architecture.
+    if (Matcher::match_rule_supported_vector(opc, vlen, bt)) {
+      return true;
+    }
+    // Negate is implemented with "(SubVI/L (ReplicateI/L 0) src)", if NegVI/L is not supported.
+    int sub_opc = (bt == T_LONG) ? Op_SubL : Op_SubI;
+    if (Matcher::match_rule_supported_vector(VectorNode::opcode(sub_opc, bt), vlen, bt) &&
+        Matcher::match_rule_supported_vector(VectorNode::replicate_opcode(bt), vlen, bt)) {
+      return true;
+    }
+  } else {
+    // Check whether the predicated NegVI/L is supported by the architecture.
+    if (Matcher::match_rule_supported_vector_masked(opc, vlen, bt)) {
+      return true;
+    }
+    // Predicated negate is implemented with "(AddVI/L (XorV src (ReplicateI/L -1)) (ReplicateI/L 1))",
+    // if predicated NegVI/L is not supported.
+    int add_opc = (bt == T_LONG) ? Op_AddL : Op_AddI;
+    if (Matcher::match_rule_supported_vector_masked(Op_XorV, vlen, bt) &&
+        Matcher::match_rule_supported_vector_masked(VectorNode::opcode(add_opc, bt), vlen, bt) &&
+        Matcher::match_rule_supported_vector(VectorNode::replicate_opcode(bt), vlen, bt)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool VectorNode::is_shift_opcode(int opc) {
@@ -472,7 +556,7 @@ VectorNode* VectorNode::make_mask_node(int vopc, Node* n1, Node* n2, uint vlen, 
 }
 
 // Make a vector node for binary operation
-VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt, bool is_mask) {
+VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt, bool is_mask, bool is_var_shift) {
   // This method should not be called for unimplemented vectors.
   guarantee(vopc > 0, "vopc must be > 0");
 
@@ -516,30 +600,38 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt, b
   case Op_AbsVL: return new AbsVLNode(n1, vt);
 
   case Op_NegVI: return new NegVINode(n1, vt);
+  case Op_NegVL: return new NegVLNode(n1, vt);
   case Op_NegVF: return new NegVFNode(n1, vt);
   case Op_NegVD: return new NegVDNode(n1, vt);
+
+  case Op_ReverseV: return new ReverseVNode(n1, vt);
+  case Op_ReverseBytesV: return new ReverseBytesVNode(n1, vt);
 
   case Op_SqrtVF: return new SqrtVFNode(n1, vt);
   case Op_SqrtVD: return new SqrtVDNode(n1, vt);
 
+  case Op_RoundVF: return new RoundVFNode(n1, vt);
+  case Op_RoundVD: return new RoundVDNode(n1, vt);
+
   case Op_PopCountVI: return new PopCountVINode(n1, vt);
+  case Op_PopCountVL: return new PopCountVLNode(n1, vt);
   case Op_RotateLeftV: return new RotateLeftVNode(n1, n2, vt);
   case Op_RotateRightV: return new RotateRightVNode(n1, n2, vt);
 
-  case Op_LShiftVB: return new LShiftVBNode(n1, n2, vt);
-  case Op_LShiftVS: return new LShiftVSNode(n1, n2, vt);
-  case Op_LShiftVI: return new LShiftVINode(n1, n2, vt);
-  case Op_LShiftVL: return new LShiftVLNode(n1, n2, vt);
+  case Op_LShiftVB: return new LShiftVBNode(n1, n2, vt, is_var_shift);
+  case Op_LShiftVS: return new LShiftVSNode(n1, n2, vt, is_var_shift);
+  case Op_LShiftVI: return new LShiftVINode(n1, n2, vt, is_var_shift);
+  case Op_LShiftVL: return new LShiftVLNode(n1, n2, vt, is_var_shift);
 
-  case Op_RShiftVB: return new RShiftVBNode(n1, n2, vt);
-  case Op_RShiftVS: return new RShiftVSNode(n1, n2, vt);
-  case Op_RShiftVI: return new RShiftVINode(n1, n2, vt);
-  case Op_RShiftVL: return new RShiftVLNode(n1, n2, vt);
+  case Op_RShiftVB: return new RShiftVBNode(n1, n2, vt, is_var_shift);
+  case Op_RShiftVS: return new RShiftVSNode(n1, n2, vt, is_var_shift);
+  case Op_RShiftVI: return new RShiftVINode(n1, n2, vt, is_var_shift);
+  case Op_RShiftVL: return new RShiftVLNode(n1, n2, vt, is_var_shift);
 
-  case Op_URShiftVB: return new URShiftVBNode(n1, n2, vt);
-  case Op_URShiftVS: return new URShiftVSNode(n1, n2, vt);
-  case Op_URShiftVI: return new URShiftVINode(n1, n2, vt);
-  case Op_URShiftVL: return new URShiftVLNode(n1, n2, vt);
+  case Op_URShiftVB: return new URShiftVBNode(n1, n2, vt, is_var_shift);
+  case Op_URShiftVS: return new URShiftVSNode(n1, n2, vt, is_var_shift);
+  case Op_URShiftVI: return new URShiftVINode(n1, n2, vt, is_var_shift);
+  case Op_URShiftVL: return new URShiftVLNode(n1, n2, vt, is_var_shift);
 
   case Op_AndV: return new AndVNode(n1, n2, vt);
   case Op_OrV:  return new OrVNode (n1, n2, vt);
@@ -548,6 +640,12 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt, b
   case Op_RoundDoubleModeV: return new RoundDoubleModeVNode(n1, n2, vt);
 
   case Op_MulAddVS2VI: return new MulAddVS2VINode(n1, n2, vt);
+
+  case Op_ExpandV: return new ExpandVNode(n1, n2, vt);
+  case Op_CompressV: return new CompressVNode(n1, n2, vt);
+  case Op_CompressM: assert(n1 == NULL, ""); return new CompressMNode(n2, vt);
+  case Op_CountLeadingZerosV: return new CountLeadingZerosVNode(n1, vt);
+  case Op_CountTrailingZerosV: return new CountTrailingZerosVNode(n1, vt);
   default:
     fatal("Missed vector creation for '%s'", NodeClassNames[vopc]);
     return NULL;
@@ -555,12 +653,12 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt, b
 }
 
 // Return the vector version of a scalar binary operation node.
-VectorNode* VectorNode::make(int opc, Node* n1, Node* n2, uint vlen, BasicType bt) {
+VectorNode* VectorNode::make(int opc, Node* n1, Node* n2, uint vlen, BasicType bt, bool is_var_shift) {
   const TypeVect* vt = TypeVect::make(bt, vlen);
   int vopc = VectorNode::opcode(opc, bt);
   // This method should not be called for unimplemented vectors.
   guarantee(vopc > 0, "Vector for '%s' is not implemented", NodeClassNames[opc]);
-  return make(vopc, n1, n2, vt);
+  return make(vopc, n1, n2, vt, false, is_var_shift);
 }
 
 // Make a vector node for ternary operation
@@ -588,13 +686,13 @@ VectorNode* VectorNode::make(int opc, Node* n1, Node* n2, Node* n3, uint vlen, B
 // Scalar promotion
 VectorNode* VectorNode::scalar2vector(Node* s, uint vlen, const Type* opd_t, bool is_mask) {
   BasicType bt = opd_t->array_element_basic_type();
-  const TypeVect* vt = opd_t->singleton() ? TypeVect::make(opd_t, vlen, is_mask)
-                                          : TypeVect::make(bt, vlen, is_mask);
-
   if (is_mask && Matcher::match_rule_supported_vector(Op_MaskAll, vlen, bt)) {
+    const TypeVect* vt = TypeVect::make(opd_t, vlen, true);
     return new MaskAllNode(s, vt);
   }
 
+  const TypeVect* vt = opd_t->singleton() ? TypeVect::make(opd_t, vlen)
+                                          : TypeVect::make(bt, vlen);
   switch (bt) {
   case T_BOOLEAN:
   case T_BYTE:
@@ -644,6 +742,10 @@ bool VectorNode::is_vector_rotate(int opc) {
   default:
     return false;
   }
+}
+
+bool VectorNode::is_vector_integral_negate(int opc) {
+  return opc == Op_NegVI || opc == Op_NegVL;
 }
 
 bool VectorNode::is_vector_shift(int opc) {
@@ -793,10 +895,10 @@ Node* LoadVectorMaskedNode::Ideal(PhaseGVN* phase, bool can_reshape) {
     Node* mask_len = in(3)->in(1);
     const TypeLong* ty = phase->type(mask_len)->isa_long();
     if (ty && ty->is_con()) {
-      BasicType mask_bt = ((VectorMaskGenNode*)in(3))->get_elem_type();
-      uint load_sz      = type2aelembytes(mask_bt) * ty->get_con();
-      if ( load_sz == 32 || load_sz == 64) {
-        assert(load_sz == 32 || MaxVectorSize > 32, "Unexpected load size");
+      BasicType mask_bt = Matcher::vector_element_basic_type(in(3));
+      int load_sz = type2aelembytes(mask_bt) * ty->get_con();
+      assert(load_sz <= MaxVectorSize, "Unexpected load size");
+      if (load_sz == MaxVectorSize) {
         Node* ctr = in(MemNode::Control);
         Node* mem = in(MemNode::Memory);
         Node* adr = in(MemNode::Address);
@@ -812,10 +914,10 @@ Node* StoreVectorMaskedNode::Ideal(PhaseGVN* phase, bool can_reshape) {
     Node* mask_len = in(4)->in(1);
     const TypeLong* ty = phase->type(mask_len)->isa_long();
     if (ty && ty->is_con()) {
-      BasicType mask_bt = ((VectorMaskGenNode*)in(4))->get_elem_type();
-      uint load_sz      = type2aelembytes(mask_bt) * ty->get_con();
-      if ( load_sz == 32 || load_sz == 64) {
-        assert(load_sz == 32 || MaxVectorSize > 32, "Unexpected store size");
+      BasicType mask_bt = Matcher::vector_element_basic_type(in(4));
+      int load_sz = type2aelembytes(mask_bt) * ty->get_con();
+      assert(load_sz <= MaxVectorSize, "Unexpected store size");
+      if (load_sz == MaxVectorSize) {
         Node* ctr = in(MemNode::Control);
         Node* mem = in(MemNode::Memory);
         Node* adr = in(MemNode::Address);
@@ -1072,23 +1174,27 @@ VectorStoreMaskNode* VectorStoreMaskNode::make(PhaseGVN& gvn, Node* in, BasicTyp
 VectorCastNode* VectorCastNode::make(int vopc, Node* n1, BasicType bt, uint vlen) {
   const TypeVect* vt = TypeVect::make(bt, vlen);
   switch (vopc) {
-    case Op_VectorCastB2X: return new VectorCastB2XNode(n1, vt);
-    case Op_VectorCastS2X: return new VectorCastS2XNode(n1, vt);
-    case Op_VectorCastI2X: return new VectorCastI2XNode(n1, vt);
-    case Op_VectorCastL2X: return new VectorCastL2XNode(n1, vt);
-    case Op_VectorCastF2X: return new VectorCastF2XNode(n1, vt);
-    case Op_VectorCastD2X: return new VectorCastD2XNode(n1, vt);
+    case Op_VectorCastB2X:  return new VectorCastB2XNode(n1, vt);
+    case Op_VectorCastS2X:  return new VectorCastS2XNode(n1, vt);
+    case Op_VectorCastI2X:  return new VectorCastI2XNode(n1, vt);
+    case Op_VectorCastL2X:  return new VectorCastL2XNode(n1, vt);
+    case Op_VectorCastF2X:  return new VectorCastF2XNode(n1, vt);
+    case Op_VectorCastD2X:  return new VectorCastD2XNode(n1, vt);
+    case Op_VectorUCastB2X: return new VectorUCastB2XNode(n1, vt);
+    case Op_VectorUCastS2X: return new VectorUCastS2XNode(n1, vt);
+    case Op_VectorUCastI2X: return new VectorUCastI2XNode(n1, vt);
     default:
       assert(false, "unknown node: %s", NodeClassNames[vopc]);
       return NULL;
   }
 }
 
-int VectorCastNode::opcode(BasicType bt) {
+int VectorCastNode::opcode(BasicType bt, bool is_signed) {
+  assert((is_integral_type(bt) && bt != T_LONG) || is_signed, "");
   switch (bt) {
-    case T_BYTE:   return Op_VectorCastB2X;
-    case T_SHORT:  return Op_VectorCastS2X;
-    case T_INT:    return Op_VectorCastI2X;
+    case T_BYTE:   return is_signed ? Op_VectorCastB2X : Op_VectorUCastB2X;
+    case T_SHORT:  return is_signed ? Op_VectorCastS2X : Op_VectorUCastS2X;
+    case T_INT:    return is_signed ? Op_VectorCastI2X : Op_VectorUCastI2X;
     case T_LONG:   return Op_VectorCastL2X;
     case T_FLOAT:  return Op_VectorCastF2X;
     case T_DOUBLE: return Op_VectorCastD2X;
@@ -1193,13 +1299,14 @@ bool ReductionNode::implemented(int opc, uint vlen, BasicType bt) {
 }
 
 MacroLogicVNode* MacroLogicVNode::make(PhaseGVN& gvn, Node* in1, Node* in2, Node* in3,
-                                       uint truth_table, const TypeVect* vt) {
+                                       Node* mask, uint truth_table, const TypeVect* vt) {
   assert(truth_table <= 0xFF, "invalid");
   assert(in1->bottom_type()->is_vect()->length_in_bytes() == vt->length_in_bytes(), "mismatch");
   assert(in2->bottom_type()->is_vect()->length_in_bytes() == vt->length_in_bytes(), "mismatch");
   assert(in3->bottom_type()->is_vect()->length_in_bytes() == vt->length_in_bytes(), "mismatch");
+  assert(!mask || mask->bottom_type()->isa_vectmask(), "predicated register type expected");
   Node* fn = gvn.intcon(truth_table);
-  return new MacroLogicVNode(in1, in2, in3, fn, vt);
+  return new MacroLogicVNode(in1, in2, in3, fn, mask, vt);
 }
 
 Node* VectorNode::degenerate_vector_rotate(Node* src, Node* cnt, bool is_rotate_left,
@@ -1289,8 +1396,8 @@ Node* VectorNode::degenerate_vector_rotate(Node* src, Node* cnt, bool is_rotate_
     shiftRCnt = phase->transform(new RShiftCntVNode(shiftRCnt, vt));
   }
 
-  return new OrVNode(phase->transform(VectorNode::make(shiftLOpc, src, shiftLCnt, vlen, bt)),
-                     phase->transform(VectorNode::make(shiftROpc, src, shiftRCnt, vlen, bt)),
+  return new OrVNode(phase->transform(VectorNode::make(shiftLOpc, src, shiftLCnt, vlen, bt, is_binary_vector_op)),
+                     phase->transform(VectorNode::make(shiftROpc, src, shiftRCnt, vlen, bt, is_binary_vector_op)),
                      vt);
 }
 
@@ -1417,6 +1524,12 @@ Node* ShiftVNode::Identity(PhaseGVN* phase) {
   return this;
 }
 
+Node* VectorMaskGenNode::make(Node* length, BasicType mask_bt) {
+  int max_vector = Matcher::max_vector_size(mask_bt);
+  const TypeVectMask* t_vmask = TypeVectMask::make(mask_bt, max_vector);
+  return new VectorMaskGenNode(length, t_vmask);
+}
+
 Node* VectorMaskOpNode::make(Node* mask, const Type* ty, int mopc) {
   switch(mopc) {
     case Op_VectorMaskTrueCount:
@@ -1429,6 +1542,145 @@ Node* VectorMaskOpNode::make(Node* mask, const Type* ty, int mopc) {
       return new VectorMaskToLongNode(mask, ty);
     default:
       assert(false, "Unhandled operation");
+  }
+  return NULL;
+}
+
+Node* VectorMaskToLongNode::Identity(PhaseGVN* phase) {
+  if (in(1)->Opcode() == Op_VectorLongToMask) {
+    return in(1)->in(1);
+  }
+  return this;
+}
+
+
+Node* VectorMaskCastNode::makeCastNode(PhaseGVN* phase, Node* src, const TypeVect* dst_type) {
+  const TypeVect* src_type = src->bottom_type()->is_vect();
+  assert(src_type->length() == dst_type->length(), "");
+
+  int num_elem = src_type->length();
+  BasicType elem_bt_from = src_type->element_basic_type();
+  BasicType elem_bt_to = dst_type->element_basic_type();
+
+  if (dst_type->isa_vectmask() == NULL && src_type->isa_vectmask() == NULL &&
+      type2aelembytes(elem_bt_from) != type2aelembytes(elem_bt_to)) {
+
+    Node* op = src;
+    BasicType new_elem_bt_from = elem_bt_from;
+    BasicType new_elem_bt_to = elem_bt_to;
+    if (is_floating_point_type(elem_bt_from)) {
+      new_elem_bt_from =  elem_bt_from == T_FLOAT ? T_INT : T_LONG;
+    }
+    if (is_floating_point_type(elem_bt_to)) {
+      new_elem_bt_to = elem_bt_to == T_FLOAT ? T_INT : T_LONG;
+    }
+
+    // Special handling for casting operation involving floating point types.
+    // Case A) F -> X :=  F -> VectorMaskCast (F->I/L [NOP]) -> VectorCast[I/L]2X
+    // Case B) X -> F :=  X -> VectorCastX2[I/L] -> VectorMaskCast ([I/L]->F [NOP])
+    // Case C) F -> F :=  VectorMaskCast (F->I/L [NOP]) -> VectorCast[I/L]2[L/I] -> VectotMaskCast (L/I->F [NOP])
+
+    if (new_elem_bt_from != elem_bt_from) {
+      const TypeVect* new_src_type = TypeVect::makemask(new_elem_bt_from, num_elem);
+      op = phase->transform(new VectorMaskCastNode(op, new_src_type));
+    }
+
+    op = phase->transform(VectorCastNode::make(VectorCastNode::opcode(new_elem_bt_from), op, new_elem_bt_to, num_elem));
+
+    if (new_elem_bt_to != elem_bt_to) {
+      op = phase->transform(new VectorMaskCastNode(op, dst_type));
+    }
+    return op;
+  } else {
+    return new VectorMaskCastNode(src, dst_type);
+  }
+}
+
+Node* VectorLongToMaskNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+  const TypeVect* dst_type = bottom_type()->is_vect();
+  if (in(1)->Opcode() == Op_AndL &&
+      in(1)->in(1)->Opcode() == Op_VectorMaskToLong &&
+      in(1)->in(2)->bottom_type()->isa_long() &&
+      in(1)->in(2)->bottom_type()->is_long()->is_con() &&
+      in(1)->in(2)->bottom_type()->is_long()->get_con() == ((1L << dst_type->length()) - 1)) {
+      // Different src/dst mask length represents a re-interpretation operation,
+      // we can however generate a mask casting operation if length matches.
+     Node* src = in(1)->in(1)->in(1);
+     if (dst_type->isa_vectmask() == NULL) {
+       if (src->Opcode() != Op_VectorStoreMask) {
+         return NULL;
+       }
+       src = src->in(1);
+     }
+     const TypeVect* src_type = src->bottom_type()->is_vect();
+     if (src_type->length() == dst_type->length() &&
+         ((src_type->isa_vectmask() == NULL && dst_type->isa_vectmask() == NULL) ||
+          (src_type->isa_vectmask() && dst_type->isa_vectmask()))) {
+       return VectorMaskCastNode::makeCastNode(phase, src, dst_type);
+     }
+  }
+  return NULL;
+}
+
+// Generate other vector nodes to implement the masked/non-masked vector negation.
+Node* NegVNode::degenerate_integral_negate(PhaseGVN* phase, bool is_predicated) {
+  const TypeVect* vt = vect_type();
+  BasicType bt = vt->element_basic_type();
+  uint vlen = length();
+
+  // Transformation for predicated NegVI/L
+  if (is_predicated) {
+      // (NegVI/L src m) ==> (AddVI/L (XorV src (ReplicateI/L -1) m) (ReplicateI/L 1) m)
+      Node* const_minus_one = NULL;
+      Node* const_one = NULL;
+      int add_opc;
+      if (bt == T_LONG) {
+        const_minus_one = phase->longcon(-1L);
+        const_one = phase->longcon(1L);
+        add_opc = Op_AddL;
+      } else {
+        const_minus_one = phase->intcon(-1);
+        const_one = phase->intcon(1);
+        add_opc = Op_AddI;
+      }
+      const_minus_one = phase->transform(VectorNode::scalar2vector(const_minus_one, vlen, Type::get_const_basic_type(bt)));
+      Node* xorv = VectorNode::make(Op_XorV, in(1), const_minus_one, vt);
+      xorv->add_req(in(2));
+      xorv->add_flag(Node::Flag_is_predicated_vector);
+      phase->transform(xorv);
+      const_one = phase->transform(VectorNode::scalar2vector(const_one, vlen, Type::get_const_basic_type(bt)));
+      Node* addv = VectorNode::make(VectorNode::opcode(add_opc, bt), xorv, const_one, vt);
+      addv->add_req(in(2));
+      addv->add_flag(Node::Flag_is_predicated_vector);
+      return addv;
+  }
+
+  // NegVI/L ==> (SubVI/L (ReplicateI/L 0) src)
+  Node* const_zero = NULL;
+  int sub_opc;
+  if (bt == T_LONG) {
+    const_zero = phase->longcon(0L);
+    sub_opc = Op_SubL;
+  } else {
+    const_zero = phase->intcon(0);
+    sub_opc = Op_SubI;
+  }
+  const_zero = phase->transform(VectorNode::scalar2vector(const_zero, vlen, Type::get_const_basic_type(bt)));
+  return VectorNode::make(VectorNode::opcode(sub_opc, bt), const_zero, in(1), vt);
+}
+
+Node* NegVNode::Ideal(PhaseGVN* phase, bool can_reshape) {
+  BasicType bt = vect_type()->element_basic_type();
+  uint vlen = length();
+  int opc = Opcode();
+  if (is_vector_integral_negate(opc)) {
+    if (is_predicated_vector()) {
+      if (!Matcher::match_rule_supported_vector_masked(opc, vlen, bt)) {
+        return degenerate_integral_negate(phase, true);
+      }
+    } else if (!Matcher::match_rule_supported_vector(opc, vlen, bt)) {
+      return degenerate_integral_negate(phase, false);
+    }
   }
   return NULL;
 }

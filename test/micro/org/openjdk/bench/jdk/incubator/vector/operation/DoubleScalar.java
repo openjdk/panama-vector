@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,6 +39,7 @@ import org.openjdk.jmh.infra.Blackhole;
 @Fork(value = 1, jvmArgsPrepend = {"--add-modules=jdk.incubator.vector"})
 public class DoubleScalar extends AbstractVectorBenchmark {
     static final int INVOC_COUNT = 1; // To align with vector benchmarks.
+
 
     @Param("1024")
     int size;
@@ -104,6 +105,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
     static boolean ge(double a, double b) {
         return a >= b;
     }
+
 
 
     @Benchmark
@@ -220,7 +222,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
-
     @Benchmark
     public void DIV(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -237,8 +238,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
-
 
     @Benchmark
     public void DIVMasked(Blackhole bh) {
@@ -260,7 +259,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         }
         bh.consume(rs);
     }
-
 
     @Benchmark
     public void FIRST_NONZERO(Blackhole bh) {
@@ -300,50 +298,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     @Benchmark
     public void MIN(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -377,12 +331,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
-
-
-
-
-
 
     @Benchmark
     public void ADDLanes(Blackhole bh) {
@@ -441,64 +389,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void MINLanes(Blackhole bh) {
-        double[] as = fa.apply(size);
-        double r = Double.POSITIVE_INFINITY;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Double.POSITIVE_INFINITY;
-            for (int i = 0; i < as.length; i++) {
-                r = (double)Math.min(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void MINMaskedLanes(Blackhole bh) {
-        double[] as = fa.apply(size);
-        boolean[] ms = fm.apply(size);
-        double r = Double.POSITIVE_INFINITY;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Double.POSITIVE_INFINITY;
-            for (int i = 0; i < as.length; i++) {
-                if (ms[i % ms.length])
-                    r = (double)Math.min(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void MAXLanes(Blackhole bh) {
-        double[] as = fa.apply(size);
-        double r = Double.NEGATIVE_INFINITY;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Double.NEGATIVE_INFINITY;
-            for (int i = 0; i < as.length; i++) {
-                r = (double)Math.max(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
-    @Benchmark
-    public void MAXMaskedLanes(Blackhole bh) {
-        double[] as = fa.apply(size);
-        boolean[] ms = fm.apply(size);
-        double r = Double.NEGATIVE_INFINITY;
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            r = Double.NEGATIVE_INFINITY;
-            for (int i = 0; i < as.length; i++) {
-                if (ms[i % ms.length])
-                    r = (double)Math.max(r, as[i]);
-            }
-        }
-        bh.consume(r);
-    }
-
-
-
-    @Benchmark
     public void IS_DEFAULT(Blackhole bh) {
         double[] as = fa.apply(size);
         boolean r = true;
@@ -528,7 +418,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
     @Benchmark
     public void IS_FINITE(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -543,8 +432,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
-
 
     @Benchmark
     public void IS_NAN(Blackhole bh) {
@@ -561,8 +448,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
     @Benchmark
     public void IS_INFINITE(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -577,7 +462,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(r);
     }
-
 
     @Benchmark
     public void LT(Blackhole bh) {
@@ -669,10 +553,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(r);
     }
 
-
-
-
-
     @Benchmark
     public void blend(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -691,6 +571,7 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
+
     void rearrangeShared(int window, Blackhole bh) {
         double[] as = fa.apply(size);
         int[] order = fs.apply(size);
@@ -732,6 +613,57 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         int window = 512 / Double.SIZE;
         rearrangeShared(window, bh);
     }
+
+    @Benchmark
+    public void compressScalar(Blackhole bh) {
+        double[] as = fa.apply(size);
+        double[] rs = new double[size];
+        boolean[] im = fmt.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0, j = 0; i < as.length; i++) {
+                if (im[i]) {
+                    rs[j++] = as[i];
+                }
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void expandScalar(Blackhole bh) {
+        double[] as = fa.apply(size);
+        double[] rs = new double[size];
+        boolean[] im = fmt.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0, j = 0; i < as.length; i++) {
+                if (im[i]) {
+                    rs[i++] = as[j++];
+                }
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void maskCompressScalar(Blackhole bh) {
+        boolean[] im = fmt.apply(size);
+        boolean[] rm = new boolean[size];
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0, j = 0; i < im.length; i++) {
+                if (im[i]) {
+                    rm[j++] = im[i];
+                }
+            }
+        }
+
+        bh.consume(rm);
+    }
+
     void broadcastShared(int window, Blackhole bh) {
         double[] as = fa.apply(size);
         double[] rs = fr.apply(size);
@@ -785,7 +717,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(as);
     }
 
-
     @Benchmark
     public void SIN(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -800,8 +731,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
-
 
     @Benchmark
     public void EXP(Blackhole bh) {
@@ -818,8 +747,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
-
-
     @Benchmark
     public void LOG1P(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -834,8 +761,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
-
 
     @Benchmark
     public void LOG(Blackhole bh) {
@@ -852,8 +777,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
-
-
     @Benchmark
     public void LOG10(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -868,8 +791,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
-
 
     @Benchmark
     public void EXPM1(Blackhole bh) {
@@ -886,8 +807,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
-
-
     @Benchmark
     public void COS(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -902,8 +821,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
-
 
     @Benchmark
     public void TAN(Blackhole bh) {
@@ -920,8 +837,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
-
-
     @Benchmark
     public void SINH(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -936,8 +851,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
-
 
     @Benchmark
     public void COSH(Blackhole bh) {
@@ -954,8 +867,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
-
-
     @Benchmark
     public void TANH(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -970,8 +881,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
-
 
     @Benchmark
     public void ASIN(Blackhole bh) {
@@ -988,8 +897,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
-
-
     @Benchmark
     public void ACOS(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -1004,8 +911,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
-
 
     @Benchmark
     public void ATAN(Blackhole bh) {
@@ -1022,8 +927,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
-
-
     @Benchmark
     public void CBRT(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -1038,8 +941,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
-
 
     @Benchmark
     public void HYPOT(Blackhole bh) {
@@ -1058,8 +959,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
-
-
     @Benchmark
     public void POW(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -1077,8 +976,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         bh.consume(rs);
     }
 
-
-
     @Benchmark
     public void ATAN2(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -1095,8 +992,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
-
 
     @Benchmark
     public void FMA(Blackhole bh) {
@@ -1116,9 +1011,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
-
-
 
     @Benchmark
     public void FMAMasked(Blackhole bh) {
@@ -1142,10 +1034,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
         }
         bh.consume(rs);
     }
-
-
-
-
     @Benchmark
     public void NEG(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -1177,7 +1065,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
     @Benchmark
     public void ABS(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -1209,12 +1096,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
-
-
-
-
-
     @Benchmark
     public void SQRT(Blackhole bh) {
         double[] as = fa.apply(size);
@@ -1229,8 +1110,6 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
-
 
     @Benchmark
     public void SQRTMasked(Blackhole bh) {
@@ -1248,120 +1127,4 @@ public class DoubleScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
-
-    @Benchmark
-    public void gatherBase0(Blackhole bh) {
-        double[] as = fa.apply(size);
-        int[] is    = fs.apply(size);
-        double[] rs = fr.apply(size);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < as.length; i++) {
-                int ix = 0 + is[i];
-                rs[i] = as[ix];
-            }
-        }
-
-        bh.consume(rs);
-    }
-
-
-    void gather(int window, Blackhole bh) {
-        double[] as = fa.apply(size);
-        int[] is    = fs.apply(size);
-        double[] rs = fr.apply(size);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < as.length; i += window) {
-                for (int j = 0; j < window; j++) {
-                    int ix = is[i + j];
-                    rs[i + j] = as[ix];
-                }
-            }
-        }
-
-        bh.consume(rs);
-    }
-
-    @Benchmark
-    public void gather064(Blackhole bh) {
-        int window = 64 / Double.SIZE;
-        gather(window, bh);
-    }
-
-    @Benchmark
-    public void gather128(Blackhole bh) {
-        int window = 128 / Double.SIZE;
-        gather(window, bh);
-    }
-
-    @Benchmark
-    public void gather256(Blackhole bh) {
-        int window = 256 / Double.SIZE;
-        gather(window, bh);
-    }
-
-    @Benchmark
-    public void gather512(Blackhole bh) {
-        int window = 512 / Double.SIZE;
-        gather(window, bh);
-    }
-
-    @Benchmark
-    public void scatterBase0(Blackhole bh) {
-        double[] as = fa.apply(size);
-        int[] is    = fs.apply(size);
-        double[] rs = fr.apply(size);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < as.length; i++) {
-                int ix = 0 + is[i];
-                rs[ix] = as[i];
-            }
-        }
-
-        bh.consume(rs);
-    }
-
-    void scatter(int window, Blackhole bh) {
-        double[] as = fa.apply(size);
-        int[] is    = fs.apply(size);
-        double[] rs = fr.apply(size);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < as.length; i += window) {
-                for (int j = 0; j < window; j++) {
-                    int ix = is[i + j];
-                    rs[ix] = as[i + j];
-                }
-            }
-        }
-
-        bh.consume(rs);
-    }
-
-    @Benchmark
-    public void scatter064(Blackhole bh) {
-        int window = 64 / Double.SIZE;
-        scatter(window, bh);
-    }
-
-    @Benchmark
-    public void scatter128(Blackhole bh) {
-        int window = 128 / Double.SIZE;
-        scatter(window, bh);
-    }
-
-    @Benchmark
-    public void scatter256(Blackhole bh) {
-        int window = 256 / Double.SIZE;
-        scatter(window, bh);
-    }
-
-    @Benchmark
-    public void scatter512(Blackhole bh) {
-        int window = 512 / Double.SIZE;
-        scatter(window, bh);
-    }
 }
-
