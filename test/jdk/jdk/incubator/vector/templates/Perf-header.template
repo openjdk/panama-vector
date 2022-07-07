@@ -73,6 +73,14 @@ public class $vectorbenchtype$ extends AbstractVectorBenchmark {
     }
 #end[BITWISE]
 
+    static $type$ firstNonZero($type$ a, $type$ b) {
+        return $Boxtype$.compare(a, ($type$) 0) != 0 ? a : b;
+    }
+
+#if[BITWISE]
+    private static final $type$ CONST_SHIFT = $Boxtype$.SIZE / 2;
+#end[BITWISE]
+
     @Param("1024")
     int size;
 

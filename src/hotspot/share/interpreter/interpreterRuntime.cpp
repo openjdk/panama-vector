@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -407,7 +407,11 @@ JRT_ENTRY(void, InterpreterRuntime::create_klass_exception(JavaThread* current, 
   // lookup exception klass
   TempNewSymbol s = SymbolTable::new_symbol(name);
   if (ProfileTraps) {
-    note_trap(current, Deoptimization::Reason_class_check);
+    if (s == vmSymbols::java_lang_ArrayStoreException()) {
+      note_trap(current, Deoptimization::Reason_array_check);
+    } else {
+      note_trap(current, Deoptimization::Reason_class_check);
+    }
   }
   // create exception, with klass name as detail message
   Handle exception = Exceptions::new_exception(current, s, klass_name);
@@ -825,7 +829,18 @@ void InterpreterRuntime::resolve_invoke(JavaThread* current, Bytecodes::Code byt
     JavaThread* THREAD = current; // For exception macros.
     LinkResolver::resolve_invoke(info, receiver, pool,
                                  last_frame.get_index_u2_cpcache(bytecode), bytecode,
-                                 CHECK);
+                                 THREAD);
+
+    if (HAS_PENDING_EXCEPTION) {
+      if (ProfileTraps && PENDING_EXCEPTION->klass()->name() == vmSymbols::java_lang_NullPointerException()) {
+        // Preserve the original exception across the call to note_trap()
+        PreserveExceptionMark pm(current);
+        // Recording the trap will help the compiler to potentially recognize this exception as "hot"
+        note_trap(current, Deoptimization::Reason_null_check);
+      }
+      return;
+    }
+
     if (JvmtiExport::can_hotswap_or_post_breakpoint() && info.resolved_method()->is_old()) {
       resolved_method = methodHandle(current, info.resolved_method()->get_new_method());
     } else {
@@ -1096,7 +1111,7 @@ JRT_END
 
 
 JRT_ENTRY(void, InterpreterRuntime::at_safepoint(JavaThread* current))
-  // We used to need an explict preserve_arguments here for invoke bytecodes. However,
+  // We used to need an explicit preserve_arguments here for invoke bytecodes. However,
   // stack traversal automatically takes care of preserving arguments for invoke, so
   // this is no longer needed.
 
@@ -1233,7 +1248,7 @@ JRT_END
 
 #ifndef SHARING_FAST_NATIVE_FINGERPRINTS
 // Dummy definition (else normalization method is defined in CPU
-// dependant code)
+// dependent code)
 uint64_t InterpreterRuntime::normalize_fast_native_fingerprint(uint64_t fingerprint) {
   return fingerprint;
 }
@@ -1294,7 +1309,7 @@ void SignatureHandlerLibrary::add(const methodHandle& method) {
       initialize();
       // lookup method signature's fingerprint
       uint64_t fingerprint = Fingerprinter(method).fingerprint();
-      // allow CPU dependant code to optimize the fingerprints for the fast handler
+      // allow CPU dependent code to optimize the fingerprints for the fast handler
       fingerprint = InterpreterRuntime::normalize_fast_native_fingerprint(fingerprint);
       handler_index = _fingerprints->find(fingerprint);
       // create handler if necessary
@@ -1309,7 +1324,7 @@ void SignatureHandlerLibrary::add(const methodHandle& method) {
         if (handler == NULL) {
           // use slow signature handler (without memorizing it in the fingerprints)
         } else {
-          // debugging suppport
+          // debugging support
           if (PrintSignatureHandlers && (handler != Interpreter::slow_signature_handler())) {
             ttyLocker ttyl;
             tty->cr();

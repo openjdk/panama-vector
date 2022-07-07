@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,7 @@
 #include "opto/memnode.hpp"
 #include "opto/node.hpp"
 #include "opto/opcodes.hpp"
+#include "prims/vectorSupport.hpp"
 
 //------------------------------VectorNode-------------------------------------
 // Vector Operation
@@ -72,8 +73,8 @@ class VectorNode : public TypeNode {
 
   static VectorNode* scalar2vector(Node* s, uint vlen, const Type* opd_t, bool is_mask = false);
   static VectorNode* shift_count(int opc, Node* cnt, uint vlen, BasicType bt);
-  static VectorNode* make(int opc, Node* n1, Node* n2, uint vlen, BasicType bt);
-  static VectorNode* make(int vopc, Node* n1, Node* n2, const TypeVect* vt, bool is_mask = false);
+  static VectorNode* make(int opc, Node* n1, Node* n2, uint vlen, BasicType bt, bool is_var_shift = false);
+  static VectorNode* make(int vopc, Node* n1, Node* n2, const TypeVect* vt, bool is_mask = false, bool is_var_shift = false);
   static VectorNode* make(int opc, Node* n1, Node* n2, Node* n3, uint vlen, BasicType bt);
   static VectorNode* make(int vopc, Node* n1, Node* n2, Node* n3, const TypeVect* vt);
   static VectorNode* make_mask_node(int vopc, Node* n1, Node* n2, uint vlen, BasicType bt);
@@ -92,9 +93,11 @@ class VectorNode : public TypeNode {
   static bool is_type_transition_short_to_int(Node* n);
   static bool is_type_transition_to_int(Node* n);
   static bool is_muladds2i(Node* n);
+  static bool is_type_transition_long_to_int(Node* n);
   static bool is_roundopD(Node* n);
   static bool is_scalar_rotate(Node* n);
   static bool is_vector_rotate_supported(int opc, uint vlen, BasicType bt);
+  static bool is_vector_integral_negate_supported(int opc, uint vlen, BasicType bt, bool use_predicate);
   static bool is_invariant_vector(Node* n);
   static bool is_all_ones_vector(Node* n);
   static bool is_vector_bitwise_not_pattern(Node* n);
@@ -107,6 +110,7 @@ class VectorNode : public TypeNode {
   static bool is_vector_shift(int opc);
   static bool is_vector_shift_count(int opc);
   static bool is_vector_rotate(int opc);
+  static bool is_vector_integral_negate(int opc);
 
   static bool is_vector_shift(Node* n) {
     return is_vector_shift(n->Opcode());
@@ -472,27 +476,47 @@ class AbsVDNode : public VectorNode {
   virtual int Opcode() const;
 };
 
-//------------------------------NegVINode--------------------------------------
-// Vector Neg int
-class NegVINode : public VectorNode {
+//------------------------------NegVNode---------------------------------------
+// Vector Neg parent class (not for code generation).
+class NegVNode : public VectorNode {
  public:
-  NegVINode(Node* in, const TypeVect* vt) : VectorNode(in, vt) {}
+  NegVNode(Node* in, const TypeVect* vt) : VectorNode(in, vt) {}
+  virtual int Opcode() const = 0;
+  virtual Node* Ideal(PhaseGVN* phase, bool can_reshape);
+
+ private:
+  Node* degenerate_integral_negate(PhaseGVN* phase, bool is_predicated);
+};
+
+//------------------------------NegVINode--------------------------------------
+// Vector Neg byte/short/int
+class NegVINode : public NegVNode {
+ public:
+  NegVINode(Node* in, const TypeVect* vt) : NegVNode(in, vt) {}
+  virtual int Opcode() const;
+};
+
+//------------------------------NegVLNode--------------------------------------
+// Vector Neg long
+class NegVLNode : public NegVNode {
+ public:
+  NegVLNode(Node* in, const TypeVect* vt) : NegVNode(in, vt) {}
   virtual int Opcode() const;
 };
 
 //------------------------------NegVFNode--------------------------------------
 // Vector Neg float
-class NegVFNode : public VectorNode {
+class NegVFNode : public NegVNode {
  public:
-  NegVFNode(Node* in, const TypeVect* vt) : VectorNode(in,vt) {}
+  NegVFNode(Node* in, const TypeVect* vt) : NegVNode(in, vt) {}
   virtual int Opcode() const;
 };
 
 //------------------------------NegVDNode--------------------------------------
 // Vector Neg double
-class NegVDNode : public VectorNode {
+class NegVDNode : public NegVNode {
  public:
-  NegVDNode(Node* in, const TypeVect* vt) : VectorNode(in,vt) {}
+  NegVDNode(Node* in, const TypeVect* vt) : NegVNode(in, vt) {}
   virtual int Opcode() const;
 };
 
@@ -501,6 +525,14 @@ class NegVDNode : public VectorNode {
 class PopCountVINode : public VectorNode {
  public:
   PopCountVINode(Node* in, const TypeVect* vt) : VectorNode(in,vt) {}
+  virtual int Opcode() const;
+};
+
+//------------------------------PopCountVLNode---------------------------------
+// Vector popcount long bits
+class PopCountVLNode : public VectorNode {
+ public:
+  PopCountVLNode(Node* in, const TypeVect* vt) : VectorNode(in,vt) {}
   virtual int Opcode() const;
 };
 
@@ -531,17 +563,29 @@ class SqrtVDNode : public VectorNode {
 // Class ShiftV functionality.  This covers the common behaviors for all kinds
 // of vector shifts.
 class ShiftVNode : public VectorNode {
+ private:
+  bool _is_var_shift;
  public:
-  ShiftVNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1,in2,vt) {}
+  ShiftVNode(Node* in1, Node* in2, const TypeVect* vt, bool is_var_shift) :
+    VectorNode(in1,in2,vt), _is_var_shift(is_var_shift) {
+    init_class_id(Class_ShiftV);
+  }
   virtual Node* Identity(PhaseGVN* phase);
   virtual int Opcode() const = 0;
+  virtual uint hash() const { return VectorNode::hash() + _is_var_shift; }
+  virtual bool cmp(const Node& n) const {
+    return VectorNode::cmp(n) && _is_var_shift == ((ShiftVNode&)n)._is_var_shift;
+  }
+  bool is_var_shift() { return _is_var_shift;}
+  virtual uint size_of() const { return sizeof(ShiftVNode); }
 };
 
 //------------------------------LShiftVBNode-----------------------------------
 // Vector left shift bytes
 class LShiftVBNode : public ShiftVNode {
  public:
-  LShiftVBNode(Node* in1, Node* in2, const TypeVect* vt) : ShiftVNode(in1,in2,vt) {}
+  LShiftVBNode(Node* in1, Node* in2, const TypeVect* vt, bool is_var_shift=false) :
+    ShiftVNode(in1,in2,vt,is_var_shift) {}
   virtual int Opcode() const;
 };
 
@@ -549,7 +593,8 @@ class LShiftVBNode : public ShiftVNode {
 // Vector left shift shorts
 class LShiftVSNode : public ShiftVNode {
  public:
-  LShiftVSNode(Node* in1, Node* in2, const TypeVect* vt) : ShiftVNode(in1,in2,vt) {}
+  LShiftVSNode(Node* in1, Node* in2, const TypeVect* vt, bool is_var_shift=false) :
+    ShiftVNode(in1,in2,vt,is_var_shift) {}
   virtual int Opcode() const;
 };
 
@@ -557,7 +602,8 @@ class LShiftVSNode : public ShiftVNode {
 // Vector left shift ints
 class LShiftVINode : public ShiftVNode {
  public:
-  LShiftVINode(Node* in1, Node* in2, const TypeVect* vt) : ShiftVNode(in1,in2,vt) {}
+  LShiftVINode(Node* in1, Node* in2, const TypeVect* vt, bool is_var_shift=false) :
+    ShiftVNode(in1,in2,vt,is_var_shift) {}
   virtual int Opcode() const;
 };
 
@@ -565,7 +611,8 @@ class LShiftVINode : public ShiftVNode {
 // Vector left shift longs
 class LShiftVLNode : public ShiftVNode {
  public:
-  LShiftVLNode(Node* in1, Node* in2, const TypeVect* vt) : ShiftVNode(in1,in2,vt) {}
+  LShiftVLNode(Node* in1, Node* in2, const TypeVect* vt, bool is_var_shift=false) :
+    ShiftVNode(in1,in2,vt,is_var_shift) {}
   virtual int Opcode() const;
 };
 
@@ -573,7 +620,8 @@ class LShiftVLNode : public ShiftVNode {
 // Vector right arithmetic (signed) shift bytes
 class RShiftVBNode : public ShiftVNode {
  public:
-  RShiftVBNode(Node* in1, Node* in2, const TypeVect* vt) : ShiftVNode(in1,in2,vt) {}
+  RShiftVBNode(Node* in1, Node* in2, const TypeVect* vt, bool is_var_shift=false) :
+    ShiftVNode(in1,in2,vt,is_var_shift) {}
   virtual int Opcode() const;
 };
 
@@ -581,7 +629,8 @@ class RShiftVBNode : public ShiftVNode {
 // Vector right arithmetic (signed) shift shorts
 class RShiftVSNode : public ShiftVNode {
  public:
-  RShiftVSNode(Node* in1, Node* in2, const TypeVect* vt) : ShiftVNode(in1,in2,vt) {}
+  RShiftVSNode(Node* in1, Node* in2, const TypeVect* vt, bool is_var_shift=false) :
+    ShiftVNode(in1,in2,vt,is_var_shift) {}
   virtual int Opcode() const;
 };
 
@@ -589,7 +638,8 @@ class RShiftVSNode : public ShiftVNode {
 // Vector right arithmetic (signed) shift ints
 class RShiftVINode : public ShiftVNode {
  public:
-  RShiftVINode(Node* in1, Node* in2, const TypeVect* vt) : ShiftVNode(in1,in2,vt) {}
+  RShiftVINode(Node* in1, Node* in2, const TypeVect* vt, bool is_var_shift=false) :
+    ShiftVNode(in1,in2,vt,is_var_shift) {}
   virtual int Opcode() const;
 };
 
@@ -597,7 +647,8 @@ class RShiftVINode : public ShiftVNode {
 // Vector right arithmetic (signed) shift longs
 class RShiftVLNode : public ShiftVNode {
  public:
-  RShiftVLNode(Node* in1, Node* in2, const TypeVect* vt) : ShiftVNode(in1,in2,vt) {}
+  RShiftVLNode(Node* in1, Node* in2, const TypeVect* vt, bool is_var_shift=false) :
+    ShiftVNode(in1,in2,vt,is_var_shift) {}
   virtual int Opcode() const;
 };
 
@@ -605,7 +656,8 @@ class RShiftVLNode : public ShiftVNode {
 // Vector right logical (unsigned) shift bytes
 class URShiftVBNode : public ShiftVNode {
  public:
-  URShiftVBNode(Node* in1, Node* in2, const TypeVect* vt) : ShiftVNode(in1,in2,vt) {}
+  URShiftVBNode(Node* in1, Node* in2, const TypeVect* vt, bool is_var_shift=false) :
+    ShiftVNode(in1,in2,vt,is_var_shift) {}
   virtual int Opcode() const;
 };
 
@@ -613,7 +665,8 @@ class URShiftVBNode : public ShiftVNode {
 // Vector right logical (unsigned) shift shorts
 class URShiftVSNode : public ShiftVNode {
  public:
-  URShiftVSNode(Node* in1, Node* in2, const TypeVect* vt) : ShiftVNode(in1,in2,vt) {}
+  URShiftVSNode(Node* in1, Node* in2, const TypeVect* vt, bool is_var_shift=false) :
+    ShiftVNode(in1,in2,vt,is_var_shift) {}
   virtual int Opcode() const;
 };
 
@@ -621,7 +674,8 @@ class URShiftVSNode : public ShiftVNode {
 // Vector right logical (unsigned) shift ints
 class URShiftVINode : public ShiftVNode {
  public:
-  URShiftVINode(Node* in1, Node* in2, const TypeVect* vt) : ShiftVNode(in1,in2,vt) {}
+  URShiftVINode(Node* in1, Node* in2, const TypeVect* vt, bool is_var_shift=false) :
+    ShiftVNode(in1,in2,vt,is_var_shift) {}
   virtual int Opcode() const;
 };
 
@@ -629,7 +683,8 @@ class URShiftVINode : public ShiftVNode {
 // Vector right logical (unsigned) shift longs
 class URShiftVLNode : public ShiftVNode {
  public:
-  URShiftVLNode(Node* in1, Node* in2, const TypeVect* vt) : ShiftVNode(in1,in2,vt) {}
+  URShiftVLNode(Node* in1, Node* in2, const TypeVect* vt, bool is_var_shift=false) :
+     ShiftVNode(in1,in2,vt,is_var_shift) {}
   virtual int Opcode() const;
 };
 
@@ -710,6 +765,37 @@ public:
 class MaxReductionVNode : public ReductionNode {
 public:
   MaxReductionVNode(Node *ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {}
+  virtual int Opcode() const;
+};
+
+//------------------------------CompressVNode--------------------------------------
+// Vector compress
+class CompressVNode: public VectorNode {
+ public:
+  CompressVNode(Node* vec, Node* mask, const TypeVect* vt) :
+      VectorNode(vec, mask, vt) {
+    init_class_id(Class_CompressV);
+  }
+  virtual int Opcode() const;
+};
+
+class CompressMNode: public VectorNode {
+ public:
+  CompressMNode(Node* mask, const TypeVect* vt) :
+      VectorNode(mask, vt) {
+    init_class_id(Class_CompressM);
+  }
+  virtual int Opcode() const;
+};
+
+//------------------------------ExpandVNode--------------------------------------
+// Vector expand
+class ExpandVNode: public VectorNode {
+ public:
+  ExpandVNode(Node* vec, Node* mask, const TypeVect* vt) :
+      VectorNode(vec, mask, vt) {
+    init_class_id(Class_ExpandV);
+  }
   virtual int Opcode() const;
 };
 
@@ -901,23 +987,19 @@ class VectorCmpMaskedNode : public TypeNode {
   virtual int Opcode() const;
 };
 
+//------------------------------VectorMaskGenNode----------------------------------
 class VectorMaskGenNode : public TypeNode {
  public:
-  VectorMaskGenNode(Node* length, const Type* ty, BasicType ety): TypeNode(ty, 2), _elemType(ety) {
+  VectorMaskGenNode(Node* length, const Type* ty): TypeNode(ty, 2) {
     init_req(1, length);
   }
 
   virtual int Opcode() const;
-  BasicType get_elem_type()  { return _elemType;}
-  virtual  uint  size_of() const { return sizeof(VectorMaskGenNode); }
-  virtual uint  ideal_reg() const {
-    return Op_RegVectMask;
-  }
-
-  private:
-   BasicType _elemType;
+  virtual uint ideal_reg() const { return Op_RegVectMask; }
+  static Node* make(Node* length, BasicType vmask_bt);
 };
 
+//------------------------------VectorMaskOpNode-----------------------------------
 class VectorMaskOpNode : public TypeNode {
  public:
   VectorMaskOpNode(Node* mask, const Type* ty, int mopc):
@@ -963,6 +1045,16 @@ class VectorMaskToLongNode : public VectorMaskOpNode {
     VectorMaskOpNode(mask, ty, Op_VectorMaskToLong) {}
   virtual int Opcode() const;
   virtual uint  ideal_reg() const { return Op_RegL; }
+  virtual Node* Identity(PhaseGVN* phase);
+};
+
+class VectorLongToMaskNode : public VectorNode {
+ public:
+  VectorLongToMaskNode(Node* mask, const TypeVect* ty):
+    VectorNode(mask, ty) {
+  }
+  virtual int Opcode() const;
+  Node* Ideal(PhaseGVN* phase, bool can_reshape);
 };
 
 //-------------------------- Vector mask broadcast -----------------------------------
@@ -1235,28 +1327,23 @@ class ExtractDNode : public ExtractNode {
   virtual uint ideal_reg() const { return Op_RegD; }
 };
 
-//------------------------------SetVectMaskINode-------------------------------
-// Provide a mask for a vector predicate machine
-class SetVectMaskINode : public Node {
-public:
-  SetVectMaskINode(Node *c, Node *in1) : Node(c, in1) {}
-  virtual int Opcode() const;
-  const Type *bottom_type() const { return TypeInt::INT; }
-  virtual uint ideal_reg() const { return Op_RegI; }
-  virtual const Type *Value(PhaseGVN *phase) const { return TypeInt::INT; }
-};
-
 //------------------------------MacroLogicVNode-------------------------------
 // Vector logical operations packing node.
 class MacroLogicVNode : public VectorNode {
 private:
-  MacroLogicVNode(Node* in1, Node* in2, Node* in3, Node* fn, const TypeVect* vt)
-  : VectorNode(in1, in2, in3, fn, vt) {}
+  MacroLogicVNode(Node* in1, Node* in2, Node* in3, Node* fn, Node* mask, const TypeVect* vt)
+  : VectorNode(in1, in2, in3, fn, vt) {
+     if (mask) {
+       this->add_req(mask);
+       this->add_flag(Node::Flag_is_predicated_vector);
+     }
+  }
 
 public:
   virtual int Opcode() const;
 
-  static MacroLogicVNode* make(PhaseGVN& igvn, Node* in1, Node* in2, Node* in3, uint truth_table, const TypeVect* vt);
+  static MacroLogicVNode* make(PhaseGVN& igvn, Node* in1, Node* in2, Node* in3,
+                               Node* mask, uint truth_table, const TypeVect* vt);
 };
 
 class VectorMaskCmpNode : public VectorNode {
@@ -1328,7 +1415,6 @@ class VectorBlendNode : public VectorNode {
  public:
   VectorBlendNode(Node* vec1, Node* vec2, Node* mask)
     : VectorNode(vec1, vec2, mask, vec1->bottom_type()->is_vect()) {
-    // assert(mask->is_VectorMask(), "VectorBlendNode requires that third argument be a mask");
   }
 
   virtual int Opcode() const;
@@ -1387,7 +1473,7 @@ class VectorMaskCastNode : public VectorNode {
     const TypeVect* in_vt = in->bottom_type()->is_vect();
     assert(in_vt->length() == vt->length(), "vector length must match");
   }
-
+  static Node* makeCastNode(PhaseGVN* phase, Node* in1, const TypeVect * vt);
   virtual int Opcode() const;
 };
 
@@ -1423,7 +1509,7 @@ class VectorCastNode : public VectorNode {
   virtual int Opcode() const;
 
   static VectorCastNode* make(int vopc, Node* n1, BasicType bt, uint vlen);
-  static int  opcode(BasicType bt);
+  static int  opcode(BasicType bt, bool is_signed = true);
   static bool implemented(BasicType bt, uint vlen);
 
   virtual Node* Identity(PhaseGVN* phase);
@@ -1473,6 +1559,46 @@ class VectorCastD2XNode : public VectorCastNode {
  public:
   VectorCastD2XNode(Node* in, const TypeVect* vt) : VectorCastNode(in, vt) {
     assert(in->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE, "must be double");
+  }
+  virtual int Opcode() const;
+};
+
+class RoundVFNode : public VectorNode {
+ public:
+  RoundVFNode(Node* in, const TypeVect* vt) :VectorNode(in, vt) {
+    assert(in->bottom_type()->is_vect()->element_basic_type() == T_FLOAT, "must be float");
+  }
+  virtual int Opcode() const;
+};
+
+class VectorUCastB2XNode : public VectorCastNode {
+ public:
+  VectorUCastB2XNode(Node* in, const TypeVect* vt) : VectorCastNode(in, vt) {
+    assert(in->bottom_type()->is_vect()->element_basic_type() == T_BYTE, "must be byte");
+  }
+  virtual int Opcode() const;
+};
+
+class RoundVDNode : public VectorNode {
+ public:
+  RoundVDNode(Node* in, const TypeVect* vt) : VectorNode(in, vt) {
+    assert(in->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE, "must be double");
+  }
+  virtual int Opcode() const;
+};
+
+class VectorUCastS2XNode : public VectorCastNode {
+ public:
+  VectorUCastS2XNode(Node* in, const TypeVect* vt) : VectorCastNode(in, vt) {
+    assert(in->bottom_type()->is_vect()->element_basic_type() == T_SHORT, "must be short");
+  }
+  virtual int Opcode() const;
+};
+
+class VectorUCastI2XNode : public VectorCastNode {
+ public:
+  VectorUCastI2XNode(Node* in, const TypeVect* vt) : VectorCastNode(in, vt) {
+    assert(in->bottom_type()->is_vect()->element_basic_type() == T_INT, "must be int");
   }
   virtual int Opcode() const;
 };
@@ -1569,5 +1695,37 @@ public:
 
   virtual int Opcode() const;
   Node* Ideal(PhaseGVN* phase, bool can_reshape);
+};
+
+class CountLeadingZerosVNode : public VectorNode {
+ public:
+  CountLeadingZerosVNode(Node* in, const TypeVect* vt)
+  : VectorNode(in, vt) {}
+
+  virtual int Opcode() const;
+};
+
+class CountTrailingZerosVNode : public VectorNode {
+ public:
+  CountTrailingZerosVNode(Node* in, const TypeVect* vt)
+  : VectorNode(in, vt) {}
+
+  virtual int Opcode() const;
+};
+
+class ReverseVNode : public VectorNode {
+public:
+  ReverseVNode(Node* in, const TypeVect* vt)
+  : VectorNode(in, vt) {}
+
+  virtual int Opcode() const;
+};
+
+class ReverseBytesVNode : public VectorNode {
+public:
+  ReverseBytesVNode(Node* in, const TypeVect* vt)
+  : VectorNode(in, vt) {}
+
+  virtual int Opcode() const;
 };
 #endif // SHARE_OPTO_VECTORNODE_HPP

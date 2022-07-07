@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -471,6 +471,8 @@ GetJavaProperties(JNIEnv* env)
          * Windows Server 2012          6               2  (!VER_NT_WORKSTATION)
          * Windows Server 2012 R2       6               3  (!VER_NT_WORKSTATION)
          * Windows 10                   10              0  (VER_NT_WORKSTATION)
+         * Windows 11                   10              0  (VER_NT_WORKSTATION)
+         *       where (buildNumber >= 22000)
          * Windows Server 2016          10              0  (!VER_NT_WORKSTATION)
          * Windows Server 2019          10              0  (!VER_NT_WORKSTATION)
          *       where (buildNumber > 17762)
@@ -544,7 +546,14 @@ GetJavaProperties(JNIEnv* env)
             } else if (majorVersion == 10) {
                 if (is_workstation) {
                     switch (minorVersion) {
-                    case  0: sprops.os_name = "Windows 10";           break;
+                    case  0:
+                        /* Windows 11 21H2 (original release) build number is 22000 */
+                        if (buildNumber >= 22000) {
+                            sprops.os_name = "Windows 11";
+                        } else {
+                            sprops.os_name = "Windows 10";
+                        }
+                        break;
                     default: sprops.os_name = "Windows NT (unknown)";
                     }
                 } else {
@@ -700,15 +709,15 @@ GetJavaProperties(JNIEnv* env)
             hStdOutErr = GetStdHandle(STD_OUTPUT_HANDLE);
             if (hStdOutErr != INVALID_HANDLE_VALUE &&
                 GetFileType(hStdOutErr) == FILE_TYPE_CHAR) {
-                sprops.sun_stdout_encoding = getConsoleEncoding();
+                sprops.stdout_encoding = getConsoleEncoding();
             }
             hStdOutErr = GetStdHandle(STD_ERROR_HANDLE);
             if (hStdOutErr != INVALID_HANDLE_VALUE &&
                 GetFileType(hStdOutErr) == FILE_TYPE_CHAR) {
-                if (sprops.sun_stdout_encoding != NULL)
-                    sprops.sun_stderr_encoding = sprops.sun_stdout_encoding;
+                if (sprops.stdout_encoding != NULL)
+                    sprops.stderr_encoding = sprops.stdout_encoding;
                 else
-                    sprops.sun_stderr_encoding = getConsoleEncoding();
+                    sprops.stderr_encoding = getConsoleEncoding();
             }
         }
     }

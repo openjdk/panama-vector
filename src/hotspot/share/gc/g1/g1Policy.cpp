@@ -1313,7 +1313,6 @@ void G1Policy::calculate_old_collection_set_regions(G1CollectionSetCandidates* c
   num_optional_regions = 0;
   uint num_expensive_regions = 0;
 
-  double predicted_old_time_ms = 0.0;
   double predicted_initial_time_ms = 0.0;
   double predicted_optional_time_ms = 0.0;
 
@@ -1344,7 +1343,7 @@ void G1Policy::calculate_old_collection_set_regions(G1CollectionSetCandidates* c
     time_remaining_ms = MAX2(time_remaining_ms - predicted_time_ms, 0.0);
     // Add regions to old set until we reach the minimum amount
     if (num_initial_regions < min_old_cset_length) {
-      predicted_old_time_ms += predicted_time_ms;
+      predicted_initial_time_ms += predicted_time_ms;
       num_initial_regions++;
       // Record the number of regions added with no time remaining
       if (time_remaining_ms == 0.0) {
@@ -1358,7 +1357,7 @@ void G1Policy::calculate_old_collection_set_regions(G1CollectionSetCandidates* c
     } else {
       // Keep adding regions to old set until we reach the optional threshold
       if (time_remaining_ms > optional_threshold_ms) {
-        predicted_old_time_ms += predicted_time_ms;
+        predicted_initial_time_ms += predicted_time_ms;
         num_initial_regions++;
       } else if (time_remaining_ms > 0) {
         // Keep adding optional regions until time is up.
@@ -1382,7 +1381,7 @@ void G1Policy::calculate_old_collection_set_regions(G1CollectionSetCandidates* c
   }
 
   log_debug(gc, ergo, cset)("Finish choosing collection set old regions. Initial: %u, optional: %u, "
-                            "predicted old time: %1.2fms, predicted optional time: %1.2fms, time remaining: %1.2f",
+                            "predicted initial time: %1.2fms, predicted optional time: %1.2fms, time remaining: %1.2f",
                             num_initial_regions, num_optional_regions,
                             predicted_initial_time_ms, predicted_optional_time_ms, time_remaining_ms);
 }
@@ -1445,17 +1444,19 @@ bool G1Policy::preventive_collection_required(uint alloc_region_count) {
   uint required_regions = (uint)(get_num_regions_adjust_for_plab_waste(total_young_predicted_surviving_bytes) +
                                 get_num_regions_adjust_for_plab_waste(_predicted_surviving_bytes_from_old));
 
-  if (required_regions > _g1h->num_free_regions() - alloc_region_count) {
-    log_debug(gc, ergo, cset)("Preventive GC, insufficient free regions. Predicted need %u. Curr Eden %u (Pred %u). Curr Survivor %u (Pred %u). Curr Old %u (Pred %u) Free %u Alloc %u",
-            required_regions,
-            eden_count,
-            (uint)get_num_regions_adjust_for_plab_waste(eden_surv_bytes_pred),
-            _g1h->survivor_regions_count(),
-            (uint)get_num_regions_adjust_for_plab_waste(_predicted_surviving_bytes_from_survivor),
-            _g1h->old_regions_count(),
-            (uint)get_num_regions_adjust_for_plab_waste(_predicted_surviving_bytes_from_old),
-            _g1h->num_free_regions(),
-            alloc_region_count);
+  if (required_regions > _g1h->num_free_or_available_regions() - alloc_region_count) {
+    log_debug(gc, ergo, cset)("Preventive GC, insufficient free or available regions. "
+                              "Predicted need %u. Curr Eden %u (Pred %u). Curr Survivor %u (Pred %u). Curr Old %u (Pred %u) Free or Avail %u (Free %u) Alloc %u",
+                              required_regions,
+                              eden_count,
+                              (uint)get_num_regions_adjust_for_plab_waste(eden_surv_bytes_pred),
+                              _g1h->survivor_regions_count(),
+                              (uint)get_num_regions_adjust_for_plab_waste(_predicted_surviving_bytes_from_survivor),
+                              _g1h->old_regions_count(),
+                              (uint)get_num_regions_adjust_for_plab_waste(_predicted_surviving_bytes_from_old),
+                              _g1h->num_free_or_available_regions(),
+                              _g1h->num_free_regions(),
+                              alloc_region_count);
 
     return true;
   }
@@ -1501,7 +1502,6 @@ void G1Policy::update_survival_estimates_for_next_collection() {
 void G1Policy::transfer_survivors_to_cset(const G1SurvivorRegions* survivors) {
   start_adding_survivor_regions();
 
-  HeapRegion* last = NULL;
   for (GrowableArrayIterator<HeapRegion*> it = survivors->regions()->begin();
        it != survivors->regions()->end();
        ++it) {
@@ -1512,8 +1512,6 @@ void G1Policy::transfer_survivors_to_cset(const G1SurvivorRegions* survivors) {
     // the incremental collection set for the next evacuation
     // pause.
     _collection_set->add_survivor_regions(curr);
-
-    last = curr;
   }
   stop_adding_survivor_regions();
 

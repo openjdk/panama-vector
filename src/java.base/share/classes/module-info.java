@@ -151,12 +151,14 @@ module java.base {
         java.management,
         java.naming,
         java.rmi,
+        jdk.charsets,
         jdk.jartool,
         jdk.jlink,
         jdk.net,
         jdk.incubator.foreign;
     exports jdk.internal.access.foreign to
-        jdk.incubator.foreign;
+        jdk.incubator.foreign,
+        jdk.incubator.vector;
     exports jdk.internal.event to
         jdk.jfr;
     exports jdk.internal.jimage to
@@ -368,6 +370,7 @@ module java.base {
 
     uses java.lang.System.LoggerFinder;
     uses java.net.ContentHandlerFactory;
+    uses java.net.spi.InetAddressResolverProvider;
     uses java.net.spi.URLStreamHandlerProvider;
     uses java.nio.channels.spi.AsynchronousChannelProvider;
     uses java.nio.channels.spi.SelectorProvider;

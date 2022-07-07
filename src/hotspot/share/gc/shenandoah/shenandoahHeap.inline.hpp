@@ -64,11 +64,11 @@ inline bool ShenandoahHeap::has_forwarded_objects() const {
   return _gc_state.is_set(HAS_FORWARDED);
 }
 
-inline WorkGang* ShenandoahHeap::workers() const {
+inline WorkerThreads* ShenandoahHeap::workers() const {
   return _workers;
 }
 
-inline WorkGang* ShenandoahHeap::safepoint_workers() {
+inline WorkerThreads* ShenandoahHeap::safepoint_workers() {
   return _safepoint_workers;
 }
 
@@ -457,7 +457,7 @@ inline void ShenandoahHeap::marked_object_iterate(ShenandoahHeapRegion* region, 
     // touch anything in oop, while it still being prefetched to get enough
     // time for prefetch to work. This is why we try to scan the bitmap linearly,
     // disregarding the object size. However, since we know forwarding pointer
-    // preceeds the object, we can skip over it. Once we cannot trust the bitmap,
+    // precedes the object, we can skip over it. Once we cannot trust the bitmap,
     // there is no point for prefetching the oop contents, as oop->size() will
     // touch it prematurely.
 
@@ -513,7 +513,7 @@ inline void ShenandoahHeap::marked_object_iterate(ShenandoahHeapRegion* region, 
     oop obj = cast_to_oop(cs);
     assert(oopDesc::is_oop(obj), "sanity");
     assert(ctx->is_marked(obj), "object expected to be marked");
-    int size = obj->size();
+    size_t size = obj->size();
     cl->do_object(obj);
     cs += size;
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -60,6 +60,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.jar.JarFile;
+import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.jar.JarEntry;
 import java.util.jar.Manifest;
@@ -560,11 +561,11 @@ public class URLClassPath {
                     // fallback to checkRead/checkConnect for pre 1.2
                     // security managers
                     if ((perm instanceof java.io.FilePermission) &&
-                        perm.getActions().indexOf("read") != -1) {
+                        perm.getActions().contains("read")) {
                         security.checkRead(perm.getName());
                     } else if ((perm instanceof
                         java.net.SocketPermission) &&
-                        perm.getActions().indexOf("connect") != -1) {
+                        perm.getActions().contains("connect")) {
                         URL locUrl = url;
                         if (urlConnection instanceof JarURLConnection) {
                             locUrl = ((JarURLConnection)urlConnection).getJarFileURL();
@@ -865,16 +866,12 @@ public class URLClassPath {
                 if (check) {
                     URLClassPath.check(url);
                 }
-            } catch (MalformedURLException e) {
-                return null;
-                // throw new IllegalArgumentException("name");
-            } catch (IOException e) {
-                return null;
-            } catch (@SuppressWarnings("removal") AccessControlException e) {
+            } catch (@SuppressWarnings("removal") AccessControlException | IOException e) {
                 return null;
             }
 
             return new Resource() {
+                private Exception dataError = null;
                 public String getName() { return name; }
                 public URL getURL() { return url; }
                 public URL getCodeSourceURL() { return csu; }
@@ -890,6 +887,18 @@ public class URLClassPath {
                     { return entry.getCertificates(); };
                 public CodeSigner[] getCodeSigners()
                     { return entry.getCodeSigners(); };
+                public Exception getDataError()
+                    { return dataError; }
+                public byte[] getBytes() throws IOException {
+                    byte[] bytes = super.getBytes();
+                    CRC32 crc32 = new CRC32();
+                    crc32.update(bytes);
+                    if (crc32.getValue() != entry.getCrc()) {
+                        dataError = new IOException(
+                                "CRC error while extracting entry from JAR file");
+                    }
+                    return bytes;
+                }
             };
         }
 
@@ -1012,9 +1021,7 @@ public class URLClassPath {
                             /* put it in the global hashtable */
                             lmap.put(urlNoFragString, newLoader);
                         }
-                    } catch (PrivilegedActionException pae) {
-                        continue;
-                    } catch (MalformedURLException e) {
+                    } catch (PrivilegedActionException | MalformedURLException e) {
                         continue;
                     }
 
@@ -1240,7 +1247,7 @@ public class URLClassPath {
                     URLClassPath.check(url);
 
                 final File file;
-                if (name.indexOf("..") != -1) {
+                if (name.contains("..")) {
                     file = (new File(dir, name.replace('/', File.separatorChar)))
                           .getCanonicalFile();
                     if ( !((file.getPath()).startsWith(dir.getPath())) ) {

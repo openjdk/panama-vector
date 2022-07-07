@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,11 +24,11 @@
  */
 package jdk.incubator.vector;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
+import jdk.incubator.foreign.MemorySegment;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
 
@@ -365,6 +365,12 @@ final class Long64Vector extends LongVector {
         return super.testTemplate(Long64Mask.class, op);  // specialize
     }
 
+    @Override
+    @ForceInline
+    public final Long64Mask test(Test op, VectorMask<Long> m) {
+        return super.testTemplate(Long64Mask.class, op, (Long64Mask) m);  // specialize
+    }
+
     // Specialized comparisons
 
     @Override
@@ -456,6 +462,22 @@ final class Long64Vector extends LongVector {
             super.rearrangeTemplate(Long64Shuffle.class,
                                     (Long64Shuffle) s,
                                     (Long64Vector) v);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Long64Vector compress(VectorMask<Long> m) {
+        return (Long64Vector)
+            super.compressTemplate(Long64Mask.class,
+                                   (Long64Mask) m);  // specialize
+    }
+
+    @Override
+    @ForceInline
+    public Long64Vector expand(VectorMask<Long> m) {
+        return (Long64Vector)
+            super.expandTemplate(Long64Mask.class,
+                                   (Long64Mask) m);  // specialize
     }
 
     @Override
@@ -631,6 +653,15 @@ final class Long64Vector extends LongVector {
             return xor(maskAll(true));
         }
 
+        @Override
+        @ForceInline
+        public Long64Mask compress() {
+            return (Long64Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+                Long64Vector.class, Long64Mask.class, ETYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+        }
+
+
         // Binary operations
 
         @Override
@@ -717,9 +748,9 @@ final class Long64Vector extends LongVector {
         @ForceInline
         /*package-private*/
         static Long64Mask maskAll(boolean bit) {
-            return VectorSupport.broadcastCoerced(Long64Mask.class, long.class, VLENGTH,
-                                                  (bit ? -1 : 0), null,
-                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
+            return VectorSupport.fromBitsCoerced(Long64Mask.class, long.class, VLENGTH,
+                                                 (bit ? -1 : 0), MODE_BROADCAST, null,
+                                                 (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
         private static final Long64Mask  TRUE_MASK = new Long64Mask(true);
         private static final Long64Mask FALSE_MASK = new Long64Mask(false);
@@ -823,29 +854,15 @@ final class Long64Vector extends LongVector {
     @ForceInline
     @Override
     final
-    LongVector fromByteArray0(byte[] a, int offset) {
-        return super.fromByteArray0Template(a, offset);  // specialize
+    LongVector fromMemorySegment0(MemorySegment ms, long offset) {
+        return super.fromMemorySegment0Template(ms, offset);  // specialize
     }
 
     @ForceInline
     @Override
     final
-    LongVector fromByteArray0(byte[] a, int offset, VectorMask<Long> m) {
-        return super.fromByteArray0Template(Long64Mask.class, a, offset, (Long64Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    LongVector fromByteBuffer0(ByteBuffer bb, int offset) {
-        return super.fromByteBuffer0Template(bb, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    LongVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Long> m) {
-        return super.fromByteBuffer0Template(Long64Mask.class, bb, offset, (Long64Mask) m);  // specialize
+    LongVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Long> m) {
+        return super.fromMemorySegment0Template(Long64Mask.class, ms, offset, (Long64Mask) m);  // specialize
     }
 
     @ForceInline
@@ -873,22 +890,8 @@ final class Long64Vector extends LongVector {
     @ForceInline
     @Override
     final
-    void intoByteArray0(byte[] a, int offset) {
-        super.intoByteArray0Template(a, offset);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteArray0(byte[] a, int offset, VectorMask<Long> m) {
-        super.intoByteArray0Template(Long64Mask.class, a, offset, (Long64Mask) m);  // specialize
-    }
-
-    @ForceInline
-    @Override
-    final
-    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Long> m) {
-        super.intoByteBuffer0Template(Long64Mask.class, bb, offset, (Long64Mask) m);
+    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Long> m) {
+        super.intoMemorySegment0Template(Long64Mask.class, ms, offset, (Long64Mask) m);
     }
 
 
