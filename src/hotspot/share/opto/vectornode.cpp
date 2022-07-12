@@ -290,6 +290,47 @@ int VectorNode::replicate_opcode(BasicType bt) {
   }
 }
 
+// Return the vector operator for the specified scalar operation
+// and vector length for half float
+int VectorNode::opcode(int sopc) {
+  switch (sopc) {
+    case Op_AddI:
+      return Op_AddVHF;
+    case Op_SubI:
+      return Op_SubVHF;
+    case Op_MulI:
+      return Op_MulVHF;
+    case Op_DivI:
+      return Op_DivVHF;
+    case Op_AbsI:
+      return Op_AbsVHF;
+    case Op_NegI:
+      return Op_NegVHF;
+    case Op_FmaF:
+      return Op_FmaVHF;
+    default:
+      return 0; // Unimplemented
+  }
+}
+
+// Make a vectornode for half float binary operation
+VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, uint vlen) {
+  const TypeVect* vt = TypeVect::make(T_SHORT, vlen);
+  // This method should not be called for unimplemented vectors.
+  switch (vopc) {
+    case Op_AddVHF: return new AddVHFNode(n1, n2, vt);
+    case Op_SubVHF: return new SubVHFNode(n1, n2, vt);
+    case Op_MulVHF: return new MulVHFNode(n1, n2, vt);
+    case Op_DivVHF: return new DivVHFNode(n1, n2, vt);
+    case Op_AbsVHF: return new AbsVHFNode(n1, vt);
+    case Op_NegVHF: return new NegVHFNode(n1, vt);
+
+  default:
+    fatal("Missed vector creation for '%s'", NodeClassNames[vopc]);
+    return NULL;
+  }
+}
+
 // Also used to check if the code generator
 // supports the vector operation.
 bool VectorNode::implemented(int opc, uint vlen, BasicType bt) {
@@ -668,6 +709,19 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, Node* n3, const TypeV
   switch (vopc) {
   case Op_FmaVD: return new FmaVDNode(n1, n2, n3, vt);
   case Op_FmaVF: return new FmaVFNode(n1, n2, n3, vt);
+  default:
+    fatal("Missed vector creation for '%s'", NodeClassNames[vopc]);
+    return NULL;
+  }
+}
+
+// Make a vectornode for half float ternary operation
+VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, Node* n3, uint vlen) {
+  const TypeVect* vt = TypeVect::make(T_SHORT, vlen);
+  // This method should not be called for unimplemented vectors.
+  guarantee(vopc > 0, "Vector for '%s' is not implemented", NodeClassNames[vopc]);
+  switch (vopc) {
+  case Op_FmaVHF: return new FmaVHFNode(n1, n2, n3, vt);
   default:
     fatal("Missed vector creation for '%s'", NodeClassNames[vopc]);
     return NULL;
@@ -1117,6 +1171,22 @@ int ReductionNode::opcode(int opc, BasicType bt) {
   return vopc;
 }
 
+//Haffloat reduction nodes.
+int ReductionNode::opcode(int opc) {
+  int vopc = opc;
+  switch (opc) {
+    case Op_AddI:
+      vopc = Op_AddReductionVHF;
+      break;
+    case Op_MulI:
+      vopc = Op_MulReductionVF;
+      break;
+    default: ShouldNotReachHere(); return 0;
+  }
+  return vopc;
+}
+
+
 // Return the appropriate reduction node.
 ReductionNode* ReductionNode::make(int opc, Node *ctrl, Node* n1, Node* n2, BasicType bt) {
 
@@ -1141,6 +1211,17 @@ ReductionNode* ReductionNode::make(int opc, Node *ctrl, Node* n1, Node* n2, Basi
   case Op_XorReductionV:  return new XorReductionVNode(ctrl, n1, n2);
   default:
     assert(false, "unknown node: %s", NodeClassNames[vopc]);
+    return NULL;
+  }
+}
+
+// Return the appropriate reduction node for halffloat
+ReductionNode* ReductionNode::make(int vopc, Node *ctrl, Node* n1, Node* n2) {
+  switch (vopc) {
+  case Op_AddReductionVHF: return new AddReductionVHFNode(ctrl, n1, n2);
+  case Op_MulReductionVF: return new MulReductionVFNode(ctrl, n1, n2);
+  default:
+    assert(false,"Missed vector creation for '%s'", NodeClassNames[vopc]);
     return NULL;
   }
 }
@@ -1236,6 +1317,7 @@ Node* ReductionNode::make_reduction_input(PhaseGVN& gvn, int opc, BasicType bt) 
     case Op_AddReductionVI: // fallthrough
     case Op_AddReductionVL: // fallthrough
     case Op_AddReductionVF: // fallthrough
+    case Op_AddReductionVHF:// fallthrough
     case Op_AddReductionVD:
     case Op_OrReductionV:
     case Op_XorReductionV:

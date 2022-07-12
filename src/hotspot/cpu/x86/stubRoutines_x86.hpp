@@ -207,6 +207,8 @@ class x86 {
   static address _join_2_3_base64;
   static address _decoding_table_base64;
   static address _ghash_poly512_addr;
+  static address _vector_halffloat_sign_flip;
+  static address _vector_halffloat_sign_mask;
 #endif
   // byte flip mask for sha256
   static address _pshuffle_byte_flip_mask_addr;
@@ -265,6 +267,8 @@ class x86 {
   static address crc_table_avx512_addr()  { return (address)_crc_table_avx512; }
   static address crc32c_table_avx512_addr()  { return (address)_crc32c_table_avx512; }
   static address ghash_polynomial512_addr() { return _ghash_poly512_addr; }
+  static address vector_halffloat_sign_mask() { return _vector_halffloat_sign_mask; }
+  static address vector_halffloat_sign_flip() { return _vector_halffloat_sign_flip; }
 #endif // _LP64
   static address ghash_long_swap_mask_addr() { return _ghash_long_swap_mask_addr; }
   static address ghash_byte_swap_mask_addr() { return _ghash_byte_swap_mask_addr; }
