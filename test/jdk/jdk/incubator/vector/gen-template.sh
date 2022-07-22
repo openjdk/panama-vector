@@ -24,7 +24,7 @@
 # questions.
 #
 
-generate_perf_tests=$1
+generate_perf_tests=$2
 
 TEMPLATE_FOLDER="templates/"
 
@@ -397,186 +397,195 @@ if [ $generate_perf_tests == true ]; then
   gen_perf_scalar_header $perf_scalar_output
 fi
 
-# ALU binary ops.
-# Here "ADD+add+withMask" says VectorOperator name is "ADD", and we have a dedicate method too named 'add', and add() is also available with mask variant.
-gen_binary_alu_op "ADD+add+withMask" "a + b"
-gen_binary_alu_op "SUB+sub+withMask" "a - b"
-gen_binary_alu_op "MUL+mul+withMask" "a \* b"
-gen_binary_alu_op "DIV+div+withMask" "a \/ b" "FP"
-gen_op_tmpl "Binary-op_bitwise-div" "DIV+div+withMask" "a \/ b" "BITWISE"
-gen_op_tmpl "Binary-Masked-op_bitwise-div" "DIV+div+withMask" "a \/ b" "BITWISE"
-gen_binary_alu_op "FIRST_NONZERO" "{#if[FP]?Double.doubleToLongBits}(a)!=0?a:b"
-gen_binary_alu_op "AND+and"   "a \& b"  "BITWISE"
-gen_binary_alu_op "AND_NOT" "a \& ~b" "BITWISE"
-gen_binary_alu_op "OR+or"    "a | b"   "BITWISE"
-# Missing:        "OR_UNCHECKED"
-gen_binary_alu_op "XOR"   "a ^ b"   "BITWISE"
-gen_binary_alu_op "COMPRESS_BITS" "\$Boxtype\$.compress(a, b)" "intOrLong"
-gen_binary_alu_op "EXPAND_BITS" "\$Boxtype\$.expand(a, b)" "intOrLong"
-# Generate the broadcast versions
-gen_binary_alu_bcst_op "add+withMask" "a + b"
-gen_binary_alu_bcst_op "sub+withMask" "a - b"
-gen_binary_alu_bcst_op "mul+withMask" "a \* b"
-gen_binary_alu_bcst_op "div+withMask" "a \/ b" "FP"
-gen_op_tmpl "Binary-Broadcast-op_bitwise-div" "div+withMask" "a \/ b" "BITWISE"
-gen_op_tmpl "Binary-Broadcast-Masked-op_bitwise-div" "div+withMask" "a \/ b" "BITWISE"
-gen_binary_alu_bcst_op "OR+or"    "a | b"   "BITWISE"
-gen_binary_alu_bcst_op "AND+and"    "a \& b"   "BITWISE"
-gen_binary_alu_bcst_long_op "OR"     "a | b"   "BITWISE"
-gen_binary_alu_bcst_long_op "ADD"    "a + b"
+if [ "$1" == "ALL_PRIM_TYPES" ]; then
+  # ALU binary ops.
+  # Here "ADD+add+withMask" says VectorOperator name is "ADD", and we have a dedicate method too named 'add', and add() is also available with mask variant.
+  gen_binary_alu_op "ADD+add+withMask" "a + b"
+  gen_binary_alu_op "SUB+sub+withMask" "a - b"
+  gen_binary_alu_op "MUL+mul+withMask" "a \* b"
+  gen_binary_alu_op "DIV+div+withMask" "a \/ b" "FP"
+  gen_op_tmpl "Binary-op_bitwise-div" "DIV+div+withMask" "a \/ b" "BITWISE"
+  gen_op_tmpl "Binary-Masked-op_bitwise-div" "DIV+div+withMask" "a \/ b" "BITWISE"
+  gen_binary_alu_op "FIRST_NONZERO" "{#if[FP]?Double.doubleToLongBits}(a)!=0?a:b"
+  gen_binary_alu_op "AND+and"   "a \& b"  "BITWISE"
+  gen_binary_alu_op "AND_NOT" "a \& ~b" "BITWISE"
+  gen_binary_alu_op "OR+or"    "a | b"   "BITWISE"
+  # Missing:        "OR_UNCHECKED"
+  gen_binary_alu_op "XOR"   "a ^ b"   "BITWISE"
+  gen_binary_alu_op "COMPRESS_BITS" "\$Boxtype\$.compress(a, b)" "intOrLong"
+  gen_binary_alu_op "EXPAND_BITS" "\$Boxtype\$.expand(a, b)" "intOrLong"
+  # Generate the broadcast versions
+  gen_binary_alu_bcst_op "add+withMask" "a + b"
+  gen_binary_alu_bcst_op "sub+withMask" "a - b"
+  gen_binary_alu_bcst_op "mul+withMask" "a \* b"
+  gen_binary_alu_bcst_op "div+withMask" "a \/ b" "FP"
+  gen_op_tmpl "Binary-Broadcast-op_bitwise-div" "div+withMask" "a \/ b" "BITWISE"
+  gen_op_tmpl "Binary-Broadcast-Masked-op_bitwise-div" "div+withMask" "a \/ b" "BITWISE"
+  gen_binary_alu_bcst_op "OR+or"    "a | b"   "BITWISE"
+  gen_binary_alu_bcst_op "AND+and"    "a \& b"   "BITWISE"
+  gen_binary_alu_bcst_long_op "OR"     "a | b"   "BITWISE"
+  gen_binary_alu_bcst_long_op "ADD"    "a + b"
 
-# Shifts
-gen_binary_alu_op "LSHL" "(a << b)" "intOrLong"
-gen_binary_alu_op "LSHL" "(a << (b \& 0x7))" "byte"
-gen_binary_alu_op "LSHL" "(a << (b \& 0xF))" "short"
-gen_binary_alu_op "ASHR" "(a >> b)" "intOrLong"
-gen_binary_alu_op "ASHR" "(a >> (b \& 0x7))" "byte"
-gen_binary_alu_op "ASHR" "(a >> (b \& 0xF))" "short"
-gen_binary_alu_op "LSHR" "(a >>> b)" "intOrLong"
-gen_binary_alu_op "LSHR" "((a \& 0xFF) >>> (b \& 0x7))" "byte"
-gen_binary_alu_op "LSHR" "((a \& 0xFFFF) >>> (b \& 0xF))" "short"
-gen_shift_op  "LSHL" "(a << b)" "intOrLong"
-gen_shift_op  "LSHL" "(a << (b \& 7))" "byte"
-gen_shift_op  "LSHL" "(a << (b \& 15))" "short"
-gen_shift_op  "LSHR" "(a >>> b)" "intOrLong"
-gen_shift_op  "LSHR" "((a \& 0xFF) >>> (b \& 7))" "byte"
-gen_shift_op  "LSHR" "((a \& 0xFFFF) >>> (b \& 15))" "short"
-gen_shift_op  "ASHR" "(a >> b)" "intOrLong"
-gen_shift_op  "ASHR" "(a >> (b \& 7))" "byte"
-gen_shift_op  "ASHR" "(a >> (b \& 15))" "short"
-gen_binary_alu_op "ROR" "ROR_scalar(a,b)" "BITWISE"
-gen_binary_alu_op "ROL" "ROL_scalar(a,b)" "BITWISE"
-gen_shift_op  "ROR" "ROR_scalar(a, b)" "BITWISE"
-gen_shift_op  "ROL" "ROL_scalar(a, b)" "BITWISE"
+  # Shifts
+  gen_binary_alu_op "LSHL" "(a << b)" "intOrLong"
+  gen_binary_alu_op "LSHL" "(a << (b \& 0x7))" "byte"
+  gen_binary_alu_op "LSHL" "(a << (b \& 0xF))" "short"
+  gen_binary_alu_op "ASHR" "(a >> b)" "intOrLong"
+  gen_binary_alu_op "ASHR" "(a >> (b \& 0x7))" "byte"
+  gen_binary_alu_op "ASHR" "(a >> (b \& 0xF))" "short"
+  gen_binary_alu_op "LSHR" "(a >>> b)" "intOrLong"
+  gen_binary_alu_op "LSHR" "((a \& 0xFF) >>> (b \& 0x7))" "byte"
+  gen_binary_alu_op "LSHR" "((a \& 0xFFFF) >>> (b \& 0xF))" "short"
+  gen_shift_op  "LSHL" "(a << b)" "intOrLong"
+  gen_shift_op  "LSHL" "(a << (b \& 7))" "byte"
+  gen_shift_op  "LSHL" "(a << (b \& 15))" "short"
+  gen_shift_op  "LSHR" "(a >>> b)" "intOrLong"
+  gen_shift_op  "LSHR" "((a \& 0xFF) >>> (b \& 7))" "byte"
+  gen_shift_op  "LSHR" "((a \& 0xFFFF) >>> (b \& 15))" "short"
+  gen_shift_op  "ASHR" "(a >> b)" "intOrLong"
+  gen_shift_op  "ASHR" "(a >> (b \& 7))" "byte"
+  gen_shift_op  "ASHR" "(a >> (b \& 15))" "short"
+  gen_binary_alu_op "ROR" "ROR_scalar(a,b)" "BITWISE"
+  gen_binary_alu_op "ROL" "ROL_scalar(a,b)" "BITWISE"
+  gen_shift_op  "ROR" "ROR_scalar(a, b)" "BITWISE"
+  gen_shift_op  "ROL" "ROL_scalar(a, b)" "BITWISE"
 
-# Constant Shifts
-gen_shift_cst_op  "LSHR" "(a >>> CONST_SHIFT)" "intOrLong"
-gen_shift_cst_op  "LSHR" "((a \& 0xFF) >>> CONST_SHIFT)" "byte"
-gen_shift_cst_op  "LSHR" "((a \& 0xFFFF) >>> CONST_SHIFT)" "short"
-gen_shift_cst_op  "LSHL" "(a << CONST_SHIFT)" "BITWISE"
-gen_shift_cst_op  "ASHR" "(a >> CONST_SHIFT)" "BITWISE"
-gen_shift_cst_op  "ROR" "ROR_scalar(a, CONST_SHIFT)" "BITWISE"
-gen_shift_cst_op  "ROL" "ROL_scalar(a, CONST_SHIFT)" "BITWISE"
+  # Constant Shifts
+  gen_shift_cst_op  "LSHR" "(a >>> CONST_SHIFT)" "intOrLong"
+  gen_shift_cst_op  "LSHR" "((a \& 0xFF) >>> CONST_SHIFT)" "byte"
+  gen_shift_cst_op  "LSHR" "((a \& 0xFFFF) >>> CONST_SHIFT)" "short"
+  gen_shift_cst_op  "LSHL" "(a << CONST_SHIFT)" "BITWISE"
+  gen_shift_cst_op  "ASHR" "(a >> CONST_SHIFT)" "BITWISE"
+  gen_shift_cst_op  "ROR" "ROR_scalar(a, CONST_SHIFT)" "BITWISE"
+  gen_shift_cst_op  "ROL" "ROL_scalar(a, CONST_SHIFT)" "BITWISE"
 
-# Masked reductions.
-gen_binary_op_no_masked "MIN+min" "Math.min(a, b)"
-gen_binary_op_no_masked "MAX+max" "Math.max(a, b)"
-gen_binary_bcst_op_no_masked "MIN+min" "Math.min(a, b)"
-gen_binary_bcst_op_no_masked "MAX+max" "Math.max(a, b)"
+  # Masked reductions.
+  gen_binary_op_no_masked "MIN+min" "Math.min(a, b)"
+  gen_binary_op_no_masked "MAX+max" "Math.max(a, b)"
+  gen_binary_bcst_op_no_masked "MIN+min" "Math.min(a, b)"
+  gen_binary_bcst_op_no_masked "MAX+max" "Math.max(a, b)"
 
-# Reductions.
-gen_reduction_op "AND" "\&" "BITWISE" "-1"
-gen_reduction_op "OR" "|" "BITWISE" "0"
-gen_reduction_op "XOR" "^" "BITWISE" "0"
-gen_reduction_op "ADD" "+" "" "0"
-gen_reduction_op "MUL" "*" "" "1"
-gen_reduction_op_func "MIN" "(\$type\$) Math.min" "" "\$Wideboxtype\$.\$MaxValue\$"
-gen_reduction_op_func "MAX" "(\$type\$) Math.max" "" "\$Wideboxtype\$.\$MinValue\$"
-gen_reduction_op_func "FIRST_NONZERO" "firstNonZero" "" "(\$type\$) 0"
+  # Reductions.
+  gen_reduction_op "AND" "\&" "BITWISE" "-1"
+  gen_reduction_op "OR" "|" "BITWISE" "0"
+  gen_reduction_op "XOR" "^" "BITWISE" "0"
+  gen_reduction_op "ADD" "+" "" "0"
+  gen_reduction_op "MUL" "*" "" "1"
+  gen_reduction_op_func "MIN" "(\$type\$) Math.min" "" "\$Wideboxtype\$.\$MaxValue\$"
+  gen_reduction_op_func "MAX" "(\$type\$) Math.max" "" "\$Wideboxtype\$.\$MinValue\$"
+  gen_reduction_op_func "FIRST_NONZERO" "firstNonZero" "" "(\$type\$) 0"
 
-# Boolean reductions.
-gen_bool_reduction_op "anyTrue" "|" "BITWISE" "false"
-gen_bool_reduction_op "allTrue" "\&" "BITWISE" "true"
+  # Boolean reductions.
+  gen_bool_reduction_op "anyTrue" "|" "BITWISE" "false"
+  gen_bool_reduction_op "allTrue" "\&" "BITWISE" "true"
 
-#Insert
-gen_with_op "withLane" "" "" ""
+  #Insert
+  gen_with_op "withLane" "" "" ""
 
-# Tests
-gen_op_tmpl $test_template "IS_DEFAULT" "bits(a)==0"
-gen_op_tmpl $test_template "IS_NEGATIVE" "bits(a)<0"
-gen_op_tmpl $test_template "IS_FINITE" "\$Boxtype\$.isFinite(a)" "FP"
-gen_op_tmpl $test_template "IS_NAN" "\$Boxtype\$.isNaN(a)" "FP"
-gen_op_tmpl $test_template "IS_INFINITE" "\$Boxtype\$.isInfinite(a)" "FP"
+  # Tests
+  gen_op_tmpl $test_template "IS_DEFAULT" "bits(a)==0"
+  gen_op_tmpl $test_template "IS_NEGATIVE" "bits(a)<0"
+  gen_op_tmpl $test_template "IS_FINITE" "\$Boxtype\$.isFinite(a)" "FP"
+  gen_op_tmpl $test_template "IS_NAN" "\$Boxtype\$.isNaN(a)" "FP"
+  gen_op_tmpl $test_template "IS_INFINITE" "\$Boxtype\$.isInfinite(a)" "FP"
 
-# Compares
-gen_compare_op "LT+lt" "lt"
-gen_compare_op "GT" "gt"
-gen_compare_op "EQ+eq" "eq"
-gen_compare_op "NE" "neq"
-gen_compare_op "LE" "le"
-gen_compare_op "GE" "ge"
+  # Compares
+  gen_compare_op "LT+lt" "lt"
+  gen_compare_op "GT" "gt"
+  gen_compare_op "EQ+eq" "eq"
+  gen_compare_op "NE" "neq"
+  gen_compare_op "LE" "le"
+  gen_compare_op "GE" "ge"
 
-gen_compare_op "UNSIGNED_LT" "ult" "BITWISE"
-gen_compare_op "UNSIGNED_GT" "ugt" "BITWISE"
-gen_compare_op "UNSIGNED_LE" "ule" "BITWISE"
-gen_compare_op "UNSIGNED_GE" "uge" "BITWISE"
+  gen_compare_op "UNSIGNED_LT" "ult" "BITWISE"
+  gen_compare_op "UNSIGNED_GT" "ugt" "BITWISE"
+  gen_compare_op "UNSIGNED_LE" "ule" "BITWISE"
+  gen_compare_op "UNSIGNED_GE" "uge" "BITWISE"
 
 
-gen_compare_bcst_op "LT" "<"
-gen_compare_bcst_op "EQ" "=="
+  gen_compare_bcst_op "LT" "<"
+  gen_compare_bcst_op "EQ" "=="
 
-# Blend.
-gen_op_tmpl $blend "blend" ""
+  # Blend.
+  gen_op_tmpl $blend "blend" ""
 
-# Rearrange
-gen_op_tmpl $rearrange_template "rearrange" ""
+  # Rearrange
+  gen_op_tmpl $rearrange_template "rearrange" ""
 
-# Compress/Expand
-gen_op_tmpl $compressexpand_template "compress_expand" ""
+  # Compress/Expand
+  gen_op_tmpl $compressexpand_template "compress_expand" ""
 
-# Get
-gen_get_op "lane" ""
+  # Get
+  gen_get_op "lane" ""
 
-# Broadcast
-gen_op_tmpl $broadcast_template "broadcast" ""
+  # Broadcast
+  gen_op_tmpl $broadcast_template "broadcast" ""
 
-# Zero
-gen_op_tmpl $zero_template "zero" ""
+  # Zero
+  gen_op_tmpl $zero_template "zero" ""
 
-# Slice
-gen_op_tmpl $slice_template "sliceUnary" ""
-gen_op_tmpl $slice1_template "sliceBinary" ""
-gen_op_tmpl $slice1_masked_template "slice" ""
+  # Slice
+  gen_op_tmpl $slice_template "sliceUnary" ""
+  gen_op_tmpl $slice1_template "sliceBinary" ""
+  gen_op_tmpl $slice1_masked_template "slice" ""
 
-# Unslice
-gen_op_tmpl $unslice_template "unsliceUnary" ""
-gen_op_tmpl $unslice1_template "unsliceBinary" ""
-gen_op_tmpl $unslice1_masked_template "unslice" ""
+  # Unslice
+  gen_op_tmpl $unslice_template "unsliceUnary" ""
+  gen_op_tmpl $unslice1_template "unsliceBinary" ""
+  gen_op_tmpl $unslice1_masked_template "unslice" ""
 
-# Math
-gen_op_tmpl $unary_math_template "SIN" "Math.sin((double)a)" "FP"
-gen_op_tmpl $unary_math_template "EXP" "Math.exp((double)a)" "FP"
-gen_op_tmpl $unary_math_template "LOG1P" "Math.log1p((double)a)" "FP"
-gen_op_tmpl $unary_math_template "LOG" "Math.log((double)a)" "FP"
-gen_op_tmpl $unary_math_template "LOG10" "Math.log10((double)a)" "FP"
-gen_op_tmpl $unary_math_template "EXPM1" "Math.expm1((double)a)" "FP"
-gen_op_tmpl $unary_math_template "COS" "Math.cos((double)a)" "FP"
-gen_op_tmpl $unary_math_template "TAN" "Math.tan((double)a)" "FP"
-gen_op_tmpl $unary_math_template "SINH" "Math.sinh((double)a)" "FP"
-gen_op_tmpl $unary_math_template "COSH" "Math.cosh((double)a)" "FP"
-gen_op_tmpl $unary_math_template "TANH" "Math.tanh((double)a)" "FP"
-gen_op_tmpl $unary_math_template "ASIN" "Math.asin((double)a)" "FP"
-gen_op_tmpl $unary_math_template "ACOS" "Math.acos((double)a)" "FP"
-gen_op_tmpl $unary_math_template "ATAN" "Math.atan((double)a)" "FP"
-gen_op_tmpl $unary_math_template "CBRT" "Math.cbrt((double)a)" "FP"
-gen_op_tmpl $binary_math_template "HYPOT" "Math.hypot((double)a, (double)b)" "FP"
-gen_op_tmpl $binary_math_template "POW+pow" "Math.pow((double)a, (double)b)" "FP"
-gen_op_tmpl $binary_math_template "ATAN2" "Math.atan2((double)a, (double)b)" "FP"
-gen_op_tmpl $binary_math_broadcast_template "POW+pow" "Math.pow((double)a, (double)b)" "FP"
+  # Math
+  gen_op_tmpl $unary_math_template "SIN" "Math.sin((double)a)" "FP"
+  gen_op_tmpl $unary_math_template "EXP" "Math.exp((double)a)" "FP"
+  gen_op_tmpl $unary_math_template "LOG1P" "Math.log1p((double)a)" "FP"
+  gen_op_tmpl $unary_math_template "LOG" "Math.log((double)a)" "FP"
+  gen_op_tmpl $unary_math_template "LOG10" "Math.log10((double)a)" "FP"
+  gen_op_tmpl $unary_math_template "EXPM1" "Math.expm1((double)a)" "FP"
+  gen_op_tmpl $unary_math_template "COS" "Math.cos((double)a)" "FP"
+  gen_op_tmpl $unary_math_template "TAN" "Math.tan((double)a)" "FP"
+  gen_op_tmpl $unary_math_template "SINH" "Math.sinh((double)a)" "FP"
+  gen_op_tmpl $unary_math_template "COSH" "Math.cosh((double)a)" "FP"
+  gen_op_tmpl $unary_math_template "TANH" "Math.tanh((double)a)" "FP"
+  gen_op_tmpl $unary_math_template "ASIN" "Math.asin((double)a)" "FP"
+  gen_op_tmpl $unary_math_template "ACOS" "Math.acos((double)a)" "FP"
+  gen_op_tmpl $unary_math_template "ATAN" "Math.atan((double)a)" "FP"
+  gen_op_tmpl $unary_math_template "CBRT" "Math.cbrt((double)a)" "FP"
+  gen_op_tmpl $binary_math_template "HYPOT" "Math.hypot((double)a, (double)b)" "FP"
+  gen_op_tmpl $binary_math_template "POW+pow" "Math.pow((double)a, (double)b)" "FP"
+  gen_op_tmpl $binary_math_template "ATAN2" "Math.atan2((double)a, (double)b)" "FP"
+  gen_op_tmpl $binary_math_broadcast_template "POW+pow" "Math.pow((double)a, (double)b)" "FP"
 
-# Ternary operations.
-gen_ternary_alu_op "FMA+fma" "Math.fma(a, b, c)" "FP"
-gen_ternary_alu_op "BITWISE_BLEND+bitwiseBlend" "(a\&~(c))|(b\&c)" "BITWISE"
-gen_ternary_alu_bcst_op "FMA" "Math.fma(a, b, c)" "FP"
-gen_ternary_alu_bcst_op "BITWISE_BLEND+bitwiseBlend" "(a\&~(c))|(b\&c)" "BITWISE"
-gen_ternary_alu_double_bcst_op "FMA+fma" "Math.fma(a, b, c)" "FP"
-gen_ternary_alu_double_bcst_op "BITWISE_BLEND+bitwiseBlend" "(a\&~(c))|(b\&c)" "BITWISE"
+  # Ternary operations.
+  gen_ternary_alu_op "FMA+fma" "Math.fma(a, b, c)" "FP"
+  gen_ternary_alu_op "BITWISE_BLEND+bitwiseBlend" "(a\&~(c))|(b\&c)" "BITWISE"
+  gen_ternary_alu_bcst_op "FMA" "Math.fma(a, b, c)" "FP"
+  gen_ternary_alu_bcst_op "BITWISE_BLEND+bitwiseBlend" "(a\&~(c))|(b\&c)" "BITWISE"
+  gen_ternary_alu_double_bcst_op "FMA+fma" "Math.fma(a, b, c)" "FP"
+  gen_ternary_alu_double_bcst_op "BITWISE_BLEND+bitwiseBlend" "(a\&~(c))|(b\&c)" "BITWISE"
 
-# Unary operations.
-gen_unary_alu_op "NEG+neg" "-((\$type\$)a)"
-gen_unary_alu_op "ABS+abs" "Math.abs((\$type\$)a)"
-gen_unary_alu_op "NOT+not" "~((\$type\$)a)" "BITWISE"
-gen_unary_alu_op "ZOMO" "(a==0?0:-1)" "BITWISE"
-gen_unary_alu_op "SQRT+sqrt" "Math.sqrt((double)a)" "FP"
-gen_unary_alu_op "BIT_COUNT" "\$Boxtype\$.bitCount(a)" "intOrLong"
-gen_unary_alu_op "BIT_COUNT" "Integer.bitCount((int)a \& 0xFF)" "byte"
-gen_unary_alu_op "BIT_COUNT" "Integer.bitCount((int)a \& 0xFFFF)" "short"
-gen_unary_alu_op "TRAILING_ZEROS_COUNT" "TRAILING_ZEROS_COUNT_scalar(a)" "BITWISE"
-gen_unary_alu_op "LEADING_ZEROS_COUNT" "LEADING_ZEROS_COUNT_scalar(a)" "BITWISE"
-gen_unary_alu_op "REVERSE" "REVERSE_scalar(a)" "BITWISE"
-gen_unary_alu_op "REVERSE_BYTES" "\$Boxtype\$.reverseBytes(a)" "intOrLong"
-gen_unary_alu_op "REVERSE_BYTES" "\$Boxtype\$.reverseBytes(a)" "short"
-gen_unary_alu_op "REVERSE_BYTES" "a" "byte"
+  # Unary operations.
+  gen_unary_alu_op "NEG+neg" "-((\$type\$)a)"
+  gen_unary_alu_op "ABS+abs" "Math.abs((\$type\$)a)"
+  gen_unary_alu_op "NOT+not" "~((\$type\$)a)" "BITWISE"
+  gen_unary_alu_op "ZOMO" "(a==0?0:-1)" "BITWISE"
+  gen_unary_alu_op "SQRT+sqrt" "Math.sqrt((double)a)" "FP"
+  gen_unary_alu_op "BIT_COUNT" "\$Boxtype\$.bitCount(a)" "intOrLong"
+  gen_unary_alu_op "BIT_COUNT" "Integer.bitCount((int)a \& 0xFF)" "byte"
+  gen_unary_alu_op "BIT_COUNT" "Integer.bitCount((int)a \& 0xFFFF)" "short"
+  gen_unary_alu_op "TRAILING_ZEROS_COUNT" "TRAILING_ZEROS_COUNT_scalar(a)" "BITWISE"
+  gen_unary_alu_op "LEADING_ZEROS_COUNT" "LEADING_ZEROS_COUNT_scalar(a)" "BITWISE"
+  gen_unary_alu_op "REVERSE" "REVERSE_scalar(a)" "BITWISE"
+  gen_unary_alu_op "REVERSE_BYTES" "\$Boxtype\$.reverseBytes(a)" "intOrLong"
+  gen_unary_alu_op "REVERSE_BYTES" "\$Boxtype\$.reverseBytes(a)" "short"
+  gen_unary_alu_op "REVERSE_BYTES" "a" "byte"
+
+elif [ "$1" == "HALF_FLOAT_TYPE" ]; then
+  gen_binary_alu_op "ADD" "Halffloat.valueOf((Halffloat.valueOf(a).floatValue() + Halffloat.valueOf(b).floatValue()))" "Halffloat"
+  gen_binary_alu_op "SUB" "Halffloat.valueOf((Halffloat.valueOf(a).floatValue() - Halffloat.valueOf(b).floatValue()))" "Halffloat"
+  gen_binary_alu_op "MUL" "Halffloat.valueOf((Halffloat.valueOf(a).floatValue() \* Halffloat.valueOf(b).floatValue()))" "Halffloat"
+  gen_binary_alu_op "MAX" "Halffloat.valueOf(Math.max(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()))" "Halffloat"
+  gen_binary_alu_op "MIN" "Halffloat.valueOf(Math.min(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()))" "Halffloat"
+fi
 
 # Miscellaneous Smoke Tests
 gen_op_tmpl $miscellaneous_template "MISC" "" ""

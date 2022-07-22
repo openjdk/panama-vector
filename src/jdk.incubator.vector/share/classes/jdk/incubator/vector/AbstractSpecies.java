@@ -645,7 +645,8 @@ abstract class AbstractSpecies<E> extends jdk.internal.vm.vector.VectorSupport.V
             // bootstrapping.
             throw new AssertionError("bootstrap problem");
         }
-        assert(s.laneType == laneType) : s + "!=" + laneType;
+        // Let the assert condition true for Halffloat
+        assert(s.laneType == laneType) || laneType.switchKey == LaneType.SK_HALFFLOAT  : s + "!=" + laneType;
         assert(s.vectorShape == shape) : s + "!=" + shape;
         CACHES[laneType.switchKey][shape.switchKey] = s;
         return s;

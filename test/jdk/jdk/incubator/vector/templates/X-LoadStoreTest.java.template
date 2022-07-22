@@ -43,6 +43,10 @@ import jdk.incubator.vector.VectorMask;
 #if[MaxBit]
 import jdk.incubator.vector.VectorShape;
 #end[MaxBit]
+#if[Halffloat]
+import jdk.incubator.vector.Halffloat;
+import jdk.incubator.vector.HalffloatVector;
+#end[Halffloat]
 import jdk.incubator.vector.VectorSpecies;
 import jdk.incubator.vector.VectorShuffle;
 import jdk.internal.vm.annotation.DontInline;
@@ -58,10 +62,10 @@ import java.util.function.*;
 public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
 #if[MaxBit]
     static final VectorSpecies<$Wideboxtype$> SPECIES =
-                $Type$Vector.SPECIES_MAX;
+                $ElementType$Vector.SPECIES_MAX;
 #else[MaxBit]
     static final VectorSpecies<$Wideboxtype$> SPECIES =
-                $Type$Vector.SPECIES_$bits$;
+                $ElementType$Vector.SPECIES_$bits$;
 #end[MaxBit]
 
     static final int INVOC_COUNT = Integer.getInteger("jdk.incubator.vector.test.loop-iterations", 100);
@@ -474,6 +478,7 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
     }
 
 
+#if[!Halffloat]
     @Test(dataProvider = "$type$MemorySegmentProvider")
     static void loadStoreMemorySegment(IntFunction<$type$[]> fa,
                                        IntFunction<MemorySegment> fb,
@@ -587,6 +592,9 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
         assertArraysEquals(segmentToArray(r), _a, mask);
     }
 
+#else[!Halffloat]
+    // TODO: Fix and Enable loadStoreMemorySegment, loadMemorySegmentIOOBE, storeMemorySegmentIOOBE, loadStoreMemorySegmentMask
+#end[!Halffloat]
     @Test(dataProvider = "$type$ByteMaskProviderForIOOBE")
     static void loadMemorySegmentMaskIOOBE(IntFunction<$type$[]> fa, IntFunction<Integer> fi, IntFunction<boolean[]> fm) {
         MemorySegment a = toSegment(fa.apply(SPECIES.length()), i -> MemorySegment.allocateNative(i, ResourceScope.newImplicitScope()));
