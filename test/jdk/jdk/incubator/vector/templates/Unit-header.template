@@ -1560,40 +1560,40 @@ public class $vectorteststype$ extends AbstractVectorTest {
 #end[BITWISE]
 #if[Halffloat]
 
-   static boolean eq(short a, short b) {
-       Halffloat at = Halffloat.valueOf(a);
-       Halffloat bt = Halffloat.valueOf(b);
-       return at.floatValue() == bt.floatValue();
+    static boolean eq(short a, short b) {
+        Halffloat at = Halffloat.valueOf(a);
+        Halffloat bt = Halffloat.valueOf(b);
+        return at.floatValue() == bt.floatValue();
     }
 
     static boolean neq(short a, short b) {
-       Halffloat at = Halffloat.valueOf(a);
-       Halffloat bt = Halffloat.valueOf(b);
-       return at.floatValue() != bt.floatValue();
+        Halffloat at = Halffloat.valueOf(a);
+        Halffloat bt = Halffloat.valueOf(b);
+        return at.floatValue() != bt.floatValue();
     }
 
     static boolean lt(short a, short b) {
-       Halffloat at = Halffloat.valueOf(a);
-       Halffloat bt = Halffloat.valueOf(b);
-       return at.floatValue() < bt.floatValue();
+        Halffloat at = Halffloat.valueOf(a);
+        Halffloat bt = Halffloat.valueOf(b);
+        return at.floatValue() < bt.floatValue();
     }
 
     static boolean le(short a, short b) {
-       Halffloat at = Halffloat.valueOf(a);
-       Halffloat bt = Halffloat.valueOf(b);
-       return at.floatValue() <= bt.floatValue();
+        Halffloat at = Halffloat.valueOf(a);
+        Halffloat bt = Halffloat.valueOf(b);
+        return at.floatValue() <= bt.floatValue();
     }
 
     static boolean gt(short a, short b) {
-       Halffloat at = Halffloat.valueOf(a);
-       Halffloat bt = Halffloat.valueOf(b);
-       return at.floatValue() > bt.floatValue();
+        Halffloat at = Halffloat.valueOf(a);
+        Halffloat bt = Halffloat.valueOf(b);
+        return at.floatValue() > bt.floatValue();
     }
 
     static boolean ge(short a, short b) {
-       Halffloat at = Halffloat.valueOf(a);
-       Halffloat bt = Halffloat.valueOf(b);
-       return at.floatValue() >= bt.floatValue();
+        Halffloat at = Halffloat.valueOf(a);
+        Halffloat bt = Halffloat.valueOf(b);
+        return at.floatValue() >= bt.floatValue();
     }
 #else[Halffloat]
 

@@ -585,6 +585,9 @@ elif [ "$1" == "HALF_FLOAT_TYPE" ]; then
   gen_binary_alu_op "MUL" "Halffloat.valueOf((Halffloat.valueOf(a).floatValue() \* Halffloat.valueOf(b).floatValue()))" "Halffloat"
   gen_binary_alu_op "MAX" "Halffloat.valueOf(Math.max(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()))" "Halffloat"
   gen_binary_alu_op "MIN" "Halffloat.valueOf(Math.min(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()))" "Halffloat"
+  gen_unary_alu_op "ABS+abs" "Math.abs(a)" "Halffloat"
+  gen_unary_alu_op "NEG+neg" "-a" "Halffloat"
+  gen_ternary_alu_op "FMA+fma" "Halffloat.valueOf(Math.fma(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue(), Halffloat.valueOf(c).floatValue()))" "Halffloat"
 fi
 
 # Miscellaneous Smoke Tests

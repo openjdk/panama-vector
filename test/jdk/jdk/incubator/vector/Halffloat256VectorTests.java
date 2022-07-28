@@ -1303,40 +1303,40 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         return new long[length];
     };
 
-   static boolean eq(short a, short b) {
-       Halffloat at = Halffloat.valueOf(a);
-       Halffloat bt = Halffloat.valueOf(b);
-       return at.floatValue() == bt.floatValue();
+    static boolean eq(short a, short b) {
+        Halffloat at = Halffloat.valueOf(a);
+        Halffloat bt = Halffloat.valueOf(b);
+        return at.floatValue() == bt.floatValue();
     }
 
     static boolean neq(short a, short b) {
-       Halffloat at = Halffloat.valueOf(a);
-       Halffloat bt = Halffloat.valueOf(b);
-       return at.floatValue() != bt.floatValue();
+        Halffloat at = Halffloat.valueOf(a);
+        Halffloat bt = Halffloat.valueOf(b);
+        return at.floatValue() != bt.floatValue();
     }
 
     static boolean lt(short a, short b) {
-       Halffloat at = Halffloat.valueOf(a);
-       Halffloat bt = Halffloat.valueOf(b);
-       return at.floatValue() < bt.floatValue();
+        Halffloat at = Halffloat.valueOf(a);
+        Halffloat bt = Halffloat.valueOf(b);
+        return at.floatValue() < bt.floatValue();
     }
 
     static boolean le(short a, short b) {
-       Halffloat at = Halffloat.valueOf(a);
-       Halffloat bt = Halffloat.valueOf(b);
-       return at.floatValue() <= bt.floatValue();
+        Halffloat at = Halffloat.valueOf(a);
+        Halffloat bt = Halffloat.valueOf(b);
+        return at.floatValue() <= bt.floatValue();
     }
 
     static boolean gt(short a, short b) {
-       Halffloat at = Halffloat.valueOf(a);
-       Halffloat bt = Halffloat.valueOf(b);
-       return at.floatValue() > bt.floatValue();
+        Halffloat at = Halffloat.valueOf(a);
+        Halffloat bt = Halffloat.valueOf(b);
+        return at.floatValue() > bt.floatValue();
     }
 
     static boolean ge(short a, short b) {
-       Halffloat at = Halffloat.valueOf(a);
-       Halffloat bt = Halffloat.valueOf(b);
-       return at.floatValue() >= bt.floatValue();
+        Halffloat at = Halffloat.valueOf(a);
+        Halffloat bt = Halffloat.valueOf(b);
+        return at.floatValue() >= bt.floatValue();
     }
 
     static short firstNonZero(short a, short b) {
@@ -1548,6 +1548,184 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         }
 
         assertArraysEquals(r, a, b, mask, Halffloat256VectorTests::MIN);
+    }
+
+    static short ABS(short a) {
+        return (short)(Math.abs(a));
+    }
+
+    static short abs(short a) {
+        return (short)(Math.abs(a));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void ABSHalffloat256VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ABS).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Halffloat256VectorTests::ABS);
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void absHalffloat256VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.abs().intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Halffloat256VectorTests::abs);
+    }
+
+    @Test(dataProvider = "shortUnaryOpMaskProvider")
+    static void ABSMaskedHalffloat256VectorTests(IntFunction<short[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ABS, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Halffloat256VectorTests::ABS);
+    }
+
+    static short NEG(short a) {
+        return (short)(-a);
+    }
+
+    static short neg(short a) {
+        return (short)(-a);
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void NEGHalffloat256VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.NEG).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Halffloat256VectorTests::NEG);
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void negHalffloat256VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.neg().intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Halffloat256VectorTests::neg);
+    }
+
+    @Test(dataProvider = "shortUnaryOpMaskProvider")
+    static void NEGMaskedHalffloat256VectorTests(IntFunction<short[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.NEG, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Halffloat256VectorTests::NEG);
+    }
+
+    static short FMA(short a, short b, short c) {
+        return (short)(Halffloat.valueOf(Math.fma(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue(), Halffloat.valueOf(c).floatValue())));
+    }
+
+    static short fma(short a, short b, short c) {
+        return (short)(Halffloat.valueOf(Math.fma(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue(), Halffloat.valueOf(c).floatValue())));
+    }
+
+    @Test(dataProvider = "shortTernaryOpProvider")
+    static void FMAHalffloat256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] c = fc.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                HalffloatVector cv = HalffloatVector.fromArray(SPECIES, c, i);
+                av.lanewise(VectorOperators.FMA, bv, cv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, c, Halffloat256VectorTests::FMA);
+    }
+
+    @Test(dataProvider = "shortTernaryOpProvider")
+    static void fmaHalffloat256VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] c = fc.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+            HalffloatVector cv = HalffloatVector.fromArray(SPECIES, c, i);
+            av.fma(bv, cv).intoArray(r, i);
+        }
+
+        assertArraysEquals(r, a, b, c, Halffloat256VectorTests::fma);
+    }
+
+    @Test(dataProvider = "shortTernaryOpMaskProvider")
+    static void FMAHalffloat256VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
+                                          IntFunction<short[]> fc, IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] c = fc.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                HalffloatVector cv = HalffloatVector.fromArray(SPECIES, c, i);
+                av.lanewise(VectorOperators.FMA, bv, cv, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, c, mask, Halffloat256VectorTests::FMA);
     }
 
     // TODO: Fix and Enable ltHalffloat256VectorTestsBroadcastSmokeTest
