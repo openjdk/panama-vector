@@ -645,7 +645,8 @@ abstract class AbstractSpecies<E> extends jdk.internal.vm.vector.VectorSupport.V
             // bootstrapping.
             throw new AssertionError("bootstrap problem");
         }
-        // FIXME: Remove the additional check for Halffloat laneTypes from following assersion after proper fix. Currently the incoming laneType does not            comply with the laneType of Halffloat species.
+        // FIXME: Remove the additional check for Halffloat laneTypes from following assertion after proper fix.
+        // Currently the incoming laneType does not comply with the laneType of Halffloat species.
         assert(s.laneType == laneType) || laneType.switchKey == LaneType.SK_HALFFLOAT : s + "!=" + laneType;
         assert(s.vectorShape == shape) : s + "!=" + shape;
         CACHES[laneType.switchKey][shape.switchKey] = s;
