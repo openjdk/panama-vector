@@ -1,5 +1,9 @@
 /*
+#if[Halffloat]
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+#else[Halffloat]
  * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+#end[Halffloat]
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,15 +42,15 @@
 import jdk.incubator.foreign.MemorySegment;
 import jdk.incubator.foreign.ResourceScope;
 import jdk.incubator.foreign.ValueLayout;
+#if[Halffloat]
+import jdk.incubator.vector.Halffloat;
+import jdk.incubator.vector.HalffloatVector;
+#end[Halffloat]
 import jdk.incubator.vector.$Type$Vector;
 import jdk.incubator.vector.VectorMask;
 #if[MaxBit]
 import jdk.incubator.vector.VectorShape;
 #end[MaxBit]
-#if[Halffloat]
-import jdk.incubator.vector.Halffloat;
-import jdk.incubator.vector.HalffloatVector;
-#end[Halffloat]
 import jdk.incubator.vector.VectorSpecies;
 import jdk.incubator.vector.VectorShuffle;
 import jdk.internal.vm.annotation.DontInline;

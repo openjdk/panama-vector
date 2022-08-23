@@ -1,5 +1,9 @@
 /*
+#if[Halffloat]
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+#else[Halffloat]
  * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+#end[Halffloat]
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,6 +46,10 @@ import jdk.incubator.vector.ByteVector;
 #if[Float]
 import jdk.incubator.vector.FloatVector;
 #end[Float]
+#if[Halffloat]
+import jdk.incubator.vector.Halffloat;
+import jdk.incubator.vector.HalffloatVector;
+#end[Halffloat]
 #if[Int]
 import jdk.incubator.vector.IntVector;
 #end[Int]
@@ -54,10 +62,6 @@ import jdk.incubator.vector.ShortVector;
 #if[Long]
 import jdk.incubator.vector.LongVector;
 #end[Long]
-#if[Halffloat]
-import jdk.incubator.vector.Halffloat;
-import jdk.incubator.vector.HalffloatVector;
-#end[Halffloat]
 
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
