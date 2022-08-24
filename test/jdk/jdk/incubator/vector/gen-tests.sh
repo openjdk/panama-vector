@@ -28,7 +28,7 @@
 # You can regenerate the source files,
 # and you can clean them up.
 # FIXME: Move this script under $REPO/make/gensrc/
-generate_test_case() {
+generate_test_cases() {
   Log false "Generating Vector API tests, $(date)\n"
 
   # Compile SPP
@@ -272,8 +272,8 @@ fi
 # First, generate the template files.
 gen_type="ALL_PRIM_TYPES"
 gen_half_type="HALF_FLOAT_TYPE"
-bash gen-template.sh $gen_type $generate_perf_tests
-generate_test_case $gen_type
-bash gen-template.sh $gen_half_type $generate_perf_tests
-generate_test_case $gen_half_type
+bash gen-template.sh "ALL_PRIM_TYPES" $generate_perf_tests
+generate_test_cases "ALL_PRIM_TYPES"
+bash gen-template.sh "HALF_FLOAT_TYPE" $generate_perf_tests
+generate_test_cases "HALF_FLOAT_TYPE"
 rm -fr build
