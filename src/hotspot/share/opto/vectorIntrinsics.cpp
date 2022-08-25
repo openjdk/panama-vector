@@ -697,6 +697,12 @@ bool LibraryCallKit::inline_vector_mask_operation() {
 
   int num_elem = vlen->get_con();
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
+  if (!elem_type->is_primitive_type()) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not a primitive bt=%d", elem_type->basic_type());
+    }
+    return false; // should be primitive type
+  }
   BasicType elem_bt = elem_type->basic_type();
 
   int mopc = VectorSupport::vop2ideal(oper->get_con(), elem_bt);
@@ -763,6 +769,12 @@ bool LibraryCallKit::inline_vector_shuffle_to_vector() {
 
   int num_elem = vlen->get_con();
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
+  if (!elem_type->is_primitive_type()) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not a primitive bt=%d", elem_type->basic_type());
+    }
+    return false; // should be primitive type
+  }
   BasicType elem_bt = elem_type->basic_type();
 
   if (num_elem < 4) {

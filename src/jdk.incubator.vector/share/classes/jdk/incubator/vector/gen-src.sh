@@ -75,6 +75,7 @@ do
   kind=BITWISE
 
   bitstype=$type
+  maskbitstype=$type
   Bitstype=$Type
   Boxbitstype=$Boxtype
 
@@ -118,6 +119,7 @@ do
     Float)
       kind=FP
       bitstype=int
+      maskbitstype=int
       Bitstype=Int
       Boxbitstype=Integer
       sizeInBytes=4
@@ -126,6 +128,7 @@ do
     Double)
       kind=FP
       bitstype=long
+      maskbitstype=long
       Bitstype=Long
       Boxbitstype=Long
       sizeInBytes=8
@@ -134,6 +137,7 @@ do
     Halffloat)
       kind=FP
       bitstype=short
+      maskbitstype=Halffloat
       Bitstype=Short
       Boxbitstype=Short
       sizeInBytes=2
@@ -144,7 +148,7 @@ do
   esac
 
   args="$args -K$kind -DBoxtype=$Boxtype -DWideboxtype=$Wideboxtype"
-  args="$args -Dbitstype=$bitstype -DBitstype=$Bitstype -DBoxbitstype=$Boxbitstype"
+  args="$args -Dbitstype=$bitstype -Dmaskbitstype=$maskbitstype -DBitstype=$Bitstype -DBoxbitstype=$Boxbitstype"
   args="$args -Dfptype=$fptype -DFptype=$Fptype -DBoxfptype=$Boxfptype"
   args="$args -DsizeInBytes=$sizeInBytes"
   args="$args -Delemtype=$elemtype -DElemtype=$Elemtype"
