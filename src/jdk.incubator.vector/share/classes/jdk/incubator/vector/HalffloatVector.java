@@ -3937,9 +3937,9 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
             short[] va = new short[laneCount()];
             for (int i = 0; i < va.length; i++) {
                 int lv = values[i];
-                short v = (short) lv;
+                short v = Float.floatToFloat16((float) lv);
                 va[i] = v;
-                if ((int)v != lv) {
+                if ((int) Float.float16ToFloat(v) != lv) {
                     throw badElementBits(lv, v);
                 }
             }

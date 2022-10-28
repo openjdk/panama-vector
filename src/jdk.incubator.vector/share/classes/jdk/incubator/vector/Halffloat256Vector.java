@@ -687,7 +687,7 @@ final class Halffloat256Vector extends HalffloatVector {
         public Halffloat256Mask compress() {
             return (Halffloat256Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
                 Halffloat256Vector.class, Halffloat256Mask.class, ETYPE, VLENGTH, null, this,
-                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, Float.floatToFloat16(m1.trueCount())));
         }
 
 
