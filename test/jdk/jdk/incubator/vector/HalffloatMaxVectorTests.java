@@ -1357,7 +1357,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         b.intoArray(r, a.length());
         return r;
     }
-/*
+
     @Test
     static void smokeTest2() {
         // Do some zipping and shuffling.
@@ -1719,7 +1719,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, mask, HalffloatMaxVectorTests::NEG);
     }
-*/
+
     static short FMA(short a, short b, short c) {
         return (short)(Halffloat.valueOf(Math.fma(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue(), Halffloat.valueOf(c).floatValue())));
     }
