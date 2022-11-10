@@ -84,6 +84,7 @@ do
   Boxfptype=$Boxtype
   elemtype=$type
   Elemtype=$Type
+  FPtype=$type
 
   case $Type in
     Byte)
@@ -124,6 +125,7 @@ do
       Boxbitstype=Integer
       sizeInBytes=4
       args="$args -KintOrFP -KintOrFloat"
+      FPtype=FP32
       ;;
     Double)
       kind=FP
@@ -133,6 +135,7 @@ do
       Boxbitstype=Long
       sizeInBytes=8
       args="$args -KintOrFP -KlongOrDouble"
+      FPtype=FP64
       ;;
     Halffloat)
       kind=FP
@@ -143,11 +146,12 @@ do
       sizeInBytes=2
       elemtype=Halffloat
       Elemtype=Short
+      FPtype=FP16
       args="$args -KbyteOrShort -KshortOrFP -KshortOrHalffloat"
       ;;
   esac
 
-  args="$args -K$kind -DBoxtype=$Boxtype -DWideboxtype=$Wideboxtype"
+  args="$args -K$FPtype -K$kind -DBoxtype=$Boxtype -DWideboxtype=$Wideboxtype"
   args="$args -Dbitstype=$bitstype -Dmaskbitstype=$maskbitstype -DBitstype=$Bitstype -DBoxbitstype=$Boxbitstype"
   args="$args -Dfptype=$fptype -DFptype=$Fptype -DBoxfptype=$Boxfptype"
   args="$args -DsizeInBytes=$sizeInBytes"

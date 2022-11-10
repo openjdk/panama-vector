@@ -656,7 +656,7 @@ final class HalffloatMaxVector extends HalffloatVector {
         public HalffloatMaxMask compress() {
             return (HalffloatMaxMask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
                 HalffloatMaxVector.class, HalffloatMaxMask.class, ETYPE, VLENGTH, null, this,
-                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, Float.floatToFloat16(m1.trueCount())));
         }
 
 

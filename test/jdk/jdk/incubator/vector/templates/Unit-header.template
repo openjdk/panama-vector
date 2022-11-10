@@ -1648,7 +1648,9 @@ public class $vectorteststype$ extends AbstractVectorTest {
         return $VecEleType$.compare(a, ($type$) 0) != 0 ? a : b;
     }
 
-#if[!Halffloat]
+#if[Halffloat]
+    // TODO: Fix and Enable smokeTest1, viewAsIntegeralLanesTest, viewAsFloatingLanesTest
+#else[Halffloat]
     @Test
     static void smokeTest1() {
         $abstractvectortype$ three = $abstractvectortype$.broadcast(SPECIES, (byte)-3);
@@ -1674,6 +1676,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
         $type$ max = higher.reduceLanes(VectorOperators.MAX);
         assert(max == -3 + scale * (SPECIES.length()-1));
     }
+#end[Halffloat]
 
     private static $type$[]
     bothToArray($abstractvectortype$ a, $abstractvectortype$ b) {
@@ -1727,6 +1730,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
         }
     }
 
+#if[!Halffloat]
     @Test
     void viewAsIntegeralLanesTest() {
 #if[FP]
@@ -1768,8 +1772,6 @@ public class $vectorteststype$ extends AbstractVectorTest {
     }
 #end[byteOrShort]
 #end[FP]
-#else[!Halffloat]
-    // TODO: Fix and Enable smokeTest1, smokeTest2, shuffleTest, viewAsIntegeralLanesTest, viewAsFloatingLanesTest
 #end[!Halffloat]
 #if[BITWISE]
 

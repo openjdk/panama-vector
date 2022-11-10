@@ -44,7 +44,7 @@ public final class Halffloat extends Number implements Comparable<Halffloat>{
     /** Definitions for FP16 */
     public static final short NEGATIVE_INFINITY = (short)0xfc00;
     /** Definitions for FP16*/
-    public static final short NaN = (short)0xffff;
+    public static final short NaN = (short)0x7e00;
     /** Definitions for FP16*/
     private static final float MAX_FLOAT_VALUE = 0x1.ffep+15f;
     /** Definitions for FP16*/
@@ -78,7 +78,7 @@ public final class Halffloat extends Number implements Comparable<Halffloat>{
     * @param f float value assigned to halffloat
     */
     public Halffloat(float f) {
-        this.value = valueOf(f);
+        this.value = Float.floatToFloat16(f);
     }
 
     /**
@@ -86,23 +86,7 @@ public final class Halffloat extends Number implements Comparable<Halffloat>{
     * @return a float value of short provided
     */
     public float floatValue() {
-        int val = (int)value;
-        float result;
-        switch(val) {
-          case Halffloat.POSITIVE_INFINITY:
-               result = Float.POSITIVE_INFINITY;
-               break;
-          case Halffloat.NEGATIVE_INFINITY:
-               result = Float.NEGATIVE_INFINITY;
-               break;
-          case Halffloat.NaN:
-               result = Float.NaN;
-               break;
-          default:
-               result = (Float.intBitsToFloat(((val&0x8000)<<16) | (((val&0x7c00)+0x1C000)<<13) | ((val&0x03FF)<<13)));
-               break;
-       }
-       return result;
+       return Float.float16ToFloat(value);
     }
 
     /**
@@ -111,14 +95,10 @@ public final class Halffloat extends Number implements Comparable<Halffloat>{
      * @return short value of float provided
     */
     public static short valueOf(float f) {
-        if (f > Halffloat.MAX_FLOAT_VALUE) return Halffloat.POSITIVE_INFINITY;
-        if (Float.isNaN(f)) return Halffloat.NaN;
-
-        if (f < Halffloat.MIN_FLOAT_VALUE) return Halffloat.NEGATIVE_INFINITY;
-
-        int val = Float.floatToIntBits(f);
-        val = ((((val>>16)&0x8000)|((((val&0x7f800000)-0x38000000)>>13)&0x7c00)|((val>>13)&0x03ff)));
-        return (short)val;
+        if (Float.isNaN(f)) {
+            return Halffloat.NaN;
+        }
+        return Float.floatToFloat16(f);
     }
 
     /** doublevalue */

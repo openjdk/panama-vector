@@ -953,8 +953,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 
     private static BinaryOperation<$abstractvectortype$, VectorMask<$Boxtype$>> binaryOperations(int opc_) {
         switch (opc_) {
-#if[FP]
-#if[short]
+#if[FP16]
             case VECTOR_OP_ADD: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() + Halffloat.valueOf(b).floatValue())));
             case VECTOR_OP_SUB: return (v0, v1, vm) ->
@@ -965,7 +964,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                     v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf(Math.max(Halffloat.valueOf(a).floatValue(),Halffloat.valueOf(b).floatValue())));
             case VECTOR_OP_MIN: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf(Math.min(Halffloat.valueOf(a).floatValue(),Halffloat.valueOf(b).floatValue())));
-#else[short]
+#else[FP16]
             case VECTOR_OP_ADD: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> ($type$)(a + b));
             case VECTOR_OP_SUB: return (v0, v1, vm) ->
@@ -978,21 +977,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                     v0.bOp(v1, vm, (i, a, b) -> ($type$)Math.max(a, b));
             case VECTOR_OP_MIN: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> ($type$)Math.min(a, b));
-#end[short]
-#else[FP]
-            case VECTOR_OP_ADD: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> ($type$)(a + b));
-            case VECTOR_OP_SUB: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> ($type$)(a - b));
-            case VECTOR_OP_MUL: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> ($type$)(a * b));
-            case VECTOR_OP_DIV: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> ($type$)(a / b));
-            case VECTOR_OP_MAX: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> ($type$)Math.max(a, b));
-            case VECTOR_OP_MIN: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> ($type$)Math.min(a, b));
-#end[FP]
+#end[FP16]
 #if[BITWISE]
             case VECTOR_OP_AND: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> ($type$)(a & b));
@@ -3389,8 +3374,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 
     private static ReductionOperation<$abstractvectortype$, VectorMask<$Boxtype$>> reductionOperations(int opc_) {
         switch (opc_) {
-#if[FP]
-#if[short]
+#if[FP16]
             case VECTOR_OP_ADD: return (v, m) ->
                     toBits(v.rOp(($type$)0, m, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() + Halffloat.valueOf(b).floatValue()))));
             case VECTOR_OP_MUL: return (v, m) ->
@@ -3399,7 +3383,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                     toBits(v.rOp(MAX_OR_INF, m, (i, a, b) -> Halffloat.valueOf(Math.min(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()))));
             case VECTOR_OP_MAX: return (v, m) ->
                     toBits(v.rOp(MIN_OR_INF, m, (i, a, b) -> Halffloat.valueOf(Math.max(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()))));
-#else[short]
+#else[FP16]
             case VECTOR_OP_ADD: return (v, m) ->
                     toBits(v.rOp(($type$)0, m, (i, a, b) -> ($type$)(a + b)));
             case VECTOR_OP_MUL: return (v, m) ->
@@ -3408,17 +3392,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                     toBits(v.rOp(MAX_OR_INF, m, (i, a, b) -> ($type$) Math.min(a, b)));
             case VECTOR_OP_MAX: return (v, m) ->
                     toBits(v.rOp(MIN_OR_INF, m, (i, a, b) -> ($type$) Math.max(a, b)));
-#end[short]
-#else[FP]
-            case VECTOR_OP_ADD: return (v, m) ->
-                    toBits(v.rOp(($type$)0, m, (i, a, b) -> ($type$)(a + b)));
-            case VECTOR_OP_MUL: return (v, m) ->
-                    toBits(v.rOp(($type$)1, m, (i, a, b) -> ($type$)(a * b)));
-            case VECTOR_OP_MIN: return (v, m) ->
-                    toBits(v.rOp(MAX_OR_INF, m, (i, a, b) -> ($type$) Math.min(a, b)));
-            case VECTOR_OP_MAX: return (v, m) ->
-                    toBits(v.rOp(MIN_OR_INF, m, (i, a, b) -> ($type$) Math.max(a, b)));
-#end[FP]
+#end[FP16]
 #if[BITWISE]
             case VECTOR_OP_AND: return (v, m) ->
                     toBits(v.rOp(($type$)-1, m, (i, a, b) -> ($type$)(a & b)));
@@ -5539,11 +5513,19 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             $type$[] va = new $type$[laneCount()];
             for (int i = 0; i < va.length; i++) {
                 int lv = values[i];
+#if[FP16]
+                $type$ v = Float.floatToFloat16((float) lv);
+                va[i] = v;
+                if ((int) Float.float16ToFloat(v) != lv) {
+                    throw badElementBits(lv, v);
+                }
+#else[FP16]
                 $type$ v = ($type$) lv;
                 va[i] = v;
                 if ((int)v != lv) {
                     throw badElementBits(lv, v);
                 }
+#end[FP16]
             }
             return dummyVector().fromArray0(va, 0);
         }
