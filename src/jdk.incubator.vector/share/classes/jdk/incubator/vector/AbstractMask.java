@@ -280,8 +280,14 @@ abstract class AbstractMask<E> extends VectorMask<E> {
         // converting, clip the comparison value to [0..vlength]
         // inclusive.
         int indexLimit = Math.max(0, Math.min(length - offset, vlength));
-        VectorMask<E> badMask =
-            iota.compare(GE, iota.broadcast(indexLimit));
+        VectorMask<E> badMask = null, badMask2 = null;
+        if (vectorSpecies().elementType() == Halffloat.class) {
+            badMask =
+                iota.compare(GE, iota.broadcast(Float.floatToFloat16((float)indexLimit)));
+        } else {
+            badMask =
+                iota.compare(GE, iota.broadcast(indexLimit));
+        }
         if (offset < 0) {
             // An active lane is bad if its number is less than
             // -offset, because when added to offset it will then
@@ -290,8 +296,13 @@ abstract class AbstractMask<E> extends VectorMask<E> {
             // vlength.  This specific expression works correctly even
             // when offset is Integer.MIN_VALUE.
             int firstGoodIndex = -Math.max(offset, -vlength);
-            VectorMask<E> badMask2 =
-                iota.compare(LT, iota.broadcast(firstGoodIndex));
+            if (vectorSpecies().elementType() == Halffloat.class) {
+                badMask2 =
+                    iota.compare(LT, iota.broadcast(Float.floatToFloat16((float)firstGoodIndex)));
+            } else {
+                badMask2 =
+                    iota.compare(LT, iota.broadcast(firstGoodIndex));
+            }
             if (indexLimit >= vlength) {
                 badMask = badMask2;  // 1st badMask is all true
             } else {
