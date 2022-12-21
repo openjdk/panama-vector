@@ -1951,6 +1951,16 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
         return false;
       }
       break;
+    case Op_AddVHF:
+    case Op_SubVHF:
+    case Op_MulVHF:
+    case Op_DivVHF:
+    case Op_AbsVHF:
+    case Op_NegVHF:
+      if (bt != T_SHORT && !VM_Version::supports_avx512_fp16()) {
+        return false;
+      }
+      break;
   }
   return true;  // Per default match rules are supported.
 }
@@ -2109,16 +2119,6 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
       if ((bt == T_INT || bt == T_LONG) && VM_Version::supports_avx512cd()) {
         return true;
       }
-    case Op_AddVHF:
-    case Op_SubVHF:
-    case Op_MulVHF:
-    case Op_DivVHF:
-    case Op_AbsVHF:
-    case Op_NegVHF:
-      if(bt != T_SHORT && !VM_Version::supports_avx512_fp16()) {
-        return false;
-      }
-      return true;
 
     default:
       return false;
@@ -4848,49 +4848,15 @@ instruct reduction16F(regF dst, legVec src, legVec vtmp1, legVec vtmp2) %{
 %}
 
 // =======================Half Float Reduction==========================================
-instruct reduction8HF(rRegI dst, vec src2, vec tmp, vec tmp1, vec tmp2) %{
-  predicate(UseAVX > 2);
+instruct reduction8HF(rRegI dst, vec src2, vec vtmp, vec vtmp1, vec vtmp2) %{
   match(Set dst (AddReductionVHF dst src2));
-  effect(TEMP tmp, TEMP tmp1, TEMP tmp2);
-   format %{"movdl    $tmp1, $dst\n\t"
-            "evaddsh  $tmp1,$tmp1,$src2\n\t"
-            "pshuflw  $tmp,$src2,0x01\n\t"
-            "evaddsh  $tmp1,$tmp1,$tmp\n\t"
-            "pshuflw  $tmp,$src2,0x02\n\t"
-            "evaddsh  $tmp1,$tmp1,$tmp\n\t"
-            "pshuflw  $tmp,$src2,0x03\n\t"
-            "evaddsh  $tmp1,$tmp1,$tmp\n\t"
-            "pshufd   $tmp2,$src2, 0x0E\n\t"
-            "evaddsh  $tmp1,$tmp1,$tmp2\n\t"
-            "pshuflw  $tmp,$tmp2,0x01\n\t"
-            "evaddsh  $tmp1,$tmp1,$tmp\n\t"
-            "pshuflw  $tmp,$tmp2,0x02\n\t"
-            "evaddsh  $tmp1,$tmp1,$tmp\n\t"
-            "pshuflw  $tmp,$tmp2,0x03\n\t"
-            "evaddsh  $tmp1,$tmp1,$tmp\t"
-            "movdl    $dst, $tmp1\t! add reductionHF" %}
+  effect(TEMP vtmp, TEMP vtmp1, TEMP vtmp2);
+  format %{ "reduction_halffloat  $dst, $src2\t using $vtmp, $vtmp1, $vtmp2 as TEMP" %}
   ins_encode %{
-    __ movdl($tmp1$$XMMRegister, $dst$$Register);
-    __ evaddsh($tmp1$$XMMRegister, $tmp1$$XMMRegister, $src2$$XMMRegister);
-    __ pshuflw($tmp$$XMMRegister, $src2$$XMMRegister, 0x01);
-    __ evaddsh($tmp1$$XMMRegister, $tmp1$$XMMRegister, $tmp$$XMMRegister);
-    __ pshuflw($tmp$$XMMRegister, $src2$$XMMRegister, 0x02);
-    __ evaddsh($tmp1$$XMMRegister, $tmp1$$XMMRegister, $tmp$$XMMRegister);
-    __ pshuflw($tmp$$XMMRegister, $src2$$XMMRegister, 0x03);
-    __ evaddsh($tmp1$$XMMRegister, $tmp1$$XMMRegister, $tmp$$XMMRegister);
-    __ pshufd($tmp2$$XMMRegister, $src2$$XMMRegister, 0x0E);
-    __ evaddsh($tmp1$$XMMRegister, $tmp1$$XMMRegister, $tmp2$$XMMRegister);
-    __ pshuflw($tmp$$XMMRegister, $tmp2$$XMMRegister, 0x01);
-    __ evaddsh($tmp1$$XMMRegister, $tmp1$$XMMRegister, $tmp$$XMMRegister);
-    __ pshuflw($tmp$$XMMRegister, $tmp2$$XMMRegister, 0x02);
-    __ evaddsh($tmp1$$XMMRegister, $tmp1$$XMMRegister, $tmp$$XMMRegister);
-    __ pshuflw($tmp$$XMMRegister, $tmp2$$XMMRegister, 0x03);
-    __ evaddsh($tmp1$$XMMRegister, $tmp1$$XMMRegister, $tmp$$XMMRegister);
-    __ movdl($dst$$Register, $tmp1$$XMMRegister);
+    __ reduce8HF($dst$$Register, $src2$$XMMRegister, $vtmp$$XMMRegister, $vtmp1$$XMMRegister, $vtmp2$$XMMRegister);
   %}
   ins_pipe( pipe_slow );
 %}
-
 
 // =======================Double Reduction==========================================
 
@@ -5408,7 +5374,6 @@ instruct vaddD_mem(vec dst, vec src, memory mem) %{
 
 // Halffloat vector add
 instruct vaddHF_reg(vec dst, vec src1, vec src2) %{
-  predicate(UseAVX > 2);
   match(Set dst (AddVHF src1 src2));
   format %{ "evaddph  $dst,$src1,$src2\t! add packedHF" %}
   ins_encode %{
@@ -5628,7 +5593,6 @@ instruct vsubD_mem(vec dst, vec src, memory mem) %{
 
 // Halffloat vector sub
 instruct vsubHF_reg(vec dst, vec src1, vec src2) %{
-  predicate(UseAVX > 2);
   match(Set dst (SubVHF src1 src2));
   format %{ "evsubph  $dst,$src1,$src2\t! sub packedHF" %}
   ins_encode %{
@@ -5969,9 +5933,8 @@ instruct vmulD_mem(vec dst, vec src, memory mem) %{
 
 //Halffloat vector mul
 instruct vmulHF_reg(vec dst, vec src1, vec src2) %{
-  predicate(UseAVX > 2);
   match(Set dst (MulVHF src1 src2));
-  format %{ "vmulph  $dst,$src1,$src2\t! mul packedHF" %}
+  format %{ "evmulph  $dst,$src1,$src2\t! mul packedHF" %}
   ins_encode %{
     int vlen_enc = vector_length_encoding(this);
     __ evmulph($dst$$XMMRegister, $src1$$XMMRegister, $src2$$XMMRegister, vlen_enc);
@@ -6087,7 +6050,6 @@ instruct vdivD_mem(vec dst, vec src, memory mem) %{
 
 // Halffloat vector div
 instruct vdivHF_reg(vec dst, vec src1, vec src2) %{
-  predicate(UseAVX > 2);
   match(Set dst (DivVHF src1 src2));
   format %{ "evdivph  $dst,$src1,$src2\t! div packedHF" %}
   ins_encode %{
@@ -7987,7 +7949,6 @@ instruct vabsL_reg(vec dst, vec src) %{
 
 // Half float abs
 instruct vabsHF_reg(vec dst, vec src) %{
-  predicate(UseAVX > 2);
   match(Set dst (AbsVHF  src));
   format %{ "vandps $dst,$src\t# $dst = |$src| abs packedHF" %}
   ins_encode %{
@@ -7999,7 +7960,6 @@ instruct vabsHF_reg(vec dst, vec src) %{
 
 // Halffloat neg
 instruct vnegHF_reg(vec dst, vec src) %{
-  predicate(UseAVX > 2);
   match(Set dst (NegVHF src));
   format %{"vxorps $dst, $src\t $dst = -$src neg packedHF" %}
   ins_encode %{

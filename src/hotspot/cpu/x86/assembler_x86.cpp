@@ -11102,11 +11102,9 @@ void Assembler::evex_prefix(bool vex_r, bool vex_b, bool vex_x, bool evex_r, boo
   // instead of not'd
   int byte2 = (vex_r ? VEX_R : 0) | (vex_x ? VEX_X : 0) | (vex_b ? VEX_B : 0) | (evex_r ? EVEX_Rb : 0);
   byte2 = (~byte2) & 0xF0;
-  // confine opc opcode extensions in mm bits to lower two bits
-  // of form {0F, 0F_38, 0F_3A}
-  // For MAP5 and MAP6, we use 3 bits in mmm bits
+  // confine opc opcode extensions in mmm bits to lower three bits
+  // of form {0F, 0F_38, 0F_3A, MAP5, MAP6}
   byte2 |= opc;
-  emit_int8(byte2);
 
   // P1: byte 3 as Wvvvv1pp
   int byte3 = ((~nds_enc) & 0xf) << 3;
