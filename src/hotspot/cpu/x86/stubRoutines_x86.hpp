@@ -183,6 +183,8 @@ class x86 {
   static address _vector_reverse_byte_perm_mask_long;
   static address _vector_reverse_byte_perm_mask_int;
   static address _vector_reverse_byte_perm_mask_short;
+  static address _vector_halffloat_sign_flip;
+  static address _vector_halffloat_sign_mask;
 #ifdef _LP64
   static juint _k256_W[];
   static address _k256_W_adr;
@@ -207,8 +209,6 @@ class x86 {
   static address _join_2_3_base64;
   static address _decoding_table_base64;
   static address _ghash_poly512_addr;
-  static address _vector_halffloat_sign_flip;
-  static address _vector_halffloat_sign_mask;
 #endif
   // byte flip mask for sha256
   static address _pshuffle_byte_flip_mask_addr;
