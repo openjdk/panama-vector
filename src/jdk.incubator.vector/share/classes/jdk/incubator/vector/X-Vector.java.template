@@ -3544,7 +3544,11 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         $type$[] a = toArray();
         long[] res = new long[a.length];
         for (int i = 0; i < a.length; i++) {
+#if[FP16]
+            $type$ e = (short) Halffloat.valueOf(a[i]).floatValue();
+#else[FP16]
             $type$ e = a[i];
+#end[FP16]
             res[i] = $Type$Species.toIntegralChecked(e, false);
         }
         return res;
@@ -3585,7 +3589,11 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         $type$[] a = toArray();
         double[] res = new double[a.length];
         for (int i = 0; i < a.length; i++) {
+#if[FP16]
+            res[i] = (double) Halffloat.valueOf(a[i]).floatValue();
+#else[FP16]
             res[i] = (double) a[i];
+#end[FP16]
         }
         return res;
     }
@@ -5419,7 +5427,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 Class<? extends $abstractvectortype$> vectorType,
                 Class<? extends AbstractMask<$Boxtype$>> maskType,
                 Function<Object, $abstractvectortype$> vectorFactory) {
-            super(shape, LaneType.of($type$.class),
+            super(shape, LaneType.of($elemtype$.class),
                   vectorType, maskType,
                   vectorFactory);
             assert(this.elementSize() == $Boxtype$.SIZE);

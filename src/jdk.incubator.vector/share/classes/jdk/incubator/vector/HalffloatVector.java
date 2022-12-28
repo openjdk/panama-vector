@@ -2694,7 +2694,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         short[] a = toArray();
         long[] res = new long[a.length];
         for (int i = 0; i < a.length; i++) {
-            short e = a[i];
+            short e = (short) Halffloat.valueOf(a[i]).floatValue();
             res[i] = HalffloatSpecies.toIntegralChecked(e, false);
         }
         return res;
@@ -2712,7 +2712,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         short[] a = toArray();
         double[] res = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            res[i] = (double) a[i];
+            res[i] = (double) Halffloat.valueOf(a[i]).floatValue();
         }
         return res;
     }
@@ -3850,7 +3850,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
                 Class<? extends HalffloatVector> vectorType,
                 Class<? extends AbstractMask<Halffloat>> maskType,
                 Function<Object, HalffloatVector> vectorFactory) {
-            super(shape, LaneType.of(short.class),
+            super(shape, LaneType.of(Halffloat.class),
                   vectorType, maskType,
                   vectorFactory);
             assert(this.elementSize() == Halffloat.SIZE);
