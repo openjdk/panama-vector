@@ -581,6 +581,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
 //  Sh ShuffleIota(Class<?> E, Class<?> shuffleClass, Vector.Species<E> s, int length,
 //                  int start, int step, int wrap, ShuffleIotaOperation<Sh, E> defaultImpl)
 bool LibraryCallKit::inline_vector_shuffle_iota() {
+  const TypeInstPtr* elem_klass    = gvn().type(argument(0))->isa_instptr();
   const TypeInstPtr* shuffle_klass = gvn().type(argument(1))->isa_instptr();
   const TypeInt*     vlen          = gvn().type(argument(3))->isa_int();
   const TypeInt*     start_val     = gvn().type(argument(4))->isa_int();
@@ -590,6 +591,13 @@ bool LibraryCallKit::inline_vector_shuffle_iota() {
   Node* start = argument(4);
   Node* step  = argument(5);
 
+  ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
+  if (!elem_type->is_primitive_type()) {
+    if (C->print_intrinsics()) {
+      tty->print_cr("  ** not a primitive bt=%d", elem_type->basic_type());
+    }
+    return false; // should be primitive type
+  }
   if (shuffle_klass == NULL || vlen == NULL || start_val == NULL || step_val == NULL || wrap == NULL) {
     return false; // dead code
   }
