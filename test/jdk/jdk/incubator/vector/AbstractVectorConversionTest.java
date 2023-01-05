@@ -315,7 +315,7 @@ abstract class AbstractVectorConversionTest {
     static BiConsumer<ByteBuffer, Object> putBufferValueFunction(Class<?> from) {
         if (from == byte.class)
             return (bb, o) -> bb.put((byte) o);
-        else if (from == short.class)
+        else if (from == short.class || from == Halffloat.class)
             return (bb, o) -> bb.putShort((short) o);
         else if (from == int.class)
             return (bb, o) -> bb.putInt((int) o);
@@ -332,7 +332,7 @@ abstract class AbstractVectorConversionTest {
     static Function<ByteBuffer, Number> getBufferValueFunction(Class<?> to) {
         if (to == byte.class)
             return ByteBuffer::get;
-        else if (to == short.class)
+        else if (to == short.class || to == Halffloat.class)
             return ByteBuffer::getShort;
         else if (to == int.class)
             return ByteBuffer::getInt;
@@ -378,11 +378,11 @@ abstract class AbstractVectorConversionTest {
         for (int i = 0; i < length; i++) {
             Number v = (Number) Array.get(src, srcPos + i);
             if (srcSpecies.elementType() == Halffloat.class) {
-                 v = (Number) Halffloat.valueOf(v.shortValue()).floatValue();
+                v = (Number) Float.float16ToFloat(v.shortValue());
             }
             v = (Number) c.apply(v);
             if (dstSpecies.elementType() == Halffloat.class) {
-                 v = (Number) Halffloat.valueOf(v.floatValue());
+                v = (Number) Halffloat.valueOf(v.floatValue());
             }
             Array.set(dest, destPos + i, v);
         }
@@ -468,7 +468,7 @@ abstract class AbstractVectorConversionTest {
 
         Object expected = null, actual = null;
         if (destSpecies.elementType() == Halffloat.class) {
-            expected = Array.newInstance(short.class , out_len);
+            expected = Array.newInstance(short.class, out_len);
             actual = Array.newInstance(short.class, out_len);
         } else {
             expected = Array.newInstance(destSpecies.elementType(), out_len);
@@ -521,11 +521,13 @@ abstract class AbstractVectorConversionTest {
 
         int[] parts = getPartsArray(m, is_contracting_conv);
 
-        Object expected = Array.newInstance(dstSpecies.elementType(), out_len);
-        Object actual = Array.newInstance(dstSpecies.elementType(), out_len);
-
-        if (srcSpecies.elementType() == Halffloat.class || dstSpecies.elementType() == Halffloat.class) {
-            return;
+        Object expected = null, actual = null;
+        if (dstSpecies.elementType() == Halffloat.class) {
+            expected = Array.newInstance(short.class, out_len);
+            actual = Array.newInstance(short.class, out_len);
+        } else {
+            expected = Array.newInstance(dstSpecies.elementType(), out_len);
+            actual = Array.newInstance(dstSpecies.elementType(), out_len);
         }
 
         BiConsumer<ByteBuffer, Object> putValue = putBufferValueFunction(srcSpecies.elementType());
