@@ -55,6 +55,16 @@ class ConvD2FNode : public Node {
   virtual uint  ideal_reg() const { return Op_RegF; }
 };
 
+//------------------------------ConvD2HFNode------------------------------------
+// Convert Double to Halffloat
+class ConvD2HFNode : public Node {
+  public:
+  ConvD2HFNode( Node *in1 ) : Node(0,in1) {}
+  virtual int Opcode() const;
+  virtual const Type *bottom_type() const { return TypeInt::SHORT; }
+  virtual uint  ideal_reg() const { return Op_RegF; }
+};
+
 //------------------------------ConvD2INode------------------------------------
 // Convert Double to Integer
 class ConvD2INode : public Node {
@@ -100,6 +110,16 @@ class ConvF2DNode : public Node {
   virtual uint  ideal_reg() const { return Op_RegD; }
 };
 
+//------------------------------ConvF2HFNode------------------------------------
+// Convert Float to Halffloat
+class ConvF2HFNode : public Node {
+  public:
+  ConvF2HFNode( Node *in1 ) : Node(0,in1) {}
+  virtual int Opcode() const;
+  virtual const Type *bottom_type() const { return TypeInt::SHORT; }
+  virtual uint  ideal_reg() const { return Op_RegI; }
+};
+
 //------------------------------ConvF2INode------------------------------------
 // Convert float to integer
 class ConvF2INode : public Node {
@@ -125,6 +145,26 @@ class ConvF2LNode : public Node {
   virtual Node* Identity(PhaseGVN* phase);
   virtual Node *Ideal(PhaseGVN *phase, bool can_reshape);
   virtual uint  ideal_reg() const { return Op_RegL; }
+};
+
+//------------------------------ConvHF2DNode------------------------------------
+// Convert Halffloat to Double
+class ConvHF2DNode : public Node {
+  public:
+  ConvHF2DNode( Node *in1 ) : Node(0,in1) {}
+  virtual int Opcode() const;
+  virtual const Type *bottom_type() const { return TypeInt::DOUBLE; }
+  virtual uint  ideal_reg() const { return Op_RegD; }
+};
+
+//------------------------------ConvHF2FNode------------------------------------
+// Convert Halffloat to Float
+class ConvHF2FNode : public Node {
+  public:
+  ConvHF2FNode( Node *in1 ) : Node(0,in1) {}
+  virtual int Opcode() const;
+  virtual const Type *bottom_type() const { return Type::FLOAT; }
+  virtual uint  ideal_reg() const { return Op_RegF; }
 };
 
 //------------------------------ConvI2DNode------------------------------------

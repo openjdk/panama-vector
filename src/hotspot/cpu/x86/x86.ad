@@ -1961,6 +1961,14 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
         return false;
       }
       break;
+    case Op_VectorCastF2HF:
+    case Op_VectorCastHF2F:
+    case Op_VectorCastD2HF:
+    case Op_VectorCastHF2D:
+      if (!VM_Version::supports_avx512_fp16()) {
+        return false;
+      }
+      break;
   }
   return true;  // Per default match rules are supported.
 }
@@ -7384,7 +7392,7 @@ instruct vucast(vec dst, vec src) %{
 // Convert from Halffloat to other types
 instruct vcvtHFtoD_reg(vec dst, vec src) %{
   predicate(UseAVX > 2 && VM_Version::supports_avx512_fp16() && Matcher::vector_element_basic_type(n) == T_DOUBLE);
-  match(Set dst (VectorCastS2X src));
+  match(Set dst (VectorCastHF2D src));
   format %{ "evcvtph2pd   $dst,$src\t! convert HF to D vector" %}
   ins_encode %{
     int vlen_enc = vector_length_encoding(this, $src);
@@ -7395,7 +7403,7 @@ instruct vcvtHFtoD_reg(vec dst, vec src) %{
 
 instruct vcvtHFtoF_reg(vec dst, vec src) %{
   predicate(UseAVX > 2 && Matcher::vector_element_basic_type(n) == T_FLOAT);
-  match(Set dst (VectorCastS2X src));
+  match(Set dst (VectorCastHF2F src));
   format %{ "evcvtph2ps   $dst,$src\t! convert HF to F vector" %}
   ins_encode %{
     int vlen_enc = vector_length_encoding(this, $src);
@@ -7407,7 +7415,7 @@ instruct vcvtHFtoF_reg(vec dst, vec src) %{
 // Convert from other types to Halffloat
 instruct vcvtFtoHF_reg(vec dst, vec src) %{
   predicate(UseAVX > 2 && Matcher::vector_element_basic_type(n) == T_SHORT);
-  match(Set dst (VectorCastF2X src));
+  match(Set dst (VectorCastF2HF src));
   format %{ "evcvtps2ph   $dst,$src\t! convert F to HF vector" %}
   ins_encode %{
     int midx = 0;
@@ -7419,7 +7427,7 @@ instruct vcvtFtoHF_reg(vec dst, vec src) %{
 
 instruct vcvtDtoHF_reg(vec dst, vec src) %{
   predicate(UseAVX > 2 && VM_Version::supports_avx512_fp16() && Matcher::vector_element_basic_type(n) == T_SHORT);
-  match(Set dst (VectorCastD2X src));
+  match(Set dst (VectorCastD2HF src));
   format %{ "evcvtpd2ph   $dst,$src\t! convert D to HF vector" %}
   ins_encode %{
     int vlen_enc = vector_length_encoding(this, $src);

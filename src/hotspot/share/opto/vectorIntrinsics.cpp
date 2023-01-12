@@ -781,7 +781,7 @@ bool LibraryCallKit::inline_vector_shuffle_to_vector() {
     return false;
   }
 
-  int cast_vopc = VectorCastNode::opcode(T_BYTE); // from shuffle of type T_BYTE
+  int cast_vopc = VectorCastNode::opcode(-1, T_BYTE); // from shuffle of type T_BYTE
   // Make sure that cast is implemented to particular type/size combination.
   if (!arch_supports_vector(cast_vopc, num_elem, elem_bt, VecMaskNotUsed)) {
     if (C->print_intrinsics()) {
@@ -2477,7 +2477,7 @@ bool LibraryCallKit::inline_vector_convert() {
     if (is_mask && is_floating_point_type(elem_bt_from)) {
       new_elem_bt_from = elem_bt_from == T_FLOAT ? T_INT : T_LONG;
     }
-    int cast_vopc = VectorCastNode::opcode(new_elem_bt_from, !is_ucast);
+    int cast_vopc = VectorCastNode::opcode(-1, new_elem_bt_from, !is_ucast);
     // Make sure that cast is implemented to particular type/size combination.
     if (!arch_supports_vector(cast_vopc, num_elem_to, elem_bt_to, VecMaskNotUsed)) {
       if (C->print_intrinsics()) {

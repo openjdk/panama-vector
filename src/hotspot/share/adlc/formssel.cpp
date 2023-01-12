@@ -4237,6 +4237,7 @@ bool MatchRule::is_vector() const {
     "VectorCastB2X", "VectorCastS2X", "VectorCastI2X",
     "VectorCastL2X", "VectorCastF2X", "VectorCastD2X",
     "VectorUCastB2X", "VectorUCastS2X", "VectorUCastI2X",
+    "VectorCastHF2F", "VectorCastF2HF", "VectorCastD2HF", "VectorCastHF2D",
     "VectorMaskWrapper","VectorMaskCmp","VectorReinterpret","LoadVectorMasked","StoreVectorMasked",
     "FmaVD","FmaVF","PopCountVI", "PopCountVL", "VectorLongToMask",
     "CountLeadingZerosV", "CountTrailingZerosV",

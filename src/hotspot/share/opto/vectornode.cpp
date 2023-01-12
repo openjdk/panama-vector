@@ -313,7 +313,7 @@ int VectorNode::opcode(int sopc) {
   }
 }
 
-// Make a vectornode for half float binary operation
+// Make a vectornode for half float unary/binary operations
 VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, uint vlen) {
   const TypeVect* vt = TypeVect::make(T_SHORT, vlen);
   // This method should not be called for unimplemented vectors.
@@ -1264,14 +1264,39 @@ VectorCastNode* VectorCastNode::make(int vopc, Node* n1, BasicType bt, uint vlen
     case Op_VectorUCastB2X: return new VectorUCastB2XNode(n1, vt);
     case Op_VectorUCastS2X: return new VectorUCastS2XNode(n1, vt);
     case Op_VectorUCastI2X: return new VectorUCastI2XNode(n1, vt);
+    case Op_VectorCastHF2F: return new VectorCastHF2FNode(n1, vt);
+    case Op_VectorCastF2HF: return new VectorCastF2HFNode(n1, vt);
+    case Op_VectorCastD2HF: return new VectorCastD2HFNode(n1, vt);
+    case Op_VectorCastHF2D: return new VectorCastHF2DNode(n1, vt);
     default:
       assert(false, "unknown node: %s", NodeClassNames[vopc]);
       return NULL;
   }
 }
 
-int VectorCastNode::opcode(BasicType bt, bool is_signed) {
+int VectorCastNode::opcode(int sopc, BasicType bt, bool is_signed) {
   assert((is_integral_type(bt) && bt != T_LONG) || is_signed, "");
+
+  //handle special case for/to Half float conversions
+  switch (sopc) {
+    case Op_ConvHF2F:
+      assert(bt == T_SHORT, "");
+      return Op_VectorCastHF2F;
+    case Op_ConvF2HF:
+      assert(bt == T_FLOAT, "");
+      return Op_VectorCastF2HF;
+    case Op_ConvD2HF:
+      assert(bt == T_DOUBLE, "");
+      return Op_VectorCastD2HF;
+    case Op_ConvHF2D:
+      assert(bt == T_SHORT, "");
+      return Op_VectorCastHF2D;
+    default:
+      // handled below
+      break;
+  }
+
+  // handle normal conversions
   switch (bt) {
     case T_BYTE:   return is_signed ? Op_VectorCastB2X : Op_VectorUCastB2X;
     case T_SHORT:  return is_signed ? Op_VectorCastS2X : Op_VectorUCastS2X;
@@ -1667,7 +1692,7 @@ Node* VectorMaskCastNode::makeCastNode(PhaseGVN* phase, Node* src, const TypeVec
       op = phase->transform(new VectorMaskCastNode(op, new_src_type));
     }
 
-    op = phase->transform(VectorCastNode::make(VectorCastNode::opcode(new_elem_bt_from), op, new_elem_bt_to, num_elem));
+    op = phase->transform(VectorCastNode::make(VectorCastNode::opcode(-1, new_elem_bt_from), op, new_elem_bt_to, num_elem));
 
     if (new_elem_bt_to != elem_bt_to) {
       op = phase->transform(new VectorMaskCastNode(op, dst_type));
