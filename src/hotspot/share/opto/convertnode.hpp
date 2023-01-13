@@ -62,7 +62,7 @@ class ConvD2HFNode : public Node {
   ConvD2HFNode( Node *in1 ) : Node(0,in1) {}
   virtual int Opcode() const;
   virtual const Type *bottom_type() const { return TypeInt::SHORT; }
-  virtual uint  ideal_reg() const { return Op_RegF; }
+  virtual uint  ideal_reg() const { return Op_RegI; }
 };
 
 //------------------------------ConvD2INode------------------------------------
