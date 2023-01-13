@@ -153,7 +153,7 @@ class ConvHF2DNode : public Node {
   public:
   ConvHF2DNode( Node *in1 ) : Node(0,in1) {}
   virtual int Opcode() const;
-  virtual const Type *bottom_type() const { return TypeInt::DOUBLE; }
+  virtual const Type *bottom_type() const { return Type::DOUBLE; }
   virtual uint  ideal_reg() const { return Op_RegD; }
 };
 
