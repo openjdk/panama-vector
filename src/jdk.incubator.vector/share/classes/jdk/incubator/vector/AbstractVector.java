@@ -530,6 +530,8 @@ abstract class AbstractVector<E> extends Vector<E> {
             return FloatVector.fromMemorySegment(rsp.check(float.class), ms, 0, bo, m.check(float.class)).check0(rsp);
         case LaneType.SK_DOUBLE:
             return DoubleVector.fromMemorySegment(rsp.check(double.class), ms, 0, bo, m.check(double.class)).check0(rsp);
+        case LaneType.SK_HALFFLOAT:
+            return HalffloatVector.fromMemorySegment(rsp.check(Halffloat.class), ms, 0, bo, m.check(Halffloat.class)).check0(rsp);
         default:
             throw new AssertionError(rsp.toString());
         }
@@ -592,6 +594,13 @@ abstract class AbstractVector<E> extends Vector<E> {
                 }
                 return DoubleVector.fromArray(dsp.check(double.class), a, 0).check0(dsp);
             }
+            case LaneType.SK_HALFFLOAT: {
+                short[] a = new short[rlength];
+                for (int i = 0; i < limit; i++) {
+                    a[i] = Halffloat.valueOf((float) lanes[i]);
+                }
+                return HalffloatVector.fromArray(dsp.check(Halffloat.class), a, 0).check0(dsp);
+            }
             default: break;
             }
         } else {
@@ -641,6 +650,13 @@ abstract class AbstractVector<E> extends Vector<E> {
                     a[i] = (double) lanes[i];
                 }
                 return DoubleVector.fromArray(dsp.check(double.class), a, 0).check0(dsp);
+            }
+            case LaneType.SK_HALFFLOAT: {
+                short[] a = new short[rlength];
+                for (int i = 0; i < limit; i++) {
+                    a[i] = Halffloat.valueOf((float) lanes[i]);
+                }
+                return HalffloatVector.fromArray(dsp.check(Halffloat.class), a, 0).check0(dsp);
             }
             default: break;
             }
