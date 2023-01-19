@@ -742,8 +742,27 @@ public class $vectorteststype$ extends AbstractVectorTest {
 
 
 #if[FP]
-#if[!Halffloat]
     static boolean isWithin1Ulp($type$ actual, $type$ expected) {
+#if[Halffloat]
+        float act = Float.float16ToFloat(actual);
+        float exp = Float.float16ToFloat(expected);
+        if (Float.isNaN(exp) && !Float.isNaN(act)) {
+            return false;
+        } else if (!Float.isNaN(exp) && Float.isNaN(act)) {
+             return false;
+        }
+
+        float low = Math.nextDown(exp);
+        float high = Math.nextUp(exp);
+
+        if (Float.compare(low, exp) > 0) {
+            return false;
+        }
+
+        if (Float.compare(high, exp) < 0) {
+            return false;
+        }
+#else[Halffloat]
         if ($Type$.isNaN(expected) && !$Type$.isNaN(actual)) {
             return false;
         } else if (!$Type$.isNaN(expected) && $Type$.isNaN(actual)) {
@@ -760,6 +779,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
         if ($Type$.compare(high, expected) < 0) {
             return false;
         }
+#end[Halffloat]
 
         return true;
     }
@@ -817,9 +837,6 @@ public class $vectorteststype$ extends AbstractVectorTest {
                              b[(i / SPECIES.length()) * SPECIES.length()]));
         }
     }
-#else[!Halffloat]
-    // TODO: Fix and Enable isWithin1Ulp
-#end[!Halffloat]
 #end[FP]
 
     interface FBinArrayOp {

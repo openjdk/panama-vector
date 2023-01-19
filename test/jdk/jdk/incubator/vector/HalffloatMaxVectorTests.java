@@ -705,7 +705,82 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
 
-    // TODO: Fix and Enable isWithin1Ulp
+    static boolean isWithin1Ulp(short actual, short expected) {
+        float act = Float.float16ToFloat(actual);
+        float exp = Float.float16ToFloat(expected);
+        if (Float.isNaN(exp) && !Float.isNaN(act)) {
+            return false;
+        } else if (!Float.isNaN(exp) && Float.isNaN(act)) {
+             return false;
+        }
+
+        float low = Math.nextDown(exp);
+        float high = Math.nextUp(exp);
+
+        if (Float.compare(low, exp) > 0) {
+            return false;
+        }
+
+        if (Float.compare(high, exp) < 0) {
+            return false;
+        }
+
+        return true;
+    }
+
+    static void assertArraysEqualsWithinOneUlp(short[] r, short[] a, FUnOp mathf, FUnOp strictmathf) {
+        int i = 0;
+        try {
+            // Check that result is within 1 ulp of strict math or equivalent to math implementation.
+            for (; i < a.length; i++) {
+                Assert.assertTrue(Short.compare(r[i], mathf.apply(a[i])) == 0 ||
+                                    isWithin1Ulp(r[i], strictmathf.apply(a[i])));
+            }
+        } catch (AssertionError e) {
+            Assert.assertTrue(Short.compare(r[i], mathf.apply(a[i])) == 0, "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i]));
+            Assert.assertTrue(isWithin1Ulp(r[i], strictmathf.apply(a[i])), "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected (within 1 ulp) = " + strictmathf.apply(a[i]));
+        }
+    }
+
+    static void assertArraysEqualsWithinOneUlp(short[] r, short[] a, short[] b, FBinOp mathf, FBinOp strictmathf) {
+        int i = 0;
+        try {
+            // Check that result is within 1 ulp of strict math or equivalent to math implementation.
+            for (; i < a.length; i++) {
+                Assert.assertTrue(Short.compare(r[i], mathf.apply(a[i], b[i])) == 0 ||
+                                    isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])));
+            }
+        } catch (AssertionError e) {
+            Assert.assertTrue(Short.compare(r[i], mathf.apply(a[i], b[i])) == 0, "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i], b[i]));
+            Assert.assertTrue(isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])), "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected (within 1 ulp) = " + strictmathf.apply(a[i], b[i]));
+        }
+    }
+
+    static void assertBroadcastArraysEqualsWithinOneUlp(short[] r, short[] a, short[] b,
+                                                        FBinOp mathf, FBinOp strictmathf) {
+        int i = 0;
+        try {
+            // Check that result is within 1 ulp of strict math or equivalent to math implementation.
+            for (; i < a.length; i++) {
+                Assert.assertTrue(Short.compare(r[i],
+                                  mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])) == 0 ||
+                                  isWithin1Ulp(r[i],
+                                  strictmathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])));
+            }
+        } catch (AssertionError e) {
+            Assert.assertTrue(Short.compare(r[i],
+                              mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])) == 0,
+                              "at index #" + i + ", input1 = " + a[i] + ", input2 = " +
+                              b[(i / SPECIES.length()) * SPECIES.length()] + ", actual = " + r[i] +
+                              ", expected = " + mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()]));
+            Assert.assertTrue(isWithin1Ulp(r[i],
+                              strictmathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])),
+                             "at index #" + i + ", input1 = " + a[i] + ", input2 = " +
+                             b[(i / SPECIES.length()) * SPECIES.length()] + ", actual = " + r[i] +
+                             ", expected (within 1 ulp) = " + strictmathf.apply(a[i],
+                             b[(i / SPECIES.length()) * SPECIES.length()]));
+        }
+    }
 
     interface FBinArrayOp {
         short apply(short[] a, int b);
@@ -1526,6 +1601,47 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, mask, HalffloatMaxVectorTests::MUL);
     }
 
+    static short DIV(short a, short b) {
+        return (short)(Halffloat.valueOf((Halffloat.valueOf(a).floatValue() / Halffloat.valueOf(b).floatValue())));
+    }
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void DIVHalffloatMaxVectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.DIV, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, HalffloatMaxVectorTests::DIV);
+    }
+
+    @Test(dataProvider = "shortBinaryOpMaskProvider")
+    static void DIVHalffloatMaxVectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.DIV, bv, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, mask, HalffloatMaxVectorTests::DIV);
+    }
+
     static short MAX(short a, short b) {
         return (short)(Halffloat.valueOf(Math.max(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue())));
     }
@@ -1785,6 +1901,556 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, c, mask, HalffloatMaxVectorTests::FMA);
     }
+
+    static short SQRT(short a) {
+        return (short)(Halffloat.valueOf((float) Math.sqrt(Halffloat.valueOf(a).floatValue())));
+    }
+
+    static short sqrt(short a) {
+        return (short)(Halffloat.valueOf((float) Math.sqrt(Halffloat.valueOf(a).floatValue())));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void SQRTHalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.SQRT).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, HalffloatMaxVectorTests::SQRT);
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void sqrtHalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.sqrt().intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, HalffloatMaxVectorTests::sqrt);
+    }
+
+    @Test(dataProvider = "shortUnaryOpMaskProvider")
+    static void SQRTMaskedHalffloatMaxVectorTests(IntFunction<short[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.SQRT, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, HalffloatMaxVectorTests::SQRT);
+    }
+
+    static short SIN(short a) {
+        return Halffloat.valueOf((float) Math.sin(Halffloat.valueOf(a).floatValue()));
+    }
+
+    static short strictSIN(short a) {
+        return Halffloat.valueOf((float) StrictMath.sin(Halffloat.valueOf(a).floatValue()));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void SINHalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.SIN).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, HalffloatMaxVectorTests::SIN, HalffloatMaxVectorTests::strictSIN);
+    }
+
+
+    static short EXP(short a) {
+        return Halffloat.valueOf((float) Math.exp(Halffloat.valueOf(a).floatValue()));
+    }
+
+    static short strictEXP(short a) {
+        return Halffloat.valueOf((float) StrictMath.exp(Halffloat.valueOf(a).floatValue()));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void EXPHalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.EXP).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, HalffloatMaxVectorTests::EXP, HalffloatMaxVectorTests::strictEXP);
+    }
+
+
+    static short LOG1P(short a) {
+        return Halffloat.valueOf((float) Math.log1p(Halffloat.valueOf(a).floatValue()));
+    }
+
+    static short strictLOG1P(short a) {
+        return Halffloat.valueOf((float) StrictMath.log1p(Halffloat.valueOf(a).floatValue()));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void LOG1PHalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LOG1P).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, HalffloatMaxVectorTests::LOG1P, HalffloatMaxVectorTests::strictLOG1P);
+    }
+
+
+    static short LOG(short a) {
+        return Halffloat.valueOf((float) Math.log(Halffloat.valueOf(a).floatValue()));
+    }
+
+    static short strictLOG(short a) {
+        return Halffloat.valueOf((float) StrictMath.log(Halffloat.valueOf(a).floatValue()));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void LOGHalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LOG).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, HalffloatMaxVectorTests::LOG, HalffloatMaxVectorTests::strictLOG);
+    }
+
+
+    static short LOG10(short a) {
+        return Halffloat.valueOf((float) Math.log10(Halffloat.valueOf(a).floatValue()));
+    }
+
+    static short strictLOG10(short a) {
+        return Halffloat.valueOf((float) StrictMath.log10(Halffloat.valueOf(a).floatValue()));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void LOG10HalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LOG10).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, HalffloatMaxVectorTests::LOG10, HalffloatMaxVectorTests::strictLOG10);
+    }
+
+
+    static short EXPM1(short a) {
+        return Halffloat.valueOf((float) Math.expm1(Halffloat.valueOf(a).floatValue()));
+    }
+
+    static short strictEXPM1(short a) {
+        return Halffloat.valueOf((float) StrictMath.expm1(Halffloat.valueOf(a).floatValue()));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void EXPM1HalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.EXPM1).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, HalffloatMaxVectorTests::EXPM1, HalffloatMaxVectorTests::strictEXPM1);
+    }
+
+
+    static short COS(short a) {
+        return Halffloat.valueOf((float) Math.cos(Halffloat.valueOf(a).floatValue()));
+    }
+
+    static short strictCOS(short a) {
+        return Halffloat.valueOf((float) StrictMath.cos(Halffloat.valueOf(a).floatValue()));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void COSHalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.COS).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, HalffloatMaxVectorTests::COS, HalffloatMaxVectorTests::strictCOS);
+    }
+
+
+    static short TAN(short a) {
+        return Halffloat.valueOf((float) Math.tan(Halffloat.valueOf(a).floatValue()));
+    }
+
+    static short strictTAN(short a) {
+        return Halffloat.valueOf((float) StrictMath.tan(Halffloat.valueOf(a).floatValue()));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void TANHalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.TAN).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, HalffloatMaxVectorTests::TAN, HalffloatMaxVectorTests::strictTAN);
+    }
+
+
+    static short SINH(short a) {
+        return Halffloat.valueOf((float) Math.sinh(Halffloat.valueOf(a).floatValue()));
+    }
+
+    static short strictSINH(short a) {
+        return Halffloat.valueOf((float) StrictMath.sinh(Halffloat.valueOf(a).floatValue()));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void SINHHalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.SINH).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, HalffloatMaxVectorTests::SINH, HalffloatMaxVectorTests::strictSINH);
+    }
+
+
+    static short COSH(short a) {
+        return Halffloat.valueOf((float) Math.cosh(Halffloat.valueOf(a).floatValue()));
+    }
+
+    static short strictCOSH(short a) {
+        return Halffloat.valueOf((float) StrictMath.cosh(Halffloat.valueOf(a).floatValue()));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void COSHHalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.COSH).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, HalffloatMaxVectorTests::COSH, HalffloatMaxVectorTests::strictCOSH);
+    }
+
+
+    static short TANH(short a) {
+        return Halffloat.valueOf((float) Math.tanh(Halffloat.valueOf(a).floatValue()));
+    }
+
+    static short strictTANH(short a) {
+        return Halffloat.valueOf((float) StrictMath.tanh(Halffloat.valueOf(a).floatValue()));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void TANHHalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.TANH).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, HalffloatMaxVectorTests::TANH, HalffloatMaxVectorTests::strictTANH);
+    }
+
+
+    static short ASIN(short a) {
+        return Halffloat.valueOf((float) Math.asin(Halffloat.valueOf(a).floatValue()));
+    }
+
+    static short strictASIN(short a) {
+        return Halffloat.valueOf((float) StrictMath.asin(Halffloat.valueOf(a).floatValue()));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void ASINHalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ASIN).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, HalffloatMaxVectorTests::ASIN, HalffloatMaxVectorTests::strictASIN);
+    }
+
+
+    static short ACOS(short a) {
+        return Halffloat.valueOf((float) Math.acos(Halffloat.valueOf(a).floatValue()));
+    }
+
+    static short strictACOS(short a) {
+        return Halffloat.valueOf((float) StrictMath.acos(Halffloat.valueOf(a).floatValue()));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void ACOSHalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ACOS).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, HalffloatMaxVectorTests::ACOS, HalffloatMaxVectorTests::strictACOS);
+    }
+
+
+    static short ATAN(short a) {
+        return Halffloat.valueOf((float) Math.atan(Halffloat.valueOf(a).floatValue()));
+    }
+
+    static short strictATAN(short a) {
+        return Halffloat.valueOf((float) StrictMath.atan(Halffloat.valueOf(a).floatValue()));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void ATANHalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ATAN).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, HalffloatMaxVectorTests::ATAN, HalffloatMaxVectorTests::strictATAN);
+    }
+
+
+    static short CBRT(short a) {
+        return Halffloat.valueOf((float) Math.cbrt(Halffloat.valueOf(a).floatValue()));
+    }
+
+    static short strictCBRT(short a) {
+        return Halffloat.valueOf((float) StrictMath.cbrt(Halffloat.valueOf(a).floatValue()));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void CBRTHalffloatMaxVectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.CBRT).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, HalffloatMaxVectorTests::CBRT, HalffloatMaxVectorTests::strictCBRT);
+    }
+
+
+    static short HYPOT(short a, short b) {
+        return Halffloat.valueOf((float) Math.hypot(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+    }
+
+    static short strictHYPOT(short a, short b) {
+        return Halffloat.valueOf((float) StrictMath.hypot(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+    }
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void HYPOTHalffloatMaxVectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.HYPOT, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, b, HalffloatMaxVectorTests::HYPOT, HalffloatMaxVectorTests::strictHYPOT);
+    }
+
+
+    static short POW(short a, short b) {
+        return Halffloat.valueOf((float) Math.pow(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+    }
+
+    static short strictPOW(short a, short b) {
+        return Halffloat.valueOf((float) StrictMath.pow(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+    }
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void POWHalffloatMaxVectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.POW, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, b, HalffloatMaxVectorTests::POW, HalffloatMaxVectorTests::strictPOW);
+    }
+
+
+    static short pow(short a, short b) {
+        return Halffloat.valueOf((float) Math.pow(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+    }
+
+    static short strictpow(short a, short b) {
+        return Halffloat.valueOf((float) StrictMath.pow(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+    }
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void powHalffloatMaxVectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                av.pow(bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, b, HalffloatMaxVectorTests::pow, HalffloatMaxVectorTests::strictpow);
+    }
+
+
+    static short ATAN2(short a, short b) {
+        return Halffloat.valueOf((float) Math.atan2(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+    }
+
+    static short strictATAN2(short a, short b) {
+        return Halffloat.valueOf((float) StrictMath.atan2(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+    }
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void ATAN2HalffloatMaxVectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.ATAN2, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, b, HalffloatMaxVectorTests::ATAN2, HalffloatMaxVectorTests::strictATAN2);
+    }
+
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void POWHalffloatMaxVectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.POW, b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEqualsWithinOneUlp(r, a, b, HalffloatMaxVectorTests::POW, HalffloatMaxVectorTests::strictPOW);
+    }
+
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void powHalffloatMaxVectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            av.pow(b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEqualsWithinOneUlp(r, a, b, HalffloatMaxVectorTests::pow, HalffloatMaxVectorTests::strictpow);
+    }
+
 
     // TODO: Fix and Enable ltHalffloatMaxVectorTestsBroadcastSmokeTest
     // TODO: Fix and Enable eqHalffloatMaxVectorTestsBroadcastMaskedSmokeTest
