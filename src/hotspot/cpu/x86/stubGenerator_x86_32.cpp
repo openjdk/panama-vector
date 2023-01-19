@@ -779,6 +779,31 @@ class StubGenerator: public StubCodeGenerator {
     return start;
   }
 
+  address generate_vector_fp_mask(const char *stub_name, int32_t mask) {
+    __ align(CodeEntryAlignment);
+    StubCodeMark mark(this, "StubRoutines", stub_name);
+    address start = __ pc();
+
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+
+    return start;
+  }
+
   //----------------------------------------------------------------------------------------------------
 
   address generate_vector_byte_perm_mask(const char *stub_name) {
