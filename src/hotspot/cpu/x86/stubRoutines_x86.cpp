@@ -67,6 +67,8 @@ address StubRoutines::x86::_vector_popcount_lut = NULL;
 address StubRoutines::x86::_vector_count_leading_zeros_lut = NULL;
 address StubRoutines::x86::_vector_32_bit_mask = NULL;
 address StubRoutines::x86::_vector_64_bit_mask = NULL;
+address StubRoutines::x86::_vector_halffloat_sign_mask = NULL;
+address StubRoutines::x86::_vector_halffloat_sign_flip = NULL;
 #ifdef _LP64
 address StubRoutines::x86::_k256_W_adr = NULL;
 address StubRoutines::x86::_k512_W_addr = NULL;
@@ -88,8 +90,6 @@ address StubRoutines::x86::_join_1_2_base64 = NULL;
 address StubRoutines::x86::_join_2_3_base64 = NULL;
 address StubRoutines::x86::_decoding_table_base64 = NULL;
 address StubRoutines::x86::_ghash_poly512_addr = NULL;
-address StubRoutines::x86::_vector_halffloat_sign_mask = NULL;
-address StubRoutines::x86::_vector_halffloat_sign_flip = NULL;
 #endif
 address StubRoutines::x86::_pshuffle_byte_flip_mask_addr = NULL;
 
