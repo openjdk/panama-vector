@@ -541,6 +541,8 @@ class Assembler : public AbstractAssembler  {
     VEX_OPCODE_0F    = 0x1,
     VEX_OPCODE_0F_38 = 0x2,
     VEX_OPCODE_0F_3A = 0x3,
+    VEX_OPCODE_MAP5  = 0x5,
+    VEX_OPCODE_MAP6  = 0x6,
     VEX_OPCODE_MASK  = 0x1F
   };
 
@@ -1178,6 +1180,16 @@ private:
   // Convert vector double to long
   void evcvtpd2qq(XMMRegister dst, XMMRegister src, int vector_len);
   void evcvttpd2qq(XMMRegister dst, XMMRegister src, int vector_len);
+
+  // convert vector HF and double
+  void evcvtph2pd(XMMRegister dst, XMMRegister src, int vector_len);
+  void evcvtph2pd(XMMRegister dst, KRegister mask, XMMRegister src, int vector_len);
+  void evcvtps2ph(XMMRegister dst, XMMRegister src, int imm8, int vector_len);
+  void evcvtps2ph(XMMRegister dst, KRegister mask, XMMRegister src, int imm8, int vector_len);
+  void evcvtph2ps(XMMRegister dst, XMMRegister src, int vector_len);
+  void evcvtph2ps(XMMRegister dst, KRegister mask, XMMRegister src, int vector_len);
+  void evcvtpd2ph(XMMRegister dst, XMMRegister src, int vector_len);
+  void evcvtpd2ph(XMMRegister dst, KRegister mask, XMMRegister src, int vector_len);
 
   // Evex casts with truncation
   void evpmovwb(XMMRegister dst, XMMRegister src, int vector_len);
@@ -2180,6 +2192,7 @@ private:
   void vaddsd(XMMRegister dst, XMMRegister nds, XMMRegister src);
   void vaddss(XMMRegister dst, XMMRegister nds, Address src);
   void vaddss(XMMRegister dst, XMMRegister nds, XMMRegister src);
+  void evaddsh(XMMRegister dst, XMMRegister nds, XMMRegister src);
   void vdivsd(XMMRegister dst, XMMRegister nds, Address src);
   void vdivsd(XMMRegister dst, XMMRegister nds, XMMRegister src);
   void vdivss(XMMRegister dst, XMMRegister nds, Address src);
@@ -2218,6 +2231,8 @@ private:
   void vaddps(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
   void vaddpd(XMMRegister dst, XMMRegister nds, Address src, int vector_len);
   void vaddps(XMMRegister dst, XMMRegister nds, Address src, int vector_len);
+  void evaddph(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+  void evaddph(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, int vector_len);
 
   // Subtract Packed Floating-Point Values
   void subpd(XMMRegister dst, XMMRegister src);
@@ -2226,6 +2241,8 @@ private:
   void vsubps(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
   void vsubpd(XMMRegister dst, XMMRegister nds, Address src, int vector_len);
   void vsubps(XMMRegister dst, XMMRegister nds, Address src, int vector_len);
+  void evsubph(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+  void evsubph(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, int vector_len);
 
   // Multiply Packed Floating-Point Values
   void mulpd(XMMRegister dst, XMMRegister src);
@@ -2235,11 +2252,17 @@ private:
   void vmulps(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
   void vmulpd(XMMRegister dst, XMMRegister nds, Address src, int vector_len);
   void vmulps(XMMRegister dst, XMMRegister nds, Address src, int vector_len);
+  void evmulph(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+  void evmulph(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, int vector_len);
 
   void vfmadd231pd(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
   void vfmadd231ps(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
   void vfmadd231pd(XMMRegister dst, XMMRegister nds, Address src, int vector_len);
   void vfmadd231ps(XMMRegister dst, XMMRegister nds, Address src, int vector_len);
+  void evfmadd231ph(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+  void evfmadd231ph(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, int vector_len);
+  void evfmadd231ph(XMMRegister dst, XMMRegister nds, Address src, int vector_len);
+  void evfmadd231ph(XMMRegister dst, KRegister mask, XMMRegister nds, Address src, int vector_len);
 
   // Divide Packed Floating-Point Values
   void divpd(XMMRegister dst, XMMRegister src);
@@ -2248,6 +2271,8 @@ private:
   void vdivps(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
   void vdivpd(XMMRegister dst, XMMRegister nds, Address src, int vector_len);
   void vdivps(XMMRegister dst, XMMRegister nds, Address src, int vector_len);
+  void evdivph(XMMRegister dst, XMMRegister nds, XMMRegister src, int vector_len);
+  void evdivph(XMMRegister dst, KRegister mask, XMMRegister nds, XMMRegister src, int vector_len);
 
   // Sqrt Packed Floating-Point Values
   void vsqrtpd(XMMRegister dst, XMMRegister src, int vector_len);

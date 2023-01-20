@@ -171,6 +171,7 @@ public:
   void reduceDoubleMinMax(int opcode, int vlen, bool is_dst_valid,
                           XMMRegister dst, XMMRegister src,
                           XMMRegister tmp, XMMRegister atmp, XMMRegister btmp, XMMRegister xmm_0, XMMRegister xmm_1 = xnoreg);
+  void reduce8HF(Register dst, XMMRegister src, XMMRegister vtmp, XMMRegister vtmp1, XMMRegister vtmp2);
  private:
   void reduceF(int opcode, int vlen, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);
   void reduceD(int opcode, int vlen, XMMRegister dst, XMMRegister src, XMMRegister vtmp1, XMMRegister vtmp2);

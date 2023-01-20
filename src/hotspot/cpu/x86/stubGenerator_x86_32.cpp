@@ -779,6 +779,31 @@ class StubGenerator: public StubCodeGenerator {
     return start;
   }
 
+  address generate_vector_fp_mask(const char *stub_name, int32_t mask) {
+    __ align(CodeEntryAlignment);
+    StubCodeMark mark(this, "StubRoutines", stub_name);
+    address start = __ pc();
+
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+    __ emit_data(mask, relocInfo::none, 0);
+
+    return start;
+  }
+
   //----------------------------------------------------------------------------------------------------
 
   address generate_vector_byte_perm_mask(const char *stub_name) {
@@ -4106,6 +4131,9 @@ class StubGenerator: public StubCodeGenerator {
     StubRoutines::x86::_vector_reverse_byte_perm_mask_long = generate_vector_reverse_byte_perm_mask_long("perm_mask_long");
     StubRoutines::x86::_vector_reverse_byte_perm_mask_int = generate_vector_reverse_byte_perm_mask_int("perm_mask_int");
     StubRoutines::x86::_vector_reverse_byte_perm_mask_short = generate_vector_reverse_byte_perm_mask_short("perm_mask_short");
+
+    StubRoutines::x86::_vector_halffloat_sign_mask = generate_vector_fp_mask("vector_halffloat_sign_mask", 0x7FFF7FFF);
+    StubRoutines::x86::_vector_halffloat_sign_flip = generate_vector_fp_mask("vector_halffloat_sign_flip", 0x80008000);
 
     if (VM_Version::supports_avx2() && !VM_Version::supports_avx512_vpopcntdq()) {
       // lut implementation influenced by counting 1s algorithm from section 5-1 of Hackers' Delight.

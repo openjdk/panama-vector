@@ -67,6 +67,8 @@ address StubRoutines::x86::_vector_popcount_lut = NULL;
 address StubRoutines::x86::_vector_count_leading_zeros_lut = NULL;
 address StubRoutines::x86::_vector_32_bit_mask = NULL;
 address StubRoutines::x86::_vector_64_bit_mask = NULL;
+address StubRoutines::x86::_vector_halffloat_sign_mask = NULL;
+address StubRoutines::x86::_vector_halffloat_sign_flip = NULL;
 #ifdef _LP64
 address StubRoutines::x86::_k256_W_adr = NULL;
 address StubRoutines::x86::_k512_W_addr = NULL;

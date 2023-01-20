@@ -4107,6 +4107,7 @@ int MatchRule::is_expensive() const {
         strcmp(opType,"AddReductionVL")==0 ||
         strcmp(opType,"AddReductionVF")==0 ||
         strcmp(opType,"AddReductionVD")==0 ||
+        strcmp(opType,"AddReductionVHF")==0 ||
         strcmp(opType,"MulReductionVI")==0 ||
         strcmp(opType,"MulReductionVL")==0 ||
         strcmp(opType,"MulReductionVF")==0 ||
@@ -4218,7 +4219,7 @@ bool MatchRule::is_vector() const {
     "MaxV", "MinV",
     "CompressV", "ExpandV", "CompressM",
     "AddReductionVI", "AddReductionVL",
-    "AddReductionVF", "AddReductionVD",
+    "AddReductionVF", "AddReductionVD","AddReductionVHF",
     "MulReductionVI", "MulReductionVL",
     "MulReductionVF", "MulReductionVD",
     "MaxReductionV", "MinReductionV",
@@ -4236,6 +4237,7 @@ bool MatchRule::is_vector() const {
     "VectorCastB2X", "VectorCastS2X", "VectorCastI2X",
     "VectorCastL2X", "VectorCastF2X", "VectorCastD2X",
     "VectorUCastB2X", "VectorUCastS2X", "VectorUCastI2X",
+    "VectorCastHF2F", "VectorCastF2HF", "VectorCastD2HF", "VectorCastHF2D",
     "VectorMaskWrapper","VectorMaskCmp","VectorReinterpret","LoadVectorMasked","StoreVectorMasked",
     "FmaVD","FmaVF","PopCountVI", "PopCountVL", "VectorLongToMask",
     "CountLeadingZerosV", "CountTrailingZerosV",

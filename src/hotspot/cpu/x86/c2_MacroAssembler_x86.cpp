@@ -1965,6 +1965,26 @@ void C2_MacroAssembler::reduce16F(int opcode, XMMRegister dst, XMMRegister src, 
   reduce8F(opcode, dst, vtmp1, vtmp1, vtmp2);
 }
 
+void C2_MacroAssembler::reduce8HF(Register dst, XMMRegister src, XMMRegister vtmp, XMMRegister vtmp1, XMMRegister vtmp2) {
+  movdl(vtmp1, dst);
+  evaddsh(vtmp1, vtmp1, src);
+  pshuflw(vtmp, src, 0x01);
+  evaddsh(vtmp1, vtmp1, vtmp);
+  pshuflw(vtmp, src, 0x02);
+  evaddsh(vtmp1, vtmp1, vtmp);
+  pshuflw(vtmp, src, 0x03);
+  evaddsh(vtmp1, vtmp1, vtmp);
+  pshufd(vtmp2, src, 0x0E);
+  evaddsh(vtmp1, vtmp1, vtmp2);
+  pshuflw(vtmp, vtmp2, 0x01);
+  evaddsh(vtmp1, vtmp1, vtmp);
+  pshuflw(vtmp, vtmp2, 0x02);
+  evaddsh(vtmp1, vtmp1, vtmp);
+  pshuflw(vtmp, vtmp2, 0x03);
+  evaddsh(vtmp1, vtmp1, vtmp);
+  movdl(dst, vtmp1);
+}
+
 void C2_MacroAssembler::reduce2D(int opcode, XMMRegister dst, XMMRegister src, XMMRegister vtmp) {
   reduce_operation_128(T_DOUBLE, opcode, dst, src);
   pshufd(vtmp, src, 0xE);

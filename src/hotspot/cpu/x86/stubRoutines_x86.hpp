@@ -183,6 +183,8 @@ class x86 {
   static address _vector_reverse_byte_perm_mask_long;
   static address _vector_reverse_byte_perm_mask_int;
   static address _vector_reverse_byte_perm_mask_short;
+  static address _vector_halffloat_sign_flip;
+  static address _vector_halffloat_sign_mask;
 #ifdef _LP64
   static juint _k256_W[];
   static address _k256_W_adr;
@@ -368,6 +370,14 @@ class x86 {
 
   static address vector_popcount_lut() {
     return _vector_popcount_lut;
+  }
+
+  static address vector_halffloat_sign_mask() {
+    return _vector_halffloat_sign_mask;
+  }
+
+  static address vector_halffloat_sign_flip() {
+    return _vector_halffloat_sign_flip;
   }
 #ifdef _LP64
   static address k256_W_addr()    { return _k256_W_adr; }
