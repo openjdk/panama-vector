@@ -1898,11 +1898,11 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
     }
 
     static short SQRT(short a) {
-        return (short)(Halffloat.valueOf((float) Math.sqrt(Halffloat.valueOf(a).floatValue())));
+        return (short)(Halffloat.valueOf((float) Math.sqrt(Float.float16ToFloat(a))));
     }
 
     static short sqrt(short a) {
-        return (short)(Halffloat.valueOf((float) Math.sqrt(Halffloat.valueOf(a).floatValue())));
+        return (short)(Halffloat.valueOf((float) Math.sqrt(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -1954,11 +1954,11 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
     }
 
     static short SIN(short a) {
-        return Halffloat.valueOf((float) Math.sin(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) Math.sin(Float.float16ToFloat(a)));
     }
 
     static short strictSIN(short a) {
-        return Halffloat.valueOf((float) StrictMath.sin(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.sin(Float.float16ToFloat(a)));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -1976,13 +1976,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, Halffloat256VectorTests::SIN, Halffloat256VectorTests::strictSIN);
     }
 
-
     static short EXP(short a) {
-        return Halffloat.valueOf((float) Math.exp(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) Math.exp(Float.float16ToFloat(a)));
     }
 
     static short strictEXP(short a) {
-        return Halffloat.valueOf((float) StrictMath.exp(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.exp(Float.float16ToFloat(a)));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2000,13 +1999,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, Halffloat256VectorTests::EXP, Halffloat256VectorTests::strictEXP);
     }
 
-
     static short LOG1P(short a) {
-        return Halffloat.valueOf((float) Math.log1p(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) Math.log1p(Float.float16ToFloat(a)));
     }
 
     static short strictLOG1P(short a) {
-        return Halffloat.valueOf((float) StrictMath.log1p(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.log1p(Float.float16ToFloat(a)));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2024,13 +2022,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, Halffloat256VectorTests::LOG1P, Halffloat256VectorTests::strictLOG1P);
     }
 
-
     static short LOG(short a) {
-        return Halffloat.valueOf((float) Math.log(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) Math.log(Float.float16ToFloat(a)));
     }
 
     static short strictLOG(short a) {
-        return Halffloat.valueOf((float) StrictMath.log(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.log(Float.float16ToFloat(a)));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2048,13 +2045,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, Halffloat256VectorTests::LOG, Halffloat256VectorTests::strictLOG);
     }
 
-
     static short LOG10(short a) {
-        return Halffloat.valueOf((float) Math.log10(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) Math.log10(Float.float16ToFloat(a)));
     }
 
     static short strictLOG10(short a) {
-        return Halffloat.valueOf((float) StrictMath.log10(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.log10(Float.float16ToFloat(a)));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2072,13 +2068,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, Halffloat256VectorTests::LOG10, Halffloat256VectorTests::strictLOG10);
     }
 
-
     static short EXPM1(short a) {
-        return Halffloat.valueOf((float) Math.expm1(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) Math.expm1(Float.float16ToFloat(a)));
     }
 
     static short strictEXPM1(short a) {
-        return Halffloat.valueOf((float) StrictMath.expm1(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.expm1(Float.float16ToFloat(a)));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2096,13 +2091,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, Halffloat256VectorTests::EXPM1, Halffloat256VectorTests::strictEXPM1);
     }
 
-
     static short COS(short a) {
-        return Halffloat.valueOf((float) Math.cos(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) Math.cos(Float.float16ToFloat(a)));
     }
 
     static short strictCOS(short a) {
-        return Halffloat.valueOf((float) StrictMath.cos(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.cos(Float.float16ToFloat(a)));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2120,13 +2114,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, Halffloat256VectorTests::COS, Halffloat256VectorTests::strictCOS);
     }
 
-
     static short TAN(short a) {
-        return Halffloat.valueOf((float) Math.tan(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) Math.tan(Float.float16ToFloat(a)));
     }
 
     static short strictTAN(short a) {
-        return Halffloat.valueOf((float) StrictMath.tan(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.tan(Float.float16ToFloat(a)));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2144,13 +2137,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, Halffloat256VectorTests::TAN, Halffloat256VectorTests::strictTAN);
     }
 
-
     static short SINH(short a) {
-        return Halffloat.valueOf((float) Math.sinh(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) Math.sinh(Float.float16ToFloat(a)));
     }
 
     static short strictSINH(short a) {
-        return Halffloat.valueOf((float) StrictMath.sinh(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.sinh(Float.float16ToFloat(a)));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2168,13 +2160,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, Halffloat256VectorTests::SINH, Halffloat256VectorTests::strictSINH);
     }
 
-
     static short COSH(short a) {
-        return Halffloat.valueOf((float) Math.cosh(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) Math.cosh(Float.float16ToFloat(a)));
     }
 
     static short strictCOSH(short a) {
-        return Halffloat.valueOf((float) StrictMath.cosh(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.cosh(Float.float16ToFloat(a)));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2192,13 +2183,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, Halffloat256VectorTests::COSH, Halffloat256VectorTests::strictCOSH);
     }
 
-
     static short TANH(short a) {
-        return Halffloat.valueOf((float) Math.tanh(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) Math.tanh(Float.float16ToFloat(a)));
     }
 
     static short strictTANH(short a) {
-        return Halffloat.valueOf((float) StrictMath.tanh(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.tanh(Float.float16ToFloat(a)));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2216,13 +2206,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, Halffloat256VectorTests::TANH, Halffloat256VectorTests::strictTANH);
     }
 
-
     static short ASIN(short a) {
-        return Halffloat.valueOf((float) Math.asin(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) Math.asin(Float.float16ToFloat(a)));
     }
 
     static short strictASIN(short a) {
-        return Halffloat.valueOf((float) StrictMath.asin(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.asin(Float.float16ToFloat(a)));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2240,13 +2229,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, Halffloat256VectorTests::ASIN, Halffloat256VectorTests::strictASIN);
     }
 
-
     static short ACOS(short a) {
-        return Halffloat.valueOf((float) Math.acos(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) Math.acos(Float.float16ToFloat(a)));
     }
 
     static short strictACOS(short a) {
-        return Halffloat.valueOf((float) StrictMath.acos(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.acos(Float.float16ToFloat(a)));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2264,13 +2252,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, Halffloat256VectorTests::ACOS, Halffloat256VectorTests::strictACOS);
     }
 
-
     static short ATAN(short a) {
-        return Halffloat.valueOf((float) Math.atan(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) Math.atan(Float.float16ToFloat(a)));
     }
 
     static short strictATAN(short a) {
-        return Halffloat.valueOf((float) StrictMath.atan(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.atan(Float.float16ToFloat(a)));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2288,13 +2275,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, Halffloat256VectorTests::ATAN, Halffloat256VectorTests::strictATAN);
     }
 
-
     static short CBRT(short a) {
-        return Halffloat.valueOf((float) Math.cbrt(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) Math.cbrt(Float.float16ToFloat(a)));
     }
 
     static short strictCBRT(short a) {
-        return Halffloat.valueOf((float) StrictMath.cbrt(Halffloat.valueOf(a).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.cbrt(Float.float16ToFloat(a)));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2312,13 +2298,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, Halffloat256VectorTests::CBRT, Halffloat256VectorTests::strictCBRT);
     }
 
-
     static short HYPOT(short a, short b) {
-        return Halffloat.valueOf((float) Math.hypot(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+        return Halffloat.valueOf((float) Math.hypot(Float.float16ToFloat(a), Float.float16ToFloat(b)));
     }
 
     static short strictHYPOT(short a, short b) {
-        return Halffloat.valueOf((float) StrictMath.hypot(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.hypot(Float.float16ToFloat(a), Float.float16ToFloat(b)));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2338,13 +2323,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, b, Halffloat256VectorTests::HYPOT, Halffloat256VectorTests::strictHYPOT);
     }
 
-
     static short POW(short a, short b) {
-        return Halffloat.valueOf((float) Math.pow(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+        return Halffloat.valueOf((float) Math.pow(Float.float16ToFloat(a), Float.float16ToFloat(b)));
     }
 
     static short strictPOW(short a, short b) {
-        return Halffloat.valueOf((float) StrictMath.pow(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.pow(Float.float16ToFloat(a), Float.float16ToFloat(b)));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2364,13 +2348,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, b, Halffloat256VectorTests::POW, Halffloat256VectorTests::strictPOW);
     }
 
-
     static short pow(short a, short b) {
-        return Halffloat.valueOf((float) Math.pow(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+        return Halffloat.valueOf((float) Math.pow(Float.float16ToFloat(a), Float.float16ToFloat(b)));
     }
 
     static short strictpow(short a, short b) {
-        return Halffloat.valueOf((float) StrictMath.pow(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.pow(Float.float16ToFloat(a), Float.float16ToFloat(b)));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2390,13 +2373,12 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
         assertArraysEqualsWithinOneUlp(r, a, b, Halffloat256VectorTests::pow, Halffloat256VectorTests::strictpow);
     }
 
-
     static short ATAN2(short a, short b) {
-        return Halffloat.valueOf((float) Math.atan2(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+        return Halffloat.valueOf((float) Math.atan2(Float.float16ToFloat(a), Float.float16ToFloat(b)));
     }
 
     static short strictATAN2(short a, short b) {
-        return Halffloat.valueOf((float) StrictMath.atan2(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()));
+        return Halffloat.valueOf((float) StrictMath.atan2(Float.float16ToFloat(a), Float.float16ToFloat(b)));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2415,7 +2397,6 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
 
         assertArraysEqualsWithinOneUlp(r, a, b, Halffloat256VectorTests::ATAN2, Halffloat256VectorTests::strictATAN2);
     }
-
 
     @Test(dataProvider = "shortBinaryOpProvider")
     static void POWHalffloat256VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
