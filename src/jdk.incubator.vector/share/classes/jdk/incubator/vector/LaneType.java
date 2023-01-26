@@ -65,7 +65,7 @@ enum LaneType {
         // int:128 or int:4 or float:16, report the size in the
         // printName.  If we do unsigned or vector or bit lane types,
         // report that condition also.
-        this.typeChar = Character.toUpperCase(printName.charAt(0));
+        this.typeChar = genericElementType.getSimpleName().charAt(0);
         assert("FDBSIL".indexOf(typeChar) == ordinal()) : this;
         // Same as in JVMS, org.objectweb.asm.Opcodes, etc.:
         this.basicType = basicType;
