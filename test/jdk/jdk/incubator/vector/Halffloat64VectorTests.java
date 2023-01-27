@@ -700,7 +700,82 @@ public class Halffloat64VectorTests extends AbstractVectorTest {
     }
 
 
-    // TODO: Fix and Enable isWithin1Ulp
+    static boolean isWithin1Ulp(short actual, short expected) {
+        float act = Float.float16ToFloat(actual);
+        float exp = Float.float16ToFloat(expected);
+        if (Float.isNaN(exp) && !Float.isNaN(act)) {
+            return false;
+        } else if (!Float.isNaN(exp) && Float.isNaN(act)) {
+             return false;
+        }
+
+        float low = Math.nextDown(exp);
+        float high = Math.nextUp(exp);
+
+        if (Float.compare(low, exp) > 0) {
+            return false;
+        }
+
+        if (Float.compare(high, exp) < 0) {
+            return false;
+        }
+
+        return true;
+    }
+
+    static void assertArraysEqualsWithinOneUlp(short[] r, short[] a, FUnOp mathf, FUnOp strictmathf) {
+        int i = 0;
+        try {
+            // Check that result is within 1 ulp of strict math or equivalent to math implementation.
+            for (; i < a.length; i++) {
+                Assert.assertTrue(Short.compare(r[i], mathf.apply(a[i])) == 0 ||
+                                    isWithin1Ulp(r[i], strictmathf.apply(a[i])));
+            }
+        } catch (AssertionError e) {
+            Assert.assertTrue(Short.compare(r[i], mathf.apply(a[i])) == 0, "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i]));
+            Assert.assertTrue(isWithin1Ulp(r[i], strictmathf.apply(a[i])), "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected (within 1 ulp) = " + strictmathf.apply(a[i]));
+        }
+    }
+
+    static void assertArraysEqualsWithinOneUlp(short[] r, short[] a, short[] b, FBinOp mathf, FBinOp strictmathf) {
+        int i = 0;
+        try {
+            // Check that result is within 1 ulp of strict math or equivalent to math implementation.
+            for (; i < a.length; i++) {
+                Assert.assertTrue(Short.compare(r[i], mathf.apply(a[i], b[i])) == 0 ||
+                                    isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])));
+            }
+        } catch (AssertionError e) {
+            Assert.assertTrue(Short.compare(r[i], mathf.apply(a[i], b[i])) == 0, "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i], b[i]));
+            Assert.assertTrue(isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])), "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected (within 1 ulp) = " + strictmathf.apply(a[i], b[i]));
+        }
+    }
+
+    static void assertBroadcastArraysEqualsWithinOneUlp(short[] r, short[] a, short[] b,
+                                                        FBinOp mathf, FBinOp strictmathf) {
+        int i = 0;
+        try {
+            // Check that result is within 1 ulp of strict math or equivalent to math implementation.
+            for (; i < a.length; i++) {
+                Assert.assertTrue(Short.compare(r[i],
+                                  mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])) == 0 ||
+                                  isWithin1Ulp(r[i],
+                                  strictmathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])));
+            }
+        } catch (AssertionError e) {
+            Assert.assertTrue(Short.compare(r[i],
+                              mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])) == 0,
+                              "at index #" + i + ", input1 = " + a[i] + ", input2 = " +
+                              b[(i / SPECIES.length()) * SPECIES.length()] + ", actual = " + r[i] +
+                              ", expected = " + mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()]));
+            Assert.assertTrue(isWithin1Ulp(r[i],
+                              strictmathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])),
+                             "at index #" + i + ", input1 = " + a[i] + ", input2 = " +
+                             b[(i / SPECIES.length()) * SPECIES.length()] + ", actual = " + r[i] +
+                             ", expected (within 1 ulp) = " + strictmathf.apply(a[i],
+                             b[(i / SPECIES.length()) * SPECIES.length()]));
+        }
+    }
 
     interface FBinArrayOp {
         short apply(short[] a, int b);
@@ -1521,6 +1596,47 @@ public class Halffloat64VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, mask, Halffloat64VectorTests::MUL);
     }
 
+    static short DIV(short a, short b) {
+        return (short)(Halffloat.valueOf((Halffloat.valueOf(a).floatValue() / Halffloat.valueOf(b).floatValue())));
+    }
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void DIVHalffloat64VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.DIV, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, Halffloat64VectorTests::DIV);
+    }
+
+    @Test(dataProvider = "shortBinaryOpMaskProvider")
+    static void DIVHalffloat64VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.DIV, bv, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, mask, Halffloat64VectorTests::DIV);
+    }
+
     static short MAX(short a, short b) {
         return (short)(Halffloat.valueOf(Math.max(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue())));
     }
@@ -1780,6 +1896,537 @@ public class Halffloat64VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, c, mask, Halffloat64VectorTests::FMA);
     }
+
+    static short SQRT(short a) {
+        return (short)(Halffloat.valueOf((float) Math.sqrt(Float.float16ToFloat(a))));
+    }
+
+    static short sqrt(short a) {
+        return (short)(Halffloat.valueOf((float) Math.sqrt(Float.float16ToFloat(a))));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void SQRTHalffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.SQRT).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Halffloat64VectorTests::SQRT);
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void sqrtHalffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.sqrt().intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, Halffloat64VectorTests::sqrt);
+    }
+
+    @Test(dataProvider = "shortUnaryOpMaskProvider")
+    static void SQRTMaskedHalffloat64VectorTests(IntFunction<short[]> fa,
+                                                IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.SQRT, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, mask, Halffloat64VectorTests::SQRT);
+    }
+
+    static short SIN(short a) {
+        return Halffloat.valueOf((float) Math.sin(Float.float16ToFloat(a)));
+    }
+
+    static short strictSIN(short a) {
+        return Halffloat.valueOf((float) StrictMath.sin(Float.float16ToFloat(a)));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void SINHalffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.SIN).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, Halffloat64VectorTests::SIN, Halffloat64VectorTests::strictSIN);
+    }
+
+    static short EXP(short a) {
+        return Halffloat.valueOf((float) Math.exp(Float.float16ToFloat(a)));
+    }
+
+    static short strictEXP(short a) {
+        return Halffloat.valueOf((float) StrictMath.exp(Float.float16ToFloat(a)));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void EXPHalffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.EXP).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, Halffloat64VectorTests::EXP, Halffloat64VectorTests::strictEXP);
+    }
+
+    static short LOG1P(short a) {
+        return Halffloat.valueOf((float) Math.log1p(Float.float16ToFloat(a)));
+    }
+
+    static short strictLOG1P(short a) {
+        return Halffloat.valueOf((float) StrictMath.log1p(Float.float16ToFloat(a)));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void LOG1PHalffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LOG1P).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, Halffloat64VectorTests::LOG1P, Halffloat64VectorTests::strictLOG1P);
+    }
+
+    static short LOG(short a) {
+        return Halffloat.valueOf((float) Math.log(Float.float16ToFloat(a)));
+    }
+
+    static short strictLOG(short a) {
+        return Halffloat.valueOf((float) StrictMath.log(Float.float16ToFloat(a)));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void LOGHalffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LOG).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, Halffloat64VectorTests::LOG, Halffloat64VectorTests::strictLOG);
+    }
+
+    static short LOG10(short a) {
+        return Halffloat.valueOf((float) Math.log10(Float.float16ToFloat(a)));
+    }
+
+    static short strictLOG10(short a) {
+        return Halffloat.valueOf((float) StrictMath.log10(Float.float16ToFloat(a)));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void LOG10Halffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.LOG10).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, Halffloat64VectorTests::LOG10, Halffloat64VectorTests::strictLOG10);
+    }
+
+    static short EXPM1(short a) {
+        return Halffloat.valueOf((float) Math.expm1(Float.float16ToFloat(a)));
+    }
+
+    static short strictEXPM1(short a) {
+        return Halffloat.valueOf((float) StrictMath.expm1(Float.float16ToFloat(a)));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void EXPM1Halffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.EXPM1).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, Halffloat64VectorTests::EXPM1, Halffloat64VectorTests::strictEXPM1);
+    }
+
+    static short COS(short a) {
+        return Halffloat.valueOf((float) Math.cos(Float.float16ToFloat(a)));
+    }
+
+    static short strictCOS(short a) {
+        return Halffloat.valueOf((float) StrictMath.cos(Float.float16ToFloat(a)));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void COSHalffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.COS).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, Halffloat64VectorTests::COS, Halffloat64VectorTests::strictCOS);
+    }
+
+    static short TAN(short a) {
+        return Halffloat.valueOf((float) Math.tan(Float.float16ToFloat(a)));
+    }
+
+    static short strictTAN(short a) {
+        return Halffloat.valueOf((float) StrictMath.tan(Float.float16ToFloat(a)));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void TANHalffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.TAN).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, Halffloat64VectorTests::TAN, Halffloat64VectorTests::strictTAN);
+    }
+
+    static short SINH(short a) {
+        return Halffloat.valueOf((float) Math.sinh(Float.float16ToFloat(a)));
+    }
+
+    static short strictSINH(short a) {
+        return Halffloat.valueOf((float) StrictMath.sinh(Float.float16ToFloat(a)));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void SINHHalffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.SINH).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, Halffloat64VectorTests::SINH, Halffloat64VectorTests::strictSINH);
+    }
+
+    static short COSH(short a) {
+        return Halffloat.valueOf((float) Math.cosh(Float.float16ToFloat(a)));
+    }
+
+    static short strictCOSH(short a) {
+        return Halffloat.valueOf((float) StrictMath.cosh(Float.float16ToFloat(a)));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void COSHHalffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.COSH).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, Halffloat64VectorTests::COSH, Halffloat64VectorTests::strictCOSH);
+    }
+
+    static short TANH(short a) {
+        return Halffloat.valueOf((float) Math.tanh(Float.float16ToFloat(a)));
+    }
+
+    static short strictTANH(short a) {
+        return Halffloat.valueOf((float) StrictMath.tanh(Float.float16ToFloat(a)));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void TANHHalffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.TANH).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, Halffloat64VectorTests::TANH, Halffloat64VectorTests::strictTANH);
+    }
+
+    static short ASIN(short a) {
+        return Halffloat.valueOf((float) Math.asin(Float.float16ToFloat(a)));
+    }
+
+    static short strictASIN(short a) {
+        return Halffloat.valueOf((float) StrictMath.asin(Float.float16ToFloat(a)));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void ASINHalffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ASIN).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, Halffloat64VectorTests::ASIN, Halffloat64VectorTests::strictASIN);
+    }
+
+    static short ACOS(short a) {
+        return Halffloat.valueOf((float) Math.acos(Float.float16ToFloat(a)));
+    }
+
+    static short strictACOS(short a) {
+        return Halffloat.valueOf((float) StrictMath.acos(Float.float16ToFloat(a)));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void ACOSHalffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ACOS).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, Halffloat64VectorTests::ACOS, Halffloat64VectorTests::strictACOS);
+    }
+
+    static short ATAN(short a) {
+        return Halffloat.valueOf((float) Math.atan(Float.float16ToFloat(a)));
+    }
+
+    static short strictATAN(short a) {
+        return Halffloat.valueOf((float) StrictMath.atan(Float.float16ToFloat(a)));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void ATANHalffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.ATAN).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, Halffloat64VectorTests::ATAN, Halffloat64VectorTests::strictATAN);
+    }
+
+    static short CBRT(short a) {
+        return Halffloat.valueOf((float) Math.cbrt(Float.float16ToFloat(a)));
+    }
+
+    static short strictCBRT(short a) {
+        return Halffloat.valueOf((float) StrictMath.cbrt(Float.float16ToFloat(a)));
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void CBRTHalffloat64VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.CBRT).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, Halffloat64VectorTests::CBRT, Halffloat64VectorTests::strictCBRT);
+    }
+
+    static short HYPOT(short a, short b) {
+        return Halffloat.valueOf((float) Math.hypot(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+    }
+
+    static short strictHYPOT(short a, short b) {
+        return Halffloat.valueOf((float) StrictMath.hypot(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+    }
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void HYPOTHalffloat64VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.HYPOT, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, b, Halffloat64VectorTests::HYPOT, Halffloat64VectorTests::strictHYPOT);
+    }
+
+    static short POW(short a, short b) {
+        return Halffloat.valueOf((float) Math.pow(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+    }
+
+    static short strictPOW(short a, short b) {
+        return Halffloat.valueOf((float) StrictMath.pow(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+    }
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void POWHalffloat64VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.POW, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, b, Halffloat64VectorTests::POW, Halffloat64VectorTests::strictPOW);
+    }
+
+    static short pow(short a, short b) {
+        return Halffloat.valueOf((float) Math.pow(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+    }
+
+    static short strictpow(short a, short b) {
+        return Halffloat.valueOf((float) StrictMath.pow(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+    }
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void powHalffloat64VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                av.pow(bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, b, Halffloat64VectorTests::pow, Halffloat64VectorTests::strictpow);
+    }
+
+    static short ATAN2(short a, short b) {
+        return Halffloat.valueOf((float) Math.atan2(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+    }
+
+    static short strictATAN2(short a, short b) {
+        return Halffloat.valueOf((float) StrictMath.atan2(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+    }
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void ATAN2Halffloat64VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                av.lanewise(VectorOperators.ATAN2, bv).intoArray(r, i);
+            }
+        }
+
+        assertArraysEqualsWithinOneUlp(r, a, b, Halffloat64VectorTests::ATAN2, Halffloat64VectorTests::strictATAN2);
+    }
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void POWHalffloat64VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            av.lanewise(VectorOperators.POW, b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEqualsWithinOneUlp(r, a, b, Halffloat64VectorTests::POW, Halffloat64VectorTests::strictPOW);
+    }
+
+
+    @Test(dataProvider = "shortBinaryOpProvider")
+    static void powHalffloat64VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            av.pow(b[i]).intoArray(r, i);
+        }
+
+        assertBroadcastArraysEqualsWithinOneUlp(r, a, b, Halffloat64VectorTests::pow, Halffloat64VectorTests::strictpow);
+    }
+
 
     // TODO: Fix and Enable ltHalffloat64VectorTestsBroadcastSmokeTest
     // TODO: Fix and Enable eqHalffloat64VectorTestsBroadcastMaskedSmokeTest

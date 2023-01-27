@@ -708,6 +708,38 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
                     v0.uOp(m, (i, a) -> (short) -a);
             case VECTOR_OP_ABS: return (v0, m) ->
                     v0.uOp(m, (i, a) -> (short) Math.abs(a));
+            case VECTOR_OP_SIN: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.sin(Float.float16ToFloat(a))));
+            case VECTOR_OP_COS: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.cos(Float.float16ToFloat(a))));
+            case VECTOR_OP_TAN: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.tan(Float.float16ToFloat(a))));
+            case VECTOR_OP_ASIN: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.asin(Float.float16ToFloat(a))));
+            case VECTOR_OP_ACOS: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.acos(Float.float16ToFloat(a))));
+            case VECTOR_OP_ATAN: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.atan(Float.float16ToFloat(a))));
+            case VECTOR_OP_EXP: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.exp(Float.float16ToFloat(a))));
+            case VECTOR_OP_LOG: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.log(Float.float16ToFloat(a))));
+            case VECTOR_OP_LOG10: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.log10(Float.float16ToFloat(a))));
+            case VECTOR_OP_SQRT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.sqrt(Float.float16ToFloat(a))));
+            case VECTOR_OP_CBRT: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.cbrt(Float.float16ToFloat(a))));
+            case VECTOR_OP_SINH: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.sinh(Float.float16ToFloat(a))));
+            case VECTOR_OP_COSH: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.cosh(Float.float16ToFloat(a))));
+            case VECTOR_OP_TANH: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.tanh(Float.float16ToFloat(a))));
+            case VECTOR_OP_EXPM1: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.expm1(Float.float16ToFloat(a))));
+            case VECTOR_OP_LOG1P: return (v0, m) ->
+                    v0.uOp(m, (i, a) -> Halffloat.valueOf((float) Math.log1p(Float.float16ToFloat(a))));
             default: return null;
         }
     }
@@ -794,10 +826,18 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
                     v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() - Halffloat.valueOf(b).floatValue())));
             case VECTOR_OP_MUL: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() * Halffloat.valueOf(b).floatValue())));
+            case VECTOR_OP_DIV: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() / Halffloat.valueOf(b).floatValue())));
             case VECTOR_OP_MAX: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf(Math.max(Halffloat.valueOf(a).floatValue(),Halffloat.valueOf(b).floatValue())));
             case VECTOR_OP_MIN: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf(Math.min(Halffloat.valueOf(a).floatValue(),Halffloat.valueOf(b).floatValue())));
+            case VECTOR_OP_ATAN2: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((float) Math.atan2(Float.float16ToFloat(a), Float.float16ToFloat(b))));
+            case VECTOR_OP_POW: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((float) Math.pow(Float.float16ToFloat(a), Float.float16ToFloat(b))));
+            case VECTOR_OP_HYPOT: return (v0, v1, vm) ->
+                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((float) Math.hypot(Float.float16ToFloat(a), Float.float16ToFloat(b))));
             default: return null;
         }
     }
