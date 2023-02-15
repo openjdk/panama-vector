@@ -728,11 +728,11 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
         try {
             // Check that result is within 1 ulp of strict math or equivalent to math implementation.
             for (; i < a.length; i++) {
-                Assert.assertTrue(Short.compare(r[i], mathf.apply(a[i])) == 0 ||
+                Assert.assertTrue(Halffloat.compare(r[i], mathf.apply(a[i])) == 0 ||
                                     isWithin1Ulp(r[i], strictmathf.apply(a[i])));
             }
         } catch (AssertionError e) {
-            Assert.assertTrue(Short.compare(r[i], mathf.apply(a[i])) == 0, "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i]));
+            Assert.assertTrue(Halffloat.compare(r[i], mathf.apply(a[i])) == 0, "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i]));
             Assert.assertTrue(isWithin1Ulp(r[i], strictmathf.apply(a[i])), "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected (within 1 ulp) = " + strictmathf.apply(a[i]));
         }
     }
@@ -742,11 +742,11 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
         try {
             // Check that result is within 1 ulp of strict math or equivalent to math implementation.
             for (; i < a.length; i++) {
-                Assert.assertTrue(Short.compare(r[i], mathf.apply(a[i], b[i])) == 0 ||
+                Assert.assertTrue(Halffloat.compare(r[i], mathf.apply(a[i], b[i])) == 0 ||
                                     isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])));
             }
         } catch (AssertionError e) {
-            Assert.assertTrue(Short.compare(r[i], mathf.apply(a[i], b[i])) == 0, "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i], b[i]));
+            Assert.assertTrue(Halffloat.compare(r[i], mathf.apply(a[i], b[i])) == 0, "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i], b[i]));
             Assert.assertTrue(isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])), "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected (within 1 ulp) = " + strictmathf.apply(a[i], b[i]));
         }
     }
@@ -757,13 +757,13 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
         try {
             // Check that result is within 1 ulp of strict math or equivalent to math implementation.
             for (; i < a.length; i++) {
-                Assert.assertTrue(Short.compare(r[i],
+                Assert.assertTrue(Halffloat.compare(r[i],
                                   mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])) == 0 ||
                                   isWithin1Ulp(r[i],
                                   strictmathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])));
             }
         } catch (AssertionError e) {
-            Assert.assertTrue(Short.compare(r[i],
+            Assert.assertTrue(Halffloat.compare(r[i],
                               mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])) == 0,
                               "at index #" + i + ", input1 = " + a[i] + ", input2 = " +
                               b[(i / SPECIES.length()) * SPECIES.length()] + ", actual = " + r[i] +
@@ -988,20 +988,20 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
         }
     }
 
-    static final List<IntFunction<short[]>> INT_SHORT_GENERATORS = List.of(
-            withToString("short[-i * 5]", (int s) -> {
+    static final List<IntFunction<short[]>> INT_HALFFLOAT_GENERATORS = List.of(
+            withToString("Halffloat[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short)(-i * 5));
+                            i -> Halffloat.valueOf(-i * 5));
             }),
-            withToString("short[i * 5]", (int s) -> {
+            withToString("Halffloat[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short)(i * 5));
+                            i -> Halffloat.valueOf(i * 5));
             }),
-            withToString("short[i + 1]", (int s) -> {
+            withToString("Halffloat[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((short)(i + 1) == 0) ? 1 : (short)(i + 1)));
+                            i -> (((short)(i + 1) == 0) ? Halffloat.valueOf(1) : Halffloat.valueOf(i + 1)));
             }),
-            withToString("short[intCornerCaseValue(i)]", (int s) -> {
+            withToString("Halffloat[intCornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> (short)intCornerCaseValue(i));
             })
@@ -1011,7 +1011,7 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < r.length; i++) {
-                Assert.assertEquals(r[i], (int)(a[i+offs]));
+                Assert.assertEquals(r[i], (int)Float.float16ToFloat(a[i+offs]));
             }
         } catch (AssertionError e) {
             Assert.assertEquals(r[i], (int)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
@@ -1033,20 +1033,20 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
         }
     }
 
-    static final List<IntFunction<short[]>> LONG_SHORT_GENERATORS = List.of(
-            withToString("short[-i * 5]", (int s) -> {
+    static final List<IntFunction<short[]>> LONG_HALFFLOAT_GENERATORS = List.of(
+            withToString("Halffloat[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short)(-i * 5));
+                            i -> Halffloat.valueOf(-i * 5));
             }),
-            withToString("short[i * 5]", (int s) -> {
+            withToString("Halffloat[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short)(i * 5));
+                            i -> Halffloat.valueOf(i * 5));
             }),
-            withToString("short[i + 1]", (int s) -> {
+            withToString("Halffloat[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((short)(i + 1) == 0) ? 1 : (short)(i + 1)));
+                            i -> (((short)(i + 1) == 0) ? Halffloat.valueOf(1) : Halffloat.valueOf(i + 1)));
             }),
-            withToString("short[cornerCaseValue(i)]", (int s) -> {
+            withToString("Halffloat[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> (short)longCornerCaseValue(i));
             })
@@ -1057,7 +1057,7 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < r.length; i++) {
-                Assert.assertEquals(r[i], (long)(a[i+offs]));
+                Assert.assertEquals(r[i], (long)Float.float16ToFloat(a[i+offs]));
             }
         } catch (AssertionError e) {
             Assert.assertEquals(r[i], (long)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
@@ -1068,7 +1068,7 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
         int i = 0;
         try {
             for (; i < r.length; i++) {
-                Assert.assertEquals(r[i], (double)(a[i+offs]));
+                Assert.assertEquals(r[i], (double)Float.float16ToFloat(a[i+offs]));
             }
         } catch (AssertionError e) {
             Assert.assertEquals(r[i], (double)(a[i+offs]), "at index #" + i + ", input = " + a[i+offs]);
@@ -1079,20 +1079,20 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
         return  Halffloat.shortToShortBits(e);
     }
 
-    static final List<IntFunction<short[]>> SHORT_GENERATORS = List.of(
-            withToString("short[-i * 5]", (int s) -> {
+    static final List<IntFunction<short[]>> HALFFLOAT_GENERATORS = List.of(
+            withToString("Halffloat[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short)(-i * 5));
+                            i -> Halffloat.valueOf(-i * 5));
             }),
-            withToString("short[i * 5]", (int s) -> {
+            withToString("Halffloat[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short)(i * 5));
+                            i -> Halffloat.valueOf(i * 5));
             }),
-            withToString("short[i + 1]", (int s) -> {
+            withToString("Halffloat[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((short)(i + 1) == 0) ? 1 : (short)(i + 1)));
+                            i -> (((short)(i + 1) == 0) ? Halffloat.valueOf(1) : Halffloat.valueOf(i + 1)));
             }),
-            withToString("short[cornerCaseValue(i)]", (int s) -> {
+            withToString("Halffloat[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> cornerCaseValue(i));
             })
@@ -1100,9 +1100,9 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
 
     // Create combinations of pairs
     // @@@ Might be sensitive to order e.g. div by 0
-    static final List<List<IntFunction<short[]>>> SHORT_GENERATOR_PAIRS =
-        Stream.of(SHORT_GENERATORS.get(0)).
-                flatMap(fa -> SHORT_GENERATORS.stream().skip(1).map(fb -> List.of(fa, fb))).
+    static final List<List<IntFunction<short[]>>> HALFFLOAT_GENERATOR_PAIRS =
+        Stream.of(HALFFLOAT_GENERATORS.get(0)).
+                flatMap(fa -> HALFFLOAT_GENERATORS.stream().skip(1).map(fb -> List.of(fa, fb))).
                 collect(Collectors.toList());
 
     @DataProvider
@@ -1112,27 +1112,27 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
                 toArray(Object[][]::new);
     }
 
-    static final List<List<IntFunction<short[]>>> SHORT_GENERATOR_TRIPLES =
-        SHORT_GENERATOR_PAIRS.stream().
-                flatMap(pair -> SHORT_GENERATORS.stream().map(f -> List.of(pair.get(0), pair.get(1), f))).
+    static final List<List<IntFunction<short[]>>> HALFFLOAT_GENERATOR_TRIPLES =
+        HALFFLOAT_GENERATOR_PAIRS.stream().
+                flatMap(pair -> HALFFLOAT_GENERATORS.stream().map(f -> List.of(pair.get(0), pair.get(1), f))).
                 collect(Collectors.toList());
 
     @DataProvider
     public Object[][] shortBinaryOpProvider() {
-        return SHORT_GENERATOR_PAIRS.stream().map(List::toArray).
+        return HALFFLOAT_GENERATOR_PAIRS.stream().map(List::toArray).
                 toArray(Object[][]::new);
     }
 
     @DataProvider
     public Object[][] shortIndexedOpProvider() {
-        return SHORT_GENERATOR_PAIRS.stream().map(List::toArray).
+        return HALFFLOAT_GENERATOR_PAIRS.stream().map(List::toArray).
                 toArray(Object[][]::new);
     }
 
     @DataProvider
     public Object[][] shortBinaryOpMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
-                flatMap(fm -> SHORT_GENERATOR_PAIRS.stream().map(lfa -> {
+                flatMap(fm -> HALFFLOAT_GENERATOR_PAIRS.stream().map(lfa -> {
                     return Stream.concat(lfa.stream(), Stream.of(fm)).toArray();
                 })).
                 toArray(Object[][]::new);
@@ -1140,14 +1140,14 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
 
     @DataProvider
     public Object[][] shortTernaryOpProvider() {
-        return SHORT_GENERATOR_TRIPLES.stream().map(List::toArray).
+        return HALFFLOAT_GENERATOR_TRIPLES.stream().map(List::toArray).
                 toArray(Object[][]::new);
     }
 
     @DataProvider
     public Object[][] shortTernaryOpMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
-                flatMap(fm -> SHORT_GENERATOR_TRIPLES.stream().map(lfa -> {
+                flatMap(fm -> HALFFLOAT_GENERATOR_TRIPLES.stream().map(lfa -> {
                     return Stream.concat(lfa.stream(), Stream.of(fm)).toArray();
                 })).
                 toArray(Object[][]::new);
@@ -1155,7 +1155,7 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
 
     @DataProvider
     public Object[][] shortUnaryOpProvider() {
-        return SHORT_GENERATORS.stream().
+        return HALFFLOAT_GENERATORS.stream().
                 map(f -> new Object[]{f}).
                 toArray(Object[][]::new);
     }
@@ -1163,7 +1163,7 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
     @DataProvider
     public Object[][] shortUnaryOpMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
-                flatMap(fm -> SHORT_GENERATORS.stream().map(fa -> {
+                flatMap(fm -> HALFFLOAT_GENERATORS.stream().map(fa -> {
                     return new Object[] {fa, fm};
                 })).
                 toArray(Object[][]::new);
@@ -1171,14 +1171,14 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
 
     @DataProvider
     public Object[][] shorttoIntUnaryOpProvider() {
-        return INT_SHORT_GENERATORS.stream().
+        return INT_HALFFLOAT_GENERATORS.stream().
                 map(f -> new Object[]{f}).
                 toArray(Object[][]::new);
     }
 
     @DataProvider
     public Object[][] shorttoLongUnaryOpProvider() {
-        return LONG_SHORT_GENERATORS.stream().
+        return LONG_HALFFLOAT_GENERATORS.stream().
                 map(f -> new Object[]{f}).
                 toArray(Object[][]::new);
     }
@@ -1212,7 +1212,7 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
     @DataProvider
     public Object[][] shortUnaryOpShuffleProvider() {
         return INT_SHUFFLE_GENERATORS.stream().
-                flatMap(fs -> SHORT_GENERATORS.stream().map(fa -> {
+                flatMap(fs -> HALFFLOAT_GENERATORS.stream().map(fa -> {
                     return new Object[] {fa, fs};
                 })).
                 toArray(Object[][]::new);
@@ -1222,13 +1222,13 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
     public Object[][] shortUnaryOpShuffleMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
                 flatMap(fm -> INT_SHUFFLE_GENERATORS.stream().
-                    flatMap(fs -> SHORT_GENERATORS.stream().map(fa -> {
+                    flatMap(fs -> HALFFLOAT_GENERATORS.stream().map(fa -> {
                         return new Object[] {fa, fs, fm};
                 }))).
                 toArray(Object[][]::new);
     }
 
-    static final List<BiFunction<Integer,Integer,short[]>> SHORT_SHUFFLE_GENERATORS = List.of(
+    static final List<BiFunction<Integer,Integer,short[]>> HALFFLOAT_SHUFFLE_GENERATORS = List.of(
             withToStringBi("shuffle[random]", (Integer l, Integer m) -> {
                 short[] a = new short[l];
                 int upper = m;
@@ -1241,8 +1241,8 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
 
     @DataProvider
     public Object[][] shortUnaryOpSelectFromProvider() {
-        return SHORT_SHUFFLE_GENERATORS.stream().
-                flatMap(fs -> SHORT_GENERATORS.stream().map(fa -> {
+        return HALFFLOAT_SHUFFLE_GENERATORS.stream().
+                flatMap(fs -> HALFFLOAT_GENERATORS.stream().map(fa -> {
                     return new Object[] {fa, fs};
                 })).
                 toArray(Object[][]::new);
@@ -1251,14 +1251,14 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
     @DataProvider
     public Object[][] shortUnaryOpSelectFromMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
-                flatMap(fm -> SHORT_SHUFFLE_GENERATORS.stream().
-                    flatMap(fs -> SHORT_GENERATORS.stream().map(fa -> {
+                flatMap(fm -> HALFFLOAT_SHUFFLE_GENERATORS.stream().
+                    flatMap(fs -> HALFFLOAT_GENERATORS.stream().map(fa -> {
                         return new Object[] {fa, fs, fm};
                 }))).
                 toArray(Object[][]::new);
     }
 
-    static final List<IntFunction<short[]>> SHORT_COMPARE_GENERATORS = List.of(
+    static final List<IntFunction<short[]>> HALFFLOAT_COMPARE_GENERATORS = List.of(
             withToString("short[i]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> (short)i);
@@ -1285,55 +1285,55 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
             })
     );
 
-    static final List<List<IntFunction<short[]>>> SHORT_TEST_GENERATOR_ARGS =
-        SHORT_COMPARE_GENERATORS.stream().
+    static final List<List<IntFunction<short[]>>> HALFFLOAT_TEST_GENERATOR_ARGS =
+        HALFFLOAT_COMPARE_GENERATORS.stream().
                 map(fa -> List.of(fa)).
                 collect(Collectors.toList());
 
     @DataProvider
     public Object[][] shortTestOpProvider() {
-        return SHORT_TEST_GENERATOR_ARGS.stream().map(List::toArray).
+        return HALFFLOAT_TEST_GENERATOR_ARGS.stream().map(List::toArray).
                 toArray(Object[][]::new);
     }
 
     @DataProvider
     public Object[][] shortTestOpMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
-                flatMap(fm -> SHORT_TEST_GENERATOR_ARGS.stream().map(lfa -> {
+                flatMap(fm -> HALFFLOAT_TEST_GENERATOR_ARGS.stream().map(lfa -> {
                     return Stream.concat(lfa.stream(), Stream.of(fm)).toArray();
                 })).
                 toArray(Object[][]::new);
     }
 
-    static final List<List<IntFunction<short[]>>> SHORT_COMPARE_GENERATOR_PAIRS =
-        SHORT_COMPARE_GENERATORS.stream().
-                flatMap(fa -> SHORT_COMPARE_GENERATORS.stream().map(fb -> List.of(fa, fb))).
+    static final List<List<IntFunction<short[]>>> HALFFLOAT_COMPARE_GENERATOR_PAIRS =
+        HALFFLOAT_COMPARE_GENERATORS.stream().
+                flatMap(fa -> HALFFLOAT_COMPARE_GENERATORS.stream().map(fb -> List.of(fa, fb))).
                 collect(Collectors.toList());
 
     @DataProvider
     public Object[][] shortCompareOpProvider() {
-        return SHORT_COMPARE_GENERATOR_PAIRS.stream().map(List::toArray).
+        return HALFFLOAT_COMPARE_GENERATOR_PAIRS.stream().map(List::toArray).
                 toArray(Object[][]::new);
     }
 
     @DataProvider
     public Object[][] shortCompareOpMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
-                flatMap(fm -> SHORT_COMPARE_GENERATOR_PAIRS.stream().map(lfa -> {
+                flatMap(fm -> HALFFLOAT_COMPARE_GENERATOR_PAIRS.stream().map(lfa -> {
                     return Stream.concat(lfa.stream(), Stream.of(fm)).toArray();
                 })).
                 toArray(Object[][]::new);
     }
 
-    interface ToShortF {
+    interface ToHalffloatF {
         short apply(int i);
     }
 
-    static short[] fill(int s , ToShortF f) {
+    static short[] fill(int s , ToHalffloatF f) {
         return fill(new short[s], f);
     }
 
-    static short[] fill(short[] a, ToShortF f) {
+    static short[] fill(short[] a, ToHalffloatF f) {
         for (int i = 0; i < a.length; i++) {
             a[i] = f.apply(i);
         }
@@ -1418,7 +1418,29 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
         return Short.compare(a, (short) 0) != 0 ? a : b;
     }
 
-    // TODO: Fix and Enable smokeTest1, viewAsIntegeralLanesTest, viewAsFloatingLanesTest
+    @Test
+    static void smokeTest1() {
+        HalffloatVector three = HalffloatVector.broadcast(SPECIES, Halffloat.valueOf(-3));
+        HalffloatVector three2 = (HalffloatVector) SPECIES.broadcast(Halffloat.valueOf(-3));
+        assert(three.eq(three2).allTrue());
+        HalffloatVector three3 = three2.broadcast(Halffloat.valueOf(1)).broadcast(Halffloat.valueOf(-3));
+        assert(three.eq(three3).allTrue());
+        int scale = 2;
+        Class<?> ETYPE = short.class;
+        if (ETYPE == double.class || ETYPE == long.class)
+            scale = 1000000;
+        else if (ETYPE == byte.class && SPECIES.length() >= 64)
+            scale = 1;
+        HalffloatVector higher = three.addIndex(scale);
+        VectorMask<Halffloat> m = three.compare(VectorOperators.LE, higher);
+        assert(m.allTrue());
+        m = higher.min((Halffloat.valueOf(-1))).test(VectorOperators.IS_NEGATIVE);
+        assert(m.allTrue());
+        m = higher.test(VectorOperators.IS_FINITE);
+        assert(m.allTrue());
+        short max = higher.reduceLanes(VectorOperators.MAX);
+        assert((short) Float.float16ToFloat(max) == -3 + scale * (SPECIES.length()-1));
+    }
 
     private static short[]
     bothToArray(HalffloatVector a, HalffloatVector b) {
@@ -1472,9 +1494,24 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
         }
     }
 
+    @Test
+    void viewAsIntegeralLanesTest() {
+        Vector<?> asIntegral = SPECIES.zero().viewAsIntegralLanes();
+        VectorSpecies<?> asIntegralSpecies = asIntegral.species();
+        Assert.assertNotEquals(asIntegralSpecies.elementType(), SPECIES.elementType());
+        Assert.assertEquals(asIntegralSpecies.vectorShape(), SPECIES.vectorShape());
+        Assert.assertEquals(asIntegralSpecies.length(), SPECIES.length());
+        Assert.assertEquals(asIntegral.viewAsFloatingLanes().species(), SPECIES);
+    }
+
+    @Test
+    void viewAsFloatingLanesTest() {
+        Vector<?> asFloating = SPECIES.zero().viewAsFloatingLanes();
+        Assert.assertEquals(asFloating.species(), SPECIES);
+    }
 
     static short ADD(short a, short b) {
-        return (short)(Halffloat.valueOf((Halffloat.valueOf(a).floatValue() + Halffloat.valueOf(b).floatValue())));
+        return (short)(Float.floatToFloat16(Float.float16ToFloat(a) + Float.float16ToFloat(b)));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1515,7 +1552,7 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
     }
 
     static short SUB(short a, short b) {
-        return (short)(Halffloat.valueOf((Halffloat.valueOf(a).floatValue() - Halffloat.valueOf(b).floatValue())));
+        return (short)(Float.floatToFloat16(Float.float16ToFloat(a) - Float.float16ToFloat(b)));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1556,7 +1593,7 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
     }
 
     static short MUL(short a, short b) {
-        return (short)(Halffloat.valueOf((Halffloat.valueOf(a).floatValue() * Halffloat.valueOf(b).floatValue())));
+        return (short)(Float.floatToFloat16(Float.float16ToFloat(a) * Float.float16ToFloat(b)));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1597,7 +1634,7 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
     }
 
     static short DIV(short a, short b) {
-        return (short)(Halffloat.valueOf((Halffloat.valueOf(a).floatValue() / Halffloat.valueOf(b).floatValue())));
+        return (short)(Float.floatToFloat16(Float.float16ToFloat(a) / Float.float16ToFloat(b)));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1638,7 +1675,7 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
     }
 
     static short MAX(short a, short b) {
-        return (short)(Halffloat.valueOf(Math.max(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue())));
+        return (short)(Float.floatToFloat16(Math.max(Float.float16ToFloat(a), Float.float16ToFloat(b))));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1679,7 +1716,7 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
     }
 
     static short MIN(short a, short b) {
-        return (short)(Halffloat.valueOf(Math.min(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue())));
+        return (short)(Halffloat.valueOf(Math.min(Float.float16ToFloat(a), Float.float16ToFloat(b))));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1832,11 +1869,11 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
     }
 
     static short FMA(short a, short b, short c) {
-        return (short)(Halffloat.valueOf(Math.fma(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue(), Halffloat.valueOf(c).floatValue())));
+        return (short)(Float.floatToFloat16(Math.fma(Float.float16ToFloat(a), Float.float16ToFloat(b), Float.float16ToFloat(c))));
     }
 
     static short fma(short a, short b, short c) {
-        return (short)(Halffloat.valueOf(Math.fma(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue(), Halffloat.valueOf(c).floatValue())));
+        return (short)(Float.floatToFloat16(Math.fma(Float.float16ToFloat(a), Float.float16ToFloat(b), Float.float16ToFloat(c))));
     }
 
     @Test(dataProvider = "shortTernaryOpProvider")
@@ -2428,29 +2465,406 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
     }
 
 
-    // TODO: Fix and Enable ltHalffloat128VectorTestsBroadcastSmokeTest
-    // TODO: Fix and Enable eqHalffloat128VectorTestsBroadcastMaskedSmokeTest
-    // TODO: Fix and Enable toLongArrayHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable toDoubleArrayHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable toStringHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable hashCodeHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable ADDReduceLongHalffloat128VectorTests
-    // TODO: Fix and Enable ADDReduceLongHalffloat128VectorTestsMasked
-    // TODO: Fix and Enable BroadcastLongHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable blendHalffloat128VectorTestsBroadcastLongSmokeTest
+    @Test(dataProvider = "shortCompareOpProvider")
+    static void ltHalffloat128VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            VectorMask<Halffloat> mv = av.lt(b[i]);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j), lt(a[i + j], b[i]));
+            }
+        }
+    }
+
+    @Test(dataProvider = "shortCompareOpProvider")
+    static void eqHalffloat128VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            VectorMask<Halffloat> mv = av.eq(b[i]);
+
+            // Check results as part of computation.
+            for (int j = 0; j < SPECIES.length(); j++) {
+                Assert.assertEquals(mv.laneIsSet(j), eq(a[i + j], b[i]));
+            }
+        }
+    }
+
+    @Test(dataProvider = "shorttoIntUnaryOpProvider")
+    static void toIntArrayHalffloat128VectorTestsSmokeTest(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            int[] r = av.toIntArray();
+            assertArraysEquals(r, a, i);
+        }
+    }
+
+    @Test(dataProvider = "shorttoLongUnaryOpProvider")
+    static void toLongArrayHalffloat128VectorTestsSmokeTest(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            long[] r = av.toLongArray();
+            assertArraysEquals(r, a, i);
+        }
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void toDoubleArrayHalffloat128VectorTestsSmokeTest(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            double[] r = av.toDoubleArray();
+            assertArraysEquals(r, a, i);
+        }
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void toStringHalffloat128VectorTestsSmokeTest(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            String str = av.toString();
+
+            short subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            Assert.assertTrue(str.equals(Arrays.toString(subarr)), "at index " + i + ", string should be = " + Arrays.toString(subarr) + ", but is = " + str);
+        }
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void hashCodeHalffloat128VectorTestsSmokeTest(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            int hash = av.hashCode();
+
+            short subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            int expectedHash = Objects.hash(SPECIES, Arrays.hashCode(subarr));
+            Assert.assertTrue(hash == expectedHash, "at index " + i + ", hash should be = " + expectedHash + ", but is = " + hash);
+        }
+    }
 
 
-    // TODO: Fix and Enable SelectFromHalffloat128VectorTests
-    // TODO: Fix and Enable SelectFromHalffloat128VectorTestsMaskedSmokeTest
-    // TODO: Fix and Enable shuffleMiscellaneousHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable shuffleToStringHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable shuffleEqualsHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable maskEqualsHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable maskEqHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable maskHashCodeHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable maskTrueCountHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable maskLastTrueHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable maskFirstTrueHalffloat128VectorTestsSmokeTest
+    static long ADDReduceLong(short[] a, int idx) {
+        short res = 0;
+        for (int i = idx; i < (idx + SPECIES.length()); i++) {
+            res = Float.floatToFloat16(Float.float16ToFloat(res) + Float.float16ToFloat(a[i]));
+        }
+
+        return (long)res;
+    }
+
+    static long ADDReduceAllLong(short[] a) {
+        long res = 0;
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            res += ADDReduceLong(a, i);
+        }
+
+        return res;
+    }
+
+    @Test(dataProvider = "shortUnaryOpProvider")
+    static void ADDReduceLongHalffloat128VectorTests(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        long[] r = lfr.apply(SPECIES.length());
+        long ra = 0;
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            r[i] = av.reduceLanesToLong(VectorOperators.ADD);
+        }
+
+        ra = 0;
+        for (int i = 0; i < a.length; i ++) {
+            ra += r[i];
+        }
+
+        assertReductionLongArraysEquals(r, ra, a,
+                Halffloat128VectorTests::ADDReduceLong, Halffloat128VectorTests::ADDReduceAllLong);
+    }
+
+    static long ADDReduceLongMasked(short[] a, int idx, boolean[] mask) {
+        short res = 0;
+        for (int i = idx; i < (idx + SPECIES.length()); i++) {
+            if(mask[i % SPECIES.length()])
+                res = Float.floatToFloat16(Float.float16ToFloat(res) + Float.float16ToFloat(a[i]));
+        }
+
+        return (long)res;
+    }
+
+    static long ADDReduceAllLongMasked(short[] a, boolean[] mask) {
+        long res = 0;
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            res += ADDReduceLongMasked(a, i, mask);
+        }
+
+        return res;
+    }
+
+    @Test(dataProvider = "shortUnaryOpMaskProvider")
+    static void ADDReduceLongHalffloat128VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        long[] r = lfr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        long ra = 0;
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            r[i] = av.reduceLanesToLong(VectorOperators.ADD, vmask);
+        }
+
+        ra = 0;
+        for (int i = 0; i < a.length; i ++) {
+            ra += r[i];
+        }
+
+        assertReductionLongArraysEqualsMasked(r, ra, a, mask,
+                Halffloat128VectorTests::ADDReduceLongMasked, Halffloat128VectorTests::ADDReduceAllLongMasked);
+    }
+
+    @Test(dataProvider = "shorttoLongUnaryOpProvider")
+    static void BroadcastLongHalffloat128VectorTestsSmokeTest(IntFunction<short[]> fa) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] r = new short[a.length];
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector.broadcast(SPECIES, (long)a[i]).intoArray(r, i);
+        }
+        assertBroadcastArraysEquals(r, a);
+    }
+
+    @Test(dataProvider = "shortBinaryOpMaskProvider")
+    static void blendHalffloat128VectorTestsBroadcastLongSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                av.blend((long)b[i], vmask).intoArray(r, i);
+            }
+        }
+       // assertBroadcastLongArraysEquals(r, a, b, mask, Halffloat128VectorTests::blend);
+    }
+
+
+    @Test(dataProvider = "shortUnaryOpSelectFromProvider")
+    static void SelectFromHalffloat128VectorTests(IntFunction<short[]> fa,
+                                           BiFunction<Integer,Integer,short[]> fs) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] order = fs.apply(a.length, SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            HalffloatVector bv = HalffloatVector.fromArray(SPECIES, order, i);
+            bv.selectFrom(av).intoArray(r, i);
+        }
+
+        assertSelectFromArraysEquals(r, a, order, SPECIES.length());
+    }
+
+    @Test(dataProvider = "shortUnaryOpSelectFromMaskProvider")
+    static void SelectFromHalffloat128VectorTestsMaskedSmokeTest(IntFunction<short[]> fa,
+                                                           BiFunction<Integer,Integer,short[]> fs,
+                                                           IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] order = fs.apply(a.length, SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            HalffloatVector bv = HalffloatVector.fromArray(SPECIES, order, i);
+            bv.selectFrom(av, vmask).intoArray(r, i);
+        }
+
+        assertSelectFromArraysEquals(r, a, order, mask, SPECIES.length());
+    }
+
+    @Test(dataProvider = "shuffleProvider")
+    static void shuffleMiscellaneousHalffloat128VectorTestsSmokeTest(BiFunction<Integer,Integer,int[]> fs) {
+        int[] a = fs.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var shuffle = VectorShuffle.fromArray(SPECIES, a, i);
+            int hash = shuffle.hashCode();
+            int length = shuffle.length();
+
+            int subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            int expectedHash = Objects.hash(SPECIES, Arrays.hashCode(subarr));
+            Assert.assertTrue(hash == expectedHash, "at index " + i + ", hash should be = " + expectedHash + ", but is = " + hash);
+            Assert.assertEquals(length, SPECIES.length());
+        }
+    }
+
+    @Test(dataProvider = "shuffleProvider")
+    static void shuffleToStringHalffloat128VectorTestsSmokeTest(BiFunction<Integer,Integer,int[]> fs) {
+        int[] a = fs.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var shuffle = VectorShuffle.fromArray(SPECIES, a, i);
+            String str = shuffle.toString();
+
+            int subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            Assert.assertTrue(str.equals("Shuffle" + Arrays.toString(subarr)), "at index " +
+                i + ", string should be = " + Arrays.toString(subarr) + ", but is = " + str);
+        }
+    }
+
+    @Test(dataProvider = "shuffleCompareOpProvider")
+    static void shuffleEqualsHalffloat128VectorTestsSmokeTest(BiFunction<Integer,Integer,int[]> fa, BiFunction<Integer,Integer,int[]> fb) {
+        int[] a = fa.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+        int[] b = fb.apply(SPECIES.length() * BUFFER_REPS, SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var av = VectorShuffle.fromArray(SPECIES, a, i);
+            var bv = VectorShuffle.fromArray(SPECIES, b, i);
+            boolean eq = av.equals(bv);
+            int to = i + SPECIES.length();
+            Assert.assertEquals(eq, Arrays.equals(a, i, to, b, i, to));
+        }
+    }
+
+    @Test(dataProvider = "maskCompareOpProvider")
+    static void maskEqualsHalffloat128VectorTestsSmokeTest(IntFunction<boolean[]> fa, IntFunction<boolean[]> fb) {
+        boolean[] a = fa.apply(SPECIES.length());
+        boolean[] b = fb.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var av = SPECIES.loadMask(a, i);
+            var bv = SPECIES.loadMask(b, i);
+            boolean equals = av.equals(bv);
+            int to = i + SPECIES.length();
+            Assert.assertEquals(equals, Arrays.equals(a, i, to, b, i, to));
+        }
+    }
+
+    static boolean beq(boolean a, boolean b) {
+        return (a == b);
+    }
+
+    @Test(dataProvider = "maskCompareOpProvider")
+    static void maskEqHalffloat128VectorTestsSmokeTest(IntFunction<boolean[]> fa, IntFunction<boolean[]> fb) {
+        boolean[] a = fa.apply(SPECIES.length());
+        boolean[] b = fb.apply(SPECIES.length());
+        boolean[] r = new boolean[a.length];
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var av = SPECIES.loadMask(a, i);
+            var bv = SPECIES.loadMask(b, i);
+            var cv = av.eq(bv);
+            cv.intoArray(r, i);
+        }
+        assertArraysEquals(r, a, b, Halffloat128VectorTests::beq);
+    }
+
+    @Test(dataProvider = "maskProvider")
+    static void maskHashCodeHalffloat128VectorTestsSmokeTest(IntFunction<boolean[]> fa) {
+        boolean[] a = fa.apply(SPECIES.length());
+
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            var vmask = SPECIES.loadMask(a, i);
+            int hash = vmask.hashCode();
+
+            boolean subarr[] = Arrays.copyOfRange(a, i, i + SPECIES.length());
+            int expectedHash = Objects.hash(SPECIES, Arrays.hashCode(subarr));
+            Assert.assertTrue(hash == expectedHash, "at index " + i + ", hash should be = " + expectedHash + ", but is = " + hash);
+        }
+    }
+
+    static int maskTrueCount(boolean[] a, int idx) {
+        int trueCount = 0;
+        for (int i = idx; i < idx + SPECIES.length(); i++) {
+            trueCount += a[i] ? 1 : 0;
+        }
+        return trueCount;
+    }
+
+    @Test(dataProvider = "maskProvider")
+    static void maskTrueCountHalffloat128VectorTestsSmokeTest(IntFunction<boolean[]> fa) {
+        boolean[] a = fa.apply(SPECIES.length());
+        int[] r = new int[a.length];
+
+        for (int ic = 0; ic < INVOC_COUNT * INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                var vmask = SPECIES.loadMask(a, i);
+                r[i] = vmask.trueCount();
+            }
+        }
+
+        assertMaskReductionArraysEquals(r, a, Halffloat128VectorTests::maskTrueCount);
+    }
+
+    static int maskLastTrue(boolean[] a, int idx) {
+        int i = idx + SPECIES.length() - 1;
+        for (; i >= idx; i--) {
+            if (a[i]) {
+                break;
+            }
+        }
+        return i - idx;
+    }
+
+    @Test(dataProvider = "maskProvider")
+    static void maskLastTrueHalffloat128VectorTestsSmokeTest(IntFunction<boolean[]> fa) {
+        boolean[] a = fa.apply(SPECIES.length());
+        int[] r = new int[a.length];
+
+        for (int ic = 0; ic < INVOC_COUNT * INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                var vmask = SPECIES.loadMask(a, i);
+                r[i] = vmask.lastTrue();
+            }
+        }
+
+        assertMaskReductionArraysEquals(r, a, Halffloat128VectorTests::maskLastTrue);
+    }
+
+    static int maskFirstTrue(boolean[] a, int idx) {
+        int i = idx;
+        for (; i < idx + SPECIES.length(); i++) {
+            if (a[i]) {
+                break;
+            }
+        }
+        return i - idx;
+    }
+
+    @Test(dataProvider = "maskProvider")
+    static void maskFirstTrueHalffloat128VectorTestsSmokeTest(IntFunction<boolean[]> fa) {
+        boolean[] a = fa.apply(SPECIES.length());
+        int[] r = new int[a.length];
+
+        for (int ic = 0; ic < INVOC_COUNT * INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                var vmask = SPECIES.loadMask(a, i);
+                r[i] = vmask.firstTrue();
+            }
+        }
+
+        assertMaskReductionArraysEquals(r, a, Halffloat128VectorTests::maskFirstTrue);
+    }
 
     @Test(dataProvider = "maskProvider")
     static void maskCompressHalffloat128VectorTestsSmokeTest(IntFunction<boolean[]> fa) {
@@ -2497,17 +2911,121 @@ public class Halffloat128VectorTests extends AbstractVectorTest {
         };
     }
 
-    // TODO: Fix and Enable indexInRangeHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable indexInRangeLongHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable loopBoundHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable loopBoundLongHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable ElementSizeHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable VectorShapeHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable ShapeWithLanesHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable ElementTypeHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable SpeciesElementSizeHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable VectorTypeHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable WithLanesHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable WithShapeHalffloat128VectorTestsSmokeTest
-    // TODO: Fix and Enable MaskAllTrueHalffloat128VectorTestsSmokeTest
+    @Test(dataProvider = "offsetProvider")
+    static void indexInRangeHalffloat128VectorTestsSmokeTest(int offset) {
+        int limit = SPECIES.length() * BUFFER_REPS;
+        for (int i = 0; i < limit; i += SPECIES.length()) {
+            var actualMask = SPECIES.indexInRange(i + offset, limit);
+            var expectedMask = SPECIES.maskAll(true).indexInRange(i + offset, limit);
+            assert(actualMask.equals(expectedMask));
+            for (int j = 0; j < SPECIES.length(); j++)  {
+                int index = i + j + offset;
+                Assert.assertEquals(actualMask.laneIsSet(j), index >= 0 && index < limit);
+            }
+        }
+    }
+
+    @Test(dataProvider = "offsetProvider")
+    static void indexInRangeLongHalffloat128VectorTestsSmokeTest(int offset) {
+        long limit = SPECIES.length() * BUFFER_REPS;
+        for (long i = 0; i < limit; i += SPECIES.length()) {
+            var actualMask = SPECIES.indexInRange(i + offset, limit);
+            var expectedMask = SPECIES.maskAll(true).indexInRange(i + offset, limit);
+            assert(actualMask.equals(expectedMask));
+            for (int j = 0; j < SPECIES.length(); j++)  {
+                long index = i + j + offset;
+                Assert.assertEquals(actualMask.laneIsSet(j), index >= 0 && index < limit);
+            }
+        }
+    }
+
+    @DataProvider
+    public static Object[][] lengthProvider() {
+        return new Object[][]{
+                {0},
+                {1},
+                {32},
+                {37},
+                {1024},
+                {1024+1},
+                {1024+5},
+        };
+    }
+
+    @Test(dataProvider = "lengthProvider")
+    static void loopBoundHalffloat128VectorTestsSmokeTest(int length) {
+        int actualLoopBound = SPECIES.loopBound(length);
+        int expectedLoopBound = length - Math.floorMod(length, SPECIES.length());
+        Assert.assertEquals(actualLoopBound, expectedLoopBound);
+    }
+
+    @Test(dataProvider = "lengthProvider")
+    static void loopBoundLongHalffloat128VectorTestsSmokeTest(int _length) {
+        long length = _length;
+        long actualLoopBound = SPECIES.loopBound(length);
+        long expectedLoopBound = length - Math.floorMod(length, SPECIES.length());
+        Assert.assertEquals(actualLoopBound, expectedLoopBound);
+    }
+
+    @Test
+    static void ElementSizeHalffloat128VectorTestsSmokeTest() {
+        HalffloatVector av = HalffloatVector.zero(SPECIES);
+        int elsize = av.elementSize();
+        Assert.assertEquals(elsize, Halffloat.SIZE);
+    }
+
+    @Test
+    static void VectorShapeHalffloat128VectorTestsSmokeTest() {
+        HalffloatVector av = HalffloatVector.zero(SPECIES);
+        VectorShape vsh = av.shape();
+        assert(vsh.equals(VectorShape.S_128_BIT));
+    }
+
+    @Test
+    static void ShapeWithLanesHalffloat128VectorTestsSmokeTest() {
+        HalffloatVector av = HalffloatVector.zero(SPECIES);
+        VectorShape vsh = av.shape();
+        VectorSpecies species = vsh.withLanes(Halffloat.class);
+        assert(species.equals(SPECIES));
+    }
+
+    @Test
+    static void ElementTypeHalffloat128VectorTestsSmokeTest() {
+        HalffloatVector av = HalffloatVector.zero(SPECIES);
+        assert(av.species().elementType() == Halffloat.class);
+    }
+
+    @Test
+    static void SpeciesElementSizeHalffloat128VectorTestsSmokeTest() {
+        HalffloatVector av = HalffloatVector.zero(SPECIES);
+        assert(av.species().elementSize() == Halffloat.SIZE);
+    }
+
+    @Test
+    static void VectorTypeHalffloat128VectorTestsSmokeTest() {
+        HalffloatVector av = HalffloatVector.zero(SPECIES);
+        assert(av.species().vectorType() == av.getClass());
+    }
+
+    @Test
+    static void WithLanesHalffloat128VectorTestsSmokeTest() {
+        HalffloatVector av = HalffloatVector.zero(SPECIES);
+        VectorSpecies species = av.species().withLanes(Halffloat.class);
+        assert(species.equals(SPECIES));
+    }
+
+    @Test
+    static void WithShapeHalffloat128VectorTestsSmokeTest() {
+        HalffloatVector av = HalffloatVector.zero(SPECIES);
+        VectorShape vsh = av.shape();
+        VectorSpecies species = av.species().withShape(vsh);
+        assert(species.equals(SPECIES));
+    }
+
+    @Test
+    static void MaskAllTrueHalffloat128VectorTestsSmokeTest() {
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+          Assert.assertEquals(SPECIES.maskAll(true).toLong(), -1L >>> (64 - SPECIES.length()));
+        }
+    }
 }

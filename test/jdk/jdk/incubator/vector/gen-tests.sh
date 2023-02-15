@@ -116,7 +116,7 @@ generate_test_cases() {
         Bitstype=Short
         Boxbitstype=Short
         Wideboxtype=Halffloat
-        args="$args -Dtype=short -DType=Short -DTYPE=SHORT -DElementType=Halffloat"
+        args="$args -Dtype=short -DType=Halffloat -DTYPE=HALFFLOAT -DElementType=Halffloat"
         ;;
       esac
 
@@ -169,7 +169,6 @@ generate_test_cases() {
         ;;
       esac
 
-      if [ $1 == "ALL_PRIM_TYPES" ]; then
         if [ $generate_perf_tests == true ]; then
           # Generate jmh performance tests
           case $vectorbenchtype in
@@ -188,10 +187,8 @@ generate_test_cases() {
             ;;
           esac
         fi
-      fi
     done
 
-    if [ $1 == "ALL_PRIM_TYPES" ]; then
       if [ $generate_perf_tests == true ]; then
         # Generate jmh performance tests
         case ${Type}Scalar in
@@ -209,7 +206,6 @@ generate_test_cases() {
           ;;
         esac
       fi
-    fi
     # Generate tests for loads and stores
     # For each size
     for bits in 64 128 256 512 Max
@@ -264,7 +260,7 @@ esac
 . config.sh
 
 # Detect whether to generate the performance tests
-generate_perf_tests=false
+generate_perf_tests=true
 if [ -d "$PERF_DEST" ]; then
   generate_perf_tests=true
 fi

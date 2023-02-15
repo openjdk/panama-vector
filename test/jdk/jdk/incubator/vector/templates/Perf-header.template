@@ -33,6 +33,9 @@ import jdk.incubator.vector.VectorSpecies;
 import jdk.incubator.vector.VectorShuffle;
 import jdk.incubator.vector.$Type$Vector;
 
+#if[Halffloat]
+import jdk.incubator.vector.Halffloat;
+#end[Halffloat]
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.IntFunction;
@@ -84,7 +87,7 @@ public class $vectorbenchtype$ extends AbstractVectorBenchmark {
     @Param("1024")
     int size;
 
-    $type$[] fill(IntFunction<$Wideboxtype$> f) {
+    $type$[] fill(IntFunction<$VecEleType$> f) {
         $type$[] array = new $type$[size];
         for (int i = 0; i < array.length; i++) {
             array[i] = f.apply(i);
@@ -100,10 +103,17 @@ public class $vectorbenchtype$ extends AbstractVectorBenchmark {
     public void init() {
         size += size % SPECIES.length(); // FIXME: add post-loops
 
+#if[Halffloat]
+        a = fill(i -> Halffloat.valueOf(2*i));
+        b = fill(i -> Halffloat.valueOf(i+1));
+        c = fill(i -> Halffloat.valueOf(i+5));
+        r = fill(i -> Halffloat.valueOf(0));
+#else[Halffloat]
         a = fill(i -> ($type$)(2*i));
         b = fill(i -> ($type$)(i+1));
         c = fill(i -> ($type$)(i+5));
         r = fill(i -> ($type$)0);
+#end[Halffloat]
 
         m = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);

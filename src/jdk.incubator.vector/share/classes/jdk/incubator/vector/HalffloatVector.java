@@ -821,17 +821,17 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
     private static BinaryOperation<HalffloatVector, VectorMask<Halffloat>> binaryOperations(int opc_) {
         switch (opc_) {
             case VECTOR_OP_ADD: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() + Halffloat.valueOf(b).floatValue())));
+                    v0.bOp(v1, vm, (i, a, b) -> Float.floatToFloat16(Float.float16ToFloat(a) + Float.float16ToFloat(b)));
             case VECTOR_OP_SUB: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() - Halffloat.valueOf(b).floatValue())));
+                    v0.bOp(v1, vm, (i, a, b) -> Float.floatToFloat16(Float.float16ToFloat(a) - Float.float16ToFloat(b)));
             case VECTOR_OP_MUL: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() * Halffloat.valueOf(b).floatValue())));
+                    v0.bOp(v1, vm, (i, a, b) -> Float.floatToFloat16(Float.float16ToFloat(a) * Float.float16ToFloat(b)));
             case VECTOR_OP_DIV: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() / Halffloat.valueOf(b).floatValue())));
+                    v0.bOp(v1, vm, (i, a, b) -> Float.floatToFloat16(Float.float16ToFloat(a) / Float.float16ToFloat(b)));
             case VECTOR_OP_MAX: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf(Math.max(Halffloat.valueOf(a).floatValue(),Halffloat.valueOf(b).floatValue())));
+                    v0.bOp(v1, vm, (i, a, b) -> Float.floatToFloat16(Math.max(Float.float16ToFloat(a), Float.float16ToFloat(b))));
             case VECTOR_OP_MIN: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf(Math.min(Halffloat.valueOf(a).floatValue(),Halffloat.valueOf(b).floatValue())));
+                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf(Math.min(Float.float16ToFloat(a), Float.float16ToFloat(b))));
             case VECTOR_OP_ATAN2: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((float) Math.atan2(Float.float16ToFloat(a), Float.float16ToFloat(b))));
             case VECTOR_OP_POW: return (v0, v1, vm) ->
@@ -1029,8 +1029,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
     private static TernaryOperation<HalffloatVector, VectorMask<Halffloat>> ternaryOperations(int opc_) {
         switch (opc_) {
             case VECTOR_OP_FMA: return (v0, v1_, v2_, m) -> v0.tOp(v1_, v2_, m, (i, a, b, c) ->
-                    Halffloat.valueOf(Math.fma(Halffloat.valueOf(a).floatValue(),
-                    Halffloat.valueOf(b).floatValue(), Halffloat.valueOf(c).floatValue())));
+                    Float.floatToFloat16(Math.fma(Float.float16ToFloat(a), Float.float16ToFloat(b), Float.float16ToFloat(c))));
             default: return null;
         }
     }
@@ -1927,12 +1926,12 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
     @ForceInline
     private static boolean compareWithOp(int cond, short a, short b) {
         return switch (cond) {
-            case BT_eq -> Halffloat.valueOf(a).floatValue() == Halffloat.valueOf(b).floatValue();
-            case BT_ne -> Halffloat.valueOf(a).floatValue() != Halffloat.valueOf(b).floatValue();
-            case BT_lt -> Halffloat.valueOf(a).floatValue() < Halffloat.valueOf(b).floatValue();
-            case BT_le -> Halffloat.valueOf(a).floatValue() <= Halffloat.valueOf(b).floatValue();
-            case BT_gt -> Halffloat.valueOf(a).floatValue() > Halffloat.valueOf(b).floatValue();
-            case BT_ge -> Halffloat.valueOf(a).floatValue() >= Halffloat.valueOf(b).floatValue();
+            case BT_eq -> Float.float16ToFloat(a) == Float.float16ToFloat(b);
+            case BT_ne -> Float.float16ToFloat(a) != Float.float16ToFloat(b);
+            case BT_lt -> Float.float16ToFloat(a) < Float.float16ToFloat(b);
+            case BT_le -> Float.float16ToFloat(a) <= Float.float16ToFloat(b);
+            case BT_gt -> Float.float16ToFloat(a) > Float.float16ToFloat(b);
+            case BT_ge -> Float.float16ToFloat(a) >= Float.float16ToFloat(b);
             default -> throw new AssertionError();
         };
     }
@@ -2065,7 +2064,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
                 // and multiply.
                 HalffloatVector iota = s.iota();
                 short sc = (short) scale_;
-                return v.add(sc == 1 ? iota : iota.mul(sc));
+                return v.add(sc == 1 ? iota : iota.mul(Halffloat.valueOf((float) sc)));
             });
     }
 
@@ -2636,13 +2635,13 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
     private static ReductionOperation<HalffloatVector, VectorMask<Halffloat>> reductionOperations(int opc_) {
         switch (opc_) {
             case VECTOR_OP_ADD: return (v, m) ->
-                    toBits(v.rOp((short)0, m, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() + Halffloat.valueOf(b).floatValue()))));
+                    toBits(v.rOp((short)0, m, (i, a, b) -> Float.floatToFloat16(Float.float16ToFloat(a) + Float.float16ToFloat(b))));
             case VECTOR_OP_MUL: return (v, m) ->
-                    toBits(v.rOp((short)1, m, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() * Halffloat.valueOf(b).floatValue()))));
+                    toBits(v.rOp((short)1, m, (i, a, b) -> Float.floatToFloat16(Float.float16ToFloat(b) * Float.float16ToFloat(b))));
             case VECTOR_OP_MIN: return (v, m) ->
-                    toBits(v.rOp(MAX_OR_INF, m, (i, a, b) -> Halffloat.valueOf(Math.min(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()))));
+                    toBits(v.rOp(MAX_OR_INF, m, (i, a, b) -> Float.floatToFloat16(Math.min(Float.float16ToFloat(a), Float.float16ToFloat(b)))));
             case VECTOR_OP_MAX: return (v, m) ->
-                    toBits(v.rOp(MIN_OR_INF, m, (i, a, b) -> Halffloat.valueOf(Math.max(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()))));
+                    toBits(v.rOp(MIN_OR_INF, m, (i, a, b) -> Float.floatToFloat16(Math.max(Float.float16ToFloat(a), Float.float16ToFloat(b)))));
             default: return null;
         }
     }

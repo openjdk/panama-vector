@@ -35,7 +35,7 @@ import jdk.incubator.foreign.ResourceScope;
 import jdk.incubator.foreign.ValueLayout;
 import jdk.incubator.vector.Halffloat;
 import jdk.incubator.vector.HalffloatVector;
-import jdk.incubator.vector.ShortVector;
+import jdk.incubator.vector.HalffloatVector;
 import jdk.incubator.vector.VectorMask;
 import jdk.incubator.vector.VectorSpecies;
 import jdk.incubator.vector.VectorShuffle;
@@ -69,7 +69,7 @@ public class Halffloat256VectorLoadStoreTests extends AbstractVectorLoadStoreTes
         }
     }
 
-    static final List<IntFunction<short[]>> SHORT_GENERATORS = List.of(
+    static final List<IntFunction<short[]>> HALFFLOAT_GENERATORS = List.of(
             withToString("short[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> (short)(i * 5));
@@ -138,7 +138,7 @@ public class Halffloat256VectorLoadStoreTests extends AbstractVectorLoadStoreTes
 
     @DataProvider
     public Object[][] shortProvider() {
-        return SHORT_GENERATORS.stream().
+        return HALFFLOAT_GENERATORS.stream().
                 map(f -> new Object[]{f}).
                 toArray(Object[][]::new);
     }
@@ -152,7 +152,7 @@ public class Halffloat256VectorLoadStoreTests extends AbstractVectorLoadStoreTes
 
     @DataProvider
     public Object[][] shortProviderForIOOBE() {
-        var f = SHORT_GENERATORS.get(0);
+        var f = HALFFLOAT_GENERATORS.get(0);
         return INDEX_GENERATORS.stream().map(fi -> {
                     return new Object[] {f, fi};
                 }).
@@ -162,7 +162,7 @@ public class Halffloat256VectorLoadStoreTests extends AbstractVectorLoadStoreTes
     @DataProvider
     public Object[][] shortMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
-                flatMap(fm -> SHORT_GENERATORS.stream().map(fa -> {
+                flatMap(fm -> HALFFLOAT_GENERATORS.stream().map(fa -> {
                     return new Object[] {fa, fm};
                 })).
                 toArray(Object[][]::new);
@@ -170,7 +170,7 @@ public class Halffloat256VectorLoadStoreTests extends AbstractVectorLoadStoreTes
 
     @DataProvider
     public Object[][] shortMaskProviderForIOOBE() {
-        var f = SHORT_GENERATORS.get(0);
+        var f = HALFFLOAT_GENERATORS.get(0);
         return BOOLEAN_MASK_GENERATORS.stream().
                 flatMap(fm -> INDEX_GENERATORS.stream().map(fi -> {
                     return new Object[] {f, fi, fm};
@@ -180,7 +180,7 @@ public class Halffloat256VectorLoadStoreTests extends AbstractVectorLoadStoreTes
 
     @DataProvider
     public Object[][] shortMemorySegmentProvider() {
-        return SHORT_GENERATORS.stream().
+        return HALFFLOAT_GENERATORS.stream().
                 flatMap(fa -> MEMORY_SEGMENT_GENERATORS.stream().
                         flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
                             return new Object[]{fa, fb, bo};
@@ -191,7 +191,7 @@ public class Halffloat256VectorLoadStoreTests extends AbstractVectorLoadStoreTes
     @DataProvider
     public Object[][] shortMemorySegmentMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
-                flatMap(fm -> SHORT_GENERATORS.stream().
+                flatMap(fm -> HALFFLOAT_GENERATORS.stream().
                         flatMap(fa -> MEMORY_SEGMENT_GENERATORS.stream().
                                 flatMap(fb -> BYTE_ORDER_VALUES.stream().map(bo -> {
                             return new Object[]{fa, fb, fm, bo};
@@ -201,7 +201,7 @@ public class Halffloat256VectorLoadStoreTests extends AbstractVectorLoadStoreTes
 
     @DataProvider
     public Object[][] shortByteProviderForIOOBE() {
-        var f = SHORT_GENERATORS.get(0);
+        var f = HALFFLOAT_GENERATORS.get(0);
         return BYTE_INDEX_GENERATORS.stream().map(fi -> {
                     return new Object[] {f, fi};
                 }).
@@ -210,7 +210,7 @@ public class Halffloat256VectorLoadStoreTests extends AbstractVectorLoadStoreTes
 
     @DataProvider
     public Object[][] shortByteMaskProviderForIOOBE() {
-        var f = SHORT_GENERATORS.get(0);
+        var f = HALFFLOAT_GENERATORS.get(0);
         return BOOLEAN_MASK_GENERATORS.stream().
                 flatMap(fm -> BYTE_INDEX_GENERATORS.stream().map(fi -> {
                     return new Object[] {f, fi, fm};
@@ -231,15 +231,15 @@ public class Halffloat256VectorLoadStoreTests extends AbstractVectorLoadStoreTes
     }
 
 
-    interface ToShortF {
+    interface ToHalffloatF {
         short apply(int i);
     }
 
-    static short[] fill(int s , ToShortF f) {
+    static short[] fill(int s , ToHalffloatF f) {
         return fill(new short[s], f);
     }
 
-    static short[] fill(short[] a, ToShortF f) {
+    static short[] fill(short[] a, ToHalffloatF f) {
         for (int i = 0; i < a.length; i++) {
             a[i] = f.apply(i);
         }
@@ -456,7 +456,119 @@ public class Halffloat256VectorLoadStoreTests extends AbstractVectorLoadStoreTes
     }
 
 
-    // TODO: Fix and Enable loadStoreMemorySegment, loadMemorySegmentIOOBE, storeMemorySegmentIOOBE, loadStoreMemorySegmentMask
+    @Test(dataProvider = "shortMemorySegmentProvider")
+    static void loadStoreMemorySegment(IntFunction<short[]> fa,
+                                       IntFunction<MemorySegment> fb,
+                                       ByteOrder bo) {
+        MemorySegment a = toSegment(fa.apply(SPECIES.length()), fb);
+        MemorySegment r = fb.apply((int) a.byteSize());
+
+        int l = (int) a.byteSize();
+        int s = SPECIES.vectorByteSize();
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                HalffloatVector av = HalffloatVector.fromMemorySegment(SPECIES, a, i, bo);
+                av.intoMemorySegment(r, i, bo);
+            }
+        }
+        long m = r.mismatch(a);
+        Assert.assertEquals(m, -1, "Segments not equal");
+    }
+
+    @Test(dataProvider = "shortByteProviderForIOOBE")
+    static void loadMemorySegmentIOOBE(IntFunction<short[]> fa, IntFunction<Integer> fi) {
+        MemorySegment a = toSegment(fa.apply(SPECIES.length()), i -> MemorySegment.allocateNative(i, ResourceScope.newImplicitScope()));
+        MemorySegment r = MemorySegment.allocateNative(a.byteSize(), ResourceScope.newImplicitScope());
+
+        int l = (int) a.byteSize();
+        int s = SPECIES.vectorByteSize();
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                HalffloatVector av = fromMemorySegment(a, i, ByteOrder.nativeOrder());
+                av.intoMemorySegment(r, i, ByteOrder.nativeOrder());
+            }
+        }
+
+        int index = fi.apply((int) a.byteSize());
+        boolean shouldFail = isIndexOutOfBounds(SPECIES.vectorByteSize(), index, (int) a.byteSize());
+        try {
+            fromMemorySegment(a, index, ByteOrder.nativeOrder());
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
+    }
+
+    @Test(dataProvider = "shortByteProviderForIOOBE")
+    static void storeMemorySegmentIOOBE(IntFunction<short[]> fa, IntFunction<Integer> fi) {
+        MemorySegment a = toSegment(fa.apply(SPECIES.length()), i -> MemorySegment.allocateNative(i, ResourceScope.newImplicitScope()));
+        MemorySegment r = MemorySegment.allocateNative(a.byteSize(), ResourceScope.newImplicitScope());
+
+        int l = (int) a.byteSize();
+        int s = SPECIES.vectorByteSize();
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                HalffloatVector av = HalffloatVector.fromMemorySegment(SPECIES, a, i, ByteOrder.nativeOrder());
+                intoMemorySegment(av, r, i, ByteOrder.nativeOrder());
+            }
+        }
+
+        int index = fi.apply((int) a.byteSize());
+        boolean shouldFail = isIndexOutOfBounds(SPECIES.vectorByteSize(), index, (int) a.byteSize());
+        try {
+            HalffloatVector av = HalffloatVector.fromMemorySegment(SPECIES, a, 0, ByteOrder.nativeOrder());
+            intoMemorySegment(av, r, index, ByteOrder.nativeOrder());
+            if (shouldFail) {
+                Assert.fail("Failed to throw IndexOutOfBoundsException");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            if (!shouldFail) {
+                Assert.fail("Unexpected IndexOutOfBoundsException");
+            }
+        }
+    }
+
+    @Test(dataProvider = "shortMemorySegmentMaskProvider")
+    static void loadStoreMemorySegmentMask(IntFunction<short[]> fa,
+                                           IntFunction<MemorySegment> fb,
+                                           IntFunction<boolean[]> fm,
+                                           ByteOrder bo) {
+        short[] _a = fa.apply(SPECIES.length());
+        MemorySegment a = toSegment(_a, fb);
+        MemorySegment r = fb.apply((int) a.byteSize());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Halffloat> vmask = VectorMask.fromValues(SPECIES, mask);
+
+        int l = (int) a.byteSize();
+        int s = SPECIES.vectorByteSize();
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                HalffloatVector av = HalffloatVector.fromMemorySegment(SPECIES, a, i, bo, vmask);
+                av.intoMemorySegment(r, i, bo);
+            }
+        }
+        assertArraysEquals(segmentToArray(r), _a, mask);
+
+
+        r = fb.apply((int) a.byteSize());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < l; i += s) {
+                HalffloatVector av = HalffloatVector.fromMemorySegment(SPECIES, a, i, bo);
+                av.intoMemorySegment(r, i, bo, vmask);
+            }
+        }
+        assertArraysEquals(segmentToArray(r), _a, mask);
+    }
+
     @Test(dataProvider = "shortByteMaskProviderForIOOBE")
     static void loadMemorySegmentMaskIOOBE(IntFunction<short[]> fa, IntFunction<Integer> fi, IntFunction<boolean[]> fm) {
         MemorySegment a = toSegment(fa.apply(SPECIES.length()), i -> MemorySegment.allocateNative(i, ResourceScope.newImplicitScope()));
@@ -644,7 +756,7 @@ public class Halffloat256VectorLoadStoreTests extends AbstractVectorLoadStoreTes
     @DataProvider
     public Object[][] gatherScatterProvider() {
         return INT_INDEX_GENERATORS.stream().
-                flatMap(fs -> SHORT_GENERATORS.stream().map(fa -> {
+                flatMap(fs -> HALFFLOAT_GENERATORS.stream().map(fa -> {
                     return new Object[] {fa, fs};
                 })).
                 toArray(Object[][]::new);
@@ -654,7 +766,7 @@ public class Halffloat256VectorLoadStoreTests extends AbstractVectorLoadStoreTes
     public Object[][] gatherScatterMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
           flatMap(fs -> INT_INDEX_GENERATORS.stream().flatMap(fm ->
-            SHORT_GENERATORS.stream().map(fa -> {
+            HALFFLOAT_GENERATORS.stream().map(fa -> {
                     return new Object[] {fa, fm, fs};
             }))).
             toArray(Object[][]::new);
