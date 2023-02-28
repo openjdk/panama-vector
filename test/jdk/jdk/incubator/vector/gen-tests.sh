@@ -64,6 +64,8 @@ generate_test_cases() {
     fptype=$type
     Fptype=$Type
     Boxfptype=$Boxtype
+    ClassType=$type
+    LayoutType=$TYPE
 
     case $type in
       byte)
@@ -111,6 +113,8 @@ generate_test_cases() {
         ;;
       halffloat)
         VecEleType=Short
+        ClassType=Halffloat
+        LayoutType=SHORT
         kind=FP
         bitstype=short
         Bitstype=Short
@@ -121,8 +125,8 @@ generate_test_cases() {
       esac
 
     args="$args -K$kind -K$Type -DBoxtype=$Boxtype -DWideboxtype=$Wideboxtype -DMaxValue=$MaxValue -DMinValue=$MinValue"
-    args="$args -Dbitstype=$bitstype -DBitstype=$Bitstype -DBoxbitstype=$Boxbitstype -DElementType=$Type -DVecEleType=$VecEleType"
-    args="$args -Dfptype=$fptype -DFptype=$Fptype -DBoxfptype=$Boxfptype"
+    args="$args -Dbitstype=$bitstype -DBitstype=$Bitstype -DBoxbitstype=$Boxbitstype -DElementType=$Type -DVecEleType=$VecEleType -DClassType=$ClassType"
+    args="$args -Dfptype=$fptype -DFptype=$Fptype -DBoxfptype=$Boxfptype -DLayoutType=$LayoutType"
 
     abstractvectortype=${typeprefix}${Type}Vector
     abstractvectorteststype=${typeprefix}${Type}VectorTests

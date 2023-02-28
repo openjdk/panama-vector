@@ -245,11 +245,7 @@
                 av.blend((long)b[i], vmask).intoArray(r, i);
             }
         }
-#if[Halffloat]
-       // assertBroadcastLongArraysEquals(r, a, b, mask, $vectorteststype$::blend);
-#else[Halffloat]
         assertBroadcastLongArraysEquals(r, a, b, mask, $vectorteststype$::blend);
-#end[Halffloat]
     }
 #end[!Long]
 
@@ -625,22 +621,14 @@
     static void ShapeWithLanes$vectorteststype$SmokeTest() {
         $abstractvectortype$ av = $abstractvectortype$.zero(SPECIES);
         VectorShape vsh = av.shape();
-#if[Halffloat]
-        VectorSpecies species = vsh.withLanes(Halffloat.class);
-#else[Halffloat]
-        VectorSpecies species = vsh.withLanes($type$.class);
-#end[Halffloat]
+        VectorSpecies species = vsh.withLanes($ClassType$.class);
         assert(species.equals(SPECIES));
     }
 
     @Test
     static void ElementType$vectorteststype$SmokeTest() {
         $abstractvectortype$ av = $abstractvectortype$.zero(SPECIES);
-#if[Halffloat]
-        assert(av.species().elementType() == Halffloat.class);
-#else[Halffloat]
-        assert(av.species().elementType() == $type$.class);
-#end[Halffloat]
+        assert(av.species().elementType() == $ClassType$.class);
     }
 
     @Test
@@ -658,11 +646,7 @@
     @Test
     static void WithLanes$vectorteststype$SmokeTest() {
         $abstractvectortype$ av = $abstractvectortype$.zero(SPECIES);
-#if[Halffloat]
-        VectorSpecies species = av.species().withLanes(Halffloat.class);
-#else[Halffloat]
-        VectorSpecies species = av.species().withLanes($type$.class);
-#end[Halffloat]
+        VectorSpecies species = av.species().withLanes($ClassType$.class);
         assert(species.equals(SPECIES));
     }
 

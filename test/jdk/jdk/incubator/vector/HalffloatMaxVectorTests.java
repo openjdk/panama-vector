@@ -978,6 +978,10 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         }
     }
 
+    static short valueOf(int i) {
+        return (short) Halffloat.valueOf(i);
+    }
+
     static int intCornerCaseValue(int i) {
         switch(i % 5) {
             case 0:
@@ -996,15 +1000,15 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     static final List<IntFunction<short[]>> INT_HALFFLOAT_GENERATORS = List.of(
             withToString("Halffloat[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> Halffloat.valueOf(-i * 5));
+                            i -> valueOf(-i * 5));
             }),
             withToString("Halffloat[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> Halffloat.valueOf(i * 5));
+                            i -> valueOf(i * 5));
             }),
             withToString("Halffloat[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((short)(i + 1) == 0) ? Halffloat.valueOf(1) : Halffloat.valueOf(i + 1)));
+                            i -> (((short)(i + 1) == 0) ? valueOf(1) : valueOf(i + 1)));
             }),
             withToString("Halffloat[intCornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1038,18 +1042,22 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         }
     }
 
+    static short valueOf(long i) {
+        return (short) Halffloat.valueOf(i);
+    }
+
     static final List<IntFunction<short[]>> LONG_HALFFLOAT_GENERATORS = List.of(
             withToString("Halffloat[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> Halffloat.valueOf(-i * 5));
+                            i -> valueOf(-i * 5));
             }),
             withToString("Halffloat[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> Halffloat.valueOf(i * 5));
+                            i -> valueOf(i * 5));
             }),
             withToString("Halffloat[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((short)(i + 1) == 0) ? Halffloat.valueOf(1) : Halffloat.valueOf(i + 1)));
+                            i -> (((short)(i + 1) == 0) ? valueOf(1) : valueOf(i + 1)));
             }),
             withToString("Halffloat[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1087,15 +1095,15 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     static final List<IntFunction<short[]>> HALFFLOAT_GENERATORS = List.of(
             withToString("Halffloat[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> Halffloat.valueOf(-i * 5));
+                            i -> valueOf(-i * 5));
             }),
             withToString("Halffloat[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> Halffloat.valueOf(i * 5));
+                            i -> valueOf(i * 5));
             }),
             withToString("Halffloat[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((short)(i + 1) == 0) ? Halffloat.valueOf(1) : Halffloat.valueOf(i + 1)));
+                            i -> (((short)(i + 1) == 0) ? valueOf(1) : valueOf(i + 1)));
             }),
             withToString("Halffloat[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -2470,6 +2478,30 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
 
+    static short blend(short a, short b, boolean mask) {
+        return mask ? b : a;
+    }
+
+    @Test(dataProvider = "shortBinaryOpMaskProvider")
+    static void blendHalffloatMaxVectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb,
+                                          IntFunction<boolean[]> fm) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                av.blend(bv, vmask).intoArray(r, i);
+            }
+        }
+
+        assertArraysEquals(r, a, b, mask, HalffloatMaxVectorTests::blend);
+    }
+
     @Test(dataProvider = "shortCompareOpProvider")
     static void ltHalffloatMaxVectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -2668,7 +2700,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
                 av.blend((long)b[i], vmask).intoArray(r, i);
             }
         }
-       // assertBroadcastLongArraysEquals(r, a, b, mask, HalffloatMaxVectorTests::blend);
+        assertBroadcastLongArraysEquals(r, a, b, mask, HalffloatMaxVectorTests::blend);
     }
 
 

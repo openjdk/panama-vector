@@ -612,6 +612,7 @@ elif [ "$1" == "HALF_FLOAT_TYPE" ]; then
   gen_op_tmpl $binary_math_hf_template "POW+pow" "Math.pow(Float.float16ToFloat(a), Float.float16ToFloat(b))" "Halffloat"
   gen_op_tmpl $binary_math_hf_template "ATAN2" "Math.atan2(Float.float16ToFloat(a), Float.float16ToFloat(b))" "Halffloat"
   gen_op_tmpl $binary_math_broadcast_template "POW+pow" "Math.pow(Float.float16ToFloat(a), Float.float16ToFloat(b))" "Halffloat"
+  gen_op_tmpl $blend "blend" "Halffloat"
 fi
 
 # Miscellaneous Smoke Tests

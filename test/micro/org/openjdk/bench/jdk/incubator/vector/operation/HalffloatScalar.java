@@ -471,4 +471,23 @@ public class HalffloatScalar extends AbstractVectorBenchmark {
 
         bh.consume(rs);
     }
+
+    @Benchmark
+    public void blend(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        short[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                short b = bs[i];
+                boolean m = ms[i % ms.length];
+                rs[i] = (m ? b : a);
+            }
+        }
+
+        bh.consume(rs);
+    }
 }

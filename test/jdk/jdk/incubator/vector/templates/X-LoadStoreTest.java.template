@@ -247,21 +247,13 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
     static MemorySegment toSegment($type$[] a, IntFunction<MemorySegment> fb) {
         MemorySegment ms = fb.apply(a.length * SPECIES.elementSize() / 8);
         for (int i = 0; i < a.length; i++) {
-#if[Halffloat]
-            ms.set(ValueLayout.JAVA_SHORT, i * SPECIES.elementSize() / 8 , a[i]);
-#else[Halffloat]
-            ms.set(ValueLayout.JAVA_$TYPE$, i * SPECIES.elementSize() / 8 , a[i]);
-#end[Halffloat]
+            ms.set(ValueLayout.JAVA_$LayoutType$, i * SPECIES.elementSize() / 8 , a[i]);
         }
         return ms;
     }
 
     static $type$[] segmentToArray(MemorySegment ms) {
-#if[Halffloat]
-        return ms.toArray(ValueLayout.JAVA_SHORT);
-#else[Halffloat]
-        return ms.toArray(ValueLayout.JAVA_$TYPE$);
-#end[Halffloat]
+        return ms.toArray(ValueLayout.JAVA_$LayoutType$);
     }
 
 

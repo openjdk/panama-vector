@@ -975,6 +975,10 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
         }
     }
 
+    static float valueOf(int i) {
+        return (float) i;
+    }
+
     static int intCornerCaseValue(int i) {
         switch(i % 5) {
             case 0:
@@ -993,15 +997,15 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
     static final List<IntFunction<float[]>> INT_FLOAT_GENERATORS = List.of(
             withToString("float[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (float)(-i * 5));
+                            i -> valueOf(-i * 5));
             }),
             withToString("float[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (float)(i * 5));
+                            i -> valueOf(i * 5));
             }),
             withToString("float[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((float)(i + 1) == 0) ? 1 : (float)(i + 1)));
+                            i -> (((float)(i + 1) == 0) ? valueOf(1) : valueOf(i + 1)));
             }),
             withToString("float[intCornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1035,20 +1039,24 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
         }
     }
 
+    static float valueOf(long i) {
+        return (float) i;
+    }
+
     static final List<IntFunction<float[]>> LONG_FLOAT_GENERATORS = List.of(
             withToString("float[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (float)(-i * 5));
+                            i -> valueOf(-i * 5));
             }),
-            withToString("float[i * 5]", (int s) -> {
+            withToString("Halffloat[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (float)(i * 5));
+                            i -> valueOf(i * 5));
             }),
-            withToString("float[i + 1]", (int s) -> {
+            withToString("Halffloat[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((float)(i + 1) == 0) ? 1 : (float)(i + 1)));
+                            i -> (((float)(i + 1) == 0) ? valueOf(1) : valueOf(i + 1)));
             }),
-            withToString("float[cornerCaseValue(i)]", (int s) -> {
+            withToString("Halffloat[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> (float)longCornerCaseValue(i));
             })
@@ -1084,15 +1092,15 @@ public class FloatMaxVectorTests extends AbstractVectorTest {
     static final List<IntFunction<float[]>> FLOAT_GENERATORS = List.of(
             withToString("float[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (float)(-i * 5));
+                            i -> valueOf(-i * 5));
             }),
             withToString("float[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (float)(i * 5));
+                            i -> valueOf(i * 5));
             }),
             withToString("float[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((float)(i + 1) == 0) ? 1 : (float)(i + 1)));
+                            i -> (((float)(i + 1) == 0) ? valueOf(1) : valueOf(i + 1)));
             }),
             withToString("float[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
