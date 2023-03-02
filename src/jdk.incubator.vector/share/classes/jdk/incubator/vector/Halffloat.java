@@ -24,8 +24,6 @@
  */
 package jdk.incubator.vector;
 
-//import jdk.internal.vm.annotation.IntrinsicCandidate;
-
 /**
  * A specialized {@link Vector} representing an ordered immutable sequence of
  * {@code short} values.

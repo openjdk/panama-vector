@@ -897,7 +897,7 @@ public class Int64VectorTests extends AbstractVectorTest {
         }
     }
 
-    static int valueOf(int i) {
+    static int genValue(int i) {
         return (int) i;
     }
 
@@ -944,15 +944,15 @@ public class Int64VectorTests extends AbstractVectorTest {
     static final List<IntFunction<int[]>> INT_GENERATORS = List.of(
             withToString("int[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("int[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("int[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((int)(i + 1) == 0) ? valueOf(1) : valueOf(i + 1)));
+                            i -> (((int)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("int[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,

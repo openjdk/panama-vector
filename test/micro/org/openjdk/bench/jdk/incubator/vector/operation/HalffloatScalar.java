@@ -61,12 +61,16 @@ public class HalffloatScalar extends AbstractVectorBenchmark {
     boolean[] ms, mt, rms;
     int[] ss;
 
+    static short genValue(int i) {
+        return Halffloat.valueOf(i);
+    }
+
     @Setup
     public void init() {
-        as = fill(i -> Halffloat.valueOf(2*i));
-        bs = fill(i -> Halffloat.valueOf(i+1));
-        cs = fill(i -> Halffloat.valueOf(i+5));
-        rs = fill(i -> Halffloat.valueOf(0));
+        as = fill(i -> genValue(2*i));
+        bs = fill(i -> genValue(i+1));
+        cs = fill(i -> genValue(i+5));
+        rs = fill(i -> genValue(0));
         ms = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);
         rms = fillMask(size, i -> false);

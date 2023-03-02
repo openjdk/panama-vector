@@ -973,7 +973,7 @@ public class Halffloat64VectorTests extends AbstractVectorTest {
         }
     }
 
-    static short valueOf(int i) {
+    static short genValue(int i) {
         return (short) Halffloat.valueOf(i);
     }
 
@@ -995,15 +995,15 @@ public class Halffloat64VectorTests extends AbstractVectorTest {
     static final List<IntFunction<short[]>> INT_HALFFLOAT_GENERATORS = List.of(
             withToString("Halffloat[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("Halffloat[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("Halffloat[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((short)(i + 1) == 0) ? valueOf(1) : valueOf(i + 1)));
+                            i -> (((short)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("Halffloat[intCornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1037,22 +1037,22 @@ public class Halffloat64VectorTests extends AbstractVectorTest {
         }
     }
 
-    static short valueOf(long i) {
+    static short genValue(long i) {
         return (short) Halffloat.valueOf(i);
     }
 
     static final List<IntFunction<short[]>> LONG_HALFFLOAT_GENERATORS = List.of(
             withToString("Halffloat[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("Halffloat[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("Halffloat[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((short)(i + 1) == 0) ? valueOf(1) : valueOf(i + 1)));
+                            i -> (((short)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("Halffloat[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1090,15 +1090,15 @@ public class Halffloat64VectorTests extends AbstractVectorTest {
     static final List<IntFunction<short[]>> HALFFLOAT_GENERATORS = List.of(
             withToString("Halffloat[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("Halffloat[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("Halffloat[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((short)(i + 1) == 0) ? valueOf(1) : valueOf(i + 1)));
+                            i -> (((short)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("Halffloat[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1434,11 +1434,6 @@ public class Halffloat64VectorTests extends AbstractVectorTest {
         HalffloatVector three3 = three2.broadcast(Halffloat.valueOf(1)).broadcast(Halffloat.valueOf(-3));
         assert(three.eq(three3).allTrue());
         int scale = 2;
-        Class<?> ETYPE = short.class;
-        if (ETYPE == double.class || ETYPE == long.class)
-            scale = 1000000;
-        else if (ETYPE == byte.class && SPECIES.length() >= 64)
-            scale = 1;
         HalffloatVector higher = three.addIndex(scale);
         VectorMask<Halffloat> m = three.compare(VectorOperators.LE, higher);
         assert(m.allTrue());

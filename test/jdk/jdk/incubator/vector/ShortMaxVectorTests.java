@@ -902,7 +902,7 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static short valueOf(int i) {
+    static short genValue(int i) {
         return (short) i;
     }
 
@@ -949,15 +949,15 @@ public class ShortMaxVectorTests extends AbstractVectorTest {
     static final List<IntFunction<short[]>> SHORT_GENERATORS = List.of(
             withToString("short[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("short[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("short[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((short)(i + 1) == 0) ? valueOf(1) : valueOf(i + 1)));
+                            i -> (((short)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("short[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,

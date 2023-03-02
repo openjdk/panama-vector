@@ -73,15 +73,17 @@ public class Halffloat64Vector extends AbstractVectorBenchmark {
     boolean[] m, mt, rm;
     int[] s;
 
+    static short genValue(int i) {
+        return Halffloat.valueOf(i);
+    }
+
     @Setup
     public void init() {
         size += size % SPECIES.length(); // FIXME: add post-loops
-
-        a = fill(i -> Halffloat.valueOf(2*i));
-        b = fill(i -> Halffloat.valueOf(i+1));
-        c = fill(i -> Halffloat.valueOf(i+5));
-        r = fill(i -> Halffloat.valueOf(0));
-
+        a = fill(i -> genValue(2*i));
+        b = fill(i -> genValue(i+1));
+        c = fill(i -> genValue(i+5));
+        r = fill(i -> genValue(0));
         m = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);
         rm = fillMask(size, i -> false);

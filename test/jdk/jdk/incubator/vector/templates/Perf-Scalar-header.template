@@ -66,19 +66,20 @@ public class $Type$Scalar extends AbstractVectorBenchmark {
     boolean[] ms, mt, rms;
     int[] ss;
 
+    static $type$ genValue(int i) {
+#if[Halffloat]
+        return Halffloat.valueOf(i);
+#else[Halffloat]
+        return ($type$) i;
+#end[Halffloat]
+    }
+
     @Setup
     public void init() {
-#if[Halffloat]
-        as = fill(i -> Halffloat.valueOf(2*i));
-        bs = fill(i -> Halffloat.valueOf(i+1));
-        cs = fill(i -> Halffloat.valueOf(i+5));
-        rs = fill(i -> Halffloat.valueOf(0));
-#else[Halffloat]
-        as = fill(i -> ($type$)(2*i));
-        bs = fill(i -> ($type$)(i+1));
-        cs = fill(i -> ($type$)(i+5));
-        rs = fill(i -> ($type$)0);
-#end[Halffloat]
+        as = fill(i -> genValue(2*i));
+        bs = fill(i -> genValue(i+1));
+        cs = fill(i -> genValue(i+5));
+        rs = fill(i -> genValue(0));
         ms = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);
         rms = fillMask(size, i -> false);

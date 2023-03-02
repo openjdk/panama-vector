@@ -2693,7 +2693,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 $abstractvectortype$ iota = s.iota();
                 $type$ sc = ($type$) scale_;
 #if[FP16]
-                return v.add(sc == 1 ? iota : iota.mul(Halffloat.valueOf((float) sc)));
+                return v.add(sc == 1 ? iota : iota.mul(Float.floatToFloat16((float) sc)));
 #else[FP16]
                 return v.add(sc == 1 ? iota : iota.mul(sc));
 #end[FP16]

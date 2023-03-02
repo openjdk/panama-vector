@@ -975,7 +975,7 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static double valueOf(int i) {
+    static double genValue(int i) {
         return (double) i;
     }
 
@@ -997,15 +997,15 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
     static final List<IntFunction<double[]>> INT_DOUBLE_GENERATORS = List.of(
             withToString("double[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("double[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("double[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((double)(i + 1) == 0) ? valueOf(1) : valueOf(i + 1)));
+                            i -> (((double)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("double[intCornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1039,22 +1039,22 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static double valueOf(long i) {
+    static double genValue(long i) {
         return (double) i;
     }
 
     static final List<IntFunction<double[]>> LONG_DOUBLE_GENERATORS = List.of(
             withToString("double[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("Halffloat[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("Halffloat[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((double)(i + 1) == 0) ? valueOf(1) : valueOf(i + 1)));
+                            i -> (((double)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("Halffloat[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1081,15 +1081,15 @@ public class DoubleMaxVectorTests extends AbstractVectorTest {
     static final List<IntFunction<double[]>> DOUBLE_GENERATORS = List.of(
             withToString("double[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("double[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> valueOf(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("double[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((double)(i + 1) == 0) ? valueOf(1) : valueOf(i + 1)));
+                            i -> (((double)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("double[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,

@@ -72,15 +72,17 @@ public class Float64Vector extends AbstractVectorBenchmark {
     boolean[] m, mt, rm;
     int[] s;
 
+    static float genValue(int i) {
+        return (float) i;
+    }
+
     @Setup
     public void init() {
         size += size % SPECIES.length(); // FIXME: add post-loops
-
-        a = fill(i -> (float)(2*i));
-        b = fill(i -> (float)(i+1));
-        c = fill(i -> (float)(i+5));
-        r = fill(i -> (float)0);
-
+        a = fill(i -> genValue(2*i));
+        b = fill(i -> genValue(i+1));
+        c = fill(i -> genValue(i+5));
+        r = fill(i -> genValue(0));
         m = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);
         rm = fillMask(size, i -> false);

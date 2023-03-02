@@ -2064,7 +2064,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
                 // and multiply.
                 HalffloatVector iota = s.iota();
                 short sc = (short) scale_;
-                return v.add(sc == 1 ? iota : iota.mul(Halffloat.valueOf((float) sc)));
+                return v.add(sc == 1 ? iota : iota.mul(Float.floatToFloat16((float) sc)));
             });
     }
 

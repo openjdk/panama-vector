@@ -283,7 +283,7 @@ abstract class AbstractMask<E> extends VectorMask<E> {
         VectorMask<E> badMask = null, badMask2 = null;
         if (vectorSpecies().elementType() == Halffloat.class) {
             badMask =
-                iota.compare(GE, iota.broadcast(Float.floatToFloat16((float)indexLimit)));
+                iota.compare(GE, Float.floatToFloat16((float)indexLimit));
         } else {
             badMask =
                 iota.compare(GE, iota.broadcast(indexLimit));
@@ -369,7 +369,7 @@ abstract class AbstractMask<E> extends VectorMask<E> {
         VectorMask<E> badMask = null, badMask2 = null;
         if (vectorSpecies().elementType() == Halffloat.class) {
             badMask =
-                iota.compare(GE, iota.broadcast(Float.floatToFloat16((float)indexLimit)));
+                iota.compare(GE, Float.floatToFloat16((float)indexLimit));
         } else {
             badMask =
                 iota.compare(GE, iota.broadcast(indexLimit));
