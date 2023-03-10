@@ -583,15 +583,15 @@ if [ "$1" == "ALL_PRIM_TYPES" ]; then
   gen_unary_alu_op "REVERSE_BYTES" "a" "byte"
 
 elif [ "$1" == "HALF_FLOAT_TYPE" ]; then
-  gen_binary_alu_op "ADD" "Halffloat.valueOf((Halffloat.valueOf(a).floatValue() + Halffloat.valueOf(b).floatValue()))" "Halffloat"
-  gen_binary_alu_op "SUB" "Halffloat.valueOf((Halffloat.valueOf(a).floatValue() - Halffloat.valueOf(b).floatValue()))" "Halffloat"
-  gen_binary_alu_op "MUL" "Halffloat.valueOf((Halffloat.valueOf(a).floatValue() \* Halffloat.valueOf(b).floatValue()))" "Halffloat"
-  gen_binary_alu_op "DIV" "Halffloat.valueOf((Halffloat.valueOf(a).floatValue() \/ Halffloat.valueOf(b).floatValue()))" "Halffloat"
-  gen_binary_alu_op "MAX" "Halffloat.valueOf(Math.max(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()))" "Halffloat"
-  gen_binary_alu_op "MIN" "Halffloat.valueOf(Math.min(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()))" "Halffloat"
+  gen_binary_alu_op "ADD" "Float.floatToFloat16(Float.float16ToFloat(a) + Float.float16ToFloat(b))" "Halffloat"
+  gen_binary_alu_op "SUB" "Float.floatToFloat16(Float.float16ToFloat(a) - Float.float16ToFloat(b))" "Halffloat"
+  gen_binary_alu_op "MUL" "Float.floatToFloat16(Float.float16ToFloat(a) \* Float.float16ToFloat(b))" "Halffloat"
+  gen_binary_alu_op "DIV" "Float.floatToFloat16(Float.float16ToFloat(a) \/ Float.float16ToFloat(b))" "Halffloat"
+  gen_binary_alu_op "MAX" "Float.floatToFloat16(Math.max(Float.float16ToFloat(a), Float.float16ToFloat(b)))" "Halffloat"
+  gen_binary_alu_op "MIN" "Halffloat.valueOf(Math.min(Float.float16ToFloat(a), Float.float16ToFloat(b)))" "Halffloat"
   gen_unary_alu_op "ABS+abs" "Math.abs(a)" "Halffloat"
   gen_unary_alu_op "NEG+neg" "-a" "Halffloat"
-  gen_ternary_alu_op "FMA+fma" "Halffloat.valueOf(Math.fma(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue(), Halffloat.valueOf(c).floatValue()))" "Halffloat"
+  gen_ternary_alu_op "FMA+fma" "Float.floatToFloat16(Math.fma(Float.float16ToFloat(a), Float.float16ToFloat(b), Float.float16ToFloat(c)))" "Halffloat"
   gen_unary_alu_op "SQRT+sqrt" "Halffloat.valueOf((float) Math.sqrt(Float.float16ToFloat(a)))" "Halffloat"
   gen_op_tmpl $unary_math_hf_template "SIN" "Math.sin(Float.float16ToFloat(a))" "Halffloat"
   gen_op_tmpl $unary_math_hf_template "EXP" "Math.exp(Float.float16ToFloat(a))" "Halffloat"
@@ -612,6 +612,7 @@ elif [ "$1" == "HALF_FLOAT_TYPE" ]; then
   gen_op_tmpl $binary_math_hf_template "POW+pow" "Math.pow(Float.float16ToFloat(a), Float.float16ToFloat(b))" "Halffloat"
   gen_op_tmpl $binary_math_hf_template "ATAN2" "Math.atan2(Float.float16ToFloat(a), Float.float16ToFloat(b))" "Halffloat"
   gen_op_tmpl $binary_math_broadcast_template "POW+pow" "Math.pow(Float.float16ToFloat(a), Float.float16ToFloat(b))" "Halffloat"
+  gen_op_tmpl $blend "blend" "Halffloat"
 fi
 
 # Miscellaneous Smoke Tests

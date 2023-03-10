@@ -4018,7 +4018,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
     public final
     HalffloatVector
     viewAsFloatingLanes() {
-        LaneType flt = LaneType.SHORT.asFloating();
+        LaneType flt = LaneType.HALFFLOAT.asFloating();
         return (HalffloatVector) asVectorRaw(flt);
     }
 

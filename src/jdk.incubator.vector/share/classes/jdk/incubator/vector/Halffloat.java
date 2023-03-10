@@ -24,8 +24,6 @@
  */
 package jdk.incubator.vector;
 
-import jdk.internal.vm.annotation.IntrinsicCandidate;
-
 /**
  * A specialized {@link Vector} representing an ordered immutable sequence of
  * {@code short} values.
@@ -138,7 +136,7 @@ public final class Halffloat extends Number implements Comparable<Halffloat>{
      * @return short value of float provided
     */
     public static short shortToShortBits(short bits) {
-        return bits;
+        return shortToRawShortBits(bits);
     }
 
     /**
@@ -150,5 +148,27 @@ public final class Halffloat extends Number implements Comparable<Halffloat>{
         float f1 = floatValue();
         float f2 = hf.floatValue();
         return Float.compare(f1, f2);
+    }
+
+    /**
+       Compares two halffloats
+     * @param h1 value to be compared
+     * @param h2 value to be compared
+     * @return 0, 1, -1
+    */
+    public static int compare(short h1, short h2) {
+        float f1 = Float.float16ToFloat(h1);
+        float f2 = Float.float16ToFloat(h2);
+        return Float.compare(f1, f2);
+    }
+
+    /**
+     * Checks if value is NaN
+     * @param hf value to be compared
+     * @return boolean
+    */
+    public boolean isNaN(Halffloat hf) {
+        float f1 = hf.floatValue();
+        return Float.isNaN(f1);
     }
 }

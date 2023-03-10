@@ -897,6 +897,10 @@ public class Byte512VectorTests extends AbstractVectorTest {
         }
     }
 
+    static byte genValue(int i) {
+        return (byte) i;
+    }
+
 
     static void assertArraysEquals(int[] r, byte[] a, int offs) {
         int i = 0;
@@ -950,15 +954,15 @@ public class Byte512VectorTests extends AbstractVectorTest {
     static final List<IntFunction<byte[]>> BYTE_GENERATORS = List.of(
             withToString("byte[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (byte)(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("byte[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (byte)(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("byte[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((byte)(i + 1) == 0) ? 1 : (byte)(i + 1)));
+                            i -> (((byte)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("byte[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,

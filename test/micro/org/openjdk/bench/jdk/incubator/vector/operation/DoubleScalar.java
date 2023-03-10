@@ -60,12 +60,16 @@ public class DoubleScalar extends AbstractVectorBenchmark {
     boolean[] ms, mt, rms;
     int[] ss;
 
+    static double genValue(int i) {
+        return (double) i;
+    }
+
     @Setup
     public void init() {
-        as = fill(i -> (double)(2*i));
-        bs = fill(i -> (double)(i+1));
-        cs = fill(i -> (double)(i+5));
-        rs = fill(i -> (double)0);
+        as = fill(i -> genValue(2*i));
+        bs = fill(i -> genValue(i+1));
+        cs = fill(i -> genValue(i+5));
+        rs = fill(i -> genValue(0));
         ms = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);
         rms = fillMask(size, i -> false);

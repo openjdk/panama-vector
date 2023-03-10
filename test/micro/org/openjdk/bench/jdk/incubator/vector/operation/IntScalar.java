@@ -61,12 +61,16 @@ public class IntScalar extends AbstractVectorBenchmark {
     boolean[] ms, mt, rms;
     int[] ss;
 
+    static int genValue(int i) {
+        return (int) i;
+    }
+
     @Setup
     public void init() {
-        as = fill(i -> (int)(2*i));
-        bs = fill(i -> (int)(i+1));
-        cs = fill(i -> (int)(i+5));
-        rs = fill(i -> (int)0);
+        as = fill(i -> genValue(2*i));
+        bs = fill(i -> genValue(i+1));
+        cs = fill(i -> genValue(i+5));
+        rs = fill(i -> genValue(0));
         ms = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);
         rms = fillMask(size, i -> false);

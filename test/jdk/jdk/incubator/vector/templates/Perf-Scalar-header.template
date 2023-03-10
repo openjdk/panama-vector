@@ -28,6 +28,9 @@ package org.openjdk.bench.jdk.incubator.vector.operation;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
 
+#if[Halffloat]
+import jdk.incubator.vector.Halffloat;
+#end[Halffloat]
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -47,7 +50,7 @@ public class $Type$Scalar extends AbstractVectorBenchmark {
     @Param("1024")
     int size;
 
-    $type$[] fill(IntFunction<$Wideboxtype$> f) {
+    $type$[] fill(IntFunction<$VecEleType$> f) {
         $type$[] array = new $type$[size];
         for (int i = 0; i < array.length; i++) {
             array[i] = f.apply(i);
@@ -63,12 +66,20 @@ public class $Type$Scalar extends AbstractVectorBenchmark {
     boolean[] ms, mt, rms;
     int[] ss;
 
+    static $type$ genValue(int i) {
+#if[Halffloat]
+        return Halffloat.valueOf(i);
+#else[Halffloat]
+        return ($type$) i;
+#end[Halffloat]
+    }
+
     @Setup
     public void init() {
-        as = fill(i -> ($type$)(2*i));
-        bs = fill(i -> ($type$)(i+1));
-        cs = fill(i -> ($type$)(i+5));
-        rs = fill(i -> ($type$)0);
+        as = fill(i -> genValue(2*i));
+        bs = fill(i -> genValue(i+1));
+        cs = fill(i -> genValue(i+5));
+        rs = fill(i -> genValue(0));
         ms = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);
         rms = fillMask(size, i -> false);

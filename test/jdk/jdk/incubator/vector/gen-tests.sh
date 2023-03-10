@@ -64,6 +64,8 @@ generate_test_cases() {
     fptype=$type
     Fptype=$Type
     Boxfptype=$Boxtype
+    ClassType=$type
+    LayoutType=$TYPE
 
     case $type in
       byte)
@@ -111,18 +113,20 @@ generate_test_cases() {
         ;;
       halffloat)
         VecEleType=Short
+        ClassType=Halffloat
+        LayoutType=SHORT
         kind=FP
         bitstype=short
         Bitstype=Short
         Boxbitstype=Short
         Wideboxtype=Halffloat
-        args="$args -Dtype=short -DType=Short -DTYPE=SHORT -DElementType=Halffloat"
+        args="$args -Dtype=short -DType=Halffloat -DTYPE=HALFFLOAT -DElementType=Halffloat"
         ;;
       esac
 
     args="$args -K$kind -K$Type -DBoxtype=$Boxtype -DWideboxtype=$Wideboxtype -DMaxValue=$MaxValue -DMinValue=$MinValue"
-    args="$args -Dbitstype=$bitstype -DBitstype=$Bitstype -DBoxbitstype=$Boxbitstype -DElementType=$Type -DVecEleType=$VecEleType"
-    args="$args -Dfptype=$fptype -DFptype=$Fptype -DBoxfptype=$Boxfptype"
+    args="$args -Dbitstype=$bitstype -DBitstype=$Bitstype -DBoxbitstype=$Boxbitstype -DElementType=$Type -DVecEleType=$VecEleType -DClassType=$ClassType"
+    args="$args -Dfptype=$fptype -DFptype=$Fptype -DBoxfptype=$Boxfptype -DLayoutType=$LayoutType"
 
     abstractvectortype=${typeprefix}${Type}Vector
     abstractvectorteststype=${typeprefix}${Type}VectorTests
@@ -169,7 +173,6 @@ generate_test_cases() {
         ;;
       esac
 
-      if [ $1 == "ALL_PRIM_TYPES" ]; then
         if [ $generate_perf_tests == true ]; then
           # Generate jmh performance tests
           case $vectorbenchtype in
@@ -188,10 +191,8 @@ generate_test_cases() {
             ;;
           esac
         fi
-      fi
     done
 
-    if [ $1 == "ALL_PRIM_TYPES" ]; then
       if [ $generate_perf_tests == true ]; then
         # Generate jmh performance tests
         case ${Type}Scalar in
@@ -209,7 +210,6 @@ generate_test_cases() {
           ;;
         esac
       fi
-    fi
     # Generate tests for loads and stores
     # For each size
     for bits in 64 128 256 512 Max
@@ -264,7 +264,7 @@ esac
 . config.sh
 
 # Detect whether to generate the performance tests
-generate_perf_tests=false
+generate_perf_tests=true
 if [ -d "$PERF_DEST" ]; then
   generate_perf_tests=true
 fi

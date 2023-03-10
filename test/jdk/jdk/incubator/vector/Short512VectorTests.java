@@ -897,6 +897,10 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+    static short genValue(int i) {
+        return (short) i;
+    }
+
 
     static void assertArraysEquals(int[] r, short[] a, int offs) {
         int i = 0;
@@ -940,15 +944,15 @@ public class Short512VectorTests extends AbstractVectorTest {
     static final List<IntFunction<short[]>> SHORT_GENERATORS = List.of(
             withToString("short[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short)(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("short[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short)(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("short[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((short)(i + 1) == 0) ? 1 : (short)(i + 1)));
+                            i -> (((short)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("short[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1382,9 +1386,14 @@ public class Short512VectorTests extends AbstractVectorTest {
         Assert.assertEquals(asIntegral.species(), SPECIES);
     }
 
-    @Test(expectedExceptions = UnsupportedOperationException.class)
+    @Test
     void viewAsFloatingLanesTest() {
-        SPECIES.zero().viewAsFloatingLanes();
+        Vector<?> asFloating = SPECIES.zero().viewAsFloatingLanes();
+        VectorSpecies<?> asFloatingSpecies = asFloating.species();
+        Assert.assertNotEquals(asFloatingSpecies.elementType(), SPECIES.elementType());
+        Assert.assertEquals(asFloatingSpecies.vectorShape(), SPECIES.vectorShape());
+        Assert.assertEquals(asFloatingSpecies.length(), SPECIES.length());
+        Assert.assertEquals(asFloating.viewAsIntegralLanes().species(), SPECIES);
     }
 
     @Test

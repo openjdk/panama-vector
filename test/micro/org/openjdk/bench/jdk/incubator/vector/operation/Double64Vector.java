@@ -72,15 +72,17 @@ public class Double64Vector extends AbstractVectorBenchmark {
     boolean[] m, mt, rm;
     int[] s;
 
+    static double genValue(int i) {
+        return (double) i;
+    }
+
     @Setup
     public void init() {
         size += size % SPECIES.length(); // FIXME: add post-loops
-
-        a = fill(i -> (double)(2*i));
-        b = fill(i -> (double)(i+1));
-        c = fill(i -> (double)(i+5));
-        r = fill(i -> (double)0);
-
+        a = fill(i -> genValue(2*i));
+        b = fill(i -> genValue(i+1));
+        c = fill(i -> genValue(i+5));
+        r = fill(i -> genValue(0));
         m = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);
         rm = fillMask(size, i -> false);

@@ -854,6 +854,10 @@ public class Long512VectorTests extends AbstractVectorTest {
         }
     }
 
+    static long genValue(int i) {
+        return (long) i;
+    }
+
     static int intCornerCaseValue(int i) {
         switch(i % 5) {
             case 0:
@@ -872,15 +876,15 @@ public class Long512VectorTests extends AbstractVectorTest {
     static final List<IntFunction<long[]>> INT_LONG_GENERATORS = List.of(
             withToString("long[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (long)(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("long[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (long)(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("long[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((long)(i + 1) == 0) ? 1 : (long)(i + 1)));
+                            i -> (((long)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("long[intCornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -930,15 +934,15 @@ public class Long512VectorTests extends AbstractVectorTest {
     static final List<IntFunction<long[]>> LONG_GENERATORS = List.of(
             withToString("long[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (long)(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("long[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (long)(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("long[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((long)(i + 1) == 0) ? 1 : (long)(i + 1)));
+                            i -> (((long)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("long[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,

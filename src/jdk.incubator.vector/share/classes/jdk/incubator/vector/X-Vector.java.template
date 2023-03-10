@@ -988,17 +988,17 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         switch (opc_) {
 #if[FP16]
             case VECTOR_OP_ADD: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() + Halffloat.valueOf(b).floatValue())));
+                    v0.bOp(v1, vm, (i, a, b) -> Float.floatToFloat16(Float.float16ToFloat(a) + Float.float16ToFloat(b)));
             case VECTOR_OP_SUB: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() - Halffloat.valueOf(b).floatValue())));
+                    v0.bOp(v1, vm, (i, a, b) -> Float.floatToFloat16(Float.float16ToFloat(a) - Float.float16ToFloat(b)));
             case VECTOR_OP_MUL: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() * Halffloat.valueOf(b).floatValue())));
+                    v0.bOp(v1, vm, (i, a, b) -> Float.floatToFloat16(Float.float16ToFloat(a) * Float.float16ToFloat(b)));
             case VECTOR_OP_DIV: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() / Halffloat.valueOf(b).floatValue())));
+                    v0.bOp(v1, vm, (i, a, b) -> Float.floatToFloat16(Float.float16ToFloat(a) / Float.float16ToFloat(b)));
             case VECTOR_OP_MAX: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf(Math.max(Halffloat.valueOf(a).floatValue(),Halffloat.valueOf(b).floatValue())));
+                    v0.bOp(v1, vm, (i, a, b) -> Float.floatToFloat16(Math.max(Float.float16ToFloat(a), Float.float16ToFloat(b))));
             case VECTOR_OP_MIN: return (v0, v1, vm) ->
-                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf(Math.min(Halffloat.valueOf(a).floatValue(),Halffloat.valueOf(b).floatValue())));
+                    v0.bOp(v1, vm, (i, a, b) -> Halffloat.valueOf(Math.min(Float.float16ToFloat(a), Float.float16ToFloat(b))));
 #else[FP16]
             case VECTOR_OP_ADD: return (v0, v1, vm) ->
                     v0.bOp(v1, vm, (i, a, b) -> ($type$)(a + b));
@@ -1367,8 +1367,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 #if[FP]
 #if[short]
             case VECTOR_OP_FMA: return (v0, v1_, v2_, m) -> v0.tOp(v1_, v2_, m, (i, a, b, c) ->
-                    Halffloat.valueOf(Math.fma(Halffloat.valueOf(a).floatValue(),
-                    Halffloat.valueOf(b).floatValue(), Halffloat.valueOf(c).floatValue())));
+                    Float.floatToFloat16(Math.fma(Float.float16ToFloat(a), Float.float16ToFloat(b), Float.float16ToFloat(c))));
 #else[short]
             case VECTOR_OP_FMA: return (v0, v1_, v2_, m) ->
                     v0.tOp(v1_, v2_, m, (i, a, b, c) -> Math.fma(a, b, c));
@@ -2538,12 +2537,12 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
             case BT_ge -> a >= b;
 #end[!short]
 #if[short]
-            case BT_eq -> Halffloat.valueOf(a).floatValue() == Halffloat.valueOf(b).floatValue();
-            case BT_ne -> Halffloat.valueOf(a).floatValue() != Halffloat.valueOf(b).floatValue();
-            case BT_lt -> Halffloat.valueOf(a).floatValue() < Halffloat.valueOf(b).floatValue();
-            case BT_le -> Halffloat.valueOf(a).floatValue() <= Halffloat.valueOf(b).floatValue();
-            case BT_gt -> Halffloat.valueOf(a).floatValue() > Halffloat.valueOf(b).floatValue();
-            case BT_ge -> Halffloat.valueOf(a).floatValue() >= Halffloat.valueOf(b).floatValue();
+            case BT_eq -> Float.float16ToFloat(a) == Float.float16ToFloat(b);
+            case BT_ne -> Float.float16ToFloat(a) != Float.float16ToFloat(b);
+            case BT_lt -> Float.float16ToFloat(a) < Float.float16ToFloat(b);
+            case BT_le -> Float.float16ToFloat(a) <= Float.float16ToFloat(b);
+            case BT_gt -> Float.float16ToFloat(a) > Float.float16ToFloat(b);
+            case BT_ge -> Float.float16ToFloat(a) >= Float.float16ToFloat(b);
 #end[short]
 #else[FP]
             case BT_eq -> a == b;
@@ -2693,7 +2692,11 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 // and multiply.
                 $abstractvectortype$ iota = s.iota();
                 $type$ sc = ($type$) scale_;
+#if[FP16]
+                return v.add(sc == 1 ? iota : iota.mul(Float.floatToFloat16((float) sc)));
+#else[FP16]
                 return v.add(sc == 1 ? iota : iota.mul(sc));
+#end[FP16]
             });
     }
 
@@ -3418,13 +3421,13 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         switch (opc_) {
 #if[FP16]
             case VECTOR_OP_ADD: return (v, m) ->
-                    toBits(v.rOp(($type$)0, m, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() + Halffloat.valueOf(b).floatValue()))));
+                    toBits(v.rOp(($type$)0, m, (i, a, b) -> Float.floatToFloat16(Float.float16ToFloat(a) + Float.float16ToFloat(b))));
             case VECTOR_OP_MUL: return (v, m) ->
-                    toBits(v.rOp(($type$)1, m, (i, a, b) -> Halffloat.valueOf((Halffloat.valueOf(a).floatValue() * Halffloat.valueOf(b).floatValue()))));
+                    toBits(v.rOp(($type$)1, m, (i, a, b) -> Float.floatToFloat16(Float.float16ToFloat(b) * Float.float16ToFloat(b))));
             case VECTOR_OP_MIN: return (v, m) ->
-                    toBits(v.rOp(MAX_OR_INF, m, (i, a, b) -> Halffloat.valueOf(Math.min(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()))));
+                    toBits(v.rOp(MAX_OR_INF, m, (i, a, b) -> Float.floatToFloat16(Math.min(Float.float16ToFloat(a), Float.float16ToFloat(b)))));
             case VECTOR_OP_MAX: return (v, m) ->
-                    toBits(v.rOp(MIN_OR_INF, m, (i, a, b) -> Halffloat.valueOf(Math.max(Halffloat.valueOf(a).floatValue(), Halffloat.valueOf(b).floatValue()))));
+                    toBits(v.rOp(MIN_OR_INF, m, (i, a, b) -> Float.floatToFloat16(Math.max(Float.float16ToFloat(a), Float.float16ToFloat(b)))));
 #else[FP16]
             case VECTOR_OP_ADD: return (v, m) ->
                     toBits(v.rOp(($type$)0, m, (i, a, b) -> ($type$)(a + b)));
@@ -5390,7 +5393,11 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
 #if[FP]
         return this;
 #else[FP]
+#if[short]
+        LaneType flt = LaneType.HALFFLOAT.asFloating();
+#else[short]
         LaneType flt = LaneType.$TYPE$.asFloating();
+#end[short]
 #if[!byte]
         return ($Fptype$Vector) asVectorRaw(flt);
 #else[!byte]

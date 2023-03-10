@@ -61,12 +61,16 @@ public class LongScalar extends AbstractVectorBenchmark {
     boolean[] ms, mt, rms;
     int[] ss;
 
+    static long genValue(int i) {
+        return (long) i;
+    }
+
     @Setup
     public void init() {
-        as = fill(i -> (long)(2*i));
-        bs = fill(i -> (long)(i+1));
-        cs = fill(i -> (long)(i+5));
-        rs = fill(i -> (long)0);
+        as = fill(i -> genValue(2*i));
+        bs = fill(i -> genValue(i+1));
+        cs = fill(i -> genValue(i+5));
+        rs = fill(i -> genValue(0));
         ms = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);
         rms = fillMask(size, i -> false);

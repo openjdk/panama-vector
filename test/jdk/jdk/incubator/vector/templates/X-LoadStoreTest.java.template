@@ -247,13 +247,13 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
     static MemorySegment toSegment($type$[] a, IntFunction<MemorySegment> fb) {
         MemorySegment ms = fb.apply(a.length * SPECIES.elementSize() / 8);
         for (int i = 0; i < a.length; i++) {
-            ms.set(ValueLayout.JAVA_$TYPE$, i * SPECIES.elementSize() / 8 , a[i]);
+            ms.set(ValueLayout.JAVA_$LayoutType$, i * SPECIES.elementSize() / 8 , a[i]);
         }
         return ms;
     }
 
     static $type$[] segmentToArray(MemorySegment ms) {
-        return ms.toArray(ValueLayout.JAVA_$TYPE$);
+        return ms.toArray(ValueLayout.JAVA_$LayoutType$);
     }
 
 
@@ -482,7 +482,6 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
     }
 
 
-#if[!Halffloat]
     @Test(dataProvider = "$type$MemorySegmentProvider")
     static void loadStoreMemorySegment(IntFunction<$type$[]> fa,
                                        IntFunction<MemorySegment> fb,
@@ -596,9 +595,6 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
         assertArraysEquals(segmentToArray(r), _a, mask);
     }
 
-#else[!Halffloat]
-    // TODO: Fix and Enable loadStoreMemorySegment, loadMemorySegmentIOOBE, storeMemorySegmentIOOBE, loadStoreMemorySegmentMask
-#end[!Halffloat]
     @Test(dataProvider = "$type$ByteMaskProviderForIOOBE")
     static void loadMemorySegmentMaskIOOBE(IntFunction<$type$[]> fa, IntFunction<Integer> fi, IntFunction<boolean[]> fm) {
         MemorySegment a = toSegment(fa.apply(SPECIES.length()), i -> MemorySegment.allocateNative(i, ResourceScope.newImplicitScope()));
