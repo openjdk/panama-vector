@@ -661,14 +661,6 @@ final class Byte64Vector extends ByteVector {
                 (m, s) -> s.maskFactory(m.toArray()).check(s));
         }
 
-        @Override
-        @ForceInline
-        public Byte64Mask eq(VectorMask<Byte> mask) {
-            Objects.requireNonNull(mask);
-            Byte64Mask m = (Byte64Mask)mask;
-            return xor(m.not());
-        }
-
         // Unary operations
 
         @Override
@@ -708,9 +700,9 @@ final class Byte64Vector extends ByteVector {
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @Override
         @ForceInline
-        /* package-private */
-        Byte64Mask xor(VectorMask<Byte> mask) {
+        public Byte64Mask xor(VectorMask<Byte> mask) {
             Objects.requireNonNull(mask);
             Byte64Mask m = (Byte64Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, Byte64Mask.class, null, byte.class, VLENGTH,

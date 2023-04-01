@@ -637,14 +637,6 @@ final class LongMaxVector extends LongVector {
                 (m, s) -> s.maskFactory(m.toArray()).check(s));
         }
 
-        @Override
-        @ForceInline
-        public LongMaxMask eq(VectorMask<Long> mask) {
-            Objects.requireNonNull(mask);
-            LongMaxMask m = (LongMaxMask)mask;
-            return xor(m.not());
-        }
-
         // Unary operations
 
         @Override
@@ -684,9 +676,9 @@ final class LongMaxVector extends LongVector {
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @Override
         @ForceInline
-        /* package-private */
-        LongMaxMask xor(VectorMask<Long> mask) {
+        public LongMaxMask xor(VectorMask<Long> mask) {
             Objects.requireNonNull(mask);
             LongMaxMask m = (LongMaxMask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, LongMaxMask.class, null, long.class, VLENGTH,

@@ -709,14 +709,6 @@ final class Short512Vector extends ShortVector {
                 (m, s) -> s.maskFactory(m.toArray()).check(s));
         }
 
-        @Override
-        @ForceInline
-        public Short512Mask eq(VectorMask<Short> mask) {
-            Objects.requireNonNull(mask);
-            Short512Mask m = (Short512Mask)mask;
-            return xor(m.not());
-        }
-
         // Unary operations
 
         @Override
@@ -756,9 +748,9 @@ final class Short512Vector extends ShortVector {
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @Override
         @ForceInline
-        /* package-private */
-        Short512Mask xor(VectorMask<Short> mask) {
+        public Short512Mask xor(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             Short512Mask m = (Short512Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, Short512Mask.class, null, short.class, VLENGTH,

@@ -651,14 +651,6 @@ final class Long512Vector extends LongVector {
                 (m, s) -> s.maskFactory(m.toArray()).check(s));
         }
 
-        @Override
-        @ForceInline
-        public Long512Mask eq(VectorMask<Long> mask) {
-            Objects.requireNonNull(mask);
-            Long512Mask m = (Long512Mask)mask;
-            return xor(m.not());
-        }
-
         // Unary operations
 
         @Override
@@ -698,9 +690,9 @@ final class Long512Vector extends LongVector {
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @Override
         @ForceInline
-        /* package-private */
-        Long512Mask xor(VectorMask<Long> mask) {
+        public Long512Mask xor(VectorMask<Long> mask) {
             Objects.requireNonNull(mask);
             Long512Mask m = (Long512Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, Long512Mask.class, null, long.class, VLENGTH,

@@ -649,14 +649,6 @@ final class Int64Vector extends IntVector {
                 (m, s) -> s.maskFactory(m.toArray()).check(s));
         }
 
-        @Override
-        @ForceInline
-        public Int64Mask eq(VectorMask<Integer> mask) {
-            Objects.requireNonNull(mask);
-            Int64Mask m = (Int64Mask)mask;
-            return xor(m.not());
-        }
-
         // Unary operations
 
         @Override
@@ -696,9 +688,9 @@ final class Int64Vector extends IntVector {
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @Override
         @ForceInline
-        /* package-private */
-        Int64Mask xor(VectorMask<Integer> mask) {
+        public Int64Mask xor(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
             Int64Mask m = (Int64Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, Int64Mask.class, null, int.class, VLENGTH,

@@ -677,14 +677,6 @@ final class Byte128Vector extends ByteVector {
                 (m, s) -> s.maskFactory(m.toArray()).check(s));
         }
 
-        @Override
-        @ForceInline
-        public Byte128Mask eq(VectorMask<Byte> mask) {
-            Objects.requireNonNull(mask);
-            Byte128Mask m = (Byte128Mask)mask;
-            return xor(m.not());
-        }
-
         // Unary operations
 
         @Override
@@ -724,9 +716,9 @@ final class Byte128Vector extends ByteVector {
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @Override
         @ForceInline
-        /* package-private */
-        Byte128Mask xor(VectorMask<Byte> mask) {
+        public Byte128Mask xor(VectorMask<Byte> mask) {
             Objects.requireNonNull(mask);
             Byte128Mask m = (Byte128Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, Byte128Mask.class, null, byte.class, VLENGTH,

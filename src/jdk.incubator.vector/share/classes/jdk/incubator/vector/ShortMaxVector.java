@@ -647,14 +647,6 @@ final class ShortMaxVector extends ShortVector {
                 (m, s) -> s.maskFactory(m.toArray()).check(s));
         }
 
-        @Override
-        @ForceInline
-        public ShortMaxMask eq(VectorMask<Short> mask) {
-            Objects.requireNonNull(mask);
-            ShortMaxMask m = (ShortMaxMask)mask;
-            return xor(m.not());
-        }
-
         // Unary operations
 
         @Override
@@ -694,9 +686,9 @@ final class ShortMaxVector extends ShortVector {
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @Override
         @ForceInline
-        /* package-private */
-        ShortMaxMask xor(VectorMask<Short> mask) {
+        public ShortMaxMask xor(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             ShortMaxMask m = (ShortMaxMask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, ShortMaxMask.class, null, short.class, VLENGTH,

@@ -638,14 +638,6 @@ final class Double128Vector extends DoubleVector {
                 (m, s) -> s.maskFactory(m.toArray()).check(s));
         }
 
-        @Override
-        @ForceInline
-        public Double128Mask eq(VectorMask<Double> mask) {
-            Objects.requireNonNull(mask);
-            Double128Mask m = (Double128Mask)mask;
-            return xor(m.not());
-        }
-
         // Unary operations
 
         @Override
@@ -685,9 +677,9 @@ final class Double128Vector extends DoubleVector {
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @Override
         @ForceInline
-        /* package-private */
-        Double128Mask xor(VectorMask<Double> mask) {
+        public Double128Mask xor(VectorMask<Double> mask) {
             Objects.requireNonNull(mask);
             Double128Mask m = (Double128Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, Double128Mask.class, null, long.class, VLENGTH,

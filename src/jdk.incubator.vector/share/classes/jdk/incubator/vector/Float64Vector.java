@@ -638,14 +638,6 @@ final class Float64Vector extends FloatVector {
                 (m, s) -> s.maskFactory(m.toArray()).check(s));
         }
 
-        @Override
-        @ForceInline
-        public Float64Mask eq(VectorMask<Float> mask) {
-            Objects.requireNonNull(mask);
-            Float64Mask m = (Float64Mask)mask;
-            return xor(m.not());
-        }
-
         // Unary operations
 
         @Override
@@ -685,9 +677,9 @@ final class Float64Vector extends FloatVector {
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @Override
         @ForceInline
-        /* package-private */
-        Float64Mask xor(VectorMask<Float> mask) {
+        public Float64Mask xor(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             Float64Mask m = (Float64Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, Float64Mask.class, null, int.class, VLENGTH,
