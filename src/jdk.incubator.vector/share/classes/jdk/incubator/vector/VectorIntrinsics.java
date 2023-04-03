@@ -70,24 +70,40 @@ import java.util.Objects;
     }
 
     @ForceInline
-    static IntVector checkIndex(IntVector vix, int length) {
+    static void checkIndex(int baseOffset, IntVector offsetMap, int length) {
         switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
-            case 0: return vix; // no range check
+            case 0: return; // no range check
             case 1: // fall-through
             case 2:
-                if (vix.compare(VectorOperators.LT, 0)
-                    .or(vix.compare(VectorOperators.GE, length))
-                    .anyTrue()) {
-                    throw checkIndexFailed(vix, length);
+                if (length < 0 || offsetMap.add(length)
+                        .compare(VectorOperators.UNSIGNED_GE, length)
+                        .anyTrue()) {
+                    throw checkIndexFailed(baseOffset, offsetMap, length);
                 }
-                return vix;
+                return;
+            default: throw new InternalError();
+        }
+    }
+
+    @ForceInline
+    static void checkIndex(long baseOffset, LongVector offsetMap, long length) {
+        switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
+            case 0: return; // no range check
+            case 1: // fall-through
+            case 2:
+                if (length < 0 || offsetMap.add(length)
+                        .compare(VectorOperators.UNSIGNED_GE, length)
+                        .anyTrue()) {
+                    throw checkIndexFailed(baseOffset, offsetMap, length);
+                }
+                return;
             default: throw new InternalError();
         }
     }
 
     private static
-    IndexOutOfBoundsException checkIndexFailed(IntVector vix, int length) {
-        String msg = String.format("Range check failed: vector %s out of bounds for length %d", vix, length);
+    IndexOutOfBoundsException checkIndexFailed(long baseOffset, Vector<?> vix, long length) {
+        String msg = String.format("Range check failed: base %d map %s out of bounds for length %d", baseOffset, vix, length);
         return new IndexOutOfBoundsException(msg);
     }
 

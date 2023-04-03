@@ -456,29 +456,30 @@ public class VectorSupport {
     /* ============================================================================ */
 
     public interface LoadVectorOperationWithMap<C,
-                                                V extends Vector<?>,
-                                                S extends VectorSpecies<?>,
-                                                M extends VectorMask<?>> {
-        V loadWithMap(C container, int index, int[] indexMap, int indexM, S s, M m);
+                                                V extends Vector<E>,
+                                                IV extends Vector<IE>,
+                                                S extends VectorSpecies<E>,
+                                                M extends VectorMask<E>,
+                                                E, IE> {
+        V loadWithMap(C container, long baseIndex, IV indexMap, S s, M m);
     }
 
     @IntrinsicCandidate
     public static
     <C,
-     V extends Vector<?>,
-     W extends Vector<Integer>,
+     V extends Vector<E>,
+     IV extends Vector<IE>,
      S extends VectorSpecies<E>,
      M extends VectorMask<E>,
-     E>
+     E, IE>
     V loadWithMap(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
-                  int length,
-                  Class<? extends Vector<Integer>> vectorIndexClass,
-                  Object base, long offset,
-                  W index_vector,
-                  M m, C container, int index, int[] indexMap, int indexM, S s,
-                  LoadVectorOperationWithMap<C, V, S, M> defaultImpl) {
+                  int length, Class<? extends IV> ivClass, Class<IE> ieClass,
+                  Object base, long baseOffset,
+                  IV indexMap, long scale, M m,
+                  C container, long baseIndex, S s,
+                  LoadVectorOperationWithMap<C, V, IV, S, M, E, IE> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.loadWithMap(container, index, indexMap, indexM, s, m);
+        return defaultImpl.loadWithMap(container, baseIndex, indexMap, s, m);
     }
 
     /* ============================================================================ */

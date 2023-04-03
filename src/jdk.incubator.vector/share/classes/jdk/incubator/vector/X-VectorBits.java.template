@@ -1149,14 +1149,33 @@ final class $vectortype$ extends $abstractvectortype$ {
         return super.fromArray0Template($masktype$.class, a, offset, ($masktype$) m, offsetInRange);  // specialize
     }
 
-#if[!byteOrShort]
     @ForceInline
     @Override
     final
-    $abstractvectortype$ fromArray0($type$[] a, int offset, int[] indexMap, int mapOffset, VectorMask<$Boxtype$> m) {
-        return super.fromArray0Template($masktype$.class, a, offset, indexMap, mapOffset, ($masktype$) m);
+    $abstractvectortype$ fromArray0($type$[] a, int baseOffset, IntVector offsetMap) {
+        return super.fromArray0Template($masktype$.class, a, baseOffset, indices);
     }
-#end[!byteOrShort]
+
+    @ForceInline
+    @Override
+    final
+    $abstractvectortype$ fromArray0($type$[] a, int baseOffset, LongVector offsetMap) {
+        return super.fromArray0Template($masktype$.class, a, baseOffset, indices);
+    }
+
+    @ForceInline
+    @Override
+    final
+    $abstractvectortype$ fromArray0($type$[] a, int baseOffset, IntVector offsetMap, VectorMask<$Boxtype$> m) {
+        return super.fromArray0Template($masktype$.class, a, baseOffset, indices, ($masktype$) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    $abstractvectortype$ fromArray0($type$[] a, int baseOffset, LongVector offsetMap, VectorMask<$Boxtype$> m) {
+        return super.fromArray0Template($masktype$.class, a, baseOffset, indices, ($masktype$) m);
+    }
 
 #if[short]
     @ForceInline
