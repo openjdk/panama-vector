@@ -883,8 +883,17 @@ final class Float512Vector extends FloatVector {
     @ForceInline
     @Override
     final
-    FloatVector fromArray0(float[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Float> m) {
-        return super.fromArray0Template(Float512Mask.class, a, offset, indexMap, mapOffset, (Float512Mask) m);
+    <IV extends Vector<IE>, IE>
+    FloatVector fromArray0(Class<? extends IV> ivClass, Class<IE> ieClass, float[] a, IV offsetMap) {
+        return super.fromArray0Template(Float512Mask.class, ivClass, ieClass, a, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    FloatVector fromArray0(Class<? extends IV> ivClass, Class<IE> ieClass, float[] a, IV offsetMap, VectorMask<Float> m) {
+        return super.fromArray0Template(Float512Mask.class, ivClass, ieClass, a, offsetMap, (Float512Mask) m);
     }
 
 
@@ -906,6 +915,22 @@ final class Float512Vector extends FloatVector {
     @ForceInline
     @Override
     final
+    <IV extends Vector<IE>, IE>
+    FloatVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
+        return super.fromMemorySegment0Template(Float512Mask.class, ivClass, ieClass, ms, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    FloatVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Float> m) {
+        return super.fromMemorySegment0Template(Float512Mask.class, ivClass, ieClass, ms, offsetMap, (Float512Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
     void intoArray0(float[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
     }
@@ -920,8 +945,17 @@ final class Float512Vector extends FloatVector {
     @ForceInline
     @Override
     final
-    void intoArray0(float[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Float> m) {
-        super.intoArray0Template(Float512Mask.class, a, offset, indexMap, mapOffset, (Float512Mask) m);
+    <IV extends Vector<IE>, IE>
+    void intoArray0(Class<? extends IV> ivClass, Class<IE> ieClass, float[] a, IV offsetMap) {
+        super.intoArray0Template(Float512Mask.class, ivClass, ieClass, a, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoArray0(Class<? extends IV> ivClass, Class<IE> ieClass, float[] a, IV offsetMap, VectorMask<Float> m) {
+        super.intoArray0Template(Float512Mask.class, ivClass, ieClass, a, offsetMap, (Float512Mask) m);
     }
 
 
@@ -930,6 +964,22 @@ final class Float512Vector extends FloatVector {
     final
     void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Float> m) {
         super.intoMemorySegment0Template(Float512Mask.class, ms, offset, (Float512Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
+        super.intoMemorySegment0Template(Float512Mask.class, ivClass, ieClass, ms, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Float> m) {
+        super.intoMemorySegment0Template(Float512Mask.class, ivClass, ieClass, ms, offsetMap, (Float512Mask) m);
     }
 
 

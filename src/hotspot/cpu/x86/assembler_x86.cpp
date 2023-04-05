@@ -10639,7 +10639,7 @@ void Assembler::vpgatherdd(XMMRegister dst, Address src, XMMRegister mask, int v
   InstructionMark im(this);
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ true, /* no_mask_reg */ true, /* uses_vl */ true);
   vex_prefix(src, mask->encoding(), dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
-  emit_int8((unsigned char)0x90);
+  emit_int8(0x90);
   emit_operand(dst, src, 0);
 }
 
@@ -10652,7 +10652,7 @@ void Assembler::vpgatherdq(XMMRegister dst, Address src, XMMRegister mask, int v
   InstructionMark im(this);
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ true, /* no_mask_reg */ true, /* uses_vl */ true);
   vex_prefix(src, mask->encoding(), dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
-  emit_int8((unsigned char)0x90);
+  emit_int8(0x90);
   emit_operand(dst, src, 0);
 }
 
@@ -10665,7 +10665,7 @@ void Assembler::vgatherdpd(XMMRegister dst, Address src, XMMRegister mask, int v
   InstructionMark im(this);
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ true, /* no_mask_reg */ true, /* uses_vl */ true);
   vex_prefix(src, mask->encoding(), dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
-  emit_int8((unsigned char)0x92);
+  emit_int8(0x92);
   emit_operand(dst, src, 0);
 }
 
@@ -10678,7 +10678,7 @@ void Assembler::vgatherdps(XMMRegister dst, Address src, XMMRegister mask, int v
   InstructionMark im(this);
   InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ true, /* no_mask_reg */ false, /* uses_vl */ true);
   vex_prefix(src, mask->encoding(), dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
-  emit_int8((unsigned char)0x92);
+  emit_int8(0x92);
   emit_operand(dst, src, 0);
 }
 void Assembler::evpgatherdd(XMMRegister dst, KRegister mask, Address src, int vector_len) {
@@ -10695,7 +10695,7 @@ void Assembler::evpgatherdd(XMMRegister dst, KRegister mask, Address src, int ve
   attributes.set_is_evex_instruction();
   // swap src<->dst for encoding
   vex_prefix(src, 0, dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
-  emit_int8((unsigned char)0x90);
+  emit_int8(0x90);
   emit_operand(dst, src, 0);
 }
 
@@ -10707,13 +10707,13 @@ void Assembler::evpgatherdq(XMMRegister dst, KRegister mask, Address src, int ve
   assert(mask != k0, "instruction will #UD if mask is in k0");
   InstructionMark im(this);
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
-  attributes.set_address_attributes(/* tuple_type */ EVEX_T1S, /* input_size_in_bits */ EVEX_32bit);
+  attributes.set_address_attributes(/* tuple_type */ EVEX_T1S, /* input_size_in_bits */ EVEX_64bit);
   attributes.reset_is_clear_context();
   attributes.set_embedded_opmask_register_specifier(mask);
   attributes.set_is_evex_instruction();
   // swap src<->dst for encoding
   vex_prefix(src, 0, dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
-  emit_int8((unsigned char)0x90);
+  emit_int8(0x90);
   emit_operand(dst, src, 0);
 }
 
@@ -10725,13 +10725,13 @@ void Assembler::evgatherdpd(XMMRegister dst, KRegister mask, Address src, int ve
   assert(mask != k0, "instruction will #UD if mask is in k0");
   InstructionMark im(this);
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
-  attributes.set_address_attributes(/* tuple_type */ EVEX_T1S, /* input_size_in_bits */ EVEX_32bit);
+  attributes.set_address_attributes(/* tuple_type */ EVEX_T1S, /* input_size_in_bits */ EVEX_64bit);
   attributes.reset_is_clear_context();
   attributes.set_embedded_opmask_register_specifier(mask);
   attributes.set_is_evex_instruction();
   // swap src<->dst for encoding
   vex_prefix(src, 0, dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
-  emit_int8((unsigned char)0x92);
+  emit_int8(0x92);
   emit_operand(dst, src, 0);
 }
 
@@ -10749,7 +10749,130 @@ void Assembler::evgatherdps(XMMRegister dst, KRegister mask, Address src, int ve
   attributes.set_is_evex_instruction();
   // swap src<->dst for encoding
   vex_prefix(src, 0, dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
-  emit_int8((unsigned char)0x92);
+  emit_int8(0x92);
+  emit_operand(dst, src, 0);
+}
+
+void Assembler::vpgatherqd(XMMRegister dst, Address src, XMMRegister mask, int vector_len) {
+  assert(VM_Version::supports_avx2(), "");
+  assert(vector_len == Assembler::AVX_128bit || vector_len == Assembler::AVX_256bit, "");
+  assert(dst != xnoreg, "sanity");
+  assert(src.isxmmindex(),"expected to be xmm index");
+  assert(dst != src.xmmindex(), "instruction will #UD if dst and index are the same");
+  InstructionMark im(this);
+  InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ true, /* no_mask_reg */ true, /* uses_vl */ true);
+  vex_prefix(src, mask->encoding(), dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
+  emit_int8(0x91);
+  emit_operand(dst, src, 0);
+}
+
+void Assembler::vpgatherqq(XMMRegister dst, Address src, XMMRegister mask, int vector_len) {
+  assert(VM_Version::supports_avx2(), "");
+  assert(vector_len == Assembler::AVX_128bit || vector_len == Assembler::AVX_256bit, "");
+  assert(dst != xnoreg, "sanity");
+  assert(src.isxmmindex(),"expected to be xmm index");
+  assert(dst != src.xmmindex(), "instruction will #UD if dst and index are the same");
+  InstructionMark im(this);
+  InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ true, /* no_mask_reg */ true, /* uses_vl */ true);
+  vex_prefix(src, mask->encoding(), dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
+  emit_int8(0x91);
+  emit_operand(dst, src, 0);
+}
+
+void Assembler::vgatherqpd(XMMRegister dst, Address src, XMMRegister mask, int vector_len) {
+  assert(VM_Version::supports_avx2(), "");
+  assert(vector_len == Assembler::AVX_128bit || vector_len == Assembler::AVX_256bit, "");
+  assert(dst != xnoreg, "sanity");
+  assert(src.isxmmindex(),"expected to be xmm index");
+  assert(dst != src.xmmindex(), "instruction will #UD if dst and index are the same");
+  InstructionMark im(this);
+  InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ true, /* no_mask_reg */ true, /* uses_vl */ true);
+  vex_prefix(src, mask->encoding(), dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
+  emit_int8(0x93);
+  emit_operand(dst, src, 0);
+}
+
+void Assembler::vgatherqps(XMMRegister dst, Address src, XMMRegister mask, int vector_len) {
+  assert(VM_Version::supports_avx2(), "");
+  assert(vector_len == Assembler::AVX_128bit || vector_len == Assembler::AVX_256bit, "");
+  assert(dst != xnoreg, "sanity");
+  assert(src.isxmmindex(),"expected to be xmm index");
+  assert(dst != src.xmmindex(), "instruction will #UD if dst and index are the same");
+  InstructionMark im(this);
+  InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ true, /* no_mask_reg */ false, /* uses_vl */ true);
+  vex_prefix(src, mask->encoding(), dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
+  emit_int8(0x93);
+  emit_operand(dst, src, 0);
+}
+void Assembler::evpgatherqd(XMMRegister dst, KRegister mask, Address src, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
+  assert(dst != xnoreg, "sanity");
+  assert(src.isxmmindex(),"expected to be xmm index");
+  assert(dst != src.xmmindex(), "instruction will #UD if dst and index are the same");
+  assert(mask != k0, "instruction will #UD if mask is in k0");
+  InstructionMark im(this);
+  InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
+  attributes.set_address_attributes(/* tuple_type */ EVEX_T1S, /* input_size_in_bits */ EVEX_32bit);
+  attributes.reset_is_clear_context();
+  attributes.set_embedded_opmask_register_specifier(mask);
+  attributes.set_is_evex_instruction();
+  // swap src<->dst for encoding
+  vex_prefix(src, 0, dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
+  emit_int8(0x91);
+  emit_operand(dst, src, 0);
+}
+
+void Assembler::evpgatherqq(XMMRegister dst, KRegister mask, Address src, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
+  assert(dst != xnoreg, "sanity");
+  assert(src.isxmmindex(),"expected to be xmm index");
+  assert(dst != src.xmmindex(), "instruction will #UD if dst and index are the same");
+  assert(mask != k0, "instruction will #UD if mask is in k0");
+  InstructionMark im(this);
+  InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
+  attributes.set_address_attributes(/* tuple_type */ EVEX_T1S, /* input_size_in_bits */ EVEX_64bit);
+  attributes.reset_is_clear_context();
+  attributes.set_embedded_opmask_register_specifier(mask);
+  attributes.set_is_evex_instruction();
+  // swap src<->dst for encoding
+  vex_prefix(src, 0, dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
+  emit_int8(0x91);
+  emit_operand(dst, src, 0);
+}
+
+void Assembler::evgatherqpd(XMMRegister dst, KRegister mask, Address src, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
+  assert(dst != xnoreg, "sanity");
+  assert(src.isxmmindex(),"expected to be xmm index");
+  assert(dst != src.xmmindex(), "instruction will #UD if dst and index are the same");
+  assert(mask != k0, "instruction will #UD if mask is in k0");
+  InstructionMark im(this);
+  InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
+  attributes.set_address_attributes(/* tuple_type */ EVEX_T1S, /* input_size_in_bits */ EVEX_64bit);
+  attributes.reset_is_clear_context();
+  attributes.set_embedded_opmask_register_specifier(mask);
+  attributes.set_is_evex_instruction();
+  // swap src<->dst for encoding
+  vex_prefix(src, 0, dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
+  emit_int8(0x93);
+  emit_operand(dst, src, 0);
+}
+
+void Assembler::evgatherqps(XMMRegister dst, KRegister mask, Address src, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
+  assert(dst != xnoreg, "sanity");
+  assert(src.isxmmindex(),"expected to be xmm index");
+  assert(dst != src.xmmindex(), "instruction will #UD if dst and index are the same");
+  assert(mask != k0, "instruction will #UD if mask is in k0");
+  InstructionMark im(this);
+  InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
+  attributes.set_address_attributes(/* tuple_type */ EVEX_T1S, /* input_size_in_bits */ EVEX_32bit);
+  attributes.reset_is_clear_context();
+  attributes.set_embedded_opmask_register_specifier(mask);
+  attributes.set_is_evex_instruction();
+  // swap src<->dst for encoding
+  vex_prefix(src, 0, dst->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
+  emit_int8(0x93);
   emit_operand(dst, src, 0);
 }
 
@@ -10763,7 +10886,7 @@ void Assembler::evpscatterdd(Address dst, KRegister mask, XMMRegister src, int v
   attributes.set_embedded_opmask_register_specifier(mask);
   attributes.set_is_evex_instruction();
   vex_prefix(dst, 0, src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
-  emit_int8((unsigned char)0xA0);
+  emit_int8(0xA0);
   emit_operand(src, dst, 0);
 }
 
@@ -10772,12 +10895,12 @@ void Assembler::evpscatterdq(Address dst, KRegister mask, XMMRegister src, int v
   assert(mask != k0, "instruction will #UD if mask is in k0");
   InstructionMark im(this);
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
-  attributes.set_address_attributes(/* tuple_type */ EVEX_T1S, /* input_size_in_bits */ EVEX_32bit);
+  attributes.set_address_attributes(/* tuple_type */ EVEX_T1S, /* input_size_in_bits */ EVEX_64bit);
   attributes.reset_is_clear_context();
   attributes.set_embedded_opmask_register_specifier(mask);
   attributes.set_is_evex_instruction();
   vex_prefix(dst, 0, src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
-  emit_int8((unsigned char)0xA0);
+  emit_int8(0xA0);
   emit_operand(src, dst, 0);
 }
 
@@ -10791,7 +10914,7 @@ void Assembler::evscatterdps(Address dst, KRegister mask, XMMRegister src, int v
   attributes.set_embedded_opmask_register_specifier(mask);
   attributes.set_is_evex_instruction();
   vex_prefix(dst, 0, src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
-  emit_int8((unsigned char)0xA2);
+  emit_int8(0xA2);
   emit_operand(src, dst, 0);
 }
 
@@ -10800,14 +10923,71 @@ void Assembler::evscatterdpd(Address dst, KRegister mask, XMMRegister src, int v
   assert(mask != k0, "instruction will #UD if mask is in k0");
   InstructionMark im(this);
   InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
+  attributes.set_address_attributes(/* tuple_type */ EVEX_T1S, /* input_size_in_bits */ EVEX_64bit);
+  attributes.reset_is_clear_context();
+  attributes.set_embedded_opmask_register_specifier(mask);
+  attributes.set_is_evex_instruction();
+  vex_prefix(dst, 0, src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
+  emit_int8(0xA2);
+  emit_operand(src, dst, 0);
+}
+
+void Assembler::evpscatterqd(Address dst, KRegister mask, XMMRegister src, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
+  assert(mask != k0, "instruction will #UD if mask is in k0");
+  InstructionMark im(this);
+  InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
   attributes.set_address_attributes(/* tuple_type */ EVEX_T1S, /* input_size_in_bits */ EVEX_32bit);
   attributes.reset_is_clear_context();
   attributes.set_embedded_opmask_register_specifier(mask);
   attributes.set_is_evex_instruction();
   vex_prefix(dst, 0, src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
-  emit_int8((unsigned char)0xA2);
+  emit_int8(0xA1);
   emit_operand(src, dst, 0);
 }
+
+void Assembler::evpscatterqq(Address dst, KRegister mask, XMMRegister src, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
+  assert(mask != k0, "instruction will #UD if mask is in k0");
+  InstructionMark im(this);
+  InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
+  attributes.set_address_attributes(/* tuple_type */ EVEX_T1S, /* input_size_in_bits */ EVEX_64bit);
+  attributes.reset_is_clear_context();
+  attributes.set_embedded_opmask_register_specifier(mask);
+  attributes.set_is_evex_instruction();
+  vex_prefix(dst, 0, src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
+  emit_int8(0xA1);
+  emit_operand(src, dst, 0);
+}
+
+void Assembler::evscatterqps(Address dst, KRegister mask, XMMRegister src, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
+  assert(mask != k0, "instruction will #UD if mask is in k0");
+  InstructionMark im(this);
+  InstructionAttr attributes(vector_len, /* vex_w */ false, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
+  attributes.set_address_attributes(/* tuple_type */ EVEX_T1S, /* input_size_in_bits */ EVEX_32bit);
+  attributes.reset_is_clear_context();
+  attributes.set_embedded_opmask_register_specifier(mask);
+  attributes.set_is_evex_instruction();
+  vex_prefix(dst, 0, src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
+  emit_int8(0xA3);
+  emit_operand(src, dst, 0);
+}
+
+void Assembler::evscatterqpd(Address dst, KRegister mask, XMMRegister src, int vector_len) {
+  assert(VM_Version::supports_evex(), "");
+  assert(mask != k0, "instruction will #UD if mask is in k0");
+  InstructionMark im(this);
+  InstructionAttr attributes(vector_len, /* vex_w */ true, /* legacy_mode */ false, /* no_mask_reg */ false, /* uses_vl */ true);
+  attributes.set_address_attributes(/* tuple_type */ EVEX_T1S, /* input_size_in_bits */ EVEX_64bit);
+  attributes.reset_is_clear_context();
+  attributes.set_embedded_opmask_register_specifier(mask);
+  attributes.set_is_evex_instruction();
+  vex_prefix(dst, 0, src->encoding(), VEX_SIMD_66, VEX_OPCODE_0F_38, &attributes);
+  emit_int8(0xA3);
+  emit_operand(src, dst, 0);
+}
+
 // Carry-Less Multiplication Quadword
 void Assembler::pclmulqdq(XMMRegister dst, XMMRegister src, int mask) {
   assert(VM_Version::supports_clmul(), "");

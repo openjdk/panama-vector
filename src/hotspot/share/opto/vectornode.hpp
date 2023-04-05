@@ -855,20 +855,44 @@ class LoadVectorNode : public LoadNode {
   uint element_size(void) { return type2aelembytes(vect_type()->element_basic_type()); }
 };
 
-//------------------------------LoadVectorGatherNode------------------------------
+//------------------------------GatherNode------------------------------
 // Load Vector from memory via index map
-class LoadVectorGatherNode : public LoadVectorNode {
+class GatherNode : public LoadVectorNode {
  public:
-  LoadVectorGatherNode(Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, Node* indices)
+  GatherNode(Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, Node* indices, Node* scale)
     : LoadVectorNode(c, mem, adr, at, vt) {
-    init_class_id(Class_LoadVectorGather);
-    assert(indices->bottom_type()->is_vect(), "indices must be in vector");
+    init_class_id(Class_Gather);
+    const TypeVect* indices_vt = indices->bottom_type()->is_vect();
+    assert(indices_vt->length() == vt->length(), "indices must have the same length");
     add_req(indices);
-    assert(req() == MemNode::ValueIn + 1, "match_edge expects that last input is in MemNode::ValueIn");
+    add_req(scale);
+    assert(req() == MemNode::ValueIn + 2, "match_edge expects that last input is in MemNode::ValueIn");
   }
 
-  virtual int Opcode() const;
   virtual uint match_edge(uint idx) const { return idx == MemNode::Address || idx == MemNode::ValueIn; }
+
+  static int opcode(BasicType bt);
+  static GatherNode* make(int opc, Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, Node* indices, Node* scale);
+};
+
+class GatherINode : public GatherNode {
+ public:
+  GatherINode(Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, Node* indices, Node* scale)
+    : GatherNode(c, mem, adr, at, vt, indices, scale) {
+    assert(indices->bottom_type()->is_vect()->element_basic_type() == T_INT, "");
+  }
+
+  virtual int Opcode();
+};
+
+class GatherLNode : public GatherNode {
+ public:
+  GatherLNode(Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, Node* indices, Node* scale)
+    : GatherNode(c, mem, adr, at, vt, indices, scale) {
+    assert(indices->bottom_type()->is_vect()->element_basic_type() == T_LONG, "");
+  }
+
+  virtual int Opcode();
 };
 
 //------------------------------StoreVectorNode--------------------------------
@@ -902,22 +926,47 @@ class StoreVectorNode : public StoreNode {
   virtual uint size_of() const { return sizeof(*this); }
 };
 
-//------------------------------StoreVectorScatterNode------------------------------
+//------------------------------ScatterNode------------------------------
 // Store Vector into memory via index map
 
- class StoreVectorScatterNode : public StoreVectorNode {
-  public:
-   StoreVectorScatterNode(Node* c, Node* mem, Node* adr, const TypePtr* at, Node* val, Node* indices)
-     : StoreVectorNode(c, mem, adr, at, val) {
-     init_class_id(Class_StoreVectorScatter);
-     assert(indices->bottom_type()->is_vect(), "indices must be in vector");
-     add_req(indices);
-     assert(req() == MemNode::ValueIn + 2, "match_edge expects that last input is in MemNode::ValueIn+1");
-   }
-   virtual int Opcode() const;
-   virtual uint match_edge(uint idx) const { return idx == MemNode::Address ||
-                                                    idx == MemNode::ValueIn ||
-                                                    idx == MemNode::ValueIn + 1; }
+class ScatterNode : public StoreVectorNode {
+ public:
+  ScatterNode(Node* c, Node* mem, Node* adr, const TypePtr* at, Node* val, Node* indices, Node* scale)
+    : StoreVectorNode(c, mem, adr, at, val) {
+    init_class_id(Class_Scatter);
+    const TypeVect* indices_vt = indices->bottom_type()->is_vect();
+    assert(indices_vt->length() == val->bottom_type()->is_vect()->length(), "indices must have the same length");
+    add_req(indices);
+    add_req(scale);
+    assert(req() == MemNode::ValueIn + 3, "match_edge expects that last input is in MemNode::ValueIn+1");
+  }
+
+  virtual uint match_edge(uint idx) const { return idx == MemNode::Address ||
+                                                   idx == MemNode::ValueIn ||
+                                                   idx == MemNode::ValueIn + 1; }
+
+  static int opcode(BasicType bt);
+  static ScatterNode* make(int opc, Node* c, Node* mem, Node* adr, const TypePtr* at, Node* val, Node* indices, Node* scale);
+};
+
+class ScatterINode : public ScatterNode {
+ public:
+  ScatterINode(Node* c, Node* mem, Node* adr, const TypePtr* at, Node* val, Node* indices, Node* scale)
+    : ScatterNode(c, mem, adr, at, val, indices, scale) {
+    assert(indices->bottom_type()->is_vect()->element_basic_type() == T_INT, "");
+  }
+
+  virtual int Opcode();
+};
+
+class ScatterLNode : public ScatterNode {
+ public:
+  ScatterLNode(Node* c, Node* mem, Node* adr, const TypePtr* at, Node* val, Node* indices, Node* scale)
+    : ScatterNode(c, mem, adr, at, val, indices, scale) {
+    assert(indices->bottom_type()->is_vect()->element_basic_type() == T_LONG, "");
+  }
+
+  virtual int Opcode();
 };
 
 //------------------------------StoreVectorMaskedNode--------------------------------
@@ -959,45 +1008,95 @@ class LoadVectorMaskedNode : public LoadVectorNode {
   virtual Node* Ideal(PhaseGVN* phase, bool can_reshape);
 };
 
-//-------------------------------LoadVectorGatherMaskedNode---------------------------------
+//-------------------------------GatherMaskedNode---------------------------------
 // Load Vector from memory via index map under the influence of a predicate register(mask).
-class LoadVectorGatherMaskedNode : public LoadVectorNode {
+class GatherMaskedNode : public LoadVectorNode {
  public:
-  LoadVectorGatherMaskedNode(Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, Node* indices, Node* mask)
+  GatherMaskedNode(Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, Node* indices, Node* scale, Node* mask)
     : LoadVectorNode(c, mem, adr, at, vt) {
-    init_class_id(Class_LoadVectorGatherMasked);
-    assert(indices->bottom_type()->is_vect(), "indices must be in vector");
+    init_class_id(Class_GatherMasked);
+    const TypeVect* indices_vt = indices->bottom_type()->is_vect();
+    assert(indices_vt->length() == vt->length(), "indices must have the same length");
     assert(mask->bottom_type()->isa_vectmask(), "sanity");
     add_req(indices);
+    add_req(scale);
     add_req(mask);
-    assert(req() == MemNode::ValueIn + 2, "match_edge expects that last input is in MemNode::ValueIn+1");
+    assert(req() == MemNode::ValueIn + 3, "match_edge expects that last input is in MemNode::ValueIn+1");
   }
 
-  virtual int Opcode() const;
   virtual uint match_edge(uint idx) const { return idx == MemNode::Address ||
                                                    idx == MemNode::ValueIn ||
                                                    idx == MemNode::ValueIn + 1; }
+
+  static int opcode(BasicType bt);
+  static GatherMaskedNode* make(int opc, Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, Node* indices, Node* scale, Node* mask);
 };
 
-//------------------------------StoreVectorScatterMaskedNode--------------------------------
+class GatherIMaskedNode : public GatherMaskedNode {
+ public:
+  GatherIMaskedNode(Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, Node* indices, Node* scale, Node* mask)
+    : GatherMaskedNode(c, mem, adr, at, vt, indices, scale, mask) {
+    assert(indices->bottom_type()->is_vect()->element_basic_type() == T_INT, "");
+  }
+
+  virtual int Opcode();
+};
+
+class GatherLMaskedNode : public GatherMaskedNode {
+ public:
+  GatherLMaskedNode(Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, Node* indices, Node* scale, Node* mask)
+    : GatherMaskedNode(c, mem, adr, at, vt, indices, scale, mask) {
+    assert(indices->bottom_type()->is_vect()->element_basic_type() == T_LONG, "");
+  }
+
+  virtual int Opcode();
+};
+
+//------------------------------ScatterMaskedNode--------------------------------
 // Store Vector into memory via index map under the influence of a predicate register(mask).
-class StoreVectorScatterMaskedNode : public StoreVectorNode {
-  public:
-   StoreVectorScatterMaskedNode(Node* c, Node* mem, Node* adr, const TypePtr* at, Node* val, Node* indices, Node* mask)
-     : StoreVectorNode(c, mem, adr, at, val) {
-     init_class_id(Class_StoreVectorScatterMasked);
-     assert(indices->bottom_type()->is_vect(), "indices must be in vector");
-     assert(mask->bottom_type()->isa_vectmask(), "sanity");
-     add_req(indices);
-     add_req(mask);
-     assert(req() == MemNode::ValueIn + 3, "match_edge expects that last input is in MemNode::ValueIn+2");
-   }
-   virtual int Opcode() const;
-   virtual uint match_edge(uint idx) const { return idx == MemNode::Address ||
+class ScatterMaskedNode : public StoreVectorNode {
+ public:
+  ScatterMaskedNode(Node* c, Node* mem, Node* adr, const TypePtr* at, Node* val, Node* indices, Node* scale, Node* mask)
+    : StoreVectorNode(c, mem, adr, at, val) {
+    init_class_id(Class_ScatterMasked);
+    const TypeVect* indices_vt = indices->bottom_type()->is_vect();
+    assert(indices_vt->length() == val->bottom_type()->is_vect()->length(), "indices must have the same length");
+    assert(mask->bottom_type()->isa_vectmask(), "sanity");
+    add_req(indices);
+    add_req(scale);
+    add_req(mask);
+    assert(req() == MemNode::ValueIn + 4, "match_edge expects that last input is in MemNode::ValueIn+2");
+  }
+
+  virtual uint match_edge(uint idx) const { return idx == MemNode::Address ||
                                                     idx == MemNode::ValueIn ||
                                                     idx == MemNode::ValueIn + 1 ||
                                                     idx == MemNode::ValueIn + 2; }
+
+  static int opcode(BasicType bt);
+  static ScatterMaskedNode* make(int opc, Node* c, Node* mem, Node* adr, const TypePtr* at, Node* val, Node* indices, Node* scale, Node* mask);
 };
+
+class ScatterIMaskedNode : public ScatterMaskedNode {
+ public:
+  ScatterIMaskedNode(Node* c, Node* mem, Node* adr, const TypePtr* at, Node* val, Node* indices, Node* scale, Node* mask)
+    : ScatterMaskedNode(c, mem, adr, at, val, indices, scale, mask) {
+    assert(indices->bottom_type()->is_vect()->element_basic_type() == T_INT, "");
+  }
+
+  virtual int Opcode();
+};
+
+class ScatterLMaskedNode : public ScatterMaskedNode {
+ public:
+  ScatterLMaskedNode(Node* c, Node* mem, Node* adr, const TypePtr* at, Node* val, Node* indices, Node* scale, Node* mask)
+    : ScatterMaskedNode(c, mem, adr, at, val, indices, scale, mask) {
+    assert(indices->bottom_type()->is_vect()->element_basic_type() == T_LONG, "");
+  }
+
+  virtual int Opcode();
+};
+
 
 //------------------------------VectorCmpMaskedNode--------------------------------
 // Vector Comparison under the influence of a predicate register(mask).

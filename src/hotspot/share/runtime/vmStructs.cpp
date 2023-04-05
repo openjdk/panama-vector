@@ -1800,6 +1800,8 @@
   declare_c2_type(MinVNode, VectorNode)                                   \
   declare_c2_type(LoadVectorNode, LoadNode)                               \
   declare_c2_type(StoreVectorNode, StoreNode)                             \
+  declare_c2_type(LoadVectorMaskedNode, LoadVectorNode)                   \
+  declare_c2_type(StoreVectorMaskedNode, StoreVectorNode)                 \
   declare_c2_type(ReplicateBNode, VectorNode)                             \
   declare_c2_type(ReplicateSNode, VectorNode)                             \
   declare_c2_type(ReplicateINode, VectorNode)                             \
@@ -1844,8 +1846,18 @@
   declare_c2_type(IsInfiniteDNode, Node)                                  \
   declare_c2_type(IsFiniteFNode, Node)                                    \
   declare_c2_type(IsFiniteDNode, Node)                                    \
-  declare_c2_type(LoadVectorGatherNode, LoadVectorNode)                   \
-  declare_c2_type(StoreVectorScatterNode, StoreVectorNode)                \
+  declare_c2_type(GatherNode, LoadVectorNode)                             \
+  declare_c2_type(GatherINode, GatherNode)                                \
+  declare_c2_type(GatherLNode, GatherNode)                                \
+  declare_c2_type(ScatterNode, StoreVectorNode)                           \
+  declare_c2_type(ScatterINode, ScatterNode)                              \
+  declare_c2_type(ScatterLNode, ScatterNode)                              \
+  declare_c2_type(GatherMaskedNode, LoadVectorNode)                       \
+  declare_c2_type(GatherIMaskedNode, GatherMaskedNode)                    \
+  declare_c2_type(GatherLMaskedNode, GatherMaskedNode)                    \
+  declare_c2_type(ScatterMaskedNode, StoreVectorNode)                     \
+  declare_c2_type(ScatterIMaskedNode, ScatterMaskedNode)                  \
+  declare_c2_type(ScatterLMaskedNode, ScatterMaskedNode)                  \
   declare_c2_type(VectorLoadMaskNode, VectorNode)                         \
   declare_c2_type(VectorLoadShuffleNode, VectorNode)                      \
   declare_c2_type(VectorStoreMaskNode, VectorNode)                        \

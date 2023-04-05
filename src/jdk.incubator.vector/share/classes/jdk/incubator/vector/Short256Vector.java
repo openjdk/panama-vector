@@ -891,6 +891,21 @@ final class Short256Vector extends ShortVector {
         return super.fromArray0Template(Short256Mask.class, a, offset, (Short256Mask) m, offsetInRange);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    ShortVector fromArray0(Class<? extends IV> ivClass, Class<IE> ieClass, short[] a, IV offsetMap) {
+        return super.fromArray0Template(Short256Mask.class, ivClass, ieClass, a, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    ShortVector fromArray0(Class<? extends IV> ivClass, Class<IE> ieClass, short[] a, IV offsetMap, VectorMask<Short> m) {
+        return super.fromArray0Template(Short256Mask.class, ivClass, ieClass, a, offsetMap, (Short256Mask) m);
+    }
 
     @ForceInline
     @Override
@@ -904,6 +919,22 @@ final class Short256Vector extends ShortVector {
     final
     ShortVector fromCharArray0(char[] a, int offset, VectorMask<Short> m, int offsetInRange) {
         return super.fromCharArray0Template(Short256Mask.class, a, offset, (Short256Mask) m, offsetInRange);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    ShortVector fromCharArray0(Class<? extends IV> ivClass, Class<IE> ieClass, char[] a, IV offsetMap) {
+        return super.fromCharArray0Template(Short256Mask.class, ivClass, ieClass, a, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    ShortVector fromCharArray0(Class<? extends IV> ivClass, Class<IE> ieClass, char[] a, IV offsetMap, VectorMask<Short> m) {
+        return super.fromCharArray0Template(Short256Mask.class, ivClass, ieClass, a, offsetMap, (Short256Mask) m);
     }
 
 
@@ -924,6 +955,22 @@ final class Short256Vector extends ShortVector {
     @ForceInline
     @Override
     final
+    <IV extends Vector<IE>, IE>
+    ShortVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
+        return super.fromMemorySegment0Template(Short256Mask.class, ivClass, ieClass, ms, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    ShortVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Short> m) {
+        return super.fromMemorySegment0Template(Short256Mask.class, ivClass, ieClass, ms, offsetMap, (Short256Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
     void intoArray0(short[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
     }
@@ -935,6 +982,21 @@ final class Short256Vector extends ShortVector {
         super.intoArray0Template(Short256Mask.class, a, offset, (Short256Mask) m);
     }
 
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoArray0(Class<? extends IV> ivClass, Class<IE> ieClass, short[] a, IV offsetMap) {
+        super.intoArray0Template(Short256Mask.class, ivClass, ieClass, a, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoArray0(Class<? extends IV> ivClass, Class<IE> ieClass, short[] a, IV offsetMap, VectorMask<Short> m) {
+        super.intoArray0Template(Short256Mask.class, ivClass, ieClass, a, offsetMap, (Short256Mask) m);
+    }
 
 
     @ForceInline
@@ -947,8 +1009,40 @@ final class Short256Vector extends ShortVector {
     @ForceInline
     @Override
     final
+    <IV extends Vector<IE>, IE>
+    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
+        super.intoMemorySegment0Template(Short256Mask.class, ivClass, ieClass, ms, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Short> m) {
+        super.intoMemorySegment0Template(Short256Mask.class, ivClass, ieClass, ms, offsetMap, (Short256Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
     void intoCharArray0(char[] a, int offset, VectorMask<Short> m) {
         super.intoCharArray0Template(Short256Mask.class, a, offset, (Short256Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoCharArray0(Class<? extends IV> ivClass, Class<IE> ieClass, char[] a, IV offsetMap) {
+        super.intoCharArray0Template(Short256Mask.class, ivClass, ieClass, a, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoCharArray0(Class<? extends IV> ivClass, Class<IE> ieClass, char[] a, IV offsetMap, VectorMask<Short> m) {
+        super.intoCharArray0Template(Short256Mask.class, ivClass, ieClass, a, offsetMap, (Short256Mask) m);
     }
 
     // End of specialized low-level memory operations.

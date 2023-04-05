@@ -1499,63 +1499,88 @@ void C2_MacroAssembler::vinsert(BasicType typ, XMMRegister dst, XMMRegister src,
   }
 }
 
-void C2_MacroAssembler::vgather(BasicType typ, XMMRegister dst, Register base, XMMRegister idx, XMMRegister mask, int vector_len) {
-  switch(typ) {
-    case T_INT:
-      vpgatherdd(dst, Address(base, idx, Address::times_4), mask, vector_len);
-      break;
-    case T_FLOAT:
-      vgatherdps(dst, Address(base, idx, Address::times_4), mask, vector_len);
-      break;
-    case T_LONG:
-      vpgatherdq(dst, Address(base, idx, Address::times_8), mask, vector_len);
-      break;
-    case T_DOUBLE:
-      vgatherdpd(dst, Address(base, idx, Address::times_8), mask, vector_len);
-      break;
-    default:
-      assert(false,"Should not reach here.");
-      break;
+void C2_MacroAssembler::vgather(BasicType elem_bt, BasicType idx_bt, XMMRegister dst, Register base,
+                                XMMRegister idx, int scale, XMMRegister mask, int vlen) {
+  int vlen_enc = vector_length_encoding(MAX2(type2aelembytes(elem_bt), type2aelembytes(idx_bt)) * vlen);
+  Address::ScaleFactor scale_factor = Address::times(scale);
+  assert_different_registers(dst, idx, mask);
+  if (idx_bt == T_INT) {
+    switch (elem_bt) {
+      case T_INT:    vpgatherdd(dst, Address(base, idx, scale_factor), mask, vlen_enc); break;
+      case T_LONG:   vpgatherdq(dst, Address(base, idx, scale_factor), mask, vlen_enc); break;
+      case T_FLOAT:  vgatherdps(dst, Address(base, idx, scale_factor), mask, vlen_enc); break;
+      case T_DOUBLE: vgatherdpd(dst, Address(base, idx, scale_factor), mask, vlen_enc); break;
+      default:
+        ShouldNotReachHere();
+    }
+  } else {
+    switch (elem_bt) {
+      case T_INT:    vpgatherqd(dst, Address(base, idx, scale_factor), mask, vlen_enc); break;
+      case T_LONG:   vpgatherqq(dst, Address(base, idx, scale_factor), mask, vlen_enc); break;
+      case T_FLOAT:  vgatherqps(dst, Address(base, idx, scale_factor), mask, vlen_enc); break;
+      case T_DOUBLE: vgatherqpd(dst, Address(base, idx, scale_factor), mask, vlen_enc); break;
+      default:
+        ShouldNotReachHere();
+    }
   }
 }
 
-void C2_MacroAssembler::evgather(BasicType typ, XMMRegister dst, KRegister mask, Register base, XMMRegister idx, int vector_len) {
-  switch(typ) {
-    case T_INT:
-      evpgatherdd(dst, mask, Address(base, idx, Address::times_4), vector_len);
-      break;
-    case T_FLOAT:
-      evgatherdps(dst, mask, Address(base, idx, Address::times_4), vector_len);
-      break;
-    case T_LONG:
-      evpgatherdq(dst, mask, Address(base, idx, Address::times_8), vector_len);
-      break;
-    case T_DOUBLE:
-      evgatherdpd(dst, mask, Address(base, idx, Address::times_8), vector_len);
-      break;
-    default:
-      assert(false,"Should not reach here.");
-      break;
+void C2_MacroAssembler::evgather(BasicType elem_bt, BasicType idx_bt, XMMRegister dst, KRegister mask,
+                                 Register base, XMMRegister idx, int scale, int vlen) {
+  int vlen_enc = vector_length_encoding(MAX2(type2aelembytes(elem_bt), type2aelembytes(idx_bt)) * vlen);
+  Address::ScaleFactor scale_factor = Address::times(scale);
+  assert(dst != idx, "");
+  if (idx_bt == T_INT) {
+    switch (elem_bt) {
+      case T_INT:    evpgatherdd(dst, mask, Address(base, idx, scale_factor), vlen_enc); break;
+      case T_LONG:   evpgatherdq(dst, mask, Address(base, idx, scale_factor), vlen_enc); break;
+      case T_FLOAT:  evgatherdps(dst, mask, Address(base, idx, scale_factor), vlen_enc); break;
+      case T_DOUBLE: evgatherdpd(dst, mask, Address(base, idx, scale_factor), vlen_enc); break;
+      default:
+        ShouldNotReachHere();
+    }
+  } else {
+    switch (elem_bt) {
+      case T_INT:    evpgatherqd(dst, mask, Address(base, idx, scale_factor), vlen_enc); break;
+      case T_LONG:   evpgatherqq(dst, mask, Address(base, idx, scale_factor), vlen_enc); break;
+      case T_FLOAT:  evgatherqps(dst, mask, Address(base, idx, scale_factor), vlen_enc); break;
+      case T_DOUBLE: evgatherqpd(dst, mask, Address(base, idx, scale_factor), vlen_enc); break;
+      default:
+        ShouldNotReachHere();
+    }
   }
 }
 
-void C2_MacroAssembler::evscatter(BasicType typ, Register base, XMMRegister idx, KRegister mask, XMMRegister src, int vector_len) {
-  switch(typ) {
-    case T_INT:
-      evpscatterdd(Address(base, idx, Address::times_4), mask, src, vector_len);
-      break;
-    case T_FLOAT:
-      evscatterdps(Address(base, idx, Address::times_4), mask, src, vector_len);
-      break;
-    case T_LONG:
-      evpscatterdq(Address(base, idx, Address::times_8), mask, src, vector_len);
-      break;
-    case T_DOUBLE:
-      evscatterdpd(Address(base, idx, Address::times_8), mask, src, vector_len);
-      break;
-    default:
-      assert(false,"Should not reach here.");
-      break;
+void C2_MacroAssembler::evscatter(BasicType elem_bt, BasicType idx_bt, Register base, XMMRegister idx, int scale,
+                                  KRegister mask, XMMRegister src, XMMRegister xtmp, int vlen) {
+  int vlen_enc = vector_length_encoding(MAX2(type2aelembytes(elem_bt), type2aelembytes(idx_bt)) * vlen);
+
+  if (src == idx) {
+    assert(elem_bt == idx_bt, "");
+    evmovdqul(xtmp, idx, vlen_enc);
+    idx = xtmp;
+  }
+
+  Address::ScaleFactor scale_factor = Address::times(scale);
+  assert(src != idx, "");
+  if (idx_bt == T_INT) {
+    switch (elem_bt) {
+      case T_INT:    evpscatterdd(Address(base, idx, scale_factor), mask, src, vlen_enc); break;
+      case T_LONG:   evpscatterdq(Address(base, idx, scale_factor), mask, src, vlen_enc); break;
+      case T_FLOAT:  evscatterdps(Address(base, idx, scale_factor), mask, src, vlen_enc); break;
+      case T_DOUBLE: evscatterdpd(Address(base, idx, scale_factor), mask, src, vlen_enc); break;
+      default:
+        ShouldNotReachHere();
+    }
+  } else {
+    switch (elem_bt) {
+      case T_INT:    evpscatterqd(Address(base, idx, scale_factor), mask, src, vlen_enc); break;
+      case T_LONG:   evpscatterqq(Address(base, idx, scale_factor), mask, src, vlen_enc); break;
+      case T_FLOAT:  evscatterqps(Address(base, idx, scale_factor), mask, src, vlen_enc); break;
+      case T_DOUBLE: evscatterqpd(Address(base, idx, scale_factor), mask, src, vlen_enc); break;
+      default:
+        ShouldNotReachHere();
+    }
   }
 }
 

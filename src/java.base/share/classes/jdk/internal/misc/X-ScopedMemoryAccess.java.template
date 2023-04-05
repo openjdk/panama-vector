@@ -415,6 +415,120 @@ public class ScopedMemoryAccess {
 
     @ForceInline
     public static
+    <C,
+     V extends VectorSupport.Vector<E>,
+     IV extends VectorSupport.Vector<IE>,
+     S extends VectorSupport.VectorSpecies<E>,
+     M extends VectorSupport.VectorMask<E>,
+     E, IE>
+    V loadFromMemorySegmentWithMap(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
+                                   int length, Class<? extends IV> ivClass, Class<IE> ieClass,
+                                   AbstractMemorySegmentImpl msp, IV offsetMap, S s,
+                                   VectorSupport.LoadVectorOperationWithMap<C, V, IV, S, M, E, IE> defaultImpl) {
+        // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
+        if (msp.maxAlignMask() > 1) {
+            throw new IllegalArgumentException();
+        }
+
+        try {
+            return loadFromMemorySegmentWithMapScopedInternal(
+                    msp.sessionImpl(),
+                    vClass, mClass, eClass,
+                    length, ivClass, ieClass,
+                    msp, offsetMap, s,
+                    defaultImpl);
+        } catch (ScopedAccessError ex) {
+            throw ex.newRuntimeException();
+        }
+    }
+
+    @Scoped
+    @ForceInline
+    private static
+    <C,
+     V extends VectorSupport.Vector<E>,
+     IV extends VectorSupport.Vector<IE>,
+     S extends VectorSupport.VectorSpecies<E>,
+     M extends VectorSupport.VectorMask<E>,
+     E, IE>
+    V loadFromMemorySegmentWithMapScopedInternal(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
+                                                 int length, Class<? extends IV> ivClass, Class<IE> ieClass,
+                                                 AbstractMemorySegmentImpl msp, IV offsetMap, S s,
+                                                 VectorSupport.LoadVectorOperationWithMap<C, V, IV, S, M, E, IE> defaultImpl){
+        try {
+            session.checkValidStateRaw();
+
+            return VectorSupport.loadWithMap(
+                    vClass, mClass, e,Class,
+                    length, ivClass, ieClass,
+                    msp.unsafeGetBase(), msp.unsafeGetOffset(),
+                    offsetMap, 1L, null,
+                    msp, s,
+                    defaultImpl);
+        } finally {
+            Reference.reachabilityFence(session);
+        }
+    }
+
+    @ForceInline
+    public static
+    <C,
+     V extends VectorSupport.Vector<E>,
+     IV extends VectorSupport.Vector<IE>,
+     S extends VectorSupport.VectorSpecies<E>,
+     M extends VectorSupport.VectorMask<E>,
+     E, IE>
+    V loadFromMemorySegmentWithMapMasked(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
+                                         int length, Class<? extends IV> ivClass, Class<IE> ieClass,
+                                         AbstractMemorySegmentImpl msp, IV offsetMap, M m, S s,
+                                         VectorSupport.LoadVectorOperationWithMap<C, V, IV, S, M, E, IE> defaultImpl) {
+        // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
+        if (msp.maxAlignMask() > 1) {
+            throw new IllegalArgumentException();
+        }
+
+        try {
+            return loadFromMemorySegmentWithMapMaskedScopedInternal(
+                    msp.sessionImpl(),
+                    vClass, mClass, eClass,
+                    length, ivClass, ieClass,
+                    msp, offsetMap, m, s,
+                    defaultImpl);
+        } catch (ScopedAccessError ex) {
+            throw ex.newRuntimeException();
+        }
+    }
+
+    @Scoped
+    @ForceInline
+    private static
+    <C,
+     V extends VectorSupport.Vector<E>,
+     IV extends VectorSupport.Vector<IE>,
+     S extends VectorSupport.VectorSpecies<E>,
+     M extends VectorSupport.VectorMask<E>,
+     E, IE>
+    V loadFromMemorySegmentWithMapMaskedScopedInternal(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
+                                                       int length, Class<? extends IV> ivClass, Class<IE> ieClass,
+                                                       AbstractMemorySegmentImpl msp, IV offsetMap, M m, S s,
+                                                       VectorSupport.LoadVectorOperationWithMap<C, V, IV, S, M, E, IE> defaultImpl){
+        try {
+            session.checkValidStateRaw();
+
+            return VectorSupport.loadWithMap(
+                    vClass, mClass, e,Class,
+                    length, ivClass, ieClass,
+                    msp.unsafeGetBase(), msp.unsafeGetOffset(),
+                    offsetMap, 1L, m,
+                    msp, s,
+                    defaultImpl);
+        } finally {
+            Reference.reachabilityFence(session);
+        }
+    }
+
+    @ForceInline
+    public static
     <V extends VectorSupport.Vector<E>, E>
     void storeIntoMemorySegment(Class<? extends V> vmClass, Class<E> e, int length,
                                 V v,
@@ -499,6 +613,117 @@ public class ScopedMemoryAccess {
                     msp.unsafeGetBase(), msp.unsafeGetOffset() + offset,
                     v, m,
                     msp, offset,
+                    defaultImpl);
+        } finally {
+            Reference.reachabilityFence(session);
+        }
+    }
+
+    @ForceInline
+    public static
+    <C,
+     V extends VectorSupport.Vector<E>,
+     IV extends VectorSupport.Vector<IE>,
+     M extends VectorSupport.VectorMask<E>,
+     E, IE>
+    V storeIntoMemorySegmentWithMap(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
+                                   int length, Class<? extends IV> ivClass, Class<IE> ieClass,
+                                   V v, AbstractMemorySegmentImpl msp, IV offsetMap,
+                                   VectorSupport.LoadVectorOperationWithMap<C, V, IV, S, M, E, IE> defaultImpl) {
+        // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
+        if (msp.maxAlignMask() > 1) {
+            throw new IllegalArgumentException();
+        }
+
+        try {
+            return storeIntoMemorySegmentWithMapScopedInternal(
+                    msp.sessionImpl(),
+                    vClass, mClass, eClass,
+                    length, ivClass, ieClass,
+                    v, msp, offsetMap,
+                    defaultImpl);
+        } catch (ScopedAccessError ex) {
+            throw ex.newRuntimeException();
+        }
+    }
+
+    @Scoped
+    @ForceInline
+    private static
+    <C,
+     V extends VectorSupport.Vector<E>,
+     IV extends VectorSupport.Vector<IE>,
+     M extends VectorSupport.VectorMask<E>,
+     E, IE>
+    V storeIntoMemorySegmentWithMapScopedInternal(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
+                                                 int length, Class<? extends IV> ivClass, Class<IE> ieClass,
+                                                 V v, AbstractMemorySegmentImpl msp, IV offsetMap,
+                                                 VectorSupport.LoadVectorOperationWithMap<C, V, IV, S, M, E, IE> defaultImpl){
+        try {
+            session.checkValidStateRaw();
+
+            return VectorSupport.storeWithMap(
+                    vClass, mClass, e,Class,
+                    length, ivClass, ieClass,
+                    msp.unsafeGetBase(), msp.unsafeGetOffset(),
+                    offsetMap, 1L, null,
+                    v, msp,
+                    defaultImpl);
+        } finally {
+            Reference.reachabilityFence(session);
+        }
+    }
+
+    @ForceInline
+    public static
+    <C,
+     V extends VectorSupport.Vector<E>,
+     IV extends VectorSupport.Vector<IE>,
+     S extends VectorSupport.VectorSpecies<E>,
+     M extends VectorSupport.VectorMask<E>,
+     E, IE>
+    V storeIntoMemorySegmentWithMapMasked(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
+                                         int length, Class<? extends IV> ivClass, Class<IE> ieClass,
+                                         V v, AbstractMemorySegmentImpl msp, IV offsetMap, M m,
+                                         VectorSupport.LoadVectorOperationWithMap<C, V, IV, S, M, E, IE> defaultImpl) {
+        // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
+        if (msp.maxAlignMask() > 1) {
+            throw new IllegalArgumentException();
+        }
+
+        try {
+            return storeIntoMemorySegmentWithMapMaskedScopedInternal(
+                    msp.sessionImpl(),
+                    vClass, mClass, eClass,
+                    length, ivClass, ieClass,
+                    v, msp, offsetMap, m,
+                    defaultImpl);
+        } catch (ScopedAccessError ex) {
+            throw ex.newRuntimeException();
+        }
+    }
+
+    @Scoped
+    @ForceInline
+    private static
+    <C,
+     V extends VectorSupport.Vector<E>,
+     IV extends VectorSupport.Vector<IE>,
+     M extends VectorSupport.VectorMask<E>,
+     E, IE>
+    V storeIntoMemorySegmentWithMapMaskedScopedInternal(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
+                                                       int length, Class<? extends IV> ivClass, Class<IE> ieClass,
+                                                       V v, AbstractMemorySegmentImpl msp, IV offsetMap, M m,
+                                                       VectorSupport.LoadVectorOperationWithMap<C, V, IV, S, M, E, IE> defaultImpl){
+        try {
+            session.checkValidStateRaw();
+
+            return VectorSupport.storeWithMap(
+                    vClass, mClass, e,Class,
+                    length, ivClass, ieClass,
+                    msp.unsafeGetBase(), msp.unsafeGetOffset(),
+                    offsetMap, 1L, m,
+                    v, msp,
                     defaultImpl);
         } finally {
             Reference.reachabilityFence(session);

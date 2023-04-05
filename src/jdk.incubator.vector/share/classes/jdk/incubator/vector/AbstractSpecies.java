@@ -447,14 +447,6 @@ abstract class AbstractSpecies<E> extends jdk.internal.vm.vector.VectorSupport.V
     }
 
     /*package-private*/
-    interface RVOp {
-        long apply(int i);  // supply raw element bits
-    }
-
-    /*package-private*/
-    abstract AbstractVector<E> rvOp(RVOp f);
-
-    /*package-private*/
     interface FOpm {
         boolean apply(int i);
     }

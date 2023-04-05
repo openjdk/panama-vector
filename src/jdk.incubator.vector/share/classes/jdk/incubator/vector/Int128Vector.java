@@ -870,8 +870,17 @@ final class Int128Vector extends IntVector {
     @ForceInline
     @Override
     final
-    IntVector fromArray0(int[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Integer> m) {
-        return super.fromArray0Template(Int128Mask.class, a, offset, indexMap, mapOffset, (Int128Mask) m);
+    <IV extends Vector<IE>, IE>
+    IntVector fromArray0(Class<? extends IV> ivClass, Class<IE> ieClass, int[] a, IV offsetMap) {
+        return super.fromArray0Template(Int128Mask.class, ivClass, ieClass, a, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    IntVector fromArray0(Class<? extends IV> ivClass, Class<IE> ieClass, int[] a, IV offsetMap, VectorMask<Integer> m) {
+        return super.fromArray0Template(Int128Mask.class, ivClass, ieClass, a, offsetMap, (Int128Mask) m);
     }
 
 
@@ -893,6 +902,22 @@ final class Int128Vector extends IntVector {
     @ForceInline
     @Override
     final
+    <IV extends Vector<IE>, IE>
+    IntVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
+        return super.fromMemorySegment0Template(Int128Mask.class, ivClass, ieClass, ms, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    IntVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Integer> m) {
+        return super.fromMemorySegment0Template(Int128Mask.class, ivClass, ieClass, ms, offsetMap, (Int128Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
     void intoArray0(int[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
     }
@@ -907,8 +932,17 @@ final class Int128Vector extends IntVector {
     @ForceInline
     @Override
     final
-    void intoArray0(int[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Integer> m) {
-        super.intoArray0Template(Int128Mask.class, a, offset, indexMap, mapOffset, (Int128Mask) m);
+    <IV extends Vector<IE>, IE>
+    void intoArray0(Class<? extends IV> ivClass, Class<IE> ieClass, int[] a, IV offsetMap) {
+        super.intoArray0Template(Int128Mask.class, ivClass, ieClass, a, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoArray0(Class<? extends IV> ivClass, Class<IE> ieClass, int[] a, IV offsetMap, VectorMask<Integer> m) {
+        super.intoArray0Template(Int128Mask.class, ivClass, ieClass, a, offsetMap, (Int128Mask) m);
     }
 
 
@@ -917,6 +951,22 @@ final class Int128Vector extends IntVector {
     final
     void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Integer> m) {
         super.intoMemorySegment0Template(Int128Mask.class, ms, offset, (Int128Mask) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
+        super.intoMemorySegment0Template(Int128Mask.class, ivClass, ieClass, ms, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Integer> m) {
+        super.intoMemorySegment0Template(Int128Mask.class, ivClass, ieClass, ms, offsetMap, (Int128Mask) m);
     }
 
 

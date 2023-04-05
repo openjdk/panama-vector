@@ -461,7 +461,7 @@ public class VectorSupport {
                                                 S extends VectorSpecies<E>,
                                                 M extends VectorMask<E>,
                                                 E, IE> {
-        V loadWithMap(C container, long baseIndex, IV indexMap, S s, M m);
+        V loadWithMap(C container, IV indexMap, S s, M m);
     }
 
     @IntrinsicCandidate
@@ -476,10 +476,10 @@ public class VectorSupport {
                   int length, Class<? extends IV> ivClass, Class<IE> ieClass,
                   Object base, long baseOffset,
                   IV indexMap, long scale, M m,
-                  C container, long baseIndex, S s,
+                  C container, S s,
                   LoadVectorOperationWithMap<C, V, IV, S, M, E, IE> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.loadWithMap(container, baseIndex, indexMap, s, m);
+        return defaultImpl.loadWithMap(container, indexMap, s, m);
     }
 
     /* ============================================================================ */
@@ -526,27 +526,29 @@ public class VectorSupport {
     /* ============================================================================ */
 
     public interface StoreVectorOperationWithMap<C,
-                                                 V extends Vector<?>,
-                                                 M extends VectorMask<?>> {
-        void storeWithMap(C container, int index, V v, int[] indexMap, int indexM, M m);
+                                                 V extends Vector<E>,
+                                                 M extends VectorMask<E>,
+                                                 IV extends Vector<IE>,
+                                                 E, IE> {
+        void storeWithMap(C container, IV indexMap, V v, M m);
     }
 
     @IntrinsicCandidate
     public static
     <C,
      V extends Vector<E>,
-     W extends Vector<Integer>,
+     IV extends Vector<IE>,
      M extends VectorMask<E>,
-     E>
+     E, IE>
     void storeWithMap(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
-                      int length,
-                      Class<? extends Vector<Integer>> vectorIndexClass,
-                      Object base, long offset,
-                      W index_vector,
-                      V v, M m, C container, int index, int[] indexMap, int indexM,
-                      StoreVectorOperationWithMap<C, V, M> defaultImpl) {
+                      int length, Class<? extends IV> ivClass, Class<IE> ieClass,
+                      Object base, long baseOffset,
+                      IV indexMap, long scale, M m,
+                      V v,
+                      C container,
+                      StoreVectorOperationWithMap<C, V, M, IV, E, IE> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        defaultImpl.storeWithMap(container, index, v, indexMap, indexM, m);
+        defaultImpl.storeWithMap(container, indexMap, v, m);
     }
 
     /* ============================================================================ */

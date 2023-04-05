@@ -1571,8 +1571,19 @@ const bool Matcher::match_rule_supported(int opcode) {
         return false; // 128bit vroundpd is not available
       }
       break;
-    case Op_LoadVectorGather:
+    case Op_GatherI:
+    case Op_GatherL:
       if (UseAVX < 2) {
+        return false;
+      }
+      break;
+    case Op_ScatterI:
+    case Op_ScatterL:
+    case Op_GatherIMasked:
+    case Op_GatherLMasked:
+    case Op_ScatterIMasked:
+    case Op_ScatterLMasked:
+      if (!VM_Version::supports_evex()) {
         return false;
       }
       break;
@@ -1923,17 +1934,33 @@ const bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType 
         return false;
       }
       break;
-    case Op_LoadVectorGatherMasked:
-    case Op_StoreVectorScatterMasked:
-    case Op_StoreVectorScatter:
-      if (is_subword_type(bt)) {
-        return false;
-      } else if (size_in_bits < 512 && !VM_Version::supports_avx512vl()) {
+    case Op_ScatterI:
+    case Op_GatherIMasked:
+    case Op_ScatterIMasked:
+      // The encodings of these are of the data vectors
+      if (size_in_bits < 512 && !VM_Version::supports_avx512vl()) {
         return false;
       }
       // fallthrough
-    case Op_LoadVectorGather:
-      if (size_in_bits == 64 ) {
+    case Op_GatherI:
+      if (is_subword_type(bt)) {
+        return false;
+      } else if (size_in_bits < 128) {
+        return false;
+      }
+      break;
+    case Op_ScatterL:
+    case Op_GatherLMasked:
+    case Op_ScatterLMasked:
+      // The encodings of these are of the index vectors
+      if (vlen < 8 && !VM_Version::supports_avx512vl()) {
+        return false;
+      }
+      // fallthrough
+    case Op_GatherL:
+      if (is_subword_type(bt)) {
+        return false;
+      } else if (vlen < 2) {
         return false;
       }
       break;
@@ -2108,8 +2135,10 @@ const bool Matcher::match_rule_supported_vector_masked(int opcode, int vlen, Bas
     case Op_URShiftVL:
     case Op_LoadVectorMasked:
     case Op_StoreVectorMasked:
-    case Op_LoadVectorGatherMasked:
-    case Op_StoreVectorScatterMasked:
+    case Op_GatherIMasked:
+    case Op_GatherLMasked:
+    case Op_ScatterIMasked:
+    case Op_ScatterLMasked:
       return true;
 
     case Op_MaxV:
@@ -4081,106 +4110,169 @@ instruct storeV(memory mem, vec src) %{
 
 // Gather INT, LONG, FLOAT, DOUBLE
 
-instruct gather(legVec dst, memory mem, legVec idx, rRegP tmp, legVec mask) %{
+instruct gatherI(legVec dst, memory mem, legVec idx, immL scale, rRegP tmp, legVec mask) %{
   predicate(!VM_Version::supports_avx512vl() && Matcher::vector_length_in_bytes(n) <= 32);
-  match(Set dst (LoadVectorGather mem idx));
+  match(Set dst (GatherI mem (Binary idx scale)));
   effect(TEMP dst, TEMP tmp, TEMP mask);
-  format %{ "load_vector_gather $dst, $mem, $idx\t! using $tmp and $mask as TEMP" %}
+  format %{ "load_vector_gather $dst, $mem, $idx, $scale\t! using $tmp and $mask as TEMP" %}
   ins_encode %{
     assert(UseAVX >= 2, "sanity");
-
+    int vlen = Matcher::vector_length(this);
     int vlen_enc = vector_length_encoding(this);
     BasicType elem_bt = Matcher::vector_element_basic_type(this);
-
-    assert(Matcher::vector_length_in_bytes(this) >= 16, "sanity");
-    assert(!is_subword_type(elem_bt), "sanity"); // T_INT, T_LONG, T_FLOAT, T_DOUBLE
-
-    if (vlen_enc == Assembler::AVX_128bit) {
-      __ movdqu($mask$$XMMRegister, ExternalAddress(vector_all_bits_set()), noreg);
-    } else {
-      __ vmovdqu($mask$$XMMRegister, ExternalAddress(vector_all_bits_set()), noreg);
-    }
+    __ vallones($mask$$XMMRegister, vlen_enc);
     __ lea($tmp$$Register, $mem$$Address);
-    __ vgather(elem_bt, $dst$$XMMRegister, $tmp$$Register, $idx$$XMMRegister, $mask$$XMMRegister, vlen_enc);
+    __ vgather(elem_bt, T_INT, $dst$$XMMRegister, $tmp$$Register, $idx$$XMMRegister,
+               $scale$$constant, $mask$$XMMRegister, vlen);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct evgather(vec dst, memory mem, vec idx, rRegP tmp, kReg ktmp) %{
+instruct gatherL(legVec dst, memory mem, legVec idx, immL scale, rRegP tmp, legVec mask) %{
+  predicate(!VM_Version::supports_avx512vl() && Matcher::vector_length_in_bytes(n->in(MemNode::ValueIn)->in(1)) <= 32);
+  match(Set dst (GatherI mem (Binary idx scale)));
+  effect(TEMP dst, TEMP tmp, TEMP mask);
+  format %{ "load_vector_gather $dst, $mem, $idx, $scale\t! using $tmp and $mask as TEMP" %}
+  ins_encode %{
+    assert(UseAVX >= 2, "sanity");
+    int vlen = Matcher::vector_length(this);
+    int vlen_enc = vector_length_encoding(this);
+    BasicType elem_bt = Matcher::vector_element_basic_type(this);
+    __ vallones($mask$$XMMRegister, vlen_enc);
+    __ lea($tmp$$Register, $mem$$Address);
+    __ vgather(elem_bt, T_LONG, $dst$$XMMRegister, $tmp$$Register, $idx$$XMMRegister,
+               $scale$$constant, $mask$$XMMRegister, vlen);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct evgatherI(vec dst, memory mem, vec idx, immL scale, rRegP tmp, kReg mask) %{
   predicate(VM_Version::supports_avx512vl() || Matcher::vector_length_in_bytes(n) == 64);
-  match(Set dst (LoadVectorGather mem idx));
-  effect(TEMP dst, TEMP tmp, TEMP ktmp);
-  format %{ "load_vector_gather $dst, $mem, $idx\t! using $tmp and ktmp as TEMP" %}
+  match(Set dst (GatherI mem (Binary idx scale)));
+  effect(TEMP dst, TEMP tmp, TEMP mask);
+  format %{ "load_vector_gather $dst, $mem, $idx, $scale\t! using $tmp and $mask as TEMP" %}
   ins_encode %{
-    assert(UseAVX > 2, "sanity");
-
-    int vlen_enc = vector_length_encoding(this);
+    int vlen = Matcher::vector_length(this);
     BasicType elem_bt = Matcher::vector_element_basic_type(this);
-
-    assert(!is_subword_type(elem_bt), "sanity"); // T_INT, T_LONG, T_FLOAT, T_DOUBLE
-
-    __ kmovwl($ktmp$$KRegister, ExternalAddress(vector_all_bits_set()), noreg);
+    __ kxnorwl($mask$$KRegister, $mask$$KRegister, $mask$$KRegister);
     __ lea($tmp$$Register, $mem$$Address);
-    __ evgather(elem_bt, $dst$$XMMRegister, $ktmp$$KRegister, $tmp$$Register, $idx$$XMMRegister, vlen_enc);
+    __ evgather(elem_bt, T_INT, $dst$$XMMRegister, $mask$$KRegister, $tmp$$Register,
+                $idx$$XMMRegister, $scale$$constant, vlen);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct evgather_masked(vec dst, memory mem, vec idx, kReg mask, kReg ktmp, rRegP tmp) %{
-  match(Set dst (LoadVectorGatherMasked mem (Binary idx mask)));
-  effect(TEMP_DEF dst, TEMP tmp, TEMP ktmp);
-  format %{ "load_vector_gather_masked $dst, $mem, $idx, $mask\t! using $tmp and ktmp as TEMP" %}
+instruct evgatherL(vec dst, memory mem, vec idx, immL scale, rRegP tmp, vec mask) %{
+  predicate(VM_Version::supports_avx512vl() || Matcher::vector_length_in_bytes(n->in(MemNode::ValueIn)->in(1)) == 64);
+  match(Set dst (GatherI mem (Binary idx scale)));
+  effect(TEMP dst, TEMP tmp, TEMP mask);
+  format %{ "load_vector_gather $dst, $mem, $idx, $scale\t! using $tmp and $mask as TEMP" %}
   ins_encode %{
-    assert(UseAVX > 2, "sanity");
-    int vlen_enc = vector_length_encoding(this);
+    int vlen = Matcher::vector_length(this);
     BasicType elem_bt = Matcher::vector_element_basic_type(this);
-    assert(!is_subword_type(elem_bt), "sanity"); // T_INT, T_LONG, T_FLOAT, T_DOUBLE
-    // Note: Since gather instruction partially updates the opmask register used
-    // for predication hense moving mask operand to a temporary.
+    __ kxnorwl($mask$$KRegister, $mask$$KRegister, $mask$$KRegister);
+    __ lea($tmp$$Register, $mem$$Address);
+    __ evgather(elem_bt, T_INT, $dst$$XMMRegister, $mask$$KRegister, $tmp$$Register,
+                $idx$$XMMRegister, $scale$$constant, vlen);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct evgatherI_masked(vec dst, kReg mask, memory mem, vec idx, immL scale, rRegP tmp, kReg ktmp) %{
+  match(Set dst (GatherIMasked mem (Binary mask (Binary idx scale))));
+  effect(TEMP dst, TEMP tmp, TEMP ktmp);
+  format %{ "load_vector_gather_masked $dst, $mem, $idx, $scale, $mask\t! using $tmp and $ktmp as TEMP" %}
+  ins_encode %{
+    int vlen_enc = vector_length_encoding(this);
+    int vlen = Matcher::vector_length(this);
+    BasicType elem_bt = Matcher::vector_element_basic_type(this);
     __ kmovwl($ktmp$$KRegister, $mask$$KRegister);
     __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vlen_enc);
     __ lea($tmp$$Register, $mem$$Address);
-    __ evgather(elem_bt, $dst$$XMMRegister, $ktmp$$KRegister, $tmp$$Register, $idx$$XMMRegister, vlen_enc);
+    __ evgather(elem_bt, T_INT, $dst$$XMMRegister, $ktmp$$KRegister, $tmp$$Register,
+                $idx$$XMMRegister, $scale$$constant, vlen);
   %}
   ins_pipe( pipe_slow );
 %}
+
+instruct evgatherL_masked(vec dst, kReg mask, memory mem, vec idx, immL scale, rRegP tmp, kReg ktmp) %{
+  match(Set dst (GatherLMasked mem (Binary mask (Binary idx scale))));
+  effect(TEMP dst, TEMP tmp, TEMP ktmp);
+  format %{ "load_vector_gather_masked $dst, $mem, $idx, $scale, $mask\t! using $tmp and $ktmp as TEMP" %}
+  ins_encode %{
+    // Use the vlen_enc of the larger vector
+    int vlen_enc = vector_length_encoding(this, $idx);
+    int vlen = Matcher::vector_length(this);
+    BasicType elem_bt = Matcher::vector_element_basic_type(this);
+    __ kmovwl($ktmp$$KRegister, $mask$$KRegister);
+    __ vpxor($dst$$XMMRegister, $dst$$XMMRegister, $dst$$XMMRegister, vlen_enc);
+    __ lea($tmp$$Register, $mem$$Address);
+    __ evgather(elem_bt, T_LONG, $dst$$XMMRegister, $ktmp$$KRegister, $tmp$$Register,
+                $idx$$XMMRegister, $scale$$constant, vlen);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
 // ====================Scatter=======================================
 
 // Scatter INT, LONG, FLOAT, DOUBLE
 
-instruct scatter(memory mem, vec src, vec idx, rRegP tmp, kReg ktmp) %{
-  predicate(UseAVX > 2);
-  match(Set mem (StoreVectorScatter mem (Binary src idx)));
-  effect(TEMP tmp, TEMP ktmp);
-  format %{ "store_vector_scatter $mem, $idx, $src\t! using k2 and $tmp as TEMP" %}
+instruct evscatterI(memory mem, vec idx, immL scale, vec src, rRegP tmp, vec xtmp, kReg mask) %{
+  match(Set mem (ScatterI mem (Binary src (Binary idx scale))));
+  effect(TEMP tmp, TEMP xtmp, TEMP mask);
+  format %{ "scatter $mem, $idx, $scale, $src\t! using $tmp, $xtmp and $mask as TEMP" %}
   ins_encode %{
-    int vlen_enc = vector_length_encoding(this, $src);
-    BasicType elem_bt = Matcher::vector_element_basic_type(this, $src);
-
-    assert(Matcher::vector_length_in_bytes(this, $src) >= 16, "sanity");
-    assert(!is_subword_type(elem_bt), "sanity"); // T_INT, T_LONG, T_FLOAT, T_DOUBLE
-
-    __ kmovwl($ktmp$$KRegister, ExternalAddress(vector_all_bits_set()), noreg);
+    int vlen = Matcher::vector_length(this);
+    BasicType elem_bt = Matcher::vector_element_basic_type(this);
+    __ kxnorwl($mask$$KRegister, $mask$$KRegister, $mask$$KRegister);
     __ lea($tmp$$Register, $mem$$Address);
-    __ evscatter(elem_bt, $tmp$$Register, $idx$$XMMRegister, $ktmp$$KRegister, $src$$XMMRegister, vlen_enc);
+    __ evscatter(elem_bt, T_INT, $tmp$$Register, $idx$$XMMRegister, $scale$$constant,
+                 $mask$$KRegister, $src$$XMMRegister, $xtmp$$XMMRegister, vlen);
   %}
   ins_pipe( pipe_slow );
 %}
 
-instruct scatter_masked(memory mem, vec src, vec idx, kReg mask, kReg ktmp, rRegP tmp) %{
-  match(Set mem (StoreVectorScatterMasked mem (Binary src (Binary idx mask))));
-  effect(TEMP tmp, TEMP ktmp);
-  format %{ "store_vector_scatter_masked $mem, $idx, $src, $mask\t!" %}
+instruct evscatterL(memory mem, vec idx, immL scale, vec src, rRegP tmp, vec xtmp, kReg mask) %{
+  match(Set mem (ScatterL mem (Binary src (Binary idx scale))));
+  effect(TEMP tmp, TEMP xtmp, TEMP mask);
+  format %{ "scatter $mem, $idx, $scale, $src\t! using $tmp, $xtmp and $mask as TEMP" %}
   ins_encode %{
-    int vlen_enc = vector_length_encoding(this, $src);
-    BasicType elem_bt = Matcher::vector_element_basic_type(this, $src);
-    assert(Matcher::vector_length_in_bytes(this, $src) >= 16, "sanity");
-    assert(!is_subword_type(elem_bt), "sanity"); // T_INT, T_LONG, T_FLOAT, T_DOUBLE
-    // Note: Since scatter instruction partially updates the opmask register used
-    // for predication hense moving mask operand to a temporary.
+    int vlen = Matcher::vector_length(this);
+    BasicType elem_bt = Matcher::vector_element_basic_type(this);
+    __ kxnorwl($mask$$KRegister, $mask$$KRegister, $mask$$KRegister);
+    __ lea($tmp$$Register, $mem$$Address);
+    __ evscatter(elem_bt, T_LONG, $tmp$$Register, $idx$$XMMRegister, $scale$$constant,
+                 $mask$$KRegister, $src$$XMMRegister, $xtmp$$XMMRegister, vlen);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct evscatterI_masked(memory mem, vec idx, immL scale, kReg mask, vec src, rRegP tmp, vec xtmp, kReg ktmp) %{
+  match(Set mem (ScatterIMasked mem (Binary src (Binary (Binary idx scale) mask))));
+  effect(TEMP tmp, TEMP xtmp, TEMP ktmp);
+  format %{ "scatter_masked $mem, $idx, $scale, $src, $mask\t! using $tmp, $xtmp and $ktmp as TEMP" %}
+  ins_encode %{
+    int vlen = Matcher::vector_length(this);
+    BasicType elem_bt = Matcher::vector_element_basic_type(this);
     __ kmovwl($ktmp$$KRegister, $mask$$KRegister);
     __ lea($tmp$$Register, $mem$$Address);
-    __ evscatter(elem_bt, $tmp$$Register, $idx$$XMMRegister, $ktmp$$KRegister, $src$$XMMRegister, vlen_enc);
+    __ evscatter(elem_bt, T_INT, $tmp$$Register, $idx$$XMMRegister, $scale$$constant,
+                 $ktmp$$KRegister, $src$$XMMRegister, $xtmp$$XMMRegister, vlen);
+  %}
+  ins_pipe( pipe_slow );
+%}
+
+instruct evscatterL_masked(memory mem, vec idx, immL scale, kReg mask, vec src, rRegP tmp, vec xtmp, kReg ktmp) %{
+  match(Set mem (ScatterLMasked mem (Binary src (Binary (Binary idx scale) mask))));
+  effect(TEMP tmp, TEMP xtmp, TEMP ktmp);
+  format %{ "scatter_masked $mem, $idx, $scale, $src, $mask\t! using $tmp, $xtmp and $ktmp as TEMP" %}
+  ins_encode %{
+    int vlen = Matcher::vector_length(this);
+    BasicType elem_bt = Matcher::vector_element_basic_type(this);
+    __ kmovwl($ktmp$$KRegister, $mask$$KRegister);
+    __ lea($tmp$$Register, $mem$$Address);
+    __ evscatter(elem_bt, T_LONG, $tmp$$Register, $idx$$XMMRegister, $scale$$constant,
+                 $ktmp$$KRegister, $src$$XMMRegister, $xtmp$$XMMRegister, vlen);
   %}
   ins_pipe( pipe_slow );
 %}

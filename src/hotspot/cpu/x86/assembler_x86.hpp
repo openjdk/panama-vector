@@ -2759,16 +2759,28 @@ private:
   void vpgatherdq(XMMRegister dst, Address src, XMMRegister mask, int vector_len);
   void vgatherdpd(XMMRegister dst, Address src, XMMRegister mask, int vector_len);
   void vgatherdps(XMMRegister dst, Address src, XMMRegister mask, int vector_len);
+  void vpgatherqd(XMMRegister dst, Address src, XMMRegister mask, int vector_len);
+  void vpgatherqq(XMMRegister dst, Address src, XMMRegister mask, int vector_len);
+  void vgatherqpd(XMMRegister dst, Address src, XMMRegister mask, int vector_len);
+  void vgatherqps(XMMRegister dst, Address src, XMMRegister mask, int vector_len);
   void evpgatherdd(XMMRegister dst, KRegister mask, Address src, int vector_len);
   void evpgatherdq(XMMRegister dst, KRegister mask, Address src, int vector_len);
   void evgatherdpd(XMMRegister dst, KRegister mask, Address src, int vector_len);
   void evgatherdps(XMMRegister dst, KRegister mask, Address src, int vector_len);
+  void evpgatherqd(XMMRegister dst, KRegister mask, Address src, int vector_len);
+  void evpgatherqq(XMMRegister dst, KRegister mask, Address src, int vector_len);
+  void evgatherqpd(XMMRegister dst, KRegister mask, Address src, int vector_len);
+  void evgatherqps(XMMRegister dst, KRegister mask, Address src, int vector_len);
 
   //Scatter AVX3 only
   void evpscatterdd(Address dst, KRegister mask, XMMRegister src, int vector_len);
   void evpscatterdq(Address dst, KRegister mask, XMMRegister src, int vector_len);
   void evscatterdps(Address dst, KRegister mask, XMMRegister src, int vector_len);
   void evscatterdpd(Address dst, KRegister mask, XMMRegister src, int vector_len);
+  void evpscatterqd(Address dst, KRegister mask, XMMRegister src, int vector_len);
+  void evpscatterqq(Address dst, KRegister mask, XMMRegister src, int vector_len);
+  void evscatterqps(Address dst, KRegister mask, XMMRegister src, int vector_len);
+  void evscatterqpd(Address dst, KRegister mask, XMMRegister src, int vector_len);
 
   // Carry-Less Multiplication Quadword
   void pclmulqdq(XMMRegister dst, XMMRegister src, int mask);

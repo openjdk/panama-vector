@@ -1151,12 +1151,13 @@ class methodHandle;
                                      "Ljava/lang/Class;"                                                                                       \
                                      "I"                                                                                                       \
                                      "Ljava/lang/Class;"                                                                                       \
+                                     "Ljava/lang/Class;"                                                                                       \
                                      "Ljava/lang/Object;"                                                                                      \
                                      "J"                                                                                                       \
                                      "Ljdk/internal/vm/vector/VectorSupport$Vector;"                                                           \
+                                     "J"                                                                                                       \
                                      "Ljdk/internal/vm/vector/VectorSupport$VectorMask;"                                                       \
                                      "Ljava/lang/Object;"                                                                                      \
-                                     "I[II"                                                                                                    \
                                      "Ljdk/internal/vm/vector/VectorSupport$VectorSpecies;"                                                    \
                                      "Ljdk/internal/vm/vector/VectorSupport$LoadVectorOperationWithMap;)"                                      \
                                      "Ljdk/internal/vm/vector/VectorSupport$Vector;")                                                          \

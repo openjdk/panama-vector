@@ -1152,29 +1152,17 @@ final class $vectortype$ extends $abstractvectortype$ {
     @ForceInline
     @Override
     final
-    $abstractvectortype$ fromArray0($type$[] a, int baseOffset, IntVector offsetMap) {
-        return super.fromArray0Template($masktype$.class, a, baseOffset, indices);
+    <IV extends Vector<IE>, IE>
+    $abstractvectortype$ fromArray0(Class<? extends IV> ivClass, Class<IE> ieClass, $type$[] a, IV offsetMap) {
+        return super.fromArray0Template($masktype$.class, ivClass, ieClass, a, offsetMap);
     }
 
     @ForceInline
     @Override
     final
-    $abstractvectortype$ fromArray0($type$[] a, int baseOffset, LongVector offsetMap) {
-        return super.fromArray0Template($masktype$.class, a, baseOffset, indices);
-    }
-
-    @ForceInline
-    @Override
-    final
-    $abstractvectortype$ fromArray0($type$[] a, int baseOffset, IntVector offsetMap, VectorMask<$Boxtype$> m) {
-        return super.fromArray0Template($masktype$.class, a, baseOffset, indices, ($masktype$) m);
-    }
-
-    @ForceInline
-    @Override
-    final
-    $abstractvectortype$ fromArray0($type$[] a, int baseOffset, LongVector offsetMap, VectorMask<$Boxtype$> m) {
-        return super.fromArray0Template($masktype$.class, a, baseOffset, indices, ($masktype$) m);
+    <IV extends Vector<IE>, IE>
+    $abstractvectortype$ fromArray0(Class<? extends IV> ivClass, Class<IE> ieClass, $type$[] a, IV offsetMap, VectorMask<$Boxtype$> m) {
+        return super.fromArray0Template($masktype$.class, ivClass, ieClass, a, offsetMap, ($masktype$) m);
     }
 
 #if[short]
@@ -1190,6 +1178,22 @@ final class $vectortype$ extends $abstractvectortype$ {
     final
     $abstractvectortype$ fromCharArray0(char[] a, int offset, VectorMask<$Boxtype$> m, int offsetInRange) {
         return super.fromCharArray0Template($masktype$.class, a, offset, ($masktype$) m, offsetInRange);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    $abstractvectortype$ fromCharArray0(Class<? extends IV> ivClass, Class<IE> ieClass, char[] a, IV offsetMap) {
+        return super.fromCharArray0Template($masktype$.class, ivClass, ieClass, a, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    $abstractvectortype$ fromCharArray0(Class<? extends IV> ivClass, Class<IE> ieClass, char[] a, IV offsetMap, VectorMask<$Boxtype$> m) {
+        return super.fromCharArray0Template($masktype$.class, ivClass, ieClass, a, offsetMap, ($masktype$) m);
     }
 #end[short]
 
@@ -1226,6 +1230,22 @@ final class $vectortype$ extends $abstractvectortype$ {
     @ForceInline
     @Override
     final
+    <IV extends Vector<IE>, IE>
+    $abstractvectortype$ fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
+        return super.fromMemorySegment0Template($masktype$.class, ivClass, ieClass, ms, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    $abstractvectortype$ fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<$Boxtype$> m) {
+        return super.fromMemorySegment0Template($masktype$.class, ivClass, ieClass, ms, offsetMap, ($masktype$) m);
+    }
+
+    @ForceInline
+    @Override
+    final
     void intoArray0($type$[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
     }
@@ -1237,14 +1257,21 @@ final class $vectortype$ extends $abstractvectortype$ {
         super.intoArray0Template($masktype$.class, a, offset, ($masktype$) m);
     }
 
-#if[!byteOrShort]
     @ForceInline
     @Override
     final
-    void intoArray0($type$[] a, int offset, int[] indexMap, int mapOffset, VectorMask<$Boxtype$> m) {
-        super.intoArray0Template($masktype$.class, a, offset, indexMap, mapOffset, ($masktype$) m);
+    <IV extends Vector<IE>, IE>
+    void intoArray0(Class<? extends IV> ivClass, Class<IE> ieClass, $type$[] a, IV offsetMap) {
+        super.intoArray0Template($masktype$.class, ivClass, ieClass, a, offsetMap);
     }
-#end[!byteOrShort]
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoArray0(Class<? extends IV> ivClass, Class<IE> ieClass, $type$[] a, IV offsetMap, VectorMask<$Boxtype$> m) {
+        super.intoArray0Template($masktype$.class, ivClass, ieClass, a, offsetMap, ($masktype$) m);
+    }
 
 #if[byte]
     @ForceInline
@@ -1262,12 +1289,44 @@ final class $vectortype$ extends $abstractvectortype$ {
         super.intoMemorySegment0Template($masktype$.class, ms, offset, ($masktype$) m);
     }
 
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
+        super.intoMemorySegment0Template($masktype$.class, ivClass, ieClass, ms, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<$Boxtype$> m) {
+        super.intoMemorySegment0Template($masktype$.class, ivClass, ieClass, ms, offsetMap, ($masktype$) m);
+    }
+
 #if[short]
     @ForceInline
     @Override
     final
     void intoCharArray0(char[] a, int offset, VectorMask<$Boxtype$> m) {
         super.intoCharArray0Template($masktype$.class, a, offset, ($masktype$) m);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoCharArray0(Class<? extends IV> ivClass, Class<IE> ieClass, char[] a, IV offsetMap) {
+        super.intoCharArray0Template($masktype$.class, ivClass, ieClass, a, offsetMap);
+    }
+
+    @ForceInline
+    @Override
+    final
+    <IV extends Vector<IE>, IE>
+    void intoCharArray0(Class<? extends IV> ivClass, Class<IE> ieClass, char[] a, IV offsetMap, VectorMask<$Boxtype$> m) {
+        super.intoCharArray0Template($masktype$.class, ivClass, ieClass, a, offsetMap, ($masktype$) m);
     }
 #end[short]
 

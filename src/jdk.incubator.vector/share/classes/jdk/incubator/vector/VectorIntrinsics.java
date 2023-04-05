@@ -70,15 +70,17 @@ import java.util.Objects;
     }
 
     @ForceInline
-    static void checkIndex(int baseOffset, IntVector offsetMap, int length) {
+    static void checkIndices(IntVector offsetMap, long length) {
         switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
             case 0: return; // no range check
             case 1: // fall-through
             case 2:
-                if (length < 0 || offsetMap.add(length)
-                        .compare(VectorOperators.UNSIGNED_GE, length)
+                if (length > Integer.MAX_VALUE) {
+                    return;
+                }
+                if (length < 0 || offsetMap.compare(VectorOperators.UNSIGNED_GE, (int)length)
                         .anyTrue()) {
-                    throw checkIndexFailed(baseOffset, offsetMap, length);
+                    throw checkIndexFailed(offsetMap, length, null);
                 }
                 return;
             default: throw new InternalError();
@@ -86,15 +88,51 @@ import java.util.Objects;
     }
 
     @ForceInline
-    static void checkIndex(long baseOffset, LongVector offsetMap, long length) {
+    static void checkIndices(LongVector offsetMap, long length) {
         switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
             case 0: return; // no range check
             case 1: // fall-through
             case 2:
-                if (length < 0 || offsetMap.add(length)
-                        .compare(VectorOperators.UNSIGNED_GE, length)
+                if (length < 0 || offsetMap.compare(VectorOperators.UNSIGNED_GE, length)
                         .anyTrue()) {
-                    throw checkIndexFailed(baseOffset, offsetMap, length);
+                    throw checkIndexFailed(offsetMap, length, null);
+                }
+                return;
+            default: throw new InternalError();
+        }
+    }
+
+    @ForceInline
+    static <E> void checkIndices(IntVector offsetMap, long length, VectorMask<E> mask) {
+        switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
+            case 0: return; // no range check
+            case 1: // fall-through
+            case 2:
+                if (length > Integer.MAX_VALUE) {
+                    return;
+                }
+                if (length < 0 || offsetMap.compare(VectorOperators.UNSIGNED_GE, (int)length)
+                        .cast(mask.vectorSpecies())
+                        .and(mask)
+                        .anyTrue()) {
+                    throw checkIndexFailed(offsetMap, length, mask);
+                }
+                return;
+            default: throw new InternalError();
+        }
+    }
+
+    @ForceInline
+    static <E> void checkIndices(LongVector offsetMap, long length, VectorMask<E> mask) {
+        switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
+            case 0: return; // no range check
+            case 1: // fall-through
+            case 2:
+                if (length < 0 || offsetMap.compare(VectorOperators.UNSIGNED_GE, length)
+                        .cast(mask.vectorSpecies())
+                        .and(mask)
+                        .anyTrue()) {
+                    throw checkIndexFailed(offsetMap, length, mask);
                 }
                 return;
             default: throw new InternalError();
@@ -102,9 +140,14 @@ import java.util.Objects;
     }
 
     private static
-    IndexOutOfBoundsException checkIndexFailed(long baseOffset, Vector<?> vix, long length) {
-        String msg = String.format("Range check failed: base %d map %s out of bounds for length %d", baseOffset, vix, length);
-        return new IndexOutOfBoundsException(msg);
+    IndexOutOfBoundsException checkIndexFailed(Vector<?> vix, long length, VectorMask<?> mask) {
+        if (mask == null) {
+            String msg = String.format("Range check failed: map %s out of bounds for length %d", vix, length);
+            return new IndexOutOfBoundsException(msg);
+        } else {
+            String msg = String.format("Range check failed: map %s with mask %s out of bounds for length %d", vix, mask, length);
+            return new IndexOutOfBoundsException(msg);
+        }
     }
 
     // If the index is not already a multiple of size,
