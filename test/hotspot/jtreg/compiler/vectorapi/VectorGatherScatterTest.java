@@ -25,14 +25,10 @@ package compiler.vectorapi;
 
 import compiler.lib.ir_framework.*;
 
+import java.util.Arrays;
 import java.util.Random;
 
-import jdk.incubator.vector.DoubleVector;
-import jdk.incubator.vector.IntVector;
-import jdk.incubator.vector.LongVector;
-import jdk.incubator.vector.VectorMask;
-import jdk.incubator.vector.VectorShape;
-import jdk.incubator.vector.VectorSpecies;
+import jdk.incubator.vector.*;
 
 import jdk.test.lib.Asserts;
 import jdk.test.lib.Utils;
@@ -42,7 +38,6 @@ import jdk.test.lib.Utils;
  * @bug 8288397
  * @key randomness
  * @library /test/lib /
- * @requires vm.cpu.features ~= ".*sve.*" & (vm.opt.MaxVectorSize == "null" | vm.opt.MaxVectorSize >= 16)
  * @summary AArch64: Fix register issues in SVE backend match rules
  * @modules jdk.incubator.vector
  *
@@ -55,6 +50,9 @@ public class VectorGatherScatterTest {
     private static final VectorSpecies<Integer> I_SPECIES =
         VectorSpecies.of(int.class, VectorShape.forBitSize(L_SPECIES.vectorBitSize() / 2));
 
+    private static final VectorSpecies<Float> F_SPECIES =
+            VectorSpecies.of(float.class, VectorShape.forBitSize(L_SPECIES.vectorBitSize() / 2));
+
     private static int LENGTH = 128;
     private static final Random RD = Utils.getRandomInstance();
 
@@ -62,6 +60,8 @@ public class VectorGatherScatterTest {
     private static int[] ir;
     private static long[] la;
     private static long[] lr;
+    private static float[] fa;
+    private static float[] fr;
     private static double[] da;
     private static double[] dr;
     private static boolean[] m;
@@ -71,82 +71,208 @@ public class VectorGatherScatterTest {
         ir = new int[LENGTH];
         la = new long[LENGTH];
         lr = new long[LENGTH];
+        fa = new float[LENGTH];
+        fr = new float[LENGTH];
         da = new double[LENGTH];
         dr = new double[LENGTH];
         m = new boolean[LENGTH];
 
         for (int i = 0; i < LENGTH; i++) {
-            ia[i] = i;
-            la[i] = RD.nextLong(25);
-            da[i] = RD.nextDouble(25.0);
+            ia[i] = RD.nextInt(100);
+            la[i] = RD.nextLong(100);
+            da[i] = RD.nextDouble(100);
             m[i] = i % 2 == 0;
         }
     }
 
-    @Test
-    @Warmup(10000)
-    @IR(counts = { IRNode.LOAD_VECTOR_GATHER, ">= 1" })
-    public static void testLoadGather() {
-        LongVector av = LongVector.fromArray(L_SPECIES, la, 0, ia, 0);
-        av.intoArray(lr, 0);
-        IntVector bv = IntVector.fromArray(I_SPECIES, ia, 0);
-        bv.add(0).intoArray(ir, 0);
-
-        for(int i = 0; i < I_SPECIES.length(); i++) {
-            Asserts.assertEquals(ia[i], ir[i]);
+    @DontInline
+    public static void verifyGather(boolean intIndex, boolean masked) {
+        for (int i = 0; i < I_SPECIES.length(); i++) {
+            int index = intIndex ? ia[i] : (int) la[i];
+            if (!masked || m[i]) {
+                Asserts.assertEquals(ir[i], ia[index]);
+                Asserts.assertEquals(lr[i], la[index]);
+                Asserts.assertEquals(fr[i], fa[index]);
+                Asserts.assertEquals(dr[i], da[index]);
+            } else {
+                Asserts.assertEquals(ir[i], 0);
+                Asserts.assertEquals(lr[i], 0L);
+                Asserts.assertEquals(fr[i], 0F);
+                Asserts.assertEquals(dr[i], 0D);
+            }
         }
     }
 
-    @Test
-    @Warmup(10000)
-    @IR(counts = { IRNode.LOAD_VECTOR_GATHER_MASKED, ">= 1" })
-    public static void testLoadGatherMasked() {
-        VectorMask<Long> mask = VectorMask.fromArray(L_SPECIES, m, 0);
-        // "mask" is guaranteed to be not alltrue, in case the masked
-        // gather load is optimized to the non-masked version.
-        LongVector av = LongVector.fromArray(L_SPECIES, la, 0, ia, 0, mask);
-        av.intoArray(lr, 0);
-        IntVector bv = IntVector.fromArray(I_SPECIES, ia, 0);
-        bv.add(0).intoArray(ir, 0);
-
-        for(int i = 0; i < I_SPECIES.length(); i++) {
-            Asserts.assertEquals(ia[i], ir[i]);
+    @DontInline
+    public static void verifyScatter(boolean intIndex, boolean masked,
+                                     int[] ie, long[] le, float[] fe, double[] de) {
+        for (int i = 0; i < I_SPECIES.length(); i++) {
+            int index = intIndex ? ia[i] : (int) la[i];
+            if (!masked || m[i]) {
+                ie[index] = ia[i];
+                le[index] = la[i];
+                fe[index] = fa[i];
+                de[index] = da[i];
+            }
         }
+        Asserts.assertTrue(Arrays.equals(ie, ir));
+        Asserts.assertTrue(Arrays.equals(le, lr));
+        Asserts.assertTrue(Arrays.equals(fe, fr));
+        Asserts.assertTrue(Arrays.equals(de, dr));
     }
 
     @Test
-    @Warmup(10000)
-    @IR(counts = { IRNode.STORE_VECTOR_SCATTER, ">= 1" })
-    public static void testStoreScatter() {
-        DoubleVector av = DoubleVector.fromArray(D_SPECIES, da, 0);
-        av.intoArray(dr, 0, ia, 0);
-        IntVector bv = IntVector.fromArray(I_SPECIES, ia, 0);
-        bv.add(0).intoArray(ir, 0);
+    @IR(counts = {IRNode.LOAD_GATHER_INT, "4"}, applyIfCPUFeatureOr = {"avx2", "true", "sve", "true"})
+    public static void testGatherInt() {
+        var idx = IntVector.fromArray(I_SPECIES, ia, 0);
+        DoubleVector.fromArray(D_SPECIES, da, idx)
+                .intoArray(dr, 0);
+        FloatVector.fromArray(F_SPECIES, fa, idx)
+                .intoArray(fr, 0);
+        LongVector.fromArray(L_SPECIES, la, idx)
+                .intoArray(lr, 0);
+        IntVector.fromArray(I_SPECIES, ia, idx)
+                .intoArray(ir, 0);
 
-        for(int i = 0; i < I_SPECIES.length(); i++) {
-            Asserts.assertEquals(ia[i], ir[i]);
-        }
+        verifyGather(true, false);
     }
 
     @Test
-    @Warmup(10000)
-    @IR(counts = { IRNode.STORE_VECTOR_SCATTER_MASKED, ">= 1" })
-    public static void testStoreScatterMasked() {
-        VectorMask<Double> mask = VectorMask.fromArray(D_SPECIES, m, 0);
-        DoubleVector av = DoubleVector.fromArray(D_SPECIES, da, 0);
-        // "mask" is guaranteed to be not alltrue, in case the masked
-        // scatter store is optimized to the non-masked version.
-        av.intoArray(dr, 0, ia, 0, mask);
-        IntVector bv = IntVector.fromArray(I_SPECIES, ia, 0);
-        bv.add(0).intoArray(ir, 0);
+    @IR(counts = {IRNode.LOAD_GATHER_LONG, "4"}, applyIfCPUFeatureOr = {"avx2", "true", "sve", "true"})
+    public static void testGatherLong() {
+        var idx = LongVector.fromArray(L_SPECIES, la, 0);
+        DoubleVector.fromArray(D_SPECIES, da, idx)
+                .intoArray(dr, 0);
+        FloatVector.fromArray(F_SPECIES, fa, idx)
+                .intoArray(fr, 0);
+        LongVector.fromArray(L_SPECIES, la, idx)
+                .intoArray(lr, 0);
+        IntVector.fromArray(I_SPECIES, ia, idx)
+                .intoArray(ir, 0);
 
-        for(int i = 0; i < I_SPECIES.length(); i++) {
-            Asserts.assertEquals(ia[i], ir[i]);
-        }
+        verifyGather(false, false);
+    }
+
+    @Test
+    @IR(counts = {IRNode.LOAD_GATHER_INT_MASKED, "4"}, applyIfCPUFeatureOr = {"avx512f", "true", "sve", "true"})
+    public static void testGatherIntMasked() {
+        var idx = IntVector.fromArray(I_SPECIES, ia, 0);
+        var mask = VectorMask.fromArray(I_SPECIES, m, 0);
+        DoubleVector.fromArray(D_SPECIES, da, idx, mask.cast(D_SPECIES))
+                .intoArray(dr, 0);
+        FloatVector.fromArray(F_SPECIES, fa, idx, mask.cast(F_SPECIES))
+                .intoArray(fr, 0);
+        LongVector.fromArray(L_SPECIES, la, idx, mask.cast(L_SPECIES))
+                .intoArray(lr, 0);
+        IntVector.fromArray(I_SPECIES, ia, idx, mask.cast(I_SPECIES))
+                .intoArray(ir, 0);
+
+        verifyGather(true, true);
+    }
+
+    @Test
+    @IR(counts = {IRNode.LOAD_GATHER_LONG_MASKED, "4"}, applyIfCPUFeatureOr = {"avx512f", "true", "sve", "true"})
+    public static void testGatherLongMasked() {
+        var idx = LongVector.fromArray(L_SPECIES, la, 0);
+        var mask = VectorMask.fromArray(I_SPECIES, m, 0);
+        DoubleVector.fromArray(D_SPECIES, da, idx, mask.cast(D_SPECIES))
+                .intoArray(dr, 0);
+        FloatVector.fromArray(F_SPECIES, fa, idx, mask.cast(F_SPECIES))
+                .intoArray(fr, 0);
+        LongVector.fromArray(L_SPECIES, la, idx, mask.cast(L_SPECIES))
+                .intoArray(lr, 0);
+        IntVector.fromArray(I_SPECIES, ia, idx, mask.cast(I_SPECIES))
+                .intoArray(ir, 0);
+
+        verifyGather(false, true);
+    }
+
+    @Test
+    @IR(counts = {IRNode.STORE_SCATTER_INT, "4"}, applyIfCPUFeatureOr = {"avx512f", "true", "sve", "true"})
+    public static void testScatterInt() {
+        int[] ie = ir.clone();
+        long[] le = lr.clone();
+        float[] fe = fr.clone();
+        double[] de = dr.clone();
+        var idx = IntVector.fromArray(I_SPECIES, ia, 0);
+        DoubleVector.fromArray(D_SPECIES, da, 0)
+                .intoArray(dr, idx);
+        FloatVector.fromArray(F_SPECIES, fa, 0)
+                .intoArray(fr, idx);
+        LongVector.fromArray(L_SPECIES, la, 0)
+                .intoArray(lr, idx);
+        IntVector.fromArray(I_SPECIES, ia, 0)
+                .intoArray(ir, idx);
+
+        verifyScatter(true, false, ie, le, fe, de);
+    }
+
+    @Test
+    @IR(counts = {IRNode.STORE_SCATTER_LONG, "4"}, applyIfCPUFeatureOr = {"avx512f", "true", "sve", "true"})
+    public static void testScatterLong() {
+        int[] ie = ir.clone();
+        long[] le = lr.clone();
+        float[] fe = fr.clone();
+        double[] de = dr.clone();
+        var idx = LongVector.fromArray(L_SPECIES, la, 0);
+        DoubleVector.fromArray(D_SPECIES, da, 0)
+                .intoArray(dr, idx);
+        FloatVector.fromArray(F_SPECIES, fa, 0)
+                .intoArray(fr, idx);
+        LongVector.fromArray(L_SPECIES, la, 0)
+                .intoArray(lr, idx);
+        IntVector.fromArray(I_SPECIES, ia, 0)
+                .intoArray(ir, idx);
+
+        verifyScatter(false, false, ie, le, fe, de);
+    }
+
+    @Test
+    @IR(counts = {IRNode.STORE_SCATTER_INT_MASKED, "4"}, applyIfCPUFeatureOr = {"avx512f", "true", "sve", "true"})
+    public static void testScatterIntMasked() {
+        int[] ie = ir.clone();
+        long[] le = lr.clone();
+        float[] fe = fr.clone();
+        double[] de = dr.clone();
+        var idx = IntVector.fromArray(I_SPECIES, ia, 0);
+        var mask = VectorMask.fromArray(I_SPECIES, m, 0);
+        DoubleVector.fromArray(D_SPECIES, da, 0)
+                .intoArray(dr, idx, mask.cast(D_SPECIES));
+        FloatVector.fromArray(F_SPECIES, fa, 0)
+                .intoArray(fr, idx, mask.cast(F_SPECIES));
+        LongVector.fromArray(L_SPECIES, la, 0)
+                .intoArray(lr, idx, mask.cast(L_SPECIES));
+        IntVector.fromArray(I_SPECIES, ia, 0)
+                .intoArray(ir, idx, mask.cast(I_SPECIES));
+
+        verifyScatter(true, true, ie, le, fe, de);
+    }
+
+    @Test
+    @IR(counts = {IRNode.STORE_SCATTER_LONG_MASKED, "4"}, applyIfCPUFeatureOr = {"avx512f", "true", "sve", "true"})
+    public static void testScatterLongMasked() {
+        int[] ie = ir.clone();
+        long[] le = lr.clone();
+        float[] fe = fr.clone();
+        double[] de = dr.clone();
+        var idx = LongVector.fromArray(L_SPECIES, la, 0);
+        var mask = VectorMask.fromArray(I_SPECIES, m, 0);
+        DoubleVector.fromArray(D_SPECIES, da, 0)
+                .intoArray(dr, idx, mask.cast(D_SPECIES));
+        FloatVector.fromArray(F_SPECIES, fa, 0)
+                .intoArray(fr, idx, mask.cast(F_SPECIES));
+        LongVector.fromArray(L_SPECIES, la, 0)
+                .intoArray(lr, idx, mask.cast(L_SPECIES));
+        IntVector.fromArray(I_SPECIES, ia, 0)
+                .intoArray(ir, idx, mask.cast(I_SPECIES));
+
+        verifyScatter(false, true, ie, le, fe, de);
     }
 
     public static void main(String[] args) {
-        TestFramework.runWithFlags("--add-modules=jdk.incubator.vector",
-                                   "-XX:UseSVE=1");
+        TestFramework inst = new TestFramework();
+        inst.setDefaultWarmup(10000)
+                .addFlags("--add-modules=jdk.incubator.vector")
+                .start();
     }
 }
