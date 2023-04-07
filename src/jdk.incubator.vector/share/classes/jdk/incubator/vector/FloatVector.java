@@ -2762,7 +2762,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             throw new IllegalArgumentException("species length and offsetMap length differ");
         }
 
-        VectorIntrinsics.checkIndices(offsetMap, a.length);
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1);
         return vsp.dummyVector().fromArray0(offsetMap.getClass(), int.class, a, offsetMap);
     }
 
@@ -2796,7 +2796,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             throw new IllegalArgumentException("species length and offsetMap length differ");
         }
 
-        VectorIntrinsics.checkIndices(offsetMap, a.length);
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1);
         return vsp.dummyVector().fromArray0(offsetMap.getClass(), long.class, a, offsetMap);
     }
 
@@ -2838,7 +2838,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             throw new IllegalArgumentException("species length and offsetMap length differ");
         }
 
-        VectorIntrinsics.checkIndices(offsetMap, a.length, m);
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1, m);
         return vsp.dummyVector().fromArray0(offsetMap.getClass(), int.class, a, offsetMap, m);
     }
 
@@ -2880,7 +2880,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             throw new IllegalArgumentException("species length and offsetMap length differ");
         }
 
-        VectorIntrinsics.checkIndices(offsetMap, a.length, m);
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1, m);
         return vsp.dummyVector().fromArray0(offsetMap.getClass(), long.class, a, offsetMap, m);
     }
 
@@ -3034,7 +3034,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             throw new IllegalArgumentException("species length and offsetMap length differ");
         }
 
-        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize() - (4 - 1));
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 4);
         return vsp.dummyVector().fromMemorySegment0(offsetMap.getClass(), int.class, ms, offsetMap).maybeSwap(bo);
     }
 
@@ -3083,7 +3083,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             throw new IllegalArgumentException("species length and offsetMap length differ");
         }
 
-        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize() - (4 - 1));
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 4);
         return vsp.dummyVector().fromMemorySegment0(offsetMap.getClass(), long.class, ms, offsetMap).maybeSwap(bo);
     }
 
@@ -3138,7 +3138,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             throw new IllegalArgumentException("species length and offsetMap length differ");
         }
 
-        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize() - (4 - 1));
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 4, m);
         return vsp.dummyVector().fromMemorySegment0(offsetMap.getClass(), int.class, ms, offsetMap, m).maybeSwap(bo);
     }
 
@@ -3193,7 +3193,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             throw new IllegalArgumentException("species length and offsetMap length differ");
         }
 
-        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize() - (4 - 1));
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 4, m);
         return vsp.dummyVector().fromMemorySegment0(offsetMap.getClass(), long.class, ms, offsetMap, m).maybeSwap(bo);
     }
 
@@ -3291,7 +3291,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             throw new IllegalArgumentException("vector length and offsetMap length differ");
         }
 
-        VectorIntrinsics.checkIndices(offsetMap, a.length);
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1);
         intoArray0(offsetMap.getClass(), int.class, a, offsetMap);
     }
 
@@ -3321,7 +3321,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             throw new IllegalArgumentException("vector length and offsetMap length differ");
         }
 
-        VectorIntrinsics.checkIndices(offsetMap, a.length);
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1);
         intoArray0(offsetMap.getClass(), long.class, a, offsetMap);
     }
 
@@ -3356,7 +3356,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             throw new IllegalArgumentException("vector length and offsetMap length differ");
         }
 
-        VectorIntrinsics.checkIndices(offsetMap, a.length, m);
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1, m);
         intoArray0(offsetMap.getClass(), int.class, a, offsetMap, m);
     }
 
@@ -3390,7 +3390,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             throw new IllegalArgumentException("vector length and offsetMap length differ");
         }
 
-        VectorIntrinsics.checkIndices(offsetMap, a.length, m);
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1, m);
         intoArray0(offsetMap.getClass(), long.class, a, offsetMap, m);
     }
 
@@ -3435,6 +3435,72 @@ public abstract class FloatVector extends AbstractVector<Float> {
             }
             maybeSwap(bo).intoMemorySegment0(ms, offset, m);
         }
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    @ForceInline
+    public final
+    void intoMemorySegment(MemorySegment ms, IntVector offsetMap,
+                           ByteOrder bo) {
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 4);
+        maybeSwap(bo).intoMemorySegment0(offsetMap.getClass(), int.class, ms, offsetMap);
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    @ForceInline
+    public final
+    void intoMemorySegment(MemorySegment ms, LongVector offsetMap,
+                           ByteOrder bo) {
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 4);
+        maybeSwap(bo).intoMemorySegment0(offsetMap.getClass(), long.class, ms, offsetMap);
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    @ForceInline
+    public final
+    void intoMemorySegment(MemorySegment ms, IntVector offsetMap,
+                           ByteOrder bo, VectorMask<Float> m) {
+        m.check(vspecies());
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 4, m);
+        maybeSwap(bo).intoMemorySegment0(offsetMap.getClass(), int.class, ms, offsetMap, m);
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    @ForceInline
+    public final
+    void intoMemorySegment(MemorySegment ms, LongVector offsetMap,
+                           ByteOrder bo, VectorMask<Float> m) {
+        m.check(vspecies());
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 4, m);
+        maybeSwap(bo).intoMemorySegment0(offsetMap.getClass(), long.class, ms, offsetMap, m);
     }
 
     // ================================================
@@ -3497,7 +3563,8 @@ public abstract class FloatVector extends AbstractVector<Float> {
      IE>
     FloatVector fromArray0Template(Class<M> mClass, Class<? extends IV> ivClass, Class<IE> ieClass, float[] a, IV offsetMap) {
         FloatSpecies vsp = vspecies();
-        return VectorSupport.loadWithMap(vsp.vectorType(), mClass, float.class,
+        return VectorSupport.<float[], FloatVector, IV, FloatSpecies, M, Float, IE>loadWithMap(
+            vsp.vectorType(), mClass, float.class,
             vsp.laneCount(), ivClass, ieClass,
             a, ARRAY_BASE, offsetMap, 4L, null,
             a, vsp,
@@ -3515,7 +3582,8 @@ public abstract class FloatVector extends AbstractVector<Float> {
      IE>
     FloatVector fromArray0Template(Class<M> mClass, Class<? extends IV> ivClass, Class<IE> ieClass, float[] a, IV offsetMap, M m) {
         FloatSpecies vsp = vspecies();
-        return VectorSupport.loadWithMap(vsp.vectorType(), mClass, float.class,
+        return VectorSupport.<float[], FloatVector, IV, FloatSpecies, M, Float, IE>loadWithMap(
+            vsp.vectorType(), mClass, float.class,
             vsp.laneCount(), ivClass, ieClass,
             a, ARRAY_BASE, offsetMap, 4L, m,
             a, vsp,
@@ -3561,11 +3629,11 @@ public abstract class FloatVector extends AbstractVector<Float> {
      IE>
     FloatVector fromMemorySegment0Template(Class<M> mClass, Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
         FloatSpecies vsp = vspecies();
-        return ScopedMemoryAccess.loadFromMemorySegmentWithMap(
+        return ScopedMemoryAccess.<FloatVector, IV, FloatSpecies, M, Float, IE>loadFromMemorySegmentWithMap(
             vsp.vectorType(), mClass, float.class,
             vsp.laneCount(), ivClass, ieClass,
             (AbstractMemorySegmentImpl) ms, offsetMap, vsp,
-            (arr, map, s, vm) -> s.nOp(i -> memorySegmentGet(ms, map.lane(i), 0)));
+            (msp, map, s, vm) -> s.nOp(i -> memorySegmentGet(msp, map.toLongArray()[i], 0)));
     }
 
     /*package-private*/
@@ -3579,11 +3647,11 @@ public abstract class FloatVector extends AbstractVector<Float> {
      IE>
     FloatVector fromMemorySegment0Template(Class<M> mClass, Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, M m) {
         FloatSpecies vsp = vspecies();
-        return ScopedMemoryAccess.loadFromMemorySegmentWithMapMasked(
+        return ScopedMemoryAccess.<FloatVector, IV, FloatSpecies, M, Float, IE>loadFromMemorySegmentWithMapMasked(
             vsp.vectorType(), mClass, float.class,
             vsp.laneCount(), ivClass, ieClass,
             (AbstractMemorySegmentImpl) ms, offsetMap, m, vsp,
-            (arr, map, s, vm) -> s.nOp(vm, i -> memorySegmentGet(ms, map.lane(i), 0)));
+            (msp, map, s, vm) -> s.nOp(vm, i -> memorySegmentGet(msp, map.toLongArray()[i], 0)));
     }
 
     // Unchecked storing operations in native byte order.
@@ -3617,7 +3685,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
             this, m, a, offset,
-            (arr, off, v, vm) -> v.cOp((i, e) -> {
+            (arr, off, v, vm) -> v.cOp(vm, (i, e) -> {
                 arr[(int)off + i] = e;
             }));
     }
@@ -3653,7 +3721,7 @@ public abstract class FloatVector extends AbstractVector<Float> {
         FloatSpecies vsp = vspecies();
         VectorSupport.storeWithMap(vsp.vectorType(), mClass, float.class,
             vsp.laneCount(), ivClass, ieClass,
-            a, ARRAY_BASE, offsetMap, 4L, null,
+            a, ARRAY_BASE, offsetMap, 4L, m,
             this, a,
             (arr, map, v, vm) -> v.cOp(vm, (i, e) -> {
                 arr[map.toIntArray()[i]] = e;
@@ -3698,11 +3766,11 @@ public abstract class FloatVector extends AbstractVector<Float> {
      IE>
     void intoMemorySegment0Template(Class<M> mClass, Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
         FloatSpecies vsp = vspecies();
-        return ScopedMemoryAccess.storeIntoMemorySegmentWithMap(
+        ScopedMemoryAccess.storeIntoMemorySegmentWithMap(
             vsp.vectorType(), mClass, float.class,
             vsp.laneCount(), ivClass, ieClass,
-            (AbstractMemorySegmentImpl) ms, offsetMap, vsp,
-            (arr, map, s, vm) -> s.nOp(i -> memorySegmentGet(ms, map.lane(i), 0)));
+            this, (AbstractMemorySegmentImpl) ms, offsetMap,
+            (msp, map, s, vm) -> s.cOp((i, e) -> memorySegmentSet(msp, map.toLongArray()[i], 0, e)));
     }
 
     /*package-private*/
@@ -3716,11 +3784,11 @@ public abstract class FloatVector extends AbstractVector<Float> {
      IE>
     void intoMemorySegment0Template(Class<M> mClass, Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, M m) {
         FloatSpecies vsp = vspecies();
-        return ScopedMemoryAccess.storeIntoMemorySegmentWithMapMasked(
+        ScopedMemoryAccess.storeIntoMemorySegmentWithMapMasked(
             vsp.vectorType(), mClass, float.class,
             vsp.laneCount(), ivClass, ieClass,
-            (AbstractMemorySegmentImpl) ms, offsetMap, m, vsp,
-            (arr, map, s, vm) -> s.nOp(vm, i -> memorySegmentGet(ms, map.lane(i), 0)));
+            this, (AbstractMemorySegmentImpl) ms, offsetMap, m,
+            (msp, map, s, vm) -> s.cOp(vm, (i, e) -> memorySegmentSet(msp, map.toLongArray()[i], 0, e)));
     }
 
 

@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.IntFunction;
 import java.util.function.IntUnaryOperator;
+import java.util.function.LongFunction;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
 
@@ -70,10 +71,24 @@ public class AbstractVectorTest {
         };
     }
 
-    static <R> BiFunction<Integer,Integer,R> withToStringBi(String s, BiFunction<Integer,Integer,R> f) {
-        return new BiFunction<Integer,Integer,R>() {
+    static <R> LongFunction<R> withToString(String s, LongFunction<R> f) {
+        return new LongFunction<R>() {
             @Override
-            public R apply(Integer v, Integer u) {
+            public R apply(long v) {
+                return f.apply(v);
+            }
+
+            @Override
+            public String toString() {
+                return s;
+            }
+        };
+    }
+
+    static <T, R> BiFunction<Integer,T,R> withToStringBi(String s, BiFunction<Integer,T,R> f) {
+        return new BiFunction<Integer,T,R>() {
+            @Override
+            public R apply(Integer v, T u) {
                 return f.apply(v, u);
             }
 
@@ -175,6 +190,11 @@ public class AbstractVectorTest {
     static final List<BiFunction<Integer,Integer,int[]>> INT_INDEX_GENERATORS = List.of(
             withToStringBi("index[random]",
                     (Integer l, Integer m) -> RAND.ints(l, 0, m).toArray())
+    );
+
+    static final List<BiFunction<Integer,Long,long[]>> LONG_INDEX_GENERATORS = List.of(
+            withToStringBi("index[random]",
+                    (Integer l, Long m) -> RAND.longs(l, 0, m).toArray())
     );
 
     static boolean isIndexOutOfBoundsForMask(boolean[] mask, int offset, int length) {

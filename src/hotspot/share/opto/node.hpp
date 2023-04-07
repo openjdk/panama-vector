@@ -168,9 +168,9 @@ class VectorNode;
 class LoadVectorNode;
 class LoadVectorMaskedNode;
 class StoreVectorMaskedNode;
-class GatherNode;
+class LoadGatherNode;
 class StoreVectorNode;
-class ScatterNode;
+class StoreScatterNode;
 class VectorMaskCmpNode;
 class VectorUnboxNode;
 class VectorSet;
@@ -728,13 +728,13 @@ public:
     DEFINE_CLASS_ID(Mem, Node, 4)
       DEFINE_CLASS_ID(Load, Mem, 0)
         DEFINE_CLASS_ID(LoadVector,  Load, 0)
-          DEFINE_CLASS_ID(Gather, LoadVector, 0)
-          DEFINE_CLASS_ID(GatherMasked, LoadVector, 1)
+          DEFINE_CLASS_ID(LoadGather, LoadVector, 0)
+          DEFINE_CLASS_ID(LoadGatherMasked, LoadVector, 1)
           DEFINE_CLASS_ID(LoadVectorMasked, LoadVector, 2)
       DEFINE_CLASS_ID(Store, Mem, 1)
         DEFINE_CLASS_ID(StoreVector, Store, 0)
-          DEFINE_CLASS_ID(Scatter, StoreVector, 0)
-          DEFINE_CLASS_ID(ScatterMasked, StoreVector, 1)
+          DEFINE_CLASS_ID(StoreScatter, StoreVector, 0)
+          DEFINE_CLASS_ID(StoreScatterMasked, StoreVector, 1)
           DEFINE_CLASS_ID(StoreVectorMasked, StoreVector, 2)
       DEFINE_CLASS_ID(LoadStore, Mem, 2)
         DEFINE_CLASS_ID(LoadStoreConditional, LoadStore, 0)
@@ -952,9 +952,9 @@ public:
   DEFINE_CLASS_QUERY(ExpandV)
   DEFINE_CLASS_QUERY(CompressM)
   DEFINE_CLASS_QUERY(LoadVector)
-  DEFINE_CLASS_QUERY(Gather)
+  DEFINE_CLASS_QUERY(LoadGather)
   DEFINE_CLASS_QUERY(StoreVector)
-  DEFINE_CLASS_QUERY(Scatter)
+  DEFINE_CLASS_QUERY(StoreScatter)
   DEFINE_CLASS_QUERY(ShiftV)
   DEFINE_CLASS_QUERY(Unlock)
 

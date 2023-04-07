@@ -122,11 +122,11 @@ public:
   void insert(BasicType typ, XMMRegister dst, Register val, int idx);
   void vinsert(BasicType typ, XMMRegister dst, XMMRegister src, Register val, int idx);
   void vgather(BasicType elem_bt, BasicType idx_bt, XMMRegister dst, Register base,
-               XMMRegister idx, int scale, XMMRegister mask, int vlen);
+               XMMRegister idx, int scale, int disp, XMMRegister mask, int vlen);
   void evgather(BasicType elem_bt, BasicType idx_bt, XMMRegister dst, KRegister mask,
-                Register base, XMMRegister idx, int scale, int vlen);
+                Register base, XMMRegister idx, int scale, int disp, int vlen);
   void evscatter(BasicType elem_bt, BasicType idx_bt, Register base, XMMRegister idx, int scale,
-                 KRegister mask, XMMRegister src, XMMRegister xtmp, int vlen);
+                 int disp, KRegister mask, XMMRegister src, XMMRegister xtmp, int vlen);
 
   void evmovdqu(BasicType type, KRegister kmask, XMMRegister dst, Address src, bool merge, int vector_len);
   void evmovdqu(BasicType type, KRegister kmask, Address dst, XMMRegister src, bool merge, int vector_len);

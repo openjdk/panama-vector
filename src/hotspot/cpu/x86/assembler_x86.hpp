@@ -1518,6 +1518,10 @@ private:
   void kxorwl(KRegister dst, KRegister src1, KRegister src2);
   void kxordl(KRegister dst, KRegister src1, KRegister src2);
   void kxorql(KRegister dst, KRegister src1, KRegister src2);
+
+  void kxnorbl(KRegister dst, KRegister src1, KRegister src2);
+  void kxnorwl(KRegister dst, KRegister src1, KRegister src2);
+
   void kmovbl(KRegister dst, Register src);
   void kmovbl(Register dst, KRegister src);
   void kmovbl(KRegister dst, KRegister src);
@@ -1544,7 +1548,6 @@ private:
   void kortestdl(KRegister dst, KRegister src);
   void kortestql(KRegister dst, KRegister src);
 
-  void kxnorbl(KRegister dst, KRegister src1, KRegister src2);
   void kshiftlbl(KRegister dst, KRegister src, int imm8);
   void kshiftlql(KRegister dst, KRegister src, int imm8);
   void kshiftrbl(KRegister dst, KRegister src, int imm8);

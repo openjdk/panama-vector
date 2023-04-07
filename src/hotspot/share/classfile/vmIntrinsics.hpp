@@ -1169,12 +1169,14 @@ class methodHandle;
                                       "Ljava/lang/Class;"                                                                                      \
                                       "I"                                                                                                      \
                                       "Ljava/lang/Class;"                                                                                      \
+                                      "Ljava/lang/Class;"                                                                                      \
                                       "Ljava/lang/Object;"                                                                                     \
                                       "J"                                                                                                      \
                                       "Ljdk/internal/vm/vector/VectorSupport$Vector;"                                                          \
+                                      "J"                                                                                                      \
+                                      "Ljdk/internal/vm/vector/VectorSupport$VectorMask;"                                                      \
                                       "Ljdk/internal/vm/vector/VectorSupport$Vector;"                                                          \
-                                      "Ljdk/internal/vm/vector/VectorSupport$VectorMask;Ljava/lang/Object;"                                    \
-                                      "I[II"                                                                                                   \
+                                      "Ljava/lang/Object;"                                                                                     \
                                       "Ljdk/internal/vm/vector/VectorSupport$StoreVectorOperationWithMap;)"                                    \
                                       "V")                                                                                                     \
     do_name(vector_scatter_name, "storeWithMap")                                                                                               \

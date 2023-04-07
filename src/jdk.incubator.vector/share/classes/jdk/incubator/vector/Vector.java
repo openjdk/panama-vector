@@ -3453,6 +3453,169 @@ public abstract class Vector<E> extends jdk.internal.vm.vector.VectorSupport.Vec
                                            ByteOrder bo, VectorMask<E> m);
 
     /**
+     * Scatters this vector into a {@linkplain
+     * MemorySegment memory segment}
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is a {@link LongVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * the lane is stored into the memory location at offset {@code f(N)}
+     * of the memory segment, where {@code f(N)} is the index mapping
+     * expression {@code offsetMap.lane(N)}.
+     *
+     * @implNote
+     * This operation is likely to be more efficient if
+     * the specified byte order is the same as
+     * {@linkplain ByteOrder#nativeOrder()
+     * the platform native order},
+     * since this method will not need to reorder
+     * the bytes of lane values.
+     * In the special case where {@code ETYPE} is
+     * {@code byte}, the byte order argument is
+     * ignored.
+     *
+     * @param ms the memory segment
+     * @param offsetMap the offset map
+     * @param bo the intended byte order
+     * @throws IllegalArgumentException
+     *         if {@code this.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code offsetMap.lane(N)<0}
+     *         or {@code offsetMap.lane(N)+$sizeInBytes$>ms.byteSize()}
+     *         for any lane {@code N} in the vector
+     *         where the mask is set
+     * @throws IllegalArgumentException if the memory segment is a heap segment that is
+     *         not backed by a {@code byte[]} array.
+     * @throws IllegalStateException if the memory segment's session is not alive,
+     *         or if access occurs from a thread other than the thread owning the session.
+     */
+    public abstract void intoMemorySegment(MemorySegment ms, IntVector offsetMap,
+                                           ByteOrder bo);
+    /**
+     * Scatters this vector into a {@linkplain
+     * MemorySegment memory segment}
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is a {@link LongVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * the lane is stored into the memory location at offset {@code f(N)}
+     * of the memory segment, where {@code f(N)} is the index mapping
+     * expression {@code offsetMap.lane(N)}.
+     *
+     * @implNote
+     * This operation is likely to be more efficient if
+     * the specified byte order is the same as
+     * {@linkplain ByteOrder#nativeOrder()
+     * the platform native order},
+     * since this method will not need to reorder
+     * the bytes of lane values.
+     * In the special case where {@code ETYPE} is
+     * {@code byte}, the byte order argument is
+     * ignored.
+     *
+     * @param ms the memory segment
+     * @param offsetMap the offset map
+     * @param bo the intended byte order
+     * @throws IllegalArgumentException
+     *         if {@code this.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code offsetMap.lane(N)<0}
+     *         or {@code offsetMap.lane(N)+$sizeInBytes$>ms.byteSize()}
+     *         for any lane {@code N} in the vector
+     *         where the mask is set
+     * @throws IllegalArgumentException if the memory segment is a heap segment that is
+     *         not backed by a {@code byte[]} array.
+     * @throws IllegalStateException if the memory segment's session is not alive,
+     *         or if access occurs from a thread other than the thread owning the session.
+     */
+    public abstract void intoMemorySegment(MemorySegment ms, LongVector offsetMap,
+                                           ByteOrder bo);
+
+    /**
+     * Scatters this vector into a {@linkplain
+     * MemorySegment memory segment} under the control of a mask
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is an {@link IntVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * if the lane is set in the mask,
+     * the lane is stored into the memory location at offset {@code f(N)}
+     * of the memory segment, where {@code f(N)} is the index mapping
+     * expression {@code offsetMap.lane(N)}.
+     *
+     * @implNote
+     * This operation is likely to be more efficient if
+     * the specified byte order is the same as
+     * {@linkplain ByteOrder#nativeOrder()
+     * the platform native order},
+     * since this method will not need to reorder
+     * the bytes of lane values.
+     * In the special case where {@code ETYPE} is
+     * {@code byte}, the byte order argument is
+     * ignored.
+     *
+     * @param ms the memory segment
+     * @param offsetMap the offset map
+     * @param bo the intended byte order
+     * @param m the mask controlling lane selection
+     * @throws IllegalArgumentException
+     *         if {@code this.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code offsetMap.lane(N)<0}
+     *         or {@code offsetMap.lane(N)+$sizeInBytes$>ms.byteSize()}
+     *         for any lane {@code N} in the vector
+     *         where the mask is set
+     * @throws IllegalArgumentException if the memory segment is a heap segment that is
+     *         not backed by a {@code byte[]} array.
+     * @throws IllegalStateException if the memory segment's session is not alive,
+     *         or if access occurs from a thread other than the thread owning the session.
+     */
+    public abstract void intoMemorySegment(MemorySegment ms, IntVector offsetMap,
+                                           ByteOrder bo, VectorMask<E> m);
+
+    /**
+     * Scatters this vector into a {@linkplain
+     * MemorySegment memory segment} under the control of a mask
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is a {@link LongVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * if the lane is set in the mask,
+     * the lane is stored into the memory location at offset {@code f(N)}
+     * of the memory segment, where {@code f(N)} is the index mapping
+     * expression {@code offsetMap.lane(N)}.
+     *
+     * @implNote
+     * This operation is likely to be more efficient if
+     * the specified byte order is the same as
+     * {@linkplain ByteOrder#nativeOrder()
+     * the platform native order},
+     * since this method will not need to reorder
+     * the bytes of lane values.
+     * In the special case where {@code ETYPE} is
+     * {@code byte}, the byte order argument is
+     * ignored.
+     *
+     * @param ms the memory segment
+     * @param offsetMap the offset map
+     * @param bo the intended byte order
+     * @param m the mask controlling lane selection
+     * @throws IllegalArgumentException
+     *         if {@code this.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code offsetMap.lane(N)<0}
+     *         or {@code offsetMap.lane(N)+$sizeInBytes$>ms.byteSize()}
+     *         for any lane {@code N} in the vector
+     *         where the mask is set
+     * @throws IllegalArgumentException if the memory segment is a heap segment that is
+     *         not backed by a {@code byte[]} array.
+     * @throws IllegalStateException if the memory segment's session is not alive,
+     *         or if access occurs from a thread other than the thread owning the session.
+     */
+    public abstract void intoMemorySegment(MemorySegment ms, LongVector offsetMap,
+                                           ByteOrder bo, VectorMask<E> m);
+
+    /**
      * Returns a packed array containing all the lane values.
      * The array length is the same as the vector length.
      * The element type of the array is the same as the element

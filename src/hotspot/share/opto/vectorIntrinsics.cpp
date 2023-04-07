@@ -1453,7 +1453,7 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
   BasicType idx_elem_bt = idx_elem_type->basic_type();
   int num_elem = vlen->get_con();
 
-  const Type* vmask_type = gvn().type(argument(9));
+  const Type* vmask_type = gvn().type(argument(12));
   bool is_masked_op = vmask_type != TypePtr::NULL_PTR;
   if (is_masked_op) {
     if (mask_klass == nullptr || mask_klass->const_oop() == nullptr) {
@@ -1477,7 +1477,7 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
       return false;
     }
 
-    opc = is_scatter ? ScatterMaskedNode::opcode(idx_elem_bt) : GatherMaskedNode::opcode(idx_elem_bt);
+    opc = is_scatter ? StoreScatterMaskedNode::opcode(idx_elem_bt) : LoadGatherMaskedNode::opcode(idx_elem_bt);
     // Check whether the predicated gather/scatter node is supported by architecture.
     if (!arch_supports_vector(opc, num_elem, elem_bt, (VectorMaskUseType) (VecMaskUseLoad | VecMaskUsePred))) {
       if (C->print_intrinsics()) {
@@ -1489,7 +1489,7 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
     }
   } else {
     // Check whether the normal gather/scatter node is supported for non-masked operation.
-    opc = is_scatter ? ScatterNode::opcode(idx_elem_bt) : GatherNode::opcode(idx_elem_bt);
+    opc = is_scatter ? StoreScatterNode::opcode(idx_elem_bt) : LoadGatherNode::opcode(idx_elem_bt);
     if (!arch_supports_vector(opc, num_elem, elem_bt, VecMaskNotUsed)) {
       if (C->print_intrinsics()) {
         tty->print_cr("  ** not supported: arity=%d op=%s vlen=%d etype=%s ietype=%s is_masked_op=0",
@@ -1535,7 +1535,7 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
   }
 
   const TypeInstPtr* idx_vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, idx_vbox_klass);
-  Node* index_vect = unbox_vector(argument(9), idx_vbox_type, T_INT, num_elem);
+  Node* index_vect = unbox_vector(argument(9), idx_vbox_type, idx_elem_bt, num_elem);
   if (index_vect == nullptr) {
     set_map(old_map);
     set_sp(old_sp);
@@ -1569,17 +1569,17 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
 
     Node* vstore = nullptr;
     if (mask != nullptr) {
-      vstore = gvn().transform(ScatterMaskedNode::make(opc, control(), memory(addr), addr, addr_type, val, index_vect, mask));
+      vstore = gvn().transform(StoreScatterMaskedNode::make(opc, control(), memory(addr), addr, addr_type, val, index_vect, scale, mask));
     } else {
-      vstore = gvn().transform(ScatterNode::make(opc, control(), memory(addr), addr, addr_type, val, index_vect));
+      vstore = gvn().transform(StoreScatterNode::make(opc, control(), memory(addr), addr, addr_type, val, index_vect, scale));
     }
     set_memory(vstore, addr_type);
   } else {
     Node* vload = nullptr;
     if (mask != nullptr) {
-      vload = gvn().transform(GatherMaskedNode::make(opc, control(), memory(addr), addr, addr_type, vector_type, index_vect, mask));
+      vload = gvn().transform(LoadGatherMaskedNode::make(opc, control(), memory(addr), addr, addr_type, vector_type, index_vect, scale, mask));
     } else {
-      vload = gvn().transform(GatherNode::make(opc, control(), memory(addr), addr, addr_type, vector_type, index_vect));
+      vload = gvn().transform(LoadGatherNode::make(opc, control(), memory(addr), addr, addr_type, vector_type, index_vect, scale));
     }
     Node* box = box_vector(vload, vbox_type, elem_bt, num_elem);
     set_result(box);

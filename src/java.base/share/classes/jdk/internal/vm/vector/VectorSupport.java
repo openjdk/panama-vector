@@ -527,8 +527,8 @@ public class VectorSupport {
 
     public interface StoreVectorOperationWithMap<C,
                                                  V extends Vector<E>,
-                                                 M extends VectorMask<E>,
                                                  IV extends Vector<IE>,
+                                                 M extends VectorMask<E>,
                                                  E, IE> {
         void storeWithMap(C container, IV indexMap, V v, M m);
     }
@@ -546,7 +546,7 @@ public class VectorSupport {
                       IV indexMap, long scale, M m,
                       V v,
                       C container,
-                      StoreVectorOperationWithMap<C, V, M, IV, E, IE> defaultImpl) {
+                      StoreVectorOperationWithMap<C, V, IV, M, E, IE> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         defaultImpl.storeWithMap(container, indexMap, v, m);
     }

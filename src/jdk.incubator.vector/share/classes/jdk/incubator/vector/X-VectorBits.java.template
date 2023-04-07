@@ -1179,22 +1179,6 @@ final class $vectortype$ extends $abstractvectortype$ {
     $abstractvectortype$ fromCharArray0(char[] a, int offset, VectorMask<$Boxtype$> m, int offsetInRange) {
         return super.fromCharArray0Template($masktype$.class, a, offset, ($masktype$) m, offsetInRange);  // specialize
     }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    $abstractvectortype$ fromCharArray0(Class<? extends IV> ivClass, Class<IE> ieClass, char[] a, IV offsetMap) {
-        return super.fromCharArray0Template($masktype$.class, ivClass, ieClass, a, offsetMap);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    $abstractvectortype$ fromCharArray0(Class<? extends IV> ivClass, Class<IE> ieClass, char[] a, IV offsetMap, VectorMask<$Boxtype$> m) {
-        return super.fromCharArray0Template($masktype$.class, ivClass, ieClass, a, offsetMap, ($masktype$) m);
-    }
 #end[short]
 
 #if[byte]
@@ -1311,22 +1295,6 @@ final class $vectortype$ extends $abstractvectortype$ {
     final
     void intoCharArray0(char[] a, int offset, VectorMask<$Boxtype$> m) {
         super.intoCharArray0Template($masktype$.class, a, offset, ($masktype$) m);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    void intoCharArray0(Class<? extends IV> ivClass, Class<IE> ieClass, char[] a, IV offsetMap) {
-        super.intoCharArray0Template($masktype$.class, ivClass, ieClass, a, offsetMap);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    void intoCharArray0(Class<? extends IV> ivClass, Class<IE> ieClass, char[] a, IV offsetMap, VectorMask<$Boxtype$> m) {
-        super.intoCharArray0Template($masktype$.class, ivClass, ieClass, a, offsetMap, ($masktype$) m);
     }
 #end[short]
 

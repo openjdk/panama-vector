@@ -2488,40 +2488,40 @@ void Matcher::find_shared_post_visit(Node* n, uint opcode) {
       n->del_req(3);
       break;
     }
-    case Op_GatherI:
-    case Op_GatherL: {
+    case Op_LoadGatherI:
+    case Op_LoadGatherL: {
       Node* is = new BinaryNode(n->in(MemNode::ValueIn), n->in(MemNode::ValueIn+1));
       n->set_req(MemNode::ValueIn, is);
       n->del_req(MemNode::ValueIn+1);
       break;
     }
-    case Op_GatherIMasked:
-    case Op_GatherLMasked: {
+    case Op_LoadGatherIMasked:
+    case Op_LoadGatherLMasked: {
       Node* is = new BinaryNode(n->in(MemNode::ValueIn), n->in(MemNode::ValueIn+1));
       Node* pair = new BinaryNode(is, n->in(MemNode::ValueIn+2));
       n->set_req(MemNode::ValueIn, pair);
-      n->del_req(MemNode::ValueIn+1);
       n->del_req(MemNode::ValueIn+2);
+      n->del_req(MemNode::ValueIn+1);
       break;
     }
-    case Op_ScatterI:
-    case Op_ScatterL: {
+    case Op_StoreScatterI:
+    case Op_StoreScatterL: {
       Node* is = new BinaryNode(n->in(MemNode::ValueIn+1), n->in(MemNode::ValueIn+2));
       Node* pair = new BinaryNode(n->in(MemNode::ValueIn), is);
       n->set_req(MemNode::ValueIn, pair);
-      n->del_req(MemNode::ValueIn+1);
       n->del_req(MemNode::ValueIn+2);
+      n->del_req(MemNode::ValueIn+1);
       break;
     }
-    case Op_ScatterIMasked:
-    case Op_ScatterLMasked: {
+    case Op_StoreScatterIMasked:
+    case Op_StoreScatterLMasked: {
       Node* is = new BinaryNode(n->in(MemNode::ValueIn+1), n->in(MemNode::ValueIn+2));
       Node* coordinates = new BinaryNode(is, n->in(MemNode::ValueIn+3));
       Node* pair = new BinaryNode(n->in(MemNode::ValueIn), coordinates);
       n->set_req(MemNode::ValueIn, pair);
-      n->del_req(MemNode::ValueIn+1);
-      n->del_req(MemNode::ValueIn+2);
       n->del_req(MemNode::ValueIn+3);
+      n->del_req(MemNode::ValueIn+2);
+      n->del_req(MemNode::ValueIn+1);
       break;
     }
     case Op_VectorMaskCmp: {

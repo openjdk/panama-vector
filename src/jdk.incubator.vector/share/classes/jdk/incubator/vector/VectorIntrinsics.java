@@ -70,17 +70,19 @@ import java.util.Objects;
     }
 
     @ForceInline
-    static void checkIndices(IntVector offsetMap, long length) {
+    static void checkIndices(IntVector offsetMap, long length, long scale) {
         switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
             case 0: return; // no range check
             case 1: // fall-through
             case 2:
-                if (length > Integer.MAX_VALUE) {
+                long scaleM1 = scale - 1;
+                if (length > Integer.MAX_VALUE + scaleM1) {
                     return;
                 }
-                if (length < 0 || offsetMap.compare(VectorOperators.UNSIGNED_GE, (int)length)
+                if (length < scaleM1 || offsetMap.compare(VectorOperators.UNSIGNED_GE,
+                                (int)(length - scaleM1))
                         .anyTrue()) {
-                    throw checkIndexFailed(offsetMap, length, null);
+                    throw checkIndexFailed(offsetMap, length, scale, null);
                 }
                 return;
             default: throw new InternalError();
@@ -88,14 +90,16 @@ import java.util.Objects;
     }
 
     @ForceInline
-    static void checkIndices(LongVector offsetMap, long length) {
+    static void checkIndices(LongVector offsetMap, long length, long scale) {
         switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
             case 0: return; // no range check
             case 1: // fall-through
             case 2:
-                if (length < 0 || offsetMap.compare(VectorOperators.UNSIGNED_GE, length)
+                long scaleM1 = scale - 1;
+                if (length < scaleM1 || offsetMap.compare(VectorOperators.UNSIGNED_GE,
+                                length - scaleM1)
                         .anyTrue()) {
-                    throw checkIndexFailed(offsetMap, length, null);
+                    throw checkIndexFailed(offsetMap, length, scale, null);
                 }
                 return;
             default: throw new InternalError();
@@ -103,19 +107,19 @@ import java.util.Objects;
     }
 
     @ForceInline
-    static <E> void checkIndices(IntVector offsetMap, long length, VectorMask<E> mask) {
+    static <E> void checkIndices(IntVector offsetMap, long length, long scale, VectorMask<E> mask) {
         switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
             case 0: return; // no range check
             case 1: // fall-through
             case 2:
-                if (length > Integer.MAX_VALUE) {
+                long scaleM1 = scale - 1;
+                if (length > Integer.MAX_VALUE + scaleM1) {
                     return;
                 }
-                if (length < 0 || offsetMap.compare(VectorOperators.UNSIGNED_GE, (int)length)
-                        .cast(mask.vectorSpecies())
-                        .and(mask)
+                if (length < scaleM1 || offsetMap.compare(VectorOperators.UNSIGNED_GE,
+                                (int)(length - scaleM1), mask.cast(offsetMap.vspecies()))
                         .anyTrue()) {
-                    throw checkIndexFailed(offsetMap, length, mask);
+                    throw checkIndexFailed(offsetMap, length, scale, mask);
                 }
                 return;
             default: throw new InternalError();
@@ -123,16 +127,16 @@ import java.util.Objects;
     }
 
     @ForceInline
-    static <E> void checkIndices(LongVector offsetMap, long length, VectorMask<E> mask) {
+    static <E> void checkIndices(LongVector offsetMap, long length, long scale, VectorMask<E> mask) {
         switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
             case 0: return; // no range check
             case 1: // fall-through
             case 2:
-                if (length < 0 || offsetMap.compare(VectorOperators.UNSIGNED_GE, length)
-                        .cast(mask.vectorSpecies())
-                        .and(mask)
+                long scaleM1 = scale - 1;
+                if (length < scaleM1 || offsetMap.compare(VectorOperators.UNSIGNED_GE,
+                                length - scaleM1, mask.cast(offsetMap.vspecies()))
                         .anyTrue()) {
-                    throw checkIndexFailed(offsetMap, length, mask);
+                    throw checkIndexFailed(offsetMap, length, scale, mask);
                 }
                 return;
             default: throw new InternalError();
@@ -140,12 +144,16 @@ import java.util.Objects;
     }
 
     private static
-    IndexOutOfBoundsException checkIndexFailed(Vector<?> vix, long length, VectorMask<?> mask) {
+    IndexOutOfBoundsException checkIndexFailed(Vector<?> vix, long length, long scale, VectorMask<?> mask) {
         if (mask == null) {
-            String msg = String.format("Range check failed: map %s out of bounds for length %d", vix, length);
+            String msg =
+                    String.format("Range check failed: map %s, scale %d out of bounds for length %d",
+                            vix, scale, length);
             return new IndexOutOfBoundsException(msg);
         } else {
-            String msg = String.format("Range check failed: map %s with mask %s out of bounds for length %d", vix, mask, length);
+            String msg =
+                    String.format("Range check failed: map %s, scale %d with mask %s out of bounds for length %d",
+                            vix, scale, mask, length);
             return new IndexOutOfBoundsException(msg);
         }
     }
@@ -157,7 +165,7 @@ import java.util.Objects;
     static int roundDown(int index, int size) {
         if ((size & (size - 1)) == 0) {
             // Size is zero or a power of two, so we got this.
-            return index & ~(size - 1);
+            return index & (-size);
         } else {
             return roundDownNPOT(index, size);
         }
@@ -177,7 +185,7 @@ import java.util.Objects;
     static long roundDown(long index, int size) {
         if ((size & (size - 1)) == 0) {
             // Size is zero or a power of two, so we got this.
-            return index & ~(size - 1);
+            return index & (-size);
         } else {
             return roundDownNPOT(index, size);
         }
