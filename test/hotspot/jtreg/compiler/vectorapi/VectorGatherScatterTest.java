@@ -35,10 +35,10 @@ import jdk.test.lib.Utils;
 
 /**
  * @test
- * @bug 8288397
+ * @bug 8288397 8287289
  * @key randomness
  * @library /test/lib /
- * @summary AArch64: Fix register issues in SVE backend match rules
+ * @summary Test vector gather, scatter intrinsics
  * @modules jdk.incubator.vector
  *
  * @run driver compiler.vectorapi.VectorGatherScatterTest
