@@ -27,10 +27,7 @@
  * @requires vm.compiler2.enabled
  */
 
-import jdk.incubator.vector.FloatVector;
-import jdk.incubator.vector.VectorShape;
-import jdk.incubator.vector.VectorSpecies;
-import jdk.incubator.vector.Vector;
+import jdk.incubator.vector.*;
 
 import java.util.Arrays;
 import java.util.stream.IntStream;
@@ -38,11 +35,13 @@ import java.util.stream.IntStream;
 public class AddTest {
     static final VectorSpecies<Float> SPECIES =
             FloatVector.SPECIES_256;
+    static final VectorSpecies<Integer> INT_SPECIES =
+            IntVector.SPECIES_256;
 
     static final int SIZE = 1024;
-    static float[] a = new float[SIZE];
-    static float[] b = new float[SIZE];
-    static float[] c = new float[SIZE];
+    static final float[] a = new float[SIZE];
+    static final float[] b = new float[SIZE];
+    static final float[] c = new float[SIZE];
 
     static {
         for (int i = 0; i < SIZE; i++) {
@@ -59,13 +58,14 @@ public class AddTest {
         }
     }
 
-    static final int[] IDENTITY_INDEX_MAPPING = IntStream.range(0, SPECIES.length()).toArray();
+    static final int[] IDENTITY_INDEX_MAPPING = IntStream.range(0, SIZE).toArray();
 
     static void workloadIndexMapped() {
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            FloatVector av = FloatVector.fromArray(SPECIES, a, i, IDENTITY_INDEX_MAPPING, 0);
-            FloatVector bv = FloatVector.fromArray(SPECIES, b, i, IDENTITY_INDEX_MAPPING, 0);
-            av.add(bv).intoArray(c, i, IDENTITY_INDEX_MAPPING, 0);
+            IntVector idx = IntVector.fromArray(INT_SPECIES, IDENTITY_INDEX_MAPPING, i);
+            FloatVector av = FloatVector.fromArray(SPECIES, a, idx);
+            FloatVector bv = FloatVector.fromArray(SPECIES, b, idx);
+            av.add(bv).intoArray(c, idx);
         }
     }
 

@@ -29,7 +29,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.function.IntFunction;
-
+import java.util.function.LongFunction;
 public class AbstractVectorLoadStoreTest extends AbstractVectorTest {
 
     static final Collection<ByteOrder> BYTE_ORDER_VALUES = Set.of(
@@ -49,13 +49,17 @@ public class AbstractVectorLoadStoreTest extends AbstractVectorTest {
             )
     );
 
-    static final List<IntFunction<MemorySegment>> MEMORY_SEGMENT_GENERATORS = List.of(
-            withToString("HMS", (int s) ->
+    static final List<LongFunction<MemorySegment>> MEMORY_SEGMENT_GENERATORS = List.of(
+            withToString("HMS", (long s) ->
                     MemorySegment.allocateNative(s, SegmentScope.auto())
             ),
-            withToString("DMS", (int s) -> {
-                byte[] b = new byte[s];
-                return MemorySegment.ofArray(b);
+            withToString("DMS", (long s) -> {
+                if (s > Integer.MAX_VALUE) {
+                    return MemorySegment.allocateNative(s, SegmentScope.auto());
+                } else {
+                    byte[] b = new byte[(int) s];
+                    return MemorySegment.ofArray(b);
+                }
             })
     );
 

@@ -116,15 +116,17 @@ public abstract class ShortVector extends AbstractVector<Short> {
         return vspecies().maskFactory(bits);
     }
 
-    // Constant loader (takes dummy as vector arg)
-    interface FVOp {
+    // Nullary operator
+
+    /*package-private*/
+    interface FNulOp {
         short apply(int i);
     }
 
     /*package-private*/
     @ForceInline
     final
-    ShortVector vOp(FVOp f) {
+    ShortVector nOp(FNulOp f) {
         short[] res = new short[length()];
         for (int i = 0; i < res.length; i++) {
             res[i] = f.apply(i);
@@ -134,7 +136,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
 
     @ForceInline
     final
-    ShortVector vOp(VectorMask<Short> m, FVOp f) {
+    ShortVector nOp(VectorMask<Short> m, FNulOp f) {
         short[] res = new short[length()];
         boolean[] mbits = ((AbstractMask<Short>)m).getBits();
         for (int i = 0; i < res.length; i++) {
@@ -316,142 +318,38 @@ public abstract class ShortVector extends AbstractVector<Short> {
         return v;
     }
 
-    // Memory reference
+    // Consume operator
 
-    /*package-private*/
-    interface FLdOp<M> {
-        short apply(M memory, int offset, int i);
+    interface FCOp<M> {
+        void apply(int i, short a);
     }
 
     /*package-private*/
     @ForceInline
     final
-    <M> ShortVector ldOp(M memory, int offset,
-                                  FLdOp<M> f) {
-        //dummy; no vec = vec();
-        short[] res = new short[length()];
-        for (int i = 0; i < res.length; i++) {
-            res[i] = f.apply(memory, offset, i);
+    <M> void cOp(FCOp<M> f) {
+        short[] vec = vec();
+        for (int i = 0; i < vec.length; i++) {
+            f.apply(i, vec[i]);
         }
-        return vectorFactory(res);
     }
 
     /*package-private*/
     @ForceInline
     final
-    <M> ShortVector ldOp(M memory, int offset,
-                                  VectorMask<Short> m,
-                                  FLdOp<M> f) {
-        //short[] vec = vec();
-        short[] res = new short[length()];
+    <M> void cOp(VectorMask<Short> m, FCOp<M> f) {
+        short[] vec = vec();
         boolean[] mbits = ((AbstractMask<Short>)m).getBits();
-        for (int i = 0; i < res.length; i++) {
+        for (int i = 0; i < vec.length; i++) {
             if (mbits[i]) {
-                res[i] = f.apply(memory, offset, i);
+                f.apply(i, vec[i]);
             }
         }
-        return vectorFactory(res);
-    }
-
-    /*package-private*/
-    interface FLdLongOp {
-        short apply(MemorySegment memory, long offset, int i);
-    }
-
-    /*package-private*/
-    @ForceInline
-    final
-    ShortVector ldLongOp(MemorySegment memory, long offset,
-                                  FLdLongOp f) {
-        //dummy; no vec = vec();
-        short[] res = new short[length()];
-        for (int i = 0; i < res.length; i++) {
-            res[i] = f.apply(memory, offset, i);
-        }
-        return vectorFactory(res);
-    }
-
-    /*package-private*/
-    @ForceInline
-    final
-    ShortVector ldLongOp(MemorySegment memory, long offset,
-                                  VectorMask<Short> m,
-                                  FLdLongOp f) {
-        //short[] vec = vec();
-        short[] res = new short[length()];
-        boolean[] mbits = ((AbstractMask<Short>)m).getBits();
-        for (int i = 0; i < res.length; i++) {
-            if (mbits[i]) {
-                res[i] = f.apply(memory, offset, i);
-            }
-        }
-        return vectorFactory(res);
     }
 
     static short memorySegmentGet(MemorySegment ms, long o, int i) {
         return ms.get(ELEMENT_LAYOUT, o + i * 2L);
     }
-
-    interface FStOp<M> {
-        void apply(M memory, int offset, int i, short a);
-    }
-
-    /*package-private*/
-    @ForceInline
-    final
-    <M> void stOp(M memory, int offset,
-                  FStOp<M> f) {
-        short[] vec = vec();
-        for (int i = 0; i < vec.length; i++) {
-            f.apply(memory, offset, i, vec[i]);
-        }
-    }
-
-    /*package-private*/
-    @ForceInline
-    final
-    <M> void stOp(M memory, int offset,
-                  VectorMask<Short> m,
-                  FStOp<M> f) {
-        short[] vec = vec();
-        boolean[] mbits = ((AbstractMask<Short>)m).getBits();
-        for (int i = 0; i < vec.length; i++) {
-            if (mbits[i]) {
-                f.apply(memory, offset, i, vec[i]);
-            }
-        }
-    }
-
-    interface FStLongOp {
-        void apply(MemorySegment memory, long offset, int i, short a);
-    }
-
-    /*package-private*/
-    @ForceInline
-    final
-    void stLongOp(MemorySegment memory, long offset,
-                  FStLongOp f) {
-        short[] vec = vec();
-        for (int i = 0; i < vec.length; i++) {
-            f.apply(memory, offset, i, vec[i]);
-        }
-    }
-
-    /*package-private*/
-    @ForceInline
-    final
-    void stLongOp(MemorySegment memory, long offset,
-                  VectorMask<Short> m,
-                  FStLongOp f) {
-        short[] vec = vec();
-        boolean[] mbits = ((AbstractMask<Short>)m).getBits();
-        for (int i = 0; i < vec.length; i++) {
-            if (mbits[i]) {
-                f.apply(memory, offset, i, vec[i]);
-            }
-        }
-    }
-
     static void memorySegmentSet(MemorySegment ms, long o, int i, short e) {
         ms.set(ELEMENT_LAYOUT, o + i * 2L, e);
     }
@@ -561,8 +459,8 @@ public abstract class ShortVector extends AbstractVector<Short> {
     public static ShortVector zero(VectorSpecies<Short> species) {
         ShortSpecies vsp = (ShortSpecies) species;
         return VectorSupport.fromBitsCoerced(vsp.vectorType(), short.class, species.length(),
-                                0, MODE_BROADCAST, vsp,
-                                ((bits_, s_) -> s_.rvOp(i -> bits_)));
+            0, MODE_BROADCAST, vsp,
+            ((b, s) -> s.nOp(i -> fromBits(b))));
     }
 
     /**
@@ -1071,7 +969,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
     // and broadcast, but it would be more surprising not to continue
     // the obvious pattern started by unary and binary.
 
-   /**
+    /**
      * {@inheritDoc} <!--workaround-->
      * @see #lanewise(VectorOperators.Ternary,short,short,VectorMask)
      * @see #lanewise(VectorOperators.Ternary,Vector,short,VectorMask)
@@ -3015,88 +2913,154 @@ public abstract class ShortVector extends AbstractVector<Short> {
 
     /**
      * Gathers a new vector composed of elements from an array of type
-     * {@code short[]},
-     * using indexes obtained by adding a fixed {@code offset} to a
-     * series of secondary offsets from an <em>index map</em>.
-     * The index map is a contiguous sequence of {@code VLENGTH}
-     * elements in a second array of {@code int}s, starting at a given
-     * {@code mapOffset}.
+     * {@code short[]}, using indices obtained from an <em>offset map</em>.
+     * The offset map is an {@link IntVector} of length {@code VLENGTH}.
      * <p>
      * For each vector lane, where {@code N} is the vector lane index,
      * the lane is loaded from the array
      * element {@code a[f(N)]}, where {@code f(N)} is the
-     * index mapping expression
-     * {@code offset + indexMap[mapOffset + N]]}.
+     * index mapping expression {@code offsetMap.lane(N)}.
      *
      * @param species species of desired vector
      * @param a the array
-     * @param offset the offset into the array, may be negative if relative
-     * indexes in the index map compensate to produce a value within the
-     * array bounds
-     * @param indexMap the index map
-     * @param mapOffset the offset into the index map
+     * @param offsetMap the offset map
      * @return the vector loaded from the indexed elements of the array
+     * @throws IllegalArgumentException
+     *         if {@code species.length()!=offsetMap.length()}
      * @throws IndexOutOfBoundsException
-     *         if {@code mapOffset+N < 0}
-     *         or if {@code mapOffset+N >= indexMap.length},
-     *         or if {@code f(N)=offset+indexMap[mapOffset+N]}
+     *         if {@code f(N)=offsetMap.lane(N)}
      *         is an invalid index into {@code a},
      *         for any lane {@code N} in the vector
-     * @see ShortVector#toIntArray()
      */
     @ForceInline
     public static
     ShortVector fromArray(VectorSpecies<Short> species,
-                                   short[] a, int offset,
-                                   int[] indexMap, int mapOffset) {
+                                   short[] a, IntVector offsetMap) {
         ShortSpecies vsp = (ShortSpecies) species;
-        return vsp.vOp(n -> a[offset + indexMap[mapOffset + n]]);
+        if (vsp.laneCount() != offsetMap.length()) {
+            throw new IllegalArgumentException("species length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1);
+        return vsp.dummyVector().fromArray0(offsetMap.getClass(), int.class, a, offsetMap);
     }
 
     /**
      * Gathers a new vector composed of elements from an array of type
-     * {@code short[]},
-     * under the control of a mask, and
-     * using indexes obtained by adding a fixed {@code offset} to a
-     * series of secondary offsets from an <em>index map</em>.
-     * The index map is a contiguous sequence of {@code VLENGTH}
-     * elements in a second array of {@code int}s, starting at a given
-     * {@code mapOffset}.
+     * {@code short[]}, using indices obtained from an <em>offset map</em>.
+     * The offset map is a {@link LongVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * the lane is loaded from the array
+     * element {@code a[(int)f(N)]}, where {@code f(N)} is the
+     * index mapping expression {@code offsetMap.lane(N)}.
+     *
+     * @param species species of desired vector
+     * @param a the array
+     * @param offsetMap the offset map
+     * @return the vector loaded from the indexed elements of the array
+     * @throws IllegalArgumentException
+     *         if {@code species.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code f(N)=offsetMap.lane(N)}
+     *         is an invalid index into {@code a},
+     *         for any lane {@code N} in the vector
+     */
+    @ForceInline
+    public static
+    ShortVector fromArray(VectorSpecies<Short> species,
+                                   short[] a, LongVector offsetMap) {
+        ShortSpecies vsp = (ShortSpecies) species;
+        if (vsp.laneCount() != offsetMap.length()) {
+            throw new IllegalArgumentException("species length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1);
+        return vsp.dummyVector().fromArray0(offsetMap.getClass(), long.class, a, offsetMap);
+    }
+
+    /**
+     * Gathers a new vector composed of elements from an array of type
+     * {@code short[]}, under the control of a mask, and
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is an {@link IntVector} of length {@code VLENGTH}.
      * <p>
      * For each vector lane, where {@code N} is the vector lane index,
      * if the lane is set in the mask,
      * the lane is loaded from the array
      * element {@code a[f(N)]}, where {@code f(N)} is the
-     * index mapping expression
-     * {@code offset + indexMap[mapOffset + N]]}.
-     * Unset lanes in the resulting vector are set to zero.
+     * index mapping expression {@code offsetMap.lane(N)}.
+     * Lanes where the mask is unset are filled with the default
+     * value of {@code short} (zero).
      *
      * @param species species of desired vector
      * @param a the array
-     * @param offset the offset into the array, may be negative if relative
-     * indexes in the index map compensate to produce a value within the
-     * array bounds
-     * @param indexMap the index map
-     * @param mapOffset the offset into the index map
+     * @param offsetMap the offset map
      * @param m the mask controlling lane selection
      * @return the vector loaded from the indexed elements of the array
+     * @throws IllegalArgumentException
+     *         if {@code species.length()!=offsetMap.length()}
      * @throws IndexOutOfBoundsException
-     *         if {@code mapOffset+N < 0}
-     *         or if {@code mapOffset+N >= indexMap.length},
-     *         or if {@code f(N)=offset+indexMap[mapOffset+N]}
+     *         if {@code f(N)=offsetMap.lane(N)}
      *         is an invalid index into {@code a},
      *         for any lane {@code N} in the vector
      *         where the mask is set
-     * @see ShortVector#toIntArray()
      */
     @ForceInline
     public static
     ShortVector fromArray(VectorSpecies<Short> species,
-                                   short[] a, int offset,
-                                   int[] indexMap, int mapOffset,
+                                   short[] a, IntVector offsetMap,
                                    VectorMask<Short> m) {
         ShortSpecies vsp = (ShortSpecies) species;
-        return vsp.vOp(m, n -> a[offset + indexMap[mapOffset + n]]);
+        m.check(vsp);
+        if (vsp.laneCount() != offsetMap.length()) {
+            throw new IllegalArgumentException("species length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1, m);
+        return vsp.dummyVector().fromArray0(offsetMap.getClass(), int.class, a, offsetMap, m);
+    }
+
+    /**
+     * Gathers a new vector composed of elements from an array of type
+     * {@code short[]}, under the control of a mask, and
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is a {@link LongVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * if the lane is set in the mask,
+     * the lane is loaded from the array
+     * element {@code a[(int)f(N)]}, where {@code f(N)} is the
+     * index mapping expression {@code offsetMap.lane(N)}.
+     * Lanes where the mask is unset are filled with the default
+     * value of {@code short} (zero).
+     *
+     * @param species species of desired vector
+     * @param a the array
+     * @param offsetMap the offset map
+     * @param m the mask controlling lane selection
+     * @return the vector loaded from the indexed elements of the array
+     * @throws IllegalArgumentException
+     *         if {@code species.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code f(N)=offsetMap.lane(N)}
+     *         is an invalid index into {@code a},
+     *         for any lane {@code N} in the vector
+     *         where the mask is set
+     */
+    @ForceInline
+    public static
+    ShortVector fromArray(VectorSpecies<Short> species,
+                                   short[] a, LongVector offsetMap,
+                                   VectorMask<Short> m) {
+        ShortSpecies vsp = (ShortSpecies) species;
+        m.check(vsp);
+        if (vsp.laneCount() != offsetMap.length()) {
+            throw new IllegalArgumentException("species length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1, m);
+        return vsp.dummyVector().fromArray0(offsetMap.getClass(), long.class, a, offsetMap, m);
     }
 
     /**
@@ -3163,90 +3127,154 @@ public abstract class ShortVector extends AbstractVector<Short> {
 
     /**
      * Gathers a new vector composed of elements from an array of type
-     * {@code char[]},
-     * using indexes obtained by adding a fixed {@code offset} to a
-     * series of secondary offsets from an <em>index map</em>.
-     * The index map is a contiguous sequence of {@code VLENGTH}
-     * elements in a second array of {@code int}s, starting at a given
-     * {@code mapOffset}.
+     * {@code char[]}, using indices obtained from an <em>offset map</em>.
+     * The offset map is an {@link IntVector} of length {@code VLENGTH}.
      * <p>
      * For each vector lane, where {@code N} is the vector lane index,
-     * the lane is loaded from the expression
-     * {@code (short) a[f(N)]}, where {@code f(N)} is the
-     * index mapping expression
-     * {@code offset + indexMap[mapOffset + N]]}.
+     * the lane is loaded from the array
+     * element {@code a[f(N)]}, where {@code f(N)} is the
+     * index mapping expression {@code offsetMap.lane(N)}.
      *
      * @param species species of desired vector
      * @param a the array
-     * @param offset the offset into the array, may be negative if relative
-     * indexes in the index map compensate to produce a value within the
-     * array bounds
-     * @param indexMap the index map
-     * @param mapOffset the offset into the index map
+     * @param offsetMap the offset map
      * @return the vector loaded from the indexed elements of the array
+     * @throws IllegalArgumentException
+     *         if {@code species.length()!=offsetMap.length()}
      * @throws IndexOutOfBoundsException
-     *         if {@code mapOffset+N < 0}
-     *         or if {@code mapOffset+N >= indexMap.length},
-     *         or if {@code f(N)=offset+indexMap[mapOffset+N]}
+     *         if {@code f(N)=offsetMap.lane(N)}
      *         is an invalid index into {@code a},
      *         for any lane {@code N} in the vector
-     * @see ShortVector#toIntArray()
      */
     @ForceInline
     public static
     ShortVector fromCharArray(VectorSpecies<Short> species,
-                                       char[] a, int offset,
-                                       int[] indexMap, int mapOffset) {
-        // FIXME: optimize
+                                       char[] a, IntVector offsetMap) {
         ShortSpecies vsp = (ShortSpecies) species;
-        return vsp.vOp(n -> (short) a[offset + indexMap[mapOffset + n]]);
+        if (vsp.laneCount() != offsetMap.length()) {
+            throw new IllegalArgumentException("species length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1);
+        return vsp.nOp(i -> (short) a[offsetMap.lane(i)]);
     }
 
     /**
      * Gathers a new vector composed of elements from an array of type
-     * {@code char[]},
-     * under the control of a mask, and
-     * using indexes obtained by adding a fixed {@code offset} to a
-     * series of secondary offsets from an <em>index map</em>.
-     * The index map is a contiguous sequence of {@code VLENGTH}
-     * elements in a second array of {@code int}s, starting at a given
-     * {@code mapOffset}.
+     * {@code char[]}, using indices obtained from an <em>offset map</em>.
+     * The offset map is a {@link LongVector} of length {@code VLENGTH}.
      * <p>
      * For each vector lane, where {@code N} is the vector lane index,
-     * if the lane is set in the mask,
-     * the lane is loaded from the expression
-     * {@code (short) a[f(N)]}, where {@code f(N)} is the
-     * index mapping expression
-     * {@code offset + indexMap[mapOffset + N]]}.
-     * Unset lanes in the resulting vector are set to zero.
+     * the lane is loaded from the array
+     * element {@code a[(int)f(N)]}, where {@code f(N)} is the
+     * index mapping expression {@code offsetMap.lane(N)}.
      *
      * @param species species of desired vector
      * @param a the array
-     * @param offset the offset into the array, may be negative if relative
-     * indexes in the index map compensate to produce a value within the
-     * array bounds
-     * @param indexMap the index map
-     * @param mapOffset the offset into the index map
-     * @param m the mask controlling lane selection
+     * @param offsetMap the offset map
      * @return the vector loaded from the indexed elements of the array
+     * @throws IllegalArgumentException
+     *         if {@code species.length()!=offsetMap.length()}
      * @throws IndexOutOfBoundsException
-     *         if {@code mapOffset+N < 0}
-     *         or if {@code mapOffset+N >= indexMap.length},
-     *         or if {@code f(N)=offset+indexMap[mapOffset+N]}
+     *         if {@code f(N)=offsetMap.lane(N)}
      *         is an invalid index into {@code a},
      *         for any lane {@code N} in the vector
-     *         where the mask is set
-     * @see ShortVector#toIntArray()
      */
     @ForceInline
     public static
     ShortVector fromCharArray(VectorSpecies<Short> species,
-                                       char[] a, int offset,
-                                       int[] indexMap, int mapOffset,
-                                       VectorMask<Short> m) {
-        // FIXME: optimize
+                                       char[] a, LongVector offsetMap) {
         ShortSpecies vsp = (ShortSpecies) species;
-        return vsp.vOp(m, n -> (short) a[offset + indexMap[mapOffset + n]]);
+        if (vsp.laneCount() != offsetMap.length()) {
+            throw new IllegalArgumentException("species length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1);
+        return vsp.nOp(i -> (short) a[(int) offsetMap.lane(i)]);
+    }
+
+    /**
+     * Gathers a new vector composed of elements from an array of type
+     * {@code char[]}, under the control of a mask, and
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is an {@link IntVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * if the lane is set in the mask,
+     * the lane is loaded from the array
+     * element {@code a[f(N)]}, where {@code f(N)} is the
+     * index mapping expression {@code offsetMap.lane(N)}.
+     * Lanes where the mask is unset are filled with the default
+     * value of {@code short} (zero).
+     *
+     * @param species species of desired vector
+     * @param a the array
+     * @param offsetMap the offset map
+     * @param m the mask controlling lane selection
+     * @return the vector loaded from the indexed elements of the array
+     * @throws IllegalArgumentException
+     *         if {@code species.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code f(N)=offsetMap.lane(N)}
+     *         is an invalid index into {@code a},
+     *         for any lane {@code N} in the vector
+     *         where the mask is set
+     */
+    @ForceInline
+    public static
+    ShortVector fromCharArray(VectorSpecies<Short> species,
+                                       char[] a, IntVector offsetMap,
+                                       VectorMask<Short> m) {
+        ShortSpecies vsp = (ShortSpecies) species;
+        m.check(vsp);
+        if (vsp.laneCount() != offsetMap.length()) {
+            throw new IllegalArgumentException("species length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1, m);
+        return vsp.nOp(m, i -> (short) a[offsetMap.lane(i)]);
+    }
+
+    /**
+     * Gathers a new vector composed of elements from an array of type
+     * {@code char[]}, under the control of a mask, and
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is a {@link LongVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * if the lane is set in the mask,
+     * the lane is loaded from the array
+     * element {@code a[(int)f(N)]}, where {@code f(N)} is the
+     * index mapping expression {@code offsetMap.lane(N)}.
+     * Lanes where the mask is unset are filled with the default
+     * value of {@code short} (zero).
+     *
+     * @param species species of desired vector
+     * @param a the array
+     * @param offsetMap the offset map
+     * @param m the mask controlling lane selection
+     * @return the vector loaded from the indexed elements of the array
+     * @throws IllegalArgumentException
+     *         if {@code species.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code f(N)=offsetMap.lane(N)}
+     *         is an invalid index into {@code a},
+     *         for any lane {@code N} in the vector
+     *         where the mask is set
+     */
+    @ForceInline
+    public static
+    ShortVector fromCharArray(VectorSpecies<Short> species,
+                                       char[] a, LongVector offsetMap,
+                                       VectorMask<Short> m) {
+        ShortSpecies vsp = (ShortSpecies) species;
+        m.check(vsp);
+        if (vsp.laneCount() != offsetMap.length()) {
+            throw new IllegalArgumentException("species length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1, m);
+        return vsp.nOp(m, i -> (short) a[(int) offsetMap.lane(i)]);
     }
 
 
@@ -3353,6 +3381,214 @@ public abstract class ShortVector extends AbstractVector<Short> {
         return vsp.dummyVector().fromMemorySegment0(ms, offset, m, OFFSET_OUT_OF_RANGE).maybeSwap(bo);
     }
 
+    /**
+     * Gathers a new vector composed of elements from a {@linkplain
+     * MemorySegment memory segment}
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is an {@link IntVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * the lane is loaded from the memory location at offset {@code f(N)}
+     * of the memory segment, where {@code f(N)} is the index mapping
+     * expression {@code offsetMap.lane(N)}.
+     * <p>
+     * This operation is likely to be more efficient if
+     * the specified byte order is the same as
+     * {@linkplain ByteOrder#nativeOrder()
+     * the platform native order},
+     * since this method will not need to reorder
+     * the bytes of lane values.
+     *
+     * @param species species of desired vector
+     * @param ms the memory segment
+     * @param offsetMap the offset map
+     * @param bo the intended byte order
+     * @return the vector loaded from the indexed elements of the
+     *         memory segment
+     * @throws IllegalArgumentException
+     *         if {@code species.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code offsetMap.lane(N)<0}
+     *         or {@code offsetMap.lane(N)+2>ms.byteSize()}
+     *         for any lane {@code N} in the vector
+     * @throws IllegalArgumentException if the memory segment is a heap segment that is
+     *         not backed by a {@code byte[]} array.
+     * @throws IllegalStateException if the memory segment's session is not alive,
+     *         or if access occurs from a thread other than the thread owning the session.
+     */
+    @ForceInline
+    public static
+    ShortVector fromMemorySegment(VectorSpecies<Short> species,
+                                           MemorySegment ms, IntVector offsetMap,
+                                           ByteOrder bo) {
+        ShortSpecies vsp = (ShortSpecies) species;
+        if (vsp.laneCount() != offsetMap.length()) {
+            throw new IllegalArgumentException("species length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 2);
+        return vsp.dummyVector().fromMemorySegment0(offsetMap.getClass(), int.class, ms, offsetMap).maybeSwap(bo);
+    }
+
+    /**
+     * Gathers a new vector composed of elements from a {@linkplain
+     * MemorySegment memory segment}
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is a {@link LongVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * the lane is loaded from the memory location at offset {@code f(N)}
+     * of the memory segment, where {@code f(N)} is the index mapping
+     * expression {@code offsetMap.lane(N)}.
+     * <p>
+     * This operation is likely to be more efficient if
+     * the specified byte order is the same as
+     * {@linkplain ByteOrder#nativeOrder()
+     * the platform native order},
+     * since this method will not need to reorder
+     * the bytes of lane values.
+     *
+     * @param species species of desired vector
+     * @param ms the memory segment
+     * @param offsetMap the offset map
+     * @param bo the intended byte order
+     * @return the vector loaded from the indexed elements of the
+     *         memory segment
+     * @throws IllegalArgumentException
+     *         if {@code species.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code offsetMap.lane(N)<0}
+     *         or {@code offsetMap.lane(N)+2>ms.byteSize()}
+     *         for any lane {@code N} in the vector
+     * @throws IllegalArgumentException if the memory segment is a heap segment that is
+     *         not backed by a {@code byte[]} array.
+     * @throws IllegalStateException if the memory segment's session is not alive,
+     *         or if access occurs from a thread other than the thread owning the session.
+     */
+    @ForceInline
+    public static
+    ShortVector fromMemorySegment(VectorSpecies<Short> species,
+                                           MemorySegment ms, LongVector offsetMap,
+                                           ByteOrder bo) {
+        ShortSpecies vsp = (ShortSpecies) species;
+        if (vsp.laneCount() != offsetMap.length()) {
+            throw new IllegalArgumentException("species length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 2);
+        return vsp.dummyVector().fromMemorySegment0(offsetMap.getClass(), long.class, ms, offsetMap).maybeSwap(bo);
+    }
+
+    /**
+     * Gathers a new vector composed of elements from a {@linkplain
+     * MemorySegment memory segment} under the control of a mask
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is an {@link IntVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * if the lane is set in the mask,
+     * the lane is loaded from the memory location at offset {@code f(N)}
+     * of the memory segment, where {@code f(N)} is the index mapping
+     * expression {@code offsetMap.lane(N)}.
+     * Lanes where the mask is unset are filled with the default
+     * value of {@code short} (zero).
+     * <p>
+     * This operation is likely to be more efficient if
+     * the specified byte order is the same as
+     * {@linkplain ByteOrder#nativeOrder()
+     * the platform native order},
+     * since this method will not need to reorder
+     * the bytes of lane values.
+     *
+     * @param species species of desired vector
+     * @param ms the memory segment
+     * @param offsetMap the offset map
+     * @param bo the intended byte order
+     * @param m the mask controlling lane selection
+     * @return the vector loaded from the indexed elements of the
+     *         memory segment
+     * @throws IllegalArgumentException
+     *         if {@code species.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code offsetMap.lane(N)<0}
+     *         or {@code offsetMap.lane(N)+2>ms.byteSize()}
+     *         for any lane {@code N} in the vector
+     *         where the mask is set
+     * @throws IllegalArgumentException if the memory segment is a heap segment that is
+     *         not backed by a {@code byte[]} array.
+     * @throws IllegalStateException if the memory segment's session is not alive,
+     *         or if access occurs from a thread other than the thread owning the session.
+     */
+    @ForceInline
+    public static
+    ShortVector fromMemorySegment(VectorSpecies<Short> species,
+                                           MemorySegment ms, IntVector offsetMap,
+                                           ByteOrder bo, VectorMask<Short> m) {
+        ShortSpecies vsp = (ShortSpecies) species;
+        m.check(vsp);
+        if (vsp.laneCount() != offsetMap.length()) {
+            throw new IllegalArgumentException("species length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 2, m);
+        return vsp.dummyVector().fromMemorySegment0(offsetMap.getClass(), int.class, ms, offsetMap, m).maybeSwap(bo);
+    }
+
+    /**
+     * Gathers a new vector composed of elements from a {@linkplain
+     * MemorySegment memory segment} under the control of a mask
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is a {@link LongVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * if the lane is set in the mask,
+     * the lane is loaded from the memory location at offset {@code f(N)}
+     * of the memory segment, where {@code f(N)} is the index mapping
+     * expression {@code offsetMap.lane(N)}.
+     * Lanes where the mask is unset are filled with the default
+     * value of {@code short} (zero).
+     * <p>
+     * This operation is likely to be more efficient if
+     * the specified byte order is the same as
+     * {@linkplain ByteOrder#nativeOrder()
+     * the platform native order},
+     * since this method will not need to reorder
+     * the bytes of lane values.
+     *
+     * @param species species of desired vector
+     * @param ms the memory segment
+     * @param offsetMap the offset map
+     * @param bo the intended byte order
+     * @param m the mask controlling lane selection
+     * @return the vector loaded from the indexed elements of the
+     *         memory segment
+     * @throws IllegalArgumentException
+     *         if {@code species.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code offsetMap.lane(N)<0}
+     *         or {@code offsetMap.lane(N)+2>ms.byteSize()}
+     *         for any lane {@code N} in the vector
+     *         where the mask is set
+     * @throws IllegalArgumentException if the memory segment is a heap segment that is
+     *         not backed by a {@code byte[]} array.
+     * @throws IllegalStateException if the memory segment's session is not alive,
+     *         or if access occurs from a thread other than the thread owning the session.
+     */
+    @ForceInline
+    public static
+    ShortVector fromMemorySegment(VectorSpecies<Short> species,
+                                           MemorySegment ms, LongVector offsetMap,
+                                           ByteOrder bo, VectorMask<Short> m) {
+        ShortSpecies vsp = (ShortSpecies) species;
+        m.check(vsp);
+        if (vsp.laneCount() != offsetMap.length()) {
+            throw new IllegalArgumentException("species length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 2, m);
+        return vsp.dummyVector().fromMemorySegment0(offsetMap.getClass(), long.class, ms, offsetMap, m).maybeSwap(bo);
+    }
+
     // Memory store operations
 
     /**
@@ -3379,9 +3615,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             a, arrayAddress(a, offset),
             this,
             a, offset,
-            (arr, off, v)
-            -> v.stOp(arr, (int) off,
-                      (arr_, off_, i, e) -> arr_[off_ + i] = e));
+            (arr, off, v) -> v.cOp((i, e) -> arr[(int)off + i] = e));
     }
 
     /**
@@ -3425,81 +3659,131 @@ public abstract class ShortVector extends AbstractVector<Short> {
 
     /**
      * Scatters this vector into an array of type {@code short[]}
-     * using indexes obtained by adding a fixed {@code offset} to a
-     * series of secondary offsets from an <em>index map</em>.
-     * The index map is a contiguous sequence of {@code VLENGTH}
-     * elements in a second array of {@code int}s, starting at a given
-     * {@code mapOffset}.
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is an {@link IntVector} of length {@code VLENGTH}.
      * <p>
      * For each vector lane, where {@code N} is the vector lane index,
-     * the lane element at index {@code N} is stored into the array
+     * the lane is stored into the array
      * element {@code a[f(N)]}, where {@code f(N)} is the
-     * index mapping expression
-     * {@code offset + indexMap[mapOffset + N]]}.
+     * index mapping expression {@code offsetMap.lane(N)}.
      *
      * @param a the array
-     * @param offset an offset to combine with the index map offsets
-     * @param indexMap the index map
-     * @param mapOffset the offset into the index map
+     * @param offsetMap the offset map
+     * @throws IllegalArgumentException
+     *         if {@code this.length()!=offsetMap.length()}
      * @throws IndexOutOfBoundsException
-     *         if {@code mapOffset+N < 0}
-     *         or if {@code mapOffset+N >= indexMap.length},
-     *         or if {@code f(N)=offset+indexMap[mapOffset+N]}
+     *         if {@code f(N)=offsetMap.lane(N)}
      *         is an invalid index into {@code a},
      *         for any lane {@code N} in the vector
-     * @see ShortVector#toIntArray()
      */
     @ForceInline
     public final
-    void intoArray(short[] a, int offset,
-                   int[] indexMap, int mapOffset) {
-        stOp(a, offset,
-             (arr, off, i, e) -> {
-                 int j = indexMap[mapOffset + i];
-                 arr[off + j] = e;
-             });
+    void intoArray(short[] a, IntVector offsetMap) {
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1);
+        intoArray0(offsetMap.getClass(), int.class, a, offsetMap);
     }
 
     /**
-     * Scatters this vector into an array of type {@code short[]},
-     * under the control of a mask, and
-     * using indexes obtained by adding a fixed {@code offset} to a
-     * series of secondary offsets from an <em>index map</em>.
-     * The index map is a contiguous sequence of {@code VLENGTH}
-     * elements in a second array of {@code int}s, starting at a given
-     * {@code mapOffset}.
+     * Scatters this vector into an array of type {@code short[]}
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is a {@link LongVector} of length {@code VLENGTH}.
      * <p>
      * For each vector lane, where {@code N} is the vector lane index,
-     * if the mask lane at index {@code N} is set then
-     * the lane element at index {@code N} is stored into the array
-     * element {@code a[f(N)]}, where {@code f(N)} is the
-     * index mapping expression
-     * {@code offset + indexMap[mapOffset + N]]}.
+     * the lane is stored into the array
+     * element {@code a[(int)f(N)]}, where {@code f(N)} is the
+     * index mapping expression {@code offsetMap.lane(N)}.
      *
      * @param a the array
-     * @param offset an offset to combine with the index map offsets
-     * @param indexMap the index map
-     * @param mapOffset the offset into the index map
-     * @param m the mask
+     * @param offsetMap the offset map
+     * @throws IllegalArgumentException
+     *         if {@code this.length()!=offsetMap.length()}
      * @throws IndexOutOfBoundsException
-     *         if {@code mapOffset+N < 0}
-     *         or if {@code mapOffset+N >= indexMap.length},
-     *         or if {@code f(N)=offset+indexMap[mapOffset+N]}
+     *         if {@code f(N)=offsetMap.lane(N)}
      *         is an invalid index into {@code a},
      *         for any lane {@code N} in the vector
-     *         where the mask is set
-     * @see ShortVector#toIntArray()
      */
     @ForceInline
     public final
-    void intoArray(short[] a, int offset,
-                   int[] indexMap, int mapOffset,
-                   VectorMask<Short> m) {
-        stOp(a, offset, m,
-             (arr, off, i, e) -> {
-                 int j = indexMap[mapOffset + i];
-                 arr[off + j] = e;
-             });
+    void intoArray(short[] a, LongVector offsetMap) {
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1);
+        intoArray0(offsetMap.getClass(), long.class, a, offsetMap);
+    }
+
+
+    /**
+     * Scatters this vector into an array of type {@code short[]}
+     * under the control of a mask, and
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is an {@link IntVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * if the lane is set in the mask,
+     * the lane is stored into the array
+     * element {@code a[f(N)]}, where {@code f(N)} is the
+     * index mapping expression {@code offsetMap.lane(N)}.
+     *
+     * @param a the array
+     * @param offsetMap the offset map
+     * @param m the mask
+     * @throws IllegalArgumentException
+     *         if {@code this.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code f(N)=offsetMap.lane(N)}
+     *         is an invalid index into {@code a},
+     *         for any lane {@code N} in the vector
+     *         where the mask is set
+     */
+    @ForceInline
+    public final
+    void intoArray(short[] a, IntVector offsetMap, VectorMask<Short> m) {
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1, m);
+        intoArray0(offsetMap.getClass(), int.class, a, offsetMap, m);
+    }
+
+    /**
+     * Scatters this vector into an array of type {@code short[]}
+     * under the control of a mask, and
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is a {@link LongVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * if the lane is set in the mask,
+     * the lane is stored into the array
+     * element {@code a[(int)f(N)]}, where {@code f(N)} is the
+     * index mapping expression {@code offsetMap.lane(N)}.
+     *
+     * @param a the array
+     * @param offsetMap the offset map
+     * @param m the mask
+     * @throws IllegalArgumentException
+     *         if {@code this.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code f(N)=offsetMap.lane(N)}
+     *         is an invalid index into {@code a},
+     *         for any lane {@code N} in the vector
+     *         where the mask is set
+     */
+    @ForceInline
+    public final
+    void intoArray(short[] a, LongVector offsetMap, VectorMask<Short> m) {
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1, m);
+        intoArray0(offsetMap.getClass(), long.class, a, offsetMap, m);
     }
 
     /**
@@ -3527,9 +3811,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             a, charArrayAddress(a, offset),
             this,
             a, offset,
-            (arr, off, v)
-            -> v.stOp(arr, (int) off,
-                      (arr_, off_, i, e) -> arr_[off_ + i] = (char) e));
+            (arr, off, v) -> v.cOp((i, e) -> arr[(int)off + i] = (char) e));
     }
 
     /**
@@ -3574,87 +3856,139 @@ public abstract class ShortVector extends AbstractVector<Short> {
 
     /**
      * Scatters this vector into an array of type {@code char[]}
-     * using indexes obtained by adding a fixed {@code offset} to a
-     * series of secondary offsets from an <em>index map</em>.
-     * The index map is a contiguous sequence of {@code VLENGTH}
-     * elements in a second array of {@code int}s, starting at a given
-     * {@code mapOffset}.
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is an {@link IntVector} of length {@code VLENGTH}.
      * <p>
      * For each vector lane, where {@code N} is the vector lane index,
-     * the lane element at index {@code N}
-     * is first cast to a {@code char} value and then
-     * stored into the array
+     * the lane is stored into the array
      * element {@code a[f(N)]}, where {@code f(N)} is the
-     * index mapping expression
-     * {@code offset + indexMap[mapOffset + N]]}.
+     * index mapping expression {@code offsetMap.lane(N)}.
      *
      * @param a the array
-     * @param offset an offset to combine with the index map offsets
-     * @param indexMap the index map
-     * @param mapOffset the offset into the index map
+     * @param offsetMap the offset map
+     * @throws IllegalArgumentException
+     *         if {@code this.length()!=offsetMap.length()}
      * @throws IndexOutOfBoundsException
-     *         if {@code mapOffset+N < 0}
-     *         or if {@code mapOffset+N >= indexMap.length},
-     *         or if {@code f(N)=offset+indexMap[mapOffset+N]}
+     *         if {@code f(N)=offsetMap.lane(N)}
      *         is an invalid index into {@code a},
      *         for any lane {@code N} in the vector
-     * @see ShortVector#toIntArray()
      */
     @ForceInline
     public final
-    void intoCharArray(char[] a, int offset,
-                       int[] indexMap, int mapOffset) {
-        // FIXME: optimize
-        stOp(a, offset,
-             (arr, off, i, e) -> {
-                 int j = indexMap[mapOffset + i];
-                 arr[off + j] = (char) e;
-             });
+    void intoCharArray(char[] a, IntVector offsetMap) {
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1);
+        cOp((i, e) -> {
+            a[offsetMap.lane(i)] = (char) e;
+        });
     }
 
     /**
-     * Scatters this vector into an array of type {@code char[]},
-     * under the control of a mask, and
-     * using indexes obtained by adding a fixed {@code offset} to a
-     * series of secondary offsets from an <em>index map</em>.
-     * The index map is a contiguous sequence of {@code VLENGTH}
-     * elements in a second array of {@code int}s, starting at a given
-     * {@code mapOffset}.
+     * Scatters this vector into an array of type {@code char[]}
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is a {@link LongVector} of length {@code VLENGTH}.
      * <p>
      * For each vector lane, where {@code N} is the vector lane index,
-     * if the mask lane at index {@code N} is set then
-     * the lane element at index {@code N}
-     * is first cast to a {@code char} value and then
-     * stored into the array
-     * element {@code a[f(N)]}, where {@code f(N)} is the
-     * index mapping expression
-     * {@code offset + indexMap[mapOffset + N]]}.
+     * the lane is stored into the array
+     * element {@code a[(int)f(N)]}, where {@code f(N)} is the
+     * index mapping expression {@code offsetMap.lane(N)}.
      *
      * @param a the array
-     * @param offset an offset to combine with the index map offsets
-     * @param indexMap the index map
-     * @param mapOffset the offset into the index map
-     * @param m the mask
+     * @param offsetMap the offset map
+     * @throws IllegalArgumentException
+     *         if {@code this.length()!=offsetMap.length()}
      * @throws IndexOutOfBoundsException
-     *         if {@code mapOffset+N < 0}
-     *         or if {@code mapOffset+N >= indexMap.length},
-     *         or if {@code f(N)=offset+indexMap[mapOffset+N]}
+     *         if {@code f(N)=offsetMap.lane(N)}
      *         is an invalid index into {@code a},
      *         for any lane {@code N} in the vector
-     *         where the mask is set
-     * @see ShortVector#toIntArray()
      */
     @ForceInline
     public final
-    void intoCharArray(char[] a, int offset,
-                       int[] indexMap, int mapOffset,
-                       VectorMask<Short> m) {
-        // FIXME: optimize
-        stOp(a, offset, m,
-             (arr, off, i, e) -> {
-                 int j = indexMap[mapOffset + i];
-                 arr[off + j] = (char) e;
-             });
+    void intoCharArray(char[] a, LongVector offsetMap) {
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1);
+        cOp((i, e) -> {
+            a[(int) offsetMap.lane(i)] = (char) e;
+        });
+    }
+
+
+    /**
+     * Scatters this vector into an array of type {@code char[]}
+     * under the control of a mask, and
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is an {@link IntVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * if the lane is set in the mask,
+     * the lane is stored into the array
+     * element {@code a[f(N)]}, where {@code f(N)} is the
+     * index mapping expression {@code offsetMap.lane(N)}.
+     *
+     * @param a the array
+     * @param offsetMap the offset map
+     * @param m the mask
+     * @throws IllegalArgumentException
+     *         if {@code this.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code f(N)=offsetMap.lane(N)}
+     *         is an invalid index into {@code a},
+     *         for any lane {@code N} in the vector
+     *         where the mask is set
+     */
+    @ForceInline
+    public final
+    void intoCharArray(char[] a, IntVector offsetMap, VectorMask<Short> m) {
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1, m);
+        cOp(m, (i, e) -> {
+            a[offsetMap.lane(i)] = (char) e;
+        });
+    }
+
+    /**
+     * Scatters this vector into an array of type {@code char[]}
+     * under the control of a mask, and
+     * using indices obtained from an <em>offset map</em>.
+     * The offset map is a {@link LongVector} of length {@code VLENGTH}.
+     * <p>
+     * For each vector lane, where {@code N} is the vector lane index,
+     * if the lane is set in the mask,
+     * the lane is stored into the array
+     * element {@code a[(int)f(N)]}, where {@code f(N)} is the
+     * index mapping expression {@code offsetMap.lane(N)}.
+     *
+     * @param a the array
+     * @param offsetMap the offset map
+     * @param m the mask
+     * @throws IllegalArgumentException
+     *         if {@code this.length()!=offsetMap.length()}
+     * @throws IndexOutOfBoundsException
+     *         if {@code f(N)=offsetMap.lane(N)}
+     *         is an invalid index into {@code a},
+     *         for any lane {@code N} in the vector
+     *         where the mask is set
+     */
+    @ForceInline
+    public final
+    void intoCharArray(char[] a, LongVector offsetMap, VectorMask<Short> m) {
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, a.length, 1, m);
+        cOp(m, (i, e) -> {
+            a[(int) offsetMap.lane(i)] = (char) e;
+        });
     }
 
 
@@ -3699,6 +4033,72 @@ public abstract class ShortVector extends AbstractVector<Short> {
         }
     }
 
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    @ForceInline
+    public final
+    void intoMemorySegment(MemorySegment ms, IntVector offsetMap,
+                           ByteOrder bo) {
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 2);
+        maybeSwap(bo).intoMemorySegment0(offsetMap.getClass(), int.class, ms, offsetMap);
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    @ForceInline
+    public final
+    void intoMemorySegment(MemorySegment ms, LongVector offsetMap,
+                           ByteOrder bo) {
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 2);
+        maybeSwap(bo).intoMemorySegment0(offsetMap.getClass(), long.class, ms, offsetMap);
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    @ForceInline
+    public final
+    void intoMemorySegment(MemorySegment ms, IntVector offsetMap,
+                           ByteOrder bo, VectorMask<Short> m) {
+        m.check(vspecies());
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 2, m);
+        maybeSwap(bo).intoMemorySegment0(offsetMap.getClass(), int.class, ms, offsetMap, m);
+    }
+
+    /**
+     * {@inheritDoc} <!--workaround-->
+     */
+    @Override
+    @ForceInline
+    public final
+    void intoMemorySegment(MemorySegment ms, LongVector offsetMap,
+                           ByteOrder bo, VectorMask<Short> m) {
+        m.check(vspecies());
+        if (length() != offsetMap.length()) {
+            throw new IllegalArgumentException("vector length and offsetMap length differ");
+        }
+
+        VectorIntrinsics.checkIndices(offsetMap, ms.byteSize(), 2, m);
+        maybeSwap(bo).intoMemorySegment0(offsetMap.getClass(), long.class, ms, offsetMap, m);
+    }
+
     // ================================================
 
     // Low-level memory operations.
@@ -3729,8 +4129,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
             a, offset, vsp,
-            (arr, off, s) -> s.ldOp(arr, (int) off,
-                                    (arr_, off_, i) -> arr_[off_ + i]));
+            (arr, off, s) -> s.nOp(i -> arr[(int)off + i]));
     }
 
     /*package-private*/
@@ -3746,10 +4145,46 @@ public abstract class ShortVector extends AbstractVector<Short> {
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset), m, offsetInRange,
             a, offset, vsp,
-            (arr, off, s, vm) -> s.ldOp(arr, (int) off, vm,
-                                        (arr_, off_, i) -> arr_[off_ + i]));
+            (arr, off, s, vm) -> s.nOp(vm, i -> arr[(int)off + i]));
     }
 
+    /*package-private*/
+    abstract
+    <IV extends Vector<IE>, IE>
+    ShortVector fromArray0(Class<? extends IV> ivClass, Class<IE> ieClass, short[] a, IV offsetMap);
+    @ForceInline
+    final
+    <M extends VectorMask<Short>,
+     IV extends Vector<IE>,
+     IE>
+    ShortVector fromArray0Template(Class<M> mClass, Class<? extends IV> ivClass, Class<IE> ieClass, short[] a, IV offsetMap) {
+        ShortSpecies vsp = vspecies();
+        return VectorSupport.<short[], ShortVector, IV, ShortSpecies, M, Short, IE>loadWithMap(
+            vsp.vectorType(), mClass, short.class,
+            vsp.laneCount(), ivClass, ieClass,
+            a, ARRAY_BASE, offsetMap, 2L, null,
+            a, vsp,
+            (arr, map, s, vm) -> s.nOp(i -> arr[map.toIntArray()[i]]));
+    }
+
+    /*package-private*/
+    abstract
+    <IV extends Vector<IE>, IE>
+    ShortVector fromArray0(Class<? extends IV> ivClass, Class<IE> ieClass, short[] a, IV offsetMap, VectorMask<Short> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Short>,
+     IV extends Vector<IE>,
+     IE>
+    ShortVector fromArray0Template(Class<M> mClass, Class<? extends IV> ivClass, Class<IE> ieClass, short[] a, IV offsetMap, M m) {
+        ShortSpecies vsp = vspecies();
+        return VectorSupport.<short[], ShortVector, IV, ShortSpecies, M, Short, IE>loadWithMap(
+            vsp.vectorType(), mClass, short.class,
+            vsp.laneCount(), ivClass, ieClass,
+            a, ARRAY_BASE, offsetMap, 2L, m,
+            a, vsp,
+            (arr, map, s, vm) -> s.nOp(vm, i -> arr[map.toIntArray()[i]]));
+    }
 
     /*package-private*/
     abstract
@@ -3762,8 +4197,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, charArrayAddress(a, offset),
             a, offset, vsp,
-            (arr, off, s) -> s.ldOp(arr, (int) off,
-                                    (arr_, off_, i) -> (short) arr_[off_ + i]));
+            (arr, off, s) -> s.nOp(i -> (short) arr[(int)off + i]));
     }
 
     /*package-private*/
@@ -3776,11 +4210,10 @@ public abstract class ShortVector extends AbstractVector<Short> {
         m.check(species());
         ShortSpecies vsp = vspecies();
         return VectorSupport.loadMasked(
-                vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-                a, charArrayAddress(a, offset), m, offsetInRange,
-                a, offset, vsp,
-                (arr, off, s, vm) -> s.ldOp(arr, (int) off, vm,
-                                            (arr_, off_, i) -> (short) arr_[off_ + i]));
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            a, charArrayAddress(a, offset), m, offsetInRange,
+            a, offset, vsp,
+            (arr, off, s, vm) -> s.nOp(vm, i -> (short) arr[(int)off + i]));
     }
 
 
@@ -3791,11 +4224,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
     ShortVector fromMemorySegment0Template(MemorySegment ms, long offset) {
         ShortSpecies vsp = vspecies();
         return ScopedMemoryAccess.loadFromMemorySegment(
-                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                (AbstractMemorySegmentImpl) ms, offset, vsp,
-                (msp, off, s) -> {
-                    return s.ldLongOp((MemorySegment) msp, off, ShortVector::memorySegmentGet);
-                });
+            vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+            (AbstractMemorySegmentImpl) ms, offset, vsp,
+            (msp, off, s) -> s.nOp(i -> memorySegmentGet(msp, off, i)));
     }
 
     abstract
@@ -3807,11 +4238,45 @@ public abstract class ShortVector extends AbstractVector<Short> {
         ShortSpecies vsp = vspecies();
         m.check(vsp);
         return ScopedMemoryAccess.loadFromMemorySegmentMasked(
-                vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-                (AbstractMemorySegmentImpl) ms, offset, m, vsp, offsetInRange,
-                (msp, off, s, vm) -> {
-                    return s.ldLongOp((MemorySegment) msp, off, vm, ShortVector::memorySegmentGet);
-                });
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            (AbstractMemorySegmentImpl) ms, offset, m, vsp, offsetInRange,
+            (msp, off, s, vm) -> s.nOp(vm, i -> memorySegmentGet(msp, off, i)));
+    }
+
+    /*package-private*/
+    abstract
+    <IV extends Vector<IE>, IE>
+    ShortVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap);
+    @ForceInline
+    final
+    <M extends VectorMask<Short>,
+     IV extends Vector<IE>,
+     IE>
+    ShortVector fromMemorySegment0Template(Class<M> mClass, Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
+        ShortSpecies vsp = vspecies();
+        return ScopedMemoryAccess.<ShortVector, IV, ShortSpecies, M, Short, IE>loadFromMemorySegmentWithMap(
+            vsp.vectorType(), mClass, short.class,
+            vsp.laneCount(), ivClass, ieClass,
+            (AbstractMemorySegmentImpl) ms, offsetMap, vsp,
+            (msp, map, s, vm) -> s.nOp(i -> memorySegmentGet(msp, map.toLongArray()[i], 0)));
+    }
+
+    /*package-private*/
+    abstract
+    <IV extends Vector<IE>, IE>
+    ShortVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Short> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Short>,
+     IV extends Vector<IE>,
+     IE>
+    ShortVector fromMemorySegment0Template(Class<M> mClass, Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, M m) {
+        ShortSpecies vsp = vspecies();
+        return ScopedMemoryAccess.<ShortVector, IV, ShortSpecies, M, Short, IE>loadFromMemorySegmentWithMapMasked(
+            vsp.vectorType(), mClass, short.class,
+            vsp.laneCount(), ivClass, ieClass,
+            (AbstractMemorySegmentImpl) ms, offsetMap, m, vsp,
+            (msp, map, s, vm) -> s.nOp(vm, i -> memorySegmentGet(msp, map.toLongArray()[i], 0)));
     }
 
     // Unchecked storing operations in native byte order.
@@ -3828,9 +4293,9 @@ public abstract class ShortVector extends AbstractVector<Short> {
             vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
             this, a, offset,
-            (arr, off, v)
-            -> v.stOp(arr, (int) off,
-                      (arr_, off_, i, e) -> arr_[off_+i] = e));
+            (arr, off, v) -> v.cOp((i, e) -> {
+                arr[(int)off + i] = e;
+            }));
     }
 
     abstract
@@ -3845,11 +4310,48 @@ public abstract class ShortVector extends AbstractVector<Short> {
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
             a, arrayAddress(a, offset),
             this, m, a, offset,
-            (arr, off, v, vm)
-            -> v.stOp(arr, (int) off, vm,
-                      (arr_, off_, i, e) -> arr_[off_ + i] = e));
+            (arr, off, v, vm) -> v.cOp(vm, (i, e) -> {
+                arr[(int)off + i] = e;
+            }));
     }
 
+    abstract
+    <IV extends Vector<IE>, IE>
+    void intoArray0(Class<? extends IV> ivClass, Class<IE> ieClass, short[] a, IV offsetMap);
+    @ForceInline
+    final
+    <M extends VectorMask<Short>,
+     IV extends Vector<IE>,
+     IE>
+    void intoArray0Template(Class<M> mClass, Class<? extends IV> ivClass, Class<IE> ieClass, short[] a, IV offsetMap) {
+        ShortSpecies vsp = vspecies();
+        VectorSupport.storeWithMap(vsp.vectorType(), mClass, short.class,
+            vsp.laneCount(), ivClass, ieClass,
+            a, ARRAY_BASE, offsetMap, 2L, null,
+            this, a,
+            (arr, map, v, vm) -> v.cOp((i, e) -> {
+                arr[map.toIntArray()[i]] = e;
+            }));
+    }
+
+    abstract
+    <IV extends Vector<IE>, IE>
+    void intoArray0(Class<? extends IV> ivClass, Class<IE> ieClass, short[] a, IV offsetMap, VectorMask<Short> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Short>,
+     IV extends Vector<IE>,
+     IE>
+    void intoArray0Template(Class<M> mClass, Class<? extends IV> ivClass, Class<IE> ieClass, short[] a, IV offsetMap, M m) {
+        ShortSpecies vsp = vspecies();
+        VectorSupport.storeWithMap(vsp.vectorType(), mClass, short.class,
+            vsp.laneCount(), ivClass, ieClass,
+            a, ARRAY_BASE, offsetMap, 2L, m,
+            this, a,
+            (arr, map, v, vm) -> v.cOp(vm, (i, e) -> {
+                arr[map.toIntArray()[i]] = e;
+            }));
+    }
 
 
     @ForceInline
@@ -3857,12 +4359,10 @@ public abstract class ShortVector extends AbstractVector<Short> {
     void intoMemorySegment0(MemorySegment ms, long offset) {
         ShortSpecies vsp = vspecies();
         ScopedMemoryAccess.storeIntoMemorySegment(
-                vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                this,
-                (AbstractMemorySegmentImpl) ms, offset,
-                (msp, off, v) -> {
-                    v.stLongOp((MemorySegment) msp, off, ShortVector::memorySegmentSet);
-                });
+            vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
+            this,
+            (AbstractMemorySegmentImpl) ms, offset,
+            (msp, off, v) -> v.cOp((i, e) -> memorySegmentSet(msp, off, i, e)));
     }
 
     abstract
@@ -3874,12 +4374,46 @@ public abstract class ShortVector extends AbstractVector<Short> {
         ShortSpecies vsp = vspecies();
         m.check(vsp);
         ScopedMemoryAccess.storeIntoMemorySegmentMasked(
-                vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-                this, m,
-                (AbstractMemorySegmentImpl) ms, offset,
-                (msp, off, v, vm) -> {
-                    v.stLongOp((MemorySegment) msp, off, vm, ShortVector::memorySegmentSet);
-                });
+            vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
+            this, m,
+            (AbstractMemorySegmentImpl) ms, offset,
+            (msp, off, v, vm) -> v.cOp(vm, (i, e) -> memorySegmentSet(msp, off, i, e)));
+    }
+
+    /*package-private*/
+    abstract
+    <IV extends Vector<IE>, IE>
+    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap);
+    @ForceInline
+    final
+    <M extends VectorMask<Short>,
+     IV extends Vector<IE>,
+     IE>
+    void intoMemorySegment0Template(Class<M> mClass, Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
+        ShortSpecies vsp = vspecies();
+        ScopedMemoryAccess.storeIntoMemorySegmentWithMap(
+            vsp.vectorType(), mClass, short.class,
+            vsp.laneCount(), ivClass, ieClass,
+            this, (AbstractMemorySegmentImpl) ms, offsetMap,
+            (msp, map, s, vm) -> s.cOp((i, e) -> memorySegmentSet(msp, map.toLongArray()[i], 0, e)));
+    }
+
+    /*package-private*/
+    abstract
+    <IV extends Vector<IE>, IE>
+    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Short> m);
+    @ForceInline
+    final
+    <M extends VectorMask<Short>,
+     IV extends Vector<IE>,
+     IE>
+    void intoMemorySegment0Template(Class<M> mClass, Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, M m) {
+        ShortSpecies vsp = vspecies();
+        ScopedMemoryAccess.storeIntoMemorySegmentWithMapMasked(
+            vsp.vectorType(), mClass, short.class,
+            vsp.laneCount(), ivClass, ieClass,
+            this, (AbstractMemorySegmentImpl) ms, offsetMap, m,
+            (msp, map, s, vm) -> s.cOp(vm, (i, e) -> memorySegmentSet(msp, map.toLongArray()[i], 0, e)));
     }
 
     /*package-private*/
@@ -3896,12 +4430,13 @@ public abstract class ShortVector extends AbstractVector<Short> {
             a, charArrayAddress(a, offset),
             this, m, a, offset,
             (arr, off, v, vm)
-            -> v.stOp(arr, (int) off, vm,
-                      (arr_, off_, i, e) -> arr_[off_ + i] = (char) e));
+            -> v.cOp(vm, (i, e) -> {
+                arr[(int)off + i] = (char) e;
+            }));
     }
 
     // End of low-level memory operations.
-
+    @ForceInline
     private static
     void checkMaskFromIndexSize(int offset,
                                 ShortSpecies vsp,
@@ -3912,6 +4447,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
             .checkIndexByLane(offset, limit, vsp.iota(), scale);
     }
 
+    @ForceInline
     private static
     void checkMaskFromIndexSize(long offset,
                                 ShortSpecies vsp,
@@ -4133,7 +4669,7 @@ public abstract class ShortVector extends AbstractVector<Short> {
                 VectorSupport.fromBitsCoerced(
                     vectorType, short.class, laneCount,
                     bits, MODE_BROADCAST, this,
-                    (bits_, s_) -> s_.rvOp(i -> bits_));
+                    (b, s) -> s.nOp(i -> fromBits(b)));
         }
 
         /*package-private*/
@@ -4204,92 +4740,15 @@ public abstract class ShortVector extends AbstractVector<Short> {
         }
 
         /*package-private*/
-        final @Override
         @ForceInline
-        ShortVector rvOp(RVOp f) {
-            short[] res = new short[laneCount()];
-            for (int i = 0; i < res.length; i++) {
-                short bits = (short) f.apply(i);
-                res[i] = fromBits(bits);
-            }
-            return dummyVector().vectorFactory(res);
-        }
-
-        ShortVector vOp(FVOp f) {
-            short[] res = new short[laneCount()];
-            for (int i = 0; i < res.length; i++) {
-                res[i] = f.apply(i);
-            }
-            return dummyVector().vectorFactory(res);
-        }
-
-        ShortVector vOp(VectorMask<Short> m, FVOp f) {
-            short[] res = new short[laneCount()];
-            boolean[] mbits = ((AbstractMask<Short>)m).getBits();
-            for (int i = 0; i < res.length; i++) {
-                if (mbits[i]) {
-                    res[i] = f.apply(i);
-                }
-            }
-            return dummyVector().vectorFactory(res);
+        <M> ShortVector nOp(FNulOp f) {
+            return dummyVector().nOp(f);
         }
 
         /*package-private*/
         @ForceInline
-        <M> ShortVector ldOp(M memory, int offset,
-                                      FLdOp<M> f) {
-            return dummyVector().ldOp(memory, offset, f);
-        }
-
-        /*package-private*/
-        @ForceInline
-        <M> ShortVector ldOp(M memory, int offset,
-                                      VectorMask<Short> m,
-                                      FLdOp<M> f) {
-            return dummyVector().ldOp(memory, offset, m, f);
-        }
-
-        /*package-private*/
-        @ForceInline
-        ShortVector ldLongOp(MemorySegment memory, long offset,
-                                      FLdLongOp f) {
-            return dummyVector().ldLongOp(memory, offset, f);
-        }
-
-        /*package-private*/
-        @ForceInline
-        ShortVector ldLongOp(MemorySegment memory, long offset,
-                                      VectorMask<Short> m,
-                                      FLdLongOp f) {
-            return dummyVector().ldLongOp(memory, offset, m, f);
-        }
-
-        /*package-private*/
-        @ForceInline
-        <M> void stOp(M memory, int offset, FStOp<M> f) {
-            dummyVector().stOp(memory, offset, f);
-        }
-
-        /*package-private*/
-        @ForceInline
-        <M> void stOp(M memory, int offset,
-                      AbstractMask<Short> m,
-                      FStOp<M> f) {
-            dummyVector().stOp(memory, offset, m, f);
-        }
-
-        /*package-private*/
-        @ForceInline
-        void stLongOp(MemorySegment memory, long offset, FStLongOp f) {
-            dummyVector().stLongOp(memory, offset, f);
-        }
-
-        /*package-private*/
-        @ForceInline
-        void stLongOp(MemorySegment memory, long offset,
-                      AbstractMask<Short> m,
-                      FStLongOp f) {
-            dummyVector().stLongOp(memory, offset, m, f);
+        <M> ShortVector nOp(VectorMask<Short> m, FNulOp f) {
+            return dummyVector().nOp(m, f);
         }
 
         // N.B. Make sure these constant vectors and

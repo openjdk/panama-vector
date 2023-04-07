@@ -4345,6 +4345,8 @@ opclass memory(indirect, indOffset8, indOffset32, indIndexOffset, indIndex,
                indIndexOffsetNarrow, indIndexNarrow, indIndexScaleNarrow,
                indIndexScaleOffsetNarrow, indPosIndexOffsetNarrow, indPosIndexScaleOffsetNarrow);
 
+opclass noIndexMemory(indirect, indOffset8, indOffset32);
+
 //----------PIPELINE-----------------------------------------------------------
 // Rules which define the behavior of the target architectures pipeline.
 pipeline %{

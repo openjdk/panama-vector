@@ -70,25 +70,92 @@ import java.util.Objects;
     }
 
     @ForceInline
-    static IntVector checkIndex(IntVector vix, int length) {
+    static void checkIndices(IntVector offsetMap, long length, long scale) {
         switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
-            case 0: return vix; // no range check
+            case 0: return; // no range check
             case 1: // fall-through
             case 2:
-                if (vix.compare(VectorOperators.LT, 0)
-                    .or(vix.compare(VectorOperators.GE, length))
-                    .anyTrue()) {
-                    throw checkIndexFailed(vix, length);
+                long scaleM1 = scale - 1;
+                if (length > Integer.MAX_VALUE + scaleM1) {
+                    return;
                 }
-                return vix;
+                if (length < scaleM1 || offsetMap.compare(VectorOperators.UNSIGNED_GE,
+                                (int)(length - scaleM1))
+                        .anyTrue()) {
+                    throw checkIndexFailed(offsetMap, length, scale, null);
+                }
+                return;
+            default: throw new InternalError();
+        }
+    }
+
+    @ForceInline
+    static void checkIndices(LongVector offsetMap, long length, long scale) {
+        switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
+            case 0: return; // no range check
+            case 1: // fall-through
+            case 2:
+                long scaleM1 = scale - 1;
+                if (length < scaleM1 || offsetMap.compare(VectorOperators.UNSIGNED_GE,
+                                length - scaleM1)
+                        .anyTrue()) {
+                    throw checkIndexFailed(offsetMap, length, scale, null);
+                }
+                return;
+            default: throw new InternalError();
+        }
+    }
+
+    @ForceInline
+    static <E> void checkIndices(IntVector offsetMap, long length, long scale, VectorMask<E> mask) {
+        switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
+            case 0: return; // no range check
+            case 1: // fall-through
+            case 2:
+                long scaleM1 = scale - 1;
+                if (length > Integer.MAX_VALUE + scaleM1) {
+                    return;
+                }
+                if (length < scaleM1 || offsetMap.compare(VectorOperators.UNSIGNED_GE,
+                                (int)(length - scaleM1), mask.cast(offsetMap.vspecies()))
+                        .anyTrue()) {
+                    throw checkIndexFailed(offsetMap, length, scale, mask);
+                }
+                return;
+            default: throw new InternalError();
+        }
+    }
+
+    @ForceInline
+    static <E> void checkIndices(LongVector offsetMap, long length, long scale, VectorMask<E> mask) {
+        switch (VectorIntrinsics.VECTOR_ACCESS_OOB_CHECK) {
+            case 0: return; // no range check
+            case 1: // fall-through
+            case 2:
+                long scaleM1 = scale - 1;
+                if (length < scaleM1 || offsetMap.compare(VectorOperators.UNSIGNED_GE,
+                                length - scaleM1, mask.cast(offsetMap.vspecies()))
+                        .anyTrue()) {
+                    throw checkIndexFailed(offsetMap, length, scale, mask);
+                }
+                return;
             default: throw new InternalError();
         }
     }
 
     private static
-    IndexOutOfBoundsException checkIndexFailed(IntVector vix, int length) {
-        String msg = String.format("Range check failed: vector %s out of bounds for length %d", vix, length);
-        return new IndexOutOfBoundsException(msg);
+    IndexOutOfBoundsException checkIndexFailed(Vector<?> vix, long length, long scale, VectorMask<?> mask) {
+        if (mask == null) {
+            String msg =
+                    String.format("Range check failed: map %s, scale %d out of bounds for length %d",
+                            vix, scale, length);
+            return new IndexOutOfBoundsException(msg);
+        } else {
+            String msg =
+                    String.format("Range check failed: map %s, scale %d with mask %s out of bounds for length %d",
+                            vix, scale, mask, length);
+            return new IndexOutOfBoundsException(msg);
+        }
     }
 
     // If the index is not already a multiple of size,
@@ -98,7 +165,7 @@ import java.util.Objects;
     static int roundDown(int index, int size) {
         if ((size & (size - 1)) == 0) {
             // Size is zero or a power of two, so we got this.
-            return index & ~(size - 1);
+            return index & (-size);
         } else {
             return roundDownNPOT(index, size);
         }
@@ -118,7 +185,7 @@ import java.util.Objects;
     static long roundDown(long index, int size) {
         if ((size & (size - 1)) == 0) {
             // Size is zero or a power of two, so we got this.
-            return index & ~(size - 1);
+            return index & (-size);
         } else {
             return roundDownNPOT(index, size);
         }

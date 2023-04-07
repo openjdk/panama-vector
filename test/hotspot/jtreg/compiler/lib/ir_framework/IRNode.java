@@ -597,14 +597,24 @@ public class IRNode {
         beforeMatchingNameRegex(LOAD_VECTOR, "LoadVector");
     }
 
-    public static final String LOAD_VECTOR_GATHER = PREFIX + "LOAD_VECTOR_GATHER" + POSTFIX;
+    public static final String LOAD_GATHER_INT = PREFIX + "LOAD_GATHER_INT" + POSTFIX;
     static {
-        beforeMatchingNameRegex(LOAD_VECTOR_GATHER, "LoadVectorGather");
+        beforeMatchingNameRegex(LOAD_GATHER_INT, "LoadGatherI");
     }
 
-    public static final String LOAD_VECTOR_GATHER_MASKED = PREFIX + "LOAD_VECTOR_GATHER_MASKED" + POSTFIX;
+    public static final String LOAD_GATHER_LONG = PREFIX + "LOAD_GATHER_LONG" + POSTFIX;
     static {
-        beforeMatchingNameRegex(LOAD_VECTOR_GATHER_MASKED, "LoadVectorGatherMasked");
+        beforeMatchingNameRegex(LOAD_GATHER_LONG, "LoadGatherL");
+    }
+
+    public static final String LOAD_GATHER_INT_MASKED = PREFIX + "LOAD_GATHER_INT_MASKED" + POSTFIX;
+    static {
+        beforeMatchingNameRegex(LOAD_GATHER_INT_MASKED, "LoadGatherIMasked");
+    }
+
+    public static final String LOAD_GATHER_LONG_MASKED = PREFIX + "LOAD_GATHER_LONG_MASKED" + POSTFIX;
+    static {
+        beforeMatchingNameRegex(LOAD_GATHER_LONG_MASKED, "LoadGatherLMasked");
     }
 
     public static final String LONG_COUNTED_LOOP = PREFIX + "LONG_COUNTED_LOOP" + POSTFIX;
@@ -1098,14 +1108,24 @@ public class IRNode {
         beforeMatchingNameRegex(STORE_VECTOR, "StoreVector");
     }
 
-    public static final String STORE_VECTOR_SCATTER = PREFIX + "STORE_VECTOR_SCATTER" + POSTFIX;
+    public static final String STORE_SCATTER_INT = PREFIX + "STORE_SCATTER_INT" + POSTFIX;
     static {
-        beforeMatchingNameRegex(STORE_VECTOR_SCATTER, "StoreVectorScatter");
+        beforeMatchingNameRegex(STORE_SCATTER_INT, "StoreScatterI");
     }
 
-    public static final String STORE_VECTOR_SCATTER_MASKED = PREFIX + "STORE_VECTOR_SCATTER_MASKED" + POSTFIX;
+    public static final String STORE_SCATTER_LONG = PREFIX + "STORE_SCATTER_LONG" + POSTFIX;
     static {
-        beforeMatchingNameRegex(STORE_VECTOR_SCATTER_MASKED, "StoreVectorScatterMasked");
+        beforeMatchingNameRegex(STORE_SCATTER_LONG, "StoreScatterL");
+    }
+
+    public static final String STORE_SCATTER_INT_MASKED = PREFIX + "STORE_SCATTER_INT_MASKED" + POSTFIX;
+    static {
+        beforeMatchingNameRegex(STORE_SCATTER_INT_MASKED, "StoreScatterIMasked");
+    }
+
+    public static final String STORE_SCATTER_LONG_MASKED = PREFIX + "STORE_SCATTER_LONG_MASKED" + POSTFIX;
+    static {
+        beforeMatchingNameRegex(STORE_SCATTER_LONG_MASKED, "StoreScatterLMasked");
     }
 
     public static final String SUB = PREFIX + "SUB" + POSTFIX;

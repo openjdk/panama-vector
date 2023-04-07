@@ -1518,6 +1518,10 @@ private:
   void kxorwl(KRegister dst, KRegister src1, KRegister src2);
   void kxordl(KRegister dst, KRegister src1, KRegister src2);
   void kxorql(KRegister dst, KRegister src1, KRegister src2);
+
+  void kxnorbl(KRegister dst, KRegister src1, KRegister src2);
+  void kxnorwl(KRegister dst, KRegister src1, KRegister src2);
+
   void kmovbl(KRegister dst, Register src);
   void kmovbl(Register dst, KRegister src);
   void kmovbl(KRegister dst, KRegister src);
@@ -1544,7 +1548,6 @@ private:
   void kortestdl(KRegister dst, KRegister src);
   void kortestql(KRegister dst, KRegister src);
 
-  void kxnorbl(KRegister dst, KRegister src1, KRegister src2);
   void kshiftlbl(KRegister dst, KRegister src, int imm8);
   void kshiftlql(KRegister dst, KRegister src, int imm8);
   void kshiftrbl(KRegister dst, KRegister src, int imm8);
@@ -2759,16 +2762,28 @@ private:
   void vpgatherdq(XMMRegister dst, Address src, XMMRegister mask, int vector_len);
   void vgatherdpd(XMMRegister dst, Address src, XMMRegister mask, int vector_len);
   void vgatherdps(XMMRegister dst, Address src, XMMRegister mask, int vector_len);
+  void vpgatherqd(XMMRegister dst, Address src, XMMRegister mask, int vector_len);
+  void vpgatherqq(XMMRegister dst, Address src, XMMRegister mask, int vector_len);
+  void vgatherqpd(XMMRegister dst, Address src, XMMRegister mask, int vector_len);
+  void vgatherqps(XMMRegister dst, Address src, XMMRegister mask, int vector_len);
   void evpgatherdd(XMMRegister dst, KRegister mask, Address src, int vector_len);
   void evpgatherdq(XMMRegister dst, KRegister mask, Address src, int vector_len);
   void evgatherdpd(XMMRegister dst, KRegister mask, Address src, int vector_len);
   void evgatherdps(XMMRegister dst, KRegister mask, Address src, int vector_len);
+  void evpgatherqd(XMMRegister dst, KRegister mask, Address src, int vector_len);
+  void evpgatherqq(XMMRegister dst, KRegister mask, Address src, int vector_len);
+  void evgatherqpd(XMMRegister dst, KRegister mask, Address src, int vector_len);
+  void evgatherqps(XMMRegister dst, KRegister mask, Address src, int vector_len);
 
   //Scatter AVX3 only
   void evpscatterdd(Address dst, KRegister mask, XMMRegister src, int vector_len);
   void evpscatterdq(Address dst, KRegister mask, XMMRegister src, int vector_len);
   void evscatterdps(Address dst, KRegister mask, XMMRegister src, int vector_len);
   void evscatterdpd(Address dst, KRegister mask, XMMRegister src, int vector_len);
+  void evpscatterqd(Address dst, KRegister mask, XMMRegister src, int vector_len);
+  void evpscatterqq(Address dst, KRegister mask, XMMRegister src, int vector_len);
+  void evscatterqps(Address dst, KRegister mask, XMMRegister src, int vector_len);
+  void evscatterqpd(Address dst, KRegister mask, XMMRegister src, int vector_len);
 
   // Carry-Less Multiplication Quadword
   void pclmulqdq(XMMRegister dst, XMMRegister src, int mask);

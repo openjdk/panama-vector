@@ -4541,6 +4541,8 @@ operand cmpOpU_commute() %{
 opclass memory(direct, indirect, indOffset8, indOffset32, indOffset32X, indIndexOffset,
                indIndex, indIndexScale, indIndexScaleOffset);
 
+opclass noIndexMemory(indirect, indOffset8, indOffset32);
+
 // Long memory operations are encoded in 2 instructions and a +4 offset.
 // This means some kind of offset is always required and you cannot use
 // an oop as the offset (done when working on static globals).

@@ -456,29 +456,30 @@ public class VectorSupport {
     /* ============================================================================ */
 
     public interface LoadVectorOperationWithMap<C,
-                                                V extends Vector<?>,
-                                                S extends VectorSpecies<?>,
-                                                M extends VectorMask<?>> {
-        V loadWithMap(C container, int index, int[] indexMap, int indexM, S s, M m);
+                                                V extends Vector<E>,
+                                                IV extends Vector<IE>,
+                                                S extends VectorSpecies<E>,
+                                                M extends VectorMask<E>,
+                                                E, IE> {
+        V loadWithMap(C container, IV indexMap, S s, M m);
     }
 
     @IntrinsicCandidate
     public static
     <C,
-     V extends Vector<?>,
-     W extends Vector<Integer>,
+     V extends Vector<E>,
+     IV extends Vector<IE>,
      S extends VectorSpecies<E>,
      M extends VectorMask<E>,
-     E>
+     E, IE>
     V loadWithMap(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
-                  int length,
-                  Class<? extends Vector<Integer>> vectorIndexClass,
-                  Object base, long offset,
-                  W index_vector,
-                  M m, C container, int index, int[] indexMap, int indexM, S s,
-                  LoadVectorOperationWithMap<C, V, S, M> defaultImpl) {
+                  int length, Class<? extends IV> ivClass, Class<IE> ieClass,
+                  Object base, long baseOffset,
+                  IV indexMap, long scale, M m,
+                  C container, S s,
+                  LoadVectorOperationWithMap<C, V, IV, S, M, E, IE> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        return defaultImpl.loadWithMap(container, index, indexMap, indexM, s, m);
+        return defaultImpl.loadWithMap(container, indexMap, s, m);
     }
 
     /* ============================================================================ */
@@ -525,27 +526,29 @@ public class VectorSupport {
     /* ============================================================================ */
 
     public interface StoreVectorOperationWithMap<C,
-                                                 V extends Vector<?>,
-                                                 M extends VectorMask<?>> {
-        void storeWithMap(C container, int index, V v, int[] indexMap, int indexM, M m);
+                                                 V extends Vector<E>,
+                                                 IV extends Vector<IE>,
+                                                 M extends VectorMask<E>,
+                                                 E, IE> {
+        void storeWithMap(C container, IV indexMap, V v, M m);
     }
 
     @IntrinsicCandidate
     public static
     <C,
      V extends Vector<E>,
-     W extends Vector<Integer>,
+     IV extends Vector<IE>,
      M extends VectorMask<E>,
-     E>
+     E, IE>
     void storeWithMap(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
-                      int length,
-                      Class<? extends Vector<Integer>> vectorIndexClass,
-                      Object base, long offset,
-                      W index_vector,
-                      V v, M m, C container, int index, int[] indexMap, int indexM,
-                      StoreVectorOperationWithMap<C, V, M> defaultImpl) {
+                      int length, Class<? extends IV> ivClass, Class<IE> ieClass,
+                      Object base, long baseOffset,
+                      IV indexMap, long scale, M m,
+                      V v,
+                      C container,
+                      StoreVectorOperationWithMap<C, V, IV, M, E, IE> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-        defaultImpl.storeWithMap(container, index, v, indexMap, indexM, m);
+        defaultImpl.storeWithMap(container, indexMap, v, m);
     }
 
     /* ============================================================================ */

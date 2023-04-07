@@ -912,24 +912,32 @@ Node* VectorNode::try_to_gen_masked_vector(PhaseGVN* gvn, Node* node, const Type
     return nullptr;
   }
 
-  // Generate the related masked op for vector load/store/load_gather/store_scatter.
+  // Generate the related masked op for vector load/store/load_LoadGather/store_StoreScatter.
   // Or append the mask to the vector op's input list by default.
   switch(vopc) {
   case Op_LoadVector:
     return new LoadVectorMaskedNode(node->in(0), node->in(1), node->in(2),
                                     node->as_LoadVector()->adr_type(), vt, mask,
                                     node->as_LoadVector()->control_dependency());
-  case Op_LoadVectorGather:
-    return new LoadVectorGatherMaskedNode(node->in(0), node->in(1), node->in(2),
-                                          node->as_LoadVector()->adr_type(), vt,
-                                          node->in(3), mask);
+  case Op_LoadGatherI:
+    return new LoadGatherIMaskedNode(node->in(0), node->in(1), node->in(2),
+                                 node->as_LoadVector()->adr_type(), vt,
+                                 node->in(3), node->in(4), mask);
+  case Op_LoadGatherL:
+    return new LoadGatherLMaskedNode(node->in(0), node->in(1), node->in(2),
+                                 node->as_LoadVector()->adr_type(), vt,
+                                 node->in(3), node->in(4), mask);
   case Op_StoreVector:
     return new StoreVectorMaskedNode(node->in(0), node->in(1), node->in(2), node->in(3),
                                      node->as_StoreVector()->adr_type(), mask);
-  case Op_StoreVectorScatter:
-    return new StoreVectorScatterMaskedNode(node->in(0), node->in(1), node->in(2),
-                                            node->as_StoreVector()->adr_type(),
-                                            node->in(3), node->in(4), mask);
+  case Op_StoreScatterI:
+    return new StoreScatterIMaskedNode(node->in(0), node->in(1), node->in(2),
+                                  node->as_StoreVector()->adr_type(),
+                                  node->in(3), node->in(4), node->in(5), mask);
+  case Op_StoreScatterL:
+    return new StoreScatterLMaskedNode(node->in(0), node->in(1), node->in(2),
+                                  node->as_StoreVector()->adr_type(),
+                                  node->in(3), node->in(4), node->in(5), mask);
   default:
     // Add the mask as an additional input to the original vector node by default.
     // This is used for almost all the vector nodes.
@@ -1976,6 +1984,78 @@ Node* XorVNode::Ideal(PhaseGVN* phase, bool can_reshape) {
     Node* zero = phase->transform(phase->zerocon(bt));
     return VectorNode::scalar2vector(zero, length(), Type::get_const_basic_type(bt),
                                      bottom_type()->isa_vectmask() != nullptr);
+  }
+  return nullptr;
+}
+
+int LoadGatherNode::opcode(BasicType bt) {
+  switch (bt) {
+    case T_INT:  return Op_LoadGatherI;
+    case T_LONG: return Op_LoadGatherL;
+    default: ShouldNotReachHere();
+  }
+  return 0;
+}
+
+LoadGatherNode* LoadGatherNode::make(int opc, Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, Node* indices, Node* scale) {
+  switch (opc) {
+    case Op_LoadGatherI: return new LoadGatherINode(c, mem, adr, at, vt, indices, scale);
+    case Op_LoadGatherL: return new LoadGatherLNode(c, mem, adr, at, vt, indices, scale);
+    default: ShouldNotReachHere();
+  }
+  return nullptr;
+}
+
+int StoreScatterNode::opcode(BasicType bt) {
+  switch (bt) {
+    case T_INT:  return Op_StoreScatterI;
+    case T_LONG: return Op_StoreScatterL;
+    default: ShouldNotReachHere();
+  }
+  return 0;
+}
+
+StoreScatterNode* StoreScatterNode::make(int opc, Node* c, Node* mem, Node* adr, const TypePtr* at, Node* val, Node* indices, Node* scale) {
+  switch (opc) {
+    case Op_StoreScatterI: return new StoreScatterINode(c, mem, adr, at, val, indices, scale);
+    case Op_StoreScatterL: return new StoreScatterLNode(c, mem, adr, at, val, indices, scale);
+    default: ShouldNotReachHere();
+  }
+  return nullptr;
+}
+
+int LoadGatherMaskedNode::opcode(BasicType bt) {
+  switch (bt) {
+    case T_INT:  return Op_LoadGatherIMasked;
+    case T_LONG: return Op_LoadGatherLMasked;
+    default: ShouldNotReachHere();
+  }
+  return 0;
+}
+
+LoadGatherMaskedNode* LoadGatherMaskedNode::make(int opc, Node* c, Node* mem, Node* adr, const TypePtr* at, const TypeVect* vt, Node* indices, Node* scale, Node* mask) {
+  switch (opc) {
+    case Op_LoadGatherIMasked: return new LoadGatherIMaskedNode(c, mem, adr, at, vt, indices, scale, mask);
+    case Op_LoadGatherLMasked: return new LoadGatherLMaskedNode(c, mem, adr, at, vt, indices, scale, mask);
+    default: ShouldNotReachHere();
+  }
+  return nullptr;
+}
+
+int StoreScatterMaskedNode::opcode(BasicType bt) {
+  switch (bt) {
+    case T_INT:  return Op_StoreScatterIMasked;
+    case T_LONG: return Op_StoreScatterLMasked;
+    default: ShouldNotReachHere();
+  }
+  return 0;
+}
+
+StoreScatterMaskedNode* StoreScatterMaskedNode::make(int opc, Node* c, Node* mem, Node* adr, const TypePtr* at, Node* val, Node* indices, Node* scale, Node* mask) {
+  switch (opc) {
+    case Op_StoreScatterIMasked: return new StoreScatterIMaskedNode(c, mem, adr, at, val, indices, scale, mask);
+    case Op_StoreScatterLMasked: return new StoreScatterLMaskedNode(c, mem, adr, at, val, indices, scale, mask);
+    default: ShouldNotReachHere();
   }
   return nullptr;
 }

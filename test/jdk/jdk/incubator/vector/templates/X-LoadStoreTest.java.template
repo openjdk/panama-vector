@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -39,13 +39,7 @@
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentScope;
 import java.lang.foreign.ValueLayout;
-import jdk.incubator.vector.$Type$Vector;
-import jdk.incubator.vector.VectorMask;
-#if[MaxBit]
-import jdk.incubator.vector.VectorShape;
-#end[MaxBit]
-import jdk.incubator.vector.VectorSpecies;
-import jdk.incubator.vector.VectorShuffle;
+import jdk.incubator.vector.*;
 import jdk.internal.vm.annotation.DontInline;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -53,6 +47,7 @@ import org.testng.annotations.Test;
 
 import java.nio.ByteOrder;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.*;
 
 @Test
@@ -64,6 +59,39 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
     static final VectorSpecies<$Wideboxtype$> SPECIES =
                 $Type$Vector.SPECIES_$bits$;
 #end[MaxBit]
+
+    static final VectorSpecies<Integer> SAME_LENGTH_INT_SPECIES;
+    static final VectorSpecies<Long> SAME_LENGTH_LONG_SPECIES;
+
+    static {
+        VectorSpecies<Integer> intSpecies;
+        try {
+            intSpecies = VectorSpecies.of(
+                    int.class,
+                    VectorShape.forBitSize(SPECIES.length() * Integer.SIZE)
+            );
+            if (intSpecies.length() != SPECIES.length()) {
+                intSpecies = null;
+            }
+        } catch (Throwable e) {
+            intSpecies = null;
+        }
+        SAME_LENGTH_INT_SPECIES = intSpecies;
+
+        VectorSpecies<Long> longSpecies;
+        try {
+            longSpecies = VectorSpecies.of(
+                    long.class,
+                    VectorShape.forBitSize(SPECIES.length() * Long.SIZE)
+            );
+            if (longSpecies.length() != SPECIES.length()) {
+                longSpecies = null;
+            }
+        } catch (Throwable e) {
+            longSpecies = null;
+        }
+        SAME_LENGTH_LONG_SPECIES = longSpecies;
+    }
 
     static final int INVOC_COUNT = Integer.getInteger("jdk.incubator.vector.test.loop-iterations", 100);
 
@@ -239,7 +267,7 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
                 toArray(Object[][]::new);
     }
 
-    static MemorySegment toSegment($type$[] a, IntFunction<MemorySegment> fb) {
+    static MemorySegment toSegment($type$[] a, LongFunction<MemorySegment> fb) {
         MemorySegment ms = fb.apply(a.length * SPECIES.elementSize() / 8);
         for (int i = 0; i < a.length; i++) {
             ms.set(ELEMENT_LAYOUT, i * SPECIES.elementSize() / 8 , a[i]);
@@ -479,7 +507,7 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
 
     @Test(dataProvider = "$type$MemorySegmentProvider")
     static void loadStoreMemorySegment(IntFunction<$type$[]> fa,
-                                       IntFunction<MemorySegment> fb,
+                                       LongFunction<MemorySegment> fb,
                                        ByteOrder bo) {
         MemorySegment a = toSegment(fa.apply(SPECIES.length()), fb);
         MemorySegment r = fb.apply((int) a.byteSize());
@@ -558,7 +586,7 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
 
     @Test(dataProvider = "$type$MemorySegmentMaskProvider")
     static void loadStoreMemorySegmentMask(IntFunction<$type$[]> fa,
-                                           IntFunction<MemorySegment> fb,
+                                           LongFunction<MemorySegment> fb,
                                            IntFunction<boolean[]> fm,
                                            ByteOrder bo) {
         $type$[] _a = fa.apply(SPECIES.length());
@@ -655,7 +683,7 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
 
     @Test(dataProvider = "$type$MemorySegmentProvider")
     static void loadStoreReadonlyMemorySegment(IntFunction<$type$[]> fa,
-                                               IntFunction<MemorySegment> fb,
+                                               LongFunction<MemorySegment> fb,
                                                ByteOrder bo) {
         MemorySegment a = toSegment(fa.apply(SPECIES.length()), fb).asReadOnly();
 
@@ -1051,33 +1079,28 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
 
     // Gather/Scatter load/store tests
 
-    static void assertGatherArraysEquals($type$[] r, $type$[] a, int[] indexMap) {
-        int i = 0;
-        int j = 0;
-        try {
-            for (; i < a.length; i += SPECIES.length()) {
-                j = i;
-                for (; j < i + SPECIES.length(); j++) {
-                    Assert.assertEquals(r[j], a[i + indexMap[j]]);
+    static void assertGatherArraysEquals($type$[] r, $type$[] a, int[] indexMap, boolean[] mask) {
+        for (int i = 0; i < r.length; i += SPECIES.length()) {
+            for (int j = i; j < i + SPECIES.length(); j++) {
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    Assert.assertEquals(r[j], a[indexMap[j]], "at index #" + j);
+                } else {
+                    Assert.assertEquals(r[j], ($type$) 0, "at index #" + j);
                 }
             }
-        } catch (AssertionError e) {
-            Assert.assertEquals(r[j], a[i + indexMap[j]], "at index #" + j);
         }
     }
 
-    static void assertGatherArraysEquals($type$[] r, $type$[] a, int[] indexMap, boolean[] mask) {
-        int i = 0;
-        int j = 0;
-        try {
-            for (; i < a.length; i += SPECIES.length()) {
-                j = i;
-                for (; j < i + SPECIES.length(); j++) {
-                    Assert.assertEquals(r[j], mask[j % SPECIES.length()] ? a[i + indexMap[j]]: ($type$) 0);
+    static void assertGatherArraysEquals($type$[] r, $type$[] a, long[] indexMap, boolean[] mask) {
+        for (int i = 0; i < r.length; i += SPECIES.length()) {
+            for (int j = i; j < i + SPECIES.length(); j++) {
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    Objects.checkIndex(indexMap[j], a.length);
+                    Assert.assertEquals(r[j], a[(int)indexMap[j]], "at index #" + j);
+                } else {
+                    Assert.assertEquals(r[j], ($type$) 0, "at index #" + j);
                 }
             }
-        } catch (AssertionError e) {
-            Assert.assertEquals(r[i], mask[j % SPECIES.length()] ? a[i + indexMap[j]]: ($type$) 0, "at index #" + j);
         }
     }
 
@@ -1087,8 +1110,8 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
         // Store before checking, since the same location may be stored to more than once
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             for (int j = i; j < i + SPECIES.length(); j++) {
-                if (mask[j % SPECIES.length()]) {
-                    expected[i + indexMap[j]] = a[j];
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    expected[indexMap[j]] = a[j];
                 }
             }
         }
@@ -1096,13 +1119,16 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
         Assert.assertEquals(r, expected);
     }
 
-    static void assertScatterArraysEquals($type$[] r, $type$[] a, int[] indexMap) {
+    static void assertScatterArraysEquals($type$[] r, $type$[] a, long[] indexMap, boolean[] mask) {
         $type$[] expected = new $type$[r.length];
 
         // Store before checking, since the same location may be stored to more than once
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             for (int j = i; j < i + SPECIES.length(); j++) {
-                expected[i + indexMap[j]] = a[j];
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    Objects.checkIndex(indexMap[j], r.length);
+                    expected[(int)indexMap[j]] = a[j];
+                }
             }
         }
 
@@ -1110,7 +1136,7 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
     }
 
     @DataProvider
-    public Object[][] gatherScatterProvider() {
+    public Object[][] gatherScatterIntProvider() {
         return INT_INDEX_GENERATORS.stream().
                 flatMap(fs -> $TYPE$_GENERATORS.stream().map(fa -> {
                     return new Object[] {fa, fs};
@@ -1119,7 +1145,16 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
     }
 
     @DataProvider
-    public Object[][] gatherScatterMaskProvider() {
+    public Object[][] gatherScatterLongProvider() {
+        return LONG_INDEX_GENERATORS.stream().
+                flatMap(fs -> $TYPE$_GENERATORS.stream().map(fa -> {
+                    return new Object[] {fa, fs};
+                })).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] gatherScatterIntMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
           flatMap(fs -> INT_INDEX_GENERATORS.stream().flatMap(fm ->
             $TYPE$_GENERATORS.stream().map(fa -> {
@@ -1128,103 +1163,199 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
             toArray(Object[][]::new);
     }
 
-
-    @Test(dataProvider = "gatherScatterProvider")
-    static void gather(IntFunction<$type$[]> fa, BiFunction<Integer,Integer,int[]> fs) {
-        $type$[] a = fa.apply(SPECIES.length());
-        int[] b = fs.apply(a.length, SPECIES.length());
-        $type$[] r = new $type$[a.length];
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i, b, i);
-                av.intoArray(r, i);
-            }
-        }
-
-        assertGatherArraysEquals(r, a, b);
+    @DataProvider
+    public Object[][] gatherScatterLongMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+          flatMap(fs -> LONG_INDEX_GENERATORS.stream().flatMap(fm ->
+            $TYPE$_GENERATORS.stream().map(fa -> {
+                    return new Object[] {fa, fm, fs};
+            }))).
+            toArray(Object[][]::new);
     }
 
-    @Test(dataProvider = "gatherScatterMaskProvider")
-    static void gatherMask(IntFunction<$type$[]> fa, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
-        $type$[] a = fa.apply(SPECIES.length());
-        int[] b = fs.apply(a.length, SPECIES.length());
-        $type$[] r = new $type$[a.length];
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+    @Test(dataProvider = "gatherScatterIntProvider")
+    static void gatherInt(IntFunction<$type$[]> fa, BiFunction<Integer,Integer,int[]> fs) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            int[] b = fs.apply(a.length, a.length);
+            $type$[] r = new $type$[b.length];
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i, b, i, vmask);
-                av.intoArray(r, i);
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, idx);
+                    av.intoArray(r, i);
+                }
             }
-        }
 
-        assertGatherArraysEquals(r, a, b, mask);
+            assertGatherArraysEquals(r, a, b, null);
+        }
     }
 
-    @Test(dataProvider = "gatherScatterProvider")
-    static void scatter(IntFunction<$type$[]> fa, BiFunction<Integer,Integer,int[]> fs) {
-        $type$[] a = fa.apply(SPECIES.length());
-        int[] b = fs.apply(a.length, SPECIES.length());
-        $type$[] r = new $type$[a.length];
+    @Test(dataProvider = "gatherScatterLongProvider")
+    static void gatherLong(IntFunction<$type$[]> fa, BiFunction<Integer,Long,long[]> fs) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            long[] b = fs.apply(a.length, (long) a.length);
+            $type$[] r = new $type$[a.length];
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
-                av.intoArray(r, i, b, i);
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, idx);
+                    av.intoArray(r, i);
+                }
             }
-        }
 
-        assertScatterArraysEquals(r, a, b);
+            assertGatherArraysEquals(r, a, b, null);
+        }
     }
 
-    @Test(dataProvider = "gatherScatterMaskProvider")
-    static void scatterMask(IntFunction<$type$[]> fa, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
-        $type$[] a = fa.apply(SPECIES.length());
-        int[] b = fs.apply(a.length, SPECIES.length());
-        $type$[] r = new $type$[a.length];
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+    @Test(dataProvider = "gatherScatterIntMaskProvider")
+    static void gatherIntMask(IntFunction<$type$[]> fa, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            int[] b = fs.apply(a.length, a.length);
+            $type$[] r = new $type$[a.length];
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
-                av.intoArray(r, i, b, i, vmask);
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, idx, vmask);
+                    av.intoArray(r, i);
+                }
             }
-        }
 
-        assertScatterArraysEquals(r, a, b, mask);
+            assertGatherArraysEquals(r, a, b, mask);
+        }
+    }
+
+    @Test(dataProvider = "gatherScatterLongMaskProvider")
+    static void gatherLongMask(IntFunction<$type$[]> fa, BiFunction<Integer,Long,long[]> fs, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            long[] b = fs.apply(a.length, (long) a.length);
+            $type$[] r = new $type$[a.length];
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, idx, vmask);
+                    av.intoArray(r, i);
+                }
+            }
+
+            assertGatherArraysEquals(r, a, b, mask);
+        }
+    }
+
+    @Test(dataProvider = "gatherScatterIntProvider")
+    static void scatterInt(IntFunction<$type$[]> fa, BiFunction<Integer,Integer,int[]> fs) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            int[] b = fs.apply(a.length, a.length);
+            $type$[] r = new $type$[a.length];
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
+                    av.intoArray(r, idx);
+                }
+            }
+
+            assertScatterArraysEquals(r, a, b, null);
+        }
+    }
+
+    @Test(dataProvider = "gatherScatterLongProvider")
+    static void scatterLong(IntFunction<$type$[]> fa, BiFunction<Integer,Long,long[]> fs) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            long[] b = fs.apply(a.length, (long) a.length);
+            $type$[] r = new $type$[a.length];
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
+                    av.intoArray(r, idx);
+                }
+            }
+
+            assertScatterArraysEquals(r, a, b, null);
+        }
+    }
+
+    @Test(dataProvider = "gatherScatterIntMaskProvider")
+    static void scatterIntMask(IntFunction<$type$[]> fa, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            int[] b = fs.apply(a.length, a.length);
+            $type$[] r = new $type$[a.length];
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
+                    av.intoArray(r, idx, vmask);
+                }
+            }
+
+            assertScatterArraysEquals(r, a, b, mask);
+        }
+    }
+
+    @Test(dataProvider = "gatherScatterLongMaskProvider")
+    static void scatterLongMask(IntFunction<$type$[]> fa, BiFunction<Integer,Long,long[]> fs, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            long[] b = fs.apply(a.length, (long) a.length);
+            $type$[] r = new $type$[a.length];
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
+                    av.intoArray(r, idx, vmask);
+                }
+            }
+
+            assertScatterArraysEquals(r, a, b, mask);
+        }
     }
 
 #if[short]
-    static void assertGatherArraysEquals(char[] r, char[] a, int[] indexMap) {
-        int i = 0;
-        int j = 0;
-        try {
-            for (; i < a.length; i += SPECIES.length()) {
-                j = i;
-                for (; j < i + SPECIES.length(); j++) {
-                    Assert.assertEquals(r[j], a[i + indexMap[j]]);
+    static void assertGatherArraysEquals(char[] r, char[] a, int[] indexMap, boolean[] mask) {
+        for (int i = 0; i < r.length; i += SPECIES.length()) {
+            for (int j = i; j < i + SPECIES.length(); j++) {
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    Assert.assertEquals(r[j], a[indexMap[j]], "at index #" + j);
+                } else {
+                    Assert.assertEquals(r[j], (char) 0, "at index #" + j);
                 }
             }
-        } catch (AssertionError e) {
-            Assert.assertEquals(r[j], a[i + indexMap[j]], "at index #" + j);
         }
     }
 
-    static void assertGatherArraysEquals(char[] r, char[] a, int[] indexMap, boolean[] mask) {
-        int i = 0;
-        int j = 0;
-        try {
-            for (; i < a.length; i += SPECIES.length()) {
-                j = i;
-                for (; j < i + SPECIES.length(); j++) {
-                    Assert.assertEquals(r[j], mask[j % SPECIES.length()] ? a[i + indexMap[j]]: (char) 0);
+    static void assertGatherArraysEquals(char[] r, char[] a, long[] indexMap, boolean[] mask) {
+        for (int i = 0; i < r.length; i += SPECIES.length()) {
+            for (int j = i; j < i + SPECIES.length(); j++) {
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    Objects.checkIndex(indexMap[j], a.length);
+                    Assert.assertEquals(r[j], a[(int)indexMap[j]], "at index #" + j);
+                } else {
+                    Assert.assertEquals(r[j], (char) 0, "at index #" + j);
                 }
             }
-        } catch (AssertionError e) {
-            Assert.assertEquals(r[i], mask[j % SPECIES.length()] ? a[i + indexMap[j]]: (char) 0, "at index #" + j);
         }
     }
 
@@ -1234,8 +1365,8 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
         // Store before checking, since the same location may be stored to more than once
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             for (int j = i; j < i + SPECIES.length(); j++) {
-                if (mask[j % SPECIES.length()]) {
-                    expected[i + indexMap[j]] = a[j];
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    expected[indexMap[j]] = a[j];
                 }
             }
         }
@@ -1243,13 +1374,16 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
         Assert.assertEquals(r, expected);
     }
 
-    static void assertScatterArraysEquals(char[] r, char[] a, int[] indexMap) {
+    static void assertScatterArraysEquals(char[] r, char[] a, long[] indexMap, boolean[] mask) {
         char[] expected = new char[r.length];
 
         // Store before checking, since the same location may be stored to more than once
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             for (int j = i; j < i + SPECIES.length(); j++) {
-                expected[i + indexMap[j]] = a[j];
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    Objects.checkIndex(indexMap[j], r.length);
+                    expected[(int)indexMap[j]] = a[j];
+                }
             }
         }
 
@@ -1257,7 +1391,7 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
     }
 
     @DataProvider
-    public Object[][] charGatherScatterProvider() {
+    public Object[][] charGatherScatterIntProvider() {
         return INT_INDEX_GENERATORS.stream().
                 flatMap(fs -> CHAR_GENERATORS.stream().map(fa -> {
                     return new Object[] {fa, fs};
@@ -1266,7 +1400,16 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
     }
 
     @DataProvider
-    public Object[][] charGatherScatterMaskProvider() {
+    public Object[][] charGatherScatterLongProvider() {
+        return LONG_INDEX_GENERATORS.stream().
+                flatMap(fs -> CHAR_GENERATORS.stream().map(fa -> {
+                    return new Object[] {fa, fs};
+                })).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] charGatherScatterIntMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
           flatMap(fs -> INT_INDEX_GENERATORS.stream().flatMap(fm ->
             CHAR_GENERATORS.stream().map(fa -> {
@@ -1275,104 +1418,200 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
             toArray(Object[][]::new);
     }
 
-
-    @Test(dataProvider = "charGatherScatterProvider")
-    static void charGather(IntFunction<char[]> fa, BiFunction<Integer,Integer,int[]> fs) {
-        char[] a = fa.apply(SPECIES.length());
-        int[] b = fs.apply(a.length, SPECIES.length());
-        char[] r = new char[a.length];
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                $abstractvectortype$ av = $abstractvectortype$.fromCharArray(SPECIES, a, i, b, i);
-                av.intoCharArray(r, i);
-            }
-        }
-
-        assertGatherArraysEquals(r, a, b);
+    @DataProvider
+    public Object[][] charGatherScatterLongMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+          flatMap(fs -> LONG_INDEX_GENERATORS.stream().flatMap(fm ->
+            CHAR_GENERATORS.stream().map(fa -> {
+                    return new Object[] {fa, fm, fs};
+            }))).
+            toArray(Object[][]::new);
     }
 
-    @Test(dataProvider = "charGatherScatterMaskProvider")
-    static void charGatherMask(IntFunction<char[]> fa, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
-        char[] a = fa.apply(SPECIES.length());
-        int[] b = fs.apply(a.length, SPECIES.length());
-        char[] r = new char[a.length];
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+    @Test(dataProvider = "charGatherScatterIntProvider")
+    static void charGatherInt(IntFunction<char[]> fa, BiFunction<Integer,Integer,int[]> fs) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            char[] a = fa.apply(SPECIES.length());
+            int[] b = fs.apply(a.length, a.length);
+            char[] r = new char[a.length];
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                $abstractvectortype$ av = $abstractvectortype$.fromCharArray(SPECIES, a, i, b, i, vmask);
-                av.intoCharArray(r, i);
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromCharArray(SPECIES, a, idx);
+                    av.intoCharArray(r, i);
+                }
             }
-        }
 
-        assertGatherArraysEquals(r, a, b, mask);
+            assertGatherArraysEquals(r, a, b, null);
+        }
     }
 
-    @Test(dataProvider = "charGatherScatterProvider")
-    static void charScatter(IntFunction<char[]> fa, BiFunction<Integer,Integer,int[]> fs) {
-        char[] a = fa.apply(SPECIES.length());
-        int[] b = fs.apply(a.length, SPECIES.length());
-        char[] r = new char[a.length];
+    @Test(dataProvider = "charGatherScatterLongProvider")
+    static void charGatherLong(IntFunction<char[]> fa, BiFunction<Integer,Long,long[]> fs) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            char[] a = fa.apply(SPECIES.length());
+            long[] b = fs.apply(a.length, (long) a.length);
+            char[] r = new char[a.length];
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                $abstractvectortype$ av = $abstractvectortype$.fromCharArray(SPECIES, a, i);
-                av.intoCharArray(r, i, b, i);
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromCharArray(SPECIES, a, idx);
+                    av.intoCharArray(r, i);
+                }
             }
-        }
 
-        assertScatterArraysEquals(r, a, b);
+            assertGatherArraysEquals(r, a, b, null);
+        }
     }
 
-    @Test(dataProvider = "charGatherScatterMaskProvider")
-    static void charScatterMask(IntFunction<char[]> fa, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
-        char[] a = fa.apply(SPECIES.length());
-        int[] b = fs.apply(a.length, SPECIES.length());
-        char[] r = new char[a.length];
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+    @Test(dataProvider = "charGatherScatterIntMaskProvider")
+    static void charGatherIntMask(IntFunction<char[]> fa, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            char[] a = fa.apply(SPECIES.length());
+            int[] b = fs.apply(a.length, a.length);
+            char[] r = new char[a.length];
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                $abstractvectortype$ av = $abstractvectortype$.fromCharArray(SPECIES, a, i);
-                av.intoCharArray(r, i, b, i, vmask);
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromCharArray(SPECIES, a, idx, vmask);
+                    av.intoCharArray(r, i);
+                }
             }
-        }
 
-        assertScatterArraysEquals(r, a, b, mask);
+            assertGatherArraysEquals(r, a, b, mask);
+        }
+    }
+
+    @Test(dataProvider = "charGatherScatterLongMaskProvider")
+    static void charGatherLongMask(IntFunction<char[]> fa, BiFunction<Integer,Long,long[]> fs, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            char[] a = fa.apply(SPECIES.length());
+            long[] b = fs.apply(a.length, (long) a.length);
+            char[] r = new char[a.length];
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromCharArray(SPECIES, a, idx, vmask);
+                    av.intoCharArray(r, i);
+                }
+            }
+
+            assertGatherArraysEquals(r, a, b, mask);
+        }
+    }
+
+    @Test(dataProvider = "charGatherScatterIntProvider")
+    static void charScatterInt(IntFunction<char[]> fa, BiFunction<Integer,Integer,int[]> fs) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            char[] a = fa.apply(SPECIES.length());
+            int[] b = fs.apply(a.length, a.length);
+            char[] r = new char[a.length];
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromCharArray(SPECIES, a, i);
+                    av.intoCharArray(r, idx);
+                }
+            }
+
+            assertScatterArraysEquals(r, a, b, null);
+        }
+    }
+
+    @Test(dataProvider = "charGatherScatterLongProvider")
+    static void charScatterLong(IntFunction<char[]> fa, BiFunction<Integer,Long,long[]> fs) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            char[] a = fa.apply(SPECIES.length());
+            long[] b = fs.apply(a.length, (long) a.length);
+            char[] r = new char[a.length];
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromCharArray(SPECIES, a, i);
+                    av.intoCharArray(r, idx);
+                }
+            }
+
+            assertScatterArraysEquals(r, a, b, null);
+        }
+    }
+
+    @Test(dataProvider = "charGatherScatterIntMaskProvider")
+    static void charScatterIntMask(IntFunction<char[]> fa, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            char[] a = fa.apply(SPECIES.length());
+            int[] b = fs.apply(a.length, a.length);
+            char[] r = new char[a.length];
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromCharArray(SPECIES, a, i);
+                    av.intoCharArray(r, idx, vmask);
+                }
+            }
+
+            assertScatterArraysEquals(r, a, b, mask);
+        }
+    }
+
+    @Test(dataProvider = "charGatherScatterLongMaskProvider")
+    static void charScatterLongMask(IntFunction<char[]> fa, BiFunction<Integer,Long,long[]> fs, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            char[] a = fa.apply(SPECIES.length());
+            long[] b = fs.apply(a.length, (long) a.length);
+            char[] r = new char[a.length];
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromCharArray(SPECIES, a, i);
+                    av.intoCharArray(r, idx, vmask);
+                }
+            }
+
+            assertScatterArraysEquals(r, a, b, mask);
+        }
     }
 #end[short]
 
 #if[byte]
-    static void assertGatherArraysEquals(boolean[] r, boolean[] a, int[] indexMap) {
-        int i = 0;
-        int j = 0;
-        try {
-            for (; i < a.length; i += SPECIES.length()) {
-                j = i;
-                for (; j < i + SPECIES.length(); j++) {
-                    Assert.assertEquals(r[j], a[i + indexMap[j]]);
+    static void assertGatherArraysEquals(boolean[] r, boolean[] a, int[] indexMap, boolean[] mask) {
+        for (int i = 0; i < r.length; i += SPECIES.length()) {
+            for (int j = i; j < i + SPECIES.length(); j++) {
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    Assert.assertEquals(r[j], a[indexMap[j]], "at index #" + j);
+                } else {
+                    Assert.assertEquals(r[j], false, "at index #" + j);
                 }
             }
-        } catch (AssertionError e) {
-            Assert.assertEquals(r[j], a[i + indexMap[j]], "at index #" + j);
         }
     }
 
-    static void assertGatherArraysEquals(boolean[] r, boolean[] a, int[] indexMap, boolean[] mask) {
-        int i = 0;
-        int j = 0;
-        try {
-            for (; i < a.length; i += SPECIES.length()) {
-                j = i;
-                for (; j < i + SPECIES.length(); j++) {
-                    Assert.assertEquals(r[j], mask[j % SPECIES.length()] ? a[i + indexMap[j]]: false);
+    static void assertGatherArraysEquals(boolean[] r, boolean[] a, long[] indexMap, boolean[] mask) {
+        for (int i = 0; i < r.length; i += SPECIES.length()) {
+            for (int j = i; j < i + SPECIES.length(); j++) {
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    Objects.checkIndex(indexMap[j], a.length);
+                    Assert.assertEquals(r[j], a[(int)indexMap[j]], "at index #" + j);
+                } else {
+                    Assert.assertEquals(r[j], false, "at index #" + j);
                 }
             }
-        } catch (AssertionError e) {
-            Assert.assertEquals(r[i], mask[j % SPECIES.length()] ? a[i + indexMap[j]]: false, "at index #" + j);
         }
     }
 
@@ -1382,8 +1621,8 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
         // Store before checking, since the same location may be stored to more than once
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             for (int j = i; j < i + SPECIES.length(); j++) {
-                if (mask[j % SPECIES.length()]) {
-                    expected[i + indexMap[j]] = a[j];
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    expected[indexMap[j]] = a[j];
                 }
             }
         }
@@ -1391,86 +1630,452 @@ public class $vectorteststype$ extends AbstractVectorLoadStoreTest {
         Assert.assertEquals(r, expected);
     }
 
-    static void assertScatterArraysEquals(boolean[] r, boolean[] a, int[] indexMap) {
+    static void assertScatterArraysEquals(boolean[] r, boolean[] a, long[] indexMap, boolean[] mask) {
         boolean[] expected = new boolean[r.length];
 
         // Store before checking, since the same location may be stored to more than once
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             for (int j = i; j < i + SPECIES.length(); j++) {
-                expected[i + indexMap[j]] = a[j];
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    Objects.checkIndex(indexMap[j], r.length);
+                    expected[(int)indexMap[j]] = a[j];
+                }
             }
         }
 
         Assert.assertEquals(r, expected);
     }
 
-    @Test(dataProvider = "gatherScatterProvider")
-    static void booleanGather(IntFunction<byte[]> fa, BiFunction<Integer,Integer,int[]> fs) {
-        boolean[] a = convertToBooleanArray(fa.apply(SPECIES.length()));
-        int[] b = fs.apply(a.length, SPECIES.length());
-        boolean[] r = new boolean[a.length];
+    @Test(dataProvider = "gatherScatterIntProvider")
+    static void booleanGatherInt(IntFunction<$type$[]> fa, BiFunction<Integer,Integer,int[]> fs) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            boolean[] a = convertToBooleanArray(fa.apply(SPECIES.length()));
+            int[] b = fs.apply(a.length, a.length);
+            boolean[] r = new boolean[a.length];
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                $abstractvectortype$ av = $abstractvectortype$.fromBooleanArray(SPECIES, a, i, b, i);
-                av.intoBooleanArray(r, i);
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromBooleanArray(SPECIES, a, idx);
+                    av.intoBooleanArray(r, i);
+                }
             }
-        }
 
-        assertGatherArraysEquals(r, a, b);
+            assertGatherArraysEquals(r, a, b, null);
+        }
     }
 
-    @Test(dataProvider = "gatherScatterMaskProvider")
-    static void booleanGatherMask(IntFunction<byte[]> fa, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
-        boolean[] a = convertToBooleanArray(fa.apply(SPECIES.length()));
-        int[] b = fs.apply(a.length, SPECIES.length());
-        boolean[] r = new boolean[a.length];
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+    @Test(dataProvider = "gatherScatterLongProvider")
+    static void booleanGatherLong(IntFunction<$type$[]> fa, BiFunction<Integer,Long,long[]> fs) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            boolean[] a = convertToBooleanArray(fa.apply(SPECIES.length()));
+            long[] b = fs.apply(a.length, (long) a.length);
+            boolean[] r = new boolean[a.length];
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                $abstractvectortype$ av = $abstractvectortype$.fromBooleanArray(SPECIES, a, i, b, i, vmask);
-                av.intoBooleanArray(r, i);
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromBooleanArray(SPECIES, a, idx);
+                    av.intoBooleanArray(r, i);
+                }
             }
-        }
 
-        assertGatherArraysEquals(r, a, b, mask);
+            assertGatherArraysEquals(r, a, b, null);
+        }
     }
 
-    @Test(dataProvider = "gatherScatterProvider")
-    static void booleanScatter(IntFunction<byte[]> fa, BiFunction<Integer,Integer,int[]> fs) {
-        boolean[] a = convertToBooleanArray(fa.apply(SPECIES.length()));
-        int[] b = fs.apply(a.length, SPECIES.length());
-        boolean[] r = new boolean[a.length];
+    @Test(dataProvider = "gatherScatterIntMaskProvider")
+    static void booleanGatherIntMask(IntFunction<$type$[]> fa, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            boolean[] a = convertToBooleanArray(fa.apply(SPECIES.length()));
+            int[] b = fs.apply(a.length, a.length);
+            boolean[] r = new boolean[a.length];
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                $abstractvectortype$ av = $abstractvectortype$.fromBooleanArray(SPECIES, a, i);
-                av.intoBooleanArray(r, i, b, i);
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromBooleanArray(SPECIES, a, idx, vmask);
+                    av.intoBooleanArray(r, i);
+                }
             }
-        }
 
-        assertScatterArraysEquals(r, a, b);
+            assertGatherArraysEquals(r, a, b, mask);
+        }
     }
 
-    @Test(dataProvider = "gatherScatterMaskProvider")
-    static void booleanScatterMask(IntFunction<byte[]> fa, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
-        boolean[] a = convertToBooleanArray(fa.apply(SPECIES.length()));
-        int[] b = fs.apply(a.length, SPECIES.length());
-        boolean[] r = new boolean[a.length];
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+    @Test(dataProvider = "gatherScatterLongMaskProvider")
+    static void booleanGatherLongMask(IntFunction<$type$[]> fa, BiFunction<Integer,Long,long[]> fs, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            boolean[] a = convertToBooleanArray(fa.apply(SPECIES.length()));
+            long[] b = fs.apply(a.length, (long) a.length);
+            boolean[] r = new boolean[a.length];
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                $abstractvectortype$ av = $abstractvectortype$.fromBooleanArray(SPECIES, a, i);
-                av.intoBooleanArray(r, i, b, i, vmask);
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromBooleanArray(SPECIES, a, idx, vmask);
+                    av.intoBooleanArray(r, i);
+                }
             }
-        }
 
-        assertScatterArraysEquals(r, a, b, mask);
+            assertGatherArraysEquals(r, a, b, mask);
+        }
+    }
+
+    @Test(dataProvider = "gatherScatterIntProvider")
+    static void booleanScatterInt(IntFunction<$type$[]> fa, BiFunction<Integer,Integer,int[]> fs) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            boolean[] a = convertToBooleanArray(fa.apply(SPECIES.length()));
+            int[] b = fs.apply(a.length, a.length);
+            boolean[] r = new boolean[a.length];
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromBooleanArray(SPECIES, a, i);
+                    av.intoBooleanArray(r, idx);
+                }
+            }
+
+            assertScatterArraysEquals(r, a, b, null);
+        }
+    }
+
+    @Test(dataProvider = "gatherScatterLongProvider")
+    static void booleanScatterLong(IntFunction<$type$[]> fa, BiFunction<Integer,Long,long[]> fs) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            boolean[] a = convertToBooleanArray(fa.apply(SPECIES.length()));
+            long[] b = fs.apply(a.length, (long) a.length);
+            boolean[] r = new boolean[a.length];
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromBooleanArray(SPECIES, a, i);
+                    av.intoBooleanArray(r, idx);
+                }
+            }
+
+            assertScatterArraysEquals(r, a, b, null);
+        }
+    }
+
+    @Test(dataProvider = "gatherScatterIntMaskProvider")
+    static void booleanScatterIntMask(IntFunction<$type$[]> fa, BiFunction<Integer,Integer,int[]> fs, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            boolean[] a = convertToBooleanArray(fa.apply(SPECIES.length()));
+            int[] b = fs.apply(a.length, a.length);
+            boolean[] r = new boolean[a.length];
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromBooleanArray(SPECIES, a, i);
+                    av.intoBooleanArray(r, idx, vmask);
+                }
+            }
+
+            assertScatterArraysEquals(r, a, b, mask);
+        }
+    }
+
+    @Test(dataProvider = "gatherScatterLongMaskProvider")
+    static void booleanScatterLongMask(IntFunction<$type$[]> fa, BiFunction<Integer,Long,long[]> fs, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            boolean[] a = convertToBooleanArray(fa.apply(SPECIES.length()));
+            long[] b = fs.apply(a.length, (long) a.length);
+            boolean[] r = new boolean[a.length];
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromBooleanArray(SPECIES, a, i);
+                    av.intoBooleanArray(r, idx, vmask);
+                }
+            }
+
+            assertScatterArraysEquals(r, a, b, mask);
+        }
     }
 #end[byte]
 
+    static void assertGatherMemorySegmentsEquals($type$[] r, MemorySegment ms, int[] indexMap, ByteOrder bo, boolean[] mask) {
+        for (int i = 0; i < r.length; i += SPECIES.length()) {
+            for (int j = i; j < i + SPECIES.length(); j++) {
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    Assert.assertEquals(r[j], ms.get(ELEMENT_LAYOUT.withOrder(bo), indexMap[j]), "at index #" + j);
+                } else {
+                    Assert.assertEquals(r[j], ($type$) 0, "at index #" + j);
+                }
+            }
+        }
+    }
+
+    static void assertGatherMemorySegmentsEquals($type$[] r, MemorySegment ms, long[] indexMap, ByteOrder bo, boolean[] mask) {
+        for (int i = 0; i < r.length; i += SPECIES.length()) {
+            for (int j = i; j < i + SPECIES.length(); j++) {
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    Assert.assertEquals(r[j], ms.get(ELEMENT_LAYOUT.withOrder(bo), indexMap[j]), "at index #" + j);
+                } else {
+                    Assert.assertEquals(r[j], ($type$) 0, "at index #" + j);
+                }
+            }
+        }
+    }
+
+    static void assertScatterMemorySegmentsEquals(MemorySegment ms, $type$[] a, int[] indexMap, ByteOrder bo, boolean[] mask) {
+        MemorySegment expected = MEMORY_SEGMENT_GENERATORS.get(0).apply(ms.byteSize());
+
+        // Store before checking, since the same location may be stored to more than once
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            for (int j = i; j < i + SPECIES.length(); j++) {
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    expected.set(ELEMENT_LAYOUT.withOrder(bo), indexMap[j], a[j]);
+                }
+            }
+        }
+
+        Assert.assertEquals(expected.mismatch(ms), -1);
+    }
+
+    static void assertScatterMemorySegmentsEquals(MemorySegment ms, $type$[] a, long[] indexMap, ByteOrder bo, boolean[] mask) {
+        MemorySegment expected = MEMORY_SEGMENT_GENERATORS.get(0).apply(ms.byteSize());
+
+        // Store before checking, since the same location may be stored to more than once
+        for (int i = 0; i < a.length; i += SPECIES.length()) {
+            for (int j = i; j < i + SPECIES.length(); j++) {
+                if (mask == null || mask[j % SPECIES.length()]) {
+                    expected.set(ELEMENT_LAYOUT.withOrder(bo), indexMap[j], a[j]);
+                }
+            }
+        }
+
+        Assert.assertEquals(expected.mismatch(ms), -1);
+    }
+
+    @DataProvider
+    public Object[][] msGatherScatterIntProvider() {
+        return $TYPE$_GENERATORS.stream().
+                flatMap(fa -> MEMORY_SEGMENT_GENERATORS.stream().
+                        flatMap(fb -> BYTE_ORDER_VALUES.stream().
+                                flatMap(bo -> INT_INDEX_GENERATORS.stream().map(fs -> {
+                                    return new Object[]{fa, fb, fs, bo};
+                                })))).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] msGatherScatterLongProvider() {
+        return $TYPE$_GENERATORS.stream().
+                flatMap(fa -> MEMORY_SEGMENT_GENERATORS.stream().
+                        flatMap(fb -> BYTE_ORDER_VALUES.stream().
+                                flatMap(bo -> LONG_INDEX_GENERATORS.stream().map(fs -> {
+                                    return new Object[]{fa, fb, fs, bo};
+                                })))).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] msGatherScatterIntMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> $TYPE$_GENERATORS.stream().
+                        flatMap(fa -> MEMORY_SEGMENT_GENERATORS.stream().
+                                flatMap(fb -> BYTE_ORDER_VALUES.stream().
+                                        flatMap(bo -> INT_INDEX_GENERATORS.stream().map(fs -> {
+                                            return new Object[]{fa, fb, fs, bo, fm};
+                                        }))))).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] msGatherScatterLongMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> $TYPE$_GENERATORS.stream().
+                        flatMap(fa -> MEMORY_SEGMENT_GENERATORS.stream().
+                                flatMap(fb -> BYTE_ORDER_VALUES.stream().
+                                        flatMap(bo -> LONG_INDEX_GENERATORS.stream().map(fs -> {
+                                            return new Object[]{fa, fb, fs, bo, fm};
+                                        }))))).
+                toArray(Object[][]::new);
+    }
+
+    @Test(dataProvider = "msGatherScatterIntProvider")
+    static void msGatherInt(IntFunction<$type$[]> fa, LongFunction<MemorySegment> fb,
+                            BiFunction<Integer,Integer,int[]> fs, ByteOrder bo) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            MemorySegment ms = toSegment(a, fb);
+            int[] b = fs.apply(a.length, (int) ms.byteSize() - $Boxtype$.BYTES + 1);
+            $type$[] r = new $type$[a.length];
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromMemorySegment(SPECIES, ms, idx, bo);
+                    av.intoArray(r, i);
+                }
+            }
+
+            assertGatherMemorySegmentsEquals(r, ms, b, bo, null);
+        }
+    }
+
+    @Test(dataProvider = "msGatherScatterLongProvider")
+    static void msGatherLong(IntFunction<$type$[]> fa, LongFunction<MemorySegment> fb,
+                             BiFunction<Integer,Long,long[]> fs, ByteOrder bo) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            MemorySegment ms = toSegment(a, fb);
+            long[] b = fs.apply(a.length, ms.byteSize() - $Boxtype$.BYTES + 1);
+            $type$[] r = new $type$[a.length];
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromMemorySegment(SPECIES, ms, idx, bo);
+                    av.intoArray(r, i);
+                }
+            }
+
+            assertGatherMemorySegmentsEquals(r, ms, b, bo, null);
+        }
+    }
+
+    @Test(dataProvider = "msGatherScatterIntMaskProvider")
+    static void msGatherIntMask(IntFunction<$type$[]> fa, LongFunction<MemorySegment> fb,
+                                BiFunction<Integer,Integer,int[]> fs, ByteOrder bo, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            MemorySegment ms = toSegment(a, fb);
+            int[] b = fs.apply(a.length, (int) ms.byteSize() - $Boxtype$.BYTES + 1);
+            $type$[] r = new $type$[a.length];
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromMemorySegment(SPECIES, ms, idx, bo, vmask);
+                    av.intoArray(r, i);
+                }
+            }
+
+            assertGatherMemorySegmentsEquals(r, ms, b, bo, mask);
+        }
+    }
+
+    @Test(dataProvider = "msGatherScatterLongMaskProvider")
+    static void msGatherLongMask(IntFunction<$type$[]> fa, LongFunction<MemorySegment> fb,
+                                 BiFunction<Integer,Long,long[]> fs, ByteOrder bo, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            MemorySegment ms = toSegment(a, fb);
+            long[] b = fs.apply(a.length, ms.byteSize() - $Boxtype$.BYTES + 1);
+            $type$[] r = new $type$[a.length];
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < r.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromMemorySegment(SPECIES, ms, idx, bo, vmask);
+                    av.intoArray(r, i);
+                }
+            }
+
+            assertGatherMemorySegmentsEquals(r, ms, b, bo, mask);
+        }
+    }
+
+    @Test(dataProvider = "msGatherScatterIntProvider")
+    static void msScatterInt(IntFunction<$type$[]> fa, LongFunction<MemorySegment> fb,
+                             BiFunction<Integer,Integer,int[]> fs, ByteOrder bo) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            MemorySegment ms = fb.apply(a.length * $Boxtype$.BYTES);
+            int[] b = fs.apply(a.length, (int) ms.byteSize() - $Boxtype$.BYTES + 1);
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
+                    av.intoMemorySegment(ms, idx, bo);
+                }
+            }
+
+            assertScatterMemorySegmentsEquals(ms, a, b, bo, null);
+        }
+    }
+
+    @Test(dataProvider = "msGatherScatterLongProvider")
+    static void msScatterLong(IntFunction<$type$[]> fa, LongFunction<MemorySegment> fb,
+                              BiFunction<Integer,Long,long[]> fs, ByteOrder bo) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            MemorySegment ms = fb.apply(a.length * $Boxtype$.BYTES);
+            long[] b = fs.apply(a.length, ms.byteSize() - $Boxtype$.BYTES + 1);
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
+                    av.intoMemorySegment(ms, idx, bo);
+                }
+            }
+
+            assertScatterMemorySegmentsEquals(ms, a, b, bo, null);
+        }
+    }
+
+    @Test(dataProvider = "msGatherScatterIntMaskProvider")
+    static void msScatterIntMask(IntFunction<$type$[]> fa, LongFunction<MemorySegment> fb,
+                                 BiFunction<Integer,Integer,int[]> fs, ByteOrder bo, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_INT_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            MemorySegment ms = fb.apply(a.length * $Boxtype$.BYTES);
+            int[] b = fs.apply(a.length, (int) ms.byteSize() - $Boxtype$.BYTES + 1);
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    IntVector idx = IntVector.fromArray(SAME_LENGTH_INT_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
+                    av.intoMemorySegment(ms, idx, bo, vmask);
+                }
+            }
+
+            assertScatterMemorySegmentsEquals(ms, a, b, bo, mask);
+        }
+    }
+
+    @Test(dataProvider = "msGatherScatterLongMaskProvider")
+    static void msScatterLongMask(IntFunction<$type$[]> fa, LongFunction<MemorySegment> fb,
+                                  BiFunction<Integer,Long,long[]> fs, ByteOrder bo, IntFunction<boolean[]> fm) {
+        if (SAME_LENGTH_LONG_SPECIES != null) {
+            $type$[] a = fa.apply(SPECIES.length());
+            MemorySegment ms = fb.apply(a.length * $Boxtype$.BYTES);
+            long[] b = fs.apply(a.length, ms.byteSize() - $Boxtype$.BYTES + 1);
+            boolean[] mask = fm.apply(SPECIES.length());
+            VectorMask<$Wideboxtype$> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+            for (int ic = 0; ic < INVOC_COUNT; ic++) {
+                for (int i = 0; i < a.length; i += SPECIES.length()) {
+                    LongVector idx = LongVector.fromArray(SAME_LENGTH_LONG_SPECIES, b, i);
+                    $abstractvectortype$ av = $abstractvectortype$.fromArray(SPECIES, a, i);
+                    av.intoMemorySegment(ms, idx, bo, vmask);
+                }
+            }
+
+            assertScatterMemorySegmentsEquals(ms, a, b, bo, mask);
+        }
+    }
 }

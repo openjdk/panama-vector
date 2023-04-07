@@ -3656,10 +3656,14 @@ void Compile::final_graph_reshaping_main_switch(Node* n, Final_Reshape_Counts& f
 
   case Op_LoadVector:
   case Op_StoreVector:
-  case Op_LoadVectorGather:
-  case Op_StoreVectorScatter:
-  case Op_LoadVectorGatherMasked:
-  case Op_StoreVectorScatterMasked:
+  case Op_LoadGatherI:
+  case Op_LoadGatherL:
+  case Op_StoreScatterI:
+  case Op_StoreScatterL:
+  case Op_LoadGatherIMasked:
+  case Op_LoadGatherLMasked:
+  case Op_StoreScatterIMasked:
+  case Op_StoreScatterLMasked:
   case Op_VectorCmpMasked:
   case Op_VectorMaskGen:
   case Op_LoadVectorMasked:
