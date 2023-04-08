@@ -1453,6 +1453,16 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
   BasicType idx_elem_bt = idx_elem_type->basic_type();
   int num_elem = vlen->get_con();
 
+  // Check that the vector holding indices is supported by architecture
+  if (!arch_supports_vector(Op_LoadVector, num_elem, idx_elem_bt, VecMaskNotUsed)) {
+      if (C->print_intrinsics()) {
+        tty->print_cr("  ** not supported: arity=%d op=%s vlen=%d etype=%s ietype=%s",
+                      is_scatter, is_scatter ? "scatter" : "gather",
+                      num_elem, type2name(elem_bt), type2name(idx_elem_bt));
+      }
+      return false; // not supported
+  }
+
   const Type* vmask_type = gvn().type(argument(12));
   bool is_masked_op = vmask_type != TypePtr::NULL_PTR;
   if (is_masked_op) {
