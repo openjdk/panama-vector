@@ -878,22 +878,6 @@ final class LongMaxVector extends LongVector {
     @ForceInline
     @Override
     final
-    <IV extends Vector<IE>, IE>
-    LongVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
-        return super.fromMemorySegment0Template(LongMaxMask.class, ivClass, ieClass, ms, offsetMap);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    LongVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Long> m) {
-        return super.fromMemorySegment0Template(LongMaxMask.class, ivClass, ieClass, ms, offsetMap, (LongMaxMask) m);
-    }
-
-    @ForceInline
-    @Override
-    final
     void intoArray0(long[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
     }
@@ -927,22 +911,6 @@ final class LongMaxVector extends LongVector {
     final
     void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Long> m) {
         super.intoMemorySegment0Template(LongMaxMask.class, ms, offset, (LongMaxMask) m);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
-        super.intoMemorySegment0Template(LongMaxMask.class, ivClass, ieClass, ms, offsetMap);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Long> m) {
-        super.intoMemorySegment0Template(LongMaxMask.class, ivClass, ieClass, ms, offsetMap, (LongMaxMask) m);
     }
 
 

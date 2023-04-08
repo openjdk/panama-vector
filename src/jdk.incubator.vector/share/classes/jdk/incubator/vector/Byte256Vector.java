@@ -963,22 +963,6 @@ final class Byte256Vector extends ByteVector {
     @ForceInline
     @Override
     final
-    <IV extends Vector<IE>, IE>
-    ByteVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
-        return super.fromMemorySegment0Template(Byte256Mask.class, ivClass, ieClass, ms, offsetMap);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    ByteVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Byte> m) {
-        return super.fromMemorySegment0Template(Byte256Mask.class, ivClass, ieClass, ms, offsetMap, (Byte256Mask) m);
-    }
-
-    @ForceInline
-    @Override
-    final
     void intoArray0(byte[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
     }
@@ -1018,22 +1002,6 @@ final class Byte256Vector extends ByteVector {
     final
     void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Byte> m) {
         super.intoMemorySegment0Template(Byte256Mask.class, ms, offset, (Byte256Mask) m);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
-        super.intoMemorySegment0Template(Byte256Mask.class, ivClass, ieClass, ms, offsetMap);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Byte> m) {
-        super.intoMemorySegment0Template(Byte256Mask.class, ivClass, ieClass, ms, offsetMap, (Byte256Mask) m);
     }
 
 

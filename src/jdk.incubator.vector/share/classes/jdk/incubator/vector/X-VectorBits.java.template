@@ -1206,22 +1206,6 @@ final class $vectortype$ extends $abstractvectortype$ {
     @ForceInline
     @Override
     final
-    <IV extends Vector<IE>, IE>
-    $abstractvectortype$ fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
-        return super.fromMemorySegment0Template($masktype$.class, ivClass, ieClass, ms, offsetMap);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    $abstractvectortype$ fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<$Boxtype$> m) {
-        return super.fromMemorySegment0Template($masktype$.class, ivClass, ieClass, ms, offsetMap, ($masktype$) m);
-    }
-
-    @ForceInline
-    @Override
-    final
     void intoArray0($type$[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
     }
@@ -1263,22 +1247,6 @@ final class $vectortype$ extends $abstractvectortype$ {
     final
     void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<$Boxtype$> m) {
         super.intoMemorySegment0Template($masktype$.class, ms, offset, ($masktype$) m);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
-        super.intoMemorySegment0Template($masktype$.class, ivClass, ieClass, ms, offsetMap);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<$Boxtype$> m) {
-        super.intoMemorySegment0Template($masktype$.class, ivClass, ieClass, ms, offsetMap, ($masktype$) m);
     }
 
 #if[short]

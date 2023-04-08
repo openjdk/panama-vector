@@ -877,22 +877,6 @@ final class Double64Vector extends DoubleVector {
     @ForceInline
     @Override
     final
-    <IV extends Vector<IE>, IE>
-    DoubleVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
-        return super.fromMemorySegment0Template(Double64Mask.class, ivClass, ieClass, ms, offsetMap);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    DoubleVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Double> m) {
-        return super.fromMemorySegment0Template(Double64Mask.class, ivClass, ieClass, ms, offsetMap, (Double64Mask) m);
-    }
-
-    @ForceInline
-    @Override
-    final
     void intoArray0(double[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
     }
@@ -926,22 +910,6 @@ final class Double64Vector extends DoubleVector {
     final
     void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Double> m) {
         super.intoMemorySegment0Template(Double64Mask.class, ms, offset, (Double64Mask) m);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
-        super.intoMemorySegment0Template(Double64Mask.class, ivClass, ieClass, ms, offsetMap);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Double> m) {
-        super.intoMemorySegment0Template(Double64Mask.class, ivClass, ieClass, ms, offsetMap, (Double64Mask) m);
     }
 
 

@@ -907,22 +907,6 @@ final class Short64Vector extends ShortVector {
     @ForceInline
     @Override
     final
-    <IV extends Vector<IE>, IE>
-    ShortVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
-        return super.fromMemorySegment0Template(Short64Mask.class, ivClass, ieClass, ms, offsetMap);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    ShortVector fromMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Short> m) {
-        return super.fromMemorySegment0Template(Short64Mask.class, ivClass, ieClass, ms, offsetMap, (Short64Mask) m);
-    }
-
-    @ForceInline
-    @Override
-    final
     void intoArray0(short[] a, int offset) {
         super.intoArray0Template(a, offset);  // specialize
     }
@@ -956,22 +940,6 @@ final class Short64Vector extends ShortVector {
     final
     void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Short> m) {
         super.intoMemorySegment0Template(Short64Mask.class, ms, offset, (Short64Mask) m);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap) {
-        super.intoMemorySegment0Template(Short64Mask.class, ivClass, ieClass, ms, offsetMap);
-    }
-
-    @ForceInline
-    @Override
-    final
-    <IV extends Vector<IE>, IE>
-    void intoMemorySegment0(Class<? extends IV> ivClass, Class<IE> ieClass, MemorySegment ms, IV offsetMap, VectorMask<Short> m) {
-        super.intoMemorySegment0Template(Short64Mask.class, ivClass, ieClass, ms, offsetMap, (Short64Mask) m);
     }
 
     @ForceInline
