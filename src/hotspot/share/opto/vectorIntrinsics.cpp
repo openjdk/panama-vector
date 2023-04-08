@@ -1523,18 +1523,6 @@ bool LibraryCallKit::inline_vector_gather_scatter(bool is_scatter) {
   const TypePtr *addr_type = gvn().type(addr)->isa_ptr();
   const TypeAryPtr* arr_type = addr_type->isa_aryptr();
 
-  // The array must be consistent with vector type
-  if (arr_type == nullptr || (arr_type != nullptr && !elem_consistent_with_arr(elem_bt, arr_type))) {
-    if (C->print_intrinsics()) {
-      tty->print_cr("  ** not supported: arity=%d op=%s vlen=%d etype=%s atype=%s ismask=no",
-                    is_scatter, is_scatter ? "scatter" : "gather",
-                    num_elem, type2name(elem_bt), type2name(arr_type->elem()->array_element_basic_type()));
-    }
-    set_map(old_map);
-    set_sp(old_sp);
-    return false;
-  }
-
   ciKlass* vbox_klass = vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
   const TypeInstPtr* vbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, vbox_klass);
   ciKlass* idx_vbox_klass = idx_vector_klass->const_oop()->as_instance()->java_lang_Class_klass();
