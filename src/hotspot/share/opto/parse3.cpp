@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -60,7 +60,7 @@ void Parse::do_field_access(bool is_get, bool is_field) {
       !(method()->holder() == field_holder && method()->is_object_initializer())) {
     uncommon_trap(Deoptimization::Reason_unhandled,
                   Deoptimization::Action_reinterpret,
-                  NULL, "put to call site target field");
+                  nullptr, "put to call site target field");
     return;
   }
 
@@ -118,7 +118,7 @@ void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field) {
       (bt != T_OBJECT || field->type()->is_loaded())) {
     // final or stable field
     Node* con = make_constant_from_field(field, obj);
-    if (con != NULL) {
+    if (con != nullptr) {
       push_node(field->layout_type(), con);
       return;
     }
@@ -156,7 +156,7 @@ void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field) {
       } else {
         type = TypeOopPtr::make_from_constant(con)->isa_oopptr();
       }
-      assert(type != NULL, "field singleton type must be consistent");
+      assert(type != nullptr, "field singleton type must be consistent");
     } else {
       type = TypeOopPtr::make_from_klass(field_klass->as_klass());
     }
@@ -186,7 +186,7 @@ void Parse::do_get_xxx(Node* obj, ciField* field, bool is_field) {
     if (PrintOpto && (Verbose || WizardMode)) {
       method()->print_name(); tty->print_cr(" asserting nullness of field at bci: %d", bci());
     }
-    if (C->log() != NULL) {
+    if (C->log() != nullptr) {
       C->log()->elem("assert_null reason='field' klass='%d'",
                      C->log()->identify(field->type()));
     }
@@ -242,7 +242,7 @@ void Parse::do_put_xxx(Node* obj, ciField* field, bool is_field) {
     // Any method can write a @Stable field; insert memory barriers after those also.
     if (field->is_final()) {
       set_wrote_final(true);
-      if (AllocateNode::Ideal_allocation(obj, &_gvn) != NULL) {
+      if (AllocateNode::Ideal_allocation(obj, &_gvn) != nullptr) {
         // Preserve allocation ptr to create precedent edge to it in membar
         // generated on exit from constructor.
         // Can't bind stable with its allocation, only record allocation for final field.
@@ -277,7 +277,7 @@ void Parse::do_anewarray() {
 
   kill_dead_locals();
 
-  const TypeKlassPtr* array_klass_type = TypeKlassPtr::make(array_klass);
+  const TypeKlassPtr* array_klass_type = TypeKlassPtr::make(array_klass, Type::trust_interfaces);
   Node* count_val = pop();
   Node* obj = new_array(makecon(array_klass_type), count_val, 1);
   push(obj);
@@ -298,8 +298,8 @@ void Parse::do_newarray(BasicType elem_type) {
 // Also handle the degenerate 1-dimensional case of anewarray.
 Node* Parse::expand_multianewarray(ciArrayKlass* array_klass, Node* *lengths, int ndimensions, int nargs) {
   Node* length = lengths[0];
-  assert(length != NULL, "");
-  Node* array = new_array(makecon(TypeKlassPtr::make(array_klass)), length, nargs);
+  assert(length != nullptr, "");
+  Node* array = new_array(makecon(TypeKlassPtr::make(array_klass, Type::trust_interfaces)), length, nargs);
   if (ndimensions > 1) {
     jint length_con = find_int_con(length, -1);
     guarantee(length_con >= 0, "non-constant multianewarray");
@@ -331,7 +331,7 @@ void Parse::do_multianewarray() {
 
   // get the lengths from the stack (first dimension is on top)
   Node** length = NEW_RESOURCE_ARRAY(Node*, ndimensions + 1);
-  length[ndimensions] = NULL;  // terminating null for make_runtime_call
+  length[ndimensions] = nullptr;  // terminating null for make_runtime_call
   int j;
   for (j = ndimensions-1; j >= 0 ; j--) length[j] = pop();
 
@@ -356,7 +356,7 @@ void Parse::do_multianewarray() {
   // Can use multianewarray instead of [a]newarray if only one dimension,
   // or if all non-final dimensions are small constants.
   if (ndimensions == 1 || (1 <= expand_count && expand_count <= expand_limit)) {
-    Node* obj = NULL;
+    Node* obj = nullptr;
     // Set the original stack and the reexecute bit for the interpreter
     // to reexecute the multianewarray bytecode if deoptimization happens.
     // Do it unconditionally even for one dimension multianewarray.
@@ -371,7 +371,7 @@ void Parse::do_multianewarray() {
     return;
   }
 
-  address fun = NULL;
+  address fun = nullptr;
   switch (ndimensions) {
   case 1: ShouldNotReachHere(); break;
   case 2: fun = OptoRuntime::multianewarray2_Java(); break;
@@ -379,19 +379,19 @@ void Parse::do_multianewarray() {
   case 4: fun = OptoRuntime::multianewarray4_Java(); break;
   case 5: fun = OptoRuntime::multianewarray5_Java(); break;
   };
-  Node* c = NULL;
+  Node* c = nullptr;
 
-  if (fun != NULL) {
+  if (fun != nullptr) {
     c = make_runtime_call(RC_NO_LEAF | RC_NO_IO,
                           OptoRuntime::multianewarray_Type(ndimensions),
-                          fun, NULL, TypeRawPtr::BOTTOM,
-                          makecon(TypeKlassPtr::make(array_klass)),
+                          fun, nullptr, TypeRawPtr::BOTTOM,
+                          makecon(TypeKlassPtr::make(array_klass, Type::trust_interfaces)),
                           length[0], length[1], length[2],
-                          (ndimensions > 2) ? length[3] : NULL,
-                          (ndimensions > 3) ? length[4] : NULL);
+                          (ndimensions > 2) ? length[3] : nullptr,
+                          (ndimensions > 3) ? length[4] : nullptr);
   } else {
     // Create a java array for dimension sizes
-    Node* dims = NULL;
+    Node* dims = nullptr;
     { PreserveReexecuteState preexecs(this);
       inc_sp(ndimensions);
       Node* dims_array_klass = makecon(TypeKlassPtr::make(ciArrayKlass::make(ciType::make(T_INT))));
@@ -406,22 +406,22 @@ void Parse::do_multianewarray() {
 
     c = make_runtime_call(RC_NO_LEAF | RC_NO_IO,
                           OptoRuntime::multianewarrayN_Type(),
-                          OptoRuntime::multianewarrayN_Java(), NULL, TypeRawPtr::BOTTOM,
-                          makecon(TypeKlassPtr::make(array_klass)),
+                          OptoRuntime::multianewarrayN_Java(), nullptr, TypeRawPtr::BOTTOM,
+                          makecon(TypeKlassPtr::make(array_klass, Type::trust_interfaces)),
                           dims);
   }
   make_slow_call_ex(c, env()->Throwable_klass(), false);
 
   Node* res = _gvn.transform(new ProjNode(c, TypeFunc::Parms));
 
-  const Type* type = TypeOopPtr::make_from_klass_raw(array_klass);
+  const Type* type = TypeOopPtr::make_from_klass_raw(array_klass, Type::trust_interfaces);
 
   // Improve the type:  We know it's not null, exact, and of a given length.
   type = type->is_ptr()->cast_to_ptr_type(TypePtr::NotNull);
   type = type->is_aryptr()->cast_to_exactness(true);
 
   const TypeInt* ltype = _gvn.find_int_type(length[0]);
-  if (ltype != NULL)
+  if (ltype != nullptr)
     type = type->is_aryptr()->cast_to_size(ltype);
 
     // We cannot sharpen the nested sub-arrays, since the top level is mutable.
@@ -432,78 +432,4 @@ void Parse::do_multianewarray() {
   // Possible improvements:
   // - Make a fast path for small multi-arrays.  (W/ implicit init. loops.)
   // - Issue CastII against length[*] values, to TypeInt::POS.
-}
-
-// On some architectures, a division cannot be done immediately due to
-// the special case with min_jint / -1. As a result, we need to have
-// special handling for this case
-void Parse::do_divmod_fixup() {
-  Bytecodes::Code bc = this->bc();
-  BasicType bt = (bc == Bytecodes::_idiv || bc == Bytecodes::_irem) ? T_INT : T_LONG;
-  // Operands need to stay in the stack during zero check
-  if (bt == T_INT) {
-    zero_check_int(peek(0));
-  } else {
-    zero_check_long(peek(1));
-  }
-  // Compile-time detection of arithmetic exception
-  if (stopped()) {
-    return;
-  }
-
-  Node* in2 = (bt == T_INT) ? pop() : pop_pair();
-  Node* in1 = (bt == T_INT) ? pop() : pop_pair();
-
-  auto generate_division = [](PhaseGVN& gvn, Node* control, Node* in1, Node* in2,
-                              Bytecodes::Code bc) {
-    switch (bc) {
-      case Bytecodes::_idiv: return gvn.transform(new NoOvfDivINode(control, in1, in2));
-      case Bytecodes::_ldiv: return gvn.transform(new NoOvfDivLNode(control, in1, in2));
-      case Bytecodes::_irem: return gvn.transform(new NoOvfModINode(control, in1, in2));
-      case Bytecodes::_lrem: return gvn.transform(new NoOvfModLNode(control, in1, in2));
-      default:
-        ShouldNotReachHere();
-        return static_cast<Node*>(nullptr);
-    }
-  };
-
-  auto push_result = [](Parse& parser, Node* res, BasicType bt) {
-    if (bt == T_INT) {
-      parser.push(res);
-    } else {
-      parser.push_pair(res);
-    }
-  };
-
-  // No overflow possibility here
-  if ((in1 == in2) ||
-      (bt == T_INT  &&  !TypeInt::MIN->higher_equal(_gvn.type(in1))) ||
-      (bt == T_LONG && !TypeLong::MIN->higher_equal(_gvn.type(in1)))) {
-    Node* res = generate_division(_gvn, control(), in1, in2, bc);
-    push_result(*this, res, bt);
-    return;
-  }
-
-  // The generated graph is equivalent to (in2 == -1) ? -in1 : (in1 / in2)
-  // we need to have a separate branch for in2 == -1 due to the special
-  // case of min_jint / -1
-  Node* cmp = _gvn.transform(CmpNode::make(in2, _gvn.integercon(-1, bt), bt));
-  Node* bol = Bool(cmp, BoolTest::eq);
-  IfNode* iff = create_and_map_if(control(), bol, PROB_UNLIKELY_MAG(3), COUNT_UNKNOWN);
-  Node* iff_true = IfTrue(iff);
-  Node* iff_false = IfFalse(iff);
-  Node* res_fast = (bc == Bytecodes::_idiv || bc == Bytecodes::_ldiv)
-                   ? _gvn.transform(SubNode::make(_gvn.zerocon(bt), in1, bt))
-                   : _gvn.zerocon(bt);
-  Node* res_slow = generate_division(_gvn, iff_false, in1, in2, bc);
-  Node* merge = new RegionNode(3);
-  merge->init_req(1, iff_true);
-  merge->init_req(2, iff_false);
-  record_for_igvn(merge);
-  set_control(_gvn.transform(merge));
-  Node* res = new PhiNode(merge, Type::get_const_basic_type(bt));
-  res->init_req(1, res_fast);
-  res->init_req(2, res_slow);
-  res = _gvn.transform(res);
-  push_result(*this, res, bt);
 }

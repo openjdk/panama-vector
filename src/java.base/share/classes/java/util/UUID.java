@@ -68,6 +68,8 @@ import jdk.internal.access.SharedSecrets;
  * Universally Unique IDentifier (UUID) URN Namespace</i></a>, section 4.2
  * &quot;Algorithms for Creating a Time-Based UUID&quot;.
  *
+ * @spec https://www.rfc-editor.org/info/rfc4122
+ *      RFC 4122: A Universally Unique IDentifier (UUID) URN Namespace
  * @since   1.5
  */
 public final class UUID implements java.io.Serializable, Comparable<UUID> {
@@ -152,7 +154,7 @@ public final class UUID implements java.io.Serializable, Comparable<UUID> {
         randomBytes[6]  &= 0x0f;  /* clear version        */
         randomBytes[6]  |= 0x40;  /* set to version 4     */
         randomBytes[8]  &= 0x3f;  /* clear variant        */
-        randomBytes[8]  |= 0x80;  /* set to IETF variant  */
+        randomBytes[8]  |= (byte) 0x80;  /* set to IETF variant  */
         return new UUID(randomBytes);
     }
 
@@ -176,7 +178,7 @@ public final class UUID implements java.io.Serializable, Comparable<UUID> {
         md5Bytes[6]  &= 0x0f;  /* clear version        */
         md5Bytes[6]  |= 0x30;  /* set to version 3     */
         md5Bytes[8]  &= 0x3f;  /* clear variant        */
-        md5Bytes[8]  |= 0x80;  /* set to IETF variant  */
+        md5Bytes[8]  |= (byte) 0x80;  /* set to IETF variant  */
         return new UUID(md5Bytes);
     }
 
@@ -345,6 +347,9 @@ public final class UUID implements java.io.Serializable, Comparable<UUID> {
      * </ul>
      *
      * @return  The variant number of this {@code UUID}
+     *
+     * @spec https://www.rfc-editor.org/info/rfc4122
+     *      RFC 4122: A Universally Unique IDentifier (UUID) URN Namespace
      */
     public int variant() {
         // This field is composed of a varying number of bits.

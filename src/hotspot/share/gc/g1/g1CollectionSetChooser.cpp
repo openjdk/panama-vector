@@ -274,7 +274,7 @@ public:
 
   virtual bool do_heap_region(HeapRegion* r) {
     size_t const reclaimable = r->reclaimable_bytes();
-    if (_num_pruned > _max_pruned ||
+    if (_num_pruned >= _max_pruned ||
         _cur_wasted + reclaimable > _max_wasted) {
       return true;
     }
@@ -291,7 +291,7 @@ public:
 void G1CollectionSetChooser::prune(G1CollectionSetCandidates* candidates) {
   G1Policy* p = G1CollectedHeap::heap()->policy();
 
-  uint min_old_cset_length = p->calc_min_old_cset_length(candidates);
+  uint min_old_cset_length = p->calc_min_old_cset_length(candidates->num_regions());
   uint num_candidates = candidates->num_regions();
 
   if (min_old_cset_length < num_candidates) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -69,6 +69,7 @@ public class Names {
     public final Name transitive;
     public final Name uses;
     public final Name open;
+    public final Name when;
     public final Name with;
     public final Name yield;
 
@@ -119,6 +120,7 @@ public class Names {
     // package names
     public final Name java;
     public final Name java_lang;
+    public final Name jdk_internal_javac;
 
     // module names
     public final Name java_base;
@@ -222,6 +224,7 @@ public class Names {
 
     public final Name.Table table;
 
+    @SuppressWarnings("this-escape")
     public Names(Context context) {
         Options options = Options.instance(context);
         table = createTable(options);
@@ -248,6 +251,7 @@ public class Names {
         transitive = fromString("transitive");
         uses = fromString("uses");
         open = fromString("open");
+        when = fromString("when");
         with = fromString("with");
         yield = fromString("yield");
 
@@ -299,6 +303,7 @@ public class Names {
         // package names
         java = fromString("java");
         java_lang = fromString("java.lang");
+        jdk_internal_javac = fromString("jdk.internal.javac");
 
         // module names
         java_base = fromString("java.base");
@@ -416,11 +421,19 @@ public class Names {
         return table.fromString(s);
     }
 
-    public Name fromUtf(byte[] cs) {
+    public Name fromUtf(byte[] cs) throws InvalidUtfException {
         return table.fromUtf(cs);
     }
 
-    public Name fromUtf(byte[] cs, int start, int len) {
-        return table.fromUtf(cs, start, len);
+    public Name fromUtf(byte[] cs, int start, int len, Convert.Validation validation) throws InvalidUtfException {
+        return table.fromUtf(cs, start, len, validation);
+    }
+
+    public Name fromUtfLax(byte[] cs, int start, int len) {
+        try {
+            return table.fromUtf(cs, start, len, Convert.Validation.NONE);
+        } catch (InvalidUtfException e) {
+            throw new AssertionError(e);
+        }
     }
 }

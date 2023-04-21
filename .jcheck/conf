@@ -1,7 +1,7 @@
 [general]
 project=panama
 jbs=JDK
-version=19
+version=21
 
 [checks]
 error=author,committer,reviewers,executable,symlink,message,whitespace
@@ -14,7 +14,11 @@ version=0
 domain=openjdk.org
 
 [checks "whitespace"]
-files=.*\.cpp|.*\.hpp|.*\.c|.*\.h|.*\.java
+files=.*\.cpp|.*\.hpp|.*\.c|.*\.h|.*\.java|.*\.cc|.*\.hh|.*\.m|.*\.mm|.*\.md|.*\.gmk|.*\.m4|.*\.ac|Makefile
+ignore-tabs=.*\.gmk|Makefile
+
+[checks "merge"]
+message=Merge
 
 [checks "reviewers"]
 committers=1

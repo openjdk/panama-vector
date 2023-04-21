@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2014, 2015, Red Hat Inc. All rights reserved.
  * Copyright (c) 2020, 2021, Huawei Technologies Co., Ltd. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -56,7 +56,6 @@ class InterpreterMacroAssembler: public MacroAssembler {
 
  public:
   InterpreterMacroAssembler(CodeBuffer* code) : MacroAssembler(code) {}
-  virtual ~InterpreterMacroAssembler() {}
 
   void load_earlyret_value(TosState state);
 
@@ -76,11 +75,36 @@ class InterpreterMacroAssembler: public MacroAssembler {
 
   void restore_locals() {
     ld(xlocals, Address(fp, frame::interpreter_frame_locals_offset * wordSize));
+    shadd(xlocals, xlocals, fp,  t0,  LogBytesPerWord);
   }
 
   void restore_constant_pool_cache() {
     ld(xcpool, Address(fp, frame::interpreter_frame_cache_offset * wordSize));
   }
+
+  void restore_sp_after_call() {
+    Label L;
+    ld(t0, Address(fp, frame::interpreter_frame_extended_sp_offset * wordSize));
+#ifdef ASSERT
+    bnez(t0, L);
+    stop("SP is null");
+#endif
+    bind(L);
+    mv(sp, t0);
+  }
+
+  void check_extended_sp(const char* msg = "check extended SP") {
+#ifdef ASSERT
+    Label L;
+    ld(t0, Address(fp, frame::interpreter_frame_extended_sp_offset * wordSize));
+    beq(sp, t0, L);
+    stop(msg);
+    bind(L);
+#endif
+  }
+
+#define check_extended_sp()                                                                    \
+  check_extended_sp("SP does not match extended SP in frame at " __FILE__ ":" XSTR(__LINE__))
 
   void get_dispatch();
 
@@ -140,7 +164,7 @@ class InterpreterMacroAssembler: public MacroAssembler {
 
   void empty_expression_stack() {
     ld(esp, Address(fp, frame::interpreter_frame_monitor_block_top_offset * wordSize));
-    // NULL last_sp until next java call
+    // null last_sp until next java call
     sd(zr, Address(fp, frame::interpreter_frame_last_sp_offset * wordSize));
   }
 
@@ -275,8 +299,10 @@ class InterpreterMacroAssembler: public MacroAssembler {
     MacroAssembler::_call_Unimplemented(call_site);
   }
 
+  void load_resolved_indy_entry(Register cache, Register index);
+
 #ifdef ASSERT
-  void verify_access_flags(Register access_flags, uint32_t flag_bits,
+  void verify_access_flags(Register access_flags, uint32_t flag,
                            const char* msg, bool stop_by_hit = true);
   void verify_frame_setup();
 #endif

@@ -52,7 +52,7 @@ struct DeviceRecord
 
     unsigned length = it.len ();
 
-    if (unlikely (!c->extend (*this, length)))  return_trace (false);
+    if (unlikely (!c->extend (this, length)))  return_trace (false);
 
     this->pixelSize = pixelSize;
     this->maxWidth =
@@ -110,7 +110,7 @@ struct hdmx
     for (const hb_item_type<Iterator>& _ : +it)
       c->start_embed<DeviceRecord> ()->serialize (c, _.first, _.second);
 
-    return_trace (c->successful);
+    return_trace (c->successful ());
   }
 
 
@@ -156,6 +156,7 @@ struct hdmx
     TRACE_SANITIZE (this);
     return_trace (c->check_struct (this) &&
                   !hb_unsigned_mul_overflows (numRecords, sizeDeviceRecord) &&
+                  min_size + numRecords * sizeDeviceRecord > numRecords * sizeDeviceRecord &&
                   sizeDeviceRecord >= DeviceRecord::min_size &&
                   c->check_range (this, get_size ()));
   }

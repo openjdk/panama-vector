@@ -24,6 +24,7 @@
 
 #include "precompiled.hpp"
 #include "asm/macroAssembler.hpp"
+#include "runtime/interfaceSupport.inline.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "vmreg_x86.inline.hpp"
 #ifdef COMPILER1
@@ -49,7 +50,7 @@ void SharedRuntime::inline_check_hashcode_from_object_header(MacroAssembler* mas
   if (method->intrinsic_id() == vmIntrinsics::_identityHashCode) {
     Label Continue;
     // return 0 for null reference input
-    __ cmpptr(obj_reg, (int32_t)NULL_WORD);
+    __ cmpptr(obj_reg, NULL_WORD);
     __ jcc(Assembler::notEqual, Continue);
     __ xorptr(result, result);
     __ ret(0);
@@ -83,3 +84,34 @@ void SharedRuntime::inline_check_hashcode_from_object_header(MacroAssembler* mas
 }
 #endif //COMPILER1
 
+#if defined(TARGET_COMPILER_gcc) && !defined(_WIN64)
+JRT_LEAF(jfloat, SharedRuntime::frem(jfloat x, jfloat y))
+  jfloat retval;
+  asm ("\
+1:               \n\
+fprem            \n\
+fnstsw %%ax      \n\
+test   $0x4,%%ah \n\
+jne    1b        \n\
+"
+    :"=t"(retval)
+    :"0"(x), "u"(y)
+    :"cc", "ax");
+  return retval;
+JRT_END
+
+JRT_LEAF(jdouble, SharedRuntime::drem(jdouble x, jdouble y))
+  jdouble retval;
+  asm ("\
+1:               \n\
+fprem            \n\
+fnstsw %%ax      \n\
+test   $0x4,%%ah \n\
+jne    1b        \n\
+"
+    :"=t"(retval)
+    :"0"(x), "u"(y)
+    :"cc", "ax");
+  return retval;
+JRT_END
+#endif // TARGET_COMPILER_gcc && !_WIN64

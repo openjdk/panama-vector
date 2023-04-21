@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,6 @@ package jdk.javadoc.internal.doclets.formats.html;
 
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -44,7 +43,6 @@ import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardJavaFileManager;
 
-import com.sun.source.util.DocTreePath;
 import jdk.javadoc.doclet.Doclet;
 import jdk.javadoc.doclet.DocletEnvironment;
 import jdk.javadoc.doclet.Reporter;
@@ -151,14 +149,19 @@ public class HtmlConfiguration extends BaseConfiguration {
     // Note: this should (eventually) be merged with Navigation.PageMode,
     // which performs a somewhat similar role
     public enum ConditionalPage {
-        CONSTANT_VALUES, DEPRECATED, PREVIEW, SERIALIZED_FORM, SYSTEM_PROPERTIES, NEW
+        CONSTANT_VALUES, DEPRECATED, EXTERNAL_SPECS, PREVIEW, SERIALIZED_FORM, SYSTEM_PROPERTIES, NEW
     }
 
     /**
      * A set of values indicating which conditional pages should be generated.
+     *
      * The set is computed lazily, although values must (obviously) be set before
-     * they are required, such as when deciding whether or not to generate links
-     * to these files in the navigation par, on each page, the help file, and so on.
+     * they are required, such as when deciding whether to generate links
+     * to these files in the navigation bar, on each page, the help file, and so on.
+     *
+     * The value for any page may depend on both command-line options to enable or
+     * disable a page, and on content being found for the page, such as deprecated
+     * items to appear in the summary page of deprecated items.
      */
     public final Set<ConditionalPage> conditionalPages;
 
@@ -401,16 +404,6 @@ public class HtmlConfiguration extends BaseConfiguration {
     @Override
     public JavaFileManager getFileManager() {
         return docEnv.getJavaFileManager();
-    }
-
-    @Override
-    public boolean showMessage(DocTreePath path, String key) {
-        return (path == null || !haveDocLint());
-    }
-
-    @Override
-    public boolean showMessage(Element e, String key) {
-        return (e == null || !haveDocLint());
     }
 
     @Override

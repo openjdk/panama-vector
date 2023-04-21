@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2023, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2016, 2017 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -24,11 +24,11 @@
  */
 
 #include "precompiled.hpp"
-#include "jvm.h"
 #include "asm/macroAssembler.inline.hpp"
 #include "classfile/javaClasses.inline.hpp"
 #include "classfile/vmClasses.hpp"
 #include "interpreter/interpreter.hpp"
+#include "jvm.h"
 #include "logging/log.hpp"
 #include "logging/logStream.hpp"
 #include "memory/allocation.inline.hpp"
@@ -152,15 +152,13 @@ void MethodHandles::jump_from_method_handle(MacroAssembler* _masm, Register meth
     // by avoiding running compiled code in threads for which the
     // event is enabled. Check here for interp_only_mode if these
     // events CAN be enabled.
-    __ verify_thread();
 
     Label run_compiled_code;
 
     __ load_and_test_int(temp, Address(Z_thread, JavaThread::interp_only_mode_offset()));
     __ z_bre(run_compiled_code);
 
-    // Null method test is replicated below in compiled case,
-    // it might be able to address across the verify_thread().
+    // Null method test is replicated below in compiled case.,
     __ z_ltgr(temp, method);
     __ z_bre(L_no_such_method);
 
@@ -182,7 +180,7 @@ void MethodHandles::jump_from_method_handle(MacroAssembler* _masm, Register meth
   __ z_br(target);
 
   __ bind(L_no_such_method);
-  assert(StubRoutines::throw_AbstractMethodError_entry() != NULL, "not yet generated!");
+  assert(StubRoutines::throw_AbstractMethodError_entry() != nullptr, "not yet generated!");
   __ load_const_optimized(target, StubRoutines::throw_AbstractMethodError_entry());
   __ z_br(target);
 }
@@ -251,14 +249,14 @@ address MethodHandles::generate_method_handle_interpreter_entry(MacroAssembler* 
     // adapters via MethodHandleNatives.linkMethod. They all allow an
     // appendix argument.
     __ should_not_reach_here();           // Empty stubs make SG sick.
-    return NULL;
+    return nullptr;
   }
 
   // No need in interpreter entry for linkToNative for now.
   // Interpreter calls compiled entry through i2c.
   if (iid == vmIntrinsics::_linkToNative) {
     __ should_not_reach_here();           // Empty stubs make SG sick.
-    return NULL;
+    return nullptr;
   }
 
   // Z_R10: sender SP (must preserve; see prepare_to_jump_from_interprted)
@@ -349,6 +347,12 @@ address MethodHandles::generate_method_handle_interpreter_entry(MacroAssembler* 
   return entry_point;
 }
 
+void MethodHandles::jump_to_native_invoker(MacroAssembler* _masm, Register nep_reg, Register temp_target) {
+  BLOCK_COMMENT("jump_to_native_invoker {");
+  __ should_not_reach_here();
+  BLOCK_COMMENT("} jump_to_native_invoker");
+}
+
 void MethodHandles::generate_method_handle_dispatch(MacroAssembler* _masm,
                                                     vmIntrinsics::ID iid,
                                                     Register receiver_reg,
@@ -362,7 +366,7 @@ void MethodHandles::generate_method_handle_dispatch(MacroAssembler* _masm,
   Register temp4 = Z_R13;
 
   if (for_compiler_entry) {
-    assert(receiver_reg == (iid == vmIntrinsics::_linkToStatic ? noreg : Z_ARG1),
+    assert(receiver_reg == (iid == vmIntrinsics::_linkToStatic || iid == vmIntrinsics::_linkToNative ? noreg : Z_ARG1),
            "only valid assignment");
   }
   if (receiver_reg != noreg) {
@@ -375,14 +379,14 @@ void MethodHandles::generate_method_handle_dispatch(MacroAssembler* _masm,
     assert_different_registers(temp1, temp2, temp3, temp4, Z_R10);
   }
 
-  if (iid == vmIntrinsics::_invokeBasic || iid == vmIntrinsics::_linkToNative) {
-    if (iid == vmIntrinsics::_linkToNative) {
-      assert(for_compiler_entry, "only compiler entry is supported");
-    }
+  if (iid == vmIntrinsics::_invokeBasic) {
     __ pc(); // Just for the block comment.
     // Indirect through MH.form.vmentry.vmtarget.
     jump_to_lambda_form(_masm, receiver_reg, Z_method, Z_R1, temp3, for_compiler_entry);
     return;
+  } else if (iid == vmIntrinsics::_linkToNative) {
+    assert(for_compiler_entry, "only compiler entry is supported");
+    jump_to_native_invoker(_masm, member_reg, temp1);
   }
 
   // The method is a member invoker used by direct method handles.
@@ -407,7 +411,6 @@ void MethodHandles::generate_method_handle_dispatch(MacroAssembler* _masm,
       __ null_check(receiver_reg);
     } else {
       // Load receiver klass itself.
-      __ null_check(receiver_reg, Z_R0, oopDesc::klass_offset_in_bytes());
       __ load_klass(temp1_recv_klass, receiver_reg);
       __ verify_klass_ptr(temp1_recv_klass);
     }
@@ -556,8 +559,8 @@ void trace_method_handle_stub(const char* adaptername,
                               intptr_t* sender_sp,
                               intptr_t* args,
                               intptr_t* tracing_fp) {
-  bool has_mh = (strstr(adaptername, "/static") == NULL &&
-                 strstr(adaptername, "linkTo") == NULL);    // Static linkers don't have MH.
+  bool has_mh = (strstr(adaptername, "/static") == nullptr &&
+                 strstr(adaptername, "linkTo") == nullptr);    // Static linkers don't have MH.
   const char* mh_reg_name = has_mh ? "Z_R4_mh" : "Z_R4";
   log_info(methodhandles)("MH %s %s=" INTPTR_FORMAT " sender_sp=" INTPTR_FORMAT " args=" INTPTR_FORMAT,
                           adaptername, mh_reg_name,

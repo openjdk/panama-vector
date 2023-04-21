@@ -77,6 +77,7 @@ import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import jdk.internal.util.OperatingSystem;
 import jdk.internal.misc.VM;
 import jdk.internal.module.ModuleBootstrap;
 import jdk.internal.module.Modules;
@@ -168,7 +169,7 @@ public final class LauncherHelper {
                 printLocale();
                 break;
             case "system":
-                if (System.getProperty("os.name").contains("Linux")) {
+                if (OperatingSystem.isLinux()) {
                     printSystemMetrics();
                     break;
                 }
@@ -176,7 +177,7 @@ public final class LauncherHelper {
                 printVmSettings(initialHeapSize, maxHeapSize, stackSize);
                 printProperties();
                 printLocale();
-                if (System.getProperty("os.name").contains("Linux")) {
+                if (OperatingSystem.isLinux()) {
                     printSystemMetrics();
                 }
                 break;
@@ -532,7 +533,7 @@ public final class LauncherHelper {
         initOutput(printToStderr);
         ostream.println(getLocalizedMessage("java.launcher.X.usage",
                 File.pathSeparator));
-        if (System.getProperty("os.name").contains("OS X")) {
+        if (OperatingSystem.isMacOS()) {
             ostream.println(getLocalizedMessage("java.launcher.X.macosx.usage",
                         File.pathSeparator));
         }
@@ -726,7 +727,7 @@ public final class LauncherHelper {
         // main module is in the boot layer
         ModuleLayer layer = ModuleLayer.boot();
         Optional<Module> om = layer.findModule(mainModule);
-        if (!om.isPresent()) {
+        if (om.isEmpty()) {
             // should not happen
             throw new InternalError("Module " + mainModule + " not in boot Layer");
         }
@@ -735,7 +736,7 @@ public final class LauncherHelper {
         // get main class
         if (mainClass == null) {
             Optional<String> omc = m.getDescriptor().mainClass();
-            if (!omc.isPresent()) {
+            if (omc.isEmpty()) {
                 abort(null, "java.launcher.module.error1", mainModule);
             }
             mainClass = omc.get();
@@ -745,7 +746,7 @@ public final class LauncherHelper {
         Class<?> c = null;
         try {
             c = Class.forName(m, mainClass);
-            if (c == null && System.getProperty("os.name", "").contains("OS X")
+            if (c == null && OperatingSystem.isMacOS()
                     && Normalizer.isNormalized(mainClass, Normalizer.Form.NFD)) {
 
                 String cn = Normalizer.normalize(mainClass, Normalizer.Form.NFC);
@@ -789,7 +790,7 @@ public final class LauncherHelper {
             try {
                 mainClass = Class.forName(cn, false, scl);
             } catch (NoClassDefFoundError | ClassNotFoundException cnfe) {
-                if (System.getProperty("os.name", "").contains("OS X")
+                if (OperatingSystem.isMacOS()
                         && Normalizer.isNormalized(cn, Normalizer.Form.NFD)) {
                     try {
                         // On Mac OS X since all names with diacritical marks are
@@ -1023,7 +1024,7 @@ public final class LauncherHelper {
 
             // find the module with the FX launcher
             Optional<Module> om = ModuleLayer.boot().findModule(JAVAFX_GRAPHICS_MODULE_NAME);
-            if (!om.isPresent()) {
+            if (om.isEmpty()) {
                 abort(null, "java.launcher.cls.error5");
             }
 

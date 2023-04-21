@@ -1941,7 +1941,7 @@ public class Font implements java.io.Serializable
      * @throws ClassNotFoundException if the class of a serialized object could
      *         not be found
      * @throws IOException if an I/O error occurs
-     * @serial
+     *
      * @see #writeObject(java.io.ObjectOutputStream)
      */
     @Serial
@@ -2629,8 +2629,10 @@ public class Font implements java.io.Serializable
         // quick check for simple text, assume GV ok to use if simple
 
         boolean simple = values == null ||
-            (values.getKerning() == 0 && values.getLigatures() == 0 &&
-              values.getBaselineTransform() == null);
+            (values.getKerning() == 0
+             && values.getLigatures() == 0
+             && values.getTracking() == 0
+             && values.getBaselineTransform() == null);
         if (simple) {
             simple = ! FontUtilities.isComplexText(chars, beginIndex, limit);
         }

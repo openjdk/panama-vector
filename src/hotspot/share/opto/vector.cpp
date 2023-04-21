@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,11 +35,6 @@
 static bool is_vector_mask(ciKlass* klass) {
   return klass->is_subclass_of(ciEnv::current()->vector_VectorMask_klass());
 }
-
-static bool is_vector_shuffle(ciKlass* klass) {
-  return klass->is_subclass_of(ciEnv::current()->vector_VectorShuffle_klass());
-}
-
 
 void PhaseVector::optimize_vector_boxes() {
   Compile::TracePhase tp("vector_elimination", &timers[_t_vector_elimination]);
@@ -163,6 +158,17 @@ static JVMState* clone_jvms(Compile* C, SafePointNode* sfpt) {
   for (uint i = 0; i < size; i++) {
     map->init_req(i, sfpt->in(i));
   }
+  Node* mem = map->memory();
+  if (!mem->is_MergeMem()) {
+    // Since we are not in parsing, the SafePointNode does not guarantee that the memory
+    // input is necessarily a MergeMemNode. But we need to ensure that there is that
+    // MergeMemNode, since the GraphKit assumes the memory input of the map to be a
+    // MergeMemNode, so that it can directly access the memory slices.
+    PhaseGVN& gvn = *C->initial_gvn();
+    Node* mergemem = MergeMemNode::make(mem);
+    gvn.set_type_bottom(mergemem);
+    map->set_memory(mergemem);
+  }
   new_jvms->set_map(map);
   return new_jvms;
 }
@@ -201,7 +207,7 @@ void PhaseVector::scalarize_vbox_node(VectorBoxNode* vec_box) {
       }
       jvms = kit.sync_jvms();
 
-      Node* new_vbox = NULL;
+      Node* new_vbox = nullptr;
       {
         Node* vect = vec_box->in(VectorBoxNode::Value);
         const TypeInstPtr* vbox_type = vec_box->box_type();
@@ -247,7 +253,7 @@ void PhaseVector::scalarize_vbox_node(VectorBoxNode* vec_box) {
     }
   }
 
-  ciInstanceKlass* iklass = vec_box->box_type()->klass()->as_instance_klass();
+  ciInstanceKlass* iklass = vec_box->box_type()->instance_klass();
   int n_fields = iklass->nof_nonstatic_fields();
   assert(n_fields == 1, "sanity");
 
@@ -283,7 +289,7 @@ void PhaseVector::scalarize_vbox_node(VectorBoxNode* vec_box) {
     // to the allocated object with vector value.
     for (uint i = jvms->debug_start(); i < jvms->debug_end(); i++) {
       Node* debug = sfpt->in(i);
-      if (debug != NULL && debug->uncast(/*keep_deps*/false) == vec_box) {
+      if (debug != nullptr && debug->uncast(/*keep_deps*/false) == vec_box) {
         sfpt->set_req(i, sobj);
       }
     }
@@ -348,7 +354,7 @@ Node* PhaseVector::expand_vbox_alloc_node(VectorBoxAllocateNode* vbox_alloc,
   GraphKit kit(jvms);
   PhaseGVN& gvn = kit.gvn();
 
-  ciInstanceKlass* box_klass = box_type->klass()->as_instance_klass();
+  ciInstanceKlass* box_klass = box_type->instance_klass();
   BasicType bt = vect_type->element_basic_type();
   int num_elem = vect_type->length();
 
@@ -393,7 +399,7 @@ Node* PhaseVector::expand_vbox_alloc_node(VectorBoxAllocateNode* vbox_alloc,
   ciField* field = ciEnv::current()->vector_VectorPayload_klass()->get_field_by_name(ciSymbols::payload_name(),
                                                                                      ciSymbols::object_signature(),
                                                                                      false);
-  assert(field != NULL, "");
+  assert(field != nullptr, "");
   Node* vec_field = kit.basic_plus_adr(vec_obj, field->offset_in_bytes());
   const TypePtr* vec_adr_type = vec_field->bottom_type()->is_ptr();
 
@@ -420,21 +426,19 @@ void PhaseVector::expand_vunbox_node(VectorUnboxNode* vec_unbox) {
 
     Node* obj = vec_unbox->obj();
     const TypeInstPtr* tinst = gvn.type(obj)->isa_instptr();
-    ciInstanceKlass* from_kls = tinst->klass()->as_instance_klass();
+    ciInstanceKlass* from_kls = tinst->instance_klass();
     const TypeVect* vt = vec_unbox->bottom_type()->is_vect();
     BasicType bt = vt->element_basic_type();
     BasicType masktype = bt;
 
     if (is_vector_mask(from_kls)) {
       bt = T_BOOLEAN;
-    } else if (is_vector_shuffle(from_kls)) {
-      bt = T_BYTE;
     }
 
     ciField* field = ciEnv::current()->vector_VectorPayload_klass()->get_field_by_name(ciSymbols::payload_name(),
                                                                                        ciSymbols::object_signature(),
                                                                                        false);
-    assert(field != NULL, "");
+    assert(field != nullptr, "");
     int offset = field->offset_in_bytes();
     Node* vec_adr = kit.basic_plus_adr(obj, offset);
 
@@ -473,9 +477,6 @@ void PhaseVector::expand_vunbox_node(VectorUnboxNode* vec_unbox) {
 
     if (is_vector_mask(from_kls)) {
       vec_val_load = gvn.transform(new VectorLoadMaskNode(vec_val_load, TypeVect::makemask(masktype, num_elem)));
-    } else if (is_vector_shuffle(from_kls) && !vec_unbox->is_shuffle_to_vector()) {
-      assert(vec_unbox->bottom_type()->is_vect()->element_basic_type() == masktype, "expect shuffle type consistency");
-      vec_val_load = gvn.transform(new VectorLoadShuffleNode(vec_val_load, TypeVect::make(masktype, num_elem)));
     }
 
     gvn.hash_delete(vec_unbox);

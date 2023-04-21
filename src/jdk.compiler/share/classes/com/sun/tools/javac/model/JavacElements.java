@@ -105,6 +105,7 @@ public class JavacElements implements Elements {
         return instance;
     }
 
+    @SuppressWarnings("this-escape")
     protected JavacElements(Context context) {
         context.put(JavacElements.class, this);
         javaCompiler = JavaCompiler.instance(context);
@@ -537,9 +538,6 @@ public class JavacElements implements Elements {
         return valmap;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @DefinedBy(Api.LANGUAGE_MODEL)
     public FilteredMemberList getAllMembers(TypeElement element) {
         Symbol sym = cast(Symbol.class, element);
@@ -725,6 +723,16 @@ public class JavacElements implements Elements {
     public boolean isAutomaticModule(ModuleElement module) {
         ModuleSymbol msym = (ModuleSymbol) module;
         return (msym.flags() & Flags.AUTOMATIC_MODULE) != 0;
+    }
+
+    @Override @DefinedBy(Api.LANGUAGE_MODEL)
+    public boolean isCompactConstructor(ExecutableElement e) {
+        return (((MethodSymbol)e).flags() & Flags.COMPACT_RECORD_CONSTRUCTOR) != 0;
+    }
+
+    @Override @DefinedBy(Api.LANGUAGE_MODEL)
+    public boolean isCanonicalConstructor(ExecutableElement e) {
+        return (((MethodSymbol)e).flags() & Flags.RECORD) != 0;
     }
 
     @Override @DefinedBy(Api.LANGUAGE_MODEL)

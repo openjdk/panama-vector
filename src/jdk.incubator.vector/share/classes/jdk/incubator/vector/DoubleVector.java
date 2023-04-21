@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,14 +24,14 @@
  */
 package jdk.incubator.vector;
 
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
 
-import jdk.incubator.foreign.MemorySegment;
-import jdk.incubator.foreign.ValueLayout;
-import jdk.internal.access.foreign.MemorySegmentProxy;
+import jdk.internal.foreign.AbstractMemorySegmentImpl;
 import jdk.internal.misc.ScopedMemoryAccess;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.vm.annotation.ForceInline;
@@ -764,15 +764,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
 
         if (opKind(op, VO_SPECIAL )) {
             if (op == FIRST_NONZERO) {
-                // FIXME: Support this in the JIT.
-                VectorMask<Long> thisNZ
-                    = this.viewAsIntegralLanes().compare(NE, (long) 0);
-                that = that.blend((double) 0, thisNZ.cast(vspecies()));
-                op = OR_UNCHECKED;
-                // FIXME: Support OR_UNCHECKED on float/double also!
-                return this.viewAsIntegralLanes()
-                    .lanewise(op, that.viewAsIntegralLanes())
-                    .viewAsFloatingLanes();
+                VectorMask<Long> mask
+                    = this.viewAsIntegralLanes().compare(EQ, (long) 0);
+                return this.blend(that, mask.cast(vspecies()));
             }
         }
 
@@ -803,7 +797,10 @@ public abstract class DoubleVector extends AbstractVector<Double> {
 
         if (opKind(op, VO_SPECIAL )) {
             if (op == FIRST_NONZERO) {
-                return blend(lanewise(op, v), m);
+                LongVector bits = this.viewAsIntegralLanes();
+                VectorMask<Long> mask
+                    = bits.compare(EQ, (long) 0, m.cast(bits.vspecies()));
+                return this.blend(that, mask.cast(vspecies()));
             }
         }
 
@@ -956,7 +953,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     // and broadcast, but it would be more surprising not to continue
     // the obvious pattern started by unary and binary.
 
-   /**
+    /**
      * {@inheritDoc} <!--workaround-->
      * @see #lanewise(VectorOperators.Ternary,double,double,VectorMask)
      * @see #lanewise(VectorOperators.Ternary,Vector,double,VectorMask)
@@ -2325,26 +2322,14 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     }
 
     @ForceInline
-    private final
-    VectorShuffle<Double> toShuffle0(DoubleSpecies dsp) {
+    final <F>
+    VectorShuffle<F> toShuffle0(AbstractSpecies<F> dsp) {
         double[] a = toArray();
         int[] sa = new int[a.length];
         for (int i = 0; i < a.length; i++) {
             sa[i] = (int) a[i];
         }
         return VectorShuffle.fromArray(dsp, sa, 0);
-    }
-
-    /*package-private*/
-    @ForceInline
-    final
-    VectorShuffle<Double> toShuffleTemplate(Class<?> shuffleType) {
-        DoubleSpecies vsp = vspecies();
-        return VectorSupport.convert(VectorSupport.VECTOR_OP_CAST,
-                                     getClass(), double.class, length(),
-                                     shuffleType, byte.class, length(),
-                                     this, vsp,
-                                     DoubleVector::toShuffle0);
     }
 
     /**
@@ -2361,9 +2346,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     <M extends AbstractMask<Double>>
     DoubleVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      return (DoubleVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
-                                                   double.class, length(), this, m,
-                                                   (v1, m1) -> compressHelper(v1, m1));
+      return (DoubleVector) VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
+                                                        double.class, length(), this, m,
+                                                        (v1, m1) -> compressHelper(v1, m1));
     }
 
     /**
@@ -2380,9 +2365,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     <M extends AbstractMask<Double>>
     DoubleVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      return (DoubleVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
-                                                   double.class, length(), this, m,
-                                                   (v1, m1) -> expandHelper(v1, m1));
+      return (DoubleVector) VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
+                                                        double.class, length(), this, m,
+                                                        (v1, m1) -> expandHelper(v1, m1));
     }
 
 
@@ -2805,13 +2790,12 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                    double[] a, int offset,
                                    VectorMask<Double> m) {
         DoubleSpecies vsp = (DoubleSpecies) species;
-        if (offset >= 0 && offset <= (a.length - species.length())) {
-            return vsp.dummyVector().fromArray0(a, offset, m);
+        if (VectorIntrinsics.indexInRange(offset, vsp.length(), a.length)) {
+            return vsp.dummyVector().fromArray0(a, offset, m, OFFSET_IN_RANGE);
         }
 
-        // FIXME: optimize
         checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
-        return vsp.vOp(m, i -> a[offset + i]);
+        return vsp.dummyVector().fromArray0(a, offset, m, OFFSET_OUT_OF_RANGE);
     }
 
     /**
@@ -3038,13 +3022,12 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                                            ByteOrder bo,
                                            VectorMask<Double> m) {
         DoubleSpecies vsp = (DoubleSpecies) species;
-        if (offset >= 0 && offset <= (ms.byteSize() - species.vectorByteSize())) {
-            return vsp.dummyVector().fromMemorySegment0(ms, offset, m).maybeSwap(bo);
+        if (VectorIntrinsics.indexInRange(offset, vsp.vectorByteSize(), ms.byteSize())) {
+            return vsp.dummyVector().fromMemorySegment0(ms, offset, m, OFFSET_IN_RANGE).maybeSwap(bo);
         }
 
-        // FIXME: optimize
         checkMaskFromIndexSize(offset, vsp, m, 8, ms.byteSize());
-        return vsp.ldLongOp(ms, offset, m, DoubleVector::memorySegmentGet);
+        return vsp.dummyVector().fromMemorySegment0(ms, offset, m, OFFSET_OUT_OF_RANGE).maybeSwap(bo);
     }
 
     // Memory store operations
@@ -3110,7 +3093,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
             intoArray(a, offset);
         } else {
             DoubleSpecies vsp = vspecies();
-            checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
+            if (!VectorIntrinsics.indexInRange(offset, vsp.length(), a.length)) {
+                checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
+            }
             intoArray0(a, offset, m);
         }
     }
@@ -3266,7 +3251,9 @@ public abstract class DoubleVector extends AbstractVector<Double> {
                 throw new UnsupportedOperationException("Attempt to write a read-only segment");
             }
             DoubleSpecies vsp = vspecies();
-            checkMaskFromIndexSize(offset, vsp, m, 8, ms.byteSize());
+            if (!VectorIntrinsics.indexInRange(offset, vsp.vectorByteSize(), ms.byteSize())) {
+                checkMaskFromIndexSize(offset, vsp, m, 8, ms.byteSize());
+            }
             maybeSwap(bo).intoMemorySegment0(ms, offset, m);
         }
     }
@@ -3307,16 +3294,16 @@ public abstract class DoubleVector extends AbstractVector<Double> {
 
     /*package-private*/
     abstract
-    DoubleVector fromArray0(double[] a, int offset, VectorMask<Double> m);
+    DoubleVector fromArray0(double[] a, int offset, VectorMask<Double> m, int offsetInRange);
     @ForceInline
     final
     <M extends VectorMask<Double>>
-    DoubleVector fromArray0Template(Class<M> maskClass, double[] a, int offset, M m) {
+    DoubleVector fromArray0Template(Class<M> maskClass, double[] a, int offset, M m, int offsetInRange) {
         m.check(species());
         DoubleSpecies vsp = vspecies();
         return VectorSupport.loadMasked(
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-            a, arrayAddress(a, offset), m,
+            a, arrayAddress(a, offset), m, offsetInRange,
             a, offset, vsp,
             (arr, off, s, vm) -> s.ldOp(arr, (int) off, vm,
                                         (arr_, off_, i) -> arr_[off_ + i]));
@@ -3384,23 +3371,23 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         DoubleSpecies vsp = vspecies();
         return ScopedMemoryAccess.loadFromMemorySegment(
                 vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                (MemorySegmentProxy) ms, offset, vsp,
+                (AbstractMemorySegmentImpl) ms, offset, vsp,
                 (msp, off, s) -> {
                     return s.ldLongOp((MemorySegment) msp, off, DoubleVector::memorySegmentGet);
                 });
     }
 
     abstract
-    DoubleVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Double> m);
+    DoubleVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Double> m, int offsetInRange);
     @ForceInline
     final
     <M extends VectorMask<Double>>
-    DoubleVector fromMemorySegment0Template(Class<M> maskClass, MemorySegment ms, long offset, M m) {
+    DoubleVector fromMemorySegment0Template(Class<M> maskClass, MemorySegment ms, long offset, M m, int offsetInRange) {
         DoubleSpecies vsp = vspecies();
         m.check(vsp);
         return ScopedMemoryAccess.loadFromMemorySegmentMasked(
                 vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-                (MemorySegmentProxy) ms, offset, m, vsp,
+                (AbstractMemorySegmentImpl) ms, offset, m, vsp, offsetInRange,
                 (msp, off, s, vm) -> {
                     return s.ldLongOp((MemorySegment) msp, off, vm, DoubleVector::memorySegmentGet);
                 });
@@ -3503,7 +3490,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         ScopedMemoryAccess.storeIntoMemorySegment(
                 vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
                 this,
-                (MemorySegmentProxy) ms, offset,
+                (AbstractMemorySegmentImpl) ms, offset,
                 (msp, off, v) -> {
                     v.stLongOp((MemorySegment) msp, off, DoubleVector::memorySegmentSet);
                 });
@@ -3520,7 +3507,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         ScopedMemoryAccess.storeIntoMemorySegmentMasked(
                 vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
                 this, m,
-                (MemorySegmentProxy) ms, offset,
+                (AbstractMemorySegmentImpl) ms, offset,
                 (msp, off, v, vm) -> {
                     v.stLongOp((MemorySegment) msp, off, vm, DoubleVector::memorySegmentSet);
                 });
@@ -3700,9 +3687,10 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         private DoubleSpecies(VectorShape shape,
                 Class<? extends DoubleVector> vectorType,
                 Class<? extends AbstractMask<Double>> maskType,
+                Class<? extends AbstractShuffle<Double>> shuffleType,
                 Function<Object, DoubleVector> vectorFactory) {
             super(shape, LaneType.of(double.class),
-                  vectorType, maskType,
+                  vectorType, maskType, shuffleType,
                   vectorFactory);
             assert(this.elementSize() == Double.SIZE);
         }
@@ -3978,6 +3966,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         = new DoubleSpecies(VectorShape.S_64_BIT,
                             Double64Vector.class,
                             Double64Vector.Double64Mask.class,
+                            Double64Vector.Double64Shuffle.class,
                             Double64Vector::new);
 
     /** Species representing {@link DoubleVector}s of {@link VectorShape#S_128_BIT VectorShape.S_128_BIT}. */
@@ -3985,6 +3974,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         = new DoubleSpecies(VectorShape.S_128_BIT,
                             Double128Vector.class,
                             Double128Vector.Double128Mask.class,
+                            Double128Vector.Double128Shuffle.class,
                             Double128Vector::new);
 
     /** Species representing {@link DoubleVector}s of {@link VectorShape#S_256_BIT VectorShape.S_256_BIT}. */
@@ -3992,6 +3982,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         = new DoubleSpecies(VectorShape.S_256_BIT,
                             Double256Vector.class,
                             Double256Vector.Double256Mask.class,
+                            Double256Vector.Double256Shuffle.class,
                             Double256Vector::new);
 
     /** Species representing {@link DoubleVector}s of {@link VectorShape#S_512_BIT VectorShape.S_512_BIT}. */
@@ -3999,6 +3990,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         = new DoubleSpecies(VectorShape.S_512_BIT,
                             Double512Vector.class,
                             Double512Vector.Double512Mask.class,
+                            Double512Vector.Double512Shuffle.class,
                             Double512Vector::new);
 
     /** Species representing {@link DoubleVector}s of {@link VectorShape#S_Max_BIT VectorShape.S_Max_BIT}. */
@@ -4006,6 +3998,7 @@ public abstract class DoubleVector extends AbstractVector<Double> {
         = new DoubleSpecies(VectorShape.S_Max_BIT,
                             DoubleMaxVector.class,
                             DoubleMaxVector.DoubleMaxMask.class,
+                            DoubleMaxVector.DoubleMaxShuffle.class,
                             DoubleMaxVector::new);
 
     /**
@@ -4015,3 +4008,4 @@ public abstract class DoubleVector extends AbstractVector<Double> {
     public static final VectorSpecies<Double> SPECIES_PREFERRED
         = (DoubleSpecies) VectorSpecies.ofPreferred(double.class);
 }
+
