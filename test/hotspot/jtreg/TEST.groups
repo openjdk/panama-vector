@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2013, 2023, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -84,6 +84,7 @@ hotspot_containers_extended = \
 
 hotspot_vector_1 = \
   compiler/c2/cr6340864 \
+  compiler/c2/irTests \
   compiler/codegen \
   compiler/loopopts/superword \
   compiler/vectorapi \
@@ -108,6 +109,22 @@ hotspot_vector_2 = \
 hotspot_compiler_arraycopy = \
   compiler/arraycopy/stress
 
+tier1_loom = \
+  :tier1_loom_runtime \
+  :tier1_loom_serviceability
+
+tier1_loom_runtime = \
+  runtime/vthread \
+  runtime/jni/IsVirtualThread
+
+tier1_loom_serviceability = \
+  serviceability/jvmti/vthread \
+  serviceability/jvmti/events \
+  serviceability/dcmd/thread
+
+hotspot_loom = \
+  :tier1_loom
+
 tier1_common = \
   sanity/BasicVMTest.java \
   gtest/GTestWrapper.java \
@@ -130,6 +147,8 @@ hotspot_slow_compiler = \
   compiler/codegen/aes \
   compiler/codecache/stress \
   compiler/gcbarriers/PreserveFPRegistersTest.java \
+  compiler/memoryinitialization/ZeroTLABTest.java \
+  compiler/classUnloading/methodUnloading/TestOverloadCompileQueues.java \
   resourcehogs/compiler \
   :hotspot_compiler_arraycopy
 
@@ -257,7 +276,6 @@ ctw_3 = \
 tier1_gc = \
   :tier1_gc_1 \
   :tier1_gc_2 \
-  :tier1_gc_gcold \
   :tier1_gc_gcbasher \
   :tier1_gc_epsilon \
   :tier1_gc_shenandoah
@@ -288,7 +306,7 @@ tier1_gc_epsilon = \
 
 tier2_gc_epsilon =
 
-tier1_gc_gcold = \
+tier3_gc_gcold = \
   gc/stress/gcold/TestGCOldWithG1.java \
   gc/stress/gcold/TestGCOldWithSerial.java \
   gc/stress/gcold/TestGCOldWithParallel.java
@@ -401,11 +419,11 @@ hotspot_appcds_dynamic = \
  -runtime/cds/appcds/javaldr/ArrayTest.java \
  -runtime/cds/appcds/javaldr/ExceptionDuringDumpAtObjectsInitPhase.java \
  -runtime/cds/appcds/javaldr/GCSharedStringsDuringDump.java \
- -runtime/cds/appcds/javaldr/HumongousDuringDump.java \
  -runtime/cds/appcds/javaldr/LockDuringDump.java \
  -runtime/cds/appcds/jcmd/JCmdTestStaticDump.java \
  -runtime/cds/appcds/jcmd/JCmdTestDynamicDump.java \
  -runtime/cds/appcds/jcmd/JCmdTestFileSafety.java \
+ -runtime/cds/appcds/lambdaForm/DefaultClassListLFInvokers.java \
  -runtime/cds/appcds/methodHandles \
  -runtime/cds/appcds/sharedStrings \
  -runtime/cds/appcds/ArchiveRelocationTest.java \
@@ -419,6 +437,7 @@ hotspot_appcds_dynamic = \
  -runtime/cds/appcds/LambdaProxyClasslist.java \
  -runtime/cds/appcds/LambdaVerificationFailedDuringDump.java \
  -runtime/cds/appcds/LambdaWithJavaAgent.java \
+ -runtime/cds/appcds/LambdaWithUseImplMethodHandle.java \
  -runtime/cds/appcds/LambdaWithOldClass.java \
  -runtime/cds/appcds/LongClassListPath.java \
  -runtime/cds/appcds/LotsOfClasses.java \
@@ -540,6 +559,7 @@ tier2 = \
 tier3 = \
   :hotspot_tier3_runtime \
   :tier3_compiler \
+  :tier3_gc_gcold \
   :tier3_gc_shenandoah
 
 # Everything that is not in other tiers, but not apps
@@ -671,9 +691,6 @@ vmTestbase_vm_gc_juggle = \
 # GC Locker
 vmTestbase_vm_gc_locker = \
   vmTestbase/gc/lock \
-  vmTestbase/gc/gctests/mallocWithGC1/mallocWithGC1.java \
-  vmTestbase/gc/gctests/mallocWithGC2/mallocWithGC2.java \
-  vmTestbase/gc/gctests/mallocWithGC3/mallocWithGC3.java \
   vmTestbase/gc/gctests/nativeGC01/nativeGC01.java \
   vmTestbase/gc/gctests/nativeGC02/nativeGC02.java \
   vmTestbase/gc/gctests/nativeGC03/nativeGC03.java \

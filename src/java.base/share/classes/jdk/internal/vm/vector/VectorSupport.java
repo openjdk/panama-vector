@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -150,6 +150,9 @@ public class VectorSupport {
 
     public static class VectorSpecies<E> {}
 
+    /**
+     * @hidden
+     */
     public static class VectorPayload {
         private final Object payload; // array of primitives
 
@@ -162,17 +165,26 @@ public class VectorSupport {
         }
     }
 
+    /**
+     * @hidden
+     */
     public static class Vector<E> extends VectorPayload {
         public Vector(Object payload) {
             super(payload);
         }
     }
 
+    /**
+     * @hidden
+     */
     public static class VectorShuffle<E> extends VectorPayload {
         public VectorShuffle(Object payload) {
             super(payload);
         }
     }
+    /**
+     * @hidden
+     */
     public static class VectorMask<E> extends VectorPayload {
         public VectorMask(Object payload) {
             super(payload);
@@ -199,39 +211,20 @@ public class VectorSupport {
     }
 
     /* ============================================================================ */
-    public interface ShuffleIotaOperation<S extends VectorSpecies<?>,
-                                          SH extends VectorShuffle<?>> {
-        SH apply(int length, int start, int step, S s);
+    public interface IndexPartiallyInUpperRangeOperation<E,
+                                                         M extends VectorMask<E>> {
+        M apply(long offset, long limit);
     }
 
     @IntrinsicCandidate
     public static
     <E,
-     S extends VectorSpecies<E>,
-     SH extends VectorShuffle<E>>
-    SH shuffleIota(Class<E> eClass, Class<? extends SH> shClass, S s,
-                   int length,
-                   int start, int step, int wrap,
-                   ShuffleIotaOperation<S, SH> defaultImpl) {
-       assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-       return defaultImpl.apply(length, start, step, s);
-    }
-
-    public interface ShuffleToVectorOperation<V extends Vector<?>,
-                                              SH extends VectorShuffle<?>> {
-       V apply(SH sh);
-    }
-
-    @IntrinsicCandidate
-    public static
-    <V extends Vector<E>,
-     SH extends VectorShuffle<E>,
-     E>
-    V shuffleToVector(Class<? extends Vector<E>> vClass, Class<E> eClass, Class<? extends SH> shClass, SH sh,
-                      int length,
-                      ShuffleToVectorOperation<V, SH> defaultImpl) {
-      assert isNonCapturingLambda(defaultImpl) : defaultImpl;
-      return defaultImpl.apply(sh);
+     M extends VectorMask<E>>
+    M indexPartiallyInUpperRange(Class<? extends M> mClass, Class<E> eClass,
+                                 int length, long offset, long limit,
+                                 IndexPartiallyInUpperRangeOperation<E, M> defaultImpl) {
+        assert isNonCapturingLambda(defaultImpl) : defaultImpl;
+        return defaultImpl.apply(offset, limit);
     }
 
     /* ============================================================================ */
@@ -240,7 +233,7 @@ public class VectorSupport {
         V index(V v, int step, S s);
     }
 
-    //FIXME @IntrinsicCandidate
+    @IntrinsicCandidate
     public static
     <V extends Vector<E>,
      E,
@@ -416,9 +409,9 @@ public class VectorSupport {
      S extends VectorSpecies<E>,
      M extends VectorMask<E>>
     V loadMasked(Class<? extends V> vClass, Class<M> mClass, Class<E> eClass,
-                 int length,
-                 Object base, long offset,
-                 M m, C container, long index, S s,
+                 int length, Object base, long offset,
+                 M m, int offsetInRange,
+                 C container, long index, S s,
                  LoadVectorMaskedOperation<C, V, S, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.load(container, index, s, m);
@@ -644,7 +637,7 @@ public class VectorSupport {
 
     /* ============================================================================ */
 
-    public interface ComExpOperation<V extends Vector<?>,
+    public interface CompressExpandOperation<V extends Vector<?>,
                                      M extends VectorMask<?>> {
         VectorPayload apply(V v, M m);
     }
@@ -654,10 +647,10 @@ public class VectorSupport {
     <V extends Vector<E>,
      M extends VectorMask<E>,
      E>
-    VectorPayload comExpOp(int opr,
-                           Class<? extends V> vClass, Class<? extends M> mClass, Class<E> eClass,
-                           int length, V v, M m,
-                           ComExpOperation<V, M> defaultImpl) {
+    VectorPayload compressExpandOp(int opr,
+                                   Class<? extends V> vClass, Class<? extends M> mClass, Class<E> eClass,
+                                   int length, V v, M m,
+                                   CompressExpandOperation<V, M> defaultImpl) {
         assert isNonCapturingLambda(defaultImpl) : defaultImpl;
         return defaultImpl.apply(v, m);
     }

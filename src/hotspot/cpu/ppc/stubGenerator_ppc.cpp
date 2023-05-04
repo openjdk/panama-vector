@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2012, 2022 SAP SE. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2023 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,12 +36,14 @@
 #include "oops/objArrayKlass.hpp"
 #include "oops/oop.inline.hpp"
 #include "prims/methodHandles.hpp"
+#include "runtime/continuation.hpp"
+#include "runtime/continuationEntry.inline.hpp"
 #include "runtime/frame.inline.hpp"
 #include "runtime/handles.inline.hpp"
+#include "runtime/javaThread.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "runtime/stubCodeGenerator.hpp"
 #include "runtime/stubRoutines.hpp"
-#include "runtime/thread.inline.hpp"
 #include "runtime/vm_version.hpp"
 #include "utilities/align.hpp"
 #include "utilities/powerOfTwo.hpp"
@@ -89,8 +91,8 @@ class StubGenerator: public StubCodeGenerator {
     address start = __ function_entry();
 
     // some sanity checks
-    assert((sizeof(frame::abi_minframe) % 16) == 0,           "unaligned");
-    assert((sizeof(frame::abi_reg_args) % 16) == 0,           "unaligned");
+    assert((sizeof(frame::native_abi_minframe) % 16) == 0,    "unaligned");
+    assert((sizeof(frame::native_abi_reg_args) % 16) == 0,    "unaligned");
     assert((sizeof(frame::spill_nonvolatiles) % 16) == 0,     "unaligned");
     assert((sizeof(frame::parent_ijava_frame_abi) % 16) == 0, "unaligned");
     assert((sizeof(frame::entry_frame_locals) % 16) == 0,     "unaligned");
@@ -323,6 +325,7 @@ class StubGenerator: public StubCodeGenerator {
 
       // pop frame and restore non-volatiles, LR and CR
       __ mr(R1_SP, r_entryframe_fp);
+      __ pop_cont_fastpath();
       __ mtcr(r_cr);
       __ mtlr(r_lr);
 
@@ -409,7 +412,7 @@ class StubGenerator: public StubCodeGenerator {
     __ stw(exception_line, in_bytes(JavaThread::exception_line_offset()), R16_thread);
 
     // complete return to VM
-    assert(StubRoutines::_call_stub_return_address != NULL, "must have been generated before");
+    assert(StubRoutines::_call_stub_return_address != nullptr, "must have been generated before");
 
     __ mtlr(R4_ARG2);
     // continue in call stub
@@ -537,7 +540,7 @@ class StubGenerator: public StubCodeGenerator {
     MacroAssembler* masm = new MacroAssembler(&code);
 
     OopMapSet* oop_maps  = new OopMapSet();
-    int frame_size_in_bytes = frame::abi_reg_args_size;
+    int frame_size_in_bytes = frame::native_abi_reg_args_size;
     OopMap* map = new OopMap(frame_size_in_bytes / sizeof(jint), 0);
 
     address start = __ pc();
@@ -2131,9 +2134,9 @@ class StubGenerator: public StubCodeGenerator {
 
     Label L_miss;
 
-    __ check_klass_subtype_fast_path(sub_klass, super_klass, temp, R0, &L_success, &L_miss, NULL,
+    __ check_klass_subtype_fast_path(sub_klass, super_klass, temp, R0, &L_success, &L_miss, nullptr,
                                      super_check_offset);
-    __ check_klass_subtype_slow_path(sub_klass, super_klass, temp, R0, &L_success, NULL);
+    __ check_klass_subtype_slow_path(sub_klass, super_klass, temp, R0, &L_success);
 
     // Fall through on failure!
     __ bind(L_miss);
@@ -2409,15 +2412,15 @@ class StubGenerator: public StubCodeGenerator {
     // (2) src_pos must not be negative.
     // (3) dst_pos must not be negative.
     // (4) length  must not be negative.
-    // (5) src klass and dst klass should be the same and not NULL.
+    // (5) src klass and dst klass should be the same and not null.
     // (6) src and dst should be arrays.
     // (7) src_pos + length must not exceed length of src.
     // (8) dst_pos + length must not exceed length of dst.
     BLOCK_COMMENT("arraycopy initial argument checks");
 
-    __ cmpdi(CCR1, src, 0);      // if (src == NULL) return -1;
+    __ cmpdi(CCR1, src, 0);      // if (src == nullptr) return -1;
     __ extsw_(src_pos, src_pos); // if (src_pos < 0) return -1;
-    __ cmpdi(CCR5, dst, 0);      // if (dst == NULL) return -1;
+    __ cmpdi(CCR5, dst, 0);      // if (dst == nullptr) return -1;
     __ cror(CCR1, Assembler::equal, CCR0, Assembler::less);
     __ extsw_(dst_pos, dst_pos); // if (src_pos < 0) return -1;
     __ cror(CCR5, Assembler::equal, CCR0, Assembler::less);
@@ -3537,7 +3540,7 @@ class StubGenerator: public StubCodeGenerator {
     // passing the link register's value directly doesn't work.
     // Since we have to save the link register on the stack anyway, we calculate the corresponding stack address
     // and pass that one instead.
-    __ add(R3_ARG1, _abi0(lr), R1_SP);
+    __ addi(R3_ARG1, R1_SP, _abi0(lr));
 
     __ save_LR_CR(R0);
     __ push_frame_reg_args(nbytes_save, R0);
@@ -3613,7 +3616,7 @@ class StubGenerator: public StubCodeGenerator {
 #define BLK_OFFSETOF(x) (offsetof(constant_block, x))
 
 // In little-endian mode, the lxv instruction loads the element at EA into
-// element 15 of the the vector register, EA+1 goes into element 14, and so
+// element 15 of the vector register, EA+1 goes into element 14, and so
 // on.
 //
 // To make a look-up table easier to read, ARRAY_TO_LXV_ORDER reverses the
@@ -4501,8 +4504,153 @@ class StubGenerator: public StubCodeGenerator {
 
 #endif // VM_LITTLE_ENDIAN
 
+  address generate_cont_thaw(const char* label, Continuation::thaw_kind kind) {
+    if (!Continuations::enabled()) return nullptr;
+
+    bool return_barrier = Continuation::is_thaw_return_barrier(kind);
+    bool return_barrier_exception = Continuation::is_thaw_return_barrier_exception(kind);
+
+    StubCodeMark mark(this, "StubRoutines", label);
+
+    Register tmp1 = R10_ARG8;
+    Register tmp2 = R9_ARG7;
+    Register tmp3 = R8_ARG6;
+    Register nvtmp = R15_esp;   // nonvolatile tmp register
+    FloatRegister nvftmp = F20; // nonvolatile fp tmp register
+
+    address start = __ pc();
+
+    if (return_barrier) {
+      __ mr(nvtmp, R3_RET); __ fmr(nvftmp, F1_RET); // preserve possible return value from a method returning to the return barrier
+      DEBUG_ONLY(__ ld_ptr(tmp1, _abi0(callers_sp), R1_SP);)
+      __ ld_ptr(R1_SP, JavaThread::cont_entry_offset(), R16_thread);
+#ifdef ASSERT
+      __ ld_ptr(tmp2, _abi0(callers_sp), R1_SP);
+      __ cmpd(CCR0, tmp1, tmp2);
+      __ asm_assert_eq(FILE_AND_LINE ": callers sp is corrupt");
+#endif
+    }
+#ifdef ASSERT
+    __ ld_ptr(tmp1, JavaThread::cont_entry_offset(), R16_thread);
+    __ cmpd(CCR0, R1_SP, tmp1);
+    __ asm_assert_eq(FILE_AND_LINE ": incorrect R1_SP");
+#endif
+
+    __ li(R4_ARG2, return_barrier ? 1 : 0);
+    __ call_VM_leaf(CAST_FROM_FN_PTR(address, Continuation::prepare_thaw), R16_thread, R4_ARG2);
+
+#ifdef ASSERT
+    DEBUG_ONLY(__ ld_ptr(tmp1, JavaThread::cont_entry_offset(), R16_thread));
+    DEBUG_ONLY(__ cmpd(CCR0, R1_SP, tmp1));
+    __ asm_assert_eq(FILE_AND_LINE ": incorrect R1_SP");
+#endif
+
+    // R3_RET contains the size of the frames to thaw, 0 if overflow or no more frames
+    Label thaw_success;
+    __ cmpdi(CCR0, R3_RET, 0);
+    __ bne(CCR0, thaw_success);
+    __ load_const_optimized(tmp1, (StubRoutines::throw_StackOverflowError_entry()), R0);
+    __ mtctr(tmp1); __ bctr();
+    __ bind(thaw_success);
+
+    __ addi(R3_RET, R3_RET, frame::native_abi_reg_args_size); // Large abi required for C++ calls.
+    __ neg(R3_RET, R3_RET);
+    // align down resulting in a smaller negative offset
+    __ clrrdi(R3_RET, R3_RET, exact_log2(frame::alignment_in_bytes));
+    DEBUG_ONLY(__ mr(tmp1, R1_SP);)
+    __ resize_frame(R3_RET, tmp2);  // make room for the thawed frames
+
+    __ li(R4_ARG2, kind);
+    __ call_VM_leaf(Continuation::thaw_entry(), R16_thread, R4_ARG2);
+    __ mr(R1_SP, R3_RET); // R3_RET contains the SP of the thawed top frame
+
+    if (return_barrier) {
+      // we're now in the caller of the frame that returned to the barrier
+      __ mr(R3_RET, nvtmp); __ fmr(F1_RET, nvftmp); // restore return value (no safepoint in the call to thaw, so even an oop return value should be OK)
+    } else {
+      // we're now on the yield frame (which is in an address above us b/c rsp has been pushed down)
+      __ li(R3_RET, 0); // return 0 (success) from doYield
+    }
+
+    if (return_barrier_exception) {
+      Register ex_pc = R17_tos;   // nonvolatile register
+      __ ld(ex_pc, _abi0(lr), R1_SP); // LR
+      __ mr(nvtmp, R3_RET); // save return value containing the exception oop
+      __ call_VM_leaf(CAST_FROM_FN_PTR(address, SharedRuntime::exception_handler_for_return_address), R16_thread, ex_pc);
+      __ mtlr(R3_RET); // the exception handler
+      // See OptoRuntime::generate_exception_blob for register arguments
+      __ mr(R3_ARG1, nvtmp); // exception oop
+      __ mr(R4_ARG2, ex_pc); // exception pc
+    } else {
+      // We're "returning" into the topmost thawed frame; see Thaw::push_return_frame
+      __ ld(R0, _abi0(lr), R1_SP); // LR
+      __ mtlr(R0);
+    }
+    __ blr();
+
+    return start;
+  }
+
+  address generate_cont_thaw() {
+    return generate_cont_thaw("Cont thaw", Continuation::thaw_top);
+  }
+
+  // TODO: will probably need multiple return barriers depending on return type
+
+  address generate_cont_returnBarrier() {
+    return generate_cont_thaw("Cont thaw return barrier", Continuation::thaw_return_barrier);
+  }
+
+  address generate_cont_returnBarrier_exception() {
+    return generate_cont_thaw("Cont thaw return barrier exception", Continuation::thaw_return_barrier_exception);
+  }
+
+#if INCLUDE_JFR
+
+  // For c2: c_rarg0 is junk, call to runtime to write a checkpoint.
+  // It returns a jobject handle to the event writer.
+  // The handle is dereferenced and the return value is the event writer oop.
+  RuntimeStub* generate_jfr_write_checkpoint() {
+    CodeBuffer code("jfr_write_checkpoint", 512, 64);
+    MacroAssembler* _masm = new MacroAssembler(&code);
+
+    Register tmp1 = R10_ARG8;
+    Register tmp2 = R9_ARG7;
+
+    int framesize = frame::native_abi_reg_args_size / VMRegImpl::stack_slot_size;
+    address start = __ pc();
+    __ mflr(tmp1);
+    __ std(tmp1, _abi0(lr), R1_SP);  // save return pc
+    __ push_frame_reg_args(0, tmp1);
+    int frame_complete = __ pc() - start;
+    __ set_last_Java_frame(R1_SP, noreg);
+    __ call_VM_leaf(CAST_FROM_FN_PTR(address, JfrIntrinsicSupport::write_checkpoint), R16_thread);
+    address calls_return_pc = __ last_calls_return_pc();
+    __ reset_last_Java_frame();
+    // The handle is dereferenced through a load barrier.
+    __ resolve_global_jobject(R3_RET, tmp1, tmp2, MacroAssembler::PRESERVATION_NONE);
+    __ pop_frame();
+    __ ld(tmp1, _abi0(lr), R1_SP);
+    __ mtlr(tmp1);
+    __ blr();
+
+    OopMapSet* oop_maps = new OopMapSet();
+    OopMap* map = new OopMap(framesize, 0);
+    oop_maps->add_gc_map(calls_return_pc - start, map);
+
+    RuntimeStub* stub = // codeBlob framesize is in words (not VMRegImpl::slot_size)
+      RuntimeStub::new_runtime_stub(code.name(),
+                                    &code, frame_complete,
+                                    (framesize >> (LogBytesPerWord - LogBytesPerInt)),
+                                    oop_maps, false);
+    return stub;
+  }
+
+#endif // INCLUDE_JFR
+
+
   // Initialization
-  void generate_initial() {
+  void generate_initial_stubs() {
     // Generates all stubs and initializes the entry points
 
     // Entry points that exist in all platforms.
@@ -4514,6 +4662,10 @@ class StubGenerator: public StubCodeGenerator {
     StubRoutines::_forward_exception_entry          = generate_forward_exception();
     StubRoutines::_call_stub_entry                  = generate_call_stub(StubRoutines::_call_stub_return_address);
     StubRoutines::_catch_exception_entry            = generate_catch_exception();
+
+    if (UnsafeCopyMemory::_table == NULL) {
+      UnsafeCopyMemory::create_table(8);
+    }
 
     // Build this early so it's available for the interpreter.
     StubRoutines::_throw_StackOverflowError_entry   =
@@ -4536,7 +4688,17 @@ class StubGenerator: public StubCodeGenerator {
     }
   }
 
-  void generate_all() {
+  void generate_continuation_stubs() {
+    // Continuation stubs:
+    StubRoutines::_cont_thaw          = generate_cont_thaw();
+    StubRoutines::_cont_returnBarrier = generate_cont_returnBarrier();
+    StubRoutines::_cont_returnBarrierExc = generate_cont_returnBarrier_exception();
+
+    JFR_ONLY(StubRoutines::_jfr_write_checkpoint_stub = generate_jfr_write_checkpoint();)
+    JFR_ONLY(StubRoutines::_jfr_write_checkpoint = StubRoutines::_jfr_write_checkpoint_stub->entry_point();)
+  }
+
+  void generate_final_stubs() {
     // Generates all stubs and initializes the entry points
 
     // These entry points require SharedInfo::stack0 to be set up in
@@ -4551,12 +4713,16 @@ class StubGenerator: public StubCodeGenerator {
 
     // nmethod entry barriers for concurrent class unloading
     BarrierSetNMethod* bs_nm = BarrierSet::barrier_set()->barrier_set_nmethod();
-    if (bs_nm != NULL) {
+    if (bs_nm != nullptr) {
       StubRoutines::ppc::_nmethod_entry_barrier            = generate_nmethod_entry_barrier();
     }
 
     // arraycopy stubs used by compilers
     generate_arraycopy_stubs();
+  }
+
+  void generate_compiler_stubs() {
+#if COMPILER2_OR_JVMCI
 
 #ifdef COMPILER2
     if (UseMultiplyToLenIntrinsic) {
@@ -4605,22 +4771,31 @@ class StubGenerator: public StubCodeGenerator {
       StubRoutines::_base64_encodeBlock = generate_base64_encodeBlock();
     }
 #endif
+#endif // COMPILER2_OR_JVMCI
   }
 
  public:
-  StubGenerator(CodeBuffer* code, bool all) : StubCodeGenerator(code) {
-    if (all) {
-      generate_all();
-    } else {
-      generate_initial();
-    }
+  StubGenerator(CodeBuffer* code, StubsKind kind) : StubCodeGenerator(code) {
+    switch(kind) {
+    case Initial_stubs:
+      generate_initial_stubs();
+      break;
+     case Continuation_stubs:
+      generate_continuation_stubs();
+      break;
+    case Compiler_stubs:
+      generate_compiler_stubs();
+      break;
+    case Final_stubs:
+      generate_final_stubs();
+      break;
+    default:
+      fatal("unexpected stubs kind: %d", kind);
+      break;
+    };
   }
 };
 
-#define UCM_TABLE_MAX_ENTRIES 8
-void StubGenerator_generate(CodeBuffer* code, bool all) {
-  if (UnsafeCopyMemory::_table == NULL) {
-    UnsafeCopyMemory::create_table(UCM_TABLE_MAX_ENTRIES);
-  }
-  StubGenerator g(code, all);
+void StubGenerator_generate(CodeBuffer* code, StubCodeGenerator::StubsKind kind) {
+  StubGenerator g(code, kind);
 }

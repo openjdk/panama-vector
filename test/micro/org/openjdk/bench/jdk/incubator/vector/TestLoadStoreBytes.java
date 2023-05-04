@@ -23,11 +23,11 @@
  */
 package org.openjdk.bench.jdk.incubator.vector;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.SegmentScope;
 import java.nio.ByteOrder;
 import java.util.concurrent.TimeUnit;
-import jdk.incubator.foreign.MemoryAddress;
-import jdk.incubator.foreign.MemorySegment;
-import jdk.incubator.foreign.ResourceScope;
 import jdk.incubator.vector.ByteVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
@@ -43,16 +43,14 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
-import static jdk.incubator.foreign.ValueLayout.JAVA_BYTE;
-
 @BenchmarkMode(Mode.AverageTime)
 @Warmup(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @State(org.openjdk.jmh.annotations.Scope.Thread)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Fork(value = 1, jvmArgsAppend = {
-    "--add-modules=jdk.incubator.foreign,jdk.incubator.vector",
-    "-Dforeign.restricted=permit",
+    "--add-modules=jdk.incubator.vector",
+    "--enable-preview",
     "--enable-native-access", "ALL-UNNAMED",
     "-Djdk.incubator.vector.VECTOR_ACCESS_OOB_CHECK=1"})
 public class TestLoadStoreBytes {
@@ -70,17 +68,9 @@ public class TestLoadStoreBytes {
 
   private MemorySegment dstSegmentHeap;
 
-
-  private ResourceScope implicitScope;
-
   private MemorySegment srcSegment;
 
   private MemorySegment dstSegment;
-
-
-  private MemoryAddress srcAddress;
-
-  private MemoryAddress dstAddress;
 
   private byte[] a, b, c;
 
@@ -95,12 +85,8 @@ public class TestLoadStoreBytes {
     srcSegmentHeap = MemorySegment.ofArray(new byte[size]);
     dstSegmentHeap = MemorySegment.ofArray(new byte[size]);
 
-    implicitScope = ResourceScope.newImplicitScope();
-    srcSegment = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), implicitScope);
-    dstSegment = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), implicitScope);
-
-    srcAddress = srcSegment.address();
-    dstAddress = dstSegment.address();
+    srcSegment = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), SegmentScope.auto());
+    dstSegment = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), SegmentScope.auto());
 
     a = new byte[size];
     b = new byte[size];
@@ -177,9 +163,9 @@ public class TestLoadStoreBytes {
 
   @Benchmark
   public void segmentNativeConfined() {
-    try (final var scope = ResourceScope.newConfinedScope()) {
-      final var srcSegmentConfined = MemorySegment.ofAddress(srcAddress, size, scope);
-      final var dstSegmentConfined = MemorySegment.ofAddress(dstAddress, size, scope);
+    try (final var arena = Arena.openConfined()) {
+      final var srcSegmentConfined = MemorySegment.ofAddress(srcSegment.address(), size, arena.scope());
+      final var dstSegmentConfined = MemorySegment.ofAddress(dstSegment.address(), size, arena.scope());
 
       for (long i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
         var v = ByteVector.fromMemorySegment(SPECIES, srcSegmentConfined, i, ByteOrder.nativeOrder());
