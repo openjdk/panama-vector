@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -53,9 +53,8 @@ public interface ThreadMXBean extends java.lang.management.ThreadMXBean {
      * @param ids an array of thread IDs.
      * @return an array of long values, each of which is the amount of CPU
      * time the thread whose ID is in the corresponding element of the input
-     * array of IDs has used,
-     * if the thread of a specified ID exists, the thread is alive,
-     * and CPU time measurement is enabled;
+     * array of IDs has used, if the thread of a specified ID is a platform
+     * thread, the thread is alive, and CPU time measurement is enabled;
      * {@code -1} otherwise.
      *
      * @throws NullPointerException if {@code ids} is {@code null}
@@ -87,9 +86,8 @@ public interface ThreadMXBean extends java.lang.management.ThreadMXBean {
      * @param ids an array of thread IDs.
      * @return an array of long values, each of which is the amount of user
      * mode CPU time the thread whose ID is in the corresponding element of
-     * the input array of IDs has used,
-     * if the thread of a specified ID exists, the thread is alive,
-     * and CPU time measurement is enabled;
+     * the input array of IDs has used, if the thread of a specified ID is a
+     * platform thread, the thread is alive, and CPU time measurement is enabled;
      * {@code -1} otherwise.
      *
      * @throws NullPointerException if {@code ids} is {@code null}
@@ -119,7 +117,7 @@ public interface ThreadMXBean extends java.lang.management.ThreadMXBean {
      * This is a convenience method for local management use and is
      * equivalent to calling:
      * <blockquote><pre>
-     *   {@link #getThreadAllocatedBytes getThreadAllocatedBytes}(Thread.currentThread().getId());
+     *   {@link #getThreadAllocatedBytes getThreadAllocatedBytes}(Thread.currentThread().threadId());
      * </pre></blockquote>
      *
      * @return an approximation of the total memory allocated, in bytes, in
@@ -138,7 +136,7 @@ public interface ThreadMXBean extends java.lang.management.ThreadMXBean {
      * @since 14
      */
     public default long getCurrentThreadAllocatedBytes() {
-        return getThreadAllocatedBytes(Thread.currentThread().getId());
+        return getThreadAllocatedBytes(Thread.currentThread().threadId());
     }
 
     /**
@@ -149,10 +147,10 @@ public interface ThreadMXBean extends java.lang.management.ThreadMXBean {
      * delay between the time an object is allocated and the time its size is
      * recorded.
      * <p>
-     * If the thread with the specified ID is not alive or does not exist,
-     * this method returns {@code -1}. If thread memory allocation measurement
-     * is disabled, this method returns {@code -1}.
-     * A thread is alive if it has been started and has not yet died.
+     * If the thread with the specified ID is a virtual thread, is not alive,
+     * or does not exist, this method returns {@code -1}. If thread memory
+     * allocation measurement is disabled, this method returns {@code -1}.
+     * A thread is alive if it has been started and has not yet terminated.
      * <p>
      * If thread memory allocation measurement is enabled after the thread has
      * started, the Java virtual machine implementation may choose any time up
@@ -161,10 +159,9 @@ public interface ThreadMXBean extends java.lang.management.ThreadMXBean {
      *
      * @param id the thread ID of a thread
      * @return an approximation of the total memory allocated, in bytes, in
-     * heap memory for the thread with the specified ID
-     * if the thread with the specified ID exists, the thread is alive,
-     * and thread memory allocation measurement is enabled;
-     * {@code -1} otherwise.
+     * heap memory for the thread with the specified ID if the thread with the
+     * specified ID is a platform thread, the thread is alive, and thread memory
+     * allocation measurement is enabled; {@code -1} otherwise.
      *
      * @throws IllegalArgumentException if {@code id} {@code <=} {@code 0}.
      * @throws UnsupportedOperationException if the Java virtual

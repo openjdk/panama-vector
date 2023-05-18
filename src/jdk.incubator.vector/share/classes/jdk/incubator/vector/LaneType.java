@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -66,14 +66,19 @@ enum LaneType {
         // int:128 or int:4 or float:16, report the size in the
         // printName.  If we do unsigned or vector or bit lane types,
         // report that condition also.
-        this.typeChar = printName.toUpperCase().charAt(0);
-        assert("FDBSILH".indexOf(typeChar) == ordinal()) : this;
+        this.typeChar = genericElementType.getSimpleName().charAt(0);
+        if (basicType == T_HALFFLOAT) {
+          assert("FDBSILS".indexOf(typeChar, "FDBSILS".indexOf(typeChar) + 1) == ordinal()) : this;
+        }
+        else {
+          assert("FDBSILS".indexOf(typeChar) == ordinal()) : this;
+        }
         // Same as in JVMS, org.objectweb.asm.Opcodes, etc.:
         this.basicType = basicType;
         assert(basicType ==
                ( (elementSizeLog2 - /*lg(Byte.SIZE)*/ 3)
                  | (elementKind == 'F' ? 4 : 8))) : this;
-        assert("....zHFDBSILoav..".charAt(basicType) == typeChar);
+        assert("....zSFDBSILSoav..".charAt(basicType) == typeChar);
     }
 
     final Class<?> elementType;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -314,7 +314,7 @@ public abstract class VectorMask<E> extends jdk.internal.vm.vector.VectorSupport
      * return a;
      * }</pre>
      *
-     * @return an array containing the the lane elements of this vector
+     * @return an array containing the lane elements of this vector
      */
     public abstract boolean[] toArray();
 
@@ -398,20 +398,18 @@ public abstract class VectorMask<E> extends jdk.internal.vm.vector.VectorSupport
     public abstract VectorMask<E> or(VectorMask<E> m);
 
     /**
-     * Determines logical equivalence of this mask
-     * to a second input mask (as boolean {@code a==b}
-     * or {@code a^~b}).
+     * Determines logical symmetric difference
+     * (as {@code a^b}) of this mask and a second input mask.
      * <p>
-     * This is a lane-wise binary operation tests each
-     * corresponding pair of mask bits for equality.
-     * It is also equivalent to a inverse {@code XOR}
-     * operation ({@code ^~}) on the mask bits.
+     * This is a lane-wise binary operation which applies
+     * the logical {@code XOR} operation
+     * ({@code ^}) to each corresponding pair of mask bits.
      *
      * @param m the input mask
-     * @return a mask showing where the two input masks were equal
-     * @see #equals
+     * @return the result of logically disjunctively disjoining the two
+     * input masks
      */
-    public abstract VectorMask<E> eq(VectorMask<E> m);
+    public abstract VectorMask<E> xor(VectorMask<E> m);
 
     /**
      * Logically subtracts a second input mask
@@ -425,6 +423,23 @@ public abstract class VectorMask<E> extends jdk.internal.vm.vector.VectorSupport
      * @return the result of logically subtracting the second mask from this mask
      */
     public abstract VectorMask<E> andNot(VectorMask<E> m);
+
+    /**
+     * Determines logical equivalence of this mask
+     * to a second input mask (as boolean {@code a==b}
+     * or {@code a^~b}).
+     * <p>
+     * This is a lane-wise binary operation tests each
+     * corresponding pair of mask bits for equality.
+     * It is also equivalent to the logical {@code XNOR}
+     * operation ({@code ^~}) to each corresponding pair
+     * of mask bits.
+     *
+     * @param m the input mask
+     * @return a mask showing where the two input masks were equal
+     * @see #equals
+     */
+    public abstract VectorMask<E> eq(VectorMask<E> m);
 
     /**
      * Logically negates this mask.

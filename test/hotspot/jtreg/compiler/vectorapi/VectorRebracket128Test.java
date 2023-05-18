@@ -30,13 +30,14 @@ import java.util.List;
 import java.util.function.IntFunction;
 import java.util.function.IntUnaryOperator;
 
-import jdk.incubator.foreign.MemorySegment;
+import java.lang.foreign.MemorySegment;
 import jdk.incubator.vector.*;
 import jdk.internal.vm.annotation.ForceInline;
 
 /*
  * @test id=Z
  * @bug 8260473
+ * @enablePreview
  * @requires vm.gc.Z
  * @modules jdk.incubator.vector
  * @modules java.base/jdk.internal.vm.annotation

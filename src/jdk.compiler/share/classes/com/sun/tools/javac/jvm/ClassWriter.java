@@ -107,6 +107,8 @@ public class ClassWriter extends ClassFile {
     /** Type utilities. */
     private Types types;
 
+    private Symtab syms;
+
     private Check check;
 
     /**
@@ -162,6 +164,7 @@ public class ClassWriter extends ClassFile {
 
     /** Construct a class writer, given an options table.
      */
+    @SuppressWarnings("this-escape")
     protected ClassWriter(Context context) {
         context.put(classWriterKey, this);
 
@@ -172,6 +175,7 @@ public class ClassWriter extends ClassFile {
         target = Target.instance(context);
         source = Source.instance(context);
         types = Types.instance(context);
+        syms = Symtab.instance(context);
         check = Check.instance(context);
         fileManager = context.get(JavaFileManager.class);
         poolWriter = Gen.instance(context).poolWriter;
@@ -825,7 +829,7 @@ public class ClassWriter extends ClassFile {
         databuf.appendChar(poolWriter.innerClasses.size());
         for (ClassSymbol inner : poolWriter.innerClasses) {
             inner.markAbstractIfNeeded(types);
-            char flags = (char) adjustFlags(inner.flags_field);
+            int flags = adjustFlags(inner.flags_field);
             if ((flags & INTERFACE) != 0) flags |= ABSTRACT; // Interfaces are always ABSTRACT
             flags &= ~STRICTFP; //inner classes should not have the strictfp flag set.
             if (dumpInnerClassModifiers) {
@@ -1633,7 +1637,9 @@ public class ClassWriter extends ClassFile {
         acount += writeExtraAttributes(c);
 
         poolbuf.appendInt(JAVA_MAGIC);
-        if (preview.isEnabled() && preview.usesPreview(c.sourcefile)) {
+        if (preview.isEnabled() && preview.usesPreview(c.sourcefile)
+                // do not write PREVIEW_MINOR_VERSION for classes participating in preview
+                && !preview.participatesInPreview(syms, c, syms.java_base.unnamedPackage)) {
             poolbuf.appendChar(ClassFile.PREVIEW_MINOR_VERSION);
         } else {
             poolbuf.appendChar(target.minorVersion);

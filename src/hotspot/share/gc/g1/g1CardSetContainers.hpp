@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -157,6 +157,8 @@ public:
 
   // Log of largest card index that can be stored in any G1CardSetContainer
   static uint LogCardsPerRegionLimit;
+
+  static uint cards_per_region_limit() { return 1u << LogCardsPerRegionLimit; }
 };
 
 class G1CardSetArray : public G1CardSetContainer {
@@ -188,12 +190,6 @@ private:
       Atomic::release_store(_num_entries_addr, _local_num_entries);
     }
   };
-
-  template<typename Derived>
-  static size_t header_size_in_bytes_internal() {
-    return offset_of(Derived, _data);
-  }
-
 public:
   G1CardSetArray(uint const card_in_region, EntryCountType num_cards);
 
@@ -206,7 +202,7 @@ public:
 
   size_t num_entries() const { return _num_entries & EntryMask; }
 
-  static size_t header_size_in_bytes() { return header_size_in_bytes_internal<G1CardSetArray>(); }
+  static size_t header_size_in_bytes();
 
   static size_t size_in_bytes(size_t num_cards) {
     return header_size_in_bytes() + sizeof(EntryDataType) * num_cards;
@@ -216,13 +212,6 @@ public:
 class G1CardSetBitMap : public G1CardSetContainer {
   size_t _num_bits_set;
   BitMap::bm_word_t _bits[1];
-
-  using ContainerPtr = G1CardSet::ContainerPtr;
-
-  template<typename Derived>
-  static size_t header_size_in_bytes_internal() {
-    return offset_of(Derived, _bits);
-  }
 
 public:
   G1CardSetBitMap(uint const card_in_region, uint const size_in_bits);
@@ -241,10 +230,10 @@ public:
 
   uint next(uint const idx, size_t const size_in_bits) {
     BitMapView bm(_bits, size_in_bits);
-    return static_cast<uint>(bm.get_next_one_offset(idx));
+    return static_cast<uint>(bm.find_first_set_bit(idx));
   }
 
-  static size_t header_size_in_bytes() { return header_size_in_bytes_internal<G1CardSetBitMap>(); }
+  static size_t header_size_in_bytes();
 
   static size_t size_in_bytes(size_t size_in_bits) { return header_size_in_bytes() + BitMap::calc_size_in_words(size_in_bits) * BytesPerWord; }
 };
@@ -257,11 +246,6 @@ public:
 private:
   ContainerPtr _buckets[2];
   // Do not add class member variables beyond this point
-
-  template<typename Derived>
-  static size_t header_size_in_bytes_internal() {
-    return offset_of(Derived, _buckets);
-  }
 
   // Iterates over the given ContainerPtr with at index in this Howl card set,
   // applying a CardOrRangeVisitor on it.
@@ -297,7 +281,7 @@ public:
     return round_up_power_of_2(num_cards);
   }
 
-  static size_t header_size_in_bytes() { return header_size_in_bytes_internal<G1CardSetHowl>(); }
+  static size_t header_size_in_bytes();
 
   static size_t size_in_bytes(size_t num_arrays) {
     return header_size_in_bytes() + sizeof(ContainerPtr) * num_arrays;

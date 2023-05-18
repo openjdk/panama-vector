@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,11 +24,11 @@
  */
 package jdk.incubator.vector;
 
+import java.lang.foreign.MemorySegment;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
-import jdk.incubator.foreign.MemorySegment;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.vector.VectorSupport;
 
@@ -141,24 +141,9 @@ final class Halffloat128Vector extends HalffloatVector {
     @ForceInline
     Halffloat128Shuffle iotaShuffle() { return Halffloat128Shuffle.IOTA; }
 
-    @ForceInline
-    Halffloat128Shuffle iotaShuffle(int start, int step, boolean wrap) {
-      if (wrap) {
-        return (Halffloat128Shuffle)VectorSupport.shuffleIota(ETYPE, Halffloat128Shuffle.class, VSPECIES, VLENGTH, start, step, 1,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (VectorIntrinsics.wrapToRange(i*lstep + lstart, l))));
-      } else {
-        return (Halffloat128Shuffle)VectorSupport.shuffleIota(ETYPE, Halffloat128Shuffle.class, VSPECIES, VLENGTH, start, step, 0,
-                (l, lstart, lstep, s) -> s.shuffleFromOp(i -> (i*lstep + lstart)));
-      }
-    }
-
     @Override
     @ForceInline
-    Halffloat128Shuffle shuffleFromBytes(byte[] reorder) { return new Halffloat128Shuffle(reorder); }
-
-    @Override
-    @ForceInline
-    Halffloat128Shuffle shuffleFromArray(int[] indexes, int i) { return new Halffloat128Shuffle(indexes, i); }
+    Halffloat128Shuffle shuffleFromArray(int[] indices, int i) { return new Halffloat128Shuffle(indices, i); }
 
     @Override
     @ForceInline
@@ -344,9 +329,11 @@ final class Halffloat128Vector extends HalffloatVector {
         return (long) super.reduceLanesTemplate(op, Halffloat128Mask.class, (Halffloat128Mask) m);  // specialized
     }
 
+    @Override
     @ForceInline
-    public VectorShuffle<Halffloat> toShuffle() {
-        return super.toShuffleTemplate(Halffloat128Shuffle.class); // specialize
+    public final
+    <F> VectorShuffle<F> toShuffle(AbstractSpecies<F> dsp) {
+        return super.toShuffleTemplate(dsp);
     }
 
     // Specialized unary testing
@@ -652,10 +639,11 @@ final class Halffloat128Vector extends HalffloatVector {
 
         @Override
         @ForceInline
-        public Halffloat128Mask eq(VectorMask<Halffloat> mask) {
-            Objects.requireNonNull(mask);
-            Halffloat128Mask m = (Halffloat128Mask)mask;
-            return xor(m.not());
+        /*package-private*/
+        Halffloat128Mask indexPartiallyInUpperRange(long offset, long limit) {
+            return (Halffloat128Mask) VectorSupport.indexPartiallyInUpperRange(
+                Halffloat128Mask.class, ETYPE, VLENGTH, offset, limit,
+                (o, l) -> (Halffloat128Mask) TRUE_MASK.indexPartiallyInRange(o, l));
         }
 
         // Unary operations
@@ -669,7 +657,7 @@ final class Halffloat128Vector extends HalffloatVector {
         @Override
         @ForceInline
         public Halffloat128Mask compress() {
-            return (Halffloat128Mask)VectorSupport.comExpOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
+            return (Halffloat128Mask)VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
                 Halffloat128Vector.class, Halffloat128Mask.class, ETYPE, VLENGTH, null, this,
                 (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, Float.floatToFloat16(m1.trueCount())));
         }
@@ -697,9 +685,9 @@ final class Halffloat128Vector extends HalffloatVector {
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
+        @Override
         @ForceInline
-        /* package-private */
-        Halffloat128Mask xor(VectorMask<Halffloat> mask) {
+        public Halffloat128Mask xor(VectorMask<Halffloat> mask) {
             Objects.requireNonNull(mask);
             Halffloat128Mask m = (Halffloat128Mask)mask;
             return VectorSupport.binaryOp(VECTOR_OP_XOR, Halffloat128Mask.class, null, Halffloat.class, VLENGTH,
@@ -774,25 +762,28 @@ final class Halffloat128Vector extends HalffloatVector {
 
     static final class Halffloat128Shuffle extends AbstractShuffle<Halffloat> {
         static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
-        static final Class<Halffloat> ETYPE = Halffloat.class; // used by the JVM
+        static final Class<Short> ETYPE = short.class; // used by the JVM
 
-        Halffloat128Shuffle(byte[] reorder) {
-            super(VLENGTH, reorder);
+        Halffloat128Shuffle(short[] indices) {
+            super(indices);
+            assert(VLENGTH == indices.length);
+            assert(indicesInRange(indices));
         }
 
-        public Halffloat128Shuffle(int[] reorder) {
-            super(VLENGTH, reorder);
+        Halffloat128Shuffle(int[] indices, int i) {
+            this(prepare(indices, i));
         }
 
-        public Halffloat128Shuffle(int[] reorder, int i) {
-            super(VLENGTH, reorder, i);
+        Halffloat128Shuffle(IntUnaryOperator fn) {
+            this(prepare(fn));
         }
 
-        public Halffloat128Shuffle(IntUnaryOperator fn) {
-            super(VLENGTH, fn);
+        short[] indices() {
+            return (short[])getPayload();
         }
 
         @Override
+        @ForceInline
         public HalffloatSpecies vspecies() {
             return VSPECIES;
         }
@@ -800,40 +791,77 @@ final class Halffloat128Vector extends HalffloatVector {
         static {
             // There must be enough bits in the shuffle lanes to encode
             // VLENGTH valid indexes and VLENGTH exceptional ones.
-            assert(VLENGTH < Byte.MAX_VALUE);
-            assert(Byte.MIN_VALUE <= -VLENGTH);
+            assert(VLENGTH < Short.MAX_VALUE);
+            assert(Short.MIN_VALUE <= -VLENGTH);
         }
         static final Halffloat128Shuffle IOTA = new Halffloat128Shuffle(IDENTITY);
 
         @Override
         @ForceInline
-        public Halffloat128Vector toVector() {
-            return VectorSupport.shuffleToVector(VCLASS, ETYPE, Halffloat128Shuffle.class, this, VLENGTH,
-                                                    (s) -> ((Halffloat128Vector)(((AbstractShuffle<Halffloat>)(s)).toVectorTemplate())));
+        Short128Vector toBitsVector() {
+            return (Short128Vector) super.toBitsVectorTemplate();
         }
 
         @Override
         @ForceInline
-        public <F> VectorShuffle<F> cast(VectorSpecies<F> s) {
-            AbstractSpecies<F> species = (AbstractSpecies<F>) s;
-            if (length() != species.laneCount())
-                throw new IllegalArgumentException("VectorShuffle length and species length differ");
-            int[] shuffleArray = toArray();
-            return s.shuffleFromArray(shuffleArray, 0).check(s);
+        ShortVector toBitsVector0() {
+            return Short128Vector.VSPECIES.dummyVector().vectorFactory(indices());
         }
 
-        @ForceInline
         @Override
-        public Halffloat128Shuffle rearrange(VectorShuffle<Halffloat> shuffle) {
-            Halffloat128Shuffle s = (Halffloat128Shuffle) shuffle;
-            byte[] reorder1 = reorder();
-            byte[] reorder2 = s.reorder();
-            byte[] r = new byte[reorder1.length];
-            for (int i = 0; i < reorder1.length; i++) {
-                int ssi = reorder2[i];
-                r[i] = reorder1[ssi];  // throws on exceptional index
+        @ForceInline
+        public int laneSource(int i) {
+            return (int)toBitsVector().lane(i);
+        }
+
+        @Override
+        @ForceInline
+        public void intoArray(int[] a, int offset) {
+            VectorSpecies<Integer> species = IntVector.SPECIES_128;
+            Vector<Short> v = toBitsVector();
+            v.convertShape(VectorOperators.S2I, species, 0)
+                    .reinterpretAsInts()
+                    .intoArray(a, offset);
+            v.convertShape(VectorOperators.S2I, species, 1)
+                    .reinterpretAsInts()
+                    .intoArray(a, offset + species.length());
+        }
+
+        private static short[] prepare(int[] indices, int offset) {
+            short[] a = new short[VLENGTH];
+            for (int i = 0; i < VLENGTH; i++) {
+                int si = indices[offset + i];
+                si = partiallyWrapIndex(si, VLENGTH);
+                a[i] = (short)si;
             }
-            return new Halffloat128Shuffle(r);
+            return a;
+        }
+
+        private static short[] prepare(IntUnaryOperator f) {
+            short[] a = new short[VLENGTH];
+            for (int i = 0; i < VLENGTH; i++) {
+                int si = f.applyAsInt(i);
+                si = partiallyWrapIndex(si, VLENGTH);
+                a[i] = (short)si;
+            }
+            return a;
+        }
+
+        private static boolean indicesInRange(short[] indices) {
+            int length = indices.length;
+            for (short si : indices) {
+                if (si >= (short)length || si < (short)(-length)) {
+                    boolean assertsEnabled = false;
+                    assert(assertsEnabled = true);
+                    if (assertsEnabled) {
+                        String msg = ("index "+si+"out of range ["+length+"] in "+
+                                  java.util.Arrays.toString(indices));
+                        throw new AssertionError(msg);
+                    }
+                    return false;
+                }
+            }
+            return true;
         }
     }
 
@@ -851,8 +879,8 @@ final class Halffloat128Vector extends HalffloatVector {
     @ForceInline
     @Override
     final
-    HalffloatVector fromArray0(short[] a, int offset, VectorMask<Halffloat> m) {
-        return super.fromArray0Template(Halffloat128Mask.class, a, offset, (Halffloat128Mask) m);  // specialize
+    HalffloatVector fromArray0(short[] a, int offset, VectorMask<Halffloat> m, int offsetInRange) {
+        return super.fromArray0Template(Halffloat128Mask.class, a, offset, (Halffloat128Mask) m, offsetInRange);  // specialize
     }
 
 
@@ -866,8 +894,8 @@ final class Halffloat128Vector extends HalffloatVector {
     @ForceInline
     @Override
     final
-    HalffloatVector fromCharArray0(char[] a, int offset, VectorMask<Halffloat> m) {
-        return super.fromCharArray0Template(Halffloat128Mask.class, a, offset, (Halffloat128Mask) m);  // specialize
+    HalffloatVector fromCharArray0(char[] a, int offset, VectorMask<Halffloat> m, int offsetInRange) {
+        return super.fromCharArray0Template(Halffloat128Mask.class, a, offset, (Halffloat128Mask) m, offsetInRange);  // specialize
     }
 
 
@@ -881,8 +909,8 @@ final class Halffloat128Vector extends HalffloatVector {
     @ForceInline
     @Override
     final
-    HalffloatVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Halffloat> m) {
-        return super.fromMemorySegment0Template(Halffloat128Mask.class, ms, offset, (Halffloat128Mask) m);  // specialize
+    HalffloatVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Halffloat> m, int offsetInRange) {
+        return super.fromMemorySegment0Template(Halffloat128Mask.class, ms, offset, (Halffloat128Mask) m, offsetInRange);  // specialize
     }
 
     @ForceInline
@@ -920,3 +948,4 @@ final class Halffloat128Vector extends HalffloatVector {
     // ================================================
 
 }
+

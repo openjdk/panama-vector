@@ -23,12 +23,13 @@
  */
 package org.openjdk.bench.jdk.incubator.vector;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.SegmentScope;
 import java.nio.ByteOrder;
 import java.util.concurrent.TimeUnit;
 
-import jdk.incubator.foreign.MemoryAddress;
-import jdk.incubator.foreign.MemorySegment;
-import jdk.incubator.foreign.ResourceScope;
+import java.lang.foreign.MemorySegment;
+
 import jdk.incubator.vector.ShortVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
@@ -51,8 +52,8 @@ import org.openjdk.jmh.annotations.Warmup;
 @State(org.openjdk.jmh.annotations.Scope.Thread)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Fork(value = 1, jvmArgsAppend = {
-    "--add-modules=jdk.incubator.foreign,jdk.incubator.vector",
-    "-Dforeign.restricted=permit",
+    "--add-modules=jdk.incubator.vector",
+    "--enable-preview",
     "--enable-native-access", "ALL-UNNAMED"})
 public class TestLoadStoreShorts {
   private static final VectorSpecies<Short> SPECIES = VectorSpecies.ofLargestShape(short.class);
@@ -71,17 +72,9 @@ public class TestLoadStoreShorts {
 
   private MemorySegment dstSegmentHeap;
 
-
-  private ResourceScope implicitScope;
-
   private MemorySegment srcSegment;
 
   private MemorySegment dstSegment;
-
-
-  private MemoryAddress srcAddress;
-
-  private MemoryAddress dstAddress;
 
   private short[] a, b, c;
 
@@ -97,12 +90,8 @@ public class TestLoadStoreShorts {
     srcSegmentHeap = MemorySegment.ofArray(new byte[size]);
     dstSegmentHeap = MemorySegment.ofArray(new byte[size]);
 
-    implicitScope = ResourceScope.newImplicitScope();
-    srcSegment = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), implicitScope);
-    dstSegment = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), implicitScope);
-
-    srcAddress = srcSegment.address();
-    dstAddress = dstSegment.address();
+    srcSegment = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), SegmentScope.auto());
+    dstSegment = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), SegmentScope.auto());
 
     this.longSize = longSize;
 
@@ -172,9 +161,9 @@ public class TestLoadStoreShorts {
 
   @Benchmark
   public void segmentNativeConfined() {
-    try (final var scope = ResourceScope.newConfinedScope()) {
-      final var srcSegmentConfined = MemorySegment.ofAddress(srcAddress, size, scope);
-      final var dstSegmentConfined = MemorySegment.ofAddress(dstAddress, size, scope);
+    try (final var arena = Arena.openConfined()) {
+      final var srcSegmentConfined = MemorySegment.ofAddress(srcSegment.address(), size, arena.scope());
+      final var dstSegmentConfined = MemorySegment.ofAddress(dstSegment.address(), size, arena.scope());
 
       for (long i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
         var v = ShortVector.fromMemorySegment(SPECIES, srcSegmentConfined, i, ByteOrder.nativeOrder());
