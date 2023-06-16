@@ -56,6 +56,14 @@
 #define HWCAP_ATOMICS (1<<8)
 #endif
 
+#ifndef HWCAP_FPHP
+#define HWCAP_FPHP (1<<9)
+#endif
+
+#ifndef HWCAP_ASIMDHP
+#define HWCAP_ASIMDHP (1<<10)
+#endif
+
 #ifndef HWCAP_DCPOP
 #define HWCAP_DCPOP (1<<16)
 #endif
@@ -115,6 +123,8 @@ void VM_Version::get_os_cpu_info() {
   static_assert(CPU_SHA2    == HWCAP_SHA2,    "Flag CPU_SHA2 must follow Linux HWCAP");
   static_assert(CPU_CRC32   == HWCAP_CRC32,   "Flag CPU_CRC32 must follow Linux HWCAP");
   static_assert(CPU_LSE     == HWCAP_ATOMICS, "Flag CPU_LSE must follow Linux HWCAP");
+  static_assert(CPU_FPHP    == HWCAP_FPHP,    "Flag CPU_FPHP must follow Linux HWCAP");
+  static_assert(CPU_ASIMDHP == HWCAP_ASIMDHP, "Flag CPU_ASIMDHP must follow Linux HWCAP");
   static_assert(CPU_DCPOP   == HWCAP_DCPOP,   "Flag CPU_DCPOP must follow Linux HWCAP");
   static_assert(CPU_SHA3    == HWCAP_SHA3,    "Flag CPU_SHA3 must follow Linux HWCAP");
   static_assert(CPU_SHA512  == HWCAP_SHA512,  "Flag CPU_SHA512 must follow Linux HWCAP");
@@ -130,6 +140,8 @@ void VM_Version::get_os_cpu_info() {
       HWCAP_SHA2    |
       HWCAP_CRC32   |
       HWCAP_ATOMICS |
+      HWCAP_FPHP    |
+      HWCAP_ASIMDHP |
       HWCAP_DCPOP   |
       HWCAP_SHA3    |
       HWCAP_SHA512  |

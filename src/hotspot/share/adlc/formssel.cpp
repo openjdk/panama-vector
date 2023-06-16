@@ -3831,8 +3831,8 @@ void MatchNode::count_commutative_op(int& count) {
   };
 
   static const char *commut_vector_op_list[] = {
-    "AddVB", "AddVS", "AddVI", "AddVL", "AddVF", "AddVD",
-    "MulVB", "MulVS", "MulVI", "MulVL", "MulVF", "MulVD",
+    "AddVB", "AddVS", "AddVI", "AddVL", "AddVHF", "AddVF", "AddVD",
+    "MulVB", "MulVS", "MulVI", "MulVL", "MulVHF", "MulVF", "MulVD",
     "AndV", "OrV", "XorV",
     "MaxV", "MinV"
   };
@@ -4201,13 +4201,13 @@ Form::DataType MatchRule::is_ideal_load() const {
 
 bool MatchRule::is_vector() const {
   static const char *vector_list[] = {
-    "AddVB","AddVS","AddVI","AddVL","AddVF","AddVD",
-    "SubVB","SubVS","SubVI","SubVL","SubVF","SubVD",
-    "MulVB","MulVS","MulVI","MulVL","MulVF","MulVD",
+    "AddVB","AddVS","AddVI","AddVL","AddVHF","AddVF","AddVD",
+    "SubVB","SubVS","SubVI","SubVL","SubVHF","SubVF","SubVD",
+    "MulVB","MulVS","MulVI","MulVL","MulVHF","MulVF","MulVD",
     "CMoveVD", "CMoveVF",
-    "DivVF","DivVD",
-    "AbsVB","AbsVS","AbsVI","AbsVL","AbsVF","AbsVD",
-    "NegVF","NegVD","NegVI","NegVL",
+    "DivVHF","DivVF","DivVD",
+    "AbsVB","AbsVS","AbsVI","AbsVL","AbsVHF","AbsVF","AbsVD",
+    "NegVHF","NegVF","NegVD","NegVI","NegVL",
     "SqrtVD","SqrtVF",
     "AndV" ,"XorV" ,"OrV",
     "MaxV", "MinV",
@@ -4231,9 +4231,9 @@ bool MatchRule::is_vector() const {
     "VectorCastB2X", "VectorCastS2X", "VectorCastI2X",
     "VectorCastL2X", "VectorCastF2X", "VectorCastD2X", "VectorCastF2HF", "VectorCastHF2F",
     "VectorUCastB2X", "VectorUCastS2X", "VectorUCastI2X",
-    "VectorCastHF2F", "VectorCastF2HF", "VectorCastD2HF", "VectorCastHF2D",
+    "VectorCastD2HF", "VectorCastHF2D",
     "VectorMaskWrapper","VectorMaskCmp","VectorReinterpret","LoadVectorMasked","StoreVectorMasked",
-    "FmaVD","FmaVF","PopCountVI","PopCountVL","PopulateIndex","VectorLongToMask",
+    "FmaVD","FmaVF","FmaVHF","PopCountVI","PopCountVL","PopulateIndex","VectorLongToMask",
     "CountLeadingZerosV", "CountTrailingZerosV", "SignumVF", "SignumVD",
     // Next are vector mask ops.
     "MaskAll", "AndVMask", "OrVMask", "XorVMask", "VectorMaskCast",

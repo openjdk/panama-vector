@@ -2053,9 +2053,10 @@ public:
   void data_processing(unsigned op31, unsigned type, unsigned opcode,
                        FloatRegister Vd, FloatRegister Vn, FloatRegister Vm) {
     starti;
+    int op21 = (opcode == 0b000101) ? 0b0 : 0b1;
     f(op31, 31, 29);
     f(0b11110, 28, 24);
-    f(type, 23, 22), f(1, 21), f(opcode, 15, 10);
+    f(type, 23, 22), f(op21, 21), f(opcode, 15, 10);
     rf(Vm, 16), rf(Vn, 5), rf(Vd, 0);
   }
 
@@ -2082,6 +2083,14 @@ public:
   INSN(fmind,  0b000, 0b01, 0b010110);
   INSN(fnmuld, 0b000, 0b01, 0b100010);
 
+  INSN(fabdh,  0b011, 0b11, 0b000101);
+  INSN(fmulh,  0b000, 0b11, 0b000010);
+  INSN(fdivh,  0b000, 0b11, 0b000110);
+  INSN(faddh,  0b000, 0b11, 0b001010);
+  INSN(fsubh,  0b000, 0b11, 0b001110);
+  INSN(fmaxh,  0b000, 0b11, 0b010010);
+  INSN(fminh,  0b000, 0b11, 0b010110);
+  INSN(fnmulh, 0b000, 0b11, 0b100010);
 #undef INSN
 
    // Floating-point data-processing (3 source)
@@ -2170,8 +2179,9 @@ public:
   INSN(fcvtmssw, 0b0, 0b00, 0b10, 0b000);  // float -> signed word
   INSN(fcvtmsd,  0b1, 0b01, 0b10, 0b000);  // double -> signed xword
 
-  INSN(fmovs, 0b0, 0b00, 0b00, 0b110);
-  INSN(fmovd, 0b1, 0b01, 0b00, 0b110);
+  INSN(fmovs,  0b0, 0b00, 0b00, 0b110);
+  INSN(fmovd,  0b1, 0b01, 0b00, 0b110);
+  INSN(fmovhw, 0b0, 0b11, 0b00, 0b110);    // half-precision -> 32-bit
 
   INSN(fmovhid, 0b1, 0b10, 0b01, 0b110);
 
@@ -2182,8 +2192,9 @@ public:
     float_int_convert(sflag, type, rmode, opcode, as_Register(Vd), Rn); \
   }
 
-  INSN(fmovs, 0b0, 0b00, 0b00, 0b111);
-  INSN(fmovd, 0b1, 0b01, 0b00, 0b111);
+  INSN(fmovs,  0b0, 0b00, 0b00, 0b111);
+  INSN(fmovd,  0b1, 0b01, 0b00, 0b111);
+  INSN(fmovwh, 0b0, 0b11, 0b00, 0b111); // 32-bit -> half-precision
 
   INSN(scvtfws, 0b0, 0b00, 0b00, 0b010);
   INSN(scvtfs,  0b1, 0b00, 0b00, 0b010);
@@ -2707,25 +2718,29 @@ template<typename R, typename... Rx>
 #undef INSN
 
 // Advanced SIMD three same
-#define INSN(NAME, op1, op2, op3)                                                       \
-  void NAME(FloatRegister Vd, SIMD_Arrangement T, FloatRegister Vn, FloatRegister Vm) { \
-    starti;                                                                             \
-    assert(T == T2S || T == T4S || T == T2D, "invalid arrangement");                    \
-    f(0, 31), f((int)T & 1, 30), f(op1, 29), f(0b01110, 28, 24), f(op2, 23);            \
-    f(T==T2D ? 1:0, 22); f(1, 21), rf(Vm, 16), f(op3, 15, 10), rf(Vn, 5), rf(Vd, 0);    \
+#define INSN(NAME, op1, op2, op3)                                                           \
+  void NAME(FloatRegister Vd, SIMD_Arrangement T, FloatRegister Vn, FloatRegister Vm) {     \
+    starti;                                                                                 \
+    assert(T== T4H || T == T8H || T == T2S || T == T4S || T == T2D, "invalid arrangement"); \
+    int op22 = (T == T2S || T == T4S) ? 0b0 : 0b1;                                          \
+    int op21 = (T == T4H || T == T8H) ? 0b0 : 0b1;                                          \
+    int op15 = (T == T4H || T == T8H) ? 0b00 : 0b11;                                        \
+    f(0, 31), f((int)T & 1, 30), f(op1, 29), f(0b01110, 28, 24), f(op2, 23);                \
+    f(op22, 22); f(op21, 21), rf(Vm, 16), f(op15, 15, 14), f(op3, 13, 10), rf(Vn, 5);       \
+    rf(Vd, 0);                                                                              \
   }
 
-  INSN(fabd, 1, 1, 0b110101);
-  INSN(fadd, 0, 0, 0b110101);
-  INSN(fdiv, 1, 0, 0b111111);
-  INSN(faddp, 1, 0, 0b110101);
-  INSN(fmul, 1, 0, 0b110111);
-  INSN(fsub, 0, 1, 0b110101);
-  INSN(fmla, 0, 0, 0b110011);
-  INSN(fmls, 0, 1, 0b110011);
-  INSN(fmax, 0, 0, 0b111101);
-  INSN(fmin, 0, 1, 0b111101);
-  INSN(facgt, 1, 1, 0b111011);
+  INSN(fabd,  1, 1, 0b0101);
+  INSN(fadd,  0, 0, 0b0101);
+  INSN(fdiv,  1, 0, 0b1111);
+  INSN(faddp, 1, 0, 0b0101);
+  INSN(fmul,  1, 0, 0b0111);
+  INSN(fsub,  0, 1, 0b0101);
+  INSN(fmla,  0, 0, 0b0011);
+  INSN(fmls,  0, 1, 0b0011);
+  INSN(fmax,  0, 0, 0b1101);
+  INSN(fmin,  0, 1, 0b1101);
+  INSN(facgt, 1, 1, 0b1011);
 
 #undef INSN
 
@@ -2910,9 +2925,9 @@ template<typename R, typename... Rx>
 #define INSN(NAME, op1, op2) \
   void NAME(FloatRegister Vd, FloatRegister Vn, SIMD_RegVariant type) {                 \
     starti;                                                                             \
-    assert(type == D || type == S, "Wrong type for faddp/fmaxp/fminp");                 \
-    f(0b0111111, 31, 25), f(op1, 24, 23),                                               \
-    f(type == S ? 0 : 1, 22), f(0b11000, 21, 17), f(op2, 16, 10), rf(Vn, 5), rf(Vd, 0); \
+    assert(type == D || type == S || type == H, "Wrong type for faddp/fmaxp/fminp");    \
+    f(0b01, 31, 30), f(type == H ? 0 : 1, 29), f(0b1111, 28, 25), f(op1, 24, 23),       \
+    f(type == D ? 1 : 0, 22), f(0b11000, 21, 17), f(op2, 16, 10), rf(Vn, 5), rf(Vd, 0); \
   }
 
   INSN(faddp, 0b00, 0b0110110);
@@ -3180,14 +3195,15 @@ public:
   void NAME(FloatRegister Vd, SIMD_Arrangement T, FloatRegister Vn) {               \
        starti;                                                                      \
        assert((ASSERTION), MSG);                                                    \
+       int op19 = (tmask == 0b01 && (T == T4H || T == T8H)) ? 0b11 : 0b00;          \
        f(0, 31), f((int)T & 1, 30), f(U, 29), f(0b01110, 28, 24);                   \
-       f(size | ((int)(T >> 1) & tmask), 23, 22), f(0b10000, 21, 17);               \
-       f(opcode, 16, 12), f(0b10, 11, 10), rf(Vn, 5), rf(Vd, 0);                    \
+       f(size | ((int)(T >> 1) & tmask), 23, 22), f(1, 21), f(op19, 20, 19);        \
+       f(0b00, 18, 17), f(opcode, 16, 12), f(0b10, 11, 10), rf(Vn, 5), rf(Vd, 0);   \
  }
 
 #define MSG "invalid arrangement"
 
-#define ASSERTION (T == T2S || T == T4S || T == T2D)
+#define ASSERTION (T == T4H || T == T8H || T == T2S || T == T4S || T == T2D)
   INSN(fsqrt,  1, 0b10, 0b01, 0b11111);
   INSN(fabs,   0, 0b10, 0b01, 0b01111);
   INSN(fneg,   1, 0b10, 0b01, 0b01111);
@@ -3310,7 +3326,7 @@ public:
 #define INSN(NAME, opcode)                                                             \
   void NAME(FloatRegister Zd, SIMD_RegVariant T, FloatRegister Zn, FloatRegister Zm) { \
     starti;                                                                            \
-    assert(T == S || T == D, "invalid register variant");                              \
+    assert(T == H || T == S || T == D, "invalid register variant");                    \
     f(0b01100101, 31, 24), f(T, 23, 22), f(0, 21),                                     \
     rf(Zm, 16), f(0, 15, 13), f(opcode, 12, 10), rf(Zn, 5), rf(Zd, 0);                 \
   }
@@ -3393,27 +3409,27 @@ public:
 // SVE floating-point arithmetic - predicate
 #define INSN(NAME, op1, op2)                                                                          \
   void NAME(FloatRegister Zd_or_Zdn_or_Vd, SIMD_RegVariant T, PRegister Pg, FloatRegister Zn_or_Zm) { \
-    assert(T == S || T == D, "invalid register variant");                                             \
+    assert(T == H || T == S || T == D, "invalid register variant");                                   \
     sve_predicate_reg_insn(op1, op2, Zd_or_Zdn_or_Vd, T, Pg, Zn_or_Zm);                               \
   }
 
   INSN(sve_fabd,   0b01100101, 0b001000100); // floating-point absolute difference
-  INSN(sve_fabs,   0b00000100, 0b011100101);
-  INSN(sve_fadd,   0b01100101, 0b000000100);
+  INSN(sve_fabs,   0b00000100, 0b011100101); // floating-point absolute value
+  INSN(sve_fadd,   0b01100101, 0b000000100); // floating-point add vector
   INSN(sve_fadda,  0b01100101, 0b011000001); // add strictly-ordered reduction to scalar Vd
-  INSN(sve_fdiv,   0b01100101, 0b001101100);
+  INSN(sve_fdiv,   0b01100101, 0b001101100); // floating-point divide by vector
   INSN(sve_fmax,   0b01100101, 0b000110100); // floating-point maximum
   INSN(sve_fmaxv,  0b01100101, 0b000110001); // floating-point maximum recursive reduction to scalar
   INSN(sve_fmin,   0b01100101, 0b000111100); // floating-point minimum
   INSN(sve_fminv,  0b01100101, 0b000111001); // floating-point minimum recursive reduction to scalar
-  INSN(sve_fmul,   0b01100101, 0b000010100);
-  INSN(sve_fneg,   0b00000100, 0b011101101);
+  INSN(sve_fmul,   0b01100101, 0b000010100); // floating-point multiply vectors
+  INSN(sve_fneg,   0b00000100, 0b011101101); // floating-point negate
   INSN(sve_frintm, 0b01100101, 0b000010101); // floating-point round to integral value, toward minus infinity
   INSN(sve_frintn, 0b01100101, 0b000000101); // floating-point round to integral value, nearest with ties to even
   INSN(sve_frinta, 0b01100101, 0b000100101); // floating-point round to integral value, nearest with ties to away
   INSN(sve_frintp, 0b01100101, 0b000001101); // floating-point round to integral value, toward plus infinity
-  INSN(sve_fsqrt,  0b01100101, 0b001101101);
-  INSN(sve_fsub,   0b01100101, 0b000001100);
+  INSN(sve_fsqrt,  0b01100101, 0b001101101); // floating-point square root
+  INSN(sve_fsub,   0b01100101, 0b000001100); // floating-point subtract vectors
 #undef INSN
 
   // SVE multiple-add/sub - predicated
