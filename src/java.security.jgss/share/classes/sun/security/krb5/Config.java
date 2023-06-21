@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -44,6 +44,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import jdk.internal.util.OperatingSystem;
 import sun.net.dns.ResolverConfiguration;
 import sun.security.action.GetPropertyAction;
 import sun.security.krb5.internal.crypto.EType;
@@ -104,7 +105,7 @@ public class Config {
 
     private static boolean DEBUG = sun.security.krb5.internal.Krb5.DEBUG;
 
-    // these are used for hexdecimal calculation.
+    // these are used for hexadecimal calculation.
     private static final int BASE16_0 = 1;
     private static final int BASE16_1 = 16;
     private static final int BASE16_2 = 16 * 16;
@@ -159,8 +160,7 @@ public class Config {
 
     private static boolean isMacosLionOrBetter() {
         // split the "10.x.y" version number
-        String osname = GetPropertyAction.privilegedGetProperty("os.name");
-        if (!osname.contains("OS X")) {
+        if (!OperatingSystem.isMacOS()) {
             return false;
         }
 
@@ -275,7 +275,7 @@ public class Config {
     /**
      * Gets the boolean value for the specified keys. Returns TRUE if the
      * string value is "yes", or "true", FALSE if "no", or "false", or null
-     * if otherwise or not defined. The comparision is case-insensitive.
+     * if otherwise or not defined. The comparison is case-insensitive.
      *
      * @param keys the keys, see {@link #get(String...)}
      * @return the boolean value, or null if there is no value defined or the
@@ -892,8 +892,7 @@ public class Config {
      */
     private String getNativeFileName() {
         String name = null;
-        String osname = GetPropertyAction.privilegedGetProperty("os.name");
-        if (osname.startsWith("Windows")) {
+        if (OperatingSystem.isWindows()) {
             try {
                 Credentials.ensureLoaded();
             } catch (Exception e) {
@@ -926,7 +925,7 @@ public class Config {
             if (name == null) {
                 name = "c:\\winnt\\krb5.ini";
             }
-        } else if (osname.contains("OS X")) {
+        } else if (OperatingSystem.isMacOS()) {
             name = findMacosConfigFile();
         } else {
             name =  "/etc/krb5.conf";
@@ -1193,8 +1192,7 @@ public class Config {
                     new java.security.PrivilegedAction<String>() {
                 @Override
                 public String run() {
-                    String osname = System.getProperty("os.name");
-                    if (osname.startsWith("Windows")) {
+                    if (OperatingSystem.isWindows()) {
                         return System.getenv("USERDNSDOMAIN");
                     }
                     return null;
@@ -1241,8 +1239,7 @@ public class Config {
                     new java.security.PrivilegedAction<String>() {
                 @Override
                 public String run() {
-                    String osname = System.getProperty("os.name");
-                    if (osname.startsWith("Windows")) {
+                    if (OperatingSystem.isWindows()) {
                         String logonServer = System.getenv("LOGONSERVER");
                         if (logonServer != null
                                 && logonServer.startsWith("\\\\")) {

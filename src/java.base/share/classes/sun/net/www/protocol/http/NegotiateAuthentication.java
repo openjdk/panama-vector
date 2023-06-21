@@ -216,12 +216,9 @@ class NegotiateAuthentication extends AuthenticationInfo {
      */
     private byte[] firstToken() throws IOException {
         negotiator = null;
-        HashMap <String, Negotiator> cachedMap = getCache();
+        HashMap<String, Negotiator> cachedMap = getCache();
         if (cachedMap != null) {
-            negotiator = cachedMap.get(getHost());
-            if (negotiator != null) {
-                cachedMap.remove(getHost()); // so that it is only used once
-            }
+            negotiator = cachedMap.remove(getHost()); // so that it is only used once
         }
         if (negotiator == null) {
             negotiator = Negotiator.getNegotiator(hci);
@@ -243,6 +240,22 @@ class NegotiateAuthentication extends AuthenticationInfo {
      */
     private byte[] nextToken(byte[] token) throws IOException {
         return negotiator.nextToken(token);
+    }
+
+    /**
+     * Releases any system resources and cryptographic information stored in
+     * the context object and invalidates the context.
+     */
+    @Override
+    public void disposeContext() {
+        if (negotiator != null) {
+            try {
+                negotiator.disposeContext();
+            } catch (IOException ioEx) {
+                //do not rethrow IOException
+            }
+            negotiator = null;
+        }
     }
 
     // MS will send a final WWW-Authenticate even if the status is already

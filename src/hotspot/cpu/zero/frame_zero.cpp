@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2007, 2021, Red Hat, Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -53,7 +53,7 @@ bool frame::is_fake_stub_frame() const {
 
 frame frame::sender_for_entry_frame(RegisterMap *map) const {
   assert(zeroframe()->is_entry_frame(), "wrong type of frame");
-  assert(map != NULL, "map must be set");
+  assert(map != nullptr, "map must be set");
   assert(!entry_frame_is_first(), "next Java fp must be non zero");
   assert(entry_frame_call_wrapper()->anchor()->last_Java_sp() == sender_sp(),
          "sender should be next Java frame");
@@ -62,12 +62,12 @@ frame frame::sender_for_entry_frame(RegisterMap *map) const {
   return frame(zeroframe()->next(), sender_sp());
 }
 
-OptimizedEntryBlob::FrameData* OptimizedEntryBlob::frame_data_for_frame(const frame& frame) const {
+UpcallStub::FrameData* UpcallStub::frame_data_for_frame(const frame& frame) const {
   ShouldNotCallThis();
   return nullptr;
 }
 
-bool frame::optimized_entry_frame_is_first() const {
+bool frame::upcall_stub_frame_is_first() const {
   ShouldNotCallThis();
   return false;
 }
@@ -78,39 +78,24 @@ frame frame::sender_for_nonentry_frame(RegisterMap *map) const {
   return frame(zeroframe()->next(), sender_sp());
 }
 
-frame frame::sender(RegisterMap* map) const {
-  // Default is not to follow arguments; the various
-  // sender_for_xxx methods update this accordingly.
-  map->set_include_argument_oops(false);
-
-  frame result = zeroframe()->is_entry_frame() ?
-                 sender_for_entry_frame(map) :
-                 sender_for_nonentry_frame(map);
-
-  if (map->process_frames()) {
-    StackWatermarkSet::on_iteration(map->thread(), result);
-  }
-
-  return result;
-}
-
 BasicObjectLock* frame::interpreter_frame_monitor_begin() const {
   return get_interpreterState()->monitor_base();
 }
 
+// Pointer beyond the "oldest/deepest" BasicObjectLock on stack.
 BasicObjectLock* frame::interpreter_frame_monitor_end() const {
   return (BasicObjectLock*) get_interpreterState()->stack_base();
 }
 
 void frame::patch_pc(Thread* thread, address pc) {
-  if (pc != NULL) {
+  if (pc != nullptr) {
     assert(_cb == CodeCache::find_blob(pc), "unexpected pc");
     _pc = pc;
     _deopt_state = is_deoptimized;
   } else {
     // We borrow this call to set the thread pointer in the interpreter
     // state; the hook to set up deoptimized frames isn't supplied it.
-    assert(pc == NULL, "should be");
+    assert(pc == nullptr, "should be");
     get_interpreterState()->set_thread(JavaThread::cast(thread));
   }
 }
@@ -171,7 +156,7 @@ bool frame::is_interpreted_frame_valid(JavaThread *thread) const {
   }
 
   // validate locals
-  address locals = (address) *interpreter_frame_locals_addr();
+  address locals = (address)interpreter_frame_locals();
   if (!thread->is_in_stack_range_incl(locals, (address)fp())) {
     return false;
   }
@@ -222,9 +207,9 @@ BasicType frame::interpreter_frame_result(oop* oop_result,
     }
     else {
       oop* obj_p = (oop *) tos_addr;
-      obj = (obj_p == NULL) ? (oop) NULL : *obj_p;
+      obj = (obj_p == nullptr) ? (oop) nullptr : *obj_p;
     }
-    assert(obj == NULL || Universe::heap()->is_in(obj), "sanity check");
+    assert(obj == nullptr || Universe::heap()->is_in(obj), "sanity check");
     *oop_result = obj;
     break;
 
@@ -233,13 +218,6 @@ BasicType frame::interpreter_frame_result(oop* oop_result,
   }
 
   return type;
-}
-
-int frame::frame_size(RegisterMap* map) const {
-#ifdef PRODUCT
-  ShouldNotCallThis();
-#endif // PRODUCT
-  return 0; // make javaVFrame::print_value work
 }
 
 intptr_t* frame::interpreter_frame_tos_at(jint offset) const {
@@ -360,7 +338,7 @@ void InterpreterFrame::identify_word(int   frame_index,
   // JNI stuff
   if (istate->method()->is_native() && addr < istate->stack_base()) {
     address hA = istate->method()->signature_handler();
-    if (hA != NULL) {
+    if (hA != nullptr) {
       if (hA != (address) InterpreterRuntime::slow_signature_handler) {
         InterpreterRuntime::SignatureHandler *handler =
           InterpreterRuntime::SignatureHandler::from_handlerAddr(hA);

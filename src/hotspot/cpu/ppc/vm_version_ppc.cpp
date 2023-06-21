@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2012, 2020 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -24,10 +24,10 @@
  */
 
 #include "precompiled.hpp"
-#include "jvm.h"
 #include "asm/assembler.inline.hpp"
 #include "asm/macroAssembler.inline.hpp"
 #include "compiler/disassembler.hpp"
+#include "jvm.h"
 #include "memory/resourceArea.hpp"
 #include "runtime/globals_extension.hpp"
 #include "runtime/java.hpp"
@@ -41,6 +41,7 @@
 
 #include <sys/sysinfo.h>
 #if defined(_AIX)
+#include "os_aix.hpp"
 #include <libperfstat.h>
 #endif
 
@@ -426,7 +427,7 @@ void VM_Version::check_virtualizations() {
 #if defined(_AIX)
   int rc = 0;
   perfstat_partition_total_t pinfo;
-  rc = perfstat_partition_total(NULL, &pinfo, sizeof(perfstat_partition_total_t), 1);
+  rc = perfstat_partition_total(nullptr, &pinfo, sizeof(perfstat_partition_total_t), 1);
   if (rc == 1) {
     Abstract_VM_Version::_detected_virtualization = PowerVM;
   }
@@ -436,14 +437,14 @@ void VM_Version::check_virtualizations() {
   // e.g. system_type=IBM pSeries (emulated by qemu)
   char line[500];
   FILE* fp = os::fopen(info_file, "r");
-  if (fp == NULL) {
+  if (fp == nullptr) {
     return;
   }
   const char* system_type="system_type=";  // in case this line contains qemu, it is KVM
   const char* num_lpars="NumLpars="; // in case of non-KVM : if this line is found it is PowerVM
   bool num_lpars_found = false;
 
-  while (fgets(line, sizeof(line), fp) != NULL) {
+  while (fgets(line, sizeof(line), fp) != nullptr) {
     if (strncmp(line, system_type, strlen(system_type)) == 0) {
       if (strstr(line, "qemu") != 0) {
         Abstract_VM_Version::_detected_virtualization = PowerKVM;
@@ -471,7 +472,7 @@ void VM_Version::print_platform_virtualization_info(outputStream* st) {
   int rc = 0;
   perfstat_partition_total_t pinfo;
   memset(&pinfo, 0, sizeof(perfstat_partition_total_t));
-  rc = perfstat_partition_total(NULL, &pinfo, sizeof(perfstat_partition_total_t), 1);
+  rc = perfstat_partition_total(nullptr, &pinfo, sizeof(perfstat_partition_total_t), 1);
   if (rc != 1) {
     return;
   } else {
@@ -480,7 +481,7 @@ void VM_Version::print_platform_virtualization_info(outputStream* st) {
   // CPU information
   perfstat_cpu_total_t cpuinfo;
   memset(&cpuinfo, 0, sizeof(perfstat_cpu_total_t));
-  rc = perfstat_cpu_total(NULL, &cpuinfo, sizeof(perfstat_cpu_total_t), 1);
+  rc = perfstat_cpu_total(nullptr, &cpuinfo, sizeof(perfstat_cpu_total_t), 1);
   if (rc != 1) {
     return;
   }
@@ -531,7 +532,7 @@ void VM_Version::print_platform_virtualization_info(outputStream* st) {
                        "pool=", // CPU-pool number
                        "pool_capacity=",
                        "NumLpars=", // on non-KVM machines, NumLpars is not found for full partition mode machines
-                       NULL };
+                       nullptr };
   if (!print_matching_lines_from_file(info_file, st, kw)) {
     st->print_cr("  <%s Not Available>", info_file);
   }

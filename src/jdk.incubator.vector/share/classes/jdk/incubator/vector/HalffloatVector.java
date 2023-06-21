@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,14 +24,14 @@
  */
 package jdk.incubator.vector;
 
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
 
-import jdk.incubator.foreign.MemorySegment;
-import jdk.incubator.foreign.ValueLayout;
-import jdk.internal.access.foreign.MemorySegmentProxy;
+import jdk.internal.foreign.AbstractMemorySegmentImpl;
 import jdk.internal.misc.ScopedMemoryAccess;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.vm.annotation.ForceInline;
@@ -764,15 +764,9 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
 
         if (opKind(op, VO_SPECIAL )) {
             if (op == FIRST_NONZERO) {
-                // FIXME: Support this in the JIT.
-                VectorMask<Short> thisNZ
-                    = this.viewAsIntegralLanes().compare(NE, (short) 0);
-                that = that.blend((short) 0, thisNZ.cast(vspecies()));
-                op = OR_UNCHECKED;
-                // FIXME: Support OR_UNCHECKED on float/double also!
-                return this.viewAsIntegralLanes()
-                    .lanewise(op, that.viewAsIntegralLanes())
-                    .viewAsFloatingLanes();
+                VectorMask<Short> mask
+                    = this.viewAsIntegralLanes().compare(EQ, (short) 0);
+                return this.blend(that, mask.cast(vspecies()));
             }
         }
 
@@ -803,7 +797,10 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
 
         if (opKind(op, VO_SPECIAL )) {
             if (op == FIRST_NONZERO) {
-                return blend(lanewise(op, v), m);
+                ShortVector bits = this.viewAsIntegralLanes();
+                VectorMask<Short> mask
+                    = bits.compare(EQ, (short) 0, m.cast(bits.vspecies()));
+                return this.blend(that, mask.cast(vspecies()));
             }
         }
 
@@ -954,7 +951,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
     // and broadcast, but it would be more surprising not to continue
     // the obvious pattern started by unary and binary.
 
-   /**
+    /**
      * {@inheritDoc} <!--workaround-->
      * @see #lanewise(VectorOperators.Ternary,short,short,VectorMask)
      * @see #lanewise(VectorOperators.Ternary,Vector,short,VectorMask)
@@ -2323,26 +2320,14 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
     }
 
     @ForceInline
-    private final
-    VectorShuffle<Halffloat> toShuffle0(HalffloatSpecies dsp) {
+    final <F>
+    VectorShuffle<F> toShuffle0(AbstractSpecies<F> dsp) {
         short[] a = toArray();
         int[] sa = new int[a.length];
         for (int i = 0; i < a.length; i++) {
             sa[i] = (int) a[i];
         }
         return VectorShuffle.fromArray(dsp, sa, 0);
-    }
-
-    /*package-private*/
-    @ForceInline
-    final
-    VectorShuffle<Halffloat> toShuffleTemplate(Class<?> shuffleType) {
-        HalffloatSpecies vsp = vspecies();
-        return VectorSupport.convert(VectorSupport.VECTOR_OP_CAST,
-                                     getClass(), short.class, length(),
-                                     shuffleType, byte.class, length(),
-                                     this, vsp,
-                                     HalffloatVector::toShuffle0);
     }
 
     /**
@@ -2359,9 +2344,9 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
     <M extends AbstractMask<Halffloat>>
     HalffloatVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      return (HalffloatVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
-                                                   Halffloat.class, length(), this, m,
-                                                   (v1, m1) -> compressHelper(v1, m1));
+      return (HalffloatVector) VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
+                                                        Halffloat.class, length(), this, m,
+                                                        (v1, m1) -> compressHelper(v1, m1));
     }
 
     /**
@@ -2378,9 +2363,9 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
     <M extends AbstractMask<Halffloat>>
     HalffloatVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
-      return (HalffloatVector) VectorSupport.comExpOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
-                                                   Halffloat.class, length(), this, m,
-                                                   (v1, m1) -> expandHelper(v1, m1));
+      return (HalffloatVector) VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
+                                                        Halffloat.class, length(), this, m,
+                                                        (v1, m1) -> expandHelper(v1, m1));
     }
 
 
@@ -2807,13 +2792,12 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
                                    short[] a, int offset,
                                    VectorMask<Halffloat> m) {
         HalffloatSpecies vsp = (HalffloatSpecies) species;
-        if (offset >= 0 && offset <= (a.length - species.length())) {
-            return vsp.dummyVector().fromArray0(a, offset, m);
+        if (VectorIntrinsics.indexInRange(offset, vsp.length(), a.length)) {
+            return vsp.dummyVector().fromArray0(a, offset, m, OFFSET_IN_RANGE);
         }
 
-        // FIXME: optimize
         checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
-        return vsp.vOp(m, i -> a[offset + i]);
+        return vsp.dummyVector().fromArray0(a, offset, m, OFFSET_OUT_OF_RANGE);
     }
 
     /**
@@ -2956,13 +2940,12 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
                                        char[] a, int offset,
                                        VectorMask<Halffloat> m) {
         HalffloatSpecies vsp = (HalffloatSpecies) species;
-        if (offset >= 0 && offset <= (a.length - species.length())) {
-            return vsp.dummyVector().fromCharArray0(a, offset, m);
+        if (VectorIntrinsics.indexInRange(offset, vsp.length(), a.length)) {
+            return vsp.dummyVector().fromCharArray0(a, offset, m, OFFSET_IN_RANGE);
         }
 
-        // FIXME: optimize
         checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
-        return vsp.vOp(m, i -> (short) a[offset + i]);
+        return vsp.dummyVector().fromCharArray0(a, offset, m, OFFSET_OUT_OF_RANGE);
     }
 
     /**
@@ -3149,13 +3132,12 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
                                            ByteOrder bo,
                                            VectorMask<Halffloat> m) {
         HalffloatSpecies vsp = (HalffloatSpecies) species;
-        if (offset >= 0 && offset <= (ms.byteSize() - species.vectorByteSize())) {
-            return vsp.dummyVector().fromMemorySegment0(ms, offset, m).maybeSwap(bo);
+        if (VectorIntrinsics.indexInRange(offset, vsp.vectorByteSize(), ms.byteSize())) {
+            return vsp.dummyVector().fromMemorySegment0(ms, offset, m, OFFSET_IN_RANGE).maybeSwap(bo);
         }
 
-        // FIXME: optimize
         checkMaskFromIndexSize(offset, vsp, m, 2, ms.byteSize());
-        return vsp.ldLongOp(ms, offset, m, HalffloatVector::memorySegmentGet);
+        return vsp.dummyVector().fromMemorySegment0(ms, offset, m, OFFSET_OUT_OF_RANGE).maybeSwap(bo);
     }
 
     // Memory store operations
@@ -3221,7 +3203,9 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
             intoArray(a, offset);
         } else {
             HalffloatSpecies vsp = vspecies();
-            checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
+            if (!VectorIntrinsics.indexInRange(offset, vsp.length(), a.length)) {
+                checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
+            }
             intoArray0(a, offset, m);
         }
     }
@@ -3368,7 +3352,9 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
             intoCharArray(a, offset);
         } else {
             HalffloatSpecies vsp = vspecies();
-            checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
+            if (!VectorIntrinsics.indexInRange(offset, vsp.length(), a.length)) {
+                checkMaskFromIndexSize(offset, vsp, m, 1, a.length);
+            }
             intoCharArray0(a, offset, m);
         }
     }
@@ -3493,7 +3479,9 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
                 throw new UnsupportedOperationException("Attempt to write a read-only segment");
             }
             HalffloatSpecies vsp = vspecies();
-            checkMaskFromIndexSize(offset, vsp, m, 2, ms.byteSize());
+            if (!VectorIntrinsics.indexInRange(offset, vsp.vectorByteSize(), ms.byteSize())) {
+                checkMaskFromIndexSize(offset, vsp, m, 2, ms.byteSize());
+            }
             maybeSwap(bo).intoMemorySegment0(ms, offset, m);
         }
     }
@@ -3534,16 +3522,16 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
 
     /*package-private*/
     abstract
-    HalffloatVector fromArray0(short[] a, int offset, VectorMask<Halffloat> m);
+    HalffloatVector fromArray0(short[] a, int offset, VectorMask<Halffloat> m, int offsetInRange);
     @ForceInline
     final
     <M extends VectorMask<Halffloat>>
-    HalffloatVector fromArray0Template(Class<M> maskClass, short[] a, int offset, M m) {
+    HalffloatVector fromArray0Template(Class<M> maskClass, short[] a, int offset, M m, int offsetInRange) {
         m.check(species());
         HalffloatSpecies vsp = vspecies();
         return VectorSupport.loadMasked(
             vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-            a, arrayAddress(a, offset), m,
+            a, arrayAddress(a, offset), m, offsetInRange,
             a, offset, vsp,
             (arr, off, s, vm) -> s.ldOp(arr, (int) off, vm,
                                         (arr_, off_, i) -> arr_[off_ + i]));
@@ -3567,16 +3555,16 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
 
     /*package-private*/
     abstract
-    HalffloatVector fromCharArray0(char[] a, int offset, VectorMask<Halffloat> m);
+    HalffloatVector fromCharArray0(char[] a, int offset, VectorMask<Halffloat> m, int offsetInRange);
     @ForceInline
     final
     <M extends VectorMask<Halffloat>>
-    HalffloatVector fromCharArray0Template(Class<M> maskClass, char[] a, int offset, M m) {
+    HalffloatVector fromCharArray0Template(Class<M> maskClass, char[] a, int offset, M m, int offsetInRange) {
         m.check(species());
         HalffloatSpecies vsp = vspecies();
         return VectorSupport.loadMasked(
                 vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-                a, charArrayAddress(a, offset), m,
+                a, charArrayAddress(a, offset), m, offsetInRange,
                 a, offset, vsp,
                 (arr, off, s, vm) -> s.ldOp(arr, (int) off, vm,
                                             (arr_, off_, i) -> (short) arr_[off_ + i]));
@@ -3591,23 +3579,23 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         HalffloatSpecies vsp = vspecies();
         return ScopedMemoryAccess.loadFromMemorySegment(
                 vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
-                (MemorySegmentProxy) ms, offset, vsp,
+                (AbstractMemorySegmentImpl) ms, offset, vsp,
                 (msp, off, s) -> {
                     return s.ldLongOp((MemorySegment) msp, off, HalffloatVector::memorySegmentGet);
                 });
     }
 
     abstract
-    HalffloatVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Halffloat> m);
+    HalffloatVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Halffloat> m, int offsetInRange);
     @ForceInline
     final
     <M extends VectorMask<Halffloat>>
-    HalffloatVector fromMemorySegment0Template(Class<M> maskClass, MemorySegment ms, long offset, M m) {
+    HalffloatVector fromMemorySegment0Template(Class<M> maskClass, MemorySegment ms, long offset, M m, int offsetInRange) {
         HalffloatSpecies vsp = vspecies();
         m.check(vsp);
         return ScopedMemoryAccess.loadFromMemorySegmentMasked(
                 vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
-                (MemorySegmentProxy) ms, offset, m, vsp,
+                (AbstractMemorySegmentImpl) ms, offset, m, vsp, offsetInRange,
                 (msp, off, s, vm) -> {
                     return s.ldLongOp((MemorySegment) msp, off, vm, HalffloatVector::memorySegmentGet);
                 });
@@ -3658,7 +3646,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         ScopedMemoryAccess.storeIntoMemorySegment(
                 vsp.vectorType(), vsp.elementType(), vsp.laneCount(),
                 this,
-                (MemorySegmentProxy) ms, offset,
+                (AbstractMemorySegmentImpl) ms, offset,
                 (msp, off, v) -> {
                     v.stLongOp((MemorySegment) msp, off, HalffloatVector::memorySegmentSet);
                 });
@@ -3675,7 +3663,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         ScopedMemoryAccess.storeIntoMemorySegmentMasked(
                 vsp.vectorType(), maskClass, vsp.elementType(), vsp.laneCount(),
                 this, m,
-                (MemorySegmentProxy) ms, offset,
+                (AbstractMemorySegmentImpl) ms, offset,
                 (msp, off, v, vm) -> {
                     v.stLongOp((MemorySegment) msp, off, vm, HalffloatVector::memorySegmentSet);
                 });
@@ -3888,9 +3876,10 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         private HalffloatSpecies(VectorShape shape,
                 Class<? extends HalffloatVector> vectorType,
                 Class<? extends AbstractMask<Halffloat>> maskType,
+                Class<? extends AbstractShuffle<Halffloat>> shuffleType,
                 Function<Object, HalffloatVector> vectorFactory) {
             super(shape, LaneType.of(Halffloat.class),
-                  vectorType, maskType,
+                  vectorType, maskType, shuffleType,
                   vectorFactory);
             assert(this.elementSize() == Halffloat.SIZE);
         }
@@ -4166,6 +4155,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         = new HalffloatSpecies(VectorShape.S_64_BIT,
                             Halffloat64Vector.class,
                             Halffloat64Vector.Halffloat64Mask.class,
+                            Halffloat64Vector.Halffloat64Shuffle.class,
                             Halffloat64Vector::new);
 
     /** Species representing {@link HalffloatVector}s of {@link VectorShape#S_128_BIT VectorShape.S_128_BIT}. */
@@ -4173,6 +4163,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         = new HalffloatSpecies(VectorShape.S_128_BIT,
                             Halffloat128Vector.class,
                             Halffloat128Vector.Halffloat128Mask.class,
+                            Halffloat128Vector.Halffloat128Shuffle.class,
                             Halffloat128Vector::new);
 
     /** Species representing {@link HalffloatVector}s of {@link VectorShape#S_256_BIT VectorShape.S_256_BIT}. */
@@ -4180,6 +4171,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         = new HalffloatSpecies(VectorShape.S_256_BIT,
                             Halffloat256Vector.class,
                             Halffloat256Vector.Halffloat256Mask.class,
+                            Halffloat256Vector.Halffloat256Shuffle.class,
                             Halffloat256Vector::new);
 
     /** Species representing {@link HalffloatVector}s of {@link VectorShape#S_512_BIT VectorShape.S_512_BIT}. */
@@ -4187,6 +4179,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         = new HalffloatSpecies(VectorShape.S_512_BIT,
                             Halffloat512Vector.class,
                             Halffloat512Vector.Halffloat512Mask.class,
+                            Halffloat512Vector.Halffloat512Shuffle.class,
                             Halffloat512Vector::new);
 
     /** Species representing {@link HalffloatVector}s of {@link VectorShape#S_Max_BIT VectorShape.S_Max_BIT}. */
@@ -4194,6 +4187,7 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
         = new HalffloatSpecies(VectorShape.S_Max_BIT,
                             HalffloatMaxVector.class,
                             HalffloatMaxVector.HalffloatMaxMask.class,
+                            HalffloatMaxVector.HalffloatMaxShuffle.class,
                             HalffloatMaxVector::new);
 
     /**
@@ -4203,3 +4197,4 @@ public abstract class HalffloatVector extends AbstractVector<Halffloat> {
     public static final VectorSpecies<Halffloat> SPECIES_PREFERRED
         = (HalffloatSpecies) VectorSpecies.ofPreferred(Halffloat.class);
 }
+
