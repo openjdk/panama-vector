@@ -2717,18 +2717,16 @@ template<typename R, typename... Rx>
 
 #undef INSN
 
+  void fp_arithmetic(Instruction_aarch64 &current_insn, FloatRegister Vd,
+                     SIMD_Arrangement T, FloatRegister Vn, FloatRegister Vm,
+                     int op1, int op2, int op3);
+
 // Advanced SIMD three same
 #define INSN(NAME, op1, op2, op3)                                                           \
   void NAME(FloatRegister Vd, SIMD_Arrangement T, FloatRegister Vn, FloatRegister Vm) {     \
     starti;                                                                                 \
-    assert(T== T4H || T == T8H || T == T2S || T == T4S || T == T2D, "invalid arrangement"); \
-    int op22 = (T == T2S || T == T4S) ? 0b0 : 0b1;                                          \
-    int op21 = (T == T4H || T == T8H) ? 0b0 : 0b1;                                          \
-    int op15 = (T == T4H || T == T8H) ? 0b00 : 0b11;                                        \
-    f(0, 31), f((int)T & 1, 30), f(op1, 29), f(0b01110, 28, 24), f(op2, 23);                \
-    f(op22, 22); f(op21, 21), rf(Vm, 16), f(op15, 15, 14), f(op3, 13, 10), rf(Vn, 5);       \
-    rf(Vd, 0);                                                                              \
-  }
+    fp_arithmetic(current_insn, Vd, T, Vn, Vm, op1, op2, op3);                              \
+ }
 
   INSN(fabd,  1, 1, 0b0101);
   INSN(fadd,  0, 0, 0b0101);

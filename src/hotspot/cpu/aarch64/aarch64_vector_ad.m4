@@ -226,10 +226,10 @@ source %{
       case Op_AddReductionVHF:
         // FEAT_FP16 is enabled if both "fphp" and "asimdhp" features are supported.
         // Only the Neon instructions need this check. SVE supports 16-bit floats by default.
-        if (UseSVE == 0 && (!VM_Version::supports_fphp() || !VM_Version::supports_asimdhp())) {
-          return false;
+        if (UseSVE > 0 || (VM_Version::supports_fphp() && VM_Version::supports_asimdhp())) {
+          break;
         }
-        break;
+        return false;
       default:
         break;
     }
