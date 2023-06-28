@@ -226,9 +226,9 @@ void Assembler::add_sub_immediate(Instruction_aarch64 &current_insn,
 }
 
 // This method is used to generate Advanced SIMD data processing instructions
-void Assembler::fp_arithmetic(Instruction_aarch64 &current_insn, FloatRegister Vd,
-                              SIMD_Arrangement T, FloatRegister Vn, FloatRegister Vm,
-                              int op1, int op2, int op3) {
+void Assembler::adv_simd_three_same(Instruction_aarch64 &current_insn, FloatRegister Vd,
+                                    SIMD_Arrangement T, FloatRegister Vn, FloatRegister Vm,
+                                    int op1, int op2, int op3) {
   assert(T == T4H || T == T8H || T == T2S || T == T4S || T == T2D, "invalid arrangement");
   int op22 = (T == T2S || T == T4S) ? 0b0 : 0b1;
   int op21 = (T == T4H || T == T8H) ? 0b0 : 0b1;

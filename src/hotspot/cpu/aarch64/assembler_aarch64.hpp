@@ -2717,15 +2717,16 @@ template<typename R, typename... Rx>
 
 #undef INSN
 
-  void fp_arithmetic(Instruction_aarch64 &current_insn, FloatRegister Vd,
-                     SIMD_Arrangement T, FloatRegister Vn, FloatRegister Vm,
-                     int op1, int op2, int op3);
+  // Advanced SIMD three same
 
-// Advanced SIMD three same
+  void adv_simd_three_same(Instruction_aarch64 &current_insn, FloatRegister Vd,
+                           SIMD_Arrangement T, FloatRegister Vn, FloatRegister Vm,
+                           int op1, int op2, int op3);
+
 #define INSN(NAME, op1, op2, op3)                                                           \
   void NAME(FloatRegister Vd, SIMD_Arrangement T, FloatRegister Vn, FloatRegister Vm) {     \
     starti;                                                                                 \
-    fp_arithmetic(current_insn, Vd, T, Vn, Vm, op1, op2, op3);                              \
+    adv_simd_three_same(current_insn, Vd, T, Vn, Vm, op1, op2, op3);                        \
  }
 
   INSN(fabd,  1, 1, 0b0101);
