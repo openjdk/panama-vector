@@ -1020,7 +1020,7 @@ class FloatInstruction(Instruction):
     def aname(self):
         if (self._name in ["fcvtsh", "fcvths"]):
             return self._name[:len(self._name)-2]
-        elif (self._name.endswith("s") | self._name.endswith("d")):
+        elif (self._name.endswith("h") | self._name.endswith("s") | self._name.endswith("d")):
             return self._name[:len(self._name)-1]
         else:
             return self._name
@@ -1566,7 +1566,9 @@ generate(FourRegMulOp,
          ["maddw", "msubw", "madd", "msub", "smaddl", "smsubl", "umaddl", "umsubl"])
 
 generate(ThreeRegFloatOp,
-         [["fabds", "sss"], ["fmuls", "sss"], ["fdivs", "sss"], ["fadds", "sss"], ["fsubs", "sss"],
+         [["fabdh", "hhh"], ["fmulh", "hhh"], ["fdivh", "hhh"], ["faddh", "hhh"], ["fsubh", "hhh"],
+          ["fmaxh", "hhh"], ["fminh", "hhh"], ["fnmulh", "hhh"],
+          ["fabds", "sss"], ["fmuls", "sss"], ["fdivs", "sss"], ["fadds", "sss"], ["fsubs", "sss"],
           ["fabdd", "ddd"], ["fmuld", "ddd"], ["fdivd", "ddd"], ["faddd", "ddd"], ["fsubd", "ddd"],
           ])
 
@@ -1588,7 +1590,8 @@ generate(FloatConvertOp, [["fcvtzsw", "fcvtzs", "ws"], ["fcvtzs", "fcvtzs", "xs"
                           ["fcvtassw", "fcvtas", "ws"], ["fcvtasd", "fcvtas", "xd"],
                           ["fcvtmssw", "fcvtms", "ws"], ["fcvtmsd", "fcvtms", "xd"],
                           ["fmovs", "fmov", "ws"], ["fmovd", "fmov", "xd"],
-                          ["fmovs", "fmov", "sw"], ["fmovd", "fmov", "dx"]])
+                          ["fmovs", "fmov", "sw"], ["fmovd", "fmov", "dx"],
+                          ["fmovwh", "fmov", "hw"], ["fmovhw", "fmov", "wh"]])
 
 generate(TwoRegFloatOp, [["fcmps", "ss"], ["fcmpd", "dd"],
                          ["fcmps", "sz"], ["fcmpd", "dz"]])
