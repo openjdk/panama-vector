@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -360,6 +360,20 @@ public class BasicSplitPaneDivider extends Container
         }
     }
 
+    /**
+     * {@inheritDoc}
+     * @param enabled {@inheritDoc}
+     */
+    @Override
+    public void setEnabled(boolean enabled) {
+        if (splitPane.isOneTouchExpandable() &&
+                rightButton != null &&
+                leftButton != null) {
+
+            rightButton.setEnabled(enabled);
+            leftButton.setEnabled(enabled);
+        }
+    }
 
     /**
      * Paints the divider.
@@ -472,6 +486,7 @@ public class BasicSplitPaneDivider extends Container
         b.setFocusPainted(false);
         b.setBorderPainted(false);
         b.setRequestFocusEnabled(false);
+        b.setEnabled(splitPane.isEnabled());
         return b;
     }
 
@@ -529,6 +544,7 @@ public class BasicSplitPaneDivider extends Container
         b.setFocusPainted(false);
         b.setBorderPainted(false);
         b.setRequestFocusEnabled(false);
+        b.setEnabled(splitPane.isEnabled());
         return b;
     }
 
@@ -970,7 +986,7 @@ public class BasicSplitPaneDivider extends Container
             newY = Math.min(maxX, Math.max(minX, newY - offset));
             return newY;
         }
-    } // End of BasicSplitPaneDividier.VerticalDragController
+    } // End of BasicSplitPaneDivider.VerticalDragController
 
 
     /**
@@ -1118,7 +1134,7 @@ public class BasicSplitPaneDivider extends Container
             int     newLoc;
 
             // We use the location from the UI directly, as the location the
-            // JSplitPane itself maintains is not necessarly correct.
+            // JSplitPane itself maintains is not necessarily correct.
             if (toMinimum) {
                 if (orientation == JSplitPane.VERTICAL_SPLIT) {
                     if (currentLoc >= (splitPane.getHeight() -

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,27 +25,26 @@
 #include "precompiled.hpp"
 #include "classfile/stringTable.hpp"
 #include "classfile/symbolTable.hpp"
-#include "code/icBuffer.hpp"
 #include "compiler/compiler_globals.hpp"
 #include "gc/shared/collectedHeap.hpp"
 #include "gc/shared/gcHeapSummary.hpp"
 #include "interpreter/bytecodes.hpp"
 #include "logging/logAsyncWriter.hpp"
 #include "memory/universe.hpp"
+#include "nmt/memTracker.hpp"
+#include "prims/downcallLinker.hpp"
 #include "prims/jvmtiExport.hpp"
 #include "prims/methodHandles.hpp"
-#include "prims/downcallLinker.hpp"
-#include "runtime/globals.hpp"
 #include "runtime/atomic.hpp"
 #include "runtime/continuation.hpp"
 #include "runtime/flags/jvmFlag.hpp"
+#include "runtime/globals.hpp"
 #include "runtime/handles.inline.hpp"
 #include "runtime/icache.hpp"
 #include "runtime/init.hpp"
 #include "runtime/safepoint.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "sanitizers/leak.hpp"
-#include "services/memTracker.hpp"
 #include "utilities/macros.hpp"
 #if INCLUDE_JVMCI
 #include "jvmci/jvmci.hpp"
@@ -58,6 +57,7 @@ void mutex_init();
 void universe_oopstorage_init();
 void perfMemory_init();
 void SuspendibleThreadSet_init();
+void ExternalsRecorder_init(); // After mutex_init() and before CodeCache_init
 
 // Initialization done by Java thread in init_globals()
 void management_init();
@@ -83,8 +83,7 @@ void jni_handles_init();
 void vmStructs_init() NOT_DEBUG_RETURN;
 
 void vtableStubs_init();
-void InlineCacheBuffer_init();
-void compilerOracle_init();
+bool compilerOracle_init();
 bool compileBroker_init();
 void dependencyContext_init();
 void dependencies_init();
@@ -109,12 +108,19 @@ void vm_init_globals() {
   universe_oopstorage_init();
   perfMemory_init();
   SuspendibleThreadSet_init();
+  ExternalsRecorder_init(); // After mutex_init() and before CodeCache_init
 }
 
 
 jint init_globals() {
   management_init();
   JvmtiExport::initialize_oop_storage();
+#if INCLUDE_JVMTI
+  if (AlwaysRecordEvolDependencies) {
+    JvmtiExport::set_can_hotswap_or_post_breakpoint(true);
+    JvmtiExport::set_all_dependencies_are_recorded(true);
+  }
+#endif
   bytecodes_init();
   classLoader_init1();
   compilationPolicy_init();
@@ -143,6 +149,10 @@ jint init_globals() {
   InterfaceSupport_init();
   VMRegImpl::set_regName();  // need this before generate_stubs (for printing oop maps).
   SharedRuntime::generate_stubs();
+  return JNI_OK;
+}
+
+jint init_globals2() {
   universe2_init();          // dependent on codeCache_init and initial_stubs_init
   javaClasses_init();        // must happen after vtable initialization, before referenceProcessor_init
   interpreter_init_code();   // after javaClasses_init and before any method gets linked
@@ -153,8 +163,9 @@ jint init_globals() {
 #endif // INCLUDE_VM_STRUCTS
 
   vtableStubs_init();
-  InlineCacheBuffer_init();
-  compilerOracle_init();
+  if (!compilerOracle_init()) {
+    return JNI_EINVAL;
+  }
   dependencyContext_init();
   dependencies_init();
 

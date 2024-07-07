@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2014, 2023, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, 2023 SAP SE. All rights reserved.
+ * Copyright (c) 2014, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2024 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,9 +35,12 @@
 #include "interpreter/templateInterpreterGenerator.hpp"
 #include "interpreter/templateTable.hpp"
 #include "oops/arrayOop.hpp"
-#include "oops/methodData.hpp"
 #include "oops/method.hpp"
+#include "oops/methodCounters.hpp"
+#include "oops/methodData.hpp"
 #include "oops/oop.inline.hpp"
+#include "oops/resolvedIndyEntry.hpp"
+#include "oops/resolvedMethodEntry.hpp"
 #include "prims/jvmtiExport.hpp"
 #include "prims/jvmtiThreadState.hpp"
 #include "runtime/arguments.hpp"
@@ -118,7 +121,7 @@ address TemplateInterpreterGenerator::generate_slow_signature_handler() {
 
   address entry = __ function_entry();
 
-  __ save_LR_CR(R0);
+  __ save_LR(R0);
   __ save_nonvolatile_gprs(R1_SP, _spill_nonvolatiles_neg(r14));
   // We use target_sp for storing arguments in the C frame.
   __ mr(target_sp, R1_SP);
@@ -288,21 +291,7 @@ address TemplateInterpreterGenerator::generate_slow_signature_handler() {
 
   __ bind(do_float);
   __ lfs(floatSlot, 0, arg_java);
-#if defined(LINUX)
-  // Linux uses ELF ABI. Both original ELF and ELFv2 ABIs have float
-  // in the least significant word of an argument slot.
-#if defined(VM_LITTLE_ENDIAN)
-  __ stfs(floatSlot, 0, arg_c);
-#else
-  __ stfs(floatSlot, 4, arg_c);
-#endif
-#elif defined(AIX)
-  // Although AIX runs on big endian CPU, float is in most significant
-  // word of an argument slot.
-  __ stfs(floatSlot, 0, arg_c);
-#else
-#error "unknown OS"
-#endif
+  __ stfs(floatSlot, Argument::float_on_stack_offset_in_bytes_c, arg_c);
   __ addi(arg_java, arg_java, -BytesPerWord);
   __ addi(arg_c, arg_c, BytesPerWord);
   __ cmplwi(CCR0, fpcnt, max_fp_register_arguments);
@@ -322,7 +311,7 @@ address TemplateInterpreterGenerator::generate_slow_signature_handler() {
 
   __ pop_frame();
   __ restore_nonvolatile_gprs(R1_SP, _spill_nonvolatiles_neg(r14));
-  __ restore_LR_CR(R0);
+  __ restore_LR(R0);
 
   __ blr();
 
@@ -383,9 +372,7 @@ address TemplateInterpreterGenerator::generate_result_handler_for(BasicType type
   switch (type) {
   case T_BOOLEAN:
     // convert !=0 to 1
-    __ neg(R0, R3_RET);
-    __ orr(R0, R3_RET, R0);
-    __ srwi(R3_RET, R0, 31);
+    __ normalize_bool(R3_RET);
     break;
   case T_BYTE:
      // sign extend 8 bits
@@ -452,7 +439,7 @@ address TemplateInterpreterGenerator::generate_abstract_entry(void) {
   __ set_top_ijava_frame_at_SP_as_last_Java_frame(R1_SP, R12_scratch2/*tmp*/);
 
   // Push a new C frame and save LR.
-  __ save_LR_CR(R0);
+  __ save_LR(R0);
   __ push_frame_reg_args(0, R11_scratch1);
 
   // This is not a leaf but we have a JavaFrameAnchor now and we will
@@ -462,7 +449,7 @@ address TemplateInterpreterGenerator::generate_abstract_entry(void) {
 
   // Pop the C frame and restore LR.
   __ pop_frame();
-  __ restore_LR_CR(R0);
+  __ restore_LR(R0);
 
   // Reset JavaFrameAnchor from call_VM_leaf above.
   __ reset_last_Java_frame();
@@ -645,16 +632,11 @@ address TemplateInterpreterGenerator::generate_return_entry_for(TosState state, 
   const Register size  = R12_scratch2;
   if (index_size == sizeof(u4)) {
     __ load_resolved_indy_entry(cache, size /* tmp */);
-    __ lhz(size, Array<ResolvedIndyEntry>::base_offset_in_bytes() + in_bytes(ResolvedIndyEntry::num_parameters_offset()), cache);
+    __ lhz(size, in_bytes(ResolvedIndyEntry::num_parameters_offset()), cache);
   } else {
-    __ get_cache_and_index_at_bcp(cache, 1, index_size);
-
-    // Get least significant byte of 64 bit value:
-#if defined(VM_LITTLE_ENDIAN)
-    __ lbz(size, in_bytes(ConstantPoolCache::base_offset() + ConstantPoolCacheEntry::flags_offset()), cache);
-#else
-    __ lbz(size, in_bytes(ConstantPoolCache::base_offset() + ConstantPoolCacheEntry::flags_offset()) + 7, cache);
-#endif
+    assert(index_size == sizeof(u2), "Can only be u2");
+    __ load_method_entry(cache, size /* tmp */);
+    __ lhz(size, in_bytes(ResolvedMethodEntry::num_parameters_offset()), cache);
   }
   __ sldi(size, size, Interpreter::logStackElementSize);
   __ add(R15_esp, R15_esp, size);
@@ -869,7 +851,7 @@ void TemplateInterpreterGenerator::lock_method(Register Rflags, Register Rscratc
   // Got the oop to lock => execute!
   __ add_monitor_to_stack(true, Rscratch1, R0);
 
-  __ std(Robj_to_lock, BasicObjectLock::obj_offset_in_bytes(), R26_monitor);
+  __ std(Robj_to_lock, in_bytes(BasicObjectLock::obj_offset()), R26_monitor);
   __ lock_object(R26_monitor, Robj_to_lock);
 }
 
@@ -953,14 +935,14 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call, Regist
          in_bytes(ConstMethod::size_of_parameters_offset()), Rconst_method);
   if (native_call) {
     // If we're calling a native method, we reserve space for the worst-case signature
-    // handler varargs vector, which is max(Argument::n_register_parameters, parameter_count+2).
+    // handler varargs vector, which is max(Argument::n_int_register_parameters_c, parameter_count+2).
     // We add two slots to the parameter_count, one for the jni
     // environment and one for a possible native mirror.
     Label skip_native_calculate_max_stack;
     __ addi(Rtop_frame_size, Rsize_of_parameters, 2);
-    __ cmpwi(CCR0, Rtop_frame_size, Argument::n_register_parameters);
+    __ cmpwi(CCR0, Rtop_frame_size, Argument::n_int_register_parameters_c);
     __ bge(CCR0, skip_native_calculate_max_stack);
-    __ li(Rtop_frame_size, Argument::n_register_parameters);
+    __ li(Rtop_frame_size, Argument::n_int_register_parameters_c);
     __ bind(skip_native_calculate_max_stack);
     __ sldi(Rsize_of_parameters, Rsize_of_parameters, Interpreter::logStackElementSize);
     __ sldi(Rtop_frame_size, Rtop_frame_size, Interpreter::logStackElementSize);
@@ -1001,7 +983,7 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call, Regist
 
   __ add(R18_locals, R15_esp, Rsize_of_parameters);
   __ ld(Rconst_pool, in_bytes(ConstMethod::constants_offset()), Rconst_method);
-  __ ld(R27_constPoolCache, ConstantPool::cache_offset_in_bytes(), Rconst_pool);
+  __ ld(R27_constPoolCache, ConstantPool::cache_offset(), Rconst_pool);
 
   // Set method data pointer.
   if (ProfileInterpreter) {
@@ -1026,7 +1008,7 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call, Regist
   __ std(R12_scratch2, _abi0(lr), R1_SP);
 
   // Get mirror and store it in the frame as GC root for this Method*.
-  __ ld(Rmirror, ConstantPool::pool_holder_offset_in_bytes(), Rconst_pool);
+  __ ld(Rmirror, ConstantPool::pool_holder_offset(), Rconst_pool);
   __ ld(Rmirror, in_bytes(Klass::java_mirror_offset()), Rmirror);
   __ resolve_oop_handle(Rmirror, R11_scratch1, R12_scratch2, MacroAssembler::PRESERVATION_FRAME_LR_GP_REGS);
 
@@ -1053,15 +1035,20 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call, Regist
   // Also initialize them for non-native calls for better tool support (even though
   // you may not get the most recent version as described above).
   __ li(R0, 0);
-  __ std(R26_monitor, _ijava_state_neg(monitors), R1_SP);
+  __ li(R12_scratch2, -(frame::ijava_state_size / wordSize));
+  __ std(R12_scratch2, _ijava_state_neg(monitors), R1_SP);
   __ std(R14_bcp, _ijava_state_neg(bcp), R1_SP);
   if (ProfileInterpreter) { __ std(R28_mdx, _ijava_state_neg(mdx), R1_SP); }
-  __ std(R15_esp, _ijava_state_neg(esp), R1_SP);
+  __ sub(R12_scratch2, R15_esp, R1_SP);
+  __ sradi(R12_scratch2, R12_scratch2, Interpreter::logStackElementSize);
+  __ std(R12_scratch2, _ijava_state_neg(esp), R1_SP);
   __ std(R0, _ijava_state_neg(oop_tmp), R1_SP); // only used for native_call
 
   // Store sender's SP and this frame's top SP.
-  __ subf(R12_scratch2, Rtop_frame_size, R1_SP);
   __ std(R21_sender_SP, _ijava_state_neg(sender_sp), R1_SP);
+  __ neg(R12_scratch2, Rtop_frame_size);
+  __ sradi(R12_scratch2, R12_scratch2, Interpreter::logStackElementSize);
+  // Store relativized top_frame_sp
   __ std(R12_scratch2, _ijava_state_neg(top_frame_sp), R1_SP);
 
   // Push top frame.
@@ -1137,14 +1124,14 @@ address TemplateInterpreterGenerator::generate_math_entry(AbstractInterpreter::M
     //__ call_c_and_return_to_caller(R12_scratch2);
 
     // Push a new C frame and save LR.
-    __ save_LR_CR(R0);
+    __ save_LR(R0);
     __ push_frame_reg_args(0, R11_scratch1);
 
     __ call_VM_leaf(runtime_entry);
 
     // Pop the C frame and restore LR.
     __ pop_frame();
-    __ restore_LR_CR(R0);
+    __ restore_LR(R0);
   }
 
   // Restore caller sp for c2i case (from compiled) and for resized sender frame (from interpreted).
@@ -1284,7 +1271,9 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
 
     // Update monitor in state.
     __ ld(R11_scratch1, 0, R1_SP);
-    __ std(R26_monitor, _ijava_state_neg(monitors), R11_scratch1);
+    __ sub(R12_scratch2, R26_monitor, R11_scratch1);
+    __ sradi(R12_scratch2, R12_scratch2, Interpreter::logStackElementSize);
+    __ std(R12_scratch2, _ijava_state_neg(monitors), R11_scratch1);
   }
 
   // jvmti/jvmpi support
@@ -1350,7 +1339,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   // outgoing argument area.
   //
   // Not needed on PPC64.
-  //__ add(SP, SP, Argument::n_register_parameters*BytesPerWord);
+  //__ add(SP, SP, Argument::n_int_register_parameters_c*BytesPerWord);
 
   assert(result_handler_addr->is_nonvolatile(), "result_handler_addr must be in a non-volatile register");
   // Save across call to native method.
@@ -1541,7 +1530,7 @@ address TemplateInterpreterGenerator::generate_native_entry(bool synchronized) {
   __ ld(active_handles, thread_(active_handles));
   // TODO PPC port assert(4 == JNIHandleBlock::top_size_in_bytes(), "unexpected field size");
   __ li(R0, 0);
-  __ stw(R0, JNIHandleBlock::top_offset_in_bytes(), active_handles);
+  __ stw(R0, in_bytes(JNIHandleBlock::top_offset()), active_handles);
 
   Label exception_return_sync_check_already_unlocked;
   __ ld(R0/*pending_exception*/, thread_(pending_exception));

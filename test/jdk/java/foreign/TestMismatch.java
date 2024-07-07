@@ -1,34 +1,33 @@
 /*
- *  Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
- *  DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- *  This code is free software; you can redistribute it and/or modify it
- *  under the terms of the GNU General Public License version 2 only, as
- *  published by the Free Software Foundation.
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.
  *
- *  This code is distributed in the hope that it will be useful, but WITHOUT
- *  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- *  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- *  version 2 for more details (a copy is included in the LICENSE file that
- *  accompanied this code).
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
  *
- *  You should have received a copy of the GNU General Public License version
- *  2 along with this work; if not, write to the Free Software Foundation,
- *  Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  *
- *  Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
- *  or visit www.oracle.com if you need additional information or have any
- *  questions.
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
  */
 
 /*
  * @test
- * @enablePreview
+ * @bug 8323552
  * @run testng TestMismatch
  */
 
 import java.lang.foreign.Arena;
-import java.lang.foreign.SegmentScope;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,7 +45,7 @@ import static org.testng.Assert.assertThrows;
 
 public class TestMismatch {
 
-    // stores a increasing sequence of values into the memory of the given segment
+    // stores an increasing sequence of values into the memory of the given segment
     static MemorySegment initializeSegment(MemorySegment segment) {
         for (int i = 0 ; i < segment.byteSize() ; i++) {
             segment.set(ValueLayout.JAVA_BYTE, i, (byte)i);
@@ -172,8 +171,8 @@ public class TestMismatch {
     public void testEmpty() {
         var s1 = MemorySegment.ofArray(new byte[0]);
         assertEquals(s1.mismatch(s1), -1);
-        try (Arena arena = Arena.openConfined()) {
-            var nativeSegment = MemorySegment.allocateNative(4, 4, arena.scope());;
+        try (Arena arena = Arena.ofConfined()) {
+            var nativeSegment = arena.allocate(4, 4);;
             var s2 = nativeSegment.asSlice(0, 0);
             assertEquals(s1.mismatch(s2), -1);
             assertEquals(s2.mismatch(s1), -1);
@@ -184,9 +183,9 @@ public class TestMismatch {
     public void testLarge() {
         // skip if not on 64 bits
         if (ValueLayout.ADDRESS.byteSize() > 32) {
-            try (Arena arena = Arena.openConfined()) {
-                var s1 = MemorySegment.allocateNative((long) Integer.MAX_VALUE + 10L, 8, arena.scope());;
-                var s2 = MemorySegment.allocateNative((long) Integer.MAX_VALUE + 10L, 8, arena.scope());;
+            try (Arena arena = Arena.ofConfined()) {
+                var s1 = arena.allocate((long) Integer.MAX_VALUE + 10L, 8);;
+                var s2 = arena.allocate((long) Integer.MAX_VALUE + 10L, 8);;
                 assertEquals(s1.mismatch(s1), -1);
                 assertEquals(s1.mismatch(s2), -1);
                 assertEquals(s2.mismatch(s1), -1);
@@ -228,9 +227,9 @@ public class TestMismatch {
     @Test
     public void testClosed() {
         MemorySegment s1, s2;
-        try (Arena arena = Arena.openConfined()) {
-            s1 = MemorySegment.allocateNative(4, 1, arena.scope());;
-            s2 = MemorySegment.allocateNative(4, 1, arena.scope());;
+        try (Arena arena = Arena.ofConfined()) {
+            s1 = arena.allocate(4, 1);
+            s2 = arena.allocate(4, 1);;
         }
         assertThrows(ISE, () -> s1.mismatch(s1));
         assertThrows(ISE, () -> s1.mismatch(s2));
@@ -239,8 +238,8 @@ public class TestMismatch {
 
     @Test
     public void testThreadAccess() throws Exception {
-        try (Arena arena = Arena.openConfined()) {
-            var segment = MemorySegment.allocateNative(4, 1, arena.scope());;
+        try (Arena arena = Arena.ofConfined()) {
+            var segment = arena.allocate(4, 1);;
             {
                 AtomicReference<RuntimeException> exception = new AtomicReference<>();
                 Runnable action = () -> {
@@ -280,8 +279,34 @@ public class TestMismatch {
         }
     }
 
+    @Test
+    public void testSameSegment() {
+        var segment = MemorySegment.ofArray(new byte[]{
+                1,2,3,4,  1,2,3,4,  1,4});
+
+        long match = MemorySegment.mismatch(
+                segment, 0L, 4L,
+                segment, 4L, 8L);
+        assertEquals(match, -1);
+
+        long noMatch = MemorySegment.mismatch(
+                segment, 0L, 4L,
+                segment, 1L, 5L);
+        assertEquals(noMatch, 0);
+
+        long noMatchEnd = MemorySegment.mismatch(
+                segment, 0L, 2L,
+                segment, 8L, 10L);
+        assertEquals(noMatchEnd, 1);
+
+        long same = MemorySegment.mismatch(
+                segment, 0L, 8L,
+                segment, 0L, 8L);
+        assertEquals(same, -1);
+    }
+
     enum SegmentKind {
-        NATIVE(i -> MemorySegment.allocateNative(i, SegmentScope.auto())),
+        NATIVE(i -> Arena.ofAuto().allocate(i, 1)),
         ARRAY(i -> MemorySegment.ofArray(new byte[i]));
 
         final IntFunction<MemorySegment> segmentFactory;

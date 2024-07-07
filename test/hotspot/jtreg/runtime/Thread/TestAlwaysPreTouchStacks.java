@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2022 SAP SE. All rights reserved.
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,68 +27,114 @@ import jdk.test.lib.process.ProcessTools;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.CyclicBarrier;
+
+import static jdk.test.lib.Platform.isLinux;
+import static jdk.test.lib.Platform.isWindows;
 
 /*
- * @test
+ * @test id=preTouch
  * @summary Test AlwaysPreTouchThreadStacks
+ * @requires os.family != "aix"
  * @library /test/lib
  * @modules java.base/jdk.internal.misc
  *          java.management
- * @run driver TestAlwaysPreTouchStacks
+ * @run driver TestAlwaysPreTouchStacks preTouch
  */
 
-public class TestAlwaysPreTouchStacks extends Thread {
+/*
+ * @test id=noPreTouch
+ * @summary Test that only touched committed memory is reported as thread stack usage.
+ * @requires os.family != "aix"
+ * @library /test/lib
+ * @modules java.base/jdk.internal.misc
+ *          java.management
+ * @run driver TestAlwaysPreTouchStacks noPreTouch
+ */
 
-    static private final Thread createTestThread(int stackSize) {
+public class TestAlwaysPreTouchStacks {
+
+    // We will create a bunch of large-stacked threads to make a significant imprint on combined thread stack size
+    final static int MB = 1024*1024;
+    static int memoryCeilingMB = 128;
+    static int threadStackSizeMB = 8;
+    static int numThreads = memoryCeilingMB / threadStackSizeMB;
+    static CyclicBarrier gate = new CyclicBarrier(numThreads + 1);
+
+    static private final Thread createTestThread(int num) {
         Thread t = new Thread(null,
-                () -> System.out.println("Alive: " + stackSize),
-                "Thread-" + stackSize, stackSize);
+                () -> {
+                    System.out.println("Alive: " + num);
+                    try {
+                        // report aliveness, then sleep until VM death
+                        gate.await();
+                        for (;;) {
+                            Thread.sleep(1000);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                },
+                "TestThread-" + num, threadStackSizeMB * MB);
+        t.setDaemon(true);
         return t;
     }
 
-    public static void main(String[] args) throws InterruptedException, IOException {
-
-        int[] stackSizes = {
-          1024 * 256, 1024 * 512, 1024 * 1024 * 3
-        };
+    public static void main(String[] args) throws Exception {
 
         if (args.length == 1 && args[0].equals("test")) {
 
             ArrayList<Thread> threads = new ArrayList<>();
 
-            for (int s: stackSizes) {
-                threads.add(createTestThread(s));
+            // Add a bunch of large-stacked threads to make a significant imprint on combined thread stack size
+            for (int i = 0; i < numThreads; i++) {
+                threads.add(createTestThread(i));
             }
 
+            // Start test threads.
             threads.forEach(Thread::start);
-            for (Thread t: threads) {
-                t.join();
-            }
+
+            gate.await();
+
+            // Stop VM. VM will run PrintNMTStatistics before exiting, and the still-running daemon threads
+            // should show up with fully - or almost fully - committed thread stacks.
 
         } else {
-
-            ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(
+            boolean preTouch;
+            if (args.length == 1 && args[0].equals("noPreTouch")){
+                preTouch = false;
+            } else if (args.length == 1 && args[0].equals("preTouch")){
+                preTouch = true;
+            } else {
+                throw new RuntimeException("Invalid test input. Must be 'preTouch' or 'noPreTouch'.");
+            }
+            ArrayList<String> vmArgs = new ArrayList<>();
+            Collections.addAll(vmArgs,
                     "-XX:+UnlockDiagnosticVMOptions",
                     "-Xmx100M",
-                    "-XX:+AlwaysPreTouchStacks", "-Xlog:os+thread=trace",
-                    "-XX:NativeMemoryTracking=summary", "-XX:+PrintNMTStatistics",
-                    "TestAlwaysPreTouchStacks",
-                    "test");
+                    "-XX:NativeMemoryTracking=summary", "-XX:+PrintNMTStatistics");
+            if (preTouch){
+                vmArgs.add("-XX:+AlwaysPreTouchStacks");
+            }
+            if (System.getProperty("os.name").contains("Linux")) {
+                vmArgs.add("-XX:-UseMadvPopulateWrite");
+            }
+            Collections.addAll(vmArgs, "TestAlwaysPreTouchStacks", "test");
+            ProcessBuilder pb = ProcessTools.createLimitedTestJavaProcessBuilder(vmArgs);
             OutputAnalyzer output = new OutputAnalyzer(pb.start());
             output.reportDiagnosticSummary();
 
             output.shouldHaveExitValue(0);
 
-            for (int s: stackSizes) {
-                output.shouldContain("Alive: " + Integer.toString(s));
+            for (int i = 0; i < numThreads; i++) {
+                output.shouldContain("Alive: " + i);
             }
 
-            output.shouldContain("Pretouching thread stack");
-
-            // We want to see, in the final NMT printout, a committed thread stack size very close to reserved
-            // stack size. Like this:
+            // If using -XX:+AlwaysPreTouchStacks, we want to see, in the final NMT printout,
+            // a committed thread stack size very close to reserved stack size. Like this:
             // -                    Thread (reserved=10332400KB, committed=10284360KB)
             //                      (thread #10021)
             //                      (stack: reserved=10301560KB, committed=10253520KB)   <<<<
@@ -108,8 +154,22 @@ public class TestAlwaysPreTouchStacks extends Thread {
                     long reserved = Long.parseLong(m.group(1));
                     long committed = Long.parseLong(m.group(2));
                     System.out.println(">>>>> " + line + ": " + reserved + " - " + committed);
-                    if (committed < (reserved / 2)) {
+                    // This is a bit fuzzy: even with PreTouch we don't commit the full range of what NMT counts
+                    // as thread stack. But without pre-touching, the thread stacks would be committed to about 1/5th
+                    // of their reserved size. Requiring them to be committed for over 3/4th shows that pretouch is
+                    // really working.
+                    if (preTouch && (double)committed < ((double)reserved * 0.75)) {
                         throw new RuntimeException("Expected a higher ratio between stack committed and reserved.");
+                    } else if (!preTouch && (double)committed > ((double)reserved * 0.50)){
+                        throw new RuntimeException("Expected a lower ratio between stack committed and reserved.");
+                    }
+                    // Added sanity tests: we expect our test threads to be still alive when NMT prints its final
+                    // report, so their stacks should dominate the NMT-reported total stack size.
+                    long max_reserved = memoryCeilingMB * 3 * MB;
+                    long min_reserved = memoryCeilingMB * MB;
+                    if (reserved >= max_reserved || reserved < min_reserved) {
+                        throw new RuntimeException("Total reserved stack sizes outside of our expectations (" + reserved +
+                                                   ", expected " + min_reserved + ".." + max_reserved + ")");
                     }
                     foundLine = true;
                     break;

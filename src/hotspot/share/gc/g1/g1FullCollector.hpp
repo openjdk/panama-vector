@@ -45,7 +45,7 @@ class G1FullGCMarker;
 class G1FullGCScope;
 class G1FullGCCompactionPoint;
 class GCMemoryManager;
-class HeapRegion;
+class G1HeapRegion;
 class ReferenceProcessor;
 
 // Subject-to-discovery closure for reference processing during Full GC. During
@@ -53,7 +53,7 @@ class ReferenceProcessor;
 class G1FullGCSubjectToDiscoveryClosure: public BoolObjectClosure {
 public:
   bool do_object_b(oop p) {
-    assert(p != NULL, "must be");
+    assert(p != nullptr, "must be");
     return true;
   }
 };
@@ -87,7 +87,7 @@ class G1FullCollector : StackObj {
   G1IsAliveClosure          _is_alive;
   ReferenceProcessorIsAliveMutator _is_alive_mutator;
   G1RegionMarkStats*        _live_stats;
-  GrowableArrayCHeap<HeapRegion*, mtGC> _humongous_compaction_regions;
+  GrowableArrayCHeap<G1HeapRegion*, mtGC> _humongous_compaction_regions;
 
   static uint calc_active_workers();
 
@@ -100,7 +100,6 @@ class G1FullCollector : StackObj {
 
 public:
   G1FullCollector(G1CollectedHeap* heap,
-                  bool explicit_gc,
                   bool clear_soft_refs,
                   bool do_maximal_compaction,
                   G1FullGCTracer* tracer);
@@ -126,11 +125,10 @@ public:
     return _live_stats[region_index]._live_words;
   }
 
-  void before_marking_update_attribute_table(HeapRegion* hr);
+  void before_marking_update_attribute_table(G1HeapRegion* hr);
 
   inline bool is_compacting(oop obj) const;
   inline bool is_skip_compacting(uint region_index) const;
-  inline bool is_skip_marking(oop obj) const;
 
   // Are we (potentially) going to compact into this region?
   inline bool is_compaction_target(uint region_index) const;
@@ -140,14 +138,14 @@ public:
   inline void update_from_compacting_to_skip_compacting(uint region_idx);
   inline void update_from_skip_compacting_to_compacting(uint region_idx);
 
-  inline void set_compaction_top(HeapRegion* r, HeapWord* value);
-  inline HeapWord* compaction_top(HeapRegion* r) const;
+  inline void set_compaction_top(G1HeapRegion* r, HeapWord* value);
+  inline HeapWord* compaction_top(G1HeapRegion* r) const;
 
   inline void set_has_compaction_targets();
   inline bool has_compaction_targets() const;
 
-  inline void add_humongous_region(HeapRegion* hr);
-  inline GrowableArrayCHeap<HeapRegion*, mtGC>& humongous_compaction_regions();
+  inline void add_humongous_region(G1HeapRegion* hr);
+  inline GrowableArrayCHeap<G1HeapRegion*, mtGC>& humongous_compaction_regions();
 
   uint truncate_parallel_cps();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,7 @@
 
 package java.lang.invoke;
 
+import java.lang.classfile.TypeKind;
 import jdk.internal.perf.PerfCounter;
 import jdk.internal.vm.annotation.DontInline;
 import jdk.internal.vm.annotation.Hidden;
@@ -137,12 +138,12 @@ class LambdaForm {
     public static final int VOID_RESULT = -1, LAST_RESULT = -2;
 
     enum BasicType {
-        L_TYPE('L', Object.class, Wrapper.OBJECT),  // all reference types
-        I_TYPE('I', int.class,    Wrapper.INT),
-        J_TYPE('J', long.class,   Wrapper.LONG),
-        F_TYPE('F', float.class,  Wrapper.FLOAT),
-        D_TYPE('D', double.class, Wrapper.DOUBLE),  // all primitive types
-        V_TYPE('V', void.class,   Wrapper.VOID);    // not valid in all contexts
+        L_TYPE('L', Object.class, Wrapper.OBJECT, TypeKind.ReferenceType), // all reference types
+        I_TYPE('I', int.class,    Wrapper.INT,    TypeKind.IntType),
+        J_TYPE('J', long.class,   Wrapper.LONG,   TypeKind.LongType),
+        F_TYPE('F', float.class,  Wrapper.FLOAT,  TypeKind.FloatType),
+        D_TYPE('D', double.class, Wrapper.DOUBLE, TypeKind.DoubleType),  // all primitive types
+        V_TYPE('V', void.class,   Wrapper.VOID,   TypeKind.VoidType);    // not valid in all contexts
 
         static final @Stable BasicType[] ALL_TYPES = BasicType.values();
         static final @Stable BasicType[] ARG_TYPES = Arrays.copyOf(ALL_TYPES, ALL_TYPES.length-1);
@@ -153,11 +154,13 @@ class LambdaForm {
         final char btChar;
         final Class<?> btClass;
         final Wrapper btWrapper;
+        final TypeKind btKind;
 
-        private BasicType(char btChar, Class<?> btClass, Wrapper wrapper) {
+        private BasicType(char btChar, Class<?> btClass, Wrapper wrapper, TypeKind typeKind) {
             this.btChar = btChar;
             this.btClass = btClass;
             this.btWrapper = wrapper;
+            this.btKind = typeKind;
         }
 
         char basicTypeChar() {
@@ -168,6 +171,9 @@ class LambdaForm {
         }
         Wrapper basicTypeWrapper() {
             return btWrapper;
+        }
+        TypeKind basicTypeKind() {
+            return btKind;
         }
         int basicTypeSlots() {
             return btWrapper.stackSlots();
@@ -332,7 +338,7 @@ class LambdaForm {
         this.isCompiled = false;
     }
 
-    // root factory pre/post processing and calls simple cosntructor
+    // root factory pre/post processing and calls simple constructor
     private static LambdaForm create(int arity, Name[] names, int result, boolean forceInline, MethodHandle customized, Kind kind) {
         names = names.clone();
         assert(namesOK(arity, names));
@@ -571,7 +577,7 @@ class LambdaForm {
         return true;
     }
 
-    /** Invoke this form on the given arguments. */
+    // /** Invoke this form on the given arguments. */
     // final Object invoke(Object... args) throws Throwable {
     //     // NYI: fit this into the fast path?
     //     return interpretWithArguments(args);
@@ -923,9 +929,9 @@ class LambdaForm {
         return invocationCounter == -1;
     }
 
+    /** Interpretively invoke this form on the given arguments. */
     @Hidden
     @DontInline
-    /** Interpretively invoke this form on the given arguments. */
     Object interpretWithArguments(Object... argumentValues) throws Throwable {
         if (TRACE_INTERPRETER)
             return interpretWithArgumentsTracing(argumentValues);
@@ -940,17 +946,17 @@ class LambdaForm {
         return rv;
     }
 
+    /** Evaluate a single Name within this form, applying its function to its arguments. */
     @Hidden
     @DontInline
-    /** Evaluate a single Name within this form, applying its function to its arguments. */
     Object interpretName(Name name, Object[] values) throws Throwable {
         if (TRACE_INTERPRETER)
             traceInterpreter("| interpretName", name.debugString(), (Object[]) null);
         Object[] arguments = Arrays.copyOf(name.arguments, name.arguments.length, Object[].class);
         for (int i = 0; i < arguments.length; i++) {
             Object a = arguments[i];
-            if (a instanceof Name) {
-                int i2 = ((Name)a).index();
+            if (a instanceof Name n) {
+                int i2 = n.index();
                 assert(names[i2] == a);
                 a = values[i2];
                 arguments[i] = a;
@@ -1061,7 +1067,7 @@ class LambdaForm {
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof LambdaForm && equals((LambdaForm)obj);
+        return obj instanceof LambdaForm lf && equals(lf);
     }
     public boolean equals(LambdaForm that) {
         if (this.result != that.result)  return false;
@@ -1362,7 +1368,7 @@ class LambdaForm {
         }
         Name(MethodType functionType, Object... arguments) {
             this(new NamedFunction(functionType), arguments);
-            assert(arguments[0] instanceof Name && ((Name)arguments[0]).type == L_TYPE);
+            assert(arguments[0] instanceof Name name && name.type == L_TYPE);
         }
         Name(MemberName function, Object... arguments) {
             this(new NamedFunction(function), arguments);
@@ -1524,7 +1530,7 @@ class LambdaForm {
             Object c = constraint;
             if (c == null)
                 return s;
-            if (c instanceof Class)  c = ((Class<?>)c).getSimpleName();
+            if (c instanceof Class<?> cl)  c = cl.getSimpleName();
             return s + "/" + c;
         }
         public String exprString() {
@@ -1556,8 +1562,8 @@ class LambdaForm {
         }
 
         private static boolean typesMatch(BasicType parameterType, Object object) {
-            if (object instanceof Name) {
-                return ((Name)object).type == parameterType;
+            if (object instanceof Name name) {
+                return name.type == parameterType;
             }
             switch (parameterType) {
                 case I_TYPE:  return object instanceof Integer;
@@ -1608,7 +1614,7 @@ class LambdaForm {
         }
         @Override
         public boolean equals(Object x) {
-            return x instanceof Name && equals((Name)x);
+            return x instanceof Name n && equals(n);
         }
         @Override
         public int hashCode() {

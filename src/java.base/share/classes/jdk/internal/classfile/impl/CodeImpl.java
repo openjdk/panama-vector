@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,15 +30,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import jdk.internal.classfile.*;
-import jdk.internal.classfile.attribute.CodeAttribute;
-import jdk.internal.classfile.attribute.RuntimeInvisibleTypeAnnotationsAttribute;
-import jdk.internal.classfile.attribute.RuntimeVisibleTypeAnnotationsAttribute;
-import jdk.internal.classfile.attribute.StackMapTableAttribute;
-import jdk.internal.classfile.constantpool.ClassEntry;
-import jdk.internal.classfile.instruction.*;
+import java.lang.classfile.*;
+import java.lang.classfile.attribute.CodeAttribute;
+import java.lang.classfile.attribute.RuntimeInvisibleTypeAnnotationsAttribute;
+import java.lang.classfile.attribute.RuntimeVisibleTypeAnnotationsAttribute;
+import java.lang.classfile.attribute.StackMapTableAttribute;
+import java.lang.classfile.constantpool.ClassEntry;
+import java.lang.classfile.instruction.*;
 
-import static jdk.internal.classfile.Classfile.*;
+import static java.lang.classfile.ClassFile.*;
 
 public final class CodeImpl
         extends BoundAttribute.BoundCodeAttribute
@@ -97,6 +97,9 @@ public final class CodeImpl
 
     @Override
     public Label getLabel(int bci) {
+        if (bci < 0 || bci > codeLength)
+            throw new IllegalArgumentException(String.format("Bytecode offset out of range; bci=%d, codeLength=%d",
+                                                             bci, codeLength));
         if (labels == null)
             labels = new LabelImpl[codeLength + 1];
         LabelImpl l = labels[bci];
@@ -118,7 +121,7 @@ public final class CodeImpl
         if (!inflated) {
             if (labels == null)
                 labels = new LabelImpl[codeLength + 1];
-            if (((ClassReaderImpl)classReader).options().processLineNumbers)
+            if (classReader.context().lineNumbersOption() == ClassFile.LineNumbersOption.PASS_LINE_NUMBERS)
                 inflateLineNumbers();
             inflateJumpTargets();
             inflateTypeAnnotations();
@@ -150,6 +153,7 @@ public final class CodeImpl
                                         }
                                     },
                                     (SplitConstantPool)buf.constantPool(),
+                                    ((BufWriterImpl)buf).context(),
                                     null).writeTo(buf);
         }
     }
@@ -166,7 +170,7 @@ public final class CodeImpl
         inflateMetadata();
         boolean doLineNumbers = (lineNumbers != null);
         generateCatchTargets(consumer);
-        if (((ClassReaderImpl)classReader).options().processDebug)
+        if (classReader.context().debugElementsOption() == ClassFile.DebugElementsOption.PASS_DEBUG)
             generateDebugElements(consumer);
         for (int pos=codeStart; pos<codeEnd; ) {
             if (labels[pos - codeStart] != null)
@@ -195,7 +199,7 @@ public final class CodeImpl
                 public void accept(int s, int e, int h, int c) {
                     ClassEntry catchTypeEntry = c == 0
                                                              ? null
-                                                             : (ClassEntry) constantPool().entryByIndex(c);
+                                                             : constantPool().entryByIndex(c, ClassEntry.class);
                     exceptionTable.add(new AbstractPseudoInstruction.ExceptionCatchImpl(getLabel(h), getLabel(s), getLabel(e), catchTypeEntry));
                 }
             });
@@ -217,13 +221,16 @@ public final class CodeImpl
     }
 
     private void inflateLabel(int bci) {
+        if (bci < 0 || bci > codeLength)
+            throw new IllegalArgumentException(String.format("Bytecode offset out of range; bci=%d, codeLength=%d",
+                                                             bci, codeLength));
         if (labels[bci] == null)
             labels[bci] = new LabelImpl(this, bci);
     }
 
     private void inflateLineNumbers() {
         for (Attribute<?> a : attributes()) {
-            if (a.attributeMapper() == Attributes.LINE_NUMBER_TABLE) {
+            if (a.attributeMapper() == Attributes.lineNumberTable()) {
                 BoundLineNumberTableAttribute attr = (BoundLineNumberTableAttribute) a;
                 if (lineNumbers == null)
                     lineNumbers = new int[codeLength + 1];
@@ -233,6 +240,10 @@ public final class CodeImpl
                 int pEnd = p + (nLn * 4);
                 for (; p < pEnd; p += 4) {
                     int startPc = classReader.readU2(p);
+                    if (startPc > codeLength) {
+                        throw new IllegalArgumentException(String.format(
+                                "Line number start_pc out of range; start_pc=%d, codeLength=%d", startPc, codeLength));
+                    }
                     int lineNumber = classReader.readU2(p + 2);
                     lineNumbers[startPc] = lineNumber;
                 }
@@ -241,9 +252,22 @@ public final class CodeImpl
     }
 
     private void inflateJumpTargets() {
-        Optional<StackMapTableAttribute> a = findAttribute(Attributes.STACK_MAP_TABLE);
-        if (a.isEmpty())
+        Optional<StackMapTableAttribute> a = findAttribute(Attributes.stackMapTable());
+        if (a.isEmpty()) {
+            if (classReader.readU2(6) <= ClassFile.JAVA_6_VERSION) {
+                //fallback to jump targets inflation without StackMapTableAttribute
+                for (int pos=codeStart; pos<codeEnd; ) {
+                    var i = bcToInstruction(classReader.readU1(pos), pos);
+                    switch (i) {
+                        case BranchInstruction br -> br.target();
+                        case DiscontinuedInstruction.JsrInstruction jsr -> jsr.target();
+                        default -> {}
+                    }
+                    pos += i.sizeInBytes();
+                }
+            }
             return;
+        }
         @SuppressWarnings("unchecked")
         int stackMapPos = ((BoundAttribute<StackMapTableAttribute>) a.get()).payloadStart;
 
@@ -301,8 +325,8 @@ public final class CodeImpl
     }
 
     private void inflateTypeAnnotations() {
-        findAttribute(Attributes.RUNTIME_VISIBLE_TYPE_ANNOTATIONS).ifPresent(RuntimeVisibleTypeAnnotationsAttribute::annotations);
-        findAttribute(Attributes.RUNTIME_INVISIBLE_TYPE_ANNOTATIONS).ifPresent(RuntimeInvisibleTypeAnnotationsAttribute::annotations);
+        findAttribute(Attributes.runtimeVisibleTypeAnnotations()).ifPresent(RuntimeVisibleTypeAnnotationsAttribute::annotations);
+        findAttribute(Attributes.runtimeInvisibleTypeAnnotations()).ifPresent(RuntimeInvisibleTypeAnnotationsAttribute::annotations);
     }
 
     private void generateCatchTargets(Consumer<CodeElement> consumer) {
@@ -313,7 +337,7 @@ public final class CodeImpl
             public void accept(int s, int e, int h, int c) {
                 ClassEntry catchType = c == 0
                                                     ? null
-                                                    : (ClassEntry) classReader.entryByIndex(c);
+                                                    : classReader.entryByIndex(c, ClassEntry.class);
                 consumer.accept(new AbstractPseudoInstruction.ExceptionCatchImpl(getLabel(h), getLabel(s), getLabel(e), catchType));
             }
         });
@@ -321,7 +345,7 @@ public final class CodeImpl
 
     private void generateDebugElements(Consumer<CodeElement> consumer) {
         for (Attribute<?> a : attributes()) {
-            if (a.attributeMapper() == Attributes.CHARACTER_RANGE_TABLE) {
+            if (a.attributeMapper() == Attributes.characterRangeTable()) {
                 var attr = (BoundCharacterRangeTableAttribute) a;
                 int cnt = classReader.readU2(attr.payloadStart);
                 int p = attr.payloadStart + 2;
@@ -333,7 +357,7 @@ public final class CodeImpl
                     consumer.accept(instruction);
                 }
             }
-            else if (a.attributeMapper() == Attributes.LOCAL_VARIABLE_TABLE) {
+            else if (a.attributeMapper() == Attributes.localVariableTable()) {
                 var attr = (BoundLocalVariableTableAttribute) a;
                 int cnt = classReader.readU2(attr.payloadStart);
                 int p = attr.payloadStart + 2;
@@ -345,7 +369,7 @@ public final class CodeImpl
                     consumer.accept(instruction);
                 }
             }
-            else if (a.attributeMapper() == Attributes.LOCAL_VARIABLE_TYPE_TABLE) {
+            else if (a.attributeMapper() == Attributes.localVariableTypeTable()) {
                 var attr = (BoundLocalVariableTypeTableAttribute) a;
                 int cnt = classReader.readU2(attr.payloadStart);
                 int p = attr.payloadStart + 2;
@@ -357,10 +381,10 @@ public final class CodeImpl
                     consumer.accept(instruction);
                 }
             }
-            else if (a.attributeMapper() == Attributes.RUNTIME_VISIBLE_TYPE_ANNOTATIONS) {
+            else if (a.attributeMapper() == Attributes.runtimeVisibleTypeAnnotations()) {
                 consumer.accept((BoundRuntimeVisibleTypeAnnotationsAttribute) a);
             }
-            else if (a.attributeMapper() == Attributes.RUNTIME_INVISIBLE_TYPE_ANNOTATIONS) {
+            else if (a.attributeMapper() == Attributes.runtimeInvisibleTypeAnnotations()) {
                 consumer.accept((BoundRuntimeInvisibleTypeAnnotationsAttribute) a);
             }
         }
@@ -442,8 +466,8 @@ public final class CodeImpl
                     case DSTORE -> new AbstractInstruction.BoundStoreInstruction(Opcode.DSTORE_W, this, pos);
                     case ASTORE -> new AbstractInstruction.BoundStoreInstruction(Opcode.ASTORE_W, this, pos);
                     case IINC -> new AbstractInstruction.BoundIncrementInstruction(Opcode.IINC_W, this, pos);
-                    case RET -> throw new UnsupportedOperationException("RET_W instruction not supported");
-                    default -> throw new UnsupportedOperationException("unknown wide instruction: " + bclow);
+                    case RET ->  new AbstractInstruction.BoundRetInstruction(Opcode.RET_W, this, pos);
+                    default -> throw new IllegalArgumentException("unknown wide instruction: " + bclow);
                 };
             }
 
@@ -452,13 +476,13 @@ public final class CodeImpl
             case IFNONNULL -> new AbstractInstruction.BoundBranchInstruction(Opcode.IFNONNULL, CodeImpl.this, pos);
             case GOTO_W -> new AbstractInstruction.BoundBranchInstruction(Opcode.GOTO_W, CodeImpl.this, pos);
 
-            case JSR -> throw new UnsupportedOperationException("JSR instruction not supported");
-            case RET -> throw new UnsupportedOperationException("RET instruction not supported");
-            case JSR_W -> throw new UnsupportedOperationException("JSR_W instruction not supported");
+            case JSR -> new AbstractInstruction.BoundJsrInstruction(Opcode.JSR, CodeImpl.this, pos);
+            case RET ->  new AbstractInstruction.BoundRetInstruction(Opcode.RET, this, pos);
+            case JSR_W -> new AbstractInstruction.BoundJsrInstruction(Opcode.JSR_W, CodeImpl.this, pos);
             default -> {
                 Instruction instr = SINGLETON_INSTRUCTIONS[bc];
                 if (instr == null)
-                    throw new UnsupportedOperationException("unknown instruction: " + bc);
+                    throw new IllegalArgumentException("unknown instruction: " + bc);
                 yield instr;
             }
         };

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2024, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2016, 2023 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -37,6 +37,7 @@
 #include "oops/objArrayKlass.hpp"
 #include "oops/oop.inline.hpp"
 #include "prims/methodHandles.hpp"
+#include "prims/upcallLinker.hpp"
 #include "runtime/frame.inline.hpp"
 #include "runtime/handles.inline.hpp"
 #include "runtime/javaThread.hpp"
@@ -372,9 +373,9 @@ class StubGenerator: public StubCodeGenerator {
 #ifdef ASSERT
       char  assertMsg[] = "check BasicType definition in globalDefinitions.hpp";
       __ z_chi(r_arg_result_type, T_BOOLEAN);
-      __ asm_assert_low(assertMsg, 0x0234);
+      __ asm_assert(Assembler::bcondNotLow, assertMsg, 0x0234);
       __ z_chi(r_arg_result_type, T_NARROWOOP);
-      __ asm_assert_high(assertMsg, 0x0235);
+      __ asm_assert(Assembler::bcondNotHigh, assertMsg, 0x0235);
 #endif
       __ add2reg(r_arg_result_type, -T_BOOLEAN);          // Remove offset.
       __ z_larl(Z_R1, firstHandler);                      // location of first handler
@@ -740,7 +741,7 @@ class StubGenerator: public StubCodeGenerator {
   void assert_positive_int(Register count) {
 #ifdef ASSERT
     __ z_srag(Z_R0, count, 31);  // Just leave the sign (must be zero) in Z_R0.
-    __ asm_assert_eq("missing zero extend", 0xAFFE);
+    __ asm_assert(Assembler::bcondZero, "missing zero extend", 0xAFFE);
 #endif
   }
 
@@ -2980,7 +2981,6 @@ class StubGenerator: public StubCodeGenerator {
   //   Z_ARG3    - y address
   //   Z_ARG4    - y length
   //   Z_ARG5    - z address
-  //   160[Z_SP] - z length
   address generate_multiplyToLen() {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", "multiplyToLen");
@@ -2992,8 +2992,6 @@ class StubGenerator: public StubCodeGenerator {
     const Register y    = Z_ARG3;
     const Register ylen = Z_ARG4;
     const Register z    = Z_ARG5;
-    // zlen is passed on the stack:
-    // Address zlen(Z_SP, _z_abi(remaining_cargs));
 
     // Next registers will be saved on stack in multiply_to_len().
     const Register tmp1 = Z_tmp_1;
@@ -3014,7 +3012,7 @@ class StubGenerator: public StubCodeGenerator {
     return start;
   }
 
-  address generate_nmethod_entry_barrier() {
+  address generate_method_entry_barrier() {
     __ align(CodeEntryAlignment);
     StubCodeMark mark(this, "StubRoutines", "nmethod_entry_barrier");
 
@@ -3085,7 +3083,29 @@ class StubGenerator: public StubCodeGenerator {
     Unimplemented();
     return nullptr;
   }
-  #endif // INCLUD_JFR
+
+  RuntimeStub* generate_jfr_return_lease() {
+    if (!Continuations::enabled()) return nullptr;
+    Unimplemented();
+    return nullptr;
+  }
+
+  #endif // INCLUDE_JFR
+
+  // exception handler for upcall stubs
+  address generate_upcall_stub_exception_handler() {
+    StubCodeMark mark(this, "StubRoutines", "upcall stub exception handler");
+    address start = __ pc();
+
+    // Native caller has no idea how to handle exceptions,
+    // so we just crash here. Up to callee to catch exceptions.
+    __ verify_oop(Z_ARG1);
+    __ load_const_optimized(Z_R1_scratch, CAST_FROM_FN_PTR(uint64_t, UpcallLinker::handle_uncaught_exception));
+    __ call_c(Z_R1_scratch);
+    __ should_not_reach_here();
+
+    return start;
+  }
 
   void generate_initial_stubs() {
     // Generates all stubs and initializes the entry points.
@@ -3133,9 +3153,17 @@ class StubGenerator: public StubCodeGenerator {
     StubRoutines::_cont_returnBarrier = generate_cont_returnBarrier();
     StubRoutines::_cont_returnBarrierExc = generate_cont_returnBarrier_exception();
 
-    JFR_ONLY(StubRoutines::_jfr_write_checkpoint_stub = generate_jfr_write_checkpoint();)
-    JFR_ONLY(StubRoutines::_jfr_write_checkpoint = StubRoutines::_jfr_write_checkpoint_stub->entry_point();)
+    JFR_ONLY(generate_jfr_stubs();)
   }
+
+#if INCLUDE_JFR
+  void generate_jfr_stubs() {
+    StubRoutines::_jfr_write_checkpoint_stub = generate_jfr_write_checkpoint();
+    StubRoutines::_jfr_write_checkpoint = StubRoutines::_jfr_write_checkpoint_stub->entry_point();
+    StubRoutines::_jfr_return_lease_stub = generate_jfr_return_lease();
+    StubRoutines::_jfr_return_lease = StubRoutines::_jfr_return_lease_stub->entry_point();
+  }
+#endif // INCLUDE_JFR
 
   void generate_final_stubs() {
     // Generates all stubs and initializes the entry points.
@@ -3155,10 +3183,11 @@ class StubGenerator: public StubCodeGenerator {
 
     // nmethod entry barriers for concurrent class unloading
     BarrierSetNMethod* bs_nm = BarrierSet::barrier_set()->barrier_set_nmethod();
-    if (bs_nm != NULL) {
-      StubRoutines::zarch::_nmethod_entry_barrier = generate_nmethod_entry_barrier();
+    if (bs_nm != nullptr) {
+      StubRoutines::_method_entry_barrier = generate_method_entry_barrier();
     }
 
+    StubRoutines::_upcall_stub_exception_handler = generate_upcall_stub_exception_handler();
   }
 
   void generate_compiler_stubs() {

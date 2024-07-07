@@ -28,13 +28,10 @@
  * @summary Test some examples with independent packs with cyclic dependency
  *          between the packs.
  *          Before fix, this hit: "assert(!is_visited) failed: visit only once"
- * @requires vm.compiler2.enabled
- * @requires vm.bits == 64
- * @requires vm.cpu.features ~= ".*avx2.*" | vm.cpu.features ~= ".*asimd.*"
  * @modules java.base/jdk.internal.misc
  * @library /test/lib /
- * @run main/othervm -XX:LoopUnrollLimit=250
- *                   -XX:CompileCommand=compileonly,compiler.loopopts.superword.TestIndependentPacksWithCyclicDependency2::test
+ * @run main/othervm -XX:CompileCommand=compileonly,compiler.loopopts.superword.TestIndependentPacksWithCyclicDependency2::test
+ *                   -XX:+IgnoreUnrecognizedVMOptions -XX:LoopUnrollLimit=250
  *                   compiler.loopopts.superword.TestIndependentPacksWithCyclicDependency2
  */
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2023, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2014, 2021, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -27,6 +27,7 @@
 #define CPU_AARCH64_REGISTER_AARCH64_HPP
 
 #include "asm/register.hpp"
+#include "utilities/checkedCast.hpp"
 #include "utilities/powerOfTwo.hpp"
 
 class VMRegImpl;
@@ -52,7 +53,7 @@ class Register {
 
    public:
     // accessors
-    constexpr int raw_encoding() const { return this - first(); }
+    constexpr int raw_encoding() const { return checked_cast<int>(this - first()); }
     constexpr int     encoding() const { assert(is_valid(), "invalid register"); return raw_encoding(); }
     constexpr bool    is_valid() const { return 0 <= raw_encoding() && raw_encoding() < number_of_registers; }
 
@@ -175,7 +176,7 @@ class FloatRegister {
 
    public:
     // accessors
-    constexpr int raw_encoding() const { return this - first(); }
+    constexpr int raw_encoding() const { return checked_cast<int>(this - first()); }
     constexpr int     encoding() const { assert(is_valid(), "invalid register"); return raw_encoding(); }
     constexpr bool    is_valid() const { return 0 <= raw_encoding() && raw_encoding() < number_of_registers; }
 
@@ -308,7 +309,7 @@ public:
 
    public:
     // accessors
-    int raw_encoding() const  { return this - first(); }
+    int raw_encoding() const  { return checked_cast<int>(this - first()); }
     int encoding() const      { assert(is_valid(), "invalid register"); return raw_encoding(); }
     bool is_valid() const     { return 0 <= raw_encoding() && raw_encoding() < number_of_registers; }
     bool is_governing() const { return 0 <= raw_encoding() && raw_encoding() < number_of_governing_registers; }
@@ -388,18 +389,21 @@ typedef AbstractRegSet<PRegister> PRegSet;
 
 template <>
 inline Register AbstractRegSet<Register>::first() {
-  uint32_t first = _bitset & -_bitset;
-  return first ? as_Register(exact_log2(first)) : noreg;
+  if (_bitset == 0) { return noreg; }
+  return as_Register(count_trailing_zeros(_bitset));
 }
 
 template <>
 inline FloatRegister AbstractRegSet<FloatRegister>::first() {
-  uint32_t first = _bitset & -_bitset;
-  return first ? as_FloatRegister(exact_log2(first)) : fnoreg;
+  if (_bitset == 0) { return fnoreg; }
+  return as_FloatRegister(count_trailing_zeros(_bitset));
 }
 
 inline Register as_Register(FloatRegister reg) {
   return as_Register(reg->encoding());
 }
+
+// High-level register class of an OptoReg or a VMReg register.
+enum RC { rc_bad, rc_int, rc_float, rc_predicate, rc_stack };
 
 #endif // CPU_AARCH64_REGISTER_AARCH64_HPP

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 #define SHARE_MEMORY_ALLOCATION_HPP
 
 #include "memory/allStatic.hpp"
+#include "nmt/memflags.hpp"
 #include "utilities/debug.hpp"
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/macros.hpp"
@@ -99,63 +100,6 @@ typedef AllocFailStrategy::AllocFailEnum AllocFailType;
 // void FreeHeap(void* p);
 //
 
-#define MEMORY_TYPES_DO(f)                                                           \
-  /* Memory type by sub systems. It occupies lower byte. */                          \
-  f(mtJavaHeap,       "Java Heap")   /* Java heap                                 */ \
-  f(mtClass,          "Class")       /* Java classes                              */ \
-  f(mtThread,         "Thread")      /* thread objects                            */ \
-  f(mtThreadStack,    "Thread Stack")                                                \
-  f(mtCode,           "Code")        /* generated code                            */ \
-  f(mtGC,             "GC")                                                          \
-  f(mtGCCardSet,      "GCCardSet")   /* G1 card set remembered set                */ \
-  f(mtCompiler,       "Compiler")                                                    \
-  f(mtJVMCI,          "JVMCI")                                                       \
-  f(mtInternal,       "Internal")    /* memory used by VM, but does not belong to */ \
-                                     /* any of above categories, and not used by  */ \
-                                     /* NMT                                       */ \
-  f(mtOther,          "Other")       /* memory not used by VM                     */ \
-  f(mtSymbol,         "Symbol")                                                      \
-  f(mtNMT,            "Native Memory Tracking")  /* memory used by NMT            */ \
-  f(mtClassShared,    "Shared class space")      /* class data sharing            */ \
-  f(mtChunk,          "Arena Chunk") /* chunk that holds content of arenas        */ \
-  f(mtTest,           "Test")        /* Test type for verifying NMT               */ \
-  f(mtTracing,        "Tracing")                                                     \
-  f(mtLogging,        "Logging")                                                     \
-  f(mtStatistics,     "Statistics")                                                  \
-  f(mtArguments,      "Arguments")                                                   \
-  f(mtModule,         "Module")                                                      \
-  f(mtSafepoint,      "Safepoint")                                                   \
-  f(mtSynchronizer,   "Synchronization")                                             \
-  f(mtServiceability, "Serviceability")                                              \
-  f(mtMetaspace,      "Metaspace")                                                   \
-  f(mtStringDedup,    "String Deduplication")                                        \
-  f(mtObjectMonitor,  "Object Monitors")                                             \
-  f(mtNone,           "Unknown")                                                     \
-  //end
-
-#define MEMORY_TYPE_DECLARE_ENUM(type, human_readable) \
-  type,
-
-/*
- * Memory types
- */
-enum class MEMFLAGS : uint8_t  {
-  MEMORY_TYPES_DO(MEMORY_TYPE_DECLARE_ENUM)
-  mt_number_of_types   // number of memory types (mtDontTrack
-                       // is not included as validate type)
-};
-// Extra insurance that MEMFLAGS truly has the same size as uint8_t.
-STATIC_ASSERT(sizeof(MEMFLAGS) == sizeof(uint8_t));
-
-#define MEMORY_TYPE_SHORTNAME(type, human_readable) \
-  constexpr MEMFLAGS type = MEMFLAGS::type;
-
-// Generate short aliases for the enum values. E.g. mtGC instead of MEMFLAGS::mtGC.
-MEMORY_TYPES_DO(MEMORY_TYPE_SHORTNAME)
-
-// Make an int version of the sentinel end value.
-constexpr int mt_number_of_types = static_cast<int>(MEMFLAGS::mt_number_of_types);
-
 extern bool NMT_track_callsite;
 
 class NativeCallStack;
@@ -179,13 +123,13 @@ void FreeHeap(void* p);
 
 class CHeapObjBase {
  public:
-  ALWAYSINLINE void* operator new(size_t size, MEMFLAGS f) throw() {
+  ALWAYSINLINE void* operator new(size_t size, MEMFLAGS f) {
     return AllocateHeap(size, f);
   }
 
   ALWAYSINLINE void* operator new(size_t size,
                                   MEMFLAGS f,
-                                  const NativeCallStack& stack) throw() {
+                                  const NativeCallStack& stack) {
     return AllocateHeap(size, f, stack);
   }
 
@@ -202,13 +146,13 @@ class CHeapObjBase {
     return AllocateHeap(size, f, AllocFailStrategy::RETURN_NULL);
   }
 
-  ALWAYSINLINE void* operator new[](size_t size, MEMFLAGS f) throw() {
+  ALWAYSINLINE void* operator new[](size_t size, MEMFLAGS f) {
     return AllocateHeap(size, f);
   }
 
   ALWAYSINLINE void* operator new[](size_t size,
                                     MEMFLAGS f,
-                                    const NativeCallStack& stack) throw() {
+                                    const NativeCallStack& stack) {
     return AllocateHeap(size, f, stack);
   }
 
@@ -233,12 +177,12 @@ class CHeapObjBase {
 template<MEMFLAGS F>
 class CHeapObj {
  public:
-  ALWAYSINLINE void* operator new(size_t size) throw() {
+  ALWAYSINLINE void* operator new(size_t size) {
     return CHeapObjBase::operator new(size, F);
   }
 
   ALWAYSINLINE void* operator new(size_t size,
-                                  const NativeCallStack& stack) throw() {
+                                  const NativeCallStack& stack) {
     return CHeapObjBase::operator new(size, F, stack);
   }
 
@@ -251,12 +195,12 @@ class CHeapObj {
     return CHeapObjBase::operator new(size, F, nt);
   }
 
-  ALWAYSINLINE void* operator new[](size_t size) throw() {
+  ALWAYSINLINE void* operator new[](size_t size) {
     return CHeapObjBase::operator new[](size, F);
   }
 
   ALWAYSINLINE void* operator new[](size_t size,
-                                    const NativeCallStack& stack) throw() {
+                                    const NativeCallStack& stack) {
     return CHeapObjBase::operator new[](size, F, stack);
   }
 
@@ -282,11 +226,11 @@ class CHeapObj {
 // Calling new or delete will result in fatal error.
 
 class StackObj {
- private:
-  void* operator new(size_t size) throw();
-  void* operator new [](size_t size) throw();
-  void  operator delete(void* p);
-  void  operator delete [](void* p);
+ public:
+  void* operator new(size_t size) = delete;
+  void* operator new [](size_t size) = delete;
+  void  operator delete(void* p) = delete;
+  void  operator delete [](void* p) = delete;
 };
 
 // Base class for objects stored in Metaspace.
@@ -370,6 +314,7 @@ class MetaspaceObj {
   f(ConstantPoolCache) \
   f(Annotations) \
   f(MethodCounters) \
+  f(SharedClassPathEntry) \
   f(RecordComponent)
 
 #define METASPACE_OBJ_TYPE_DECLARE(name) name ## Type,
@@ -432,7 +377,7 @@ extern void resource_free_bytes( Thread* thread, char *old, size_t size );
 // Base class for objects allocated in the resource area.
 class ResourceObj {
  public:
-  void* operator new(size_t size) throw() {
+  void* operator new(size_t size) {
     return resource_allocate_bytes(size);
   }
 
@@ -500,11 +445,11 @@ protected:
   void* operator new [](size_t size, const std::nothrow_t&  nothrow_constant, MEMFLAGS flags) throw() = delete;
 
   // Arena allocations
-  void* operator new(size_t size, Arena *arena) throw();
-  void* operator new [](size_t size, Arena *arena) throw() = delete;
+  void* operator new(size_t size, Arena *arena);
+  void* operator new [](size_t size, Arena *arena) = delete;
 
   // Resource allocations
-  void* operator new(size_t size) throw() {
+  void* operator new(size_t size) {
     address res = (address)resource_allocate_bytes(size);
     DEBUG_ONLY(set_allocation_type(res, RESOURCE_AREA);)
     return res;
@@ -515,8 +460,8 @@ protected:
     return res;
   }
 
-  void* operator new [](size_t size) throw() = delete;
-  void* operator new [](size_t size, const std::nothrow_t& nothrow_constant) throw() = delete;
+  void* operator new [](size_t size) = delete;
+  void* operator new [](size_t size, const std::nothrow_t& nothrow_constant) = delete;
   void  operator delete(void* p);
   void  operator delete [](void* p) = delete;
 
@@ -613,32 +558,6 @@ protected:
 public:
   ReallocMark()   PRODUCT_RETURN;
   void check()    PRODUCT_RETURN;
-};
-
-// Helper class to allocate arrays that may become large.
-// Uses the OS malloc for allocations smaller than ArrayAllocatorMallocLimit
-// and uses mapped memory for larger allocations.
-// Most OS mallocs do something similar but Solaris malloc does not revert
-// to mapped memory for large allocations. By default ArrayAllocatorMallocLimit
-// is set so that we always use malloc except for Solaris where we set the
-// limit to get mapped memory.
-template <class E>
-class ArrayAllocator : public AllStatic {
- private:
-  static bool should_use_malloc(size_t length);
-
-  static E* allocate_malloc(size_t length, MEMFLAGS flags);
-  static E* allocate_mmap(size_t length, MEMFLAGS flags);
-
-  static E* reallocate_malloc(E* addr, size_t new_length, MEMFLAGS flags);
-
-  static void free_malloc(E* addr, size_t length);
-  static void free_mmap(E* addr, size_t length);
-
- public:
-  static E* allocate(size_t length, MEMFLAGS flags);
-  static E* reallocate(E* old_addr, size_t old_length, size_t new_length, MEMFLAGS flags);
-  static void free(E* addr, size_t length);
 };
 
 // Uses mmapped memory for all allocations. All allocations are initially

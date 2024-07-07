@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2024, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2021, Azul Systems, Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -221,6 +221,10 @@ inline bool JavaThread::is_terminated() const {
 
 inline void JavaThread::set_terminated(TerminatedTypes t) {
   Atomic::release_store(&_terminated, t);
+}
+
+inline bool JavaThread::is_active_Java_thread() const {
+  return on_thread_list() && !is_terminated();
 }
 
 // Allow tracking of class initialization monitor use

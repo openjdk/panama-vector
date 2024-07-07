@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,8 +25,9 @@
 #ifndef SHARE_INTERPRETER_OOPMAPCACHE_HPP
 #define SHARE_INTERPRETER_OOPMAPCACHE_HPP
 
-#include "oops/generateOopMap.hpp"
+#include "runtime/handles.hpp"
 #include "runtime/mutex.hpp"
+#include "utilities/globalDefinitions.hpp"
 
 // A Cache for storing (method, bci) -> oopMap.
 // The memory management system uses the cache when locating object
@@ -60,6 +61,7 @@ class OffsetClosure  {
   virtual void offset_do(int offset) = 0;
 };
 
+class Method;
 class OopMapCacheEntry;
 
 class InterpreterOopMap: ResourceObj {
@@ -81,27 +83,27 @@ class InterpreterOopMap: ResourceObj {
 
  private:
   Method*        _method;         // the method for which the mask is valid
-  unsigned short _bci;            // the bci    for which the mask is valid
-  int            _mask_size;      // the mask size in bits
+  int            _mask_size;      // the mask size in bits (USHRT_MAX if invalid)
   int            _expression_stack_size; // the size of the expression stack in slots
+  unsigned short _bci;            // the bci    for which the mask is valid
 
  protected:
+#ifdef ASSERT
+  bool _resource_allocate_bit_mask;
+#endif
+  int            _num_oops;
   intptr_t       _bit_mask[N];    // the bit mask if
                                   // mask_size <= small_mask_limit,
                                   // ptr to bit mask otherwise
                                   // "protected" so that sub classes can
                                   // access it without using trickery in
                                   // method bit_mask().
-  int            _num_oops;
-#ifdef ASSERT
-  bool _resource_allocate_bit_mask;
-#endif
 
   // access methods
   Method*        method() const                  { return _method; }
   void           set_method(Method* v)           { _method = v; }
-  int            bci() const                     { return _bci; }
-  void           set_bci(int v)                  { _bci = v; }
+  unsigned short bci() const                     { return _bci; }
+  void           set_bci(unsigned short v)       { _bci = v; }
   int            mask_size() const               { return _mask_size; }
   void           set_mask_size(int v)            { _mask_size = v; }
   // Test bit mask size and return either the in-line bit mask or allocated
@@ -126,7 +128,6 @@ class InterpreterOopMap: ResourceObj {
 
  public:
   InterpreterOopMap();
-  ~InterpreterOopMap();
 
   // Copy the OopMapCacheEntry in parameter "from" into this
   // InterpreterOopMap.  If the _bit_mask[0] in "from" points to
@@ -144,16 +145,17 @@ class InterpreterOopMap: ResourceObj {
 
   int expression_stack_size() const              { return _expression_stack_size; }
 
+  // Determines if a valid mask has been computed
+  bool has_valid_mask() const { return _mask_size != USHRT_MAX; }
 };
 
 class OopMapCache : public CHeapObj<mtClass> {
  static OopMapCacheEntry* volatile _old_entries;
  private:
-  enum { _size        = 32,     // Use fixed size for now
-         _probe_depth = 3       // probe depth in case of collisions
-  };
+  static constexpr int size = 32;        // Use fixed size for now
+  static constexpr int probe_depth = 3;  // probe depth in case of collisions
 
-  OopMapCacheEntry* volatile * _array;
+  OopMapCacheEntry* volatile _array[size];
 
   unsigned int hash_value_for(const methodHandle& method, int bci) const;
   OopMapCacheEntry* entry_at(int i) const;
@@ -176,7 +178,15 @@ class OopMapCache : public CHeapObj<mtClass> {
 
   // Compute an oop map without updating the cache or grabbing any locks (for debugging)
   static void compute_one_oop_map(const methodHandle& method, int bci, InterpreterOopMap* entry);
-  static void cleanup_old_entries();
+
+  // Check if we need to clean up old entries
+  static bool has_cleanup_work();
+
+  // Request cleanup if work is needed and notification is currently possible
+  static void try_trigger_cleanup();
+
+  // Clean up the old entries
+  static void cleanup();
 };
 
 #endif // SHARE_INTERPRETER_OOPMAPCACHE_HPP

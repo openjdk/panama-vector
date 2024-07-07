@@ -260,7 +260,7 @@ address MethodHandles::generate_method_handle_interpreter_entry(MacroAssembler* 
 
     Label L;
     BLOCK_COMMENT("verify_intrinsic_id {");
-    __ cmpw(Address(rbx_method, Method::intrinsic_id_offset_in_bytes()), (int) iid);
+    __ cmpw(Address(rbx_method, Method::intrinsic_id_offset()), (int) iid);
     __ jcc(Assembler::equal, L);
     if (iid == vmIntrinsics::_linkToVirtual ||
         iid == vmIntrinsics::_linkToSpecial) {
@@ -536,10 +536,11 @@ void trace_method_handle_stub(const char* adaptername,
       Register r = as_Register(i);
       // The registers are stored in reverse order on the stack (by pusha).
 #ifdef AMD64
-      assert(Register::number_of_registers == 16, "sanity");
+      int num_regs = UseAPX ? 32 : 16;
+      assert(Register::available_gp_registers() == num_regs, "sanity");
       if (r == rsp) {
         // rsp is actually not stored by pusha(), compute the old rsp from saved_regs (rsp after pusha): saved_regs + 16 = old rsp
-        ls.print("%3s=" PTR_FORMAT, r->name(), (intptr_t)(&saved_regs[16]));
+        ls.print("%3s=" PTR_FORMAT, r->name(), (intptr_t)(&saved_regs[num_regs]));
       } else {
         ls.print("%3s=" PTR_FORMAT, r->name(), saved_regs[((saved_regs_count - 1) - i)]);
       }

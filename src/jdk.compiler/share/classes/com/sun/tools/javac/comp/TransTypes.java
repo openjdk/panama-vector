@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -512,7 +512,7 @@ public class TransTypes extends TreeTranslator {
     }
 
     public void visitForeachLoop(JCEnhancedForLoop tree) {
-        tree.varOrRecordPattern = translate(tree.varOrRecordPattern, null);
+        tree.var = translate(tree.var, null);
         Type iterableType = tree.expr.type;
         tree.expr = translate(tree.expr, erasure(tree.expr.type));
         if (types.elemtype(tree.expr.type) == null)
@@ -551,7 +551,13 @@ public class TransTypes extends TreeTranslator {
 
     public void visitCase(JCCase tree) {
         tree.labels = translate(tree.labels, null);
+        tree.guard = translate(tree.guard, syms.booleanType);
         tree.stats = translate(tree.stats);
+        result = tree;
+    }
+
+    @Override
+    public void visitAnyPattern(JCAnyPattern tree) {
         result = tree;
     }
 
@@ -569,7 +575,6 @@ public class TransTypes extends TreeTranslator {
     @Override
     public void visitPatternCaseLabel(JCPatternCaseLabel tree) {
         tree.pat = translate(tree.pat, null);
-        tree.guard = translate(tree.guard, syms.booleanType);
         result = tree;
     }
 
@@ -582,12 +587,6 @@ public class TransTypes extends TreeTranslator {
         tree.cases = translate(tree.cases, tree.type);
         tree.type = erasure(tree.type);
         result = retype(tree, tree.type, pt);
-    }
-
-    @Override
-    public void visitParenthesizedPattern(JCParenthesizedPattern tree) {
-        tree.pattern = translate(tree.pattern, null);
-        result = tree;
     }
 
     public void visitRecordPattern(JCRecordPattern tree) {
@@ -898,7 +897,7 @@ public class TransTypes extends TreeTranslator {
         result = tree;
     }
 
-/**************************************************************************
+/* ************************************************************************
  * utility methods
  *************************************************************************/
 
@@ -906,7 +905,7 @@ public class TransTypes extends TreeTranslator {
         return types.erasure(t);
     }
 
-/**************************************************************************
+/* ************************************************************************
  * main method
  *************************************************************************/
 

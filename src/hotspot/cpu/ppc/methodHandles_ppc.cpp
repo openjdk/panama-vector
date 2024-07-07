@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2012, 2023 SAP SE. All rights reserved.
+ * Copyright (c) 1997, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2024 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -247,7 +247,7 @@ address MethodHandles::generate_method_handle_interpreter_entry(MacroAssembler* 
 
     Label L;
     BLOCK_COMMENT("verify_intrinsic_id {");
-    __ load_sized_value(R30_tmp1, Method::intrinsic_id_offset_in_bytes(), R19_method,
+    __ load_sized_value(R30_tmp1, in_bytes(Method::intrinsic_id_offset()), R19_method,
                         sizeof(u2), /*is_signed*/ false);
     __ cmpwi(CCR1, R30_tmp1, (int) iid);
     __ beq(CCR1, L);
@@ -308,7 +308,14 @@ address MethodHandles::generate_method_handle_interpreter_entry(MacroAssembler* 
 
 void MethodHandles::jump_to_native_invoker(MacroAssembler* _masm, Register nep_reg, Register temp_target) {
   BLOCK_COMMENT("jump_to_native_invoker {");
-  __ stop("Should not reach here");
+  assert_different_registers(nep_reg, temp_target);
+  assert(nep_reg != noreg, "required register");
+
+  // Load the invoker, as NEP -> .invoker
+  __ verify_oop(nep_reg);
+  __ ld(temp_target, NONZERO(jdk_internal_foreign_abi_NativeEntryPoint::downcall_stub_address_offset_in_bytes()), nep_reg);
+  __ mtctr(temp_target);
+  __ bctr();
   BLOCK_COMMENT("} jump_to_native_invoker");
 }
 
@@ -574,7 +581,7 @@ void MethodHandles::trace_method_handle(MacroAssembler* _masm, const char* adapt
   const Register tmp = R11; // Will be preserved.
   const int nbytes_save = MacroAssembler::num_volatile_regs * 8;
   __ save_volatile_gprs(R1_SP, -nbytes_save); // except R0
-  __ save_LR_CR(tmp); // save in old frame
+  __ save_LR(tmp); // save in old frame
 
   __ mr(R5_ARG3, R1_SP);     // saved_sp
   __ push_frame_reg_args(nbytes_save, tmp);
@@ -585,7 +592,7 @@ void MethodHandles::trace_method_handle(MacroAssembler* _masm, const char* adapt
   __ call_VM_leaf(CAST_FROM_FN_PTR(address, trace_method_handle_stub));
 
   __ pop_frame();
-  __ restore_LR_CR(tmp);
+  __ restore_LR(tmp);
   __ restore_volatile_gprs(R1_SP, -nbytes_save); // except R0
 
   BLOCK_COMMENT("} trace_method_handle");

@@ -24,7 +24,7 @@
 package org.openjdk.bench.jdk.incubator.vector.crypto;
 
 import org.openjdk.jmh.annotations.*;
-import jdk.incubator.foreign.MemorySegment;
+import java.lang.foreign.MemorySegment;
 import jdk.incubator.vector.*;
 
 import java.nio.ByteOrder;

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002, 2023, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2012, 2023 SAP SE. All rights reserved.
+ * Copyright (c) 2002, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2024 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,7 +28,6 @@
 
 #include "asm/assembler.hpp"
 #include "oops/accessDecorators.hpp"
-#include "runtime/rtmLocking.hpp"
 #include "utilities/macros.hpp"
 
 // MacroAssembler extends Assembler by a few frequently used macros.
@@ -179,6 +178,8 @@ class MacroAssembler: public Assembler {
   void inline set_cmp3(Register dst);
   // set dst to (treat_unordered_like_less ? -1 : +1)
   void inline set_cmpu3(Register dst, bool treat_unordered_like_less);
+  // Branch-free implementation to convert !=0 to 1.
+  void inline normalize_bool(Register dst, Register temp = R0, bool is_64bit = false);
 
   inline void pd_patch_instruction(address branch, address target, const char* file, int line);
   NOT_PRODUCT(static void pd_print_patched_instruction(address branch);)
@@ -299,7 +300,9 @@ class MacroAssembler: public Assembler {
                              bool include_fp_regs = true, bool include_R3_RET_reg = true);
   void restore_volatile_gprs(Register src_base, int offset,
                              bool include_fp_regs = true, bool include_R3_RET_reg = true);
-  void save_LR_CR(   Register tmp);     // tmp contains LR on return.
+  void save_LR(Register tmp);
+  void restore_LR(Register tmp);
+  void save_LR_CR(Register tmp);     // tmp contains LR on return.
   void restore_LR_CR(Register tmp);
 
   // Get current PC using bl-next-instruction trick.
@@ -368,6 +371,9 @@ class MacroAssembler: public Assembler {
                            Register toc);
 #endif
 
+  static int ic_check_size();
+  int ic_check(int end_alignment);
+
  protected:
 
   // It is imperative that all calls into the VM are handled via the
@@ -418,6 +424,12 @@ class MacroAssembler: public Assembler {
   inline void call_stub_and_return_to(Register function_entry, Register return_pc);
 
   void post_call_nop();
+  static bool is_post_call_nop(int instr_bits) {
+    const uint32_t nineth_bit = opp_u_field(1, 9, 9);
+    const uint32_t opcode_mask = 0b111110 << OPCODE_SHIFT;
+    const uint32_t pcn_mask = opcode_mask | nineth_bit;
+    return (instr_bits & pcn_mask) == (Assembler::CMPLI_OPCODE | nineth_bit);
+  }
 
   //
   // Java utilities
@@ -594,6 +606,33 @@ class MacroAssembler: public Assembler {
                            Register temp2_reg,
                            Label& L_success);
 
+  void repne_scan(Register addr, Register value, Register count, Register scratch);
+
+  // As above, but with a constant super_klass.
+  // The result is in Register result, not the condition codes.
+  void lookup_secondary_supers_table(Register r_sub_klass,
+                                     Register r_super_klass,
+                                     Register temp1,
+                                     Register temp2,
+                                     Register temp3,
+                                     Register temp4,
+                                     Register result,
+                                     u1 super_klass_slot);
+
+  void verify_secondary_supers_table(Register r_sub_klass,
+                                     Register r_super_klass,
+                                     Register result,
+                                     Register temp1,
+                                     Register temp2,
+                                     Register temp3);
+
+  void lookup_secondary_supers_table_slow_path(Register r_super_klass,
+                                               Register r_array_base,
+                                               Register r_array_index,
+                                               Register r_bitmap,
+                                               Register result,
+                                               Register temp1);
+
   void clinit_barrier(Register klass,
                       Register thread,
                       Label* L_fast_path = nullptr,
@@ -606,6 +645,9 @@ class MacroAssembler: public Assembler {
   void pop_cont_fastpath();
   void inc_held_monitor_count(Register tmp);
   void dec_held_monitor_count(Register tmp);
+  void atomically_flip_locked_state(bool is_unlock, Register obj, Register tmp, Label& failed, int semantics);
+  void lightweight_lock(Register obj, Register t1, Register t2, Label& slow);
+  void lightweight_unlock(Register obj, Register t1, Label& slow);
 
   // allocation (for C1)
   void tlab_allocate(
@@ -615,46 +657,21 @@ class MacroAssembler: public Assembler {
     Register t1,                       // temp register
     Label&   slow_case                 // continuation point if fast allocation fails
   );
-  void incr_allocated_bytes(RegisterOrConstant size_in_bytes, Register t1, Register t2);
 
   enum { trampoline_stub_size = 6 * 4 };
   address emit_trampoline_stub(int destination_toc_offset, int insts_call_instruction_offset, Register Rtoc = noreg);
 
-  void atomic_inc_ptr(Register addr, Register result, int simm16 = 1);
-  void atomic_ori_int(Register addr, Register result, int uimm16);
-
-#if INCLUDE_RTM_OPT
-  void rtm_counters_update(Register abort_status, Register rtm_counters);
-  void branch_on_random_using_tb(Register tmp, int count, Label& brLabel);
-  void rtm_abort_ratio_calculation(Register rtm_counters_reg, RTMLockingCounters* rtm_counters,
-                                   Metadata* method_data);
-  void rtm_profiling(Register abort_status_Reg, Register temp_Reg,
-                     RTMLockingCounters* rtm_counters, Metadata* method_data, bool profile_rtm);
-  void rtm_retry_lock_on_abort(Register retry_count, Register abort_status,
-                               Label& retryLabel, Label* checkRetry = nullptr);
-  void rtm_retry_lock_on_busy(Register retry_count, Register owner_addr, Label& retryLabel);
-  void rtm_stack_locking(ConditionRegister flag, Register obj, Register mark_word, Register tmp,
-                         Register retry_on_abort_count,
-                         RTMLockingCounters* stack_rtm_counters,
-                         Metadata* method_data, bool profile_rtm,
-                         Label& DONE_LABEL, Label& IsInflated);
-  void rtm_inflated_locking(ConditionRegister flag, Register obj, Register mark_word, Register box,
-                            Register retry_on_busy_count, Register retry_on_abort_count,
-                            RTMLockingCounters* rtm_counters,
-                            Metadata* method_data, bool profile_rtm,
-                            Label& DONE_LABEL);
-#endif
-
   void compiler_fast_lock_object(ConditionRegister flag, Register oop, Register box,
-                                 Register tmp1, Register tmp2, Register tmp3,
-                                 RTMLockingCounters* rtm_counters = nullptr,
-                                 RTMLockingCounters* stack_rtm_counters = nullptr,
-                                 Metadata* method_data = nullptr,
-                                 bool use_rtm = false, bool profile_rtm = false);
+                                 Register tmp1, Register tmp2, Register tmp3);
 
   void compiler_fast_unlock_object(ConditionRegister flag, Register oop, Register box,
-                                   Register tmp1, Register tmp2, Register tmp3,
-                                   bool use_rtm = false);
+                                   Register tmp1, Register tmp2, Register tmp3);
+
+  void compiler_fast_lock_lightweight_object(ConditionRegister flag, Register oop, Register tmp1,
+                                             Register tmp2, Register tmp3);
+
+  void compiler_fast_unlock_lightweight_object(ConditionRegister flag, Register oop, Register tmp1,
+                                               Register tmp2, Register tmp3);
 
   // Check if safepoint requested and if so branch
   void safepoint_poll(Label& slow_path, Register temp, bool at_return, bool in_nmethod);
@@ -732,7 +749,7 @@ class MacroAssembler: public Assembler {
 
   // Load/Store klass oop from klass field. Compress.
   void load_klass(Register dst, Register src);
-  void load_klass_check_null(Register dst, Register src, Label* is_null = NULL);
+  void load_klass_check_null(Register dst, Register src, Label* is_null = nullptr);
   void store_klass(Register dst_oop, Register klass, Register tmp = R0);
   void store_klass_gap(Register dst_oop, Register val = noreg); // Will store 0 if val not specified.
 
@@ -798,7 +815,7 @@ class MacroAssembler: public Assembler {
               Register tmp1, Register tmp2, Register carry);
   void multiply_to_len(Register x, Register xlen,
                        Register y, Register ylen,
-                       Register z, Register zlen,
+                       Register z,
                        Register tmp1, Register tmp2, Register tmp3, Register tmp4, Register tmp5,
                        Register tmp6, Register tmp7, Register tmp8, Register tmp9, Register tmp10,
                        Register tmp11, Register tmp12, Register tmp13);

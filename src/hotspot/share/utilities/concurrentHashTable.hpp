@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 #define SHARE_UTILITIES_CONCURRENTHASHTABLE_HPP
 
 #include "memory/allocation.hpp"
+#include "runtime/mutex.hpp"
 #include "utilities/globalCounter.hpp"
 #include "utilities/globalDefinitions.hpp"
 #include "utilities/growableArray.hpp"
@@ -90,6 +91,13 @@ class ConcurrentHashTable : public CHeapObj<F> {
 
     void print_on(outputStream* st) const {};
     void print_value_on(outputStream* st) const {};
+
+    static bool is_dynamic_sized_value_compatible() {
+      // To support dynamically sized Value types, where part of the payload is
+      // allocated beyond the end of the object, it must be that the _value
+      // field ends where the Node object ends. (No end padding).
+      return offset_of(Node, _value) + sizeof(_value) == sizeof(Node);
+    }
   };
 
   // Only constructed with placement new from an array allocated with MEMFLAGS
@@ -406,10 +414,11 @@ class ConcurrentHashTable : public CHeapObj<F> {
                       size_t log2size_limit = DEFAULT_MAX_SIZE_LOG2,
                       size_t grow_hint = DEFAULT_GROW_HINT,
                       bool enable_statistics = DEFAULT_ENABLE_STATISTICS,
+                      Mutex::Rank rank = Mutex::nosafepoint-2,
                       void* context = nullptr);
 
-  explicit ConcurrentHashTable(void* context, size_t log2size = DEFAULT_START_SIZE_LOG2, bool enable_statistics = DEFAULT_ENABLE_STATISTICS) :
-    ConcurrentHashTable(log2size, DEFAULT_MAX_SIZE_LOG2, DEFAULT_GROW_HINT, enable_statistics, context) {}
+  explicit ConcurrentHashTable(Mutex::Rank rank, void* context, size_t log2size = DEFAULT_START_SIZE_LOG2, bool enable_statistics = DEFAULT_ENABLE_STATISTICS) :
+    ConcurrentHashTable(log2size, DEFAULT_MAX_SIZE_LOG2, DEFAULT_GROW_HINT, enable_statistics, rank, context) {}
 
   ~ConcurrentHashTable();
 
@@ -417,6 +426,7 @@ class ConcurrentHashTable : public CHeapObj<F> {
 
   size_t get_size_log2(Thread* thread);
   static size_t get_node_size() { return sizeof(Node); }
+  static size_t get_dynamic_node_size(size_t value_size);
   bool is_max_size_reached() { return _size_limit_reached; }
 
   // This means no paused bucket resize operation is going to resume
@@ -522,8 +532,9 @@ class ConcurrentHashTable : public CHeapObj<F> {
   void statistics_to(Thread* thread, VALUE_SIZE_FUNC& vs_f, outputStream* st,
                      const char* table_name);
 
-  // Moves all nodes from this table to to_cht
-  bool try_move_nodes_to(Thread* thread, ConcurrentHashTable<CONFIG, F>* to_cht);
+  // Moves all nodes from this table to to_cht with new hash code.
+  // Must be done at a safepoint.
+  void rehash_nodes_to(Thread* thread, ConcurrentHashTable<CONFIG, F>* to_cht);
 
   // Scoped multi getter.
   class MultiGetHandle : private ScopedCS {
