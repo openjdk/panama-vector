@@ -20,7 +20,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-  
+
 package org.openjdk.bench.jdk.incubator.vector.crypto;
 
 import org.openjdk.jmh.annotations.*;
@@ -39,11 +39,11 @@ public class ChaChaBench {
 
     @Param({"16384", "65536"})
     private int dataSize;
-    
+
     private ChaChaVector cc20_S128 = makeCC20(VectorShape.S_128_BIT);
     private ChaChaVector cc20_S256 = makeCC20(VectorShape.S_256_BIT);
     private ChaChaVector cc20_S512 = makeCC20(VectorShape.S_512_BIT);
- 
+
     private MemorySegment in;
     private MemorySegment out;
 
