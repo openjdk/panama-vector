@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002, 2023, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2012, 2021 SAP SE. All rights reserved.
+ * Copyright (c) 2002, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2024 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -264,6 +264,29 @@ inline void MacroAssembler::set_cmpu3(Register dst, bool treat_unordered_like_le
   set_cmp3(dst);
 }
 
+// Branch-free implementation to convert !=0 to 1
+// Set register dst to 1 if dst is non-zero. Uses setbcr instruction on Power10.
+inline void MacroAssembler::normalize_bool(Register dst, Register temp, bool is_64bit) {
+
+  if (VM_Version::has_brw()) {
+    if (is_64bit) {
+      cmpdi(CCR0, dst, 0);
+    } else {
+      cmpwi(CCR0, dst, 0);
+    }
+    setbcr(dst, CCR0, Assembler::equal);
+  } else {
+    assert_different_registers(temp, dst);
+    neg(temp, dst);
+    orr(temp, dst, temp);
+    if (is_64bit) {
+      srdi(dst, temp, 63);
+    } else {
+      srwi(dst, temp, 31);
+    }
+  }
+}
+
 // Convenience bc_far versions
 inline void MacroAssembler::blt_far(ConditionRegister crx, Label& L, int optimize) { MacroAssembler::bc_far(bcondCRbiIs1, bi0(crx, less), L, optimize); }
 inline void MacroAssembler::bgt_far(ConditionRegister crx, Label& L, int optimize) { MacroAssembler::bc_far(bcondCRbiIs1, bi0(crx, greater), L, optimize); }
@@ -354,7 +377,7 @@ inline void MacroAssembler::access_store_at(BasicType type, DecoratorSet decorat
                                             Register tmp1, Register tmp2, Register tmp3,
                                             MacroAssembler::PreservationLevel preservation_level) {
   assert((decorators & ~(AS_RAW | IN_HEAP | IN_NATIVE | IS_ARRAY | IS_NOT_NULL |
-                         ON_UNKNOWN_OOP_REF)) == 0, "unsupported decorator");
+                         ON_UNKNOWN_OOP_REF | IS_DEST_UNINITIALIZED)) == 0, "unsupported decorator");
   BarrierSetAssembler* bs = BarrierSet::barrier_set()->barrier_set_assembler();
   bool as_raw = (decorators & AS_RAW) != 0;
   decorators = AccessInternal::decorator_fixup(decorators, type);

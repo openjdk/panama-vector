@@ -132,11 +132,11 @@ private:
   ShenandoahHeap* const _heap;
   const GCIdMark                _gc_id_mark;
   const SvcGCMarker             _svc_gc_mark;
-  const IsGCActiveMark          _is_gc_active_mark;
+  const IsSTWGCActiveMark       _is_gc_active_mark;
   TraceMemoryManagerStats       _trace_pause;
 
 public:
-  ShenandoahGCPauseMark(uint gc_id, SvcGCMarker::reason_type type);
+  ShenandoahGCPauseMark(uint gc_id, const char* notification_action, SvcGCMarker::reason_type type);
 };
 
 class ShenandoahSafepoint : public AllStatic {

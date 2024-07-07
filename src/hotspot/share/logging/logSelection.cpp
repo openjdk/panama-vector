@@ -226,7 +226,7 @@ double LogSelection::similarity(const LogSelection& other) const {
       }
     }
   }
-  return 2.0 * intersecting / (_ntags + other._ntags);
+  return 2.0 * (double)intersecting / (double)(_ntags + other._ntags);
 }
 
 // Comparator used for sorting LogSelections based on their similarity to a specific LogSelection.
@@ -322,7 +322,7 @@ void LogSelection::suggest_similar_matching(outputStream* out) const {
 
   // Sort found suggestions to suggest the best one first
   SimilarityComparator sc(*this);
-  QuickSort::sort(suggestions, nsuggestions, sc, false);
+  QuickSort::sort(suggestions, nsuggestions, sc);
 
   out->print("Did you mean any of the following?");
   for (size_t i = 0; i < nsuggestions; i++) {

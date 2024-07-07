@@ -82,7 +82,7 @@ template <class E> class LinkedListNode : public AnyObj {
 template <class E> class LinkedList : public AnyObj {
  protected:
   LinkedListNode<E>*    _head;
-  NONCOPYABLE(LinkedList<E>);
+  NONCOPYABLE(LinkedList);
 
  public:
   LinkedList() : _head(nullptr) { }
@@ -171,7 +171,7 @@ template <class E, AnyObj::allocation_type T = AnyObj::C_HEAP,
   }
 
   virtual void add(LinkedListNode<E>* node) {
-    assert(node != nullptr, "nullptr pointer");
+    assert(node != nullptr, "null pointer");
     node->set_next(this->head());
     this->set_head(node);
   }
@@ -385,7 +385,7 @@ template <class E, int (*FUNC)(const E&, const E&),
   }
 
   virtual void add(LinkedListNode<E>* node) {
-    assert(node != nullptr, "nullptr pointer");
+    assert(node != nullptr, "null pointer");
     LinkedListNode<E>* tmp = this->head();
     LinkedListNode<E>* prev = nullptr;
 

@@ -23,7 +23,7 @@
 
 package org.openjdk.bench.jdk.incubator.vector.crypto;
 
-import jdk.incubator.foreign.MemorySegment;
+import java.lang.foreign.MemorySegment;
 import org.openjdk.jmh.annotations.*;
 import jdk.incubator.vector.*;
 

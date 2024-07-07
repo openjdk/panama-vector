@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,12 +27,26 @@ package java.lang.invoke;
 
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.SharedSecrets;
+import jdk.internal.constant.ConstantUtils;
+import jdk.internal.misc.VM;
+import jdk.internal.util.ClassFileDumper;
 import jdk.internal.vm.annotation.Stable;
 import sun.invoke.util.Wrapper;
 
+import java.lang.classfile.ClassBuilder;
+import java.lang.classfile.ClassFile;
+import java.lang.classfile.CodeBuilder;
+import java.lang.classfile.TypeKind;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.MethodTypeDesc;
 import java.lang.invoke.MethodHandles.Lookup;
+import java.lang.reflect.AccessFlag;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
 
+import static java.lang.invoke.MethodHandles.Lookup.ClassOption.STRONG;
 import static java.lang.invoke.MethodType.methodType;
 
 /**
@@ -93,6 +107,13 @@ import static java.lang.invoke.MethodType.methodType;
  * @since 9
  */
 public final class StringConcatFactory {
+
+    private static final int HIGH_ARITY_THRESHOLD;
+
+    static {
+        String highArity = VM.getSavedProperty("java.lang.invoke.StringConcat.highArityThreshold");
+        HIGH_ARITY_THRESHOLD = highArity != null ? Integer.parseInt(highArity) : 20;
+    }
 
     /**
      * Tag used to demarcate an ordinary argument.
@@ -321,6 +342,7 @@ public final class StringConcatFactory {
     {
         Objects.requireNonNull(lookup, "Lookup is null");
         Objects.requireNonNull(name, "Name is null");
+        Objects.requireNonNull(recipe, "Recipe is null");
         Objects.requireNonNull(concatType, "Concat type is null");
         Objects.requireNonNull(constants, "Constants are null");
 
@@ -349,9 +371,14 @@ public final class StringConcatFactory {
         }
 
         try {
-            return new ConstantCallSite(
-                    generateMHInlineCopy(concatType, constantStrings)
-                            .viewAsType(concatType, true));
+            if (concatType.parameterCount() <= HIGH_ARITY_THRESHOLD) {
+                return new ConstantCallSite(
+                        generateMHInlineCopy(concatType, constantStrings)
+                                .viewAsType(concatType, true));
+            } else {
+                return new ConstantCallSite(
+                        SimpleStringBuilderStrategy.generate(lookup, concatType, constantStrings));
+            }
         } catch (Error e) {
             // Pass through any error
             throw e;
@@ -488,14 +515,12 @@ public final class StringConcatFactory {
             // Use int as the logical type for subword integral types
             // (byte and short). char and boolean require special
             // handling so don't change the logical type of those
-            if (cl == byte.class || cl == short.class) {
-                ptypes[i] = int.class;
-            }
+            ptypes[i] = promoteToIntType(ptypes[i]);
             // Object, float and double will be eagerly transformed
             // into a (non-null) String as a first step after invocation.
             // Set up to use String as the logical type for such arguments
             // internally.
-            else if (cl == Object.class) {
+            if (cl == Object.class) {
                 if (objFilters == null) {
                     objFilters = new MethodHandle[ptypes.length];
                 }
@@ -664,7 +689,6 @@ public final class StringConcatFactory {
         return argPositions;
     }
 
-
     private static MethodHandle foldInLastMixers(MethodHandle mh, long initialLengthCoder, int pos, Class<?>[] ptypes, int count) {
         MethodHandle mix = switch (count) {
             case 1 -> mixer(ptypes[pos]);
@@ -691,19 +715,12 @@ public final class StringConcatFactory {
     // Simple prependers, single argument. May be used directly or as a
     // building block for complex prepender combinators.
     private static MethodHandle prepender(String prefix, Class<?> cl) {
-        MethodHandle prepend;
-        int idx = classIndex(cl);
-        if (prefix == null) {
-            prepend = NULL_PREPENDERS[idx];
-            if (prepend == null) {
-                NULL_PREPENDERS[idx] = prepend = MethodHandles.insertArguments(
-                                prepender(cl), 3, (String)null);
-            }
+        if (prefix == null || prefix.isEmpty()) {
+            return noPrefixPrepender(cl);
         } else {
-            prepend = MethodHandles.insertArguments(
+            return MethodHandles.insertArguments(
                     prepender(cl), 3, prefix);
         }
-        return prepend;
     }
 
     private static MethodHandle prepender(Class<?> cl) {
@@ -717,6 +734,17 @@ public final class StringConcatFactory {
         return prepend;
     }
 
+    private static MethodHandle noPrefixPrepender(Class<?> cl) {
+        int idx = classIndex(cl);
+        MethodHandle prepend = NO_PREFIX_PREPENDERS[idx];
+        if (prepend == null) {
+            NO_PREFIX_PREPENDERS[idx] = prepend = JLA.stringConcatHelper("prepend",
+                    methodType(long.class, long.class, byte[].class,
+                            Wrapper.asPrimitiveType(cl))).rebind();
+        }
+        return prepend;
+    }
+
     private static final int INT_IDX = 0,
             CHAR_IDX = 1,
             LONG_IDX = 2,
@@ -724,11 +752,11 @@ public final class StringConcatFactory {
             STRING_IDX = 4,
             TYPE_COUNT = 5;
     private static int classIndex(Class<?> cl) {
-        if (cl == String.class)  return STRING_IDX;
-        if (cl == int.class)     return INT_IDX;
-        if (cl == boolean.class) return BOOLEAN_IDX;
-        if (cl == char.class)    return CHAR_IDX;
-        if (cl == long.class)    return LONG_IDX;
+        if (cl == String.class)                          return STRING_IDX;
+        if (cl == int.class)                             return INT_IDX;
+        if (cl == boolean.class)                         return BOOLEAN_IDX;
+        if (cl == char.class)                            return CHAR_IDX;
+        if (cl == long.class)                            return LONG_IDX;
         throw new IllegalArgumentException("Unexpected class: " + cl);
     }
 
@@ -981,10 +1009,37 @@ public final class StringConcatFactory {
         }
     }
 
-    private static final @Stable MethodHandle[] NULL_PREPENDERS = new MethodHandle[TYPE_COUNT];
+    private static final @Stable MethodHandle[] NO_PREFIX_PREPENDERS = new MethodHandle[TYPE_COUNT];
     private static final @Stable MethodHandle[] PREPENDERS      = new MethodHandle[TYPE_COUNT];
     private static final @Stable MethodHandle[] MIXERS          = new MethodHandle[TYPE_COUNT];
     private static final long INITIAL_CODER = JLA.stringConcatInitialCoder();
+
+    /**
+     * Promote integral types to int.
+     */
+    private static Class<?> promoteToIntType(Class<?> t) {
+        // use int for subword integral types; still need special mixers
+        // and prependers for char, boolean
+        return t == byte.class || t == short.class ? int.class : t;
+    }
+
+    /**
+     * Returns a stringifier for references and floats/doubles only.
+     * Always returns null for other primitives.
+     *
+     * @param t class to stringify
+     * @return stringifier; null, if not available
+     */
+    private static MethodHandle stringifierFor(Class<?> t) {
+        if (t == Object.class) {
+            return objectStringifier();
+        } else if (t == float.class) {
+            return floatStringifier();
+        } else if (t == double.class) {
+            return doubleStringifier();
+        }
+        return null;
+    }
 
     private static MethodHandle stringValueOf(Class<?> ptype) {
         try {
@@ -997,5 +1052,142 @@ public final class StringConcatFactory {
 
     private StringConcatFactory() {
         // no instantiation
+    }
+
+    /**
+     * Bytecode StringBuilder strategy.
+     *
+     * <p>This strategy emits StringBuilder chains as similar as possible
+     * to what javac would. No exact sizing of parameters or estimates.
+     */
+    private static final class SimpleStringBuilderStrategy {
+        static final String METHOD_NAME = "concat";
+        static final ClassDesc STRING_BUILDER = ClassDesc.ofDescriptor("Ljava/lang/StringBuilder;");
+        static final ClassFileDumper DUMPER =
+                ClassFileDumper.getInstance("java.lang.invoke.StringConcatFactory.dump", "stringConcatClasses");
+        static final MethodTypeDesc APPEND_BOOLEAN_TYPE = MethodTypeDesc.of(STRING_BUILDER, ConstantDescs.CD_boolean);
+        static final MethodTypeDesc APPEND_CHAR_TYPE = MethodTypeDesc.of(STRING_BUILDER, ConstantDescs.CD_char);
+        static final MethodTypeDesc APPEND_DOUBLE_TYPE = MethodTypeDesc.of(STRING_BUILDER, ConstantDescs.CD_double);
+        static final MethodTypeDesc APPEND_FLOAT_TYPE = MethodTypeDesc.of(STRING_BUILDER, ConstantDescs.CD_float);
+        static final MethodTypeDesc APPEND_INT_TYPE = MethodTypeDesc.of(STRING_BUILDER, ConstantDescs.CD_int);
+        static final MethodTypeDesc APPEND_LONG_TYPE = MethodTypeDesc.of(STRING_BUILDER, ConstantDescs.CD_long);
+        static final MethodTypeDesc APPEND_OBJECT_TYPE = MethodTypeDesc.of(STRING_BUILDER, ConstantDescs.CD_Object);
+        static final MethodTypeDesc APPEND_STRING_TYPE = MethodTypeDesc.of(STRING_BUILDER, ConstantDescs.CD_String);
+        static final MethodTypeDesc INT_CONSTRUCTOR_TYPE = MethodTypeDesc.of(ConstantDescs.CD_void, ConstantDescs.CD_int);
+        static final MethodTypeDesc TO_STRING_TYPE = MethodTypeDesc.of(ConstantDescs.CD_String);
+
+        /**
+         * Ensure a capacity in the initial StringBuilder to accommodate all
+         * constants plus this factor times the number of arguments.
+         */
+        static final int ARGUMENT_SIZE_FACTOR = 4;
+
+        static final Set<Lookup.ClassOption> SET_OF_STRONG = Set.of(STRONG);
+
+        private SimpleStringBuilderStrategy() {
+            // no instantiation
+        }
+
+        private static MethodHandle generate(Lookup lookup, MethodType args, String[] constants) throws Exception {
+            String className = getClassName(lookup.lookupClass());
+
+            byte[] classBytes = ClassFile.of().build(ConstantUtils.binaryNameToDesc(className),
+                    new Consumer<ClassBuilder>() {
+                        @Override
+                        public void accept(ClassBuilder clb) {
+                            clb.withFlags(AccessFlag.FINAL, AccessFlag.SUPER, AccessFlag.SYNTHETIC)
+                                .withMethodBody(METHOD_NAME,
+                                        ConstantUtils.methodTypeDesc(args),
+                                        ClassFile.ACC_FINAL | ClassFile.ACC_PRIVATE | ClassFile.ACC_STATIC,
+                                        generateMethod(constants, args));
+                    }});
+            try {
+                Lookup hiddenLookup = lookup.makeHiddenClassDefiner(className, classBytes, SET_OF_STRONG, DUMPER)
+                                            .defineClassAsLookup(true);
+                Class<?> innerClass = hiddenLookup.lookupClass();
+                return hiddenLookup.findStatic(innerClass, METHOD_NAME, args);
+            } catch (Exception e) {
+                throw new StringConcatException("Exception while spinning the class", e);
+            }
+        }
+
+        private static Consumer<CodeBuilder> generateMethod(String[] constants, MethodType args) {
+            return new Consumer<CodeBuilder>() {
+                @Override
+                public void accept(CodeBuilder cb) {
+                    cb.new_(STRING_BUILDER);
+                    cb.dup();
+
+                    int len = 0;
+                    for (String constant : constants) {
+                        if (constant != null) {
+                            len += constant.length();
+                        }
+                    }
+                    len += args.parameterCount() * ARGUMENT_SIZE_FACTOR;
+                    cb.loadConstant(len);
+                    cb.invokespecial(STRING_BUILDER, "<init>", INT_CONSTRUCTOR_TYPE);
+
+                    // At this point, we have a blank StringBuilder on stack, fill it in with .append calls.
+                    {
+                        int off = 0;
+                        for (int c = 0; c < args.parameterCount(); c++) {
+                            if (constants[c] != null) {
+                                cb.ldc(constants[c]);
+                                cb.invokevirtual(STRING_BUILDER, "append", APPEND_STRING_TYPE);
+                            }
+                            Class<?> cl = args.parameterType(c);
+                            TypeKind kind = TypeKind.from(cl);
+                            cb.loadLocal(kind, off);
+                            off += kind.slotSize();
+                            MethodTypeDesc desc = getSBAppendDesc(cl);
+                            cb.invokevirtual(STRING_BUILDER, "append", desc);
+                        }
+                        if (constants[constants.length - 1] != null) {
+                            cb.ldc(constants[constants.length - 1]);
+                            cb.invokevirtual(STRING_BUILDER, "append", APPEND_STRING_TYPE);
+                        }
+                    }
+
+                    cb.invokevirtual(STRING_BUILDER, "toString", TO_STRING_TYPE);
+                    cb.areturn();
+                }
+            };
+        }
+
+        /**
+         * The generated class is in the same package as the host class as
+         * it's the implementation of the string concatenation for the host
+         * class.
+         */
+        private static String getClassName(Class<?> hostClass) {
+            String name = hostClass.isHidden() ? hostClass.getName().replace('/', '_')
+                    : hostClass.getName();
+            return name + "$$StringConcat";
+        }
+
+        private static MethodTypeDesc getSBAppendDesc(Class<?> cl) {
+            if (cl.isPrimitive()) {
+                if (cl == Integer.TYPE || cl == Byte.TYPE || cl == Short.TYPE) {
+                    return APPEND_INT_TYPE;
+                } else if (cl == Boolean.TYPE) {
+                    return APPEND_BOOLEAN_TYPE;
+                } else if (cl == Character.TYPE) {
+                    return APPEND_CHAR_TYPE;
+                } else if (cl == Double.TYPE) {
+                    return APPEND_DOUBLE_TYPE;
+                } else if (cl == Float.TYPE) {
+                    return APPEND_FLOAT_TYPE;
+                } else if (cl == Long.TYPE) {
+                    return APPEND_LONG_TYPE;
+                } else {
+                    throw new IllegalStateException("Unhandled primitive StringBuilder.append: " + cl);
+                }
+            } else if (cl == String.class) {
+                return APPEND_STRING_TYPE;
+            } else {
+                return APPEND_OBJECT_TYPE;
+            }
+        }
     }
 }

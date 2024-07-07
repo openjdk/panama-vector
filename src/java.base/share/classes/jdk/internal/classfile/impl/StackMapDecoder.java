@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,21 +25,21 @@
 
 package jdk.internal.classfile.impl;
 
+import java.lang.classfile.BufWriter;
+import java.lang.classfile.ClassReader;
+import java.lang.classfile.Label;
+import java.lang.classfile.MethodModel;
+import java.lang.classfile.attribute.StackMapFrameInfo;
+import java.lang.classfile.attribute.StackMapFrameInfo.*;
+import java.lang.classfile.constantpool.ClassEntry;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.AccessFlag;
 import java.util.List;
+import java.util.Objects;
 import java.util.TreeMap;
-import jdk.internal.classfile.BufWriter;
 
-import jdk.internal.classfile.constantpool.ClassEntry;
-import jdk.internal.classfile.attribute.StackMapFrameInfo;
-import jdk.internal.classfile.attribute.StackMapFrameInfo.*;
-import jdk.internal.classfile.ClassReader;
-
-import static jdk.internal.classfile.Classfile.*;
-import jdk.internal.classfile.Label;
-import jdk.internal.classfile.MethodModel;
+import static java.lang.classfile.ClassFile.*;
 
 public class StackMapDecoder {
 
@@ -63,31 +63,31 @@ public class StackMapDecoder {
     static List<VerificationTypeInfo> initFrameLocals(MethodModel method) {
         return initFrameLocals(method.parent().orElseThrow().thisClass(),
                 method.methodName().stringValue(),
-                method.methodType().stringValue(),
+                method.methodTypeSymbol(),
                 method.flags().has(AccessFlag.STATIC));
     }
 
-    public static List<VerificationTypeInfo> initFrameLocals(ClassEntry thisClass, String methodName, String methodType, boolean isStatic) {
-        var mdesc = MethodTypeDesc.ofDescriptor(methodType);
+    public static List<VerificationTypeInfo> initFrameLocals(ClassEntry thisClass, String methodName, MethodTypeDesc methodType, boolean isStatic) {
         VerificationTypeInfo vtis[];
         int i = 0;
         if (!isStatic) {
-            vtis = new VerificationTypeInfo[mdesc.parameterCount() + 1];
+            vtis = new VerificationTypeInfo[methodType.parameterCount() + 1];
             if ("<init>".equals(methodName) && !ConstantDescs.CD_Object.equals(thisClass.asSymbol())) {
                 vtis[i++] = SimpleVerificationTypeInfo.ITEM_UNINITIALIZED_THIS;
             } else {
                 vtis[i++] = new StackMapDecoder.ObjectVerificationTypeInfoImpl(thisClass);
             }
         } else {
-            vtis = new VerificationTypeInfo[mdesc.parameterCount()];
+            vtis = new VerificationTypeInfo[methodType.parameterCount()];
         }
-        for(var arg : mdesc.parameterList()) {
-            vtis[i++] = switch (arg.descriptorString()) {
-                case "I", "S", "C" ,"B", "Z" ->  SimpleVerificationTypeInfo.ITEM_INTEGER;
-                case "J" -> SimpleVerificationTypeInfo.ITEM_LONG;
-                case "F" -> SimpleVerificationTypeInfo.ITEM_FLOAT;
-                case "D" -> SimpleVerificationTypeInfo.ITEM_DOUBLE;
-                case "V" -> throw new IllegalArgumentException("Illegal method argument type: " + arg);
+        for (int pi = 0; pi < methodType.parameterCount(); pi++) {
+            var arg = methodType.parameterType(pi);
+            vtis[i++] = switch (arg.descriptorString().charAt(0)) {
+                case 'I', 'S', 'C' ,'B', 'Z' -> SimpleVerificationTypeInfo.ITEM_INTEGER;
+                case 'J' -> SimpleVerificationTypeInfo.ITEM_LONG;
+                case 'F' -> SimpleVerificationTypeInfo.ITEM_FLOAT;
+                case 'D' -> SimpleVerificationTypeInfo.ITEM_DOUBLE;
+                case 'V' -> throw new IllegalArgumentException("Illegal method argument type: " + arg);
                 default -> new StackMapDecoder.ObjectVerificationTypeInfoImpl(TemporaryConstantPool.INSTANCE.classEntry(arg));
             };
         }
@@ -100,7 +100,7 @@ public class StackMapDecoder {
         var mi = dcb.methodInfo();
         var prevLocals = StackMapDecoder.initFrameLocals(buf.thisClass(),
                 mi.methodName().stringValue(),
-                mi.methodType().stringValue(),
+                mi.methodTypeSymbol(),
                 (mi.methodFlags() & ACC_STATIC) != 0);
         int prevOffset = -1;
         var map = new TreeMap<Integer, StackMapFrameInfo>();
@@ -231,7 +231,7 @@ public class StackMapDecoder {
             case VT_LONG -> SimpleVerificationTypeInfo.ITEM_LONG;
             case VT_NULL -> SimpleVerificationTypeInfo.ITEM_NULL;
             case VT_UNINITIALIZED_THIS -> SimpleVerificationTypeInfo.ITEM_UNINITIALIZED_THIS;
-            case VT_OBJECT -> new ObjectVerificationTypeInfoImpl((ClassEntry)classReader.entryByIndex(u2()));
+            case VT_OBJECT -> new ObjectVerificationTypeInfoImpl(classReader.entryByIndex(u2(), ClassEntry.class));
             case VT_UNINITIALIZED -> new UninitializedVerificationTypeInfoImpl(ctx.getLabel(u2()));
             default -> throw new IllegalArgumentException("Invalid verification type tag: " + tag);
         };
@@ -242,6 +242,20 @@ public class StackMapDecoder {
 
         @Override
         public int tag() { return VT_OBJECT; }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o instanceof ObjectVerificationTypeInfoImpl that) {
+                return Objects.equals(className, that.className);
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(className);
+        }
 
         @Override
         public String toString() {

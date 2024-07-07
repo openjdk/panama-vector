@@ -38,7 +38,6 @@
 #include "interpreter/interpreter.hpp"
 #include "memory/universe.hpp"
 #include "nativeInst_x86.hpp"
-#include "oops/compiledICHolder.hpp"
 #include "oops/oop.inline.hpp"
 #include "prims/jvmtiExport.hpp"
 #include "register_x86.hpp"
@@ -421,7 +420,12 @@ static OopMap* generate_oop_map(StubAssembler* sasm, int num_rt_args,
 void C1_MacroAssembler::save_live_registers_no_oop_map(bool save_fpu_registers) {
   __ block_comment("save_live_registers");
 
-  __ pusha();         // integer registers
+  // Push CPU state in multiple of 16 bytes
+#ifdef _LP64
+  __ save_legacy_gprs();
+#else
+  __ pusha();
+#endif
 
   // assert(float_regs_as_doubles_off % 2 == 0, "misaligned offset");
   // assert(xmm_regs_as_doubles_off % 2 == 0, "misaligned offset");
@@ -561,7 +565,12 @@ void C1_MacroAssembler::restore_live_registers(bool restore_fpu_registers) {
   __ block_comment("restore_live_registers");
 
   restore_fpu(this, restore_fpu_registers);
+#ifdef _LP64
+  __ restore_legacy_gprs();
+#else
   __ popa();
+#endif
+
 }
 
 
@@ -797,6 +806,14 @@ void Runtime1::generate_unwind_exception(StubAssembler *sasm) {
   const Register exception_pc = rdx;
   const Register handler_addr = rbx;
   const Register thread = NOT_LP64(rdi) LP64_ONLY(r15_thread);
+
+  if (AbortVMOnException) {
+    __ enter();
+    save_live_registers(sasm, 2);
+    __ call_VM_leaf(CAST_FROM_FN_PTR(address, check_abort_on_vm_exception), rax);
+    restore_live_registers(sasm);
+    __ leave();
+  }
 
   // verify that only rax, is valid at this time
   __ invalidate_registers(false, true, true, true, true, true);

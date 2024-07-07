@@ -25,7 +25,6 @@
  * @test
  * @bug 8240248
  * @summary Add C2 x86 Superword support for scalar logical reduction optimizations : long test
- * @requires vm.bits == "64"
  * @library /test/lib /
  * @run driver compiler.loopopts.superword.RedTest_long
  */
@@ -137,7 +136,8 @@ public class RedTest_long {
         failOn = {IRNode.ADD_REDUCTION_VL})
     @IR(applyIfCPUFeature = {"avx2", "true"},
         applyIfAnd = {"SuperWordReductions", "true", "LoopMaxUnroll", ">= 8"},
-        counts = {IRNode.ADD_REDUCTION_VL, ">= 1"})
+        applyIfPlatform = {"64-bit", "true"},
+        counts = {IRNode.ADD_REDUCTION_VL, ">= 1", IRNode.ADD_REDUCTION_VL, "<= 2"}) // one for main-loop, one for vector-post-loop
     public static long sumReductionImplement(
             long[] a,
             long[] b,
@@ -154,7 +154,8 @@ public class RedTest_long {
         failOn = {IRNode.OR_REDUCTION_V})
     @IR(applyIfCPUFeature = {"avx2", "true"},
         applyIfAnd = {"SuperWordReductions", "true", "LoopMaxUnroll", ">= 8"},
-        counts = {IRNode.OR_REDUCTION_V, ">= 1"})
+        applyIfPlatform = {"64-bit", "true"},
+        counts = {IRNode.OR_REDUCTION_V, ">= 1", IRNode.OR_REDUCTION_V, "<= 2"}) // one for main-loop, one for vector-post-loop
     public static long orReductionImplement(
             long[] a,
             long[] b,
@@ -171,7 +172,8 @@ public class RedTest_long {
         failOn = {IRNode.AND_REDUCTION_V})
     @IR(applyIfCPUFeature = {"avx2", "true"},
         applyIfAnd = {"SuperWordReductions", "true", "LoopMaxUnroll", ">= 8"},
-        counts = {IRNode.AND_REDUCTION_V, ">= 1"})
+        applyIfPlatform = {"64-bit", "true"},
+        counts = {IRNode.AND_REDUCTION_V, ">= 1", IRNode.AND_REDUCTION_V, "<= 2"}) // one for main-loop, one for vector-post-loop
     public static long andReductionImplement(
             long[] a,
             long[] b,
@@ -188,7 +190,8 @@ public class RedTest_long {
         failOn = {IRNode.XOR_REDUCTION_V})
     @IR(applyIfCPUFeature = {"avx2", "true"},
         applyIfAnd = {"SuperWordReductions", "true", "LoopMaxUnroll", ">= 8"},
-        counts = {IRNode.XOR_REDUCTION_V, ">= 1"})
+        applyIfPlatform = {"64-bit", "true"},
+        counts = {IRNode.XOR_REDUCTION_V, ">= 1", IRNode.XOR_REDUCTION_V, "<= 2"}) // one for main-loop, one for vector-post-loop
     public static long xorReductionImplement(
             long[] a,
             long[] b,
@@ -205,7 +208,8 @@ public class RedTest_long {
         failOn = {IRNode.MUL_REDUCTION_VL})
     @IR(applyIfCPUFeature = {"avx512dq", "true"},
         applyIfAnd = {"SuperWordReductions", "true", "LoopMaxUnroll", ">= 8"},
-        counts = {IRNode.MUL_REDUCTION_VL, ">= 1"})
+        applyIfPlatform = {"64-bit", "true"},
+        counts = {IRNode.MUL_REDUCTION_VL, ">= 1", IRNode.MUL_REDUCTION_VL, "<= 2"}) // one for main-loop, one for vector-post-loop
     public static long mulReductionImplement(
             long[] a,
             long[] b,

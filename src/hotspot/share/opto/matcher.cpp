@@ -62,6 +62,7 @@ const uint Matcher::_end_rematerialize   = _END_REMATERIALIZE;
 Matcher::Matcher()
 : PhaseTransform( Phase::Ins_Select ),
   _states_arena(Chunk::medium_size, mtCompiler),
+  _new_nodes(C->comp_arena()),
   _visited(&_states_arena),
   _shared(&_states_arena),
   _dontcare(&_states_arena),
@@ -334,7 +335,7 @@ void Matcher::match( ) {
   Node* new_ideal_null = ConNode::make(TypePtr::NULL_PTR);
 
   // Swap out to old-space; emptying new-space
-  Arena *old = C->node_arena()->move_contents(C->old_arena());
+  Arena* old = C->swap_old_and_new();
 
   // Save debug and profile information for nodes in old space:
   _old_node_note_array = C->node_note_array();
@@ -355,9 +356,12 @@ void Matcher::match( ) {
   // Recursively match trees from old space into new space.
   // Correct leaves of new-space Nodes; they point to old-space.
   _visited.clear();
-  C->set_cached_top_node(xform( C->top(), live_nodes ));
+  Node* const n = xform(C->top(), live_nodes);
+  if (C->failing()) return;
+  C->set_cached_top_node(n);
   if (!C->failing()) {
     Node* xroot =        xform( C->root(), 1 );
+    if (C->failing()) return;
     if (xroot == nullptr) {
       Matcher::soft_match_failure();  // recursive matching process failed
       assert(false, "instruction match failed");
@@ -446,7 +450,7 @@ static RegMask *init_input_masks( uint size, RegMask &ret_adr, RegMask &fp ) {
   return rms;
 }
 
-const int Matcher::scalable_predicate_reg_slots() {
+int Matcher::scalable_predicate_reg_slots() {
   assert(Matcher::has_predicated_vectors() && Matcher::supports_scalable_vector(),
         "scalable predicate vector should be supported");
   int vector_reg_bit_size = Matcher::scalable_vector_reg_size(T_BYTE) << LogBitsPerByte;
@@ -1735,7 +1739,7 @@ MachNode* Matcher::find_shared_node(Node* leaf, uint rule) {
   if (!leaf->is_Con() && !leaf->is_DecodeNarrowPtr()) return nullptr;
 
   // See if this Con has already been reduced using this rule.
-  if (_shared_nodes.Size() <= leaf->_idx) return nullptr;
+  if (_shared_nodes.max() <= leaf->_idx) return nullptr;
   MachNode* last = (MachNode*)_shared_nodes.at(leaf->_idx);
   if (last != nullptr && rule == last->rule()) {
     // Don't expect control change for DecodeN
@@ -1886,11 +1890,7 @@ MachNode *Matcher::ReduceInst( State *s, int rule, Node *&mem ) {
   }
 
   // Have mach nodes inherit GC barrier data
-  if (leaf->is_LoadStore()) {
-    mach->set_barrier_data(leaf->as_LoadStore()->barrier_data());
-  } else if (leaf->is_Mem()) {
-    mach->set_barrier_data(leaf->as_Mem()->barrier_data());
-  }
+  mach->set_barrier_data(MemNode::barrier_data(leaf));
 
   return ex;
 }
@@ -2385,20 +2385,6 @@ void Matcher::find_shared_post_visit(Node* n, uint opcode) {
       n->del_req(3);
       break;
     }
-    case Op_CMoveVF:
-    case Op_CMoveVD: {
-      // Restructure into a binary tree for Matching:
-      // CMoveVF (Binary bool mask) (Binary src1 src2)
-      Node* in_cc = n->in(1);
-      assert(in_cc->is_Con(), "The condition input of cmove vector node must be a constant.");
-      Node* bol = new BoolNode(in_cc, (BoolTest::mask)in_cc->get_int());
-      Node* pair1 = new BinaryNode(bol, in_cc);
-      n->set_req(1, pair1);
-      Node* pair2 = new BinaryNode(n->in(2), n->in(3));
-      n->set_req(2, pair2);
-      n->del_req(3);
-      break;
-    }
     case Op_MacroLogicV: {
       Node* pair1 = new BinaryNode(n->in(1), n->in(2));
       Node* pair2 = new BinaryNode(n->in(3), n->in(4));
@@ -2488,7 +2474,22 @@ void Matcher::find_shared_post_visit(Node* n, uint opcode) {
       n->del_req(3);
       break;
     }
+    case Op_LoadVectorGather:
+      if (is_subword_type(n->bottom_type()->is_vect()->element_basic_type())) {
+        Node* pair = new BinaryNode(n->in(MemNode::ValueIn), n->in(MemNode::ValueIn+1));
+        n->set_req(MemNode::ValueIn, pair);
+        n->del_req(MemNode::ValueIn+1);
+      }
+      break;
     case Op_LoadVectorGatherMasked:
+      if (is_subword_type(n->bottom_type()->is_vect()->element_basic_type())) {
+        Node* pair2 = new BinaryNode(n->in(MemNode::ValueIn + 1), n->in(MemNode::ValueIn + 2));
+        Node* pair1 = new BinaryNode(n->in(MemNode::ValueIn), pair2);
+        n->set_req(MemNode::ValueIn, pair1);
+        n->del_req(MemNode::ValueIn+2);
+        n->del_req(MemNode::ValueIn+1);
+        break;
+      } // fall-through
     case Op_StoreVectorScatter: {
       Node* pair = new BinaryNode(n->in(MemNode::ValueIn), n->in(MemNode::ValueIn+1));
       n->set_req(MemNode::ValueIn, pair);
@@ -2508,6 +2509,14 @@ void Matcher::find_shared_post_visit(Node* n, uint opcode) {
       n->set_req(1, new BinaryNode(n->in(1), n->in(2)));
       n->set_req(2, n->in(3));
       n->del_req(3);
+      break;
+    }
+    case Op_PartialSubtypeCheck: {
+      if (UseSecondarySupersTable && n->in(2)->is_Con()) {
+        // PartialSubtypeCheck uses both constant and register operands for superclass input.
+        n->set_req(2, new BinaryNode(n->in(2), n->in(2)));
+        break;
+      }
       break;
     }
     default:
@@ -2553,7 +2562,7 @@ void Matcher::collect_null_checks( Node *proj, Node *orig_proj ) {
       bool push_it = false;
       if( proj->Opcode() == Op_IfTrue ) {
 #ifndef PRODUCT
-        extern int all_null_checks_found;
+        extern uint all_null_checks_found;
         all_null_checks_found++;
 #endif
         if( b->_test._test == BoolTest::ne ) {
@@ -2803,6 +2812,12 @@ BasicType Matcher::vector_element_basic_type(const MachNode* use, const MachOper
   int def_idx = use->operand_index(opnd);
   Node* def = use->in(def_idx);
   return def->bottom_type()->is_vect()->element_basic_type();
+}
+
+bool Matcher::is_non_long_integral_vector(const Node* n) {
+  BasicType bt = vector_element_basic_type(n);
+  assert(bt != T_CHAR, "char is not allowed in vector");
+  return is_subword_type(bt) || bt == T_INT;
 }
 
 #ifdef ASSERT

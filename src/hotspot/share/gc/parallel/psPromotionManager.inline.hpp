@@ -56,11 +56,14 @@ inline void PSPromotionManager::push_depth(ScannerTask task) {
 
 template <class T>
 inline void PSPromotionManager::claim_or_forward_depth(T* p) {
-  assert(should_scavenge(p, true), "revisiting object?");
   assert(ParallelScavengeHeap::heap()->is_in(p), "pointer outside heap");
-  oop obj = RawAccess<IS_NOT_NULL>::oop_load(p);
-  Prefetch::write(obj->mark_addr(), 0);
-  push_depth(ScannerTask(p));
+  T heap_oop = RawAccess<>::oop_load(p);
+  if (PSScavenge::is_obj_in_young(heap_oop)) {
+    oop obj = CompressedOops::decode_not_null(heap_oop);
+    assert(!PSScavenge::is_obj_in_to_space(obj), "revisiting object?");
+    Prefetch::write(obj->mark_addr(), 0);
+    push_depth(ScannerTask(p));
+  }
 }
 
 inline void PSPromotionManager::promotion_trace_event(oop new_obj, oop old_obj,
@@ -95,14 +98,12 @@ class PSPushContentsClosure: public BasicOopIterateClosure {
  public:
   PSPushContentsClosure(PSPromotionManager* pm) : BasicOopIterateClosure(PSScavenge::reference_processor()), _pm(pm) {}
 
-  template <typename T> void do_oop_nv(T* p) {
-    if (PSScavenge::should_scavenge(p)) {
-      _pm->claim_or_forward_depth(p);
-    }
+  template <typename T> void do_oop_work(T* p) {
+    _pm->claim_or_forward_depth(p);
   }
 
-  virtual void do_oop(oop* p)       { do_oop_nv(p); }
-  virtual void do_oop(narrowOop* p) { do_oop_nv(p); }
+  virtual void do_oop(oop* p)       { do_oop_work(p); }
+  virtual void do_oop(narrowOop* p) { do_oop_work(p); }
 };
 
 //
@@ -131,6 +132,11 @@ inline void PSPromotionManager::push_contents(oop obj) {
   }
 }
 
+inline void PSPromotionManager::push_contents_bounded(oop obj, HeapWord* left, HeapWord* right) {
+  PSPushContentsClosure pcc(this);
+  obj->oop_iterate(&pcc, MemRegion(left, right));
+}
+
 template<bool promote_immediately>
 inline oop PSPromotionManager::copy_to_survivor_space(oop o) {
   assert(should_scavenge(&o), "Sanity");
@@ -139,15 +145,11 @@ inline oop PSPromotionManager::copy_to_survivor_space(oop o) {
   // in o. There may be multiple threads racing on it, and it may be forwarded
   // at any time.
   markWord m = o->mark();
-  if (!m.is_marked()) {
+  if (!m.is_forwarded()) {
     return copy_unmarked_to_survivor_space<promote_immediately>(o, m);
   } else {
-    // Ensure any loads from the forwardee follow all changes that precede
-    // the release-cmpxchg that performed the forwarding, possibly in some
-    // other thread.
-    OrderAccess::acquire();
     // Return the already installed forwardee.
-    return cast_to_oop(m.decode_pointer());
+    return m.forwardee();
   }
 }
 
@@ -247,13 +249,12 @@ inline oop PSPromotionManager::copy_unmarked_to_survivor_space(oop o,
   // Copy obj
   Copy::aligned_disjoint_words(cast_from_oop<HeapWord*>(o), cast_from_oop<HeapWord*>(new_obj), new_obj_size);
 
-  // Parallel GC claims with a release - so other threads might access this object
-  // after claiming and they should see the "completed" object.
-  ContinuationGCSupport::transform_stack_chunk(new_obj);
-
   // Now we have to CAS in the header.
-  // Make copy visible to threads reading the forwardee.
-  oop forwardee = o->forward_to_atomic(new_obj, test_mark, memory_order_release);
+  // Because the forwarding is done with memory_order_relaxed there is no
+  // ordering with the above copy.  Clients that get the forwardee must not
+  // examine its contents without other synchronization, since the contents
+  // may not be up to date for them.
+  oop forwardee = o->forward_to_atomic(new_obj, test_mark, memory_order_relaxed);
   if (forwardee == nullptr) {  // forwardee is null when forwarding is successful
     // We won any races, we "own" this object.
     assert(new_obj == o->forwardee(), "Sanity");
@@ -265,6 +266,8 @@ inline oop PSPromotionManager::copy_unmarked_to_survivor_space(oop o,
       new_obj->incr_age();
       assert(young_space()->contains(new_obj), "Attempt to push non-promoted obj");
     }
+
+    ContinuationGCSupport::transform_stack_chunk(new_obj);
 
     // Do the size comparison first with new_obj_size, which we
     // already have. Hopefully, only a few objects are larger than
@@ -289,9 +292,6 @@ inline oop PSPromotionManager::copy_unmarked_to_survivor_space(oop o,
     return new_obj;
   } else {
     // We lost, someone else "owns" this object.
-    // Ensure loads from the forwardee follow all changes that preceded the
-    // release-cmpxchg that performed the forwarding in another thread.
-    OrderAccess::acquire();
 
     assert(o->is_forwarded(), "Object must be forwarded if the cas failed.");
     assert(o->forwardee() == forwardee, "invariant");

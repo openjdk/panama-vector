@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2018, 2019 SAP SE. All rights reserved.
+ * Copyright (c) 2018, 2023 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,9 +31,9 @@
 #include "gc/g1/g1BarrierSetAssembler.hpp"
 #include "gc/g1/g1BarrierSetRuntime.hpp"
 #include "gc/g1/g1DirtyCardQueue.hpp"
+#include "gc/g1/g1HeapRegion.hpp"
 #include "gc/g1/g1SATBMarkQueueSet.hpp"
 #include "gc/g1/g1ThreadLocalData.hpp"
-#include "gc/g1/heapRegion.hpp"
 #include "interpreter/interp_masm.hpp"
 #include "runtime/jniHandles.hpp"
 #include "runtime/sharedRuntime.hpp"
@@ -177,7 +177,7 @@ void G1BarrierSetAssembler::g1_write_barrier_pre(MacroAssembler* masm, Decorator
   if (preloaded && not_null) {
 #ifdef ASSERT
     __ z_ltgr(Rpre_val, Rpre_val);
-    __ asm_assert_ne("null oop not allowed (G1 pre)", 0x321); // Checked by caller.
+    __ asm_assert(Assembler::bcondNotZero, "null oop not allowed (G1 pre)", 0x321); // Checked by caller.
 #endif
   } else {
     __ z_ltgr(Rpre_val, Rpre_val);
@@ -282,14 +282,14 @@ void G1BarrierSetAssembler::g1_write_barrier_post(MacroAssembler* masm, Decorato
     __ z_lgr(Rtmp1, Rstore_addr);
     __ z_xgr(Rtmp1, Rnew_val);
   }
-  __ z_srag(Rtmp1, Rtmp1, HeapRegion::LogOfHRGrainBytes);
+  __ z_srag(Rtmp1, Rtmp1, G1HeapRegion::LogOfHRGrainBytes);
   __ z_bre(filtered);
 
   // Crosses regions, storing null?
   if (not_null) {
 #ifdef ASSERT
     __ z_ltgr(Rnew_val, Rnew_val);
-    __ asm_assert_ne("null oop not allowed (G1 post)", 0x322); // Checked by caller.
+    __ asm_assert(Assembler::bcondNotZero, "null oop not allowed (G1 post)", 0x322); // Checked by caller.
 #endif
   } else {
     __ z_ltgr(Rnew_val, Rnew_val);

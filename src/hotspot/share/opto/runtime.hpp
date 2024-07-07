@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,7 +29,6 @@
 #include "opto/machnode.hpp"
 #include "opto/optoreg.hpp"
 #include "opto/type.hpp"
-#include "runtime/rtmLocking.hpp"
 #include "runtime/deoptimization.hpp"
 #include "runtime/vframe.hpp"
 
@@ -61,8 +60,7 @@ public:
     enum CounterTag {
     NoTag,
     LockCounter,
-    EliminatedLockCounter,
-    RTMLockingCounter
+    EliminatedLockCounter
   };
 
 private:
@@ -98,17 +96,6 @@ private:
 
 };
 
-class RTMLockingNamedCounter : public NamedCounter {
- private:
- RTMLockingCounters _counters;
-
- public:
-  RTMLockingNamedCounter(const char *n) :
-    NamedCounter(n, RTMLockingCounter), _counters() {}
-
-  RTMLockingCounters* counters() { return &_counters; }
-};
-
 typedef const TypeFunc*(*TypeFunc_generator)();
 
 class OptoRuntime : public AllStatic {
@@ -136,9 +123,10 @@ class OptoRuntime : public AllStatic {
   static address _slow_arraycopy_Java;
   static address _register_finalizer_Java;
 #if INCLUDE_JVMTI
-  static address _notify_jvmti_object_alloc;
-  static address _notify_jvmti_mount;
-  static address _notify_jvmti_unmount;
+  static address _notify_jvmti_vthread_start;
+  static address _notify_jvmti_vthread_end;
+  static address _notify_jvmti_vthread_mount;
+  static address _notify_jvmti_vthread_unmount;
 #endif
 
   //
@@ -214,9 +202,10 @@ private:
   static address slow_arraycopy_Java()                   { return _slow_arraycopy_Java; }
   static address register_finalizer_Java()               { return _register_finalizer_Java; }
 #if INCLUDE_JVMTI
-  static address notify_jvmti_object_alloc()             { return _notify_jvmti_object_alloc; }
-  static address notify_jvmti_mount()                    { return _notify_jvmti_mount; }
-  static address notify_jvmti_unmount()                  { return _notify_jvmti_unmount; }
+  static address notify_jvmti_vthread_start()            { return _notify_jvmti_vthread_start; }
+  static address notify_jvmti_vthread_end()              { return _notify_jvmti_vthread_end; }
+  static address notify_jvmti_vthread_mount()            { return _notify_jvmti_vthread_mount; }
+  static address notify_jvmti_vthread_unmount()          { return _notify_jvmti_vthread_unmount; }
 #endif
 
   static ExceptionBlob*    exception_blob()                      { return _exception_blob; }
@@ -264,8 +253,12 @@ private:
   static const TypeFunc* generic_arraycopy_Type();
   static const TypeFunc* slow_arraycopy_Type();   // the full routine
 
+  static const TypeFunc* make_setmemory_Type();
+
   static const TypeFunc* array_fill_Type();
 
+  static const TypeFunc* array_sort_Type();
+  static const TypeFunc* array_partition_Type();
   static const TypeFunc* aescrypt_block_Type();
   static const TypeFunc* cipherBlockChaining_aescrypt_Type();
   static const TypeFunc* electronicCodeBook_aescrypt_Type();
@@ -291,7 +284,10 @@ private:
   static const TypeFunc* chacha20Block_Type();
   static const TypeFunc* base64_encodeBlock_Type();
   static const TypeFunc* base64_decodeBlock_Type();
+  static const TypeFunc* string_IndexOf_Type();
   static const TypeFunc* poly1305_processBlocks_Type();
+  static const TypeFunc* intpoly_montgomeryMult_P256_Type();
+  static const TypeFunc* intpoly_assign_Type();
 
   static const TypeFunc* updateBytesCRC32_Type();
   static const TypeFunc* updateBytesCRC32C_Type();
@@ -305,8 +301,7 @@ private:
 
   JFR_ONLY(static const TypeFunc* class_id_load_barrier_Type();)
 #if INCLUDE_JVMTI
-  static const TypeFunc* notify_jvmti_object_alloc_Type();
-  static const TypeFunc* notify_jvmti_Type();
+  static const TypeFunc* notify_jvmti_vthread_Type();
 #endif
 
   // Dtrace support
