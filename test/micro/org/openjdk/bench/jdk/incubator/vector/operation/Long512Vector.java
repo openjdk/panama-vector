@@ -1857,7 +1857,7 @@ public class Long512Vector extends AbstractVectorBenchmark {
     public void sliceUnary(Blackhole bh) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = new long[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
+        int origin = RAND.nextInt(SPECIES.length());
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
@@ -1873,7 +1873,7 @@ public class Long512Vector extends AbstractVectorBenchmark {
         long[] a = fa.apply(SPECIES.length());
         long[] b = fb.apply(SPECIES.length());
         long[] r = new long[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
+        int origin = RAND.nextInt(SPECIES.length());
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
@@ -1893,7 +1893,7 @@ public class Long512Vector extends AbstractVectorBenchmark {
         VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         long[] r = new long[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
+        int origin = RAND.nextInt(SPECIES.length());
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
@@ -1909,7 +1909,7 @@ public class Long512Vector extends AbstractVectorBenchmark {
     public void unsliceUnary(Blackhole bh) {
         long[] a = fa.apply(SPECIES.length());
         long[] r = new long[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
+        int origin = RAND.nextInt(SPECIES.length());
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
@@ -1925,8 +1925,8 @@ public class Long512Vector extends AbstractVectorBenchmark {
         long[] a = fa.apply(SPECIES.length());
         long[] b = fb.apply(SPECIES.length());
         long[] r = new long[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
-        int part = (new java.util.Random()).nextInt(2);
+        int origin = RAND.nextInt(SPECIES.length());
+        int part = RAND.nextInt(2);
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);
@@ -1945,8 +1945,8 @@ public class Long512Vector extends AbstractVectorBenchmark {
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Long> vmask = VectorMask.fromArray(SPECIES, mask, 0);
         long[] r = new long[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
-        int part = (new java.util.Random()).nextInt(2);
+        int origin = RAND.nextInt(SPECIES.length());
+        int part = RAND.nextInt(2);
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 LongVector av = LongVector.fromArray(SPECIES, a, i);

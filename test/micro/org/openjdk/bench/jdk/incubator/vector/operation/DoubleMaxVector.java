@@ -963,7 +963,7 @@ public class DoubleMaxVector extends AbstractVectorBenchmark {
     public void sliceUnary(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = new double[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
+        int origin = RAND.nextInt(SPECIES.length());
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
@@ -979,7 +979,7 @@ public class DoubleMaxVector extends AbstractVectorBenchmark {
         double[] a = fa.apply(SPECIES.length());
         double[] b = fb.apply(SPECIES.length());
         double[] r = new double[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
+        int origin = RAND.nextInt(SPECIES.length());
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
@@ -999,7 +999,7 @@ public class DoubleMaxVector extends AbstractVectorBenchmark {
         VectorMask<Double> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         double[] r = new double[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
+        int origin = RAND.nextInt(SPECIES.length());
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
@@ -1015,7 +1015,7 @@ public class DoubleMaxVector extends AbstractVectorBenchmark {
     public void unsliceUnary(Blackhole bh) {
         double[] a = fa.apply(SPECIES.length());
         double[] r = new double[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
+        int origin = RAND.nextInt(SPECIES.length());
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
@@ -1031,8 +1031,8 @@ public class DoubleMaxVector extends AbstractVectorBenchmark {
         double[] a = fa.apply(SPECIES.length());
         double[] b = fb.apply(SPECIES.length());
         double[] r = new double[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
-        int part = (new java.util.Random()).nextInt(2);
+        int origin = RAND.nextInt(SPECIES.length());
+        int part = RAND.nextInt(2);
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
@@ -1051,8 +1051,8 @@ public class DoubleMaxVector extends AbstractVectorBenchmark {
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Double> vmask = VectorMask.fromArray(SPECIES, mask, 0);
         double[] r = new double[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
-        int part = (new java.util.Random()).nextInt(2);
+        int origin = RAND.nextInt(SPECIES.length());
+        int part = RAND.nextInt(2);
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);

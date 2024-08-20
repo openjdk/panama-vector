@@ -1785,7 +1785,7 @@ public class Byte512Vector extends AbstractVectorBenchmark {
     public void sliceUnary(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
         byte[] r = new byte[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
+        int origin = RAND.nextInt(SPECIES.length());
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
@@ -1801,7 +1801,7 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         byte[] a = fa.apply(SPECIES.length());
         byte[] b = fb.apply(SPECIES.length());
         byte[] r = new byte[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
+        int origin = RAND.nextInt(SPECIES.length());
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
@@ -1821,7 +1821,7 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         byte[] r = new byte[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
+        int origin = RAND.nextInt(SPECIES.length());
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
@@ -1837,7 +1837,7 @@ public class Byte512Vector extends AbstractVectorBenchmark {
     public void unsliceUnary(Blackhole bh) {
         byte[] a = fa.apply(SPECIES.length());
         byte[] r = new byte[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
+        int origin = RAND.nextInt(SPECIES.length());
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
@@ -1853,8 +1853,8 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         byte[] a = fa.apply(SPECIES.length());
         byte[] b = fb.apply(SPECIES.length());
         byte[] r = new byte[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
-        int part = (new java.util.Random()).nextInt(2);
+        int origin = RAND.nextInt(SPECIES.length());
+        int part = RAND.nextInt(2);
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
@@ -1873,8 +1873,8 @@ public class Byte512Vector extends AbstractVectorBenchmark {
         boolean[] mask = fm.apply(SPECIES.length());
         VectorMask<Byte> vmask = VectorMask.fromArray(SPECIES, mask, 0);
         byte[] r = new byte[a.length];
-        int origin = (new java.util.Random()).nextInt(SPECIES.length());
-        int part = (new java.util.Random()).nextInt(2);
+        int origin = RAND.nextInt(SPECIES.length());
+        int part = RAND.nextInt(2);
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
