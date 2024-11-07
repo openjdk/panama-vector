@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -101,7 +101,7 @@ public class Long128Vector extends AbstractVectorBenchmark {
         mt = fillMask(size, i -> true);
         rm = fillMask(size, i -> false);
 
-        s = fillInt(size, i -> RANDOM.nextInt(SPECIES.length()));
+        s = fillInt(size, i -> RAND.nextInt(SPECIES.length()));
     }
 
     final IntFunction<long[]> fa = vl -> a;
