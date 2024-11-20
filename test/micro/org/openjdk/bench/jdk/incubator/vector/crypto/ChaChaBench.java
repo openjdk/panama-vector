@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -365,7 +365,7 @@ public class ChaChaBench {
         for (int i = 0; i < result.length; i++) {
             result[i] = (byte) Character.digit(str.charAt(2 * i), 16);
             result[i] <<= 4;
-            result[i] += Character.digit(str.charAt(2 * i + 1), 16);
+            result[i] += (byte) Character.digit(str.charAt(2 * i + 1), 16);
         }
         return result;
     }
