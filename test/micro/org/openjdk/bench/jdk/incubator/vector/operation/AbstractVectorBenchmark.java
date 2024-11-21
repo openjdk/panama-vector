@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,7 +29,7 @@ import java.util.Random;
 import java.util.function.IntFunction;
 
 public class AbstractVectorBenchmark {
-    static final Random RANDOM = new Random(Integer.getInteger("jdk.incubator.vector.random-seed", 1337));
+    static final Random RAND = new Random(Integer.getInteger("jdk.incubator.vector.random-seed", 1337));
 
     static final VectorSpecies<Byte> B64  = ByteVector.SPECIES_64;
     static final VectorSpecies<Byte> B128 = ByteVector.SPECIES_128;
