@@ -575,17 +575,8 @@ public class ClassWriter extends BasicWriter {
         if (options.showAllAttrs) {
             attrWriter.write(m.attributes());
         } else if (code != null) {
-            if (options.showDisassembled) {
-                println("Code:");
-                codeWriter.writeInstrs(code);
-                codeWriter.writeExceptionTable(code);
-            }
-
-            if (options.showLineAndLocalVariableTables) {
-                code.findAttribute(Attributes.lineNumberTable())
-                        .ifPresent(a -> attrWriter.write(a, code));
-                code.findAttribute(Attributes.localVariableTable())
-                        .ifPresent(a -> attrWriter.write(a, code));
+            if (options.showDisassembled || options.showLineAndLocalVariableTables) {
+                codeWriter.writeMinimal(code);
             }
         }
 
@@ -741,7 +732,7 @@ public class ClassWriter extends BasicWriter {
      */
     String getConstantValue(ClassDesc d, ConstantValueEntry cpInfo) {
         switch (cpInfo.tag()) {
-            case ClassFile.TAG_INTEGER: {
+            case PoolEntry.TAG_INTEGER: {
                 var val = (Integer)cpInfo.constantValue();
                 switch (d.descriptorString()) {
                     case "C":
@@ -755,7 +746,7 @@ public class ClassWriter extends BasicWriter {
                         return String.valueOf(val);
                 }
             }
-            case ClassFile.TAG_STRING:
+            case PoolEntry.TAG_STRING:
                 return getConstantStringValue(cpInfo.constantValue().toString());
             default:
                 return constantWriter.stringValue(cpInfo);

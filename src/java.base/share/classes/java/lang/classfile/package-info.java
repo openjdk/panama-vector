@@ -147,7 +147,7 @@
  * ClassReader, int)} method for mapping from the classfile format
  * to an attribute instance, and the
  * {@link java.lang.classfile.AttributeMapper#writeAttribute(java.lang.classfile.BufWriter,
- * java.lang.Object)} method for mapping back to the classfile format.  It also
+ * java.lang.classfile.Attribute)} method for mapping back to the classfile format.  It also
  * contains metadata including the attribute name, the set of classfile entities
  * where the attribute is applicable, and whether multiple attributes of the
  * same kind are allowed on a single entity.
@@ -546,9 +546,6 @@
  *     | CharacterRange(int rangeStart, int rangeEnd, int flags, Label startScope, Label endScope)
  * }
  *
- * @since 22
+ * @since 24
  */
-@PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
 package java.lang.classfile;
-
-import jdk.internal.javac.PreviewFeature;

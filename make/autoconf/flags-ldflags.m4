@@ -73,7 +73,9 @@ AC_DEFUN([FLAGS_SETUP_LDFLAGS_HELPER],
     if test "x$OPENJDK_TARGET_OS" = xlinux; then
       # Clang needs the lld linker to work correctly
       BASIC_LDFLAGS="-fuse-ld=lld -Wl,--exclude-libs,ALL"
-      UTIL_REQUIRE_PROGS(LLD, lld)
+      if test "x$CXX_IS_USER_SUPPLIED" = xfalse && test "x$CC_IS_USER_SUPPLIED" = xfalse; then
+        UTIL_REQUIRE_PROGS(LLD, lld, $TOOLCHAIN_PATH:$PATH)
+      fi
     fi
     if test "x$OPENJDK_TARGET_OS" = xaix; then
       BASIC_LDFLAGS="-Wl,-b64 -Wl,-brtl -Wl,-bnorwexec -Wl,-bnolibpath -Wl,-bnoexpall \
@@ -168,9 +170,9 @@ AC_DEFUN([FLAGS_SETUP_LDFLAGS_CPU_DEP],
 
     # MIPS ABI does not support GNU hash style
     if test "x${OPENJDK_$1_CPU}" = xmips ||
-       test "x${OPENJDK_$1_CPU}" = xmipsel ||
-       test "x${OPENJDK_$1_CPU}" = xmips64 ||
-       test "x${OPENJDK_$1_CPU}" = xmips64el; then
+        test "x${OPENJDK_$1_CPU}" = xmipsel ||
+        test "x${OPENJDK_$1_CPU}" = xmips64 ||
+        test "x${OPENJDK_$1_CPU}" = xmips64el; then
       $1_CPU_LDFLAGS="${$1_CPU_LDFLAGS} -Wl,--hash-style=sysv"
     else
       $1_CPU_LDFLAGS="${$1_CPU_LDFLAGS} -Wl,--hash-style=gnu"
