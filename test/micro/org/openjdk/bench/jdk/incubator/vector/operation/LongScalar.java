@@ -27,6 +27,7 @@ package org.openjdk.bench.jdk.incubator.vector.operation;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
+import jdk.incubator.vector.VectorMath;
 
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
@@ -1108,6 +1109,82 @@ public class LongScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
+    public void UMIN(Blackhole bh) {
+        long[] as = fa.apply(size);
+        long[] bs = fb.apply(size);
+        long[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                long a = as[i];
+                long b = bs[i];
+                rs[i] = (long)(VectorMath.minUnsigned(a, b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void UMINMasked(Blackhole bh) {
+        long[] as = fa.apply(size);
+        long[] bs = fb.apply(size);
+        long[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                long a = as[i];
+                long b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = (long)(VectorMath.minUnsigned(a, b));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void UMAX(Blackhole bh) {
+        long[] as = fa.apply(size);
+        long[] bs = fb.apply(size);
+        long[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                long a = as[i];
+                long b = bs[i];
+                rs[i] = (long)(VectorMath.maxUnsigned(a, b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void UMAXMasked(Blackhole bh) {
+        long[] as = fa.apply(size);
+        long[] bs = fb.apply(size);
+        long[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                long a = as[i];
+                long b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = (long)(VectorMath.maxUnsigned(a, b));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+
+    @Benchmark
     public void ANDLanes(Blackhole bh) {
         long[] as = fa.apply(size);
         long r = -1;
@@ -1394,7 +1471,7 @@ public class LongScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void UNSIGNED_LT(Blackhole bh) {
+    public void ULT(Blackhole bh) {
         long[] as = fa.apply(size);
         long[] bs = fb.apply(size);
         boolean r = true;
@@ -1409,7 +1486,7 @@ public class LongScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void UNSIGNED_GT(Blackhole bh) {
+    public void UGT(Blackhole bh) {
         long[] as = fa.apply(size);
         long[] bs = fb.apply(size);
         boolean r = true;
@@ -1424,7 +1501,7 @@ public class LongScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void UNSIGNED_LE(Blackhole bh) {
+    public void ULE(Blackhole bh) {
         long[] as = fa.apply(size);
         long[] bs = fb.apply(size);
         boolean r = true;
@@ -1439,7 +1516,7 @@ public class LongScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void UNSIGNED_GE(Blackhole bh) {
+    public void UGE(Blackhole bh) {
         long[] as = fa.apply(size);
         long[] bs = fb.apply(size);
         boolean r = true;

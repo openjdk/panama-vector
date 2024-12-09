@@ -27,6 +27,7 @@ package org.openjdk.bench.jdk.incubator.vector.operation;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
+import jdk.incubator.vector.VectorMath;
 
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;

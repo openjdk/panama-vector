@@ -27,6 +27,7 @@ package org.openjdk.bench.jdk.incubator.vector.operation;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
+import jdk.incubator.vector.VectorMath;
 
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
@@ -1035,6 +1036,82 @@ public class ByteScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
+    public void UMIN(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] bs = fb.apply(size);
+        byte[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                byte b = bs[i];
+                rs[i] = (byte)(VectorMath.minUnsigned(a, b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void UMINMasked(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] bs = fb.apply(size);
+        byte[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                byte b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = (byte)(VectorMath.minUnsigned(a, b));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void UMAX(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] bs = fb.apply(size);
+        byte[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                byte b = bs[i];
+                rs[i] = (byte)(VectorMath.maxUnsigned(a, b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void UMAXMasked(Blackhole bh) {
+        byte[] as = fa.apply(size);
+        byte[] bs = fb.apply(size);
+        byte[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                byte a = as[i];
+                byte b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = (byte)(VectorMath.maxUnsigned(a, b));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+
+    @Benchmark
     public void ANDLanes(Blackhole bh) {
         byte[] as = fa.apply(size);
         byte r = -1;
@@ -1321,7 +1398,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void UNSIGNED_LT(Blackhole bh) {
+    public void ULT(Blackhole bh) {
         byte[] as = fa.apply(size);
         byte[] bs = fb.apply(size);
         boolean r = true;
@@ -1336,7 +1413,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void UNSIGNED_GT(Blackhole bh) {
+    public void UGT(Blackhole bh) {
         byte[] as = fa.apply(size);
         byte[] bs = fb.apply(size);
         boolean r = true;
@@ -1351,7 +1428,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void UNSIGNED_LE(Blackhole bh) {
+    public void ULE(Blackhole bh) {
         byte[] as = fa.apply(size);
         byte[] bs = fb.apply(size);
         boolean r = true;
@@ -1366,7 +1443,7 @@ public class ByteScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void UNSIGNED_GE(Blackhole bh) {
+    public void UGE(Blackhole bh) {
         byte[] as = fa.apply(size);
         byte[] bs = fb.apply(size);
         boolean r = true;
