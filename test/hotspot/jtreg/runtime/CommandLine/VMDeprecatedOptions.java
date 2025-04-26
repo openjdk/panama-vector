@@ -55,6 +55,7 @@ public class VMDeprecatedOptions {
         // optionally added.
         ArrayList<String[]> deprecated = new ArrayList(
           Arrays.asList(new String[][] {
+            // { <flag name> , <expected default value> }
             // deprecated non-alias flags:
             {"AllowRedefinitionToAddDeleteMethods", "true"},
             {"LockingMode", "1"},
@@ -63,6 +64,20 @@ public class VMDeprecatedOptions {
             {"CreateMinidumpOnCrash", "false"}
           }
         ));
+        if (Platform.is64bit()) {
+          deprecated.addAll(
+            Arrays.asList(new String[][] {
+              {"UseCompressedClassPointers", "false"},
+            })
+          );
+        }
+        if (Platform.isLinux()) {
+          deprecated.addAll(
+            Arrays.asList(new String[][] {
+              {"UseOprofile", "false"}
+            })
+          );
+        }
         if (Platform.isX86() || Platform.isX64()) {
           deprecated.addAll(
             Arrays.asList(new String[][] {
@@ -89,6 +104,7 @@ public class VMDeprecatedOptions {
         }
 
         OutputAnalyzer output = CommandLineOptionTest.startVMWithOptions(optionNames, expectedValues);
+        output.reportDiagnosticSummary();
 
         // check for option deprecation messages:
         output.shouldHaveExitValue(0);

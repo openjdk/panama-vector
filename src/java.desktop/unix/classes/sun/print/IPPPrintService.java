@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -572,8 +572,15 @@ public class IPPPrintService implements PrintService, SunPrinterJobService {
                 flavor.equals(DocFlavor.SERVICE_FORMATTED.PAGEABLE) ||
                 flavor.equals(DocFlavor.SERVICE_FORMATTED.PRINTABLE) ||
                 !isIPPSupportedImages(flavor.getMimeType())) {
-                Chromaticity[]arr = new Chromaticity[1];
-                arr[0] = Chromaticity.COLOR;
+                Chromaticity[] arr;
+                if (PrintServiceLookupProvider.isMac()) {
+                    arr = new Chromaticity[2];
+                    arr[0] = Chromaticity.COLOR;
+                    arr[1] = Chromaticity.MONOCHROME;
+                } else {
+                    arr = new Chromaticity[1];
+                    arr[0] = Chromaticity.COLOR;
+                }
                 return (arr);
             } else {
                 return null;
@@ -1400,7 +1407,7 @@ public class IPPPrintService implements PrintService, SunPrinterJobService {
                 flavor.equals(DocFlavor.SERVICE_FORMATTED.PAGEABLE) ||
                 flavor.equals(DocFlavor.SERVICE_FORMATTED.PRINTABLE) ||
                 !isIPPSupportedImages(flavor.getMimeType())) {
-                return attr == Chromaticity.COLOR;
+                return PrintServiceLookupProvider.isMac() || attr == Chromaticity.COLOR;
             } else {
                 return false;
             }
