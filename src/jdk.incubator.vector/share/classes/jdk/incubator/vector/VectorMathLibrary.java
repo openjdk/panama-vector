@@ -24,7 +24,6 @@
  */
 package jdk.incubator.vector;
 
-import jdk.internal.util.StaticProperty;
 import jdk.internal.vm.annotation.DontInline;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.Stable;
@@ -70,7 +69,7 @@ import static jdk.internal.vm.vector.Utils.debug;
         }
 
         static String getDefaultName() {
-            return switch (StaticProperty.osArch()) {
+            return switch (System.getProperty("os.arch")) {
                 case "amd64", "x86_64" -> SVML;
                 case "aarch64", "riscv64" -> SLEEF;
                 default -> JAVA;
@@ -140,7 +139,8 @@ import static jdk.internal.vm.vector.Utils.debug;
         public String symbolName(Operator op, VectorSpecies<?> vspecies) {
             String suffix = suffix(vspecies);
             String elemType = (vspecies.elementType() == float.class ? "f" : "");
-            int vlen = (vspecies == FloatVector.SPECIES_64 ? 4 : vspecies.length()); // reuse 128-bit variant for 64-bit float vectors
+            boolean isFloat64Vector = (vspecies.elementType() == float.class) && (vspecies.length() == 2); // Float64Vector or FloatMaxVector
+            int vlen = (isFloat64Vector ? 4 : vspecies.length()); // reuse 128-bit variant for 64-bit float vectors
             return String.format("__jsvml_%s%s%d_ha_%s", op.operatorName(), elemType, vlen, suffix);
         }
 
@@ -211,7 +211,8 @@ import static jdk.internal.vm.vector.Utils.debug;
 
         @Override
         public String symbolName(Operator op, VectorSpecies<?> vspecies) {
-            int vlen = (vspecies == FloatVector.SPECIES_64 ? 4 : vspecies.length()); // reuse 128-bit variant for 64-bit float vectors
+            boolean isFloat64Vector = (vspecies.elementType() == float.class) && (vspecies.length() == 2); // Float64Vector or FloatMaxVector
+            int vlen = (isFloat64Vector ? 4 : vspecies.length()); // reuse 128-bit variant for 64-bit float vectors
             boolean isShapeAgnostic = isRISCV64() || (isAARCH64() && vspecies.vectorBitSize() > 128);
             return String.format("%s%s%s_%s%s", op.operatorName(),
                                  (vspecies.elementType() == float.class ? "f" : "d"),
