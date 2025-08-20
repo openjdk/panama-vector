@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -52,26 +52,25 @@ class JvmtiAgent : public CHeapObj<mtServiceability> {
   bool _xrun;
 
   JvmtiAgent* next() const;
-  void set_next(JvmtiAgent* agent);
   void convert_xrun_agent();
   void set_xrun();
 
  public:
   JvmtiAgent(const char* name, const char* options, bool is_absolute_path, bool dynamic = false);
-  const char* name() const;
+  const char* name() const NOT_JVMTI_RETURN_(nullptr);
   const char* options() const;
-  bool is_absolute_path() const;
-  void* os_lib() const;
-  void set_os_lib(void* os_lib);
+  bool is_absolute_path() const NOT_JVMTI_RETURN_(false);
+  void* os_lib() const NOT_JVMTI_RETURN_(nullptr);
+  void set_os_lib(void* os_lib) NOT_JVMTI_RETURN;
   const char* os_lib_path() const;
-  void set_os_lib_path(const char* path);
-  bool is_static_lib() const;
-  void set_static_lib();
+  void set_os_lib_path(const char* path) NOT_JVMTI_RETURN;
+  bool is_static_lib() const NOT_JVMTI_RETURN_(false);
+  void set_static_lib() NOT_JVMTI_RETURN;
   bool is_dynamic() const;
   bool is_xrun() const;
   bool is_instrument_lib() const;
-  bool is_loaded() const;
-  void set_loaded();
+  bool is_loaded() const NOT_JVMTI_RETURN_(false);
+  void set_loaded() NOT_JVMTI_RETURN;
   bool is_jplis() const;
   bool is_jplis(JvmtiEnv* env) const;
   void set_jplis(const void* jplis);

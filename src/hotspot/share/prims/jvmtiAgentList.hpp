@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,16 +25,12 @@
 #ifndef SHARE_PRIMS_JVMTIAGENTLIST_HPP
 #define SHARE_PRIMS_JVMTIAGENTLIST_HPP
 
-#include "memory/allocation.hpp"
 #include "prims/jvmtiAgent.hpp"
 
-template <typename, MEMFLAGS>
-class GrowableArrayCHeap;
 class JvmtiEnv;
 
-// Maintains a single cas linked-list of JvmtiAgents.
+// Maintains thread-safe linked list of JvmtiAgents.
 class JvmtiAgentList : AllStatic {
-  friend class Iterator;
   friend class JvmtiExport;
  public:
   class Iterator {
@@ -47,41 +43,47 @@ class JvmtiAgentList : AllStatic {
       NOT_XRUN,
       ALL
     };
-    GrowableArrayCHeap<JvmtiAgent*, mtServiceability>* _stack;
     const Filter _filter;
-    Iterator(JvmtiAgent** list, Filter filter);
+    JvmtiAgent* _next;
+    Iterator(): _filter(ALL), _next(nullptr) {}
+    Iterator(JvmtiAgent* head, Filter filter);
     JvmtiAgent* select(JvmtiAgent* agent) const;
    public:
-    bool has_next() const;
-    JvmtiAgent* next();
-    const JvmtiAgent* next() const;
-    ~Iterator();
+    bool has_next() const NOT_JVMTI_RETURN_(false);
+    JvmtiAgent* next() NOT_JVMTI_RETURN_(nullptr);
   };
 
  private:
-  static JvmtiAgent* _list;
+  static JvmtiAgent* _head;
 
-  static Iterator all();
+  static JvmtiAgent* head();
+
   static void initialize();
   static void convert_xrun_agents();
 
- public:
-  static void add(JvmtiAgent* agent);
-  static void add(const char* name, char* options, bool absolute_path);
-  static void add_xrun(const char* name, char* options, bool absolute_path);
+  static void add(JvmtiAgent* agent) NOT_JVMTI_RETURN;
 
-  static void load_agents();
-  static jint load_agent(const char* agent, const char* absParam,
-                         const char* options, outputStream* st);
-  static void load_xrun_agents();
-  static void unload_agents();
+ public:
+  static void add(const char* name, const char* options, bool absolute_path) NOT_JVMTI_RETURN;
+  static void add_xrun(const char* name, const char* options, bool absolute_path) NOT_JVMTI_RETURN;
+
+  static void load_agents() NOT_JVMTI_RETURN;
+  static void load_agent(const char* agent, bool is_absolute_path,
+                         const char* options, outputStream* st) NOT_JVMTI_RETURN;
+  static void load_xrun_agents() NOT_JVMTI_RETURN;
+  static void unload_agents() NOT_JVMTI_RETURN;
+
+  static bool is_static_lib_loaded(const char* name);
+  static bool is_dynamic_lib_loaded(void* os_lib);
 
   static JvmtiAgent* lookup(JvmtiEnv* env, void* f_ptr);
 
-  static Iterator agents();
+  static Iterator all();
+  static Iterator agents() NOT_JVMTI({ Iterator it; return it; });
   static Iterator java_agents();
   static Iterator native_agents();
   static Iterator xrun_agents();
+  static bool disable_agent_list() NOT_JVMTI_RETURN_(false);
 };
 
 #endif // SHARE_PRIMS_JVMTIAGENTLIST_HPP

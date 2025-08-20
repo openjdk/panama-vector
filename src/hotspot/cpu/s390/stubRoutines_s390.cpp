@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016, 2023, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2016, 2017 SAP SE. All rights reserved.
+ * Copyright (c) 2016, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2023 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,7 +23,6 @@
  *
  */
 
-#include "precompiled.hpp"
 #include "asm/macroAssembler.inline.hpp"
 #include "runtime/deoptimization.hpp"
 #include "runtime/frame.inline.hpp"
@@ -33,12 +32,21 @@
 // Implementation of the platform-specific part of StubRoutines - for
 // a description of how to extend it, see the stubRoutines.hpp file.
 
-address StubRoutines::zarch::_partial_subtype_check = nullptr;
+// define fields for arch-specific entries
+
+#define DEFINE_ARCH_ENTRY(arch, blob_name, stub_name, field_name, getter_name) \
+  address StubRoutines:: arch :: STUB_FIELD_NAME(field_name)  = nullptr;
+
+#define DEFINE_ARCH_ENTRY_INIT(arch, blob_name, stub_name, field_name, getter_name, init_function) \
+  address StubRoutines:: arch :: STUB_FIELD_NAME(field_name)  = CAST_FROM_FN_PTR(address, init_function);
+
+STUBGEN_ARCH_ENTRIES_DO(DEFINE_ARCH_ENTRY, DEFINE_ARCH_ENTRY_INIT)
+
+#undef DEFINE_ARCH_ENTRY_INIT
+#undef DEFINE_ARCH_ENTRY
 
 // Comapct string intrinsics: Translate table for string inflate intrinsic. Used by trot instruction.
 address StubRoutines::zarch::_trot_table_addr = nullptr;
-
-address StubRoutines::zarch::_nmethod_entry_barrier = nullptr;
 
 int StubRoutines::zarch::_atomic_memory_operation_lock = StubRoutines::zarch::unlocked;
 
@@ -55,8 +63,7 @@ void StubRoutines::zarch::generate_load_absolute_address(MacroAssembler* masm, R
     __ load_const_optimized(Z_R0, table_addr);
     __ z_cgr(table, Z_R0);  // safety net
     __ z_bre(L);
-    __ z_illtrap();
-    __ asm_assert_eq("crc_table: external word relocation required for load_absolute_address", 0x33);
+    __ stop("crc_table: external word relocation required for load_absolute_address", 0x33);
     __ bind(L);
   }
   {
@@ -65,21 +72,23 @@ void StubRoutines::zarch::generate_load_absolute_address(MacroAssembler* masm, R
     __ z_cl(Z_R0, Address(table, 4));  // safety net
     __ z_bre(L);
     __ z_l(Z_R0, Address(table, 4));   // Load data from memory, we know the constant we compared against.
-    __ z_illtrap();
-    __ asm_assert_eq("crc_table: address or contents seems to be messed up", 0x22);
+    __ stop("crc_table: address or contents seems to be messed up", 0x22);
     __ bind(L);
   }
 #endif
 }
 
+address StubRoutines::crc_table_addr()    { return (address)StubRoutines::zarch::_crc_table; }
+address StubRoutines::crc32c_table_addr() { return (address)StubRoutines::zarch::_crc32c_table; }
+
 void StubRoutines::zarch::generate_load_crc_table_addr(MacroAssembler* masm, Register table) {
   const uint64_t table_contents = 0x77073096UL;  // required contents of table[1]
-  generate_load_absolute_address(masm, table, StubRoutines::_crc_table_adr, table_contents);
+  generate_load_absolute_address(masm, table, StubRoutines::crc_table_addr(), table_contents);
 }
 
 void StubRoutines::zarch::generate_load_crc32c_table_addr(MacroAssembler* masm, Register table) {
   const uint64_t table_contents = 0xf26b8303UL;  // required contents of table[1]
-  generate_load_absolute_address(masm, table, StubRoutines::_crc32c_table_addr, table_contents);
+  generate_load_absolute_address(masm, table, StubRoutines::crc32c_table_addr(), table_contents);
 }
 
 
@@ -100,8 +109,7 @@ void StubRoutines::zarch::generate_load_trot_table_addr(MacroAssembler* masm, Re
       __ load_const_optimized(Z_R0, StubRoutines::zarch::_trot_table_addr);
       __ z_cgr(table, Z_R0);  // safety net
       __ z_bre(L);
-      __ z_illtrap();
-      __ asm_assert_eq("crc_table: external word relocation does not work for load_absolute_address", 0x33);
+      __ stop("crc_table: external word relocation does not work for load_absolute_address", 0x33);
       __ bind(L);
     }
     {
@@ -110,8 +118,7 @@ void StubRoutines::zarch::generate_load_trot_table_addr(MacroAssembler* masm, Re
       __ z_clg(Z_R0, Address(table, 8));  // safety net
       __ z_bre(L);
       __ z_lg(Z_R0, Address(table, 8));   // Load data from memory, we know the constant we compared against.
-      __ z_illtrap();
-      __ asm_assert_eq("trot_table: address or contents seems to be messed up", 0x22);
+      __ stop("trot_table: address or contents seems to be messed up", 0x22);
       __ bind(L);
     }
 #endif

@@ -68,25 +68,13 @@ abstract class AbstractMask<E> extends VectorMask<E> {
     }
 
     @Override
-    @ForceInline
-    public boolean laneIsSet(int i) {
-        int length = length();
-        Objects.checkIndex(i, length);
-        if (length <= Long.SIZE) {
-            return ((toLong() >>> i) & 1L) == 1;
-        } else {
-            return getBits()[i];
-        }
-    }
-
-    @Override
     public void intoArray(boolean[] bits, int i) {
         AbstractSpecies<E> vsp = (AbstractSpecies<E>) vectorSpecies();
         int laneCount = vsp.laneCount();
         i = VectorIntrinsics.checkFromIndexSize(i, laneCount, bits.length);
         VectorSupport.store(
-            vsp.maskType(), vsp.elementType(), laneCount,
-            bits, (long) i + Unsafe.ARRAY_BOOLEAN_BASE_OFFSET,
+            vsp.maskType(), vsp.carrierType(), vsp.elementType(), vsp.operType(), laneCount,
+            bits, (long) i + Unsafe.ARRAY_BOOLEAN_BASE_OFFSET, false,
             this, bits, i,
             (c, idx, s) -> System.arraycopy(s.getBits(), 0, c, (int) idx, s.length()));
 
@@ -315,7 +303,7 @@ abstract class AbstractMask<E> extends VectorMask<E> {
         // inclusive.
         int indexLimit = Math.max(0, Math.min(length - offset, vlength));
         VectorMask<E> badMask = null, badMask2 = null;
-        if (vectorSpecies().elementType() == Halffloat.class) {
+        if (vectorSpecies().elementType() == Float16.class) {
             badMask =
                 iota.compare(GE, Float.floatToFloat16((float)indexLimit));
         } else {
@@ -330,7 +318,7 @@ abstract class AbstractMask<E> extends VectorMask<E> {
             // vlength.  This specific expression works correctly even
             // when offset is Integer.MIN_VALUE.
             int firstGoodIndex = -Math.max(offset, -vlength);
-            if (vectorSpecies().elementType() == Halffloat.class) {
+            if (vectorSpecies().elementType() == Float16.class) {
                 badMask2 =
                     iota.compare(LT, iota.broadcast(Float.floatToFloat16((float)firstGoodIndex)));
             } else {
@@ -401,7 +389,7 @@ abstract class AbstractMask<E> extends VectorMask<E> {
         // 0 <= indexLimit <= vlength
         int indexLimit = (int) Math.max(0, Math.min(length - offset, vlength));
         VectorMask<E> badMask = null, badMask2 = null;
-        if (vectorSpecies().elementType() == Halffloat.class) {
+        if (vectorSpecies().elementType() == Float16.class) {
             badMask =
                 iota.compare(GE, Float.floatToFloat16((float)indexLimit));
         } else {
@@ -417,7 +405,7 @@ abstract class AbstractMask<E> extends VectorMask<E> {
             // when offset is Integer.MIN_VALUE.
             // 0 <= firstGoodIndex <= vlength
             int firstGoodIndex = (int) -Math.max(offset, -vlength);
-            if (vectorSpecies().elementType() == Halffloat.class) {
+            if (vectorSpecies().elementType() == Float16.class) {
                 badMask2 =
                     iota.compare(LT, iota.broadcast(Float.floatToFloat16((float)firstGoodIndex)));
             } else {

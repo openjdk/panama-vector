@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,6 +32,8 @@ import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.Stable;
 
 import jdk.internal.vm.vector.VectorSupport;
+
+import static jdk.internal.vm.vector.Utils.isNonCapturingLambda;
 
 /**
  * This class consists solely of static constants
@@ -426,6 +428,7 @@ public abstract class VectorOperators {
         VO_SPECIAL                 = 0x080, // random special handling
         VO_NOFP                    = 0x100,
         VO_ONLYFP                  = 0x200,
+        VO_MATHLIB                 = 0x400,
         VO_OPCODE_VALID            = 0x800,
         VO_OPCODE_SHIFT            = 12,
         VO_OPCODE_LIMIT            = 0x400,
@@ -452,23 +455,23 @@ public abstract class VectorOperators {
     public static final Unary ABS = unary("ABS", "abs", VectorSupport.VECTOR_OP_ABS, VO_ALL);
     /** Produce {@code -a}. */
     public static final Unary NEG = unary("NEG", "-a", VectorSupport.VECTOR_OP_NEG, VO_ALL|VO_SPECIAL);
-    /** Produce {@code bitCount(a)}
+    /** Produce {@code bitCount(a)}. Integral only.
      * @since 19
      */
     public static final Unary BIT_COUNT = unary("BIT_COUNT", "bitCount", VectorSupport.VECTOR_OP_BIT_COUNT, VO_NOFP);
-    /** Produce {@code numberOfTrailingZeros(a)}
+    /** Produce {@code numberOfTrailingZeros(a)}. Integral only.
      * @since 19
      */
     public static final Unary TRAILING_ZEROS_COUNT = unary("TRAILING_ZEROS_COUNT", "numberOfTrailingZeros", VectorSupport.VECTOR_OP_TZ_COUNT, VO_NOFP);
-    /** Produce {@code numberOfLeadingZeros(a)}
+    /** Produce {@code numberOfLeadingZeros(a)}. Integral only.
      * @since 19
      */
     public static final Unary LEADING_ZEROS_COUNT = unary("LEADING_ZEROS_COUNT", "numberOfLeadingZeros", VectorSupport.VECTOR_OP_LZ_COUNT, VO_NOFP);
-    /** Produce {@code reverse(a)}
+    /** Produce {@code reverse(a)}. Integral only.
      * @since 19
      */
     public static final Unary REVERSE = unary("REVERSE", "reverse", VectorSupport.VECTOR_OP_REVERSE, VO_NOFP);
-    /** Produce {@code reverseBytes(a)}
+    /** Produce {@code reverseBytes(a)}. Integral only.
      * @since 19
      */
     public static final Unary REVERSE_BYTES = unary("REVERSE_BYTES", "reverseBytes", VectorSupport.VECTOR_OP_REVERSE_BYTES, VO_NOFP);
@@ -476,67 +479,67 @@ public abstract class VectorOperators {
     /** Produce {@code sin(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Unary SIN = unary("SIN", "sin", VectorSupport.VECTOR_OP_SIN, VO_ONLYFP);
+    public static final /*float*/ Unary SIN = unary("SIN", "sin", VectorSupport.VECTOR_OP_SIN, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
     /** Produce {@code cos(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Unary COS = unary("COS", "cos", VectorSupport.VECTOR_OP_COS, VO_ONLYFP);
+    public static final /*float*/ Unary COS = unary("COS", "cos", VectorSupport.VECTOR_OP_COS, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
     /** Produce {@code tan(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Unary TAN = unary("TAN", "tan", VectorSupport.VECTOR_OP_TAN, VO_ONLYFP);
+    public static final /*float*/ Unary TAN = unary("TAN", "tan", VectorSupport.VECTOR_OP_TAN, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
     /** Produce {@code asin(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Unary ASIN = unary("ASIN", "asin", VectorSupport.VECTOR_OP_ASIN, VO_ONLYFP);
+    public static final /*float*/ Unary ASIN = unary("ASIN", "asin", VectorSupport.VECTOR_OP_ASIN, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
     /** Produce {@code acos(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Unary ACOS = unary("ACOS", "acos", VectorSupport.VECTOR_OP_ACOS, VO_ONLYFP);
+    public static final /*float*/ Unary ACOS = unary("ACOS", "acos", VectorSupport.VECTOR_OP_ACOS, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
     /** Produce {@code atan(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Unary ATAN = unary("ATAN", "atan", VectorSupport.VECTOR_OP_ATAN, VO_ONLYFP);
+    public static final /*float*/ Unary ATAN = unary("ATAN", "atan", VectorSupport.VECTOR_OP_ATAN, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
 
     /** Produce {@code exp(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Unary EXP = unary("EXP", "exp", VectorSupport.VECTOR_OP_EXP, VO_ONLYFP);
+    public static final /*float*/ Unary EXP = unary("EXP", "exp", VectorSupport.VECTOR_OP_EXP, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
     /** Produce {@code log(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Unary LOG = unary("LOG", "log", VectorSupport.VECTOR_OP_LOG, VO_ONLYFP);
+    public static final /*float*/ Unary LOG = unary("LOG", "log", VectorSupport.VECTOR_OP_LOG, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
     /** Produce {@code log10(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Unary LOG10 = unary("LOG10", "log10", VectorSupport.VECTOR_OP_LOG10, VO_ONLYFP);
+    public static final /*float*/ Unary LOG10 = unary("LOG10", "log10", VectorSupport.VECTOR_OP_LOG10, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
     /** Produce {@code sqrt(a)}.  Floating only.  See section "Operations on floating point vectors" above */
     public static final /*float*/ Unary SQRT = unary("SQRT", "sqrt", VectorSupport.VECTOR_OP_SQRT, VO_ONLYFP);
     /** Produce {@code cbrt(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Unary CBRT = unary("CBRT", "cbrt", VectorSupport.VECTOR_OP_CBRT, VO_ONLYFP);
+    public static final /*float*/ Unary CBRT = unary("CBRT", "cbrt", VectorSupport.VECTOR_OP_CBRT, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
 
     /** Produce {@code sinh(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Unary SINH = unary("SINH", "sinh", VectorSupport.VECTOR_OP_SINH, VO_ONLYFP);
+    public static final /*float*/ Unary SINH = unary("SINH", "sinh", VectorSupport.VECTOR_OP_SINH, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
     /** Produce {@code cosh(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Unary COSH = unary("COSH", "cosh", VectorSupport.VECTOR_OP_COSH, VO_ONLYFP);
+    public static final /*float*/ Unary COSH = unary("COSH", "cosh", VectorSupport.VECTOR_OP_COSH, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
     /** Produce {@code tanh(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Unary TANH = unary("TANH", "tanh", VectorSupport.VECTOR_OP_TANH, VO_ONLYFP);
+    public static final /*float*/ Unary TANH = unary("TANH", "tanh", VectorSupport.VECTOR_OP_TANH, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
     /** Produce {@code expm1(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Unary EXPM1 = unary("EXPM1", "expm1", VectorSupport.VECTOR_OP_EXPM1, VO_ONLYFP);
+    public static final /*float*/ Unary EXPM1 = unary("EXPM1", "expm1", VectorSupport.VECTOR_OP_EXPM1, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
     /** Produce {@code log1p(a)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Unary LOG1P = unary("LOG1P", "log1p", VectorSupport.VECTOR_OP_LOG1P, VO_ONLYFP);
+    public static final /*float*/ Unary LOG1P = unary("LOG1P", "log1p", VectorSupport.VECTOR_OP_LOG1P, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
 
     // Binary operators
 
@@ -563,8 +566,35 @@ public abstract class VectorOperators {
     public static final /*bitwise*/ Associative OR = assoc("OR", "|", VectorSupport.VECTOR_OP_OR, VO_NOFP+VO_ASSOC);
     /*package-private*/ /** Version of OR which works on float and double too. */
     static final Associative OR_UNCHECKED = assoc("OR_UNCHECKED", "|", VectorSupport.VECTOR_OP_OR, VO_ASSOC+VO_PRIVATE);
+
     /** Produce {@code a^b}.  Integral only. */
     public static final /*bitwise*/ Associative XOR = assoc("XOR", "^", VectorSupport.VECTOR_OP_XOR, VO_NOFP+VO_ASSOC);
+
+    /** Produce saturating {@code a+b}.  Integral only.
+     * @see VectorMath#addSaturating(int, int)
+     */
+    public static final Binary SADD = binary("SADD", "+", VectorSupport.VECTOR_OP_SADD, VO_NOFP);
+    /** Produce saturating unsigned {@code a+b}.  Integral only.
+     * @see VectorMath#addSaturatingUnsigned(int, int)
+     */
+    public static final Associative SUADD = assoc("SUADD", "+", VectorSupport.VECTOR_OP_SUADD, VO_NOFP+VO_ASSOC);
+    /** Produce saturating {@code a-b}.  Integral only.
+     * @see VectorMath#subSaturating(int, int)
+     */
+    public static final Binary SSUB = binary("SSUB", "-", VectorSupport.VECTOR_OP_SSUB, VO_NOFP);
+    /** Produce saturating unsigned {@code a-b}.  Integral only.
+     * @see VectorMath#subSaturatingUnsigned(int, int)
+     */
+    public static final Binary SUSUB = binary("SUSUB", "-", VectorSupport.VECTOR_OP_SUSUB, VO_NOFP);
+    /** Produce unsigned {@code min(a,b)}.  Integral only.
+     * @see VectorMath#minUnsigned(int, int) (int, int)
+     */
+    public static final Associative UMIN = assoc("UMIN", "umin", VectorSupport.VECTOR_OP_UMIN, VO_NOFP+VO_ASSOC);
+    /** Produce unsigned {@code max(a,b)}.  Integral only.
+     * @see VectorMath#maxUnsigned(int, int) (int, int)
+     */
+    public static final Associative UMAX = assoc("UMAX", "umax", VectorSupport.VECTOR_OP_UMAX, VO_NOFP+VO_ASSOC);
+
 
     /** Produce {@code a<<(n&(ESIZE*8-1))}.  Integral only. */
     public static final /*bitwise*/ Binary LSHL = binary("LSHL", "<<", VectorSupport.VECTOR_OP_LSHIFT, VO_SHIFT);
@@ -588,15 +618,15 @@ public abstract class VectorOperators {
     /** Produce {@code atan2(a,b)}. See  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Binary ATAN2 = binary("ATAN2", "atan2", VectorSupport.VECTOR_OP_ATAN2, VO_ONLYFP);
+    public static final /*float*/ Binary ATAN2 = binary("ATAN2", "atan2", VectorSupport.VECTOR_OP_ATAN2, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
     /** Produce {@code pow(a,b)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Binary POW = binary("POW", "pow", VectorSupport.VECTOR_OP_POW, VO_ONLYFP);
+    public static final /*float*/ Binary POW = binary("POW", "pow", VectorSupport.VECTOR_OP_POW, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
     /** Produce {@code hypot(a,b)}.  Floating only.
      *  Not guaranteed to be semi-monotonic. See section "Operations on floating point vectors" above
      */
-    public static final /*float*/ Binary HYPOT = binary("HYPOT", "hypot", VectorSupport.VECTOR_OP_HYPOT, VO_ONLYFP);
+    public static final /*float*/ Binary HYPOT = binary("HYPOT", "hypot", VectorSupport.VECTOR_OP_HYPOT, VO_ONLYFP | VO_SPECIAL | VO_MATHLIB);
 
     // Ternary operators
 
@@ -635,22 +665,22 @@ public abstract class VectorOperators {
      * @see java.lang.Integer#compareUnsigned
      * @see java.lang.Long#compareUnsigned
      */
-    public static final Comparison UNSIGNED_LT = compare("UNSIGNED_LT", "<",  VectorSupport.BT_ult, VO_NOFP);
+    public static final Comparison ULT = compare("ULT", "<",  VectorSupport.BT_ult, VO_NOFP);
     /** Unsigned compare {@code a<=b}.  Integral only.
      * @see java.lang.Integer#compareUnsigned
      * @see java.lang.Long#compareUnsigned
      */
-    public static final Comparison UNSIGNED_LE = compare("UNSIGNED_LE", "<=", VectorSupport.BT_ule, VO_NOFP);
+    public static final Comparison ULE = compare("ULE", "<=", VectorSupport.BT_ule, VO_NOFP);
     /** Unsigned compare {@code a>b}.  Integral only.
      * @see java.lang.Integer#compareUnsigned
      * @see java.lang.Long#compareUnsigned
      */
-    public static final Comparison UNSIGNED_GT = compare("UNSIGNED_GT", ">",  VectorSupport.BT_ugt, VO_NOFP);
+    public static final Comparison UGT = compare("UGT", ">",  VectorSupport.BT_ugt, VO_NOFP);
     /** Unsigned compare {@code a>=b}.  Integral only.
      * @see java.lang.Integer#compareUnsigned
      * @see java.lang.Long#compareUnsigned
      */
-    public static final Comparison UNSIGNED_GE = compare("UNSIGNED_GE", ">=", VectorSupport.BT_uge, VO_NOFP);
+    public static final Comparison UGE = compare("UGE", ">=", VectorSupport.BT_uge, VO_NOFP);
 
     // Conversion operators
 
@@ -665,7 +695,7 @@ public abstract class VectorOperators {
     /** Convert {@code byteVal} to {@code (short)byteVal}. */
     public static final Conversion<Byte,Short> B2S = convert("B2S", 'C', byte.class, short.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code byteVal} to {@code (halffloat)byteVal}. */
-    public static final Conversion<Byte,Halffloat> B2H = convert("B2H", 'C', byte.class, Halffloat.class, VO_KIND_CAST, VO_ALL);
+    public static final Conversion<Byte,Float16> B2H = convert("B2H", 'C', byte.class, Float16.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code doubleVal} to {@code (byte)doubleVal}. */
     public static final Conversion<Double,Byte> D2B = convert("D2B", 'C', double.class, byte.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code doubleVal} to {@code (float)doubleVal}. */
@@ -677,7 +707,7 @@ public abstract class VectorOperators {
     /** Convert {@code doubleVal} to {@code (short)doubleVal}. */
     public static final Conversion<Double,Short> D2S = convert("D2S", 'C', double.class, short.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code doubleVal} to {@code (halffloat)doubleVal}. */
-    public static final Conversion<Double,Halffloat> D2H = convert("D2H", 'C', double.class, Halffloat.class, VO_KIND_CAST, VO_ALL);
+    public static final Conversion<Double,Float16> D2H = convert("D2H", 'C', double.class, Float16.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code floatVal} to {@code (byte)floatVal}. */
     public static final Conversion<Float,Byte> F2B = convert("F2B", 'C', float.class, byte.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code floatVal} to {@code (double)floatVal}. */
@@ -689,7 +719,7 @@ public abstract class VectorOperators {
     /** Convert {@code floatVal} to {@code (short)floatVal}. */
     public static final Conversion<Float,Short> F2S = convert("F2S", 'C', float.class, short.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code floatVal} to {@code (halffloat)floatVal}. */
-    public static final Conversion<Float,Halffloat> F2H = convert("F2H", 'C', float.class, Halffloat.class, VO_KIND_CAST, VO_ALL);
+    public static final Conversion<Float,Float16> F2H = convert("F2H", 'C', float.class, Float16.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code intVal} to {@code (byte)intVal}. */
     public static final Conversion<Integer,Byte> I2B = convert("I2B", 'C', int.class, byte.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code intVal} to {@code (double)intVal}. */
@@ -701,7 +731,7 @@ public abstract class VectorOperators {
     /** Convert {@code intVal} to {@code (short)intVal}. */
     public static final Conversion<Integer,Short> I2S = convert("I2S", 'C', int.class, short.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code intVal} to {@code (halffloat)intVal}. */
-    public static final Conversion<Integer,Halffloat> I2H = convert("I2H", 'C', int.class, Halffloat.class, VO_KIND_CAST, VO_ALL);
+    public static final Conversion<Integer,Float16> I2H = convert("I2H", 'C', int.class, Float16.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code longVal} to {@code (byte)longVal}. */
     public static final Conversion<Long,Byte> L2B = convert("L2B", 'C', long.class, byte.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code longVal} to {@code (double)longVal}. */
@@ -713,7 +743,7 @@ public abstract class VectorOperators {
     /** Convert {@code longVal} to {@code (short)longVal}. */
     public static final Conversion<Long,Short> L2S = convert("L2S", 'C', long.class, short.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code longVal} to {@code (halffloat)longVal}. */
-    public static final Conversion<Long,Halffloat> L2H = convert("L2H", 'C', long.class, Halffloat.class, VO_KIND_CAST, VO_ALL);
+    public static final Conversion<Long,Float16> L2H = convert("L2H", 'C', long.class, Float16.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code shortVal} to {@code (byte)shortVal}. */
     public static final Conversion<Short,Byte> S2B = convert("S2B", 'C', short.class, byte.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code shortVal} to {@code (double)shortVal}. */
@@ -725,19 +755,19 @@ public abstract class VectorOperators {
     /** Convert {@code shortVal} to {@code (long)shortVal}. */
     public static final Conversion<Short,Long> S2L = convert("S2L", 'C', short.class, long.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code shortVal} to {@code (halffloat)shortVal}. */
-    public static final Conversion<Short,Halffloat> S2H = convert("S2H", 'C', short.class, Halffloat.class, VO_KIND_CAST, VO_ALL);
+    public static final Conversion<Short,Float16> S2H = convert("S2H", 'C', short.class, Float16.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code halffloatVal} to {@code (byte)halffloatVal}. */
-    public static final Conversion<Halffloat,Byte> H2B = convert("H2B", 'C', Halffloat.class, byte.class, VO_KIND_CAST, VO_ALL);
+    public static final Conversion<Float16,Byte> H2B = convert("H2B", 'C', Float16.class, byte.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code halffloatVal} to {@code (short)halffloatVal}. */
-    public static final Conversion<Halffloat,Short> H2S = convert("H2S", 'C', Halffloat.class, short.class, VO_KIND_CAST, VO_ALL);
+    public static final Conversion<Float16,Short> H2S = convert("H2S", 'C', Float16.class, short.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code halffloatVal} to {@code (double)halffloatVal}. */
-    public static final Conversion<Halffloat,Double> H2D = convert("H2D", 'C', Halffloat.class, double.class, VO_KIND_CAST, VO_ALL);
+    public static final Conversion<Float16,Double> H2D = convert("H2D", 'C', Float16.class, double.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code halffloatVal} to {@code (float)halffloatVal}. */
-    public static final Conversion<Halffloat,Float> H2F = convert("H2F", 'C', Halffloat.class, float.class, VO_KIND_CAST, VO_ALL);
+    public static final Conversion<Float16,Float> H2F = convert("H2F", 'C', Float16.class, float.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code halffloatVal} to {@code (int)halffloatVal}. */
-    public static final Conversion<Halffloat,Integer> H2I = convert("H2I", 'C', Halffloat.class, int.class, VO_KIND_CAST, VO_ALL);
+    public static final Conversion<Float16,Integer> H2I = convert("H2I", 'C', Float16.class, int.class, VO_KIND_CAST, VO_ALL);
     /** Convert {@code halffloatVal} to {@code (long)halffloatVal}. */
-    public static final Conversion<Halffloat,Long> H2L = convert("H2L", 'C', Halffloat.class, long.class, VO_KIND_CAST, VO_ALL);
+    public static final Conversion<Float16,Long> H2L = convert("H2L", 'C', Float16.class, long.class, VO_KIND_CAST, VO_ALL);
 
     /** Reinterpret bits of {@code doubleVal} as {@code long}. As if by {@link Double#doubleToRawLongBits(double)} */
     public static final Conversion<Double,Long> REINTERPRET_D2L = convert("REINTERPRET_D2L", 'R', double.class, long.class, VO_KIND_BITWISE, VO_ALL);
@@ -826,7 +856,7 @@ public abstract class VectorOperators {
                                     kind, dom, ran);
     }
 
-    private static abstract class OperatorImpl implements Operator {
+    private abstract static class OperatorImpl implements Operator {
         private final String symName;
         private final String opName;
         private final int opInfo;
@@ -1136,7 +1166,7 @@ public abstract class VectorOperators {
         private static final @Stable ConversionImpl<?,?>[][][]
             CACHES = new ConversionImpl<?,?>[KIND_LIMIT][LINE_LIMIT][LINE_LIMIT];
 
-        private synchronized static void initCaches() {
+        private static synchronized void initCaches() {
             for (var f : VectorOperators.class.getFields()) {
                 if (f.getType() != Conversion.class)  continue;
                 ConversionImpl<?,?> conv;
@@ -1371,7 +1401,7 @@ public abstract class VectorOperators {
             if (fn != null)  return fn;
             fn = supplier.apply(opc);
             if (fn == null)  throw badOp(op);
-            assert(VectorSupport.isNonCapturingLambda(fn)) : fn;
+            assert(isNonCapturingLambda(fn)) : fn;
             // The JIT can see into this cache:
             cache[opc] = fn;
             return fn;
