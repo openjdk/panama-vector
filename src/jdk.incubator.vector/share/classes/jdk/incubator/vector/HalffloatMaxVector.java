@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 package jdk.incubator.vector;
 
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
@@ -52,7 +54,11 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     static final int VLENGTH = VSPECIES.laneCount(); // used by the JVM
 
-    static final Class<Halffloat> ETYPE = Halffloat.class; // used by the JVM
+    static final Class<Short> CTYPE = short.class; // carrier type used by the JVM
+
+    static final Class<Float16> ETYPE = Float16.class; // vector element type used by the JVM
+
+    static final int VECTOR_OPER_TYPE = VECTOR_TYPE_FP16;
 
     HalffloatMaxVector(short[] v) {
         super(v);
@@ -87,12 +93,15 @@ final class HalffloatMaxVector extends HalffloatVector {
     }
 
     @ForceInline
-    @Override
-    public final Class<Halffloat> elementType() { return Halffloat.class; }
+    final Class<Short> carrierType() { return CTYPE; }
 
     @ForceInline
     @Override
-    public final int elementSize() { return Halffloat.SIZE; }
+    public final Class<Float16> elementType() { return ETYPE; }
+
+    @ForceInline
+    @Override
+    public final int elementSize() { return Float16.SIZE; }
 
     @ForceInline
     @Override
@@ -143,6 +152,12 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @Override
     @ForceInline
+    HalffloatMaxShuffle iotaShuffle(int start, int step, boolean wrap) {
+        return (HalffloatMaxShuffle) iotaShuffleTemplate((short) start, (short) step, wrap);
+    }
+
+    @Override
+    @ForceInline
     HalffloatMaxShuffle shuffleFromArray(int[] indices, int i) { return new HalffloatMaxShuffle(indices, i); }
 
     @Override
@@ -178,7 +193,7 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @ForceInline
     final @Override
-    HalffloatMaxVector uOp(VectorMask<Halffloat> m, FUnOp f) {
+    HalffloatMaxVector uOp(VectorMask<Float16> m, FUnOp f) {
         return (HalffloatMaxVector)
             super.uOpTemplate((HalffloatMaxMask)m, f);  // specialize
     }
@@ -187,14 +202,14 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @ForceInline
     final @Override
-    HalffloatMaxVector bOp(Vector<Halffloat> v, FBinOp f) {
+    HalffloatMaxVector bOp(Vector<Float16> v, FBinOp f) {
         return (HalffloatMaxVector) super.bOpTemplate((HalffloatMaxVector)v, f);  // specialize
     }
 
     @ForceInline
     final @Override
-    HalffloatMaxVector bOp(Vector<Halffloat> v,
-                     VectorMask<Halffloat> m, FBinOp f) {
+    HalffloatMaxVector bOp(Vector<Float16> v,
+                     VectorMask<Float16> m, FBinOp f) {
         return (HalffloatMaxVector)
             super.bOpTemplate((HalffloatMaxVector)v, (HalffloatMaxMask)m,
                               f);  // specialize
@@ -204,7 +219,7 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @ForceInline
     final @Override
-    HalffloatMaxVector tOp(Vector<Halffloat> v1, Vector<Halffloat> v2, FTriOp f) {
+    HalffloatMaxVector tOp(Vector<Float16> v1, Vector<Float16> v2, FTriOp f) {
         return (HalffloatMaxVector)
             super.tOpTemplate((HalffloatMaxVector)v1, (HalffloatMaxVector)v2,
                               f);  // specialize
@@ -212,8 +227,8 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @ForceInline
     final @Override
-    HalffloatMaxVector tOp(Vector<Halffloat> v1, Vector<Halffloat> v2,
-                     VectorMask<Halffloat> m, FTriOp f) {
+    HalffloatMaxVector tOp(Vector<Float16> v1, Vector<Float16> v2,
+                     VectorMask<Float16> m, FTriOp f) {
         return (HalffloatMaxVector)
             super.tOpTemplate((HalffloatMaxVector)v1, (HalffloatMaxVector)v2,
                               (HalffloatMaxMask)m, f);  // specialize
@@ -221,14 +236,14 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @ForceInline
     final @Override
-    short rOp(short v, VectorMask<Halffloat> m, FBinOp f) {
+    short rOp(short v, VectorMask<Float16> m, FBinOp f) {
         return super.rOpTemplate(v, m, f);  // specialize
     }
 
     @Override
     @ForceInline
     public final <F>
-    Vector<F> convertShape(VectorOperators.Conversion<Halffloat,F> conv,
+    Vector<F> convertShape(VectorOperators.Conversion<Float16,F> conv,
                            VectorSpecies<F> rsp, int part) {
         return super.convertShapeTemplate(conv, rsp, part);  // specialize
     }
@@ -260,19 +275,19 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public HalffloatMaxVector lanewise(Unary op, VectorMask<Halffloat> m) {
+    public HalffloatMaxVector lanewise(Unary op, VectorMask<Float16> m) {
         return (HalffloatMaxVector) super.lanewiseTemplate(op, HalffloatMaxMask.class, (HalffloatMaxMask) m);  // specialize
     }
 
     @Override
     @ForceInline
-    public HalffloatMaxVector lanewise(Binary op, Vector<Halffloat> v) {
+    public HalffloatMaxVector lanewise(Binary op, Vector<Float16> v) {
         return (HalffloatMaxVector) super.lanewiseTemplate(op, v);  // specialize
     }
 
     @Override
     @ForceInline
-    public HalffloatMaxVector lanewise(Binary op, Vector<Halffloat> v, VectorMask<Halffloat> m) {
+    public HalffloatMaxVector lanewise(Binary op, Vector<Float16> v, VectorMask<Float16> m) {
         return (HalffloatMaxVector) super.lanewiseTemplate(op, HalffloatMaxMask.class, v, (HalffloatMaxMask) m);  // specialize
     }
 
@@ -282,7 +297,7 @@ final class HalffloatMaxVector extends HalffloatVector {
     @ForceInline
     public final
     HalffloatMaxVector
-    lanewise(Ternary op, Vector<Halffloat> v1, Vector<Halffloat> v2) {
+    lanewise(Ternary op, Vector<Float16> v1, Vector<Float16> v2) {
         return (HalffloatMaxVector) super.lanewiseTemplate(op, v1, v2);  // specialize
     }
 
@@ -290,7 +305,7 @@ final class HalffloatMaxVector extends HalffloatVector {
     @ForceInline
     public final
     HalffloatMaxVector
-    lanewise(Ternary op, Vector<Halffloat> v1, Vector<Halffloat> v2, VectorMask<Halffloat> m) {
+    lanewise(Ternary op, Vector<Float16> v1, Vector<Float16> v2, VectorMask<Float16> m) {
         return (HalffloatMaxVector) super.lanewiseTemplate(op, HalffloatMaxMask.class, v1, v2, (HalffloatMaxMask) m);  // specialize
     }
 
@@ -312,7 +327,7 @@ final class HalffloatMaxVector extends HalffloatVector {
     @Override
     @ForceInline
     public final short reduceLanes(VectorOperators.Associative op,
-                                    VectorMask<Halffloat> m) {
+                                    VectorMask<Float16> m) {
         return super.reduceLanesTemplate(op, HalffloatMaxMask.class, (HalffloatMaxMask) m);  // specialized
     }
 
@@ -325,15 +340,20 @@ final class HalffloatMaxVector extends HalffloatVector {
     @Override
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
-                                        VectorMask<Halffloat> m) {
+                                        VectorMask<Float16> m) {
         return (long) super.reduceLanesTemplate(op, HalffloatMaxMask.class, (HalffloatMaxMask) m);  // specialized
     }
 
     @Override
     @ForceInline
-    public final
-    <F> VectorShuffle<F> toShuffle(AbstractSpecies<F> dsp) {
-        return super.toShuffleTemplate(dsp);
+    final <F> VectorShuffle<F> bitsToShuffle(AbstractSpecies<F> dsp) {
+        throw new AssertionError();
+    }
+
+    @Override
+    @ForceInline
+    public final HalffloatMaxShuffle toShuffle() {
+        return (HalffloatMaxShuffle) toShuffle(vspecies(), false);
     }
 
     // Specialized unary testing
@@ -346,7 +366,7 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public final HalffloatMaxMask test(Test op, VectorMask<Halffloat> m) {
+    public final HalffloatMaxMask test(Test op, VectorMask<Float16> m) {
         return super.testTemplate(HalffloatMaxMask.class, op, (HalffloatMaxMask) m);  // specialize
     }
 
@@ -354,7 +374,7 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public final HalffloatMaxMask compare(Comparison op, Vector<Halffloat> v) {
+    public final HalffloatMaxMask compare(Comparison op, Vector<Float16> v) {
         return super.compareTemplate(HalffloatMaxMask.class, op, v);  // specialize
     }
 
@@ -372,14 +392,14 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public final HalffloatMaxMask compare(Comparison op, Vector<Halffloat> v, VectorMask<Halffloat> m) {
+    public final HalffloatMaxMask compare(Comparison op, Vector<Float16> v, VectorMask<Float16> m) {
         return super.compareTemplate(HalffloatMaxMask.class, op, v, (HalffloatMaxMask) m);
     }
 
 
     @Override
     @ForceInline
-    public HalffloatMaxVector blend(Vector<Halffloat> v, VectorMask<Halffloat> m) {
+    public HalffloatMaxVector blend(Vector<Float16> v, VectorMask<Float16> m) {
         return (HalffloatMaxVector)
             super.blendTemplate(HalffloatMaxMask.class,
                                 (HalffloatMaxVector) v,
@@ -388,7 +408,7 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public HalffloatMaxVector slice(int origin, Vector<Halffloat> v) {
+    public HalffloatMaxVector slice(int origin, Vector<Float16> v) {
         return (HalffloatMaxVector) super.sliceTemplate(origin, v);  // specialize
     }
 
@@ -400,13 +420,13 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public HalffloatMaxVector unslice(int origin, Vector<Halffloat> w, int part) {
+    public HalffloatMaxVector unslice(int origin, Vector<Float16> w, int part) {
         return (HalffloatMaxVector) super.unsliceTemplate(origin, w, part);  // specialize
     }
 
     @Override
     @ForceInline
-    public HalffloatMaxVector unslice(int origin, Vector<Halffloat> w, int part, VectorMask<Halffloat> m) {
+    public HalffloatMaxVector unslice(int origin, Vector<Float16> w, int part, VectorMask<Float16> m) {
         return (HalffloatMaxVector)
             super.unsliceTemplate(HalffloatMaxMask.class,
                                   origin, w, part,
@@ -421,7 +441,7 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public HalffloatMaxVector rearrange(VectorShuffle<Halffloat> s) {
+    public HalffloatMaxVector rearrange(VectorShuffle<Float16> s) {
         return (HalffloatMaxVector)
             super.rearrangeTemplate(HalffloatMaxShuffle.class,
                                     (HalffloatMaxShuffle) s);  // specialize
@@ -429,8 +449,8 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public HalffloatMaxVector rearrange(VectorShuffle<Halffloat> shuffle,
-                                  VectorMask<Halffloat> m) {
+    public HalffloatMaxVector rearrange(VectorShuffle<Float16> shuffle,
+                                  VectorMask<Float16> m) {
         return (HalffloatMaxVector)
             super.rearrangeTemplate(HalffloatMaxShuffle.class,
                                     HalffloatMaxMask.class,
@@ -440,8 +460,8 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public HalffloatMaxVector rearrange(VectorShuffle<Halffloat> s,
-                                  Vector<Halffloat> v) {
+    public HalffloatMaxVector rearrange(VectorShuffle<Float16> s,
+                                  Vector<Float16> v) {
         return (HalffloatMaxVector)
             super.rearrangeTemplate(HalffloatMaxShuffle.class,
                                     (HalffloatMaxShuffle) s,
@@ -450,7 +470,7 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public HalffloatMaxVector compress(VectorMask<Halffloat> m) {
+    public HalffloatMaxVector compress(VectorMask<Float16> m) {
         return (HalffloatMaxVector)
             super.compressTemplate(HalffloatMaxMask.class,
                                    (HalffloatMaxMask) m);  // specialize
@@ -458,7 +478,7 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public HalffloatMaxVector expand(VectorMask<Halffloat> m) {
+    public HalffloatMaxVector expand(VectorMask<Float16> m) {
         return (HalffloatMaxVector)
             super.expandTemplate(HalffloatMaxMask.class,
                                    (HalffloatMaxMask) m);  // specialize
@@ -466,20 +486,27 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public HalffloatMaxVector selectFrom(Vector<Halffloat> v) {
+    public HalffloatMaxVector selectFrom(Vector<Float16> v) {
         return (HalffloatMaxVector)
             super.selectFromTemplate((HalffloatMaxVector) v);  // specialize
     }
 
     @Override
     @ForceInline
-    public HalffloatMaxVector selectFrom(Vector<Halffloat> v,
-                                   VectorMask<Halffloat> m) {
+    public HalffloatMaxVector selectFrom(Vector<Float16> v,
+                                   VectorMask<Float16> m) {
         return (HalffloatMaxVector)
             super.selectFromTemplate((HalffloatMaxVector) v,
-                                     (HalffloatMaxMask) m);  // specialize
+                                     HalffloatMaxMask.class, (HalffloatMaxMask) m);  // specialize
     }
 
+    @Override
+    @ForceInline
+    public HalffloatMaxVector selectFrom(Vector<Float16> v1,
+                                   Vector<Float16> v2) {
+        return (HalffloatMaxVector)
+            super.selectFromTemplate((HalffloatMaxVector) v1, (HalffloatMaxVector) v2);  // specialize
+    }
 
     @ForceInline
     @Override
@@ -488,16 +515,17 @@ final class HalffloatMaxVector extends HalffloatVector {
             throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
         short bits = laneHelper(i);
-        return Halffloat.shortBitsToHalffloat(bits);
+        return bits;
     }
 
+    @ForceInline
     public short laneHelper(int i) {
         return (short) VectorSupport.extract(
-                     VCLASS, ETYPE, VLENGTH,
+                     VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                      this, i,
                      (vec, ix) -> {
                      short[] vecarr = vec.vec();
-                     return (long)Halffloat.shortToShortBits(vecarr[ix]);
+                     return vecarr[ix];
                      });
     }
 
@@ -510,22 +538,23 @@ final class HalffloatMaxVector extends HalffloatVector {
         return withLaneHelper(i, e);
     }
 
+    @ForceInline
     public HalffloatMaxVector withLaneHelper(int i, short e) {
         return VectorSupport.insert(
-                                VCLASS, ETYPE, VLENGTH,
-                                this, i, (long)Halffloat.shortToShortBits(e),
+                                VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                this, i, (long)e,
                                 (v, ix, bits) -> {
                                     short[] res = v.vec().clone();
-                                    res[ix] = Halffloat.shortBitsToHalffloat((short)bits);
+                                    res[ix] = e;
                                     return v.vectorFactory(res);
                                 });
     }
 
     // Mask
 
-    static final class HalffloatMaxMask extends AbstractMask<Halffloat> {
+    static final class HalffloatMaxMask extends AbstractMask<Float16> {
         static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
-        static final Class<Halffloat> ETYPE = Halffloat.class; // used by the JVM
+        static final Class<Short> CTYPE = short.class; // used by the JVM
 
         HalffloatMaxMask(boolean[] bits) {
             this(bits, 0);
@@ -578,7 +607,7 @@ final class HalffloatMaxVector extends HalffloatVector {
         }
 
         @Override
-        HalffloatMaxMask bOp(VectorMask<Halffloat> m, MBinOp f) {
+        HalffloatMaxMask bOp(VectorMask<Float16> m, MBinOp f) {
             boolean[] res = new boolean[vspecies().laneCount()];
             boolean[] bits = getBits();
             boolean[] mbits = ((HalffloatMaxMask)m).getBits();
@@ -627,7 +656,7 @@ final class HalffloatMaxVector extends HalffloatVector {
         /*package-private*/
         HalffloatMaxMask indexPartiallyInUpperRange(long offset, long limit) {
             return (HalffloatMaxMask) VectorSupport.indexPartiallyInUpperRange(
-                HalffloatMaxMask.class, ETYPE, VLENGTH, offset, limit,
+                HalffloatMaxMask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, offset, limit,
                 (o, l) -> (HalffloatMaxMask) TRUE_MASK.indexPartiallyInRange(o, l));
         }
 
@@ -643,8 +672,9 @@ final class HalffloatMaxVector extends HalffloatVector {
         @ForceInline
         public HalffloatMaxMask compress() {
             return (HalffloatMaxMask)VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                HalffloatMaxVector.class, HalffloatMaxMask.class, ETYPE, VLENGTH, null, this,
-                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, Float.floatToFloat16(m1.trueCount())));
+                HalffloatMaxVector.class, HalffloatMaxMask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT,
+                Float16.float16ToShortBits(Float16.valueOf(m1.trueCount()))));
         }
 
 
@@ -652,30 +682,30 @@ final class HalffloatMaxVector extends HalffloatVector {
 
         @Override
         @ForceInline
-        public HalffloatMaxMask and(VectorMask<Halffloat> mask) {
+        public HalffloatMaxMask and(VectorMask<Float16> mask) {
             Objects.requireNonNull(mask);
             HalffloatMaxMask m = (HalffloatMaxMask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, HalffloatMaxMask.class, null, Halffloat.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_AND, HalffloatMaxMask.class, null, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
         @ForceInline
-        public HalffloatMaxMask or(VectorMask<Halffloat> mask) {
+        public HalffloatMaxMask or(VectorMask<Float16> mask) {
             Objects.requireNonNull(mask);
             HalffloatMaxMask m = (HalffloatMaxMask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, HalffloatMaxMask.class, null, Halffloat.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_OR, HalffloatMaxMask.class, null, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @Override
         @ForceInline
-        public HalffloatMaxMask xor(VectorMask<Halffloat> mask) {
+        public HalffloatMaxMask xor(VectorMask<Float16> mask) {
             Objects.requireNonNull(mask);
             HalffloatMaxMask m = (HalffloatMaxMask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, HalffloatMaxMask.class, null, Halffloat.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, HalffloatMaxMask.class, null, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
@@ -685,22 +715,25 @@ final class HalffloatMaxVector extends HalffloatVector {
         @Override
         @ForceInline
         public int trueCount() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, HalffloatMaxMask.class, Halffloat.class, VLENGTH, this,
-                                                      (m) -> trueCountHelper(m.getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, HalffloatMaxMask.class, short.class, ETYPE,
+                                                            VECTOR_OPER_TYPE, VLENGTH, this,
+                                                            (m) -> trueCountHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int firstTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, HalffloatMaxMask.class, Halffloat.class, VLENGTH, this,
-                                                      (m) -> firstTrueHelper(m.getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, HalffloatMaxMask.class, short.class, ETYPE,
+                                                            VECTOR_OPER_TYPE, VLENGTH, this,
+                                                            (m) -> firstTrueHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int lastTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, HalffloatMaxMask.class, Halffloat.class, VLENGTH, this,
-                                                      (m) -> lastTrueHelper(m.getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, HalffloatMaxMask.class, short.class, ETYPE,
+                                                            VECTOR_OPER_TYPE, VLENGTH, this,
+                                                            (m) -> lastTrueHelper(m.getBits()));
         }
 
         @Override
@@ -709,8 +742,19 @@ final class HalffloatMaxVector extends HalffloatVector {
             if (length() > Long.SIZE) {
                 throw new UnsupportedOperationException("too many lanes for one long");
             }
-            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, HalffloatMaxMask.class, Halffloat.class, VLENGTH, this,
+            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, HalffloatMaxMask.class, short.class, ETYPE,
+                                                      VECTOR_OPER_TYPE, VLENGTH, this,
                                                       (m) -> toLongHelper(m.getBits()));
+        }
+
+        // laneIsSet
+
+        @Override
+        @ForceInline
+        public boolean laneIsSet(int i) {
+            Objects.checkIndex(i, length());
+            return VectorSupport.extract(HalffloatMaxMask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                         this, i, (m, idx) -> (m.getBits()[idx] ? 1L : 0L)) == 1L;
         }
 
         // Reductions
@@ -718,23 +762,23 @@ final class HalffloatMaxVector extends HalffloatVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            return VectorSupport.test(BT_ne, HalffloatMaxMask.class, Halffloat.class, VLENGTH,
-                                         this, vspecies().maskAll(true),
-                                         (m, __) -> anyTrueHelper(((HalffloatMaxMask)m).getBits()));
+            return VectorSupport.test(BT_ne, HalffloatMaxMask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                      this, vspecies().maskAll(true),
+                                      (m, __) -> anyTrueHelper(((HalffloatMaxMask)m).getBits()));
         }
 
         @Override
         @ForceInline
         public boolean allTrue() {
-            return VectorSupport.test(BT_overflow, HalffloatMaxMask.class, Halffloat.class, VLENGTH,
-                                         this, vspecies().maskAll(true),
-                                         (m, __) -> allTrueHelper(((HalffloatMaxMask)m).getBits()));
+            return VectorSupport.test(BT_overflow, HalffloatMaxMask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                      this, vspecies().maskAll(true),
+                                      (m, __) -> allTrueHelper(((HalffloatMaxMask)m).getBits()));
         }
 
         @ForceInline
         /*package-private*/
         static HalffloatMaxMask maskAll(boolean bit) {
-            return VectorSupport.fromBitsCoerced(HalffloatMaxMask.class, Halffloat.class, VLENGTH,
+            return VectorSupport.fromBitsCoerced(HalffloatMaxMask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                                  (bit ? -1 : 0), MODE_BROADCAST, null,
                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
@@ -745,9 +789,9 @@ final class HalffloatMaxVector extends HalffloatVector {
 
     // Shuffle
 
-    static final class HalffloatMaxShuffle extends AbstractShuffle<Halffloat> {
+    static final class HalffloatMaxShuffle extends AbstractShuffle<Float16> {
         static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
-        static final Class<Short> ETYPE = short.class; // used by the JVM
+        static final Class<Short> CTYPE = short.class; // used by the JVM
 
         HalffloatMaxShuffle(short[] indices) {
             super(indices);
@@ -783,14 +827,19 @@ final class HalffloatMaxVector extends HalffloatVector {
 
         @Override
         @ForceInline
+        public HalffloatMaxVector toVector() {
+            return (HalffloatMaxVector) toBitsVector().castShape(vspecies(), 0);
+        }
+
+        @Override
+        @ForceInline
         ShortMaxVector toBitsVector() {
             return (ShortMaxVector) super.toBitsVectorTemplate();
         }
 
         @Override
-        @ForceInline
-        ShortVector toBitsVector0() {
-            return ShortMaxVector.VSPECIES.dummyVector().vectorFactory(indices());
+        ShortMaxVector toBitsVector0() {
+            return ((ShortMaxVector) vspecies().asIntegral().dummyVector()).vectorFactory(indices());
         }
 
         @Override
@@ -810,6 +859,47 @@ final class HalffloatMaxVector extends HalffloatVector {
             v.convertShape(VectorOperators.S2I, species, 1)
                     .reinterpretAsInts()
                     .intoArray(a, offset + species.length());
+        }
+
+        @Override
+        @ForceInline
+        public void intoMemorySegment(MemorySegment ms, long offset, ByteOrder bo) {
+            VectorSpecies<Integer> species = IntVector.SPECIES_MAX;
+            Vector<Short> v = toBitsVector();
+            v.convertShape(VectorOperators.S2I, species, 0)
+                    .reinterpretAsInts()
+                    .intoMemorySegment(ms, offset, bo);
+            v.convertShape(VectorOperators.S2I, species, 1)
+                    .reinterpretAsInts()
+                    .intoMemorySegment(ms, offset + species.vectorByteSize(), bo);
+         }
+
+        @Override
+        @ForceInline
+        public final HalffloatMaxMask laneIsValid() {
+            return (HalffloatMaxMask) toBitsVector().compare(VectorOperators.GE, 0)
+                    .cast(vspecies());
+        }
+
+        @ForceInline
+        @Override
+        public final HalffloatMaxShuffle rearrange(VectorShuffle<Float16> shuffle) {
+            HalffloatMaxShuffle concreteShuffle = (HalffloatMaxShuffle) shuffle;
+            return (HalffloatMaxShuffle) toBitsVector().rearrange(concreteShuffle.cast(ShortVector.SPECIES_MAX))
+                    .toShuffle(vspecies(), false);
+        }
+
+        @ForceInline
+        @Override
+        public final HalffloatMaxShuffle wrapIndexes() {
+            ShortMaxVector v = toBitsVector();
+            if ((length() & (length() - 1)) == 0) {
+                v = (ShortMaxVector) v.lanewise(VectorOperators.AND, length() - 1);
+            } else {
+                v = (ShortMaxVector) v.blend(v.lanewise(VectorOperators.ADD, length()),
+                            v.compare(VectorOperators.LT, 0));
+            }
+            return (HalffloatMaxShuffle) v.toShuffle(vspecies(), false);
         }
 
         private static short[] prepare(int[] indices, int offset) {
@@ -836,14 +926,9 @@ final class HalffloatMaxVector extends HalffloatVector {
             int length = indices.length;
             for (short si : indices) {
                 if (si >= (short)length || si < (short)(-length)) {
-                    boolean assertsEnabled = false;
-                    assert(assertsEnabled = true);
-                    if (assertsEnabled) {
-                        String msg = ("index "+si+"out of range ["+length+"] in "+
+                    String msg = ("index "+si+"out of range ["+length+"] in "+
                                   java.util.Arrays.toString(indices));
-                        throw new AssertionError(msg);
-                    }
-                    return false;
+                    throw new AssertionError(msg);
                 }
             }
             return true;
@@ -864,10 +949,16 @@ final class HalffloatMaxVector extends HalffloatVector {
     @ForceInline
     @Override
     final
-    HalffloatVector fromArray0(short[] a, int offset, VectorMask<Halffloat> m, int offsetInRange) {
+    HalffloatVector fromArray0(short[] a, int offset, VectorMask<Float16> m, int offsetInRange) {
         return super.fromArray0Template(HalffloatMaxMask.class, a, offset, (HalffloatMaxMask) m, offsetInRange);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    HalffloatVector fromArray0(short[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Float16> m) {
+        return super.fromArray0Template(HalffloatMaxMask.class, a, offset, indexMap, mapOffset, (HalffloatMaxMask) m);
+    }
 
     @ForceInline
     @Override
@@ -879,7 +970,7 @@ final class HalffloatMaxVector extends HalffloatVector {
     @ForceInline
     @Override
     final
-    HalffloatVector fromCharArray0(char[] a, int offset, VectorMask<Halffloat> m, int offsetInRange) {
+    HalffloatVector fromCharArray0(char[] a, int offset, VectorMask<Float16> m, int offsetInRange) {
         return super.fromCharArray0Template(HalffloatMaxMask.class, a, offset, (HalffloatMaxMask) m, offsetInRange);  // specialize
     }
 
@@ -894,7 +985,7 @@ final class HalffloatMaxVector extends HalffloatVector {
     @ForceInline
     @Override
     final
-    HalffloatVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Halffloat> m, int offsetInRange) {
+    HalffloatVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Float16> m, int offsetInRange) {
         return super.fromMemorySegment0Template(HalffloatMaxMask.class, ms, offset, (HalffloatMaxMask) m, offsetInRange);  // specialize
     }
 
@@ -908,7 +999,7 @@ final class HalffloatMaxVector extends HalffloatVector {
     @ForceInline
     @Override
     final
-    void intoArray0(short[] a, int offset, VectorMask<Halffloat> m) {
+    void intoArray0(short[] a, int offset, VectorMask<Float16> m) {
         super.intoArray0Template(HalffloatMaxMask.class, a, offset, (HalffloatMaxMask) m);
     }
 
@@ -917,14 +1008,14 @@ final class HalffloatMaxVector extends HalffloatVector {
     @ForceInline
     @Override
     final
-    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Halffloat> m) {
+    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Float16> m) {
         super.intoMemorySegment0Template(HalffloatMaxMask.class, ms, offset, (HalffloatMaxMask) m);
     }
 
     @ForceInline
     @Override
     final
-    void intoCharArray0(char[] a, int offset, VectorMask<Halffloat> m) {
+    void intoCharArray0(char[] a, int offset, VectorMask<Float16> m) {
         super.intoCharArray0Template(HalffloatMaxMask.class, a, offset, (HalffloatMaxMask) m);
     }
 

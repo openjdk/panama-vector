@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,30 +22,30 @@
  *
  */
 
-#include "precompiled.hpp"
 #include "classfile/stringTable.hpp"
 #include "classfile/symbolTable.hpp"
-#include "code/icBuffer.hpp"
+#include "code/aotCodeCache.hpp"
 #include "compiler/compiler_globals.hpp"
 #include "gc/shared/collectedHeap.hpp"
 #include "gc/shared/gcHeapSummary.hpp"
 #include "interpreter/bytecodes.hpp"
 #include "logging/logAsyncWriter.hpp"
 #include "memory/universe.hpp"
+#include "nmt/memTracker.hpp"
+#include "oops/trainingData.hpp"
+#include "prims/downcallLinker.hpp"
 #include "prims/jvmtiExport.hpp"
 #include "prims/methodHandles.hpp"
-#include "prims/downcallLinker.hpp"
-#include "runtime/globals.hpp"
 #include "runtime/atomic.hpp"
 #include "runtime/continuation.hpp"
 #include "runtime/flags/jvmFlag.hpp"
+#include "runtime/globals.hpp"
 #include "runtime/handles.inline.hpp"
 #include "runtime/icache.hpp"
 #include "runtime/init.hpp"
 #include "runtime/safepoint.hpp"
 #include "runtime/sharedRuntime.hpp"
 #include "sanitizers/leak.hpp"
-#include "services/memTracker.hpp"
 #include "utilities/macros.hpp"
 #if INCLUDE_JVMCI
 #include "jvmci/jvmci.hpp"
@@ -58,6 +58,7 @@ void mutex_init();
 void universe_oopstorage_init();
 void perfMemory_init();
 void SuspendibleThreadSet_init();
+void ExternalsRecorder_init(); // After mutex_init() and before CodeCache_init
 
 // Initialization done by Java thread in init_globals()
 void management_init();
@@ -66,9 +67,12 @@ void classLoader_init1();
 void compilationPolicy_init();
 void codeCache_init();
 void VM_Version_init();
+void icache_init2();
+void initialize_stub_info();    // must precede all blob/stub generation
+void preuniverse_stubs_init();
 void initial_stubs_init();
 
-jint universe_init();           // depends on codeCache_init and initial_stubs_init
+jint universe_init();           // depends on codeCache_init and preuniverse_stubs_init
 // depends on universe_init, must be before interpreter_init (currently only on SPARC)
 void gc_barrier_stubs_init();
 void continuations_init();      // depends on flags (UseCompressedOops) and barrier sets
@@ -83,8 +87,7 @@ void jni_handles_init();
 void vmStructs_init() NOT_DEBUG_RETURN;
 
 void vtableStubs_init();
-void InlineCacheBuffer_init();
-void compilerOracle_init();
+bool compilerOracle_init();
 bool compileBroker_init();
 void dependencyContext_init();
 void dependencies_init();
@@ -109,23 +112,33 @@ void vm_init_globals() {
   universe_oopstorage_init();
   perfMemory_init();
   SuspendibleThreadSet_init();
+  ExternalsRecorder_init(); // After mutex_init() and before CodeCache_init
 }
 
 
 jint init_globals() {
   management_init();
   JvmtiExport::initialize_oop_storage();
+#if INCLUDE_JVMTI
+  if (AlwaysRecordEvolDependencies) {
+    JvmtiExport::set_can_hotswap_or_post_breakpoint(true);
+    JvmtiExport::set_all_dependencies_are_recorded(true);
+  }
+#endif
   bytecodes_init();
   classLoader_init1();
   compilationPolicy_init();
   codeCache_init();
   VM_Version_init();              // depends on codeCache_init for emitting code
-  initial_stubs_init();
-  jint status = universe_init();  // dependent on codeCache_init and
-                                  // initial_stubs_init and metaspace_init.
-  if (status != JNI_OK)
+  icache_init2();                 // depends on VM_Version for choosing the mechanism
+  // ensure we know about all blobs, stubs and entries
+  initialize_stub_info();
+  // initialize stubs needed before we can init the universe
+  preuniverse_stubs_init();
+  jint status = universe_init();  // dependent on codeCache_init and preuniverse_stubs_init
+  if (status != JNI_OK) {
     return status;
-
+  }
 #ifdef LEAK_SANITIZER
   {
     // Register the Java heap with LSan.
@@ -133,16 +146,30 @@ jint init_globals() {
     LSAN_REGISTER_ROOT_REGION(summary.start(), summary.reserved_size());
   }
 #endif // LEAK_SANITIZER
-
+  AOTCodeCache::init2();     // depends on universe_init, must be before initial_stubs_init
   AsyncLogWriter::initialize();
+
+  initial_stubs_init();      // stubgen initial stub routines
+  // stack overflow exception blob is referenced by the interpreter
+  AOTCodeCache::init_early_stubs_table();  // need this after stubgen initial stubs and before shared runtime initial stubs
+  SharedRuntime::generate_initial_stubs();
   gc_barrier_stubs_init();   // depends on universe_init, must be before interpreter_init
   continuations_init();      // must precede continuation stub generation
   continuation_stubs_init(); // depends on continuations_init
+#if INCLUDE_JFR
+  SharedRuntime::generate_jfr_stubs();
+#endif
   interpreter_init_stub();   // before methods get loaded
   accessFlags_init();
   InterfaceSupport_init();
   VMRegImpl::set_regName();  // need this before generate_stubs (for printing oop maps).
   SharedRuntime::generate_stubs();
+  AOTCodeCache::init_shared_blobs_table();  // need this after generate_stubs
+  SharedRuntime::init_adapter_library(); // do this after AOTCodeCache::init_shared_blobs_table
+  return JNI_OK;
+}
+
+jint init_globals2() {
   universe2_init();          // dependent on codeCache_init and initial_stubs_init
   javaClasses_init();        // must happen after vtable initialization, before referenceProcessor_init
   interpreter_init_code();   // after javaClasses_init and before any method gets linked
@@ -153,8 +180,9 @@ jint init_globals() {
 #endif // INCLUDE_VM_STRUCTS
 
   vtableStubs_init();
-  InlineCacheBuffer_init();
-  compilerOracle_init();
+  if (!compilerOracle_init()) {
+    return JNI_EINVAL;
+  }
   dependencyContext_init();
   dependencies_init();
 
@@ -166,6 +194,11 @@ jint init_globals() {
     JVMCI::initialize_globals();
   }
 #endif
+
+  // Initialize TrainingData only we're recording/replaying
+  if (TrainingData::have_data() || TrainingData::need_data()) {
+   TrainingData::initialize();
+  }
 
   if (!universe_post_init()) {
     return JNI_ERR;

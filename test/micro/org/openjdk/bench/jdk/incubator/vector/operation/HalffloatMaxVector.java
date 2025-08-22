@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,7 +33,7 @@ import jdk.incubator.vector.VectorSpecies;
 import jdk.incubator.vector.VectorShuffle;
 import jdk.incubator.vector.HalffloatVector;
 
-import jdk.incubator.vector.Halffloat;
+import jdk.incubator.vector.Float16;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.IntFunction;
@@ -48,13 +48,13 @@ import org.openjdk.jmh.infra.Blackhole;
 @Measurement(iterations = 5, time = 1)
 @Fork(value = 1, jvmArgsPrepend = {"--add-modules=jdk.incubator.vector"})
 public class HalffloatMaxVector extends AbstractVectorBenchmark {
-    static final VectorSpecies<Halffloat> SPECIES = HalffloatVector.SPECIES_MAX;
+    static final VectorSpecies<Float16> SPECIES = HalffloatVector.SPECIES_MAX;
 
     static final int INVOC_COUNT = 1; // get rid of outer loop
 
 
     static short firstNonZero(short a, short b) {
-        return Halffloat.compare(a, (short) 0) != 0 ? a : b;
+        return Float16.compare(a, (short) 0) != 0 ? a : b;
     }
 
 
@@ -74,7 +74,7 @@ public class HalffloatMaxVector extends AbstractVectorBenchmark {
     int[] s;
 
     static short genValue(int i) {
-        return Halffloat.valueOf(i);
+        return Float16.float16ToRawShortBits(Float16.valueOf(i));
     }
 
     @Setup
@@ -88,7 +88,7 @@ public class HalffloatMaxVector extends AbstractVectorBenchmark {
         mt = fillMask(size, i -> true);
         rm = fillMask(size, i -> false);
 
-        s = fillInt(size, i -> RANDOM.nextInt(SPECIES.length()));
+        s = fillInt(size, i -> RAND.nextInt(SPECIES.length()));
     }
 
     final IntFunction<short[]> fa = vl -> a;
@@ -124,7 +124,7 @@ public class HalffloatMaxVector extends AbstractVectorBenchmark {
         short[] b = fb.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -160,7 +160,7 @@ public class HalffloatMaxVector extends AbstractVectorBenchmark {
         short[] b = fb.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -196,7 +196,7 @@ public class HalffloatMaxVector extends AbstractVectorBenchmark {
         short[] b = fb.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -232,7 +232,7 @@ public class HalffloatMaxVector extends AbstractVectorBenchmark {
         short[] b = fb.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -268,7 +268,7 @@ public class HalffloatMaxVector extends AbstractVectorBenchmark {
         short[] b = fb.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -304,7 +304,7 @@ public class HalffloatMaxVector extends AbstractVectorBenchmark {
         short[] b = fb.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -337,7 +337,7 @@ public class HalffloatMaxVector extends AbstractVectorBenchmark {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -369,7 +369,7 @@ public class HalffloatMaxVector extends AbstractVectorBenchmark {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -407,7 +407,7 @@ public class HalffloatMaxVector extends AbstractVectorBenchmark {
         short[] c = fc.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -441,7 +441,7 @@ public class HalffloatMaxVector extends AbstractVectorBenchmark {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -735,7 +735,7 @@ public class HalffloatMaxVector extends AbstractVectorBenchmark {
         short[] b = fb.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {

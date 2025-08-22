@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 package jdk.incubator.vector;
 
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
@@ -52,7 +54,11 @@ final class Float256Vector extends FloatVector {
 
     static final int VLENGTH = VSPECIES.laneCount(); // used by the JVM
 
-    static final Class<Float> ETYPE = float.class; // used by the JVM
+    static final Class<Float> CTYPE = float.class; // carrier type used by the JVM
+
+    static final Class<Float> ETYPE = float.class; // vector element type used by the JVM
+
+    static final int VECTOR_OPER_TYPE = VECTOR_TYPE_PRIM;
 
     Float256Vector(float[] v) {
         super(v);
@@ -87,8 +93,11 @@ final class Float256Vector extends FloatVector {
     }
 
     @ForceInline
+    final Class<Float> carrierType() { return CTYPE; }
+
+    @ForceInline
     @Override
-    public final Class<Float> elementType() { return float.class; }
+    public final Class<Float> elementType() { return ETYPE; }
 
     @ForceInline
     @Override
@@ -140,6 +149,12 @@ final class Float256Vector extends FloatVector {
     @Override
     @ForceInline
     Float256Shuffle iotaShuffle() { return Float256Shuffle.IOTA; }
+
+    @Override
+    @ForceInline
+    Float256Shuffle iotaShuffle(int start, int step, boolean wrap) {
+        return (Float256Shuffle) iotaShuffleTemplate(start, step, wrap);
+    }
 
     @Override
     @ForceInline
@@ -331,9 +346,14 @@ final class Float256Vector extends FloatVector {
 
     @Override
     @ForceInline
-    public final
-    <F> VectorShuffle<F> toShuffle(AbstractSpecies<F> dsp) {
-        return super.toShuffleTemplate(dsp);
+    final <F> VectorShuffle<F> bitsToShuffle(AbstractSpecies<F> dsp) {
+        throw new AssertionError();
+    }
+
+    @Override
+    @ForceInline
+    public final Float256Shuffle toShuffle() {
+        return (Float256Shuffle) toShuffle(vspecies(), false);
     }
 
     // Specialized unary testing
@@ -477,9 +497,16 @@ final class Float256Vector extends FloatVector {
                                    VectorMask<Float> m) {
         return (Float256Vector)
             super.selectFromTemplate((Float256Vector) v,
-                                     (Float256Mask) m);  // specialize
+                                     Float256Mask.class, (Float256Mask) m);  // specialize
     }
 
+    @Override
+    @ForceInline
+    public Float256Vector selectFrom(Vector<Float> v1,
+                                   Vector<Float> v2) {
+        return (Float256Vector)
+            super.selectFromTemplate((Float256Vector) v1, (Float256Vector) v2);  // specialize
+    }
 
     @ForceInline
     @Override
@@ -499,13 +526,14 @@ final class Float256Vector extends FloatVector {
         return Float.intBitsToFloat(bits);
     }
 
+    @ForceInline
     public int laneHelper(int i) {
         return (int) VectorSupport.extract(
-                     VCLASS, ETYPE, VLENGTH,
+                     VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                      this, i,
                      (vec, ix) -> {
                      float[] vecarr = vec.vec();
-                     return (long)Float.floatToIntBits(vecarr[ix]);
+                     return (long)Float.floatToRawIntBits(vecarr[ix]);
                      });
     }
 
@@ -525,10 +553,11 @@ final class Float256Vector extends FloatVector {
         }
     }
 
+    @ForceInline
     public Float256Vector withLaneHelper(int i, float e) {
         return VectorSupport.insert(
-                                VCLASS, ETYPE, VLENGTH,
-                                this, i, (long)Float.floatToIntBits(e),
+                                VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                this, i, (long)Float.floatToRawIntBits(e),
                                 (v, ix, bits) -> {
                                     float[] res = v.vec().clone();
                                     res[ix] = Float.intBitsToFloat((int)bits);
@@ -540,7 +569,7 @@ final class Float256Vector extends FloatVector {
 
     static final class Float256Mask extends AbstractMask<Float> {
         static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
-        static final Class<Float> ETYPE = float.class; // used by the JVM
+        static final Class<Float> CTYPE = float.class; // used by the JVM
 
         Float256Mask(boolean[] bits) {
             this(bits, 0);
@@ -642,7 +671,7 @@ final class Float256Vector extends FloatVector {
         /*package-private*/
         Float256Mask indexPartiallyInUpperRange(long offset, long limit) {
             return (Float256Mask) VectorSupport.indexPartiallyInUpperRange(
-                Float256Mask.class, ETYPE, VLENGTH, offset, limit,
+                Float256Mask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, offset, limit,
                 (o, l) -> (Float256Mask) TRUE_MASK.indexPartiallyInRange(o, l));
         }
 
@@ -658,8 +687,9 @@ final class Float256Vector extends FloatVector {
         @ForceInline
         public Float256Mask compress() {
             return (Float256Mask)VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                Float256Vector.class, Float256Mask.class, ETYPE, VLENGTH, null, this,
-                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                Float256Vector.class, Float256Mask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT,
+                m1.trueCount()));
         }
 
 
@@ -670,7 +700,7 @@ final class Float256Vector extends FloatVector {
         public Float256Mask and(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             Float256Mask m = (Float256Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, Float256Mask.class, null, int.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Float256Mask.class, null, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
@@ -680,7 +710,7 @@ final class Float256Vector extends FloatVector {
         public Float256Mask or(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             Float256Mask m = (Float256Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, Float256Mask.class, null, int.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Float256Mask.class, null, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
@@ -690,7 +720,7 @@ final class Float256Vector extends FloatVector {
         public Float256Mask xor(VectorMask<Float> mask) {
             Objects.requireNonNull(mask);
             Float256Mask m = (Float256Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, Float256Mask.class, null, int.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Float256Mask.class, null, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
@@ -700,22 +730,25 @@ final class Float256Vector extends FloatVector {
         @Override
         @ForceInline
         public int trueCount() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Float256Mask.class, int.class, VLENGTH, this,
-                                                      (m) -> trueCountHelper(m.getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Float256Mask.class, int.class, ETYPE,
+                                                            VECTOR_OPER_TYPE, VLENGTH, this,
+                                                            (m) -> trueCountHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int firstTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Float256Mask.class, int.class, VLENGTH, this,
-                                                      (m) -> firstTrueHelper(m.getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Float256Mask.class, int.class, ETYPE,
+                                                            VECTOR_OPER_TYPE, VLENGTH, this,
+                                                            (m) -> firstTrueHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int lastTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Float256Mask.class, int.class, VLENGTH, this,
-                                                      (m) -> lastTrueHelper(m.getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Float256Mask.class, int.class, ETYPE,
+                                                            VECTOR_OPER_TYPE, VLENGTH, this,
+                                                            (m) -> lastTrueHelper(m.getBits()));
         }
 
         @Override
@@ -724,8 +757,19 @@ final class Float256Vector extends FloatVector {
             if (length() > Long.SIZE) {
                 throw new UnsupportedOperationException("too many lanes for one long");
             }
-            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Float256Mask.class, int.class, VLENGTH, this,
+            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Float256Mask.class, int.class, ETYPE,
+                                                      VECTOR_OPER_TYPE, VLENGTH, this,
                                                       (m) -> toLongHelper(m.getBits()));
+        }
+
+        // laneIsSet
+
+        @Override
+        @ForceInline
+        public boolean laneIsSet(int i) {
+            Objects.checkIndex(i, length());
+            return VectorSupport.extract(Float256Mask.class, float.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                         this, i, (m, idx) -> (m.getBits()[idx] ? 1L : 0L)) == 1L;
         }
 
         // Reductions
@@ -733,23 +777,23 @@ final class Float256Vector extends FloatVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            return VectorSupport.test(BT_ne, Float256Mask.class, int.class, VLENGTH,
-                                         this, vspecies().maskAll(true),
-                                         (m, __) -> anyTrueHelper(((Float256Mask)m).getBits()));
+            return VectorSupport.test(BT_ne, Float256Mask.class, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                      this, vspecies().maskAll(true),
+                                      (m, __) -> anyTrueHelper(((Float256Mask)m).getBits()));
         }
 
         @Override
         @ForceInline
         public boolean allTrue() {
-            return VectorSupport.test(BT_overflow, Float256Mask.class, int.class, VLENGTH,
-                                         this, vspecies().maskAll(true),
-                                         (m, __) -> allTrueHelper(((Float256Mask)m).getBits()));
+            return VectorSupport.test(BT_overflow, Float256Mask.class, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                      this, vspecies().maskAll(true),
+                                      (m, __) -> allTrueHelper(((Float256Mask)m).getBits()));
         }
 
         @ForceInline
         /*package-private*/
         static Float256Mask maskAll(boolean bit) {
-            return VectorSupport.fromBitsCoerced(Float256Mask.class, int.class, VLENGTH,
+            return VectorSupport.fromBitsCoerced(Float256Mask.class, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                                  (bit ? -1 : 0), MODE_BROADCAST, null,
                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
@@ -762,7 +806,7 @@ final class Float256Vector extends FloatVector {
 
     static final class Float256Shuffle extends AbstractShuffle<Float> {
         static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
-        static final Class<Integer> ETYPE = int.class; // used by the JVM
+        static final Class<Integer> CTYPE = int.class; // used by the JVM
 
         Float256Shuffle(int[] indices) {
             super(indices);
@@ -798,14 +842,19 @@ final class Float256Vector extends FloatVector {
 
         @Override
         @ForceInline
+        public Float256Vector toVector() {
+            return (Float256Vector) toBitsVector().castShape(vspecies(), 0);
+        }
+
+        @Override
+        @ForceInline
         Int256Vector toBitsVector() {
             return (Int256Vector) super.toBitsVectorTemplate();
         }
 
         @Override
-        @ForceInline
-        IntVector toBitsVector0() {
-            return Int256Vector.VSPECIES.dummyVector().vectorFactory(indices());
+        Int256Vector toBitsVector0() {
+            return ((Int256Vector) vspecies().asIntegral().dummyVector()).vectorFactory(indices());
         }
 
         @Override
@@ -818,6 +867,40 @@ final class Float256Vector extends FloatVector {
         @ForceInline
         public void intoArray(int[] a, int offset) {
             toBitsVector().intoArray(a, offset);
+        }
+
+        @Override
+        @ForceInline
+        public void intoMemorySegment(MemorySegment ms, long offset, ByteOrder bo) {
+            toBitsVector().intoMemorySegment(ms, offset, bo);
+         }
+
+        @Override
+        @ForceInline
+        public final Float256Mask laneIsValid() {
+            return (Float256Mask) toBitsVector().compare(VectorOperators.GE, 0)
+                    .cast(vspecies());
+        }
+
+        @ForceInline
+        @Override
+        public final Float256Shuffle rearrange(VectorShuffle<Float> shuffle) {
+            Float256Shuffle concreteShuffle = (Float256Shuffle) shuffle;
+            return (Float256Shuffle) toBitsVector().rearrange(concreteShuffle.cast(IntVector.SPECIES_256))
+                    .toShuffle(vspecies(), false);
+        }
+
+        @ForceInline
+        @Override
+        public final Float256Shuffle wrapIndexes() {
+            Int256Vector v = toBitsVector();
+            if ((length() & (length() - 1)) == 0) {
+                v = (Int256Vector) v.lanewise(VectorOperators.AND, length() - 1);
+            } else {
+                v = (Int256Vector) v.blend(v.lanewise(VectorOperators.ADD, length()),
+                            v.compare(VectorOperators.LT, 0));
+            }
+            return (Float256Shuffle) v.toShuffle(vspecies(), false);
         }
 
         private static int[] prepare(int[] indices, int offset) {
@@ -844,14 +927,9 @@ final class Float256Vector extends FloatVector {
             int length = indices.length;
             for (int si : indices) {
                 if (si >= (int)length || si < (int)(-length)) {
-                    boolean assertsEnabled = false;
-                    assert(assertsEnabled = true);
-                    if (assertsEnabled) {
-                        String msg = ("index "+si+"out of range ["+length+"] in "+
+                    String msg = ("index "+si+"out of range ["+length+"] in "+
                                   java.util.Arrays.toString(indices));
-                        throw new AssertionError(msg);
-                    }
-                    return false;
+                    throw new AssertionError(msg);
                 }
             }
             return true;

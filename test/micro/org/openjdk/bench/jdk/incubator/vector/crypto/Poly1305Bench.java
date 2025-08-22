@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,7 +23,7 @@
 
 package org.openjdk.bench.jdk.incubator.vector.crypto;
 
-import jdk.incubator.foreign.MemorySegment;
+import java.lang.foreign.MemorySegment;
 import org.openjdk.jmh.annotations.*;
 import jdk.incubator.vector.*;
 
@@ -168,7 +168,7 @@ public class Poly1305Bench {
             v0 >>= 8;
             dst[3] = (byte) v0;
 
-            dst[3] += (v1 & 0x3F) << 2;
+            dst[3] += (byte) ((v1 & 0x3F) << 2);
             v1 >>= 6;
             dst[4] = (byte) v1;
             v1 >>= 8;
@@ -176,7 +176,7 @@ public class Poly1305Bench {
             v1 >>= 8;
             dst[6] = (byte) v1;
 
-            dst[6] += (v2 & 0xF) << 4;
+            dst[6] += (byte) ((v2 & 0xF) << 4);
             v2 >>= 4;
             dst[7] = (byte) v2;
             v2 >>= 8;
@@ -184,7 +184,7 @@ public class Poly1305Bench {
             v2 >>= 8;
             dst[9] = (byte) v2;
 
-            dst[9] += (v3 & 0x3) << 6;
+            dst[9] += (byte) ((v3 & 0x3) << 6);
             v3 >>= 2;
             dst[10] = (byte) v3;
             v3 >>= 8;
@@ -266,9 +266,9 @@ public class Poly1305Bench {
             keyBytes[7] &= 15;
             keyBytes[11] &= 15;
             keyBytes[15] &= 15;
-            keyBytes[4] &= 252;
-            keyBytes[8] &= 252;
-            keyBytes[12] &= 252;
+            keyBytes[4] &= (byte) 252;
+            keyBytes[8] &= (byte) 252;
+            keyBytes[12] &= (byte) 252;
 
             // Create IntegerModuloP elements from the r and s values
             int[][] r = new int[vectorWidth][];
@@ -514,9 +514,9 @@ public class Poly1305Bench {
     private static byte[] hexStringToByteArray(String str) {
         byte[] result = new byte[str.length() / 2];
         for (int i = 0; i < result.length; i++) {
-            result[i] = (byte) Character.digit(str.charAt(2 * i), 16);
+            result[i] = (byte) (Character.digit(str.charAt(2 * i), 16));
             result[i] <<= 4;
-            result[i] += Character.digit(str.charAt(2 * i + 1), 16);
+            result[i] += (byte) (Character.digit(str.charAt(2 * i + 1), 16));
         }
         return result;
     }

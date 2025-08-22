@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,7 @@ package org.openjdk.bench.jdk.incubator.vector.operation;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
+import jdk.incubator.vector.VectorMath;
 
 import jdk.incubator.vector.Halffloat;
 import org.openjdk.jmh.annotations.*;
@@ -75,7 +76,7 @@ public class HalffloatScalar extends AbstractVectorBenchmark {
         mt = fillMask(size, i -> true);
         rms = fillMask(size, i -> false);
 
-        ss = fillInt(size, i -> RANDOM.nextInt(Math.max(i,1)));
+        ss = fillInt(size, i -> RAND.nextInt(Math.max(i,1)));
     }
 
     final IntFunction<short[]> fa = vl -> as;
@@ -313,7 +314,7 @@ public class HalffloatScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 short b = bs[i];
-                rs[i] = (short)(Halffloat.valueOf(Math.min(Float.float16ToFloat(a), Float.float16ToFloat(b))));
+                rs[i] = (short)(Float.floatToFloat16(Math.min(Float.float16ToFloat(a), Float.float16ToFloat(b))));
             }
         }
 
@@ -332,7 +333,7 @@ public class HalffloatScalar extends AbstractVectorBenchmark {
                 short a = as[i];
                 short b = bs[i];
                 if (ms[i % ms.length]) {
-                    rs[i] = (short)(Halffloat.valueOf(Math.min(Float.float16ToFloat(a), Float.float16ToFloat(b))));
+                    rs[i] = (short)(Float.floatToFloat16(Math.min(Float.float16ToFloat(a), Float.float16ToFloat(b))));
                 } else {
                     rs[i] = a;
                 }
@@ -452,7 +453,7 @@ public class HalffloatScalar extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
-                rs[i] = (short)(Halffloat.valueOf((float) Math.sqrt(Float.float16ToFloat(a))));
+                rs[i] = (short)(Float.floatToFloat16((float) Math.sqrt(Float.float16ToFloat(a))));
             }
         }
 
@@ -469,7 +470,7 @@ public class HalffloatScalar extends AbstractVectorBenchmark {
             for (int i = 0; i < as.length; i++) {
                 short a = as[i];
                 boolean m = ms[i % ms.length];
-                rs[i] = (m ? (short)(Halffloat.valueOf((float) Math.sqrt(Float.float16ToFloat(a)))) : a);
+                rs[i] = (m ? (short)(Float.floatToFloat16((float) Math.sqrt(Float.float16ToFloat(a)))) : a);
             }
         }
 

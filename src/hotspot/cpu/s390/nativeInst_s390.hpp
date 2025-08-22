@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016, 2023, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2016 SAP SE. All rights reserved.
+ * Copyright (c) 2016, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2024 SAP SE. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -84,9 +84,6 @@ class NativeInstruction {
 
   // Bcrl is currently the only accepted instruction here.
   bool is_jump();
-
-  // We use an illtrap for marking a method as not_entrant.
-  bool is_sigill_not_entrant();
 
   bool is_safepoint_poll() {
     // Is the current instruction a POTENTIAL read access to the polling page?
@@ -212,6 +209,7 @@ class NativeCall: public NativeInstruction {
     call_far_pcrelative_displacement_alignment =  4
   };
 
+  static int byte_size() { return instruction_size; }
 
   // Maximum size (in bytes) of a call to an absolute address.
   // Used when emitting call to deopt handler blob, which is a
@@ -486,8 +484,8 @@ class NativeMovConstReg: public NativeInstruction {
   // Patch narrow oop constant in code stream.
   void set_narrow_oop(intptr_t data);
   void set_narrow_klass(intptr_t data);
-  void set_pcrel_addr(intptr_t addr, CompiledMethod *nm = nullptr);
-  void set_pcrel_data(intptr_t data, CompiledMethod *nm = nullptr);
+  void set_pcrel_addr(intptr_t addr, nmethod *nm = nullptr);
+  void set_pcrel_data(intptr_t data, nmethod *nm = nullptr);
 
   void verify();
 
@@ -608,11 +606,6 @@ class NativeJump: public NativeInstruction {
 
   // Insertion of native jump instruction.
   static void insert(address code_pos, address entry);
-
-  // MT-safe insertion of native jump at verified method entry.
-  static void check_verified_entry_alignment(address entry, address verified_entry) { }
-
-  static void patch_verified_entry(address entry, address verified_entry, address dest);
 };
 
 //-------------------------------------
@@ -657,8 +650,8 @@ class NativeGeneralJump: public NativeInstruction {
 class NativePostCallNop: public NativeInstruction {
 public:
   bool check() const { Unimplemented(); return false; }
-  int displacement() const { return 0; }
-  void patch(jint diff) { Unimplemented(); }
+  bool decode(int32_t& oopmap_slot, int32_t& cb_offset) const { return false; }
+  bool patch(int32_t oopmap_slot, int32_t cb_offset) { Unimplemented(); return false; }
   void make_deopt() { Unimplemented(); }
 };
 

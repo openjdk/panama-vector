@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,7 +22,6 @@
  *
  */
 
-#include "precompiled.hpp"
 #include "ci/ciField.hpp"
 #include "ci/ciInstanceKlass.hpp"
 #include "ci/ciSymbols.hpp"
@@ -35,7 +34,7 @@
 #include "oops/oop.inline.hpp"
 #include "runtime/fieldDescriptor.inline.hpp"
 #include "runtime/handles.inline.hpp"
-#include "runtime/reflectionUtils.hpp"
+#include "runtime/reflection.hpp"
 
 // ciField
 //
@@ -70,7 +69,7 @@
 
 // ------------------------------------------------------------------
 // ciField::ciField
-ciField::ciField(ciInstanceKlass* klass, int index) :
+ciField::ciField(ciInstanceKlass* klass, int index, Bytecodes::Code bc) :
     _known_to_link_with_put(nullptr), _known_to_link_with_get(nullptr) {
   ASSERT_IN_VM;
   CompilerThread *THREAD = CompilerThread::current();
@@ -82,10 +81,10 @@ ciField::ciField(ciInstanceKlass* klass, int index) :
   constantPoolHandle cpool(THREAD, klass->get_instanceKlass()->constants());
 
   // Get the field's name, signature, and type.
-  Symbol* name  = cpool->name_ref_at(index);
+  Symbol* name  = cpool->name_ref_at(index, bc);
   _name = ciEnv::current(THREAD)->get_symbol(name);
 
-  int nt_index = cpool->name_and_type_ref_index_at(index);
+  int nt_index = cpool->name_and_type_ref_index_at(index, bc);
   int sig_index = cpool->signature_ref_index_at(nt_index);
   Symbol* signature = cpool->symbol_at(sig_index);
   _signature = ciEnv::current(THREAD)->get_symbol(signature);
@@ -103,13 +102,11 @@ ciField::ciField(ciInstanceKlass* klass, int index) :
     _type = ciType::make(field_type);
   }
 
-  _name = (ciSymbol*)ciEnv::current(THREAD)->get_symbol(name);
-
   // Get the field's declared holder.
   //
   // Note: we actually create a ciInstanceKlass for this klass,
   // even though we may not need to.
-  int holder_index = cpool->klass_ref_index_at(index);
+  int holder_index = cpool->klass_ref_index_at(index, bc);
   bool holder_is_accessible;
 
   ciKlass* generic_declared_holder = ciEnv::current(THREAD)->get_klass_by_index(cpool, holder_index,

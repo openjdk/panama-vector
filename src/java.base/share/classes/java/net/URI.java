@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,7 +42,11 @@ import java.nio.file.Path;
 import java.text.Normalizer;
 import jdk.internal.access.JavaNetUriAccess;
 import jdk.internal.access.SharedSecrets;
+import jdk.internal.util.Exceptions;
 import sun.nio.cs.UTF_8;
+
+import static jdk.internal.util.Exceptions.filterNonSocketInfo;
+import static jdk.internal.util.Exceptions.formatMsg;
 
 /**
  * Represents a Uniform Resource Identifier (URI) reference.
@@ -2032,7 +2036,8 @@ public final class URI
     {
         if (scheme != null) {
             if (path != null && !path.isEmpty() && path.charAt(0) != '/')
-                throw new URISyntaxException(s, "Relative path in absolute URI");
+                throw new URISyntaxException(formatMsg("%s", filterNonSocketInfo(s)),
+                                             "Relative path in absolute URI");
         }
     }
 
@@ -2977,7 +2982,7 @@ public final class URI
 
     private class Parser {
 
-        private String input;           // URI input string
+        private final String input;           // URI input string
         private boolean requireServerAuthority = false;
 
         Parser(String s) {
@@ -2988,11 +2993,14 @@ public final class URI
         // -- Methods for throwing URISyntaxException in various ways --
 
         private void fail(String reason) throws URISyntaxException {
-            throw new URISyntaxException(input, reason);
+            throw new URISyntaxException(formatMsg("%s", filterNonSocketInfo(input)), reason);
         }
 
         private void fail(String reason, int p) throws URISyntaxException {
-            throw new URISyntaxException(input, reason, p);
+            if (!Exceptions.enhancedNonSocketExceptions()) {
+                p = -1;
+            }
+            throw new URISyntaxException(formatMsg("%s", filterNonSocketInfo(input)), reason, p);
         }
 
         private void failExpecting(String expected, int p)
@@ -3276,6 +3284,7 @@ public final class URI
 
             boolean serverChars;
             boolean regChars;
+            boolean skipParseException;
 
             if (scan(p, n, "]") > p) {
                 // contains a literal IPv6 address, therefore % is allowed
@@ -3291,15 +3300,28 @@ public final class URI
                 return n;
             }
 
+            // When parsing a URI, skip creating exception objects if the server-based
+            // authority is not required and the registry parse is successful.
+            //
+            skipParseException = (!requireServerAuthority && regChars);
             if (serverChars) {
                 // Might be (probably is) a server-based authority, so attempt
                 // to parse it as such.  If the attempt fails, try to treat it
                 // as a registry-based authority.
                 try {
-                    q = parseServer(p, n);
-                    if (q < n)
-                        failExpecting("end of authority", q);
-                    authority = input.substring(p, n);
+                    q = parseServer(p, n, skipParseException);
+                    if (q < n) {
+                        if (skipParseException) {
+                            userInfo = null;
+                            host = null;
+                            port = -1;
+                            q = p;
+                        } else {
+                            failExpecting("end of authority", q);
+                        }
+                    } else {
+                        authority = input.substring(p, n);
+                    }
                 } catch (URISyntaxException x) {
                     // Undo results of failed parse
                     userInfo = null;
@@ -3337,7 +3359,7 @@ public final class URI
 
         // [<userinfo>@]<host>[:<port>]
         //
-        private int parseServer(int start, int n)
+        private int parseServer(int start, int n, boolean skipParseException)
             throws URISyntaxException
         {
             int p = start;
@@ -3377,7 +3399,7 @@ public final class URI
             } else {
                 q = parseIPv4Address(p, n);
                 if (q <= p)
-                    q = parseHostname(p, n);
+                    q = parseHostname(p, n, skipParseException);
                 p = q;
             }
 
@@ -3394,7 +3416,10 @@ public final class URI
                     }
                     p = q;
                 }
+            } else if (p < n && skipParseException) {
+                return p;
             }
+
             if (p < n)
                 failExpecting("port number", p);
 
@@ -3409,6 +3434,19 @@ public final class URI
             int p = start;
             int q = scan(p, n, L_DIGIT, H_DIGIT);
             if (q <= p) return q;
+
+            // Handle leading zeros
+            int i = p, j;
+            while ((j = scan(i, q, '0')) > i) i = j;
+
+            // Calculate the number of significant digits (after leading zeros)
+            int significantDigitsNum = q - i;
+
+            if (significantDigitsNum < 3)  return q; // definitely < 255
+
+            // If more than 3 significant digits, it's definitely > 255
+            if (significantDigitsNum > 3) return p;
+
             if (Integer.parseInt(input, p, q, 10) > 255) return p;
             return q;
         }
@@ -3449,7 +3487,7 @@ public final class URI
                 if (q < m) break;
                 return q;
             }
-            fail("Malformed IPv4 address", q);
+            if (strict) fail("Malformed IPv4 address", q);
             return -1;
         }
 
@@ -3478,12 +3516,16 @@ public final class URI
                 return -1;
             }
 
+            if (p == -1) {
+                return p;
+            }
+
             if (p > start && p < n) {
                 // IPv4 address is followed by something - check that
                 // it's a ":" as this is the only valid character to
                 // follow an address.
                 if (input.charAt(p) != ':') {
-                    p = -1;
+                    return -1;
                 }
             }
 
@@ -3497,7 +3539,7 @@ public final class URI
         // domainlabel   = alphanum | alphanum *( alphanum | "-" ) alphanum
         // toplabel      = alpha | alpha *( alphanum | "-" ) alphanum
         //
-        private int parseHostname(int start, int n)
+        private int parseHostname(int start, int n, boolean skipParseException)
             throws URISyntaxException
         {
             int p = start;
@@ -3523,9 +3565,12 @@ public final class URI
                 p = q;
             } while (p < n);
 
-            if ((p < n) && !at(p, n, ':'))
+            if ((p < n) && !at(p, n, ':')) {
+                if (skipParseException) {
+                    return p;
+                }
                 fail("Illegal character in hostname", p);
-
+            }
             if (l < 0)
                 failExpecting("hostname", start);
 

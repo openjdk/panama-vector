@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,7 +22,6 @@
  *
  */
 
-#include "precompiled.hpp"
 #include "classfile/javaClasses.inline.hpp"
 #include "classfile/vmSymbols.hpp"
 #include "jfr/jfr.hpp"
@@ -52,13 +51,16 @@ bool register_jfr_dcmds() {
   DCmdFactory::register_DCmdFactory(new DCmdFactoryImpl<JfrDumpFlightRecordingDCmd>(full_export, true, false));
   DCmdFactory::register_DCmdFactory(new DCmdFactoryImpl<JfrStartFlightRecordingDCmd>(full_export, true, false));
   DCmdFactory::register_DCmdFactory(new DCmdFactoryImpl<JfrStopFlightRecordingDCmd>(full_export, true, false));
+  // JFR.query Uncomment when developing new queries for the JFR.view command
+  // DCmdFactory::register_DCmdFactory(new DCmdFactoryImpl<JfrQueryFlightRecordingDCmd>(full_export, true, true));
+  DCmdFactory::register_DCmdFactory(new DCmdFactoryImpl<JfrViewFlightRecordingDCmd>(full_export, true, false));
   DCmdFactory::register_DCmdFactory(new DCmdFactoryImpl<JfrConfigureFlightRecorderDCmd>(full_export, true, false));
   return true;
 }
 
 static bool is_disabled(outputStream* output) {
   if (Jfr::is_disabled()) {
-    if (output != NULL) {
+    if (output != nullptr) {
       output->print_cr("Flight Recorder is disabled.\n");
     }
     return true;
@@ -93,14 +95,14 @@ static bool invalid_state(outputStream* out, TRAPS) {
 }
 
 static void handle_pending_exception(outputStream* output, bool startup, oop throwable) {
-  assert(throwable != NULL, "invariant");
+  assert(throwable != nullptr, "invariant");
 
   oop msg = java_lang_Throwable::message(throwable);
-  if (msg == NULL) {
+  if (msg == nullptr) {
     return;
   }
   char* text = java_lang_String::as_utf8_string(msg);
-  if (text != NULL) {
+  if (text != nullptr) {
     if (startup) {
       log_error(jfr,startup)("%s", text);
     } else {
@@ -111,12 +113,12 @@ static void handle_pending_exception(outputStream* output, bool startup, oop thr
 
 static void print_message(outputStream* output, oop content, TRAPS) {
   objArrayOop lines = objArrayOop(content);
-  assert(lines != NULL, "invariant");
+  assert(lines != nullptr, "invariant");
   assert(lines->is_array(), "must be array");
   const int length = lines->length();
   for (int i = 0; i < length; ++i) {
     const char* text = JfrJavaSupport::c_str(lines->obj_at(i), THREAD);
-    if (text == NULL) {
+    if (text == nullptr) {
       // An oome has been thrown and is pending.
       break;
     }
@@ -127,12 +129,12 @@ static void print_message(outputStream* output, oop content, TRAPS) {
 static void log(oop content, TRAPS) {
   LogMessage(jfr,startup) msg;
   objArrayOop lines = objArrayOop(content);
-  assert(lines != NULL, "invariant");
+  assert(lines != nullptr, "invariant");
   assert(lines->is_array(), "must be array");
   const int length = lines->length();
   for (int i = 0; i < length; ++i) {
     const char* text = JfrJavaSupport::c_str(lines->obj_at(i), THREAD);
-    if (text == NULL) {
+    if (text == nullptr) {
       // An oome has been thrown and is pending.
       break;
     }
@@ -145,7 +147,7 @@ static void handle_dcmd_result(outputStream* output,
                                const DCmdSource source,
                                TRAPS) {
   DEBUG_ONLY(JfrJavaSupport::check_java_thread_in_vm(THREAD));
-  assert(output != NULL, "invariant");
+  assert(output != nullptr, "invariant");
   ResourceMark rm(THREAD);
   const bool startup = DCmd_Source_Internal == source;
   if (HAS_PENDING_EXCEPTION) {
@@ -177,16 +179,16 @@ static void handle_dcmd_result(outputStream* output,
 }
 
 static oop construct_dcmd_instance(JfrJavaArguments* args, TRAPS) {
-  assert(args != NULL, "invariant");
+  assert(args != nullptr, "invariant");
   DEBUG_ONLY(JfrJavaSupport::check_java_thread_in_vm(THREAD));
-  assert(args->klass() != NULL, "invariant");
+  assert(args->klass() != nullptr, "invariant");
   args->set_name("<init>");
   args->set_signature("()V");
   JfrJavaSupport::new_object(args, CHECK_NULL);
   return args->result()->get_oop();
 }
 
-JfrDCmd::JfrDCmd(outputStream* output, bool heap, int num_arguments) : DCmd(output, heap), _args(NULL), _num_arguments(num_arguments), _delimiter('\0') {}
+JfrDCmd::JfrDCmd(outputStream* output, bool heap, int num_arguments) : DCmd(output, heap), _args(nullptr), _num_arguments(num_arguments), _delimiter('\0') {}
 
 void JfrDCmd::invoke(JfrJavaArguments& method, TRAPS) const {
   JavaValue constructor_result(T_OBJECT);
@@ -217,11 +219,16 @@ void JfrDCmd::execute(DCmdSource source, TRAPS) {
   if (invalid_state(output(), THREAD)) {
     return;
   }
+  if (source == DCmd_Source_Internal && _args != nullptr && strcmp(_args, "help") == 0) {
+     print_java_help("getStartupHelp");
+     vm_exit(0);
+  }
+
   static const char signature[] = "(Ljava/lang/String;Ljava/lang/String;C)[Ljava/lang/String;";
   JavaValue result(T_OBJECT);
   JfrJavaArguments execute(&result, javaClass(), "execute", signature, CHECK);
   jstring argument = JfrJavaSupport::new_string(_args, CHECK);
-  jstring s = NULL;
+  jstring s = nullptr;
   if (source == DCmd_Source_Internal) {
     s = JfrJavaSupport::new_string("internal", CHECK);
   }
@@ -238,21 +245,25 @@ void JfrDCmd::execute(DCmdSource source, TRAPS) {
   handle_dcmd_result(output(), result.get_oop(), source, THREAD);
 }
 
-void JfrDCmd::print_help(const char* name) const {
+void JfrDCmd::print_java_help(const char* get_help_method) const {
   static const char signature[] = "()[Ljava/lang/String;";
   JavaThread* thread = JavaThread::current();
   JavaValue result(T_OBJECT);
-  JfrJavaArguments printHelp(&result, javaClass(), "printHelp", signature, thread);
-  invoke(printHelp, thread);
+  JfrJavaArguments java_method(&result, javaClass(), get_help_method, signature, thread);
+  invoke(java_method, thread);
   handle_dcmd_result(output(), result.get_oop(), DCmd_Source_MBean, thread);
 }
 
+void JfrDCmd::print_help(const char* name) const {
+  print_java_help("getHelp");
+}
+
 static void initialize_dummy_descriptors(GrowableArray<DCmdArgumentInfo*>* array) {
-  assert(array != NULL, "invariant");
-  DCmdArgumentInfo * const dummy = new DCmdArgumentInfo(NULL,
-                                                        NULL,
-                                                        NULL,
-                                                        NULL,
+  assert(array != nullptr, "invariant");
+  DCmdArgumentInfo * const dummy = new DCmdArgumentInfo(nullptr,
+                                                        nullptr,
+                                                        nullptr,
+                                                        nullptr,
                                                         false,
                                                         true, // a DcmdFramework "option"
                                                         false);
@@ -263,7 +274,7 @@ static void initialize_dummy_descriptors(GrowableArray<DCmdArgumentInfo*>* array
 
 // Since the DcmdFramework does not support dynamically allocated strings,
 // we keep them in a thread local arena. The arena is reset between invocations.
-static THREAD_LOCAL Arena* dcmd_arena = NULL;
+static THREAD_LOCAL Arena* dcmd_arena = nullptr;
 
 static void prepare_dcmd_string_arena(JavaThread* jt) {
   dcmd_arena = JfrThreadLocal::dcmd_arena(jt);
@@ -272,18 +283,18 @@ static void prepare_dcmd_string_arena(JavaThread* jt) {
 }
 
 static char* dcmd_arena_allocate(size_t size) {
-  assert(dcmd_arena != NULL, "invariant");
+  assert(dcmd_arena != nullptr, "invariant");
   return (char*)dcmd_arena->Amalloc(size);
 }
 
 static const char* get_as_dcmd_arena_string(oop string) {
-  char* str = NULL;
+  char* str = nullptr;
   const typeArrayOop value = java_lang_String::value(string);
-  if (value != NULL) {
-    const size_t length = static_cast<size_t>(java_lang_String::utf8_length(string, value)) + 1;
+  if (value != nullptr) {
+    const size_t length = java_lang_String::utf8_length(string, value) + 1;
     str = dcmd_arena_allocate(length);
-    assert(str != NULL, "invariant");
-    java_lang_String::as_utf8_string(string, value, str, static_cast<int>(length));
+    assert(str != nullptr, "invariant");
+    java_lang_String::as_utf8_string(string, value, str, length);
   }
   return str;
 }
@@ -297,7 +308,7 @@ static const char* read_string_field(oop argument, const char* field_name, TRAPS
   args.set_receiver(argument);
   JfrJavaSupport::get_field(&args, THREAD);
   const oop string_oop = result.get_oop();
-  return string_oop != NULL ? get_as_dcmd_arena_string(string_oop) : NULL;
+  return string_oop != nullptr ? get_as_dcmd_arena_string(string_oop) : nullptr;
 }
 
 static bool read_boolean_field(oop argument, const char* field_name, TRAPS) {
@@ -318,7 +329,7 @@ static DCmdArgumentInfo* create_info(oop argument, TRAPS) {
     read_string_field(argument, "type", THREAD),
     read_string_field(argument, "defaultValue", THREAD),
     read_boolean_field(argument, "mandatory", THREAD),
-    true, // a DcmdFramework "option"
+    read_boolean_field(argument, "option", THREAD),
     read_boolean_field(argument, "allowMultiple", THREAD));
 }
 
@@ -342,14 +353,14 @@ GrowableArray<DCmdArgumentInfo*>* JfrDCmd::argument_info_array() const {
     return array;
   }
   objArrayOop arguments = objArrayOop(result.get_oop());
-  assert(arguments != NULL, "invariant");
+  assert(arguments != nullptr, "invariant");
   assert(arguments->is_array(), "must be array");
   const int num_arguments = arguments->length();
   assert(num_arguments == _num_arguments, "invariant");
   prepare_dcmd_string_arena(thread);
   for (int i = 0; i < num_arguments; ++i) {
     DCmdArgumentInfo* const dai = create_info(arguments->obj_at(i), thread);
-    assert(dai != NULL, "invariant");
+    assert(dai != nullptr, "invariant");
     array->append(dai);
   }
   return array;
@@ -366,8 +377,8 @@ GrowableArray<const char*>* JfrDCmd::argument_name_array() const {
 
 JfrConfigureFlightRecorderDCmd::JfrConfigureFlightRecorderDCmd(outputStream* output,
                                                                bool heap) : DCmdWithParser(output, heap),
-  _repository_path("repositorypath", "Path to repository,.e.g \\\"My Repository\\\"", "STRING", false, NULL),
-  _dump_path("dumppath", "Path to dump, e.g. \\\"My Dump path\\\"", "STRING", false, NULL),
+  _repository_path("repositorypath", "Path to repository,.e.g \\\"My Repository\\\"", "STRING", false, nullptr),
+  _dump_path("dumppath", "Path to dump, e.g. \\\"My Dump path\\\"", "STRING", false, nullptr),
   _stack_depth("stackdepth", "Stack depth", "JULONG", false, "64"),
   _global_buffer_count("globalbuffercount", "Number of global buffers,", "JULONG", false, "20"),
   _global_buffer_size("globalbuffersize", "Size of a global buffers,", "MEMORY SIZE", false, "512k"),
@@ -469,22 +480,22 @@ void JfrConfigureFlightRecorderDCmd::execute(DCmdSource source, TRAPS) {
   Handle h_dcmd_instance(THREAD, dcmd);
   assert(h_dcmd_instance.not_null(), "invariant");
 
-  jstring repository_path = NULL;
-  if (_repository_path.is_set() && _repository_path.value() != NULL) {
+  jstring repository_path = nullptr;
+  if (_repository_path.is_set() && _repository_path.value() != nullptr) {
     repository_path = JfrJavaSupport::new_string(_repository_path.value(), CHECK);
   }
 
-  jstring dump_path = NULL;
-  if (_dump_path.is_set() && _dump_path.value() != NULL) {
+  jstring dump_path = nullptr;
+  if (_dump_path.is_set() && _dump_path.value() != nullptr) {
     dump_path = JfrJavaSupport::new_string(_dump_path.value(), CHECK);
   }
 
-  jobject stack_depth = NULL;
-  jobject global_buffer_count = NULL;
-  jobject global_buffer_size = NULL;
-  jobject thread_buffer_size = NULL;
-  jobject max_chunk_size = NULL;
-  jobject memory_size = NULL;
+  jobject stack_depth = nullptr;
+  jobject global_buffer_count = nullptr;
+  jobject global_buffer_size = nullptr;
+  jobject thread_buffer_size = nullptr;
+  jobject max_chunk_size = nullptr;
+  jobject memory_size = nullptr;
   jobject preserve_repository = nullptr;
 
   if (!JfrRecorder::is_created()) {

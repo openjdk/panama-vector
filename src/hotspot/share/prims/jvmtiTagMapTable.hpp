@@ -28,7 +28,7 @@
 #include "gc/shared/collectedHeap.hpp"
 #include "memory/allocation.hpp"
 #include "oops/weakHandle.hpp"
-#include "utilities/resizeableResourceHash.hpp"
+#include "utilities/resizableHashTable.hpp"
 
 class JvmtiEnv;
 class JvmtiTagMapKeyClosure;
@@ -48,15 +48,13 @@ class JvmtiTagMapKey : public CHeapObj<mtServiceability> {
   JvmtiTagMapKey(const JvmtiTagMapKey& src);
   JvmtiTagMapKey& operator=(const JvmtiTagMapKey&) = delete;
 
-  ~JvmtiTagMapKey();
-
-  void resolve();
   oop object() const;
   oop object_no_keepalive() const;
+  void release_weak_handle();
 
   static unsigned get_hash(const JvmtiTagMapKey& entry) {
     assert(entry._obj != nullptr, "must lookup obj to hash");
-    return entry._obj->identity_hash();
+    return (unsigned)entry._obj->identity_hash();
   }
 
   static bool equals(const JvmtiTagMapKey& lhs, const JvmtiTagMapKey& rhs) {
@@ -67,19 +65,14 @@ class JvmtiTagMapKey : public CHeapObj<mtServiceability> {
 };
 
 typedef
-ResizeableResourceHashtable <JvmtiTagMapKey, jlong,
+ResizeableHashTable <JvmtiTagMapKey, jlong,
                               AnyObj::C_HEAP, mtServiceability,
                               JvmtiTagMapKey::get_hash,
-                              JvmtiTagMapKey::equals> ResizableResourceHT;
+                              JvmtiTagMapKey::equals> ResizableHT;
 
 class JvmtiTagMapTable : public CHeapObj<mtServiceability> {
- enum Constants {
-  _table_size  = 1007
- };
-
  private:
-  void resize_if_needed();
-  ResizableResourceHT _table;
+  ResizableHT _table;
 
  public:
   JvmtiTagMapTable();
@@ -87,7 +80,6 @@ class JvmtiTagMapTable : public CHeapObj<mtServiceability> {
 
   jlong find(oop obj);
   void add(oop obj, jlong tag);
-  void update(oop obj, jlong tag);
 
   void remove(oop obj);
 

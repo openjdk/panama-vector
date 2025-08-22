@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 package jdk.incubator.vector;
 
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
@@ -52,7 +54,11 @@ final class Halffloat64Vector extends HalffloatVector {
 
     static final int VLENGTH = VSPECIES.laneCount(); // used by the JVM
 
-    static final Class<Halffloat> ETYPE = Halffloat.class; // used by the JVM
+    static final Class<Short> CTYPE = short.class; // carrier type used by the JVM
+
+    static final Class<Float16> ETYPE = Float16.class; // vector element type used by the JVM
+
+    static final int VECTOR_OPER_TYPE = VECTOR_TYPE_FP16;
 
     Halffloat64Vector(short[] v) {
         super(v);
@@ -87,12 +93,15 @@ final class Halffloat64Vector extends HalffloatVector {
     }
 
     @ForceInline
-    @Override
-    public final Class<Halffloat> elementType() { return Halffloat.class; }
+    final Class<Short> carrierType() { return CTYPE; }
 
     @ForceInline
     @Override
-    public final int elementSize() { return Halffloat.SIZE; }
+    public final Class<Float16> elementType() { return ETYPE; }
+
+    @ForceInline
+    @Override
+    public final int elementSize() { return Float16.SIZE; }
 
     @ForceInline
     @Override
@@ -143,6 +152,12 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @Override
     @ForceInline
+    Halffloat64Shuffle iotaShuffle(int start, int step, boolean wrap) {
+        return (Halffloat64Shuffle) iotaShuffleTemplate((short) start, (short) step, wrap);
+    }
+
+    @Override
+    @ForceInline
     Halffloat64Shuffle shuffleFromArray(int[] indices, int i) { return new Halffloat64Shuffle(indices, i); }
 
     @Override
@@ -178,7 +193,7 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @ForceInline
     final @Override
-    Halffloat64Vector uOp(VectorMask<Halffloat> m, FUnOp f) {
+    Halffloat64Vector uOp(VectorMask<Float16> m, FUnOp f) {
         return (Halffloat64Vector)
             super.uOpTemplate((Halffloat64Mask)m, f);  // specialize
     }
@@ -187,14 +202,14 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @ForceInline
     final @Override
-    Halffloat64Vector bOp(Vector<Halffloat> v, FBinOp f) {
+    Halffloat64Vector bOp(Vector<Float16> v, FBinOp f) {
         return (Halffloat64Vector) super.bOpTemplate((Halffloat64Vector)v, f);  // specialize
     }
 
     @ForceInline
     final @Override
-    Halffloat64Vector bOp(Vector<Halffloat> v,
-                     VectorMask<Halffloat> m, FBinOp f) {
+    Halffloat64Vector bOp(Vector<Float16> v,
+                     VectorMask<Float16> m, FBinOp f) {
         return (Halffloat64Vector)
             super.bOpTemplate((Halffloat64Vector)v, (Halffloat64Mask)m,
                               f);  // specialize
@@ -204,7 +219,7 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @ForceInline
     final @Override
-    Halffloat64Vector tOp(Vector<Halffloat> v1, Vector<Halffloat> v2, FTriOp f) {
+    Halffloat64Vector tOp(Vector<Float16> v1, Vector<Float16> v2, FTriOp f) {
         return (Halffloat64Vector)
             super.tOpTemplate((Halffloat64Vector)v1, (Halffloat64Vector)v2,
                               f);  // specialize
@@ -212,8 +227,8 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @ForceInline
     final @Override
-    Halffloat64Vector tOp(Vector<Halffloat> v1, Vector<Halffloat> v2,
-                     VectorMask<Halffloat> m, FTriOp f) {
+    Halffloat64Vector tOp(Vector<Float16> v1, Vector<Float16> v2,
+                     VectorMask<Float16> m, FTriOp f) {
         return (Halffloat64Vector)
             super.tOpTemplate((Halffloat64Vector)v1, (Halffloat64Vector)v2,
                               (Halffloat64Mask)m, f);  // specialize
@@ -221,14 +236,14 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @ForceInline
     final @Override
-    short rOp(short v, VectorMask<Halffloat> m, FBinOp f) {
+    short rOp(short v, VectorMask<Float16> m, FBinOp f) {
         return super.rOpTemplate(v, m, f);  // specialize
     }
 
     @Override
     @ForceInline
     public final <F>
-    Vector<F> convertShape(VectorOperators.Conversion<Halffloat,F> conv,
+    Vector<F> convertShape(VectorOperators.Conversion<Float16,F> conv,
                            VectorSpecies<F> rsp, int part) {
         return super.convertShapeTemplate(conv, rsp, part);  // specialize
     }
@@ -260,19 +275,19 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public Halffloat64Vector lanewise(Unary op, VectorMask<Halffloat> m) {
+    public Halffloat64Vector lanewise(Unary op, VectorMask<Float16> m) {
         return (Halffloat64Vector) super.lanewiseTemplate(op, Halffloat64Mask.class, (Halffloat64Mask) m);  // specialize
     }
 
     @Override
     @ForceInline
-    public Halffloat64Vector lanewise(Binary op, Vector<Halffloat> v) {
+    public Halffloat64Vector lanewise(Binary op, Vector<Float16> v) {
         return (Halffloat64Vector) super.lanewiseTemplate(op, v);  // specialize
     }
 
     @Override
     @ForceInline
-    public Halffloat64Vector lanewise(Binary op, Vector<Halffloat> v, VectorMask<Halffloat> m) {
+    public Halffloat64Vector lanewise(Binary op, Vector<Float16> v, VectorMask<Float16> m) {
         return (Halffloat64Vector) super.lanewiseTemplate(op, Halffloat64Mask.class, v, (Halffloat64Mask) m);  // specialize
     }
 
@@ -282,7 +297,7 @@ final class Halffloat64Vector extends HalffloatVector {
     @ForceInline
     public final
     Halffloat64Vector
-    lanewise(Ternary op, Vector<Halffloat> v1, Vector<Halffloat> v2) {
+    lanewise(Ternary op, Vector<Float16> v1, Vector<Float16> v2) {
         return (Halffloat64Vector) super.lanewiseTemplate(op, v1, v2);  // specialize
     }
 
@@ -290,7 +305,7 @@ final class Halffloat64Vector extends HalffloatVector {
     @ForceInline
     public final
     Halffloat64Vector
-    lanewise(Ternary op, Vector<Halffloat> v1, Vector<Halffloat> v2, VectorMask<Halffloat> m) {
+    lanewise(Ternary op, Vector<Float16> v1, Vector<Float16> v2, VectorMask<Float16> m) {
         return (Halffloat64Vector) super.lanewiseTemplate(op, Halffloat64Mask.class, v1, v2, (Halffloat64Mask) m);  // specialize
     }
 
@@ -312,7 +327,7 @@ final class Halffloat64Vector extends HalffloatVector {
     @Override
     @ForceInline
     public final short reduceLanes(VectorOperators.Associative op,
-                                    VectorMask<Halffloat> m) {
+                                    VectorMask<Float16> m) {
         return super.reduceLanesTemplate(op, Halffloat64Mask.class, (Halffloat64Mask) m);  // specialized
     }
 
@@ -325,15 +340,20 @@ final class Halffloat64Vector extends HalffloatVector {
     @Override
     @ForceInline
     public final long reduceLanesToLong(VectorOperators.Associative op,
-                                        VectorMask<Halffloat> m) {
+                                        VectorMask<Float16> m) {
         return (long) super.reduceLanesTemplate(op, Halffloat64Mask.class, (Halffloat64Mask) m);  // specialized
     }
 
     @Override
     @ForceInline
-    public final
-    <F> VectorShuffle<F> toShuffle(AbstractSpecies<F> dsp) {
-        return super.toShuffleTemplate(dsp);
+    final <F> VectorShuffle<F> bitsToShuffle(AbstractSpecies<F> dsp) {
+        throw new AssertionError();
+    }
+
+    @Override
+    @ForceInline
+    public final Halffloat64Shuffle toShuffle() {
+        return (Halffloat64Shuffle) toShuffle(vspecies(), false);
     }
 
     // Specialized unary testing
@@ -346,7 +366,7 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public final Halffloat64Mask test(Test op, VectorMask<Halffloat> m) {
+    public final Halffloat64Mask test(Test op, VectorMask<Float16> m) {
         return super.testTemplate(Halffloat64Mask.class, op, (Halffloat64Mask) m);  // specialize
     }
 
@@ -354,7 +374,7 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public final Halffloat64Mask compare(Comparison op, Vector<Halffloat> v) {
+    public final Halffloat64Mask compare(Comparison op, Vector<Float16> v) {
         return super.compareTemplate(Halffloat64Mask.class, op, v);  // specialize
     }
 
@@ -372,14 +392,14 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public final Halffloat64Mask compare(Comparison op, Vector<Halffloat> v, VectorMask<Halffloat> m) {
+    public final Halffloat64Mask compare(Comparison op, Vector<Float16> v, VectorMask<Float16> m) {
         return super.compareTemplate(Halffloat64Mask.class, op, v, (Halffloat64Mask) m);
     }
 
 
     @Override
     @ForceInline
-    public Halffloat64Vector blend(Vector<Halffloat> v, VectorMask<Halffloat> m) {
+    public Halffloat64Vector blend(Vector<Float16> v, VectorMask<Float16> m) {
         return (Halffloat64Vector)
             super.blendTemplate(Halffloat64Mask.class,
                                 (Halffloat64Vector) v,
@@ -388,7 +408,7 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public Halffloat64Vector slice(int origin, Vector<Halffloat> v) {
+    public Halffloat64Vector slice(int origin, Vector<Float16> v) {
         return (Halffloat64Vector) super.sliceTemplate(origin, v);  // specialize
     }
 
@@ -400,13 +420,13 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public Halffloat64Vector unslice(int origin, Vector<Halffloat> w, int part) {
+    public Halffloat64Vector unslice(int origin, Vector<Float16> w, int part) {
         return (Halffloat64Vector) super.unsliceTemplate(origin, w, part);  // specialize
     }
 
     @Override
     @ForceInline
-    public Halffloat64Vector unslice(int origin, Vector<Halffloat> w, int part, VectorMask<Halffloat> m) {
+    public Halffloat64Vector unslice(int origin, Vector<Float16> w, int part, VectorMask<Float16> m) {
         return (Halffloat64Vector)
             super.unsliceTemplate(Halffloat64Mask.class,
                                   origin, w, part,
@@ -421,7 +441,7 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public Halffloat64Vector rearrange(VectorShuffle<Halffloat> s) {
+    public Halffloat64Vector rearrange(VectorShuffle<Float16> s) {
         return (Halffloat64Vector)
             super.rearrangeTemplate(Halffloat64Shuffle.class,
                                     (Halffloat64Shuffle) s);  // specialize
@@ -429,8 +449,8 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public Halffloat64Vector rearrange(VectorShuffle<Halffloat> shuffle,
-                                  VectorMask<Halffloat> m) {
+    public Halffloat64Vector rearrange(VectorShuffle<Float16> shuffle,
+                                  VectorMask<Float16> m) {
         return (Halffloat64Vector)
             super.rearrangeTemplate(Halffloat64Shuffle.class,
                                     Halffloat64Mask.class,
@@ -440,8 +460,8 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public Halffloat64Vector rearrange(VectorShuffle<Halffloat> s,
-                                  Vector<Halffloat> v) {
+    public Halffloat64Vector rearrange(VectorShuffle<Float16> s,
+                                  Vector<Float16> v) {
         return (Halffloat64Vector)
             super.rearrangeTemplate(Halffloat64Shuffle.class,
                                     (Halffloat64Shuffle) s,
@@ -450,7 +470,7 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public Halffloat64Vector compress(VectorMask<Halffloat> m) {
+    public Halffloat64Vector compress(VectorMask<Float16> m) {
         return (Halffloat64Vector)
             super.compressTemplate(Halffloat64Mask.class,
                                    (Halffloat64Mask) m);  // specialize
@@ -458,7 +478,7 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public Halffloat64Vector expand(VectorMask<Halffloat> m) {
+    public Halffloat64Vector expand(VectorMask<Float16> m) {
         return (Halffloat64Vector)
             super.expandTemplate(Halffloat64Mask.class,
                                    (Halffloat64Mask) m);  // specialize
@@ -466,20 +486,27 @@ final class Halffloat64Vector extends HalffloatVector {
 
     @Override
     @ForceInline
-    public Halffloat64Vector selectFrom(Vector<Halffloat> v) {
+    public Halffloat64Vector selectFrom(Vector<Float16> v) {
         return (Halffloat64Vector)
             super.selectFromTemplate((Halffloat64Vector) v);  // specialize
     }
 
     @Override
     @ForceInline
-    public Halffloat64Vector selectFrom(Vector<Halffloat> v,
-                                   VectorMask<Halffloat> m) {
+    public Halffloat64Vector selectFrom(Vector<Float16> v,
+                                   VectorMask<Float16> m) {
         return (Halffloat64Vector)
             super.selectFromTemplate((Halffloat64Vector) v,
-                                     (Halffloat64Mask) m);  // specialize
+                                     Halffloat64Mask.class, (Halffloat64Mask) m);  // specialize
     }
 
+    @Override
+    @ForceInline
+    public Halffloat64Vector selectFrom(Vector<Float16> v1,
+                                   Vector<Float16> v2) {
+        return (Halffloat64Vector)
+            super.selectFromTemplate((Halffloat64Vector) v1, (Halffloat64Vector) v2);  // specialize
+    }
 
     @ForceInline
     @Override
@@ -492,16 +519,17 @@ final class Halffloat64Vector extends HalffloatVector {
             case 3: bits = laneHelper(3); break;
             default: throw new IllegalArgumentException("Index " + i + " must be zero or positive, and less than " + VLENGTH);
         }
-        return Halffloat.shortBitsToHalffloat(bits);
+        return bits;
     }
 
+    @ForceInline
     public short laneHelper(int i) {
         return (short) VectorSupport.extract(
-                     VCLASS, ETYPE, VLENGTH,
+                     VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                      this, i,
                      (vec, ix) -> {
                      short[] vecarr = vec.vec();
-                     return (long)Halffloat.shortToShortBits(vecarr[ix]);
+                     return vecarr[ix];
                      });
     }
 
@@ -517,22 +545,23 @@ final class Halffloat64Vector extends HalffloatVector {
         }
     }
 
+    @ForceInline
     public Halffloat64Vector withLaneHelper(int i, short e) {
         return VectorSupport.insert(
-                                VCLASS, ETYPE, VLENGTH,
-                                this, i, (long)Halffloat.shortToShortBits(e),
+                                VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                this, i, (long)e,
                                 (v, ix, bits) -> {
                                     short[] res = v.vec().clone();
-                                    res[ix] = Halffloat.shortBitsToHalffloat((short)bits);
+                                    res[ix] = e;
                                     return v.vectorFactory(res);
                                 });
     }
 
     // Mask
 
-    static final class Halffloat64Mask extends AbstractMask<Halffloat> {
+    static final class Halffloat64Mask extends AbstractMask<Float16> {
         static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
-        static final Class<Halffloat> ETYPE = Halffloat.class; // used by the JVM
+        static final Class<Short> CTYPE = short.class; // used by the JVM
 
         Halffloat64Mask(boolean[] bits) {
             this(bits, 0);
@@ -585,7 +614,7 @@ final class Halffloat64Vector extends HalffloatVector {
         }
 
         @Override
-        Halffloat64Mask bOp(VectorMask<Halffloat> m, MBinOp f) {
+        Halffloat64Mask bOp(VectorMask<Float16> m, MBinOp f) {
             boolean[] res = new boolean[vspecies().laneCount()];
             boolean[] bits = getBits();
             boolean[] mbits = ((Halffloat64Mask)m).getBits();
@@ -634,7 +663,7 @@ final class Halffloat64Vector extends HalffloatVector {
         /*package-private*/
         Halffloat64Mask indexPartiallyInUpperRange(long offset, long limit) {
             return (Halffloat64Mask) VectorSupport.indexPartiallyInUpperRange(
-                Halffloat64Mask.class, ETYPE, VLENGTH, offset, limit,
+                Halffloat64Mask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, offset, limit,
                 (o, l) -> (Halffloat64Mask) TRUE_MASK.indexPartiallyInRange(o, l));
         }
 
@@ -650,8 +679,9 @@ final class Halffloat64Vector extends HalffloatVector {
         @ForceInline
         public Halffloat64Mask compress() {
             return (Halffloat64Mask)VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                Halffloat64Vector.class, Halffloat64Mask.class, ETYPE, VLENGTH, null, this,
-                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, Float.floatToFloat16(m1.trueCount())));
+                Halffloat64Vector.class, Halffloat64Mask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT,
+                Float16.float16ToShortBits(Float16.valueOf(m1.trueCount()))));
         }
 
 
@@ -659,30 +689,30 @@ final class Halffloat64Vector extends HalffloatVector {
 
         @Override
         @ForceInline
-        public Halffloat64Mask and(VectorMask<Halffloat> mask) {
+        public Halffloat64Mask and(VectorMask<Float16> mask) {
             Objects.requireNonNull(mask);
             Halffloat64Mask m = (Halffloat64Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, Halffloat64Mask.class, null, Halffloat.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Halffloat64Mask.class, null, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
 
         @Override
         @ForceInline
-        public Halffloat64Mask or(VectorMask<Halffloat> mask) {
+        public Halffloat64Mask or(VectorMask<Float16> mask) {
             Objects.requireNonNull(mask);
             Halffloat64Mask m = (Halffloat64Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, Halffloat64Mask.class, null, Halffloat.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Halffloat64Mask.class, null, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
 
         @Override
         @ForceInline
-        public Halffloat64Mask xor(VectorMask<Halffloat> mask) {
+        public Halffloat64Mask xor(VectorMask<Float16> mask) {
             Objects.requireNonNull(mask);
             Halffloat64Mask m = (Halffloat64Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, Halffloat64Mask.class, null, Halffloat.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Halffloat64Mask.class, null, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
@@ -692,22 +722,25 @@ final class Halffloat64Vector extends HalffloatVector {
         @Override
         @ForceInline
         public int trueCount() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Halffloat64Mask.class, Halffloat.class, VLENGTH, this,
-                                                      (m) -> trueCountHelper(m.getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Halffloat64Mask.class, short.class, ETYPE,
+                                                            VECTOR_OPER_TYPE, VLENGTH, this,
+                                                            (m) -> trueCountHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int firstTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Halffloat64Mask.class, Halffloat.class, VLENGTH, this,
-                                                      (m) -> firstTrueHelper(m.getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Halffloat64Mask.class, short.class, ETYPE,
+                                                            VECTOR_OPER_TYPE, VLENGTH, this,
+                                                            (m) -> firstTrueHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int lastTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Halffloat64Mask.class, Halffloat.class, VLENGTH, this,
-                                                      (m) -> lastTrueHelper(m.getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Halffloat64Mask.class, short.class, ETYPE,
+                                                            VECTOR_OPER_TYPE, VLENGTH, this,
+                                                            (m) -> lastTrueHelper(m.getBits()));
         }
 
         @Override
@@ -716,8 +749,19 @@ final class Halffloat64Vector extends HalffloatVector {
             if (length() > Long.SIZE) {
                 throw new UnsupportedOperationException("too many lanes for one long");
             }
-            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Halffloat64Mask.class, Halffloat.class, VLENGTH, this,
+            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Halffloat64Mask.class, short.class, ETYPE,
+                                                      VECTOR_OPER_TYPE, VLENGTH, this,
                                                       (m) -> toLongHelper(m.getBits()));
+        }
+
+        // laneIsSet
+
+        @Override
+        @ForceInline
+        public boolean laneIsSet(int i) {
+            Objects.checkIndex(i, length());
+            return VectorSupport.extract(Halffloat64Mask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                         this, i, (m, idx) -> (m.getBits()[idx] ? 1L : 0L)) == 1L;
         }
 
         // Reductions
@@ -725,23 +769,23 @@ final class Halffloat64Vector extends HalffloatVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            return VectorSupport.test(BT_ne, Halffloat64Mask.class, Halffloat.class, VLENGTH,
-                                         this, vspecies().maskAll(true),
-                                         (m, __) -> anyTrueHelper(((Halffloat64Mask)m).getBits()));
+            return VectorSupport.test(BT_ne, Halffloat64Mask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                      this, vspecies().maskAll(true),
+                                      (m, __) -> anyTrueHelper(((Halffloat64Mask)m).getBits()));
         }
 
         @Override
         @ForceInline
         public boolean allTrue() {
-            return VectorSupport.test(BT_overflow, Halffloat64Mask.class, Halffloat.class, VLENGTH,
-                                         this, vspecies().maskAll(true),
-                                         (m, __) -> allTrueHelper(((Halffloat64Mask)m).getBits()));
+            return VectorSupport.test(BT_overflow, Halffloat64Mask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                      this, vspecies().maskAll(true),
+                                      (m, __) -> allTrueHelper(((Halffloat64Mask)m).getBits()));
         }
 
         @ForceInline
         /*package-private*/
         static Halffloat64Mask maskAll(boolean bit) {
-            return VectorSupport.fromBitsCoerced(Halffloat64Mask.class, Halffloat.class, VLENGTH,
+            return VectorSupport.fromBitsCoerced(Halffloat64Mask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                                  (bit ? -1 : 0), MODE_BROADCAST, null,
                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
@@ -752,9 +796,9 @@ final class Halffloat64Vector extends HalffloatVector {
 
     // Shuffle
 
-    static final class Halffloat64Shuffle extends AbstractShuffle<Halffloat> {
+    static final class Halffloat64Shuffle extends AbstractShuffle<Float16> {
         static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
-        static final Class<Short> ETYPE = short.class; // used by the JVM
+        static final Class<Short> CTYPE = short.class; // used by the JVM
 
         Halffloat64Shuffle(short[] indices) {
             super(indices);
@@ -790,14 +834,19 @@ final class Halffloat64Vector extends HalffloatVector {
 
         @Override
         @ForceInline
+        public Halffloat64Vector toVector() {
+            return (Halffloat64Vector) toBitsVector().castShape(vspecies(), 0);
+        }
+
+        @Override
+        @ForceInline
         Short64Vector toBitsVector() {
             return (Short64Vector) super.toBitsVectorTemplate();
         }
 
         @Override
-        @ForceInline
-        ShortVector toBitsVector0() {
-            return Short64Vector.VSPECIES.dummyVector().vectorFactory(indices());
+        Short64Vector toBitsVector0() {
+            return ((Short64Vector) vspecies().asIntegral().dummyVector()).vectorFactory(indices());
         }
 
         @Override
@@ -817,6 +866,47 @@ final class Halffloat64Vector extends HalffloatVector {
             v.convertShape(VectorOperators.S2I, species, 1)
                     .reinterpretAsInts()
                     .intoArray(a, offset + species.length());
+        }
+
+        @Override
+        @ForceInline
+        public void intoMemorySegment(MemorySegment ms, long offset, ByteOrder bo) {
+            VectorSpecies<Integer> species = IntVector.SPECIES_64;
+            Vector<Short> v = toBitsVector();
+            v.convertShape(VectorOperators.S2I, species, 0)
+                    .reinterpretAsInts()
+                    .intoMemorySegment(ms, offset, bo);
+            v.convertShape(VectorOperators.S2I, species, 1)
+                    .reinterpretAsInts()
+                    .intoMemorySegment(ms, offset + species.vectorByteSize(), bo);
+         }
+
+        @Override
+        @ForceInline
+        public final Halffloat64Mask laneIsValid() {
+            return (Halffloat64Mask) toBitsVector().compare(VectorOperators.GE, 0)
+                    .cast(vspecies());
+        }
+
+        @ForceInline
+        @Override
+        public final Halffloat64Shuffle rearrange(VectorShuffle<Float16> shuffle) {
+            Halffloat64Shuffle concreteShuffle = (Halffloat64Shuffle) shuffle;
+            return (Halffloat64Shuffle) toBitsVector().rearrange(concreteShuffle.cast(ShortVector.SPECIES_64))
+                    .toShuffle(vspecies(), false);
+        }
+
+        @ForceInline
+        @Override
+        public final Halffloat64Shuffle wrapIndexes() {
+            Short64Vector v = toBitsVector();
+            if ((length() & (length() - 1)) == 0) {
+                v = (Short64Vector) v.lanewise(VectorOperators.AND, length() - 1);
+            } else {
+                v = (Short64Vector) v.blend(v.lanewise(VectorOperators.ADD, length()),
+                            v.compare(VectorOperators.LT, 0));
+            }
+            return (Halffloat64Shuffle) v.toShuffle(vspecies(), false);
         }
 
         private static short[] prepare(int[] indices, int offset) {
@@ -843,14 +933,9 @@ final class Halffloat64Vector extends HalffloatVector {
             int length = indices.length;
             for (short si : indices) {
                 if (si >= (short)length || si < (short)(-length)) {
-                    boolean assertsEnabled = false;
-                    assert(assertsEnabled = true);
-                    if (assertsEnabled) {
-                        String msg = ("index "+si+"out of range ["+length+"] in "+
+                    String msg = ("index "+si+"out of range ["+length+"] in "+
                                   java.util.Arrays.toString(indices));
-                        throw new AssertionError(msg);
-                    }
-                    return false;
+                    throw new AssertionError(msg);
                 }
             }
             return true;
@@ -871,10 +956,16 @@ final class Halffloat64Vector extends HalffloatVector {
     @ForceInline
     @Override
     final
-    HalffloatVector fromArray0(short[] a, int offset, VectorMask<Halffloat> m, int offsetInRange) {
+    HalffloatVector fromArray0(short[] a, int offset, VectorMask<Float16> m, int offsetInRange) {
         return super.fromArray0Template(Halffloat64Mask.class, a, offset, (Halffloat64Mask) m, offsetInRange);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    HalffloatVector fromArray0(short[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Float16> m) {
+        return super.fromArray0Template(Halffloat64Mask.class, a, offset, indexMap, mapOffset, (Halffloat64Mask) m);
+    }
 
     @ForceInline
     @Override
@@ -886,7 +977,7 @@ final class Halffloat64Vector extends HalffloatVector {
     @ForceInline
     @Override
     final
-    HalffloatVector fromCharArray0(char[] a, int offset, VectorMask<Halffloat> m, int offsetInRange) {
+    HalffloatVector fromCharArray0(char[] a, int offset, VectorMask<Float16> m, int offsetInRange) {
         return super.fromCharArray0Template(Halffloat64Mask.class, a, offset, (Halffloat64Mask) m, offsetInRange);  // specialize
     }
 
@@ -901,7 +992,7 @@ final class Halffloat64Vector extends HalffloatVector {
     @ForceInline
     @Override
     final
-    HalffloatVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Halffloat> m, int offsetInRange) {
+    HalffloatVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Float16> m, int offsetInRange) {
         return super.fromMemorySegment0Template(Halffloat64Mask.class, ms, offset, (Halffloat64Mask) m, offsetInRange);  // specialize
     }
 
@@ -915,7 +1006,7 @@ final class Halffloat64Vector extends HalffloatVector {
     @ForceInline
     @Override
     final
-    void intoArray0(short[] a, int offset, VectorMask<Halffloat> m) {
+    void intoArray0(short[] a, int offset, VectorMask<Float16> m) {
         super.intoArray0Template(Halffloat64Mask.class, a, offset, (Halffloat64Mask) m);
     }
 
@@ -924,14 +1015,14 @@ final class Halffloat64Vector extends HalffloatVector {
     @ForceInline
     @Override
     final
-    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Halffloat> m) {
+    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Float16> m) {
         super.intoMemorySegment0Template(Halffloat64Mask.class, ms, offset, (Halffloat64Mask) m);
     }
 
     @ForceInline
     @Override
     final
-    void intoCharArray0(char[] a, int offset, VectorMask<Halffloat> m) {
+    void intoCharArray0(char[] a, int offset, VectorMask<Float16> m) {
         super.intoCharArray0Template(Halffloat64Mask.class, a, offset, (Halffloat64Mask) m);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,8 +23,11 @@
 
 /*
  * @test
+ * @key randomness
+ *
+ * @library /test/lib
  * @modules jdk.incubator.vector
- * @run testng/othervm -ea -esa -Xbatch -XX:-TieredCompilation HalffloatMaxVectorTests
+ * @run testng/othervm/timeout=300 -ea -esa -Xbatch -XX:-TieredCompilation HalffloatMaxVectorTests
  */
 
 // -- This file was mechanically generated: Do not edit! -- //
@@ -36,7 +39,7 @@ import jdk.incubator.vector.VectorMask;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.Vector;
 
-import jdk.incubator.vector.Halffloat;
+import jdk.incubator.vector.Float16;
 import jdk.incubator.vector.HalffloatVector;
 
 import org.testng.Assert;
@@ -55,7 +58,7 @@ import java.util.stream.Stream;
 @Test
 public class HalffloatMaxVectorTests extends AbstractVectorTest {
 
-    static final VectorSpecies<Halffloat> SPECIES =
+    static final VectorSpecies<Float16> SPECIES =
                 HalffloatVector.SPECIES_MAX;
 
     static final int INVOC_COUNT = Integer.getInteger("jdk.incubator.vector.test.loop-iterations", 100);
@@ -66,8 +69,23 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
 
     private static final int Max = 256;  // juts so we can do N/Max
 
+    // for floating point addition reduction ops that may introduce rounding errors
+    private static final short RELATIVE_ROUNDING_ERROR_FACTOR_ADD = (short)10.0;
+
+    // for floating point multiplication reduction ops that may introduce rounding errors
+    private static final short RELATIVE_ROUNDING_ERROR_FACTOR_MUL = (short)50.0;
 
     static final int BUFFER_REPS = Integer.getInteger("jdk.incubator.vector.test.buffer-vectors", 25000 / Max);
+
+    static void assertArraysStrictlyEquals(short[] r, short[] a) {
+        for (int i = 0; i < a.length; i++) {
+            short ir = Float16.shortToRawShortBits(r[i]);
+            short ia = Float16.shortToRawShortBits(a[i]);
+            if (ir != ia) {
+                Assert.fail(String.format("at index #%d, expected = %016X, actual = %016X", i, ia, ir));
+            }
+        }
+    }
 
     interface FUnOp {
         short apply(short a);
@@ -125,15 +143,21 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
 
     static void assertReductionArraysEquals(short[] r, short rc, short[] a,
                                             FReductionOp f, FReductionAllOp fa) {
+        assertReductionArraysEquals(r, rc, a, f, fa, (short)0.0);
+    }
+
+    static void assertReductionArraysEquals(short[] r, short rc, short[] a,
+                                            FReductionOp f, FReductionAllOp fa,
+                                            short relativeErrorFactor) {
         int i = 0;
         try {
-            Assert.assertEquals(rc, fa.apply(a));
+            Assert.assertEquals(rc, fa.apply(a), Math.ulp(rc) * relativeErrorFactor);
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(r[i], f.apply(a, i));
+                Assert.assertEquals(r[i], f.apply(a, i), Math.ulp(r[i]) * relativeErrorFactor);
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(rc, fa.apply(a), "Final result is incorrect!");
-            Assert.assertEquals(r[i], f.apply(a, i), "at index #" + i);
+            Assert.assertEquals(rc, fa.apply(a), Math.ulp(rc) * relativeErrorFactor, "Final result is incorrect!");
+            Assert.assertEquals(r[i], f.apply(a, i), Math.ulp(r[i]) * relativeErrorFactor, "at index #" + i);
         }
     }
 
@@ -147,15 +171,22 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
 
     static void assertReductionArraysEqualsMasked(short[] r, short rc, short[] a, boolean[] mask,
                                             FReductionMaskedOp f, FReductionAllMaskedOp fa) {
+        assertReductionArraysEqualsMasked(r, rc, a, mask, f, fa, (short)0.0);
+    }
+
+    static void assertReductionArraysEqualsMasked(short[] r, short rc, short[] a, boolean[] mask,
+                                            FReductionMaskedOp f, FReductionAllMaskedOp fa,
+                                            short relativeError) {
         int i = 0;
         try {
-            Assert.assertEquals(rc, fa.apply(a, mask));
+            Assert.assertEquals(rc, fa.apply(a, mask), Math.abs(rc * relativeError));
             for (; i < a.length; i += SPECIES.length()) {
-                Assert.assertEquals(r[i], f.apply(a, i, mask));
+                Assert.assertEquals(r[i], f.apply(a, i, mask), Math.abs(r[i] *
+relativeError));
             }
         } catch (AssertionError e) {
-            Assert.assertEquals(rc, fa.apply(a, mask), "Final result is incorrect!");
-            Assert.assertEquals(r[i], f.apply(a, i, mask), "at index #" + i);
+            Assert.assertEquals(rc, fa.apply(a, mask), Math.abs(rc * relativeError), "Final result is incorrect!");
+            Assert.assertEquals(r[i], f.apply(a, i, mask), Math.abs(r[i] * relativeError), "at index #" + i);
         }
     }
 
@@ -233,25 +264,6 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertInsertArraysEquals(short[] r, short[] a, short element, int index, int start, int end) {
-        int i = start;
-        try {
-            for (; i < end; i += 1) {
-                if(i%SPECIES.length() == index) {
-                    Assert.assertEquals(r[i], element);
-                } else {
-                    Assert.assertEquals(r[i], a[i]);
-                }
-            }
-        } catch (AssertionError e) {
-            if (i%SPECIES.length() == index) {
-                Assert.assertEquals(r[i], element, "at index #" + i);
-            } else {
-                Assert.assertEquals(r[i], a[i], "at index #" + i);
-            }
-        }
-    }
-
     static void assertRearrangeArraysEquals(short[] r, short[] a, int[] order, int vector_len) {
         int i = 0, j = 0;
         try {
@@ -312,6 +324,25 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
             } else {
                 Assert.assertEquals(r[idx], (short)0, "at index #" + idx);
             }
+        }
+    }
+
+    static void assertSelectFromTwoVectorEquals(short[] r, short[] order, short[] a, short[] b, int vector_len) {
+        int i = 0, j = 0;
+        boolean is_exceptional_idx = false;
+        int idx = 0, wrapped_index = 0, oidx = 0;
+        try {
+            for (; i < a.length; i += vector_len) {
+                for (j = 0; j < vector_len; j++) {
+                    idx = i + j;
+                    wrapped_index = Math.floorMod((int)order[idx], 2 * vector_len);
+                    is_exceptional_idx = wrapped_index >= vector_len;
+                    oidx = is_exceptional_idx ? (wrapped_index - vector_len) : wrapped_index;
+                    Assert.assertEquals(r[idx], (is_exceptional_idx ? b[i + oidx] : a[i + oidx]));
+                }
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[idx], (is_exceptional_idx ? b[i + oidx] : a[i + oidx]), "at index #" + idx + ", order = " + order[idx] + ", a = " + a[i + oidx] + ", b = " + b[i + oidx]);
         }
     }
 
@@ -398,6 +429,52 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         }
     }
 
+    static void assertArraysEqualsAssociative(short[] rl, short[] rr, short[] a, short[] b, short[] c, FBinOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                //Left associative
+                Assert.assertEquals(rl[i], f.apply(f.apply(a[i], b[i]), c[i]));
+
+                //Right associative
+                Assert.assertEquals(rr[i], f.apply(a[i], f.apply(b[i], c[i])));
+
+                //Results equal sanity check
+                Assert.assertEquals(rl[i], rr[i]);
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(rl[i], f.apply(f.apply(a[i], b[i]), c[i]), "left associative test at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", input3 = " + c[i]);
+            Assert.assertEquals(rr[i], f.apply(a[i], f.apply(b[i], c[i])), "right associative test at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", input3 = " + c[i]);
+            Assert.assertEquals(rl[i], rr[i], "Result checks not equal at index #" + i + "leftRes = " + rl[i] + ", rightRes = " + rr[i]);
+        }
+    }
+
+   static void assertArraysEqualsAssociative(short[] rl, short[] rr, short[] a, short[] b, short[] c, boolean[] mask, FBinOp f) {
+       assertArraysEqualsAssociative(rl, rr, a, b, c, mask, FBinMaskOp.lift(f));
+   }
+
+    static void assertArraysEqualsAssociative(short[] rl, short[] rr, short[] a, short[] b, short[] c, boolean[] mask, FBinMaskOp f) {
+        int i = 0;
+        boolean mask_bit = false;
+        try {
+            for (; i < a.length; i++) {
+                mask_bit = mask[i % SPECIES.length()];
+                //Left associative
+                Assert.assertEquals(rl[i], f.apply(f.apply(a[i], b[i], mask_bit), c[i], mask_bit));
+
+                //Right associative
+                Assert.assertEquals(rr[i], f.apply(a[i], f.apply(b[i], c[i], mask_bit), mask_bit));
+
+                //Results equal sanity check
+                Assert.assertEquals(rl[i], rr[i]);
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(rl[i], f.apply(f.apply(a[i], b[i], mask_bit), c[i], mask_bit), "left associative masked test at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", input3 = " + c[i] + ", mask = " + mask_bit);
+            Assert.assertEquals(rr[i], f.apply(a[i], f.apply(b[i], c[i], mask_bit), mask_bit), "right associative masked test at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", input3 = " + c[i] + ", mask = " + mask_bit);
+            Assert.assertEquals(rl[i], rr[i], "Result checks not equal at index #" + i + "leftRes = " + rl[i] + ", rightRes = " + rr[i]);
+        }
+    }
+
     static void assertArraysEquals(short[] r, short[] a, short[] b, FBinOp f) {
         int i = 0;
         try {
@@ -406,6 +483,17 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
             }
         } catch (AssertionError e) {
             Assert.assertEquals(r[i], f.apply(a[i], b[i]), "(" + a[i] + ", " + b[i] + ") at index #" + i);
+        }
+    }
+
+    static void assertArraysEquals(short[] r, short[] a, short b, FBinOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], b));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], f.apply(a[i], b), "(" + a[i] + ", " + b + ") at index #" + i);
         }
     }
 
@@ -445,6 +533,21 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
             }
         } catch (AssertionError err) {
             Assert.assertEquals(r[i], f.apply(a[i], b[i], mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", mask = " + mask[i % SPECIES.length()]);
+        }
+    }
+
+    static void assertArraysEquals(short[] r, short[] a, short b, boolean[] mask, FBinOp f) {
+        assertArraysEquals(r, a, b, mask, FBinMaskOp.lift(f));
+    }
+
+    static void assertArraysEquals(short[] r, short[] a, short b, boolean[] mask, FBinMaskOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], b, mask[i % SPECIES.length()]));
+            }
+        } catch (AssertionError err) {
+            Assert.assertEquals(r[i], f.apply(a[i], b, mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b + ", mask = " + mask[i % SPECIES.length()]);
         }
     }
 
@@ -706,22 +809,22 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
 
 
     static boolean isWithin1Ulp(short actual, short expected) {
-        float act = Float.float16ToFloat(actual);
-        float exp = Float.float16ToFloat(expected);
-        if (Float.isNaN(exp) && !Float.isNaN(act)) {
+        Float16 act = Float16.shortBitsToFloat16(actual);
+        Float16 exp = Float16.shortBitsToFloat16(expected);
+        if (Float16.isNaN(exp) && !Float16.isNaN(act)) {
             return false;
-        } else if (!Float.isNaN(exp) && Float.isNaN(act)) {
+        } else if (!Float16.isNaN(exp) && Float16.isNaN(act)) {
              return false;
         }
 
-        float low = Math.nextDown(exp);
-        float high = Math.nextUp(exp);
+        Float16 low = Float16.nextDown(exp);
+        Float16 high = Float16.nextUp(exp);
 
-        if (Float.compare(low, exp) > 0) {
+        if (Float16.compare(low, exp) > 0) {
             return false;
         }
 
-        if (Float.compare(high, exp) < 0) {
+        if (Float16.compare(high, exp) < 0) {
             return false;
         }
 
@@ -733,11 +836,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         try {
             // Check that result is within 1 ulp of strict math or equivalent to math implementation.
             for (; i < a.length; i++) {
-                Assert.assertTrue(Halffloat.compare(r[i], mathf.apply(a[i])) == 0 ||
+                Assert.assertTrue(Float16.compare(r[i], mathf.apply(a[i])) == 0 ||
                                     isWithin1Ulp(r[i], strictmathf.apply(a[i])));
             }
         } catch (AssertionError e) {
-            Assert.assertTrue(Halffloat.compare(r[i], mathf.apply(a[i])) == 0, "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i]));
+            Assert.assertTrue(Float16.compare(r[i], mathf.apply(a[i])) == 0, "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i]));
             Assert.assertTrue(isWithin1Ulp(r[i], strictmathf.apply(a[i])), "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected (within 1 ulp) = " + strictmathf.apply(a[i]));
         }
     }
@@ -747,11 +850,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         try {
             // Check that result is within 1 ulp of strict math or equivalent to math implementation.
             for (; i < a.length; i++) {
-                Assert.assertTrue(Halffloat.compare(r[i], mathf.apply(a[i], b[i])) == 0 ||
+                Assert.assertTrue(Float16.compare(r[i], mathf.apply(a[i], b[i])) == 0 ||
                                     isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])));
             }
         } catch (AssertionError e) {
-            Assert.assertTrue(Halffloat.compare(r[i], mathf.apply(a[i], b[i])) == 0, "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i], b[i]));
+            Assert.assertTrue(Float16.compare(r[i], mathf.apply(a[i], b[i])) == 0, "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i], b[i]));
             Assert.assertTrue(isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])), "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected (within 1 ulp) = " + strictmathf.apply(a[i], b[i]));
         }
     }
@@ -762,13 +865,13 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         try {
             // Check that result is within 1 ulp of strict math or equivalent to math implementation.
             for (; i < a.length; i++) {
-                Assert.assertTrue(Halffloat.compare(r[i],
+                Assert.assertTrue(Float16.compare(r[i],
                                   mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])) == 0 ||
                                   isWithin1Ulp(r[i],
                                   strictmathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])));
             }
         } catch (AssertionError e) {
-            Assert.assertTrue(Halffloat.compare(r[i],
+            Assert.assertTrue(Float16.compare(r[i],
                               mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])) == 0,
                               "at index #" + i + ", input1 = " + a[i] + ", input2 = " +
                               b[(i / SPECIES.length()) * SPECIES.length()] + ", actual = " + r[i] +
@@ -779,21 +882,6 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
                              b[(i / SPECIES.length()) * SPECIES.length()] + ", actual = " + r[i] +
                              ", expected (within 1 ulp) = " + strictmathf.apply(a[i],
                              b[(i / SPECIES.length()) * SPECIES.length()]));
-        }
-    }
-
-    interface FBinArrayOp {
-        short apply(short[] a, int b);
-    }
-
-    static void assertArraysEquals(short[] r, short[] a, FBinArrayOp f) {
-        int i = 0;
-        try {
-            for (; i < a.length; i++) {
-                Assert.assertEquals(r[i], f.apply(a, i));
-            }
-        } catch (AssertionError e) {
-            Assert.assertEquals(r[i], f.apply(a,i), "at index #" + i);
         }
     }
 
@@ -979,7 +1067,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short genValue(int i) {
-        return (short) Halffloat.valueOf(i);
+        return Float16.float16ToRawShortBits(Float16.valueOf(i));
     }
 
     static int intCornerCaseValue(int i) {
@@ -998,19 +1086,19 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static final List<IntFunction<short[]>> INT_HALFFLOAT_GENERATORS = List.of(
-            withToString("Halffloat[-i * 5]", (int s) -> {
+            withToString("Float16[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> genValue(-i * 5));
             }),
-            withToString("Halffloat[i * 5]", (int s) -> {
+            withToString("Float16[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> genValue(i * 5));
             }),
-            withToString("Halffloat[i + 1]", (int s) -> {
+            withToString("Float16[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> (((short)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
-            withToString("Halffloat[intCornerCaseValue(i)]", (int s) -> {
+            withToString("Float16[intCornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> (short)intCornerCaseValue(i));
             })
@@ -1043,23 +1131,23 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short genValue(long i) {
-        return (short) Halffloat.valueOf(i);
+        return Float16.float16ToRawShortBits(Float16.valueOf(i));
     }
 
     static final List<IntFunction<short[]>> LONG_HALFFLOAT_GENERATORS = List.of(
-            withToString("Halffloat[-i * 5]", (int s) -> {
+            withToString("Float16[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> genValue(-i * 5));
             }),
-            withToString("Halffloat[i * 5]", (int s) -> {
+            withToString("Float16[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> genValue(i * 5));
             }),
-            withToString("Halffloat[i + 1]", (int s) -> {
+            withToString("Float16[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> (((short)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
-            withToString("Halffloat[cornerCaseValue(i)]", (int s) -> {
+            withToString("Float16[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> (short)longCornerCaseValue(i));
             })
@@ -1089,23 +1177,31 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short bits(short e) {
-        return  Halffloat.shortToShortBits(e);
+        return  Float16.shortToShortBits(e);
     }
 
     static final List<IntFunction<short[]>> HALFFLOAT_GENERATORS = List.of(
-            withToString("Halffloat[-i * 5]", (int s) -> {
+            withToString("Float16[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> genValue(-i * 5));
             }),
-            withToString("Halffloat[i * 5]", (int s) -> {
+            withToString("Float16[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> genValue(i * 5));
             }),
-            withToString("Halffloat[i + 1]", (int s) -> {
+            withToString("Float16[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> (((short)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
-            withToString("Halffloat[cornerCaseValue(i)]", (int s) -> {
+            withToString("short[0.01 + (i / (i + 1))]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> (short)0.01 + ((short)i / (i + 1)));
+            }),
+            withToString("short[i -> i % 17 == 0 ? cornerCaseValue(i) : 0.01 + (i / (i + 1))]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> i % 17 == 0 ? cornerCaseValue(i) : (short)0.01 + ((short)i / (i + 1)));
+            }),
+            withToString("short[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> cornerCaseValue(i));
             })
@@ -1128,6 +1224,18 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     static final List<List<IntFunction<short[]>>> HALFFLOAT_GENERATOR_TRIPLES =
         HALFFLOAT_GENERATOR_PAIRS.stream().
                 flatMap(pair -> HALFFLOAT_GENERATORS.stream().map(f -> List.of(pair.get(0), pair.get(1), f))).
+                collect(Collectors.toList());
+
+    static final List<IntFunction<short[]>> SELECT_FROM_INDEX_GENERATORS = List.of(
+            withToString("short[0..VECLEN*2)", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> (short)(RAND.nextInt()));
+            })
+    );
+
+    static final List<List<IntFunction<short[]>>> HALFFLOAT_GENERATOR_SELECT_FROM_TRIPLES =
+        HALFFLOAT_GENERATOR_PAIRS.stream().
+                flatMap(pair -> SELECT_FROM_INDEX_GENERATORS.stream().map(f -> List.of(pair.get(0), pair.get(1), f))).
                 collect(Collectors.toList());
 
     @DataProvider
@@ -1154,6 +1262,12 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     @DataProvider
     public Object[][] shortTernaryOpProvider() {
         return HALFFLOAT_GENERATOR_TRIPLES.stream().map(List::toArray).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] shortSelectFromTwoVectorOpProvider() {
+        return HALFFLOAT_GENERATOR_SELECT_FROM_TRIPLES.stream().map(List::toArray).
                 toArray(Object[][]::new);
     }
 
@@ -1354,26 +1468,16 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short cornerCaseValue(int i) {
-        switch(i % 7) {
-            case 0:
-                return Halffloat.MAX_VALUE;
-            case 1:
-                return Halffloat.MIN_VALUE;
-            case 2:
-                return Halffloat.NEGATIVE_INFINITY;
-            case 3:
-                return Halffloat.POSITIVE_INFINITY;
-            case 4:
-                return Halffloat.NaN;
-            case 5:
-                return (short)0.0;
-            default:
-                return Short.MIN_VALUE;
-        }
-    }
-
-    static short get(short[] a, int i) {
-        return (short) a[i];
+        return switch(i % 8) {
+            case 0  -> Float16.MAX_VALUE;
+            case 1  -> Float16.MIN_VALUE;
+            case 2  -> Float16.NEGATIVE_INFINITY;
+            case 3  -> Float16.POSITIVE_INFINITY;
+            case 4  -> Float16.NaN;
+            case 5  -> Double.longBitsToDouble(0x7FF123456789ABCDL);
+            case 6  -> (short)0.0;
+            default -> (short)-0.0;
+        };
     }
 
     static final IntFunction<short[]> fr = (vl) -> {
@@ -1392,38 +1496,38 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     };
 
     static boolean eq(short a, short b) {
-        Halffloat at = Halffloat.valueOf(a);
-        Halffloat bt = Halffloat.valueOf(b);
+        Float16 at = Float16.shortBitsToFloat16(a);
+        Float16 bt = Float16.shortBitsToFloat16(b);
         return at.floatValue() == bt.floatValue();
     }
 
     static boolean neq(short a, short b) {
-        Halffloat at = Halffloat.valueOf(a);
-        Halffloat bt = Halffloat.valueOf(b);
+        Float16 at = Float16.shortBitsToFloat16(a);
+        Float16 bt = Float16.shortBitsToFloat16(b);
         return at.floatValue() != bt.floatValue();
     }
 
     static boolean lt(short a, short b) {
-        Halffloat at = Halffloat.valueOf(a);
-        Halffloat bt = Halffloat.valueOf(b);
+        Float16 at = Float16.shortBitsToFloat16(a);
+        Float16 bt = Float16.shortBitsToFloat16(b);
         return at.floatValue() < bt.floatValue();
     }
 
     static boolean le(short a, short b) {
-        Halffloat at = Halffloat.valueOf(a);
-        Halffloat bt = Halffloat.valueOf(b);
+        Float16 at = Float16.shortBitsToFloat16(a);
+        Float16 bt = Float16.shortBitsToFloat16(b);
         return at.floatValue() <= bt.floatValue();
     }
 
     static boolean gt(short a, short b) {
-        Halffloat at = Halffloat.valueOf(a);
-        Halffloat bt = Halffloat.valueOf(b);
+        Float16 at = Float16.shortBitsToFloat16(a);
+        Float16 bt = Float16.shortBitsToFloat16(b);
         return at.floatValue() > bt.floatValue();
     }
 
     static boolean ge(short a, short b) {
-        Halffloat at = Halffloat.valueOf(a);
-        Halffloat bt = Halffloat.valueOf(b);
+        Float16 at = Float16.shortBitsToFloat16(a);
+        Float16 bt = Float16.shortBitsToFloat16(b);
         return at.floatValue() >= bt.floatValue();
     }
 
@@ -1433,16 +1537,16 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
 
     @Test
     static void smokeTest1() {
-        HalffloatVector three = HalffloatVector.broadcast(SPECIES, Halffloat.valueOf(-3));
-        HalffloatVector three2 = (HalffloatVector) SPECIES.broadcast(Halffloat.valueOf(-3));
+        HalffloatVector three = HalffloatVector.broadcast(SPECIES, Float16.float16ToRawShortBits(Float16.valueOf(-3)));
+        HalffloatVector three2 = (HalffloatVector) SPECIES.broadcast(Float16.float16ToRawShortBits(Float16.valueOf(-3)));
         assert(three.eq(three2).allTrue());
-        HalffloatVector three3 = three2.broadcast(Halffloat.valueOf(1)).broadcast(Halffloat.valueOf(-3));
+        HalffloatVector three3 = three2.broadcast(Float16.float16ToRawShortBits(Float16.valueOf(1))).broadcast(Float16.float16ToRawShortBits(Float16.valueOf(-3)));
         assert(three.eq(three3).allTrue());
         int scale = 2;
         HalffloatVector higher = three.addIndex(scale);
-        VectorMask<Halffloat> m = three.compare(VectorOperators.LE, higher);
+        VectorMask<Float16> m = three.compare(VectorOperators.LE, higher);
         assert(m.allTrue());
-        m = higher.min((Halffloat.valueOf(-1))).test(VectorOperators.IS_NEGATIVE);
+        m = higher.min((Float16.float16ToRawShortBits(Float16.valueOf(-1)))).test(VectorOperators.IS_NEGATIVE);
         assert(m.allTrue());
         m = higher.test(VectorOperators.IS_FINITE);
         assert(m.allTrue());
@@ -1467,8 +1571,8 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         HalffloatVector a = io.add((short)1); //[1,2]
         HalffloatVector b = a.neg();  //[-1,-2]
         short[] abValues = bothToArray(a,b); //[1,2,-1,-2]
-        VectorShuffle<Halffloat> zip0 = VectorShuffle.makeZip(SPECIES, 0);
-        VectorShuffle<Halffloat> zip1 = VectorShuffle.makeZip(SPECIES, 1);
+        VectorShuffle<Float16> zip0 = VectorShuffle.makeZip(SPECIES, 0);
+        VectorShuffle<Float16> zip1 = VectorShuffle.makeZip(SPECIES, 1);
         HalffloatVector zab0 = a.rearrange(zip0,b); //[1,-1]
         HalffloatVector zab1 = a.rearrange(zip1,b); //[2,-2]
         short[] zabValues = bothToArray(zab0, zab1); //[1,-1,2,-2]
@@ -1479,8 +1583,8 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
             manual[i+1] = abValues[a.length() + i/2];
         }
         Assert.assertEquals(Arrays.toString(zabValues), Arrays.toString(manual));
-        VectorShuffle<Halffloat> unz0 = VectorShuffle.makeUnzip(SPECIES, 0);
-        VectorShuffle<Halffloat> unz1 = VectorShuffle.makeUnzip(SPECIES, 1);
+        VectorShuffle<Float16> unz0 = VectorShuffle.makeUnzip(SPECIES, 0);
+        VectorShuffle<Float16> unz1 = VectorShuffle.makeUnzip(SPECIES, 1);
         HalffloatVector uab0 = zab0.rearrange(unz0,zab1);
         HalffloatVector uab1 = zab0.rearrange(unz1,zab1);
         short[] abValues1 = bothToArray(uab0, uab1);
@@ -1546,7 +1650,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         short[] b = fb.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -1587,7 +1691,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         short[] b = fb.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -1628,7 +1732,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         short[] b = fb.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -1669,7 +1773,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         short[] b = fb.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -1710,7 +1814,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         short[] b = fb.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -1724,7 +1828,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short MIN(short a, short b) {
-        return (short)(Halffloat.valueOf(Math.min(Float.float16ToFloat(a), Float.float16ToFloat(b))));
+        return (short)(Float.floatToFloat16(Math.min(Float.float16ToFloat(a), Float.float16ToFloat(b))));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -1751,7 +1855,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         short[] b = fb.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -1808,7 +1912,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -1864,7 +1968,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -1928,7 +2032,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         short[] c = fc.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -1943,11 +2047,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short SQRT(short a) {
-        return (short)(Halffloat.valueOf((float) Math.sqrt(Float.float16ToFloat(a))));
+        return (short)(Float.floatToFloat16((float) Math.sqrt(Float.float16ToFloat(a))));
     }
 
     static short sqrt(short a) {
-        return (short)(Halffloat.valueOf((float) Math.sqrt(Float.float16ToFloat(a))));
+        return (short)(Float.floatToFloat16((float) Math.sqrt(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -1986,7 +2090,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -1999,11 +2103,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short SIN(short a) {
-        return Halffloat.valueOf((float) Math.sin(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Math.sin(Float.float16ToFloat(a))));
     }
 
     static short strictSIN(short a) {
-        return Halffloat.valueOf((float) StrictMath.sin(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.sin(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2022,11 +2126,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short EXP(short a) {
-        return Halffloat.valueOf((float) Math.exp(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Math.exp(Float.float16ToFloat(a))));
     }
 
     static short strictEXP(short a) {
-        return Halffloat.valueOf((float) StrictMath.exp(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.exp(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2045,11 +2149,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short LOG1P(short a) {
-        return Halffloat.valueOf((float) Math.log1p(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Math.log1p(Float.float16ToFloat(a))));
     }
 
     static short strictLOG1P(short a) {
-        return Halffloat.valueOf((float) StrictMath.log1p(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.log1p(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2068,11 +2172,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short LOG(short a) {
-        return Halffloat.valueOf((float) Math.log(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Math.log(Float.float16ToFloat(a))));
     }
 
     static short strictLOG(short a) {
-        return Halffloat.valueOf((float) StrictMath.log(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.log(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2091,11 +2195,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short LOG10(short a) {
-        return Halffloat.valueOf((float) Math.log10(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Math.log10(Float.float16ToFloat(a))));
     }
 
     static short strictLOG10(short a) {
-        return Halffloat.valueOf((float) StrictMath.log10(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.log10(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2114,11 +2218,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short EXPM1(short a) {
-        return Halffloat.valueOf((float) Math.expm1(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Math.expm1(Float.float16ToFloat(a))));
     }
 
     static short strictEXPM1(short a) {
-        return Halffloat.valueOf((float) StrictMath.expm1(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.expm1(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2137,11 +2241,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short COS(short a) {
-        return Halffloat.valueOf((float) Math.cos(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Math.cos(Float.float16ToFloat(a))));
     }
 
     static short strictCOS(short a) {
-        return Halffloat.valueOf((float) StrictMath.cos(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.cos(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2160,11 +2264,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short TAN(short a) {
-        return Halffloat.valueOf((float) Math.tan(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Math.tan(Float.float16ToFloat(a))));
     }
 
     static short strictTAN(short a) {
-        return Halffloat.valueOf((float) StrictMath.tan(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.tan(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2183,11 +2287,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short SINH(short a) {
-        return Halffloat.valueOf((float) Math.sinh(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Math.sinh(Float.float16ToFloat(a))));
     }
 
     static short strictSINH(short a) {
-        return Halffloat.valueOf((float) StrictMath.sinh(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.sinh(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2206,11 +2310,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short COSH(short a) {
-        return Halffloat.valueOf((float) Math.cosh(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Math.cosh(Float.float16ToFloat(a))));
     }
 
     static short strictCOSH(short a) {
-        return Halffloat.valueOf((float) StrictMath.cosh(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.cosh(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2229,11 +2333,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short TANH(short a) {
-        return Halffloat.valueOf((float) Math.tanh(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Math.tanh(Float.float16ToFloat(a))));
     }
 
     static short strictTANH(short a) {
-        return Halffloat.valueOf((float) StrictMath.tanh(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.tanh(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2252,11 +2356,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short ASIN(short a) {
-        return Halffloat.valueOf((float) Math.asin(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Math.asin(Float.float16ToFloat(a))));
     }
 
     static short strictASIN(short a) {
-        return Halffloat.valueOf((float) StrictMath.asin(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.asin(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2275,11 +2379,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short ACOS(short a) {
-        return Halffloat.valueOf((float) Math.acos(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Math.acos(Float.float16ToFloat(a))));
     }
 
     static short strictACOS(short a) {
-        return Halffloat.valueOf((float) StrictMath.acos(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.acos(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2298,11 +2402,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short ATAN(short a) {
-        return Halffloat.valueOf((float) Math.atan(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Math.atan(Float.float16ToFloat(a))));
     }
 
     static short strictATAN(short a) {
-        return Halffloat.valueOf((float) StrictMath.atan(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.atan(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2321,11 +2425,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short CBRT(short a) {
-        return Halffloat.valueOf((float) Math.cbrt(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Math.cbrt(Float.float16ToFloat(a))));
     }
 
     static short strictCBRT(short a) {
-        return Halffloat.valueOf((float) StrictMath.cbrt(Float.float16ToFloat(a)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.cbrt(Float.float16ToFloat(a))));
     }
 
     @Test(dataProvider = "shortUnaryOpProvider")
@@ -2344,11 +2448,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short HYPOT(short a, short b) {
-        return Halffloat.valueOf((float) Math.hypot(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+        return Float16.float16ToRawShortBits((Float16.valueOf((float) Math.hypot(Float.float16ToFloat(a), Float.float16ToFloat(b)))));
     }
 
     static short strictHYPOT(short a, short b) {
-        return Halffloat.valueOf((float) StrictMath.hypot(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.hypot(Float.float16ToFloat(a), Float.float16ToFloat(b))));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2369,11 +2473,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short POW(short a, short b) {
-        return Halffloat.valueOf((float) Math.pow(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+        return Float16.float16ToRawShortBits((Float16.valueOf((float) Math.pow(Float.float16ToFloat(a), Float.float16ToFloat(b)))));
     }
 
     static short strictPOW(short a, short b) {
-        return Halffloat.valueOf((float) StrictMath.pow(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.pow(Float.float16ToFloat(a), Float.float16ToFloat(b))));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2394,11 +2498,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short pow(short a, short b) {
-        return Halffloat.valueOf((float) Math.pow(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+        return Float16.float16ToRawShortBits((Float16.valueOf((float) Math.pow(Float.float16ToFloat(a), Float.float16ToFloat(b)))));
     }
 
     static short strictpow(short a, short b) {
-        return Halffloat.valueOf((float) StrictMath.pow(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.pow(Float.float16ToFloat(a), Float.float16ToFloat(b))));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2419,11 +2523,11 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     }
 
     static short ATAN2(short a, short b) {
-        return Halffloat.valueOf((float) Math.atan2(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+        return Float16.float16ToRawShortBits((Float16.valueOf((float) Math.atan2(Float.float16ToFloat(a), Float.float16ToFloat(b)))));
     }
 
     static short strictATAN2(short a, short b) {
-        return Halffloat.valueOf((float) StrictMath.atan2(Float.float16ToFloat(a), Float.float16ToFloat(b)));
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) StrictMath.atan2(Float.float16ToFloat(a), Float.float16ToFloat(b))));
     }
 
     @Test(dataProvider = "shortBinaryOpProvider")
@@ -2484,7 +2588,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         short[] b = fb.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -2504,7 +2608,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
-            VectorMask<Halffloat> mv = av.lt(b[i]);
+            VectorMask<Float16> mv = av.lt(b[i]);
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
@@ -2520,7 +2624,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
-            VectorMask<Halffloat> mv = av.eq(b[i]);
+            VectorMask<Float16> mv = av.eq(b[i]);
 
             // Check results as part of computation.
             for (int j = 0; j < SPECIES.length(); j++) {
@@ -2652,7 +2756,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         short[] a = fa.apply(SPECIES.length());
         long[] r = lfr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
         long ra = 0;
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -2687,7 +2791,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         short[] b = fb.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
@@ -2715,6 +2819,24 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         assertSelectFromArraysEquals(r, a, order, SPECIES.length());
     }
 
+    @Test(dataProvider = "shortSelectFromTwoVectorOpProvider")
+    static void SelectFromTwoVectorHalffloatMaxVectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
+        short[] a = fa.apply(SPECIES.length());
+        short[] b = fb.apply(SPECIES.length());
+        short[] idx = fc.apply(SPECIES.length());
+        short[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < idx.length; i += SPECIES.length()) {
+                HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+                HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
+                HalffloatVector idxv = HalffloatVector.fromArray(SPECIES, idx, i);
+                idxv.selectFrom(av, bv).intoArray(r, i);
+            }
+        }
+        assertSelectFromTwoVectorEquals(r, idx, a, b, SPECIES.length());
+    }
+
     @Test(dataProvider = "shortUnaryOpSelectFromMaskProvider")
     static void SelectFromHalffloatMaxVectorTestsMaskedSmokeTest(IntFunction<short[]> fa,
                                                            BiFunction<Integer,Integer,short[]> fs,
@@ -2723,7 +2845,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
         short[] order = fs.apply(a.length, SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Halffloat> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        VectorMask<Float16> vmask = VectorMask.fromArray(SPECIES, mask, 0);
 
         for (int i = 0; i < a.length; i += SPECIES.length()) {
             HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
@@ -3063,7 +3185,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     static void ElementSizeHalffloatMaxVectorTestsSmokeTest() {
         HalffloatVector av = HalffloatVector.zero(SPECIES);
         int elsize = av.elementSize();
-        Assert.assertEquals(elsize, Halffloat.SIZE);
+        Assert.assertEquals(elsize, Float16.SIZE);
     }
 
     @Test
@@ -3077,20 +3199,20 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     static void ShapeWithLanesHalffloatMaxVectorTestsSmokeTest() {
         HalffloatVector av = HalffloatVector.zero(SPECIES);
         VectorShape vsh = av.shape();
-        VectorSpecies species = vsh.withLanes(Halffloat.class);
+        VectorSpecies species = vsh.withLanes(Float16.class);
         assert(species.equals(SPECIES));
     }
 
     @Test
     static void ElementTypeHalffloatMaxVectorTestsSmokeTest() {
         HalffloatVector av = HalffloatVector.zero(SPECIES);
-        assert(av.species().elementType() == Halffloat.class);
+        assert(av.species().elementType() == Float16.class);
     }
 
     @Test
     static void SpeciesElementSizeHalffloatMaxVectorTestsSmokeTest() {
         HalffloatVector av = HalffloatVector.zero(SPECIES);
-        assert(av.species().elementSize() == Halffloat.SIZE);
+        assert(av.species().elementSize() == Float16.SIZE);
     }
 
     @Test
@@ -3102,7 +3224,7 @@ public class HalffloatMaxVectorTests extends AbstractVectorTest {
     @Test
     static void WithLanesHalffloatMaxVectorTestsSmokeTest() {
         HalffloatVector av = HalffloatVector.zero(SPECIES);
-        VectorSpecies species = av.species().withLanes(Halffloat.class);
+        VectorSpecies species = av.species().withLanes(Float16.class);
         assert(species.equals(SPECIES));
     }
 

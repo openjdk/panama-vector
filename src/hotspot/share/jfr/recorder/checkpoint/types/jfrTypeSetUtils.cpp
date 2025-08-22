@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,7 +22,6 @@
  *
  */
 
-#include "precompiled.hpp"
 #include "jfr/recorder/checkpoint/types/jfrTypeSetUtils.hpp"
 #include "jfr/utilities/jfrPredicate.hpp"
 #include "jfr/utilities/jfrRelation.hpp"
@@ -30,38 +29,49 @@
 #include "oops/oop.inline.hpp"
 #include "oops/symbol.hpp"
 
-JfrArtifactSet::JfrArtifactSet(bool class_unload) : _symbol_table(NULL),
-                                                    _klass_list(NULL),
-                                                    _total_count(0) {
-  initialize(class_unload);
-  assert(_klass_list != NULL, "invariant");
+JfrArtifactSet::JfrArtifactSet(bool class_unload, bool previous_epoch) : _symbol_table(nullptr),
+                                                                         _klass_set(nullptr),
+                                                                         _klass_loader_set(nullptr),
+                                                                         _klass_loader_leakp_set(nullptr),
+                                                                         _total_count(0),
+                                                                         _class_unload(class_unload) {
+  initialize(class_unload, previous_epoch);
+  assert(!previous_epoch || _klass_loader_leakp_set != nullptr, "invariant");
+  assert(_klass_loader_set != nullptr, "invariant");
+  assert(_klass_set != nullptr, "invariant");
 }
 
-static const size_t initial_klass_list_size = 256;
-const int initial_klass_loader_set_size = 64;
+static unsigned initial_klass_set_size = 4096;
+static unsigned initial_klass_loader_set_size = 64;
+static unsigned initial_klass_loader_leakp_set_size = 64;
 
-void JfrArtifactSet::initialize(bool class_unload) {
-  if (_symbol_table == NULL) {
+void JfrArtifactSet::initialize(bool class_unload, bool previous_epoch) {
+  _class_unload = class_unload;
+  if (_symbol_table == nullptr) {
     _symbol_table = JfrSymbolTable::create();
-    assert(_symbol_table != NULL, "invariant");
+    assert(_symbol_table != nullptr, "invariant");
   }
-  assert(_symbol_table != NULL, "invariant");
+  assert(_symbol_table != nullptr, "invariant");
   _symbol_table->set_class_unload(class_unload);
   _total_count = 0;
-  // resource allocation
-  _klass_list = new GrowableArray<const Klass*>(initial_klass_list_size);
-  _klass_loader_set = new GrowableArray<const Klass*>(initial_klass_loader_set_size);
+  // Resource allocations. Keep in this allocation order.
+  if (previous_epoch) {
+    _klass_loader_leakp_set = new JfrKlassSet(initial_klass_loader_leakp_set_size);
+  }
+  _klass_loader_set = new JfrKlassSet(initial_klass_loader_set_size);
+  _klass_set = new JfrKlassSet(initial_klass_set_size);
 }
 
 void JfrArtifactSet::clear() {
-  if (_symbol_table != NULL) {
+  if (_symbol_table != nullptr) {
     _symbol_table->clear();
   }
 }
 
 JfrArtifactSet::~JfrArtifactSet() {
   delete _symbol_table;
-  // _klass_list and _klass_loader_list will be cleared by a ResourceMark
+  // _klass_loader_set, _klass_loader_leakp_set and
+  // _klass_list will be cleared by a ResourceMark
 }
 
 traceid JfrArtifactSet::bootstrap_name(bool leakp) {
@@ -90,31 +100,39 @@ traceid JfrArtifactSet::mark(uintptr_t hash, const char* const str, bool leakp) 
 }
 
 bool JfrArtifactSet::has_klass_entries() const {
-  return _klass_list->is_nonempty();
+  return _klass_set->is_nonempty();
+}
+static inline bool not_in_set(JfrArtifactSet::JfrKlassSet* set, const Klass* k) {
+  assert(set != nullptr, "invariant");
+  assert(k != nullptr, "invariant");
+  return set->add(k);
 }
 
-int JfrArtifactSet::entries() const {
-  return _klass_list->length();
-}
-
-bool JfrArtifactSet::should_do_loader_klass(const Klass* k) {
-  assert(k != NULL, "invariant");
-  assert(_klass_loader_set != NULL, "invariant");
-  return !JfrMutablePredicate<const Klass*, compare_klasses>::test(_klass_loader_set, k);
+bool JfrArtifactSet::should_do_cld_klass(const Klass* k, bool leakp) {
+  assert(k != nullptr, "invariant");
+  assert(_klass_loader_set != nullptr, "invariant");
+  assert(_klass_loader_leakp_set != nullptr, "invariant");
+  return not_in_set(leakp ? _klass_loader_leakp_set : _klass_loader_set, k);
 }
 
 void JfrArtifactSet::register_klass(const Klass* k) {
-  assert(k != NULL, "invariant");
-  assert(_klass_list != NULL, "invariant");
-  _klass_list->append(k);
+  assert(k != nullptr, "invariant");
+  assert(IS_SERIALIZED(k), "invariant");
+  assert(_klass_set != nullptr, "invariant");
+  _klass_set->add(k);
 }
 
 size_t JfrArtifactSet::total_count() const {
+  assert(_klass_set != nullptr, "invariant");
+  initial_klass_set_size = MAX2(initial_klass_set_size, _klass_set->table_size());
+  assert(_klass_loader_set != nullptr, "invariant");
+  initial_klass_loader_set_size = MAX2(initial_klass_loader_set_size, _klass_loader_set->table_size());
   return _total_count;
 }
 
 void JfrArtifactSet::increment_checkpoint_id() {
-  assert(_symbol_table != NULL, "invariant");
+  assert(_symbol_table != nullptr, "invariant");
   _symbol_table->increment_checkpoint_id();
+  assert(_klass_loader_leakp_set != nullptr, "invariant");
+  initial_klass_loader_leakp_set_size = MAX2(initial_klass_loader_leakp_set_size, _klass_loader_leakp_set->table_size());
 }
-

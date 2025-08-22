@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.regex.Pattern;
+
+import jdk.internal.vm.annotation.Stable;
 import sun.security.util.*;
 
 /**
@@ -45,7 +47,9 @@ public final class PKCS12Attribute implements KeyStore.Entry.Attribute {
     private String name;
     private String value;
     private final byte[] encoded;
-    private int hashValue = -1;
+
+    @Stable
+    private int hashValue;
 
     /**
      * Constructs a PKCS12 attribute from its name and value.
@@ -196,22 +200,18 @@ public final class PKCS12Attribute implements KeyStore.Entry.Attribute {
         if (this == obj) {
             return true;
         }
-        if (!(obj instanceof PKCS12Attribute)) {
-            return false;
-        }
-        return Arrays.equals(encoded, ((PKCS12Attribute) obj).encoded);
+        return obj instanceof PKCS12Attribute other
+                && Arrays.equals(encoded, other.encoded);
     }
 
     /**
-     * Returns the hashcode for this {@code PKCS12Attribute}.
+     * {@return the hashcode for this {@code PKCS12Attribute}}
      * The hash code is computed from its DER encoding.
-     *
-     * @return the hash code
      */
     @Override
     public int hashCode() {
         int h = hashValue;
-        if (h == -1) {
+        if (h == 0) {
             hashValue = h = Arrays.hashCode(encoded);
         }
         return h;

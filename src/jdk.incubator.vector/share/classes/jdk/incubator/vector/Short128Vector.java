@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 package jdk.incubator.vector;
 
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
@@ -52,7 +54,11 @@ final class Short128Vector extends ShortVector {
 
     static final int VLENGTH = VSPECIES.laneCount(); // used by the JVM
 
-    static final Class<Short> ETYPE = short.class; // used by the JVM
+    static final Class<Short> CTYPE = short.class; // carrier type used by the JVM
+
+    static final Class<Short> ETYPE = short.class; // vector element type used by the JVM
+
+    static final int VECTOR_OPER_TYPE = VECTOR_TYPE_PRIM;
 
     Short128Vector(short[] v) {
         super(v);
@@ -87,8 +93,11 @@ final class Short128Vector extends ShortVector {
     }
 
     @ForceInline
+    final Class<Short> carrierType() { return CTYPE; }
+
+    @ForceInline
     @Override
-    public final Class<Short> elementType() { return short.class; }
+    public final Class<Short> elementType() { return ETYPE; }
 
     @ForceInline
     @Override
@@ -140,6 +149,12 @@ final class Short128Vector extends ShortVector {
     @Override
     @ForceInline
     Short128Shuffle iotaShuffle() { return Short128Shuffle.IOTA; }
+
+    @Override
+    @ForceInline
+    Short128Shuffle iotaShuffle(int start, int step, boolean wrap) {
+        return (Short128Shuffle) iotaShuffleTemplate((short) start, (short) step, wrap);
+    }
 
     @Override
     @ForceInline
@@ -344,9 +359,14 @@ final class Short128Vector extends ShortVector {
 
     @Override
     @ForceInline
-    public final
-    <F> VectorShuffle<F> toShuffle(AbstractSpecies<F> dsp) {
-        return super.toShuffleTemplate(dsp);
+    final <F> VectorShuffle<F> bitsToShuffle(AbstractSpecies<F> dsp) {
+        return bitsToShuffleTemplate(dsp);
+    }
+
+    @Override
+    @ForceInline
+    public final Short128Shuffle toShuffle() {
+        return (Short128Shuffle) toShuffle(vspecies(), false);
     }
 
     // Specialized unary testing
@@ -490,9 +510,16 @@ final class Short128Vector extends ShortVector {
                                    VectorMask<Short> m) {
         return (Short128Vector)
             super.selectFromTemplate((Short128Vector) v,
-                                     (Short128Mask) m);  // specialize
+                                     Short128Mask.class, (Short128Mask) m);  // specialize
     }
 
+    @Override
+    @ForceInline
+    public Short128Vector selectFrom(Vector<Short> v1,
+                                   Vector<Short> v2) {
+        return (Short128Vector)
+            super.selectFromTemplate((Short128Vector) v1, (Short128Vector) v2);  // specialize
+    }
 
     @ForceInline
     @Override
@@ -510,9 +537,10 @@ final class Short128Vector extends ShortVector {
         }
     }
 
+    @ForceInline
     public short laneHelper(int i) {
         return (short) VectorSupport.extract(
-                                VCLASS, ETYPE, VLENGTH,
+                                VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                 this, i,
                                 (vec, ix) -> {
                                     short[] vecarr = vec.vec();
@@ -536,9 +564,10 @@ final class Short128Vector extends ShortVector {
         }
     }
 
+    @ForceInline
     public Short128Vector withLaneHelper(int i, short e) {
         return VectorSupport.insert(
-                                VCLASS, ETYPE, VLENGTH,
+                                VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                 this, i, (long)e,
                                 (v, ix, bits) -> {
                                     short[] res = v.vec().clone();
@@ -551,7 +580,7 @@ final class Short128Vector extends ShortVector {
 
     static final class Short128Mask extends AbstractMask<Short> {
         static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
-        static final Class<Short> ETYPE = short.class; // used by the JVM
+        static final Class<Short> CTYPE = short.class; // used by the JVM
 
         Short128Mask(boolean[] bits) {
             this(bits, 0);
@@ -653,7 +682,7 @@ final class Short128Vector extends ShortVector {
         /*package-private*/
         Short128Mask indexPartiallyInUpperRange(long offset, long limit) {
             return (Short128Mask) VectorSupport.indexPartiallyInUpperRange(
-                Short128Mask.class, ETYPE, VLENGTH, offset, limit,
+                Short128Mask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, offset, limit,
                 (o, l) -> (Short128Mask) TRUE_MASK.indexPartiallyInRange(o, l));
         }
 
@@ -669,8 +698,9 @@ final class Short128Vector extends ShortVector {
         @ForceInline
         public Short128Mask compress() {
             return (Short128Mask)VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                Short128Vector.class, Short128Mask.class, ETYPE, VLENGTH, null, this,
-                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                Short128Vector.class, Short128Mask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT,
+                m1.trueCount()));
         }
 
 
@@ -681,7 +711,7 @@ final class Short128Vector extends ShortVector {
         public Short128Mask and(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             Short128Mask m = (Short128Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, Short128Mask.class, null, short.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Short128Mask.class, null, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
@@ -691,7 +721,7 @@ final class Short128Vector extends ShortVector {
         public Short128Mask or(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             Short128Mask m = (Short128Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, Short128Mask.class, null, short.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Short128Mask.class, null, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
@@ -701,7 +731,7 @@ final class Short128Vector extends ShortVector {
         public Short128Mask xor(VectorMask<Short> mask) {
             Objects.requireNonNull(mask);
             Short128Mask m = (Short128Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, Short128Mask.class, null, short.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Short128Mask.class, null, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
@@ -711,22 +741,25 @@ final class Short128Vector extends ShortVector {
         @Override
         @ForceInline
         public int trueCount() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Short128Mask.class, short.class, VLENGTH, this,
-                                                      (m) -> trueCountHelper(m.getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Short128Mask.class, short.class, ETYPE,
+                                                            VECTOR_OPER_TYPE, VLENGTH, this,
+                                                            (m) -> trueCountHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int firstTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Short128Mask.class, short.class, VLENGTH, this,
-                                                      (m) -> firstTrueHelper(m.getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Short128Mask.class, short.class, ETYPE,
+                                                            VECTOR_OPER_TYPE, VLENGTH, this,
+                                                            (m) -> firstTrueHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int lastTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Short128Mask.class, short.class, VLENGTH, this,
-                                                      (m) -> lastTrueHelper(m.getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Short128Mask.class, short.class, ETYPE,
+                                                            VECTOR_OPER_TYPE, VLENGTH, this,
+                                                            (m) -> lastTrueHelper(m.getBits()));
         }
 
         @Override
@@ -735,8 +768,19 @@ final class Short128Vector extends ShortVector {
             if (length() > Long.SIZE) {
                 throw new UnsupportedOperationException("too many lanes for one long");
             }
-            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Short128Mask.class, short.class, VLENGTH, this,
+            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Short128Mask.class, short.class, ETYPE,
+                                                      VECTOR_OPER_TYPE, VLENGTH, this,
                                                       (m) -> toLongHelper(m.getBits()));
+        }
+
+        // laneIsSet
+
+        @Override
+        @ForceInline
+        public boolean laneIsSet(int i) {
+            Objects.checkIndex(i, length());
+            return VectorSupport.extract(Short128Mask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                         this, i, (m, idx) -> (m.getBits()[idx] ? 1L : 0L)) == 1L;
         }
 
         // Reductions
@@ -744,23 +788,23 @@ final class Short128Vector extends ShortVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            return VectorSupport.test(BT_ne, Short128Mask.class, short.class, VLENGTH,
-                                         this, vspecies().maskAll(true),
-                                         (m, __) -> anyTrueHelper(((Short128Mask)m).getBits()));
+            return VectorSupport.test(BT_ne, Short128Mask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                      this, vspecies().maskAll(true),
+                                      (m, __) -> anyTrueHelper(((Short128Mask)m).getBits()));
         }
 
         @Override
         @ForceInline
         public boolean allTrue() {
-            return VectorSupport.test(BT_overflow, Short128Mask.class, short.class, VLENGTH,
-                                         this, vspecies().maskAll(true),
-                                         (m, __) -> allTrueHelper(((Short128Mask)m).getBits()));
+            return VectorSupport.test(BT_overflow, Short128Mask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                      this, vspecies().maskAll(true),
+                                      (m, __) -> allTrueHelper(((Short128Mask)m).getBits()));
         }
 
         @ForceInline
         /*package-private*/
         static Short128Mask maskAll(boolean bit) {
-            return VectorSupport.fromBitsCoerced(Short128Mask.class, short.class, VLENGTH,
+            return VectorSupport.fromBitsCoerced(Short128Mask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                                  (bit ? -1 : 0), MODE_BROADCAST, null,
                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
@@ -773,7 +817,7 @@ final class Short128Vector extends ShortVector {
 
     static final class Short128Shuffle extends AbstractShuffle<Short> {
         static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
-        static final Class<Short> ETYPE = short.class; // used by the JVM
+        static final Class<Short> CTYPE = short.class; // used by the JVM
 
         Short128Shuffle(short[] indices) {
             super(indices);
@@ -809,14 +853,19 @@ final class Short128Vector extends ShortVector {
 
         @Override
         @ForceInline
+        public Short128Vector toVector() {
+            return toBitsVector();
+        }
+
+        @Override
+        @ForceInline
         Short128Vector toBitsVector() {
             return (Short128Vector) super.toBitsVectorTemplate();
         }
 
         @Override
-        @ForceInline
-        ShortVector toBitsVector0() {
-            return Short128Vector.VSPECIES.dummyVector().vectorFactory(indices());
+        Short128Vector toBitsVector0() {
+            return ((Short128Vector) vspecies().asIntegral().dummyVector()).vectorFactory(indices());
         }
 
         @Override
@@ -836,6 +885,47 @@ final class Short128Vector extends ShortVector {
             v.convertShape(VectorOperators.S2I, species, 1)
                     .reinterpretAsInts()
                     .intoArray(a, offset + species.length());
+        }
+
+        @Override
+        @ForceInline
+        public void intoMemorySegment(MemorySegment ms, long offset, ByteOrder bo) {
+            VectorSpecies<Integer> species = IntVector.SPECIES_128;
+            Vector<Short> v = toBitsVector();
+            v.convertShape(VectorOperators.S2I, species, 0)
+                    .reinterpretAsInts()
+                    .intoMemorySegment(ms, offset, bo);
+            v.convertShape(VectorOperators.S2I, species, 1)
+                    .reinterpretAsInts()
+                    .intoMemorySegment(ms, offset + species.vectorByteSize(), bo);
+         }
+
+        @Override
+        @ForceInline
+        public final Short128Mask laneIsValid() {
+            return (Short128Mask) toBitsVector().compare(VectorOperators.GE, 0)
+                    .cast(vspecies());
+        }
+
+        @ForceInline
+        @Override
+        public final Short128Shuffle rearrange(VectorShuffle<Short> shuffle) {
+            Short128Shuffle concreteShuffle = (Short128Shuffle) shuffle;
+            return (Short128Shuffle) toBitsVector().rearrange(concreteShuffle)
+                    .toShuffle(vspecies(), false);
+        }
+
+        @ForceInline
+        @Override
+        public final Short128Shuffle wrapIndexes() {
+            Short128Vector v = toBitsVector();
+            if ((length() & (length() - 1)) == 0) {
+                v = (Short128Vector) v.lanewise(VectorOperators.AND, length() - 1);
+            } else {
+                v = (Short128Vector) v.blend(v.lanewise(VectorOperators.ADD, length()),
+                            v.compare(VectorOperators.LT, 0));
+            }
+            return (Short128Shuffle) v.toShuffle(vspecies(), false);
         }
 
         private static short[] prepare(int[] indices, int offset) {
@@ -862,14 +952,9 @@ final class Short128Vector extends ShortVector {
             int length = indices.length;
             for (short si : indices) {
                 if (si >= (short)length || si < (short)(-length)) {
-                    boolean assertsEnabled = false;
-                    assert(assertsEnabled = true);
-                    if (assertsEnabled) {
-                        String msg = ("index "+si+"out of range ["+length+"] in "+
+                    String msg = ("index "+si+"out of range ["+length+"] in "+
                                   java.util.Arrays.toString(indices));
-                        throw new AssertionError(msg);
-                    }
-                    return false;
+                    throw new AssertionError(msg);
                 }
             }
             return true;
@@ -894,6 +979,12 @@ final class Short128Vector extends ShortVector {
         return super.fromArray0Template(Short128Mask.class, a, offset, (Short128Mask) m, offsetInRange);  // specialize
     }
 
+    @ForceInline
+    @Override
+    final
+    ShortVector fromArray0(short[] a, int offset, int[] indexMap, int mapOffset, VectorMask<Short> m) {
+        return super.fromArray0Template(Short128Mask.class, a, offset, indexMap, mapOffset, (Short128Mask) m);
+    }
 
     @ForceInline
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include "jni.h"
 #include "jni_util.h"
-#ifdef _WIN64
+#ifdef WINDOWS
 #include <windows.h>
 #include <fileapi.h>
 #include <winerror.h>
@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 
-#ifdef _WIN64
+#ifdef WINDOWS
 jboolean initialized = JNI_FALSE;
 BOOL(WINAPI * pfnGetDiskSpaceInformation)(LPCWSTR, LPVOID) = NULL;
 #endif
@@ -60,14 +60,14 @@ Java_GetXSpace_getSpace0
 {
     jboolean totalSpaceIsEstimated = JNI_FALSE;
     jlong array[4];
-    const jchar* chars = (*env)->GetStringChars(env, root, NULL);
-    if (chars == NULL) {
+    const jchar* strchars = (*env)->GetStringChars(env, root, NULL);
+    if (strchars == NULL) {
         JNU_ThrowByNameWithLastError(env, "java/lang/RuntimeException",
                                      "GetStringChars");
         return JNI_FALSE;
     }
 
-#ifdef _WIN64
+#ifdef WINDOWS
     if (initialized == JNI_FALSE) {
         initialized = JNI_TRUE;
         HMODULE hmod = GetModuleHandleW(L"kernel32");
@@ -77,12 +77,13 @@ Java_GetXSpace_getSpace0
         }
     }
 
-    LPCWSTR path = (LPCWSTR)chars;
+    LPCWSTR path = (LPCWSTR)strchars;
 
     if (pfnGetDiskSpaceInformation != NULL) {
         // use GetDiskSpaceInformationW
         DISK_SPACE_INFORMATION diskSpaceInfo;
         BOOL hres = pfnGetDiskSpaceInformation(path, &diskSpaceInfo);
+        (*env)->ReleaseStringChars(env, root, strchars);
         if (FAILED(hres)) {
             JNU_ThrowByNameWithLastError(env, "java/lang/RuntimeException",
                                          "GetDiskSpaceInformationW");
@@ -108,8 +109,10 @@ Java_GetXSpace_getSpace0
         ULARGE_INTEGER totalNumberOfBytes;
         ULARGE_INTEGER totalNumberOfFreeBytes;
 
-        if (GetDiskFreeSpaceExW(path, &freeBytesAvailable, &totalNumberOfBytes,
-            &totalNumberOfFreeBytes) == 0) {
+        BOOL hres = GetDiskFreeSpaceExW(path, &freeBytesAvailable,
+            &totalNumberOfBytes, &totalNumberOfFreeBytes);
+        (*env)->ReleaseStringChars(env, root, strchars);
+        if (FAILED(hres)) {
             JNU_ThrowByNameWithLastError(env, "java/lang/RuntimeException",
                                          "GetDiskFreeSpaceExW");
             return totalSpaceIsEstimated;
@@ -124,9 +127,24 @@ Java_GetXSpace_getSpace0
         array[3] = (jlong)freeBytesAvailable.QuadPart;
     }
 #else
+    int len = (int)(*env)->GetStringLength(env, root);
+    char* chars = (char*)malloc((len + 1)*sizeof(char));
+    if (chars == NULL) {
+        (*env)->ReleaseStringChars(env, root, strchars);
+        JNU_ThrowByNameWithLastError(env, "java/lang/RuntimeException",
+                                     "malloc");
+        return JNI_FALSE;
+    }
+
+    for (int i = 0; i < len; i++) {
+        chars[i] = (char)strchars[i];
+    }
+    chars[len] = '\0';
+    (*env)->ReleaseStringChars(env, root, strchars);
+
     struct statfs buf;
-    int result = statfs((const char*)chars, &buf);
-    (*env)->ReleaseStringChars(env, root, chars);
+    int result = statfs(chars, &buf);
+    free(chars);
     if (result < 0) {
         JNU_ThrowByNameWithLastError(env, "java/lang/RuntimeException",
                                      strerror(errno));
@@ -140,6 +158,33 @@ Java_GetXSpace_getSpace0
 #endif
     (*env)->SetLongArrayRegion(env, sizes, 0, 4, array);
     return totalSpaceIsEstimated;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_GetXSpace_isCDDrive
+    (JNIEnv *env, jclass cls, jstring root)
+{
+#ifdef WINDOWS
+    const jchar* strchars = (*env)->GetStringChars(env, root, NULL);
+    if (strchars == NULL) {
+        JNU_ThrowByNameWithLastError(env, "java/lang/RuntimeException",
+                                     "GetStringChars");
+        return JNI_FALSE;
+    }
+
+    LPCWSTR path = (LPCWSTR)strchars;
+    UINT driveType = GetDriveTypeW(path);
+
+    (*env)->ReleaseStringChars(env, root, strchars);
+
+    if (driveType != DRIVE_CDROM) {
+        return JNI_FALSE;
+    }
+
+    return JNI_TRUE;
+#else
+    return JNI_FALSE;
+#endif
 }
 #ifdef __cplusplus
 }

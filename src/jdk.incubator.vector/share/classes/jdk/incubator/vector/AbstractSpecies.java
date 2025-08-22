@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -303,6 +303,12 @@ abstract class AbstractSpecies<E> extends jdk.internal.vm.vector.VectorSupport.V
     /*package-private*/
     abstract Vector<E> fromIntValues(int[] values);
 
+    /*package-private*/
+    abstract Class<?> carrierType();
+
+    /*package-private*/
+    abstract int operType();
+
     /**
      * Do not use a dummy except to call methods on it when you don't
      * care about the lane values.  The main benefit of it is to
@@ -320,15 +326,7 @@ abstract class AbstractSpecies<E> extends jdk.internal.vm.vector.VectorSupport.V
         return makeDummyVector();
     }
     private AbstractVector<E> makeDummyVector() {
-        Object za;
-        // FIXME: Remove the following special handling for
-        // Halffloat till Valhalla integration when Halffloat
-        // will become a primitive class.
-        if (elementType() == Halffloat.class) {
-           za = Array.newInstance(short.class, laneCount);
-        } else {
-           za = Array.newInstance(elementType(), laneCount);
-        }
+        Object za = Array.newInstance(carrierType(), laneCount);
         return dummyVector = vectorFactory.apply(za);
         // This is the only use of vectorFactory.
         // All other factory requests are routed
@@ -375,14 +373,6 @@ abstract class AbstractSpecies<E> extends jdk.internal.vm.vector.VectorSupport.V
             return dummyVector().iotaShuffle();
         else
             return dummyVector().iotaShuffle(start, step, wrap);
-    }
-
-    @ForceInline
-    @Override
-    public final Vector<E> fromMemorySegment(MemorySegment ms, long offset, ByteOrder bo) {
-        return dummyVector()
-            .fromMemorySegment0(ms, offset)
-            .maybeSwap(bo);
     }
 
     @Override
@@ -432,15 +422,16 @@ abstract class AbstractSpecies<E> extends jdk.internal.vm.vector.VectorSupport.V
         // Create an iota array.  It's OK if this is really slow,
         // because it happens only once per species.
         Object ia = null;
-        if (elementType() == Halffloat.class) {
-            ia = Array.newInstance(short.class, laneCount);
-            checkValue(laneCount-1);  // worst case
+        if (elementType() == Float16.class) {
+            ia = Array.newInstance(carrierType(), laneCount);
+            checkValue(laneCount - 1);  // worst case
             for (int i = 0; i < laneCount; i++) {
                 // All the numbers in the range [0 2048] are directly representable in FP16 format without the precision loss.
-                if (i < 2049)
+                if (i < 2049) {
                     Array.setShort(ia, i, Float.floatToFloat16((float)i));
-                else
-                    assert(Array.getShort(ia, i) == i);
+                } else {
+                    assert(Float16.valueOf(i).intValue() == i);
+                }
             }
         } else {
             ia = Array.newInstance(laneType.elementType, laneCount);

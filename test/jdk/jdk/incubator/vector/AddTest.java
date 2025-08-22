@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,7 @@
  * @requires vm.compiler2.enabled
  */
 
-import jdk.incubator.vector.Halffloat;
+import jdk.incubator.vector.Float16;
 import jdk.incubator.vector.HalffloatVector;
 import jdk.incubator.vector.VectorShape;
 import jdk.incubator.vector.VectorSpecies;
@@ -37,8 +37,7 @@ import java.util.Arrays;
 import java.util.stream.IntStream;
 
 public class AddTest {
-    static final VectorSpecies<Halffloat> SPECIES =
-            HalffloatVector.SPECIES_128;
+    static final VectorSpecies<Float16> SPECIES = HalffloatVector.SPECIES_256;
 
     static final int SIZE = 1024;
     static short[] a = new short[SIZE];
@@ -47,8 +46,9 @@ public class AddTest {
 
     static {
         for (int i = 0; i < SIZE; i++) {
-            a[i] = Halffloat.valueOf((float)i);
-            b[i] = Halffloat.valueOf((float)i);
+            a[i] = Float16.float16ToRawShortBits(Float16.valueOf((float)i));
+            b[i] = Float16.float16ToRawShortBits(Float16.valueOf((float)i));
+            c[i] = Float16.float16ToRawShortBits(Float16.valueOf((float)i));
         }
     }
 
@@ -60,39 +60,19 @@ public class AddTest {
         }
     }
 
-    /*static final int[] IDENTITY_INDEX_MAPPING = IntStream.range(0, SPECIES.length()).toArray();
-
-    static void workloadIndexMapped() {
-        for (int i = 0; i < a.length; i += SPECIES.length()) {
-            FloatVector av = FloatVector.fromArray(SPECIES, a, i, IDENTITY_INDEX_MAPPING, 0);
-            FloatVector bv = FloatVector.fromArray(SPECIES, b, i, IDENTITY_INDEX_MAPPING, 0);
-            av.add(bv).intoArray(c, i, IDENTITY_INDEX_MAPPING, 0);
-        }
-    }*/
-
     public static void main(String args[]) {
-        for (int i = 0; i < 30_0000; i++) {
+        for (int i = 0; i < 10_0000; i++) {
             workload();
         }
         for (int i = 0; i < a.length; i++) {
-            Halffloat hfa = new Halffloat(a[i]);
-            Halffloat hfb = new Halffloat(b[i]);
-            Halffloat hfc = new Halffloat(c[i]);
+            Float16 hfa = Float16.shortBitsToFloat16(a[i]);
+            Float16 hfb = Float16.shortBitsToFloat16(b[i]);
+            Float16 hfc = Float16.shortBitsToFloat16(c[i]);
 
             if (hfc.floatValue() != (hfa.floatValue() + hfb.floatValue())) {
                 System.out.println("RES: " + hfc.floatValue() + " EXPECTED: " + (hfa.floatValue() + hfb.floatValue()));
                 throw new AssertionError();
             }
         }
-
-        /*Arrays.fill(c, 0.0f);
-
-        for (int i = 0; i < 30_0000; i++) {
-            workloadIndexMapped();
-        }
-        for (int i = 0; i < a.length; i++) {
-            if (c[i] != a[i] + b[i])
-                throw new AssertionError();
-        }*/
     }
 }

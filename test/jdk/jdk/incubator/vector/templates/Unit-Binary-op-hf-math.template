@@ -1,10 +1,10 @@
 
     static $type$ [[TEST]]($type$ a, $type$ b) {
-        return Halffloat.valueOf((float) [[TEST_OP]]);
+        return Float16.float16ToRawShortBits((Float16.valueOf((float) [[TEST_OP]])));
     }
 
     static $type$ strict[[TEST]]($type$ a, $type$ b) {
-        return Halffloat.valueOf((float) Strict[[TEST_OP]]);
+        return Float16.float16ToRawShortBits(Float16.valueOf((float) Strict[[TEST_OP]]));
     }
 
     @Test(dataProvider = "$type$BinaryOpProvider")
