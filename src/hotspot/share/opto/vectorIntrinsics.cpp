@@ -287,46 +287,57 @@ static bool is_klass_initialized(const TypeInstPtr* vec_klass) {
   return klass->is_initialized();
 }
 
-// public static
-// <V extends Vector<E>,
-//  M extends VectorMask<E>,
-//  E>
-// V unaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<E> elementType,
-//           int length, V v, M m,
-//           UnaryOperation<V, M> defaultImpl)
 //
-// public static
-// <V,
-//  M extends VectorMask<E>,
-//  E>
-// V binaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<E> elementType,
-//            int length, V v1, V v2, M m,
-//            BinaryOperation<V, M> defaultImpl)
+//  public static
+//  <V extends Vector<E>,
+//   M extends VectorMask<E>,
+//   E>
+//  V unaryOp(int oprId,
+//            Class<? extends V> vClass, Class<? extends M> mClass, Class<?> cClass, Class<E> eClass, int operType,
+//            int length,
+//            V v, M m,
+//            UnaryOperation<V, M> defaultImpl) {
 //
-// public static
-// <V extends Vector<E>,
-//  M extends VectorMask<E>,
-//  E>
-// V ternaryOp(int oprId, Class<? extends V> vmClass, Class<? extends M> maskClass, Class<E> elementType,
-//             int length, V v1, V v2, V v3, M m,
-//             TernaryOperation<V, M> defaultImpl)
+//  public static
+//  <VM extends VectorPayload,
+//   M extends VectorMask<E>,
+//   E>
+//  VM binaryOp(int oprId,
+//              Class<? extends VM> vmClass, Class<? extends M> mClass, Class<?> cClass, Class<E> eClass, int operType,
+//              int length,
+//              VM v1, VM v2, M m,
+//              BinaryOperation<VM, M> defaultImpl) {
+//
+//
+//  public static
+//  <V extends Vector<E>,
+//   M extends VectorMask<E>,
+//   E>
+//  V ternaryOp(int oprId,
+//              Class<? extends V> vClass, Class<? extends M> mClass, Class<?> cClass, Class<E> eClass, int operType,
+//              int length,
+//              V v1, V v2, V v3, M m,
+//              TernaryOperation<V, M> defaultImpl) {
+//
 //
 bool LibraryCallKit::inline_vector_nary_operation(int n) {
   const TypeInt*     opr          = gvn().type(argument(0))->isa_int();
   const TypeInstPtr* vector_klass = gvn().type(argument(1))->isa_instptr();
   const TypeInstPtr* mask_klass   = gvn().type(argument(2))->isa_instptr();
   const TypeInstPtr* elem_klass   = gvn().type(argument(3))->isa_instptr();
-  const TypeInt*     vlen         = gvn().type(argument(4))->isa_int();
+  const TypeInt*     opr_type     = gvn().type(argument(5))->isa_int();
+  const TypeInt*     vlen         = gvn().type(argument(6))->isa_int();
 
-  if (opr          == nullptr || !opr->is_con() ||
+  if (opr          == nullptr || !opr->is_con() || !opr_type->is_con() ||
       vector_klass == nullptr || vector_klass->const_oop() == nullptr ||
       elem_klass   == nullptr || elem_klass->const_oop()   == nullptr ||
       vlen         == nullptr || !vlen->is_con()) {
-    log_if_needed("  ** missing constant: opr=%s vclass=%s etype=%s vlen=%s",
+    log_if_needed("  ** missing constant: opr=%s vclass=%s etype=%s opr_type=%s vlen=%s",
                     NodeClassNames[argument(0)->Opcode()],
                     NodeClassNames[argument(1)->Opcode()],
                     NodeClassNames[argument(3)->Opcode()],
-                    NodeClassNames[argument(4)->Opcode()]);
+                    NodeClassNames[argument(5)->Opcode()],
+                    NodeClassNames[argument(6)->Opcode()]);
     return false; // not enough info for intrinsification
   }
 
@@ -342,7 +353,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
 
   // "argument(n + 5)" should be the mask object. We assume it is "null" when no mask
   // is used to control this operation.
-  const Type* vmask_type = gvn().type(argument(n + 5));
+  const Type* vmask_type = gvn().type(argument(n + 7));
   bool is_masked_op = vmask_type != TypePtr::NULL_PTR;
   if (is_masked_op) {
     if (mask_klass == nullptr || mask_klass->const_oop() == nullptr) {
@@ -366,7 +377,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
   bool is_unsigned = VectorSupport::is_unsigned_op(opr->get_con());
 
   int num_elem = vlen->get_con();
-  int opc = VectorSupport::vop2ideal(opr->get_con(), elem_bt);
+  int opc = VectorSupport::vop2ideal(opr->get_con(), elem_bt, opr_type->get_con());
   int sopc = has_scalar_op ? VectorNode::opcode(opc, elem_bt) : opc;
   if (sopc == 0 || num_elem == 1) {
     log_if_needed("  ** operation not supported: arity=%d opc=%s[%d] vlen=%d etype=%s",
@@ -401,7 +412,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
   Node* opd1 = nullptr; Node* opd2 = nullptr; Node* opd3 = nullptr;
   switch (n) {
     case 3: {
-      opd3 = unbox_vector(argument(7), vbox_type, elem_bt, num_elem);
+      opd3 = unbox_vector(argument(9), vbox_type, elem_bt, num_elem);
       if (opd3 == nullptr) {
         log_if_needed("  ** unbox failed v3=%s",
                         NodeClassNames[argument(7)->Opcode()]);
@@ -410,7 +421,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
       // fall-through
     }
     case 2: {
-      opd2 = unbox_vector(argument(6), vbox_type, elem_bt, num_elem);
+      opd2 = unbox_vector(argument(8), vbox_type, elem_bt, num_elem);
       if (opd2 == nullptr) {
         log_if_needed("  ** unbox failed v2=%s",
                         NodeClassNames[argument(6)->Opcode()]);
@@ -419,7 +430,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
       // fall-through
     }
     case 1: {
-      opd1 = unbox_vector(argument(5), vbox_type, elem_bt, num_elem);
+      opd1 = unbox_vector(argument(7), vbox_type, elem_bt, num_elem);
       if (opd1 == nullptr) {
         log_if_needed("  ** unbox failed v1=%s",
                         NodeClassNames[argument(5)->Opcode()]);
@@ -435,10 +446,10 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
     ciKlass* mbox_klass = mask_klass->const_oop()->as_instance()->java_lang_Class_klass();
     assert(is_vector_mask(mbox_klass), "argument(2) should be a mask class");
     const TypeInstPtr* mbox_type = TypeInstPtr::make_exact(TypePtr::NotNull, mbox_klass);
-    mask = unbox_vector(argument(n + 5), mbox_type, elem_bt, num_elem);
+    mask = unbox_vector(argument(n + 7), mbox_type, elem_bt, num_elem);
     if (mask == nullptr) {
       log_if_needed("  ** unbox failed mask=%s",
-                      NodeClassNames[argument(n + 5)->Opcode()]);
+                      NodeClassNames[argument(n + 7)->Opcode()]);
       return false;
     }
   }
