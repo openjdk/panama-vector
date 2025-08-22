@@ -497,7 +497,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
 //  <V extends VectorPayload, E>
 //  V libraryBinaryOp(long addr, Class<? extends V> vClass, Class<?> cClass, Class<E> eClass, int operType, int length, String debugName,
 //                    V v1, V v2,
-//                    BinaryOperation<V,?> defaultImpl) 
+//                    BinaryOperation<V,?> defaultImpl)
 //
 bool LibraryCallKit::inline_vector_call(int arity) {
   assert(Matcher::supports_vector_calling_convention(), "required");
@@ -1577,7 +1577,7 @@ bool LibraryCallKit::inline_vector_reduction() {
 //               Class<?> mClass, Class<?> cClass, Class<E> eClass, int opType,
 //               int length,
 //               M m1, M m2,
-//               BiFunction<M, M, Boolean> defaultImpl) 
+//               BiFunction<M, M, Boolean> defaultImpl)
 //
 //
 bool LibraryCallKit::inline_vector_test() {
@@ -2871,7 +2871,7 @@ bool LibraryCallKit::inline_vector_select_from_two_vectors() {
 //  VectorPayload compressExpandOp(int opr,
 //                                 Class<? extends V> vClass, Class<? extends M> mClass, Class<?> cClass, Class<E> eClass, int operType,
 //                                 int length, V v, M m,
-//                                 CompressExpandOperation<V, M> defaultImpl) 
+//                                 CompressExpandOperation<V, M> defaultImpl)
 //
 bool LibraryCallKit::inline_vector_compress_expand() {
   const TypeInt*     opr          = gvn().type(argument(0))->isa_int();

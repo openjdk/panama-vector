@@ -494,8 +494,8 @@ class methodHandle;
                                                                                                                         \
   do_class(com_sun_crypto_provider_galoisCounterMode, "com/sun/crypto/provider/GaloisCounterMode")                      \
    do_intrinsic(_galoisCounterMode_AESCrypt, com_sun_crypto_provider_galoisCounterMode, gcm_crypt_name, aes_gcm_signature, F_S)   \
-   do_name(gcm_crypt_name, "implGCMCrypt0")                                                                                 \
-   do_signature(aes_gcm_signature, "([BII[BI[BILcom/sun/crypto/provider/GCTR;Lcom/sun/crypto/provider/GHASH;)I")                                                             \
+   do_name(gcm_crypt_name, "implGCMCrypt0")                                                                             \
+   do_signature(aes_gcm_signature, "([BII[BI[BILcom/sun/crypto/provider/GCTR;Lcom/sun/crypto/provider/GHASH;)I")        \
                                                                                                                         \
   /* support for sun.security.provider.MD5 */                                                                           \
   do_class(sun_security_provider_md5,                              "sun/security/provider/MD5")                         \
@@ -1245,7 +1245,7 @@ class methodHandle;
                                         "Ljdk/internal/vm/vector/VectorSupport$VectorMask;"                                                     \
                                         "Ljdk/internal/vm/vector/VectorSupport$VectorSelectFromOp;)"                                            \
                                         "Ljdk/internal/vm/vector/VectorSupport$Vector;")                                                        \
-   do_name(vector_select_from_name, "selectFromOp")                                                                                              \
+   do_name(vector_select_from_name, "selectFromOp")                                                                                            \
                                                                                                                                                \
   do_intrinsic(_VectorExtract, jdk_internal_vm_vector_VectorSupport, vector_extract_name, vector_extract_sig, F_S)                             \
    do_signature(vector_extract_sig, "(Ljava/lang/Class;"                                                                                       \
@@ -1261,7 +1261,7 @@ class methodHandle;
                                                                                                                                                \
  do_intrinsic(_VectorInsert, jdk_internal_vm_vector_VectorSupport, vector_insert_name, vector_insert_sig, F_S)                                 \
    do_signature(vector_insert_sig, "(Ljava/lang/Class;"                                                                                        \
-				    "Ljava/lang/Class;"                                                                                        \
+                                    "Ljava/lang/Class;"                                                                                        \
                                     "Ljava/lang/Class;"                                                                                        \
                                     "I"                                                                                                        \
                                     "I"                                                                                                        \
