@@ -495,7 +495,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
     /*package-private*/
     @ForceInline
     static short fromBits(long bits) {
-        return Float16.float16ToRawShortBits(Float16.valueOf(bits));
+        return Float16.float16ToRawShortBits(Float16.shortBitsToFloat16((short)bits));
     }
 
     static HalffloatVector expandHelper(Vector<Float16> v, VectorMask<Float16> m) {
@@ -4016,7 +4016,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
                 Class<? extends AbstractMask<Float16>> maskType,
                 Class<? extends AbstractShuffle<Float16>> shuffleType,
                 Function<Object, HalffloatVector> vectorFactory) {
-            super(shape, LaneType.of(short.class),
+            super(shape, LaneType.of(Float16.class),
                   vectorType, maskType, shuffleType,
                   vectorFactory);
             assert(this.elementSize() == Float16.SIZE);

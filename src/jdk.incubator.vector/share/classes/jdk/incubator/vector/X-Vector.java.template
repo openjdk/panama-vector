@@ -527,7 +527,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
     @ForceInline
     static $type$ fromBits(long bits) {
 #if[FP16]
-        return Float16.float16ToRawShortBits(Float16.valueOf(bits));
+        return Float16.float16ToRawShortBits(Float16.shortBitsToFloat16((short)bits));
 #else[FP16]
         return {#if[FP]?$Type$.$bitstype$BitsTo$Type$}(($bitstype$)bits);
 #end[FP16]
@@ -5666,7 +5666,7 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
                 Class<? extends AbstractMask<$Boxtype$>> maskType,
                 Class<? extends AbstractShuffle<$Boxtype$>> shuffleType,
                 Function<Object, $abstractvectortype$> vectorFactory) {
-            super(shape, LaneType.of($carriertype$.class),
+            super(shape, LaneType.of($elemtype$.class),
                   vectorType, maskType, shuffleType,
                   vectorFactory);
             assert(this.elementSize() == $Boxtype$.SIZE);

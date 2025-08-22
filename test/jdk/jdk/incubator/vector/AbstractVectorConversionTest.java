@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
-import jdk.incubator.vector.Halffloat;
+import jdk.incubator.vector.Float16;
 
 abstract class AbstractVectorConversionTest {
 
@@ -170,11 +170,11 @@ abstract class AbstractVectorConversionTest {
             a[i] = f.apply(i);
         }
         if (a.length > 7) {
-            a[0] = Halffloat.MAX_VALUE;
-            a[1] = Halffloat.MIN_VALUE;
-            a[2] = Halffloat.NEGATIVE_INFINITY;
-            a[3] = Halffloat.POSITIVE_INFINITY;
-            a[4] = Halffloat.NaN;
+            a[0] = Float16.float16ToRawShortBits(Float16.MAX_VALUE);
+            a[1] = Float16.float16ToRawShortBits(Float16.MIN_VALUE);
+            a[2] = Float16.float16ToRawShortBits(Float16.NEGATIVE_INFINITY);
+            a[3] = Float16.float16ToRawShortBits(Float16.POSITIVE_INFINITY);
+            a[4] = Float16.float16ToRawShortBits(Float16.NaN);
             a[5] = (short)0.0;
             a[6] = Short.MIN_VALUE;
         }
@@ -207,7 +207,7 @@ abstract class AbstractVectorConversionTest {
     );
 
     static final List<IntFunction<short[]>> HALFFLOAT_GENERATORS = List.of(
-            withToString("Halffloat(i)", (int s) -> fill_halffloat(s, i -> (short) (i * 100 + 1)))
+            withToString("Float16(i)", (int s) -> fill_halffloat(s, i -> (short) (i * 100 + 1)))
     );
 
     static List<?> sourceGenerators(Class<?> src) {
@@ -229,7 +229,7 @@ abstract class AbstractVectorConversionTest {
         else if (src == double.class) {
             return DOUBLE_GENERATORS;
         }
-        else if (src == Halffloat.class) {
+        else if (src == Float16.class) {
             return HALFFLOAT_GENERATORS;
         }
         else
@@ -239,11 +239,11 @@ abstract class AbstractVectorConversionTest {
     static Object[][] fixedShapeXFixedShapeSpeciesArgs(VectorShape shape) {
         List<Object[]> args = new ArrayList<>();
 
-        for (Class<?> srcE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class, Halffloat.class)) {
+        for (Class<?> srcE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class, Float16.class)) {
             VectorSpecies<?> src = VectorSpecies.of(srcE, shape);
             List<?> srcGens = sourceGenerators(srcE);
 
-            for (Class<?> dstE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class, Halffloat.class)) {
+            for (Class<?> dstE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class, Float16.class)) {
                 VectorSpecies<?> dst = VectorSpecies.of(dstE, shape);
 
                 for (Object srcGen : srcGens) {
@@ -258,12 +258,12 @@ abstract class AbstractVectorConversionTest {
     static Object[][] fixedShapeXShapeSpeciesArgs(VectorShape srcShape) {
         List<Object[]> args = new ArrayList<>();
 
-        for (Class<?> srcE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class, Halffloat.class)) {
+        for (Class<?> srcE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class, Float16.class)) {
             VectorSpecies<?> src = VectorSpecies.of(srcE, srcShape);
             List<?> srcGens = sourceGenerators(srcE);
 
             for (VectorShape dstShape : VectorShape.values()) {
-                for (Class<?> dstE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class, Halffloat.class)) {
+                for (Class<?> dstE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class, Float16.class)) {
                     VectorSpecies<?> dst = VectorSpecies.of(dstE, dstShape);
 
                     for (Object srcGen : srcGens) {
@@ -278,10 +278,10 @@ abstract class AbstractVectorConversionTest {
 
     static Object[][] fixedShapeXSegmentedCastSpeciesArgs(VectorShape srcShape, boolean legal) {
         List<Object[]> args = new ArrayList<>();
-        for (Class<?> srcE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class, Halffloat.class)) {
+        for (Class<?> srcE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class, Float16.class)) {
             VectorSpecies<?> src = VectorSpecies.of(srcE, srcShape);
             for (VectorShape dstShape : VectorShape.values()) {
-                for (Class<?> dstE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class, Halffloat.class)) {
+                for (Class<?> dstE : List.of(byte.class, short.class, int.class, long.class, float.class, double.class, Float16.class)) {
                     VectorSpecies<?> dst = VectorSpecies.of(dstE, dstShape);
                     if (legal == (dst.length() == src.length())) {
                         args.add(new Object[]{src, dst});
@@ -304,7 +304,7 @@ abstract class AbstractVectorConversionTest {
         else if (to == long.class)
             return Number::longValue;
         // Treat halffloat as float.
-        else if (to == float.class || to == Halffloat.class)
+        else if (to == float.class || to == Float16.class)
             return Number::floatValue;
         else if (to == double.class)
             return Number::doubleValue;
@@ -315,7 +315,7 @@ abstract class AbstractVectorConversionTest {
     static BiConsumer<ByteBuffer, Object> putBufferValueFunction(Class<?> from) {
         if (from == byte.class)
             return (bb, o) -> bb.put((byte) o);
-        else if (from == short.class || from == Halffloat.class)
+        else if (from == short.class || from == Float16.class)
             return (bb, o) -> bb.putShort((short) o);
         else if (from == int.class)
             return (bb, o) -> bb.putInt((int) o);
@@ -332,7 +332,7 @@ abstract class AbstractVectorConversionTest {
     static Function<ByteBuffer, Number> getBufferValueFunction(Class<?> to) {
         if (to == byte.class)
             return ByteBuffer::get;
-        else if (to == short.class || to == Halffloat.class)
+        else if (to == short.class || to == Float16.class)
             return ByteBuffer::getShort;
         else if (to == int.class)
             return ByteBuffer::getInt;
@@ -377,12 +377,12 @@ abstract class AbstractVectorConversionTest {
         }
         for (int i = 0; i < length; i++) {
             Number v = (Number) Array.get(src, srcPos + i);
-            if (srcSpecies.elementType() == Halffloat.class) {
+            if (srcSpecies.elementType() == Float16.class) {
                 v = (Number) Float.float16ToFloat(v.shortValue());
             }
             v = (Number) c.apply(v);
-            if (dstSpecies.elementType() == Halffloat.class) {
-                v = (Number) Halffloat.valueOf(v.floatValue());
+            if (dstSpecies.elementType() == Float16.class) {
+                v = (Number) Float16.valueOf(v.floatValue());
             }
             Array.set(dest, destPos + i, v);
         }
@@ -467,7 +467,7 @@ abstract class AbstractVectorConversionTest {
         int[] parts = getPartsArray(m, is_contracting_conv);
 
         Object expected = null, actual = null;
-        if (destSpecies.elementType() == Halffloat.class) {
+        if (destSpecies.elementType() == Float16.class) {
             expected = Array.newInstance(short.class, out_len);
             actual = Array.newInstance(short.class, out_len);
         } else {
@@ -522,7 +522,7 @@ abstract class AbstractVectorConversionTest {
         int[] parts = getPartsArray(m, is_contracting_conv);
 
         Object expected = null, actual = null;
-        if (dstSpecies.elementType() == Halffloat.class) {
+        if (dstSpecies.elementType() == Float16.class) {
             expected = Array.newInstance(short.class, out_len);
             actual = Array.newInstance(short.class, out_len);
         } else {

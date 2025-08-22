@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1131,15 +1131,15 @@ relativeError));
                 return fill(s * BUFFER_REPS,
                             i -> genValue(-i * 5));
             }),
-            withToString("Halffloat[i * 5]", (int s) -> {
+            withToString("double[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> genValue(i * 5));
             }),
-            withToString("Halffloat[i + 1]", (int s) -> {
+            withToString("double[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> (((double)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
-            withToString("Halffloat[cornerCaseValue(i)]", (int s) -> {
+            withToString("double[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> (double)longCornerCaseValue(i));
             })

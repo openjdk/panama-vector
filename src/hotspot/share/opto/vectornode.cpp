@@ -435,24 +435,6 @@ int VectorNode::opcode(int sopc) {
   }
 }
 
-// Make a vectornode for half float unary/binary operations
-VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, uint vlen) {
-  const TypeVect* vt = TypeVect::make(T_SHORT, vlen);
-  // This method should not be called for unimplemented vectors.
-  switch (vopc) {
-    case Op_AddVHF: return new AddVHFNode(n1, n2, vt);
-    case Op_SubVHF: return new SubVHFNode(n1, n2, vt);
-    case Op_MulVHF: return new MulVHFNode(n1, n2, vt);
-    case Op_DivVHF: return new DivVHFNode(n1, n2, vt);
-    case Op_AbsVHF: return new AbsVHFNode(n1, vt);
-    case Op_NegVHF: return new NegVHFNode(n1, vt);
-
-  default:
-    fatal("Missed vector creation for '%s'", NodeClassNames[vopc]);
-    return NULL;
-  }
-}
-
 // Limits on vector size (number of elements) for auto-vectorization.
 bool VectorNode::vector_size_supported_auto_vectorization(const BasicType bt, int size) {
   return Matcher::max_vector_size_auto_vectorization(bt) >= size &&
@@ -897,19 +879,6 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, Node* n3, const TypeV
   default:
     fatal("Missed vector creation for '%s'", NodeClassNames[vopc]);
     return nullptr;
-  }
-}
-
-// Make a vectornode for half float ternary operation
-VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, Node* n3, uint vlen) {
-  const TypeVect* vt = TypeVect::make(T_SHORT, vlen);
-  // This method should not be called for unimplemented vectors.
-  guarantee(vopc > 0, "Vector for '%s' is not implemented", NodeClassNames[vopc]);
-  switch (vopc) {
-  case Op_FmaVHF: return new FmaVHFNode(n1, n2, n3, vt);
-  default:
-    fatal("Missed vector creation for '%s'", NodeClassNames[vopc]);
-    return NULL;
   }
 }
 
