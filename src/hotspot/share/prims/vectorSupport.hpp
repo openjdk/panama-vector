@@ -123,7 +123,7 @@ class VectorSupport : AllStatic {
     MODE_BITS_COERCED_LONG_TO_MASK = 1
   };
 
-  static int vop2ideal(jint vop, BasicType bt);
+  static int vop2ideal(jint vop, BasicType bt, int operType = VECTOR_TYPE_PRIM);
   static bool has_scalar_op(jint id);
   static bool is_unsigned_op(jint id);
 
