@@ -325,14 +325,16 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
   const TypeInstPtr* vector_klass = gvn().type(argument(1))->isa_instptr();
   const TypeInstPtr* mask_klass   = gvn().type(argument(2))->isa_instptr();
   const TypeInstPtr* elem_klass   = gvn().type(argument(3))->isa_instptr();
+  const TypeInt*     opr_type     = gvn().type(argument(5))->isa_int();
   const TypeInt*     vlen         = gvn().type(argument(6))->isa_int();
 
-  if (opr          == nullptr || !opr->is_con() ||
+  if (opr          == nullptr || !opr->is_con() || !opr_type->is_con() ||
       vector_klass == nullptr || vector_klass->const_oop() == nullptr ||
       elem_klass   == nullptr || elem_klass->const_oop()   == nullptr ||
       vlen         == nullptr || !vlen->is_con()) {
-    log_if_needed("  ** missing constant: opr=%s vclass=%s etype=%s vlen=%s",
+    log_if_needed("  ** missing constant: opr=%s opr_type = %s vclass=%s etype=%s vlen=%s",
                     NodeClassNames[argument(0)->Opcode()],
+                    NodeClassNames[argument(5)->Opcode()],
                     NodeClassNames[argument(1)->Opcode()],
                     NodeClassNames[argument(3)->Opcode()],
                     NodeClassNames[argument(4)->Opcode()]);
@@ -340,7 +342,8 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
   }
 
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
-  if (!elem_type->is_primitive_type()) {
+  if (!elem_type->is_primitive_type() ||
+      opr_type->get_con() != VectorSupport::VECTOR_TYPE_PRIM) {
     log_if_needed("  ** not a primitive bt=%d", elem_type->basic_type());
     return false; // should be primitive type
   }

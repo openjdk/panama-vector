@@ -294,6 +294,23 @@ abstract class AbstractVectorConversionTest {
 
     public enum ConvAPI {CONVERT, CONVERTSHAPE, CASTSHAPE, REINTERPRETSHAPE}
 
+    static Short float16_conversion_adapter(Number in) {
+        if (in.getClass() == Short.class)
+            return Float16.float16ToRawShortBits(Float16.valueOf(in.shortValue()));
+        else if (in.getClass() == Integer.class)
+            return Float16.float16ToRawShortBits(Float16.valueOf(in.intValue()));
+        else if (in.getClass() == Long.class)
+            return Float16.float16ToRawShortBits(Float16.valueOf(in.longValue()));
+        else if (in.getClass() == Float.class)
+            return Float16.float16ToRawShortBits(Float16.valueOf(in.floatValue()));
+        else if (in.getClass() == Double.class)
+            return Float16.float16ToRawShortBits(Float16.valueOf(in.doubleValue()));
+        else if (in.getClass() == Byte.class)
+            return Float16.float16ToRawShortBits(Float16.valueOf(in.byteValue()));
+        else
+            throw new IllegalStateException();
+    }
+
     static Function<Number, Object> convertValueFunction(Class<?> to) {
         if (to == byte.class)
             return Number::byteValue;
@@ -303,9 +320,10 @@ abstract class AbstractVectorConversionTest {
             return Number::intValue;
         else if (to == long.class)
             return Number::longValue;
-        // Treat halffloat as float.
-        else if (to == float.class || to == Float16.class)
+        else if (to == float.class)
             return Number::floatValue;
+        else if (to == Float16.class)
+            return (N) -> float16_conversion_adapter(N);
         else if (to == double.class)
             return Number::doubleValue;
         else
@@ -378,11 +396,11 @@ abstract class AbstractVectorConversionTest {
         for (int i = 0; i < length; i++) {
             Number v = (Number) Array.get(src, srcPos + i);
             if (srcSpecies.elementType() == Float16.class) {
-                v = (Number) Float.float16ToFloat(v.shortValue());
+                v = (Number) Float16.shortBitsToFloat16(v.shortValue());
             }
             v = (Number) c.apply(v);
             if (dstSpecies.elementType() == Float16.class) {
-                v = (Number) Float16.valueOf(v.floatValue());
+                v = (Number) v.shortValue();
             }
             Array.set(dest, destPos + i, v);
         }
@@ -489,6 +507,7 @@ abstract class AbstractVectorConversionTest {
                 int start_idx = part * dst_species_len;
                 copyConversionArray(in, start_idx + i, expected, j, dst_species_len, srcSpecies, destSpecies, convertValue);
             }
+
         }
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
@@ -504,7 +523,6 @@ abstract class AbstractVectorConversionTest {
                 System.arraycopy(rv.toArray(), 0, actual, j, dst_species_len);
             }
         }
-
         Assert.assertEquals(actual, expected);
     }
 

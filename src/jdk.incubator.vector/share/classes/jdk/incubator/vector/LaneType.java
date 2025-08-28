@@ -253,8 +253,7 @@ enum LaneType {
             // set up asFloating
             if (value.elementKind == 'F') {
                 value.asFloating = value;
-            } else if (value.basicType != T_SHORT) {
-                // FIXME: Support asFloating for short to be Halffloat
+            } else {
                 for (LaneType v : values) {
                     if (v.elementKind == 'F' &&
                         v.elementSize == value.elementSize) {

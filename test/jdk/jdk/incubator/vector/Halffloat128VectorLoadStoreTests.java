@@ -36,6 +36,8 @@
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.Arena;
 import java.lang.foreign.ValueLayout;
+import jdk.incubator.vector.Float16;
+import jdk.incubator.vector.HalffloatVector;
 import jdk.incubator.vector.HalffloatVector;
 import jdk.incubator.vector.VectorMask;
 import jdk.incubator.vector.VectorSpecies;

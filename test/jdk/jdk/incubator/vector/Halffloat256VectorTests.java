@@ -27,7 +27,7 @@
  *
  * @library /test/lib
  * @modules jdk.incubator.vector
- * @run testng/othervm/timeout=300 -ea -esa -Xbatch -XX:-TieredCompilation Halffloat256VectorTests
+ * @run testng/othervm/timeout=300 -ea -esa -Xbatch -XX:TieredStopAtLevel=3 Halffloat256VectorTests
  */
 
 // -- This file was mechanically generated: Do not edit! -- //
@@ -74,8 +74,8 @@ public class Halffloat256VectorTests extends AbstractVectorTest {
 
     static void assertArraysStrictlyEquals(short[] r, short[] a) {
         for (int i = 0; i < a.length; i++) {
-            short ir = Float16.shortToRawShortBits(r[i]);
-            short ia = Float16.shortToRawShortBits(a[i]);
+            short ir = r[i];
+            short ia = a[i];
             if (ir != ia) {
                 Assert.fail(String.format("at index #%d, expected = %016X, actual = %016X", i, ia, ir));
             }
@@ -343,15 +343,17 @@ relativeError));
 
     static void assertSelectFromArraysEquals(short[] r, short[] a, short[] order, int vector_len) {
         int i = 0, j = 0;
+        int idx = 0, wrapped_index = 0;
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
-                    Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                    idx = Float16.shortBitsToFloat16(order[i+j]).intValue();
+                    wrapped_index = Integer.remainderUnsigned(idx, vector_len);
+                    Assert.assertEquals(r[i+j], a[i+wrapped_index]);
                 }
             }
         } catch (AssertionError e) {
-            int idx = i + j;
-            Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]]);
+            Assert.assertEquals(r[i+j], a[i+wrapped_index], "at index #" + idx + ", input = " + a[i+wrapped_index]);
         }
     }
 
@@ -377,21 +379,23 @@ relativeError));
 
     static void assertSelectFromArraysEquals(short[] r, short[] a, short[] order, boolean[] mask, int vector_len) {
         int i = 0, j = 0;
+        int idx = 0, wrapped_index = 0;
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
+                    idx = Float16.shortBitsToFloat16(order[i+j]).intValue();
+                    wrapped_index = Integer.remainderUnsigned(idx, vector_len);
                     if (mask[j % SPECIES.length()])
-                         Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                         Assert.assertEquals(r[i+j], a[i+wrapped_index]);
                     else
                          Assert.assertEquals(r[i+j], (short)0);
                 }
             }
         } catch (AssertionError e) {
-            int idx = i + j;
             if (mask[j % SPECIES.length()])
-                Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], a[i+wrapped_index], "at index #" + idx + ", input = " + a[i+wrapped_index] + ", mask = " + mask[j % SPECIES.length()]);
             else
-                Assert.assertEquals(r[i+j], (short)0, "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], (short)0, "at index #" + idx + ", input = " + a[i+wrapped_index] + ", mask = " + mask[j % SPECIES.length()]);
         }
     }
 
@@ -831,11 +835,11 @@ relativeError));
         try {
             // Check that result is within 1 ulp of strict math or equivalent to math implementation.
             for (; i < a.length; i++) {
-                Assert.assertTrue(Float16.compare(r[i], mathf.apply(a[i])) == 0 ||
+                Assert.assertTrue(Float16.compare(Float16.shortBitsToFloat16(r[i]), Float16.shortBitsToFloat16(mathf.apply(a[i]))) == 0 ||
                                     isWithin1Ulp(r[i], strictmathf.apply(a[i])));
             }
         } catch (AssertionError e) {
-            Assert.assertTrue(Float16.compare(r[i], mathf.apply(a[i])) == 0, "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i]));
+            Assert.assertTrue(Float16.compare(Float16.shortBitsToFloat16(r[i]), Float16.shortBitsToFloat16(mathf.apply(a[i]))) == 0, "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i]));
             Assert.assertTrue(isWithin1Ulp(r[i], strictmathf.apply(a[i])), "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected (within 1 ulp) = " + strictmathf.apply(a[i]));
         }
     }
@@ -845,11 +849,11 @@ relativeError));
         try {
             // Check that result is within 1 ulp of strict math or equivalent to math implementation.
             for (; i < a.length; i++) {
-                Assert.assertTrue(Float16.compare(r[i], mathf.apply(a[i], b[i])) == 0 ||
+                Assert.assertTrue(Float16.compare(Float16.shortBitsToFloat16(r[i]), Float16.shortBitsToFloat16(mathf.apply(a[i], b[i]))) == 0 ||
                                     isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])));
             }
         } catch (AssertionError e) {
-            Assert.assertTrue(Float16.compare(r[i], mathf.apply(a[i], b[i])) == 0, "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i], b[i]));
+            Assert.assertTrue(Float16.compare(Float16.shortBitsToFloat16(r[i]), Float16.shortBitsToFloat16(mathf.apply(a[i], b[i]))) == 0, "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i], b[i]));
             Assert.assertTrue(isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])), "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected (within 1 ulp) = " + strictmathf.apply(a[i], b[i]));
         }
     }
@@ -860,14 +864,14 @@ relativeError));
         try {
             // Check that result is within 1 ulp of strict math or equivalent to math implementation.
             for (; i < a.length; i++) {
-                Assert.assertTrue(Float16.compare(r[i],
-                                  mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])) == 0 ||
+                Assert.assertTrue(Float16.compare(Float16.shortBitsToFloat16(r[i]),
+                                  Float16.shortBitsToFloat16(mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()]))) == 0 ||
                                   isWithin1Ulp(r[i],
                                   strictmathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])));
             }
         } catch (AssertionError e) {
-            Assert.assertTrue(Float16.compare(r[i],
-                              mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])) == 0,
+            Assert.assertTrue(Float16.compare(Float16.shortBitsToFloat16(r[i]),
+                              Float16.shortBitsToFloat16(mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()]))) == 0,
                               "at index #" + i + ", input1 = " + a[i] + ", input2 = " +
                               b[(i / SPECIES.length()) * SPECIES.length()] + ", actual = " + r[i] +
                               ", expected = " + mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()]));
@@ -1172,7 +1176,7 @@ relativeError));
     }
 
     static short bits(short e) {
-        return  Float16.shortToShortBits(e);
+        return e;
     }
 
     static final List<IntFunction<short[]>> HALFFLOAT_GENERATORS = List.of(
@@ -1188,13 +1192,13 @@ relativeError));
                 return fill(s * BUFFER_REPS,
                             i -> (((short)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
-            withToString("short[0.01 + (i / (i + 1))]", (int s) -> {
+            withToString("Float16[0.01 + (i / (i + 1))]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short)0.01 + ((short)i / (i + 1)));
+                            i -> Float.floatToFloat16((0.01f + ((float)i / (i + 1)))));
             }),
-            withToString("short[i -> i % 17 == 0 ? cornerCaseValue(i) : 0.01 + (i / (i + 1))]", (int s) -> {
+            withToString("Float16[i -> i % 17 == 0 ? cornerCaseValue(i) : 0.01f + (i / (i + 1))]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> i % 17 == 0 ? cornerCaseValue(i) : (short)0.01 + ((short)i / (i + 1)));
+                            i -> (i % 17 == 0) ? cornerCaseValue(i) : Float.floatToFloat16((0.01f + ((float)i / (i + 1)))));
             }),
             withToString("short[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1464,14 +1468,14 @@ relativeError));
 
     static short cornerCaseValue(int i) {
         return switch(i % 8) {
-            case 0  -> Float16.MAX_VALUE;
-            case 1  -> Float16.MIN_VALUE;
-            case 2  -> Float16.NEGATIVE_INFINITY;
-            case 3  -> Float16.POSITIVE_INFINITY;
-            case 4  -> Float16.NaN;
-            case 5  -> Double.longBitsToDouble(0x7FF123456789ABCDL);
-            case 6  -> (short)0.0;
-            default -> (short)-0.0;
+            case 0  -> Float16.float16ToRawShortBits(Float16.MAX_VALUE);
+            case 1  -> Float16.float16ToRawShortBits(Float16.MIN_VALUE);
+            case 2  -> Float16.float16ToRawShortBits(Float16.NEGATIVE_INFINITY);
+            case 3  -> Float16.float16ToRawShortBits(Float16.POSITIVE_INFINITY);
+            case 4  -> Float16.float16ToRawShortBits(Float16.NaN);
+            case 5  -> Float16.float16ToRawShortBits(Float16.shortBitsToFloat16((short)0x7FFA));
+            case 6  -> ((short)0.0);
+            default -> ((short)-0.0);
         };
     }
 

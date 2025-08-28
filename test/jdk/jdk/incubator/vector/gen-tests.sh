@@ -63,6 +63,7 @@ generate_test_cases() {
     Fptype=$Type
     Boxfptype=$Boxtype
     ClassType=$type
+    fpkind=""
 
     case $type in
       byte)
@@ -92,6 +93,7 @@ generate_test_cases() {
         ;;
       float)
         kind=FP
+        fpkind=FP32
         bitstype=int
         Bitstype=Int
         Boxbitstype=Integer
@@ -101,6 +103,7 @@ generate_test_cases() {
         ;;
       double)
         kind=FP
+        fpkind=FP64
         bitstype=long
         Bitstype=Long
         Boxbitstype=Long
@@ -112,6 +115,7 @@ generate_test_cases() {
         VecEleType=Short
         ClassType=Float16
         kind=FP
+        fpkind=FP16
         bitstype=short
         Bitstype=Short
         Boxbitstype=Short
@@ -120,7 +124,7 @@ generate_test_cases() {
         ;;
       esac
 
-    args="$args -K$kind -K$Type -DBoxtype=$Boxtype -DWideboxtype=$Wideboxtype -DMaxValue=$MaxValue -DMinValue=$MinValue"
+    args="$args -K$fpkind -K$kind -K$Type -DBoxtype=$Boxtype -DWideboxtype=$Wideboxtype -DMaxValue=$MaxValue -DMinValue=$MinValue"
     args="$args -Dbitstype=$bitstype -DBitstype=$Bitstype -DBoxbitstype=$Boxbitstype -DElementType=$Type -DVecEleType=$VecEleType -DClassType=$ClassType"
     args="$args -Dfptype=$fptype -DFptype=$Fptype -DBoxfptype=$Boxfptype"
 

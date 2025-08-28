@@ -347,15 +347,17 @@ relativeError));
 
     static void assertSelectFromArraysEquals(float[] r, float[] a, float[] order, int vector_len) {
         int i = 0, j = 0;
+        int idx = 0, wrapped_index = 0;
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
-                    Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                    idx = (int)order[i+j];
+                    wrapped_index = Integer.remainderUnsigned(idx, vector_len);
+                    Assert.assertEquals(r[i+j], a[i+wrapped_index]);
                 }
             }
         } catch (AssertionError e) {
-            int idx = i + j;
-            Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]]);
+            Assert.assertEquals(r[i+j], a[i+wrapped_index], "at index #" + idx + ", input = " + a[i+wrapped_index]);
         }
     }
 
@@ -381,21 +383,23 @@ relativeError));
 
     static void assertSelectFromArraysEquals(float[] r, float[] a, float[] order, boolean[] mask, int vector_len) {
         int i = 0, j = 0;
+        int idx = 0, wrapped_index = 0;
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
+                    idx = (int)order[i+j];
+                    wrapped_index = Integer.remainderUnsigned(idx, vector_len);
                     if (mask[j % SPECIES.length()])
-                         Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                         Assert.assertEquals(r[i+j], a[i+wrapped_index]);
                     else
                          Assert.assertEquals(r[i+j], (float)0);
                 }
             }
         } catch (AssertionError e) {
-            int idx = i + j;
             if (mask[j % SPECIES.length()])
-                Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], a[i+wrapped_index], "at index #" + idx + ", input = " + a[i+wrapped_index] + ", mask = " + mask[j % SPECIES.length()]);
             else
-                Assert.assertEquals(r[i+j], (float)0, "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], (float)0, "at index #" + idx + ", input = " + a[i+wrapped_index] + ", mask = " + mask[j % SPECIES.length()]);
         }
     }
 
@@ -851,7 +855,7 @@ relativeError));
                                     isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])));
             }
         } catch (AssertionError e) {
-            Assert.assertTrue(Float.compare(r[i], mathf.apply(a[i], b[i])) == 0, "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i], b[i]));
+            Assert.assertTrue(Float.compare(r[i], mathf.apply(a[i], b[i])) == 0, "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i], b[i]));
             Assert.assertTrue(isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])), "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected (within 1 ulp) = " + strictmathf.apply(a[i], b[i]));
         }
     }
@@ -1174,7 +1178,7 @@ relativeError));
     }
 
     static int bits(float e) {
-        return  Float.floatToIntBits(e);
+        return Float.floatToIntBits(e);
     }
 
     static final List<IntFunction<float[]>> FLOAT_GENERATORS = List.of(
@@ -1192,11 +1196,11 @@ relativeError));
             }),
             withToString("float[0.01 + (i / (i + 1))]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (float)0.01 + ((float)i / (i + 1)));
+                            i -> ((float)0.01 + ((float)i / (i + 1))));
             }),
             withToString("float[i -> i % 17 == 0 ? cornerCaseValue(i) : 0.01 + (i / (i + 1))]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> i % 17 == 0 ? cornerCaseValue(i) : (float)0.01 + ((float)i / (i + 1)));
+                            i -> (i % 17 == 0) ? cornerCaseValue(i) : ((float)0.01 + ((float)i / (i + 1))));
             }),
             withToString("float[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,

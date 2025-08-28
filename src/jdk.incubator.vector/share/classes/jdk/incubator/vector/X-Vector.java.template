@@ -5587,12 +5587,12 @@ public abstract class $abstractvectortype$ extends AbstractVector<$Boxtype$> {
         return this;
 #else[FP]
         LaneType flt = LaneType.$TYPE$.asFloating();
-#if[!byteOrShort]
+#if[!byte]
         return ($Fptype$Vector) asVectorRaw(flt);
-#else[!byteOrShort]
+#else[!byte]
         // asFloating() will throw UnsupportedOperationException for the unsupported type $type$
         throw new AssertionError("Cannot reach here");
-#end[!byteOrShort]
+#end[!byte]
 #end[FP]
     }
 
