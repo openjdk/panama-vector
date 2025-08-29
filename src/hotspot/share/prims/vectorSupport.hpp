@@ -119,6 +119,13 @@ class VectorSupport : AllStatic {
   };
 
   enum {
+    VECTOR_TYPE_PRIM = 1,
+    VECTOR_TYPE_FP16 = 2,
+    VECTOR_TYPE_FP8  = 3,
+    VECTOR_TYPE_INT8 = 4
+  };
+
+  enum {
     MODE_BROADCAST = 0,
     MODE_BITS_COERCED_LONG_TO_MASK = 1
   };

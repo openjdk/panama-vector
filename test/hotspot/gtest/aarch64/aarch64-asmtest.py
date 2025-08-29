@@ -1710,7 +1710,8 @@ generate(FloatConvertOp, [["fcvtzsw", "fcvtzs", "ws"], ["fcvtzs", "fcvtzs", "xs"
                           ["fcvtassw", "fcvtas", "ws"], ["fcvtasd", "fcvtas", "xd"],
                           ["fcvtmssw", "fcvtms", "ws"], ["fcvtmsd", "fcvtms", "xd"],
                           ["fmovs", "fmov", "ws"], ["fmovd", "fmov", "xd"],
-                          ["fmovs", "fmov", "sw"], ["fmovd", "fmov", "dx"]])
+                          ["fmovs", "fmov", "sw"], ["fmovd", "fmov", "dx"],
+                          ["fmovwh", "fmov", "hw"], ["fmovhw", "fmov", "wh"]])
 
 generate(TwoRegFloatOp, [["fcmps", "ss"], ["fcmpd", "dd"],
                          ["fcmps", "sz"], ["fcmpd", "dz"]])

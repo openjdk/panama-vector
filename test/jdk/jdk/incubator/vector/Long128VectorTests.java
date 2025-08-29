@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -281,15 +281,17 @@ public class Long128VectorTests extends AbstractVectorTest {
 
     static void assertSelectFromArraysEquals(long[] r, long[] a, long[] order, int vector_len) {
         int i = 0, j = 0;
+        int idx = 0, wrapped_index = 0;
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
-                    Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                    idx = (int)order[i+j];
+                    wrapped_index = Integer.remainderUnsigned(idx, vector_len);
+                    Assert.assertEquals(r[i+j], a[i+wrapped_index]);
                 }
             }
         } catch (AssertionError e) {
-            int idx = i + j;
-            Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]]);
+            Assert.assertEquals(r[i+j], a[i+wrapped_index], "at index #" + idx + ", input = " + a[i+wrapped_index]);
         }
     }
 
@@ -315,21 +317,23 @@ public class Long128VectorTests extends AbstractVectorTest {
 
     static void assertSelectFromArraysEquals(long[] r, long[] a, long[] order, boolean[] mask, int vector_len) {
         int i = 0, j = 0;
+        int idx = 0, wrapped_index = 0;
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
+                    idx = (int)order[i+j];
+                    wrapped_index = Integer.remainderUnsigned(idx, vector_len);
                     if (mask[j % SPECIES.length()])
-                         Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                         Assert.assertEquals(r[i+j], a[i+wrapped_index]);
                     else
                          Assert.assertEquals(r[i+j], (long)0);
                 }
             }
         } catch (AssertionError e) {
-            int idx = i + j;
             if (mask[j % SPECIES.length()])
-                Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], a[i+wrapped_index], "at index #" + idx + ", input = " + a[i+wrapped_index] + ", mask = " + mask[j % SPECIES.length()]);
             else
-                Assert.assertEquals(r[i+j], (long)0, "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], (long)0, "at index #" + idx + ", input = " + a[i+wrapped_index] + ", mask = " + mask[j % SPECIES.length()]);
         }
     }
 
@@ -923,6 +927,10 @@ public class Long128VectorTests extends AbstractVectorTest {
         }
     }
 
+    static long genValue(int i) {
+        return (long) i;
+    }
+
     static int intCornerCaseValue(int i) {
         switch(i % 5) {
             case 0:
@@ -941,15 +949,15 @@ public class Long128VectorTests extends AbstractVectorTest {
     static final List<IntFunction<long[]>> INT_LONG_GENERATORS = List.of(
             withToString("long[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (long)(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("long[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (long)(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("long[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((long)(i + 1) == 0) ? 1 : (long)(i + 1)));
+                            i -> (((long)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("long[intCornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -999,15 +1007,15 @@ public class Long128VectorTests extends AbstractVectorTest {
     static final List<IntFunction<long[]>> LONG_GENERATORS = List.of(
             withToString("long[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (long)(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("long[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (long)(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("long[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((long)(i + 1) == 0) ? 1 : (long)(i + 1)));
+                            i -> (((long)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("long[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -72,15 +72,17 @@ public class Float512Vector extends AbstractVectorBenchmark {
     boolean[] m, mt, rm;
     int[] s;
 
+    static float genValue(int i) {
+        return (float) i;
+    }
+
     @Setup
     public void init() {
         size += size % SPECIES.length(); // FIXME: add post-loops
-
-        a = fill(i -> (float)(2*i));
-        b = fill(i -> (float)(i+1));
-        c = fill(i -> (float)(i+5));
-        r = fill(i -> (float)0);
-
+        a = fill(i -> genValue(2*i));
+        b = fill(i -> genValue(i+1));
+        c = fill(i -> genValue(i+5));
+        r = fill(i -> genValue(0));
         m = fillMask(size, i -> (i % 2) == 0);
         mt = fillMask(size, i -> true);
         rm = fillMask(size, i -> false);
@@ -272,6 +274,70 @@ public class Float512Vector extends AbstractVectorBenchmark {
                 FloatVector av = FloatVector.fromArray(SPECIES, a, i);
                 FloatVector bv = FloatVector.fromArray(SPECIES, b, i);
                 av.lanewise(VectorOperators.FIRST_NONZERO, bv, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void MIN(Blackhole bh) {
+        float[] a = fa.apply(SPECIES.length());
+        float[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.MIN, bv_MIN).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void MINMasked(Blackhole bh) {
+        float[] a = fa.apply(SPECIES.length());
+        float[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Float> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.MIN, bv_MIN_M, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void MAX(Blackhole bh) {
+        float[] a = fa.apply(SPECIES.length());
+        float[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.MAX, bv_MAX).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void MAXMasked(Blackhole bh) {
+        float[] a = fa.apply(SPECIES.length());
+        float[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Float> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                FloatVector av = FloatVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.MAX, bv_MAX_M, vmask).intoArray(r, i);
             }
         }
 

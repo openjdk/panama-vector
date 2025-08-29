@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -342,15 +342,17 @@ relativeError));
 
     static void assertSelectFromArraysEquals(float[] r, float[] a, float[] order, int vector_len) {
         int i = 0, j = 0;
+        int idx = 0, wrapped_index = 0;
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
-                    Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                    idx = (int)order[i+j];
+                    wrapped_index = Integer.remainderUnsigned(idx, vector_len);
+                    Assert.assertEquals(r[i+j], a[i+wrapped_index]);
                 }
             }
         } catch (AssertionError e) {
-            int idx = i + j;
-            Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]]);
+            Assert.assertEquals(r[i+j], a[i+wrapped_index], "at index #" + idx + ", input = " + a[i+wrapped_index]);
         }
     }
 
@@ -376,21 +378,23 @@ relativeError));
 
     static void assertSelectFromArraysEquals(float[] r, float[] a, float[] order, boolean[] mask, int vector_len) {
         int i = 0, j = 0;
+        int idx = 0, wrapped_index = 0;
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
+                    idx = (int)order[i+j];
+                    wrapped_index = Integer.remainderUnsigned(idx, vector_len);
                     if (mask[j % SPECIES.length()])
-                         Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                         Assert.assertEquals(r[i+j], a[i+wrapped_index]);
                     else
                          Assert.assertEquals(r[i+j], (float)0);
                 }
             }
         } catch (AssertionError e) {
-            int idx = i + j;
             if (mask[j % SPECIES.length()])
-                Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], a[i+wrapped_index], "at index #" + idx + ", input = " + a[i+wrapped_index] + ", mask = " + mask[j % SPECIES.length()]);
             else
-                Assert.assertEquals(r[i+j], (float)0, "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], (float)0, "at index #" + idx + ", input = " + a[i+wrapped_index] + ", mask = " + mask[j % SPECIES.length()]);
         }
     }
 
@@ -846,7 +850,7 @@ relativeError));
                                     isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])));
             }
         } catch (AssertionError e) {
-            Assert.assertTrue(Float.compare(r[i], mathf.apply(a[i], b[i])) == 0, "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i], b[i]));
+            Assert.assertTrue(Float.compare(r[i], mathf.apply(a[i], b[i])) == 0, "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i], b[i]));
             Assert.assertTrue(isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])), "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected (within 1 ulp) = " + strictmathf.apply(a[i], b[i]));
         }
     }
@@ -1058,6 +1062,10 @@ relativeError));
         }
     }
 
+    static float genValue(int i) {
+        return (float) i;
+    }
+
     static int intCornerCaseValue(int i) {
         switch(i % 5) {
             case 0:
@@ -1076,15 +1084,15 @@ relativeError));
     static final List<IntFunction<float[]>> INT_FLOAT_GENERATORS = List.of(
             withToString("float[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (float)(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("float[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (float)(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("float[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((float)(i + 1) == 0) ? 1 : (float)(i + 1)));
+                            i -> (((float)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("float[intCornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1118,18 +1126,22 @@ relativeError));
         }
     }
 
+    static float genValue(long i) {
+        return (float) i;
+    }
+
     static final List<IntFunction<float[]>> LONG_FLOAT_GENERATORS = List.of(
             withToString("float[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (float)(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("float[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (float)(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("float[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((float)(i + 1) == 0) ? 1 : (float)(i + 1)));
+                            i -> (((float)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("float[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1161,29 +1173,29 @@ relativeError));
     }
 
     static int bits(float e) {
-        return  Float.floatToIntBits(e);
+        return Float.floatToIntBits(e);
     }
 
     static final List<IntFunction<float[]>> FLOAT_GENERATORS = List.of(
             withToString("float[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (float)(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("float[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (float)(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("float[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((float)(i + 1) == 0) ? 1 : (float)(i + 1)));
+                            i -> (((float)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("float[0.01 + (i / (i + 1))]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (float)0.01 + ((float)i / (i + 1)));
+                            i -> ((float)0.01 + ((float)i / (i + 1))));
             }),
             withToString("float[i -> i % 17 == 0 ? cornerCaseValue(i) : 0.01 + (i / (i + 1))]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> i % 17 == 0 ? cornerCaseValue(i) : (float)0.01 + ((float)i / (i + 1)));
+                            i -> (i % 17 == 0) ? cornerCaseValue(i) : ((float)0.01 + ((float)i / (i + 1))));
             }),
             withToString("float[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,

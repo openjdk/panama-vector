@@ -580,8 +580,8 @@ const char*  dfa_shared_preds::_pred [dfa_shared_preds::count] = { "n->get_int()
 // Helper method to check whether a node is vector unary operation.
 static bool is_vector_unary_op_name(const char* op_name) {
   static const char* vector_unary_op_list[] = {
-    "AbsVB", "AbsVS", "AbsVI", "AbsVL", "AbsVF", "AbsVD",
-    "NegVI", "NegVL", "NegVF", "NegVD",
+    "AbsVB", "AbsVS", "AbsVI", "AbsVL", "AbsVHF", "AbsVF", "AbsVD",
+    "NegVI", "NegVL", "NegVHF", "NegVF", "NegVD",
     "SqrtVHF", "SqrtVF", "SqrtVD",
     "PopCountVI", "PopCountVL",
     "CountLeadingZerosV", "CountTrailingZerosV",

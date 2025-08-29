@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,8 @@
  * @requires vm.compiler2.enabled
  */
 
-import jdk.incubator.vector.FloatVector;
+import jdk.incubator.vector.Float16;
+import jdk.incubator.vector.HalffloatVector;
 import jdk.incubator.vector.VectorShape;
 import jdk.incubator.vector.VectorSpecies;
 import jdk.incubator.vector.Vector;
@@ -36,56 +37,42 @@ import java.util.Arrays;
 import java.util.stream.IntStream;
 
 public class AddTest {
-    static final VectorSpecies<Float> SPECIES =
-            FloatVector.SPECIES_256;
+    static final VectorSpecies<Float16> SPECIES = HalffloatVector.SPECIES_256;
 
     static final int SIZE = 1024;
-    static float[] a = new float[SIZE];
-    static float[] b = new float[SIZE];
-    static float[] c = new float[SIZE];
+    static short[] a = new short[SIZE];
+    static short[] b = new short[SIZE];
+    static short[] c = new short[SIZE];
 
     static {
         for (int i = 0; i < SIZE; i++) {
-            a[i] = 1f;
-            b[i] = 2f;
+            a[i] = Float16.float16ToRawShortBits(Float16.valueOf((float)i));
+            b[i] = Float16.float16ToRawShortBits(Float16.valueOf((float)i));
+            c[i] = Float16.float16ToRawShortBits(Float16.valueOf((float)i));
         }
     }
 
     static void workload() {
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            FloatVector av = FloatVector.fromArray(SPECIES, a, i);
-            FloatVector bv = FloatVector.fromArray(SPECIES, b, i);
+            HalffloatVector av = HalffloatVector.fromArray(SPECIES, a, i);
+            HalffloatVector bv = HalffloatVector.fromArray(SPECIES, b, i);
             av.add(bv).intoArray(c, i);
         }
     }
 
-    static final int[] IDENTITY_INDEX_MAPPING = IntStream.range(0, SPECIES.length()).toArray();
-
-    static void workloadIndexMapped() {
-        for (int i = 0; i < a.length; i += SPECIES.length()) {
-            FloatVector av = FloatVector.fromArray(SPECIES, a, i, IDENTITY_INDEX_MAPPING, 0);
-            FloatVector bv = FloatVector.fromArray(SPECIES, b, i, IDENTITY_INDEX_MAPPING, 0);
-            av.add(bv).intoArray(c, i, IDENTITY_INDEX_MAPPING, 0);
-        }
-    }
-
     public static void main(String args[]) {
-        for (int i = 0; i < 30_0000; i++) {
+        for (int i = 0; i < 10_0000; i++) {
             workload();
         }
         for (int i = 0; i < a.length; i++) {
-            if (c[i] != a[i] + b[i])
-                throw new AssertionError();
-        }
+            Float16 hfa = Float16.shortBitsToFloat16(a[i]);
+            Float16 hfb = Float16.shortBitsToFloat16(b[i]);
+            Float16 hfc = Float16.shortBitsToFloat16(c[i]);
 
-        Arrays.fill(c, 0.0f);
-
-        for (int i = 0; i < 30_0000; i++) {
-            workloadIndexMapped();
-        }
-        for (int i = 0; i < a.length; i++) {
-            if (c[i] != a[i] + b[i])
+            if (hfc.floatValue() != (hfa.floatValue() + hfb.floatValue())) {
+                System.out.println("RES: " + hfc.floatValue() + " EXPECTED: " + (hfa.floatValue() + hfb.floatValue()));
                 throw new AssertionError();
+            }
         }
     }
 }

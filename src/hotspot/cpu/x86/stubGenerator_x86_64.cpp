@@ -4164,6 +4164,8 @@ void StubGenerator::generate_compiler_stubs() {
 
   // Entry points that are C2 compiler specific.
 
+  StubRoutines::x86::_vector_halffloat_sign_mask = generate_vector_mask(StubId::stubgen_vector_halffloat_sign_mask_id, 0x7FFF7FFF7FFF7FFF);
+  StubRoutines::x86::_vector_halffloat_sign_flip = generate_vector_mask(StubId::stubgen_vector_halffloat_sign_flip_id, 0x8000800080008000);
   StubRoutines::x86::_vector_float_sign_mask = generate_vector_mask(StubId::stubgen_vector_float_sign_mask_id, 0x7FFFFFFF7FFFFFFF);
   StubRoutines::x86::_vector_float_sign_flip = generate_vector_mask(StubId::stubgen_vector_float_sign_flip_id, 0x8000000080000000);
   StubRoutines::x86::_vector_double_sign_mask = generate_vector_mask(StubId::stubgen_vector_double_sign_mask_id, 0x7FFFFFFFFFFFFFFF);
@@ -4196,6 +4198,7 @@ void StubGenerator::generate_compiler_stubs() {
     StubRoutines::x86::_expand_perm_table32 = generate_expand_perm_table(StubId::stubgen_expand_perm_table32_id);
     StubRoutines::x86::_expand_perm_table64 = generate_expand_perm_table(StubId::stubgen_expand_perm_table64_id);
   }
+
 
   if (VM_Version::supports_avx2() && !VM_Version::supports_avx512_vpopcntdq()) {
     // lut implementation influenced by counting 1s algorithm from section 5-1 of Hackers' Delight.

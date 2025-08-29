@@ -82,6 +82,8 @@ class VectorNode : public TypeNode {
   static VectorNode* make(int opc, Node* n1, Node* n2, Node* n3, uint vlen, BasicType bt);
   static VectorNode* make(int vopc, Node* n1, Node* n2, Node* n3, const TypeVect* vt);
   static VectorNode* make_mask_node(int vopc, Node* n1, Node* n2, uint vlen, BasicType bt);
+  static VectorNode* make(int vopc, Node* n1, Node* n2, uint vlen);
+  static VectorNode* make(int vopc, Node* n1, Node* n2, Node* n3, uint vlen);
 
   static bool is_shift_opcode(int opc);
   static bool can_use_RShiftI_instead_of_URShiftI(Node* n, BasicType bt);
@@ -95,6 +97,7 @@ class VectorNode : public TypeNode {
   static bool is_rotate_opcode(int opc);
 
   static int opcode(int sopc, BasicType bt);         // scalar_opc -> vector_opc
+  static int opcode(int opc);
   static int scalar_opcode(int vopc, BasicType bt);  // vector_opc -> scalar_opc
 
   static int shift_count_opcode(int opc);
@@ -210,14 +213,6 @@ public:
   virtual int Opcode() const;
 };
 
-//------------------------------AddVHFNode--------------------------------------
-// Vector add float
-class AddVHFNode : public VectorNode {
-public:
-  AddVHFNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1, in2, vt) {}
-  virtual int Opcode() const;
-};
-
 //------------------------------AddVFNode--------------------------------------
 // Vector add float
 class AddVFNode : public VectorNode {
@@ -231,6 +226,14 @@ public:
 class AddVDNode : public VectorNode {
 public:
   AddVDNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1, in2, vt) {}
+  virtual int Opcode() const;
+};
+
+//------------------------------AddVHFNode--------------------------------------
+// Vector add halffloat
+class AddVHFNode : public VectorNode {
+public:
+  AddVHFNode(Node * in1, Node * in2, const TypeVect * vt) : VectorNode(in1, in2, vt) {}
   virtual int Opcode() const;
 };
 
@@ -251,6 +254,7 @@ class ReductionNode : public Node {
                              // This only effects floating-point add and mul reductions.
                              bool requires_strict_order = true);
   static int  opcode(int opc, BasicType bt);
+  static int  opcode(int opc);
   static bool implemented(int opc, uint vlen, BasicType bt);
   // Make an identity scalar (zero for add, one for mul, etc) for scalar opc.
   static Node* make_identity_con_scalar(PhaseGVN& gvn, int sopc, BasicType bt);
@@ -337,6 +341,16 @@ public:
   virtual uint size_of() const { return sizeof(*this); }
 };
 
+//------------------------------AddReductionVHFNode--------------------------------------
+// Vector add halffloat as a reduction
+class AddReductionVHFNode : public ReductionNode {
+public:
+  AddReductionVHFNode(Node *ctrl, Node* in1, Node* in2) : ReductionNode(ctrl, in1, in2) {}
+  virtual int Opcode() const;
+  virtual const Type* bottom_type() const { return TypeInt::SHORT; }
+  virtual uint ideal_reg() const { return Op_RegF; }
+};
+
 //------------------------------AddReductionVDNode--------------------------------------
 // Vector add double as a reduction
 class AddReductionVDNode : public ReductionNode {
@@ -412,15 +426,6 @@ class SaturatingSubVNode : public SaturatingVectorNode {
   virtual int Opcode() const;
 };
 
-//------------------------------SubVHFNode--------------------------------------
-// Vector subtract half float
-class SubVHFNode : public VectorNode {
-public:
-  SubVHFNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1, in2, vt) {}
-  virtual int Opcode() const;
-};
-
-
 //------------------------------SubVFNode--------------------------------------
 // Vector subtract float
 class SubVFNode : public VectorNode {
@@ -434,6 +439,14 @@ class SubVFNode : public VectorNode {
 class SubVDNode : public VectorNode {
  public:
   SubVDNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1,in2,vt) {}
+  virtual int Opcode() const;
+};
+
+//------------------------------SubVHFNode--------------------------------------
+// Vector sub halffloat
+class SubVHFNode : public VectorNode {
+public:
+  SubVHFNode(Node * in1, Node * in2, const TypeVect * vt) : VectorNode(in1, in2, vt) {}
   virtual int Opcode() const;
 };
 
@@ -531,6 +544,22 @@ public:
   virtual int Opcode() const;
 };
 
+//------------------------------CMoveVFNode--------------------------------------
+// Vector float conditional move
+class CMoveVFNode : public VectorNode {
+public:
+  CMoveVFNode(Node* in1, Node* in2, Node* in3, const TypeVect* vt) : VectorNode(in1, in2, in3, vt) {}
+  virtual int Opcode() const;
+};
+
+//------------------------------CMoveVDNode--------------------------------------
+// Vector double conditional move
+class CMoveVDNode : public VectorNode {
+public:
+  CMoveVDNode(Node* in1, Node* in2, Node* in3, const TypeVect* vt) : VectorNode(in1, in2, in3, vt) {}
+  virtual int Opcode() const;
+};
+
 //------------------------------FmaVHFNode-------------------------------------
 // Vector fused-multiply-add half-precision float
 class FmaVHFNode : public FmaVNode {
@@ -607,14 +636,6 @@ public:
   virtual uint size_of() const { return sizeof(*this); }
 };
 
-//------------------------------DivVHFNode-------------------------------------
-// Vector divide half float
-class DivVHFNode : public VectorNode {
-public:
-  DivVHFNode(Node* in1, Node* in2, const TypeVect* vt) : VectorNode(in1, in2, vt) {}
-  virtual int Opcode() const;
-};
-
 //------------------------------DivVFNode--------------------------------------
 // Vector divide float
 class DivVFNode : public VectorNode {
@@ -631,6 +652,14 @@ class DivVDNode : public VectorNode {
   virtual int Opcode() const;
 };
 
+//------------------------------DivVHFNode--------------------------------------
+// Vector div halffloat
+class DivVHFNode : public VectorNode {
+public:
+  DivVHFNode(Node * in1, Node * in2, const TypeVect * vt) : VectorNode(in1, in2, vt) {}
+  virtual int Opcode() const;
+};
+
 //------------------------------AbsVBNode--------------------------------------
 // Vector Abs byte
 class AbsVBNode : public VectorNode {
@@ -644,6 +673,14 @@ public:
 class AbsVSNode : public VectorNode {
 public:
   AbsVSNode(Node* in, const TypeVect* vt) : VectorNode(in, vt) {}
+  virtual int Opcode() const;
+};
+
+//------------------------------AbsVHFNode--------------------------------------
+// Vector Abs Halffloat
+class AbsVHFNode : public VectorNode {
+public:
+  AbsVHFNode(Node * in, const TypeVect * vt) : VectorNode(in, vt) {}
   virtual int Opcode() const;
 };
 
@@ -775,6 +812,14 @@ class NegVFNode : public NegVNode {
 class NegVDNode : public NegVNode {
  public:
   NegVDNode(Node* in, const TypeVect* vt) : NegVNode(in, vt) {}
+  virtual int Opcode() const;
+};
+
+//------------------------------NegVHFNode--------------------------------------
+// Vector Neg double
+class NegVHFNode : public VectorNode {
+public:
+  NegVHFNode(Node * in, const TypeVect * vt) : VectorNode(in, vt) {}
   virtual int Opcode() const;
 };
 
@@ -1884,6 +1929,22 @@ class VectorCastF2XNode : public VectorCastNode {
 class VectorCastD2XNode : public VectorCastNode {
  public:
   VectorCastD2XNode(Node* in, const TypeVect* vt) : VectorCastNode(in, vt) {
+    assert(in->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE, "must be double");
+  }
+  virtual int Opcode() const;
+};
+
+class VectorCastHF2DNode : public VectorCastNode {
+ public:
+  VectorCastHF2DNode(Node* in, const TypeVect* vt) : VectorCastNode(in, vt) {
+    assert(in->bottom_type()->is_vect()->element_basic_type() == T_SHORT, "must be short");
+  }
+  virtual int Opcode() const;
+};
+
+class VectorCastD2HFNode : public VectorCastNode {
+ public:
+  VectorCastD2HFNode(Node* in, const TypeVect* vt) : VectorCastNode(in, vt) {
     assert(in->bottom_type()->is_vect()->element_basic_type() == T_DOUBLE, "must be double");
   }
   virtual int Opcode() const;

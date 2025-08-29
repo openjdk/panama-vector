@@ -175,6 +175,8 @@ public class AArch64 extends Architecture {
         SHA2,
         CRC32,
         LSE,
+        FPHP,
+        ASIMDHP,
         DCPOP,
         SHA3,
         SHA512,
@@ -184,8 +186,6 @@ public class AArch64 extends Architecture {
         SVEBITPERM,
         SVE2,
         A53MAC,
-        FPHP,
-        ASIMDHP,
     }
 
     private final EnumSet<CPUFeature> features;

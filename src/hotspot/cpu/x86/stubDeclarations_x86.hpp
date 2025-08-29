@@ -81,6 +81,14 @@
   do_stub(compiler, vector_float_sign_mask)                             \
   do_arch_entry(x86, compiler, vector_float_sign_mask,                  \
                 vector_float_sign_mask, vector_float_sign_mask)         \
+  do_stub(compiler, vector_halffloat_sign_mask)                         \
+  do_arch_entry(x86, compiler, vector_halffloat_sign_mask,              \
+                vector_halffloat_sign_mask,                             \
+                vector_halffloat_sign_mask)                             \
+  do_stub(compiler, vector_halffloat_sign_flip)                         \
+  do_arch_entry(x86, compiler, vector_halffloat_sign_flip,              \
+                vector_halffloat_sign_flip,                             \
+                vector_halffloat_sign_flip)                             \
   do_stub(compiler, vector_float_sign_flip)                             \
   do_arch_entry(x86, compiler, vector_float_sign_flip,                  \
                 vector_float_sign_flip, vector_float_sign_flip)         \

@@ -269,6 +269,20 @@ source %{
           return false;
         }
         break;
+      case Op_AddVHF:
+      case Op_SubVHF:
+      case Op_MulVHF:
+      case Op_DivVHF:
+      case Op_AbsVHF:
+      case Op_NegVHF:
+      case Op_FmaVHF:
+      case Op_AddReductionVHF:
+        // FEAT_FP16 is enabled if both "fphp" and "asimdhp" features are supported.
+        // Only the Neon instructions need this check. SVE supports 16-bit floats by default.
+        if (UseSVE > 0 || (VM_Version::supports_fphp() && VM_Version::supports_asimdhp())) {
+          break;
+        }
+        return false;
       default:
         break;
     }
@@ -345,6 +359,7 @@ source %{
       case Op_VectorMaskCmp:
       case Op_LoadVectorGather:
       case Op_StoreVectorScatter:
+      case Op_AddReductionVHF:
       case Op_AddReductionVF:
       case Op_AddReductionVD:
       case Op_AndReductionV:
@@ -584,12 +599,13 @@ BINARY_OP(vaddF,  AddVF,  fadd, sve_fadd, S)
 BINARY_OP(vaddD,  AddVD,  fadd, sve_fadd, D)
 
 // vector add - predicated
-BINARY_OP_PREDICATE(vaddB, AddVB, sve_add,  B)
-BINARY_OP_PREDICATE(vaddS, AddVS, sve_add,  H)
-BINARY_OP_PREDICATE(vaddI, AddVI, sve_add,  S)
-BINARY_OP_PREDICATE(vaddL, AddVL, sve_add,  D)
-BINARY_OP_PREDICATE(vaddF, AddVF, sve_fadd, S)
-BINARY_OP_PREDICATE(vaddD, AddVD, sve_fadd, D)
+BINARY_OP_PREDICATE(vaddB,  AddVB,  sve_add,  B)
+BINARY_OP_PREDICATE(vaddS,  AddVS,  sve_add,  H)
+BINARY_OP_PREDICATE(vaddI,  AddVI,  sve_add,  S)
+BINARY_OP_PREDICATE(vaddL,  AddVL,  sve_add,  D)
+BINARY_OP_PREDICATE(vaddHF, AddVHF, sve_fadd, H)
+BINARY_OP_PREDICATE(vaddF,  AddVF,  sve_fadd, S)
+BINARY_OP_PREDICATE(vaddD,  AddVD,  sve_fadd, D)
 
 // vector add reg imm (unpredicated)
 VADD_IMM(B, immBAddSubV, B)
@@ -609,12 +625,13 @@ BINARY_OP(vsubF,  SubVF,  fsub, sve_fsub, S)
 BINARY_OP(vsubD,  SubVD,  fsub, sve_fsub, D)
 
 // vector sub - predicated
-BINARY_OP_PREDICATE(vsubB, SubVB, sve_sub,  B)
-BINARY_OP_PREDICATE(vsubS, SubVS, sve_sub,  H)
-BINARY_OP_PREDICATE(vsubI, SubVI, sve_sub,  S)
-BINARY_OP_PREDICATE(vsubL, SubVL, sve_sub,  D)
-BINARY_OP_PREDICATE(vsubF, SubVF, sve_fsub, S)
-BINARY_OP_PREDICATE(vsubD, SubVD, sve_fsub, D)
+BINARY_OP_PREDICATE(vsubB,  SubVB,  sve_sub,  B)
+BINARY_OP_PREDICATE(vsubS,  SubVS,  sve_sub,  H)
+BINARY_OP_PREDICATE(vsubI,  SubVI,  sve_sub,  S)
+BINARY_OP_PREDICATE(vsubL,  SubVL,  sve_sub,  D)
+BINARY_OP_PREDICATE(vsubHF, SubVHF, sve_fsub, H)
+BINARY_OP_PREDICATE(vsubF,  SubVF,  sve_fsub, S)
+BINARY_OP_PREDICATE(vsubD,  SubVD,  sve_fsub, D)
 
 dnl
 dnl BINARY_OP_NEON_SVE_PAIRWISE($1,        $2,      $3,        $4,       $5  )
@@ -686,12 +703,13 @@ BINARY_OP(vmulF,  MulVF,  fmul, sve_fmul, S)
 BINARY_OP(vmulD,  MulVD,  fmul, sve_fmul, D)
 
 // vector mul - predicated
-BINARY_OP_PREDICATE(vmulB, MulVB, sve_mul,  B)
-BINARY_OP_PREDICATE(vmulS, MulVS, sve_mul,  H)
-BINARY_OP_PREDICATE(vmulI, MulVI, sve_mul,  S)
-BINARY_OP_PREDICATE(vmulL, MulVL, sve_mul,  D)
-BINARY_OP_PREDICATE(vmulF, MulVF, sve_fmul, S)
-BINARY_OP_PREDICATE(vmulD, MulVD, sve_fmul, D)
+BINARY_OP_PREDICATE(vmulB,  MulVB,  sve_mul,  B)
+BINARY_OP_PREDICATE(vmulS,  MulVS,  sve_mul,  H)
+BINARY_OP_PREDICATE(vmulI,  MulVI,  sve_mul,  S)
+BINARY_OP_PREDICATE(vmulL,  MulVL,  sve_mul,  D)
+BINARY_OP_PREDICATE(vmulHF, MulVHF, sve_fmul, H)
+BINARY_OP_PREDICATE(vmulF,  MulVF,  sve_fmul, S)
+BINARY_OP_PREDICATE(vmulD,  MulVD,  sve_fmul, D)
 
 // ------------------------------ Vector float div -----------------------------
 
@@ -701,8 +719,9 @@ BINARY_OP_NEON_SVE_PAIRWISE(vdivF,  DivVF,  fdiv, sve_fdiv, S)
 BINARY_OP_NEON_SVE_PAIRWISE(vdivD,  DivVD,  fdiv, sve_fdiv, D)
 
 // vector float div - predicated
-BINARY_OP_PREDICATE(vdivF, DivVF, sve_fdiv, S)
-BINARY_OP_PREDICATE(vdivD, DivVD, sve_fdiv, D)
+BINARY_OP_PREDICATE(vdivHF, DivVHF, sve_fdiv, H)
+BINARY_OP_PREDICATE(vdivF,  DivVF,  sve_fdiv, S)
+BINARY_OP_PREDICATE(vdivD,  DivVD,  sve_fdiv, D)
 dnl
 dnl BITWISE_OP_IMM($1,        $2,   $3,      $4,   $5,   $6        )
 dnl BITWISE_OP_IMM(rule_name, type, op_name, insn, size, basic_type)
@@ -994,20 +1013,22 @@ dnl
 // ------------------------------ Vector abs -----------------------------------
 
 // vector abs
-UNARY_OP(vabsB, AbsVB, absr, sve_abs,  B)
-UNARY_OP(vabsS, AbsVS, absr, sve_abs,  H)
-UNARY_OP(vabsI, AbsVI, absr, sve_abs,  S)
-UNARY_OP(vabsL, AbsVL, absr, sve_abs,  D)
-UNARY_OP(vabsF, AbsVF, fabs, sve_fabs, S)
-UNARY_OP(vabsD, AbsVD, fabs, sve_fabs, D)
+UNARY_OP(vabsB,  AbsVB,  absr, sve_abs,  B)
+UNARY_OP(vabsS,  AbsVS,  absr, sve_abs,  H)
+UNARY_OP(vabsI,  AbsVI,  absr, sve_abs,  S)
+UNARY_OP(vabsL,  AbsVL,  absr, sve_abs,  D)
+UNARY_OP(vabsHF, AbsVHF, fabs, sve_fabs, H)
+UNARY_OP(vabsF,  AbsVF,  fabs, sve_fabs, S)
+UNARY_OP(vabsD,  AbsVD,  fabs, sve_fabs, D)
 
 // vector abs - predicated
-UNARY_OP_PREDICATE_WITH_SIZE(vabsB, AbsVB, sve_abs,  B)
-UNARY_OP_PREDICATE_WITH_SIZE(vabsS, AbsVS, sve_abs,  H)
-UNARY_OP_PREDICATE_WITH_SIZE(vabsI, AbsVI, sve_abs,  S)
-UNARY_OP_PREDICATE_WITH_SIZE(vabsL, AbsVL, sve_abs,  D)
-UNARY_OP_PREDICATE_WITH_SIZE(vabsF, AbsVF, sve_fabs, S)
-UNARY_OP_PREDICATE_WITH_SIZE(vabsD, AbsVD, sve_fabs, D)
+UNARY_OP_PREDICATE_WITH_SIZE(vabsB,  AbsVB,  sve_abs,  B)
+UNARY_OP_PREDICATE_WITH_SIZE(vabsS,  AbsVS,  sve_abs,  H)
+UNARY_OP_PREDICATE_WITH_SIZE(vabsI,  AbsVI,  sve_abs,  S)
+UNARY_OP_PREDICATE_WITH_SIZE(vabsL,  AbsVL,  sve_abs,  D)
+UNARY_OP_PREDICATE_WITH_SIZE(vabsHF, AbsVHF, sve_fabs, H)
+UNARY_OP_PREDICATE_WITH_SIZE(vabsF,  AbsVF,  sve_fabs, S)
+UNARY_OP_PREDICATE_WITH_SIZE(vabsD,  AbsVD,  sve_fabs, D)
 
 // ------------------------------ Vector fabd ----------------------------------
 
@@ -1074,15 +1095,17 @@ instruct vnegI(vReg dst, vReg src) %{
   %}
   ins_pipe(pipe_slow);
 %}
-UNARY_OP(vnegL, NegVL, negr, sve_neg,  D)
-UNARY_OP(vnegF, NegVF, fneg, sve_fneg, S)
-UNARY_OP(vnegD, NegVD, fneg, sve_fneg, D)
+UNARY_OP(vnegL,  NegVL,  negr, sve_neg,  D)
+UNARY_OP(vnegHF, NegVHF, fneg, sve_fneg, H)
+UNARY_OP(vnegF,  NegVF,  fneg, sve_fneg, S)
+UNARY_OP(vnegD,  NegVD,  fneg, sve_fneg, D)
 
 // vector neg - predicated
 UNARY_OP_PREDICATE(vnegI, NegVI, sve_neg)
-UNARY_OP_PREDICATE_WITH_SIZE(vnegL, NegVL, sve_neg,  D)
-UNARY_OP_PREDICATE_WITH_SIZE(vnegF, NegVF, sve_fneg, S)
-UNARY_OP_PREDICATE_WITH_SIZE(vnegD, NegVD, sve_fneg, D)
+UNARY_OP_PREDICATE_WITH_SIZE(vnegL,  NegVL,  sve_neg,  D)
+UNARY_OP_PREDICATE_WITH_SIZE(vnegHF, NegVHF, sve_fneg, H)
+UNARY_OP_PREDICATE_WITH_SIZE(vnegF,  NegVF,  sve_fneg, S)
+UNARY_OP_PREDICATE_WITH_SIZE(vnegD,  NegVD,  sve_fneg, D)
 
 // ------------------------------ Vector sqrt ----------------------------------
 
@@ -1403,6 +1426,7 @@ instruct vfmla(vReg dst_src1, vReg src2, vReg src3) %{
 
 instruct vfmad_masked(vReg dst_src1, vReg src2, vReg src3, pRegGov pg) %{
   predicate(UseSVE > 0);
+  match(Set dst_src1 (FmaVHF (Binary dst_src1 src2) (Binary src3 pg)));
   match(Set dst_src1 (FmaVF (Binary dst_src1 src2) (Binary src3 pg)));
   match(Set dst_src1 (FmaVD (Binary dst_src1 src2) (Binary src3 pg)));
   format %{ "vfmad_masked $dst_src1, $pg, $src2, $src3" %}
@@ -1993,6 +2017,45 @@ REDUCE_ADD_INT_NEON_SVE_PAIRWISE(I, iRegIorL2I)
 
 // reduction addL
 REDUCE_ADD_INT_NEON_SVE_PAIRWISE(L, iRegL)
+
+// reduction addHF
+instruct reduce_addHF_neon(iRegINoSp dst, iRegIorL2I hfsrc, vReg vsrc, vReg tmp1, vRegF tmp2) %{
+  predicate(UseSVE == 0);
+  match(Set dst (AddReductionVHF hfsrc vsrc));
+  effect(TEMP_DEF dst, TEMP tmp1, TEMP tmp2);
+  format %{ "reduce_addHF_neon $dst, $hfsrc, $vsrc\t# KILL $tmp1, $tmp2" %}
+  ins_encode %{
+    uint length_in_bytes = Matcher::vector_length_in_bytes(this, $vsrc);
+    assert(length_in_bytes == 8 || length_in_bytes == 16, "invalid vector length");
+
+    __ fmovwh($tmp2$$FloatRegister, $hfsrc$$Register);
+    if (length_in_bytes == 8) {
+      __ faddp($tmp1$$FloatRegister, __ T4H, $vsrc$$FloatRegister, $vsrc$$FloatRegister);
+    } else {
+      __ faddp($tmp1$$FloatRegister, __ T8H, $vsrc$$FloatRegister, $vsrc$$FloatRegister);
+      __ faddp($tmp1$$FloatRegister, __ T4H, $tmp1$$FloatRegister, $tmp1$$FloatRegister);
+    }
+    __ faddp($tmp1$$FloatRegister, $tmp1$$FloatRegister, __ H);
+    __ faddh($tmp2$$FloatRegister, $tmp2$$FloatRegister, $tmp1$$FloatRegister);
+    __ fmovhw($dst$$Register, $tmp2$$FloatRegister);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct reduce_addHF_sve(iRegINoSp dst, iRegIorL2I hfsrc, vReg vsrc, vRegF tmp) %{
+  predicate(UseSVE > 0);
+  match(Set dst (AddReductionVHF hfsrc vsrc));
+  effect(TEMP tmp);
+  format %{ "reduce_addHF_sve $dst, $hfsrc, $vsrc\t# KILL $tmp" %}
+  ins_encode %{
+    uint length_in_bytes = Matcher::vector_length_in_bytes(this, $vsrc);
+    assert(length_in_bytes == MaxVectorSize, "invalid vector length");
+    __ fmovwh($tmp$$FloatRegister, $hfsrc$$Register);
+    __ sve_fadda($tmp$$FloatRegister, __ H, ptrue, $vsrc$$FloatRegister);
+    __ fmovhw($dst$$Register, $tmp$$FloatRegister);
+  %}
+  ins_pipe(pipe_slow);
+%};
 
 // reduction addF
 
@@ -2985,6 +3048,20 @@ instruct vcvtHFtoF(vReg dst, vReg src) %{
   ins_pipe(pipe_slow);
 %}
 
+// VectorCastHF2D
+
+instruct vcvtHFtoD_sve(vReg dst, vReg src) %{
+  predicate(Matcher::vector_length_in_bytes(n) > 16);
+  match(Set dst (VectorCastHF2D src));
+  format %{ "vcvtHFtoD_sve $dst, $src" %}
+  ins_encode %{
+    assert(UseSVE > 0, "must be sve");
+    __ sve_vector_extend($dst$$FloatRegister, __ D, $src$$FloatRegister, __ H);
+    __ sve_fcvt($dst$$FloatRegister, __ D, ptrue, $dst$$FloatRegister, __ H);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
 // VectorCastF2HF
 
 instruct vcvtFtoHF_neon(vReg dst, vReg src) %{
@@ -3008,6 +3085,20 @@ instruct vcvtFtoHF_sve(vReg dst, vReg src, vReg tmp) %{
     __ sve_fcvt($dst$$FloatRegister, __ H, ptrue, $src$$FloatRegister, __ S);
     __ sve_vector_narrow($dst$$FloatRegister, __ H,
                          $dst$$FloatRegister, __ S, $tmp$$FloatRegister);
+  %}
+  ins_pipe(pipe_slow);
+%}
+
+instruct vcvtDtoHF_sve(vReg dst, vReg src, vReg tmp) %{
+  predicate(Matcher::vector_length_in_bytes(n->in(1)) > 16);
+  match(Set dst (VectorCastD2HF src));
+  effect(TEMP_DEF dst, TEMP tmp);
+  format %{ "vcvtDtoHF_sve $dst, $src\t# KILL $tmp" %}
+  ins_encode %{
+    assert(UseSVE > 0, "must be sve");
+    __ sve_fcvt($dst$$FloatRegister, __ H, ptrue, $src$$FloatRegister, __ D);
+    __ sve_vector_narrow($dst$$FloatRegister, __ H,
+                         $dst$$FloatRegister, __ D, $tmp$$FloatRegister);
   %}
   ins_pipe(pipe_slow);
 %}

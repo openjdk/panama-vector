@@ -4235,6 +4235,7 @@ int MatchRule::is_expensive() const {
         strcmp(opType,"AddReductionVL")==0 ||
         strcmp(opType,"AddReductionVF")==0 ||
         strcmp(opType,"AddReductionVD")==0 ||
+        strcmp(opType,"AddReductionVHF")==0 ||
         strcmp(opType,"MulReductionVI")==0 ||
         strcmp(opType,"MulReductionVL")==0 ||
         strcmp(opType,"MulReductionVF")==0 ||
@@ -4338,15 +4339,16 @@ bool MatchRule::is_vector() const {
     "AddVB","AddVS","AddVI","AddVL","AddVHF","AddVF","AddVD",
     "SubVB","SubVS","SubVI","SubVL","SubVHF","SubVF","SubVD",
     "MulVB","MulVS","MulVI","MulVL","MulVHF","MulVF","MulVD",
+    "CMoveVD", "CMoveVF",
     "DivVHF","DivVF","DivVD",
-    "AbsVB","AbsVS","AbsVI","AbsVL","AbsVF","AbsVD",
-    "NegVF","NegVD","NegVI","NegVL",
+    "AbsVB","AbsVS","AbsVI","AbsVL","AbsVHF","AbsVF","AbsVD",
+    "NegVHF","NegVF","NegVD","NegVI","NegVL",
     "SqrtVD","SqrtVF","SqrtVHF",
     "AndV" ,"XorV" ,"OrV",
     "MaxV", "MinV", "MinVHF", "MaxVHF", "UMinV", "UMaxV",
     "CompressV", "ExpandV", "CompressM", "CompressBitsV", "ExpandBitsV",
     "AddReductionVI", "AddReductionVL",
-    "AddReductionVF", "AddReductionVD",
+    "AddReductionVF", "AddReductionVD","AddReductionVHF",
     "MulReductionVI", "MulReductionVL",
     "MulReductionVF", "MulReductionVD",
     "MaxReductionV", "MinReductionV",
@@ -4364,6 +4366,7 @@ bool MatchRule::is_vector() const {
     "VectorCastB2X", "VectorCastS2X", "VectorCastI2X",
     "VectorCastL2X", "VectorCastF2X", "VectorCastD2X", "VectorCastF2HF", "VectorCastHF2F",
     "VectorUCastB2X", "VectorUCastS2X", "VectorUCastI2X",
+    "VectorCastD2HF", "VectorCastHF2D",
     "VectorMaskWrapper","VectorMaskCmp","VectorReinterpret","LoadVectorMasked","StoreVectorMasked",
     "FmaVD", "FmaVF", "FmaVHF", "PopCountVI", "PopCountVL", "PopulateIndex", "VectorLongToMask",
     "CountLeadingZerosV", "CountTrailingZerosV", "SignumVF", "SignumVD", "SaturatingAddV", "SaturatingSubV",

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -324,15 +324,17 @@ public class Short512VectorTests extends AbstractVectorTest {
 
     static void assertSelectFromArraysEquals(short[] r, short[] a, short[] order, int vector_len) {
         int i = 0, j = 0;
+        int idx = 0, wrapped_index = 0;
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
-                    Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                    idx = (int)order[i+j];
+                    wrapped_index = Integer.remainderUnsigned(idx, vector_len);
+                    Assert.assertEquals(r[i+j], a[i+wrapped_index]);
                 }
             }
         } catch (AssertionError e) {
-            int idx = i + j;
-            Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]]);
+            Assert.assertEquals(r[i+j], a[i+wrapped_index], "at index #" + idx + ", input = " + a[i+wrapped_index]);
         }
     }
 
@@ -358,21 +360,23 @@ public class Short512VectorTests extends AbstractVectorTest {
 
     static void assertSelectFromArraysEquals(short[] r, short[] a, short[] order, boolean[] mask, int vector_len) {
         int i = 0, j = 0;
+        int idx = 0, wrapped_index = 0;
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
+                    idx = (int)order[i+j];
+                    wrapped_index = Integer.remainderUnsigned(idx, vector_len);
                     if (mask[j % SPECIES.length()])
-                         Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                         Assert.assertEquals(r[i+j], a[i+wrapped_index]);
                     else
                          Assert.assertEquals(r[i+j], (short)0);
                 }
             }
         } catch (AssertionError e) {
-            int idx = i + j;
             if (mask[j % SPECIES.length()])
-                Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], a[i+wrapped_index], "at index #" + idx + ", input = " + a[i+wrapped_index] + ", mask = " + mask[j % SPECIES.length()]);
             else
-                Assert.assertEquals(r[i+j], (short)0, "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], (short)0, "at index #" + idx + ", input = " + a[i+wrapped_index] + ", mask = " + mask[j % SPECIES.length()]);
         }
     }
 
@@ -966,6 +970,10 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+    static short genValue(int i) {
+        return (short) i;
+    }
+
 
     static void assertArraysEquals(int[] r, short[] a, int offs) {
         int i = 0;
@@ -1009,15 +1017,15 @@ public class Short512VectorTests extends AbstractVectorTest {
     static final List<IntFunction<short[]>> SHORT_GENERATORS = List.of(
             withToString("short[-i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short)(-i * 5));
+                            i -> genValue(-i * 5));
             }),
             withToString("short[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (short)(i * 5));
+                            i -> genValue(i * 5));
             }),
             withToString("short[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
-                            i -> (((short)(i + 1) == 0) ? 1 : (short)(i + 1)));
+                            i -> (((short)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
             withToString("short[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
@@ -1565,9 +1573,14 @@ public class Short512VectorTests extends AbstractVectorTest {
         Assert.assertEquals(asIntegral.species(), SPECIES);
     }
 
-    @Test(expectedExceptions = UnsupportedOperationException.class)
+    @Test
     void viewAsFloatingLanesTest() {
-        SPECIES.zero().viewAsFloatingLanes();
+        Vector<?> asFloating = SPECIES.zero().viewAsFloatingLanes();
+        VectorSpecies<?> asFloatingSpecies = asFloating.species();
+        Assert.assertNotEquals(asFloatingSpecies.elementType(), SPECIES.elementType());
+        Assert.assertEquals(asFloatingSpecies.vectorShape(), SPECIES.vectorShape());
+        Assert.assertEquals(asFloatingSpecies.length(), SPECIES.length());
+        Assert.assertEquals(asFloating.viewAsIntegralLanes().species(), SPECIES);
     }
 
     @Test

@@ -292,6 +292,11 @@ int VectorNode::opcode(int sopc, BasicType bt) {
   }
 }
 
+VectorNode* VectorCastNode::make(int vopc, Node* n1, BasicType bt, uint vlen) {
+  const TypeVect* vt = TypeVect::make(bt, vlen);
+  return VectorNode::make(vopc, n1, nullptr, vt);
+}
+
 // Return the scalar opcode for the specified vector opcode
 // and basic type.
 int VectorNode::scalar_opcode(int sopc, BasicType bt) {
@@ -403,6 +408,29 @@ int VectorNode::scalar_opcode(int sopc, BasicType bt) {
       assert(false,
              "Vector node %s is not handled in VectorNode::scalar_opcode",
              NodeClassNames[sopc]);
+      return 0; // Unimplemented
+  }
+}
+
+// Return the vector operator for the specified scalar operation
+// and vector length for half float
+int VectorNode::opcode(int sopc) {
+  switch (sopc) {
+    case Op_AddI:
+      return Op_AddVHF;
+    case Op_SubI:
+      return Op_SubVHF;
+    case Op_MulI:
+      return Op_MulVHF;
+    case Op_DivI:
+      return Op_DivVHF;
+    case Op_AbsI:
+      return Op_AbsVHF;
+    case Op_NegI:
+      return Op_NegVHF;
+    case Op_FmaF:
+      return Op_FmaVHF;
+    default:
       return 0; // Unimplemented
   }
 }
@@ -818,6 +846,8 @@ VectorNode* VectorNode::make(int vopc, Node* n1, Node* n2, const TypeVect* vt, b
   case Op_VectorUCastI2X: return new VectorUCastI2XNode(n1, vt);
   case Op_VectorCastHF2F: return new VectorCastHF2FNode(n1, vt);
   case Op_VectorCastF2HF: return new VectorCastF2HFNode(n1, vt);
+  case Op_VectorCastD2HF: return new VectorCastD2HFNode(n1, vt);
+  case Op_VectorCastHF2D: return new VectorCastHF2DNode(n1, vt);
 
   default:
     fatal("Missed vector creation for '%s'", NodeClassNames[vopc]);
@@ -1476,6 +1506,22 @@ int ReductionNode::opcode(int opc, BasicType bt) {
   return vopc;
 }
 
+//Haffloat reduction nodes.
+int ReductionNode::opcode(int opc) {
+  int vopc = opc;
+  switch (opc) {
+    case Op_AddI:
+      vopc = Op_AddReductionVHF;
+      break;
+    case Op_MulI:
+      vopc = Op_MulReductionVF;
+      break;
+    default: ShouldNotReachHere(); return 0;
+  }
+  return vopc;
+}
+
+
 // Return the appropriate reduction node.
 ReductionNode* ReductionNode::make(int opc, Node* ctrl, Node* n1, Node* n2, BasicType bt,
                                    bool requires_strict_order) {
@@ -1499,6 +1545,7 @@ ReductionNode* ReductionNode::make(int opc, Node* ctrl, Node* n1, Node* n2, Basi
   case Op_AndReductionV:  return new AndReductionVNode (ctrl, n1, n2);
   case Op_OrReductionV:   return new OrReductionVNode  (ctrl, n1, n2);
   case Op_XorReductionV:  return new XorReductionVNode (ctrl, n1, n2);
+  case Op_AddReductionVHF: return new AddReductionVHFNode(ctrl, n1, n2);
   default:
     assert(false, "unknown node: %s", NodeClassNames[vopc]);
     return nullptr;
@@ -1578,11 +1625,6 @@ VectorStoreMaskNode* VectorStoreMaskNode::make(PhaseGVN& gvn, Node* in, BasicTyp
   return new VectorStoreMaskNode(in, gvn.intcon(elem_size), vt);
 }
 
-VectorNode* VectorCastNode::make(int vopc, Node* n1, BasicType bt, uint vlen) {
-  const TypeVect* vt = TypeVect::make(bt, vlen);
-  return VectorNode::make(vopc, n1, nullptr, vt);
-}
-
 int VectorCastNode::opcode(int sopc, BasicType bt, bool is_signed) {
   assert((is_integral_type(bt) && bt != T_LONG) || is_signed, "");
 
@@ -1596,8 +1638,14 @@ int VectorCastNode::opcode(int sopc, BasicType bt, bool is_signed) {
     case Op_ConvF2HF:
       assert(bt == T_FLOAT, "");
       return Op_VectorCastF2HF;
+    case Op_ConvD2HF:
+      assert(bt == T_DOUBLE, "");
+      return Op_VectorCastD2HF;
+    case Op_ConvHF2D:
+      assert(bt == T_SHORT, "");
+      return Op_VectorCastHF2D;
     default:
-      // Handled normally below
+      // handled below
       break;
   }
 
@@ -1661,6 +1709,7 @@ Node* ReductionNode::make_identity_con_scalar(PhaseGVN& gvn, int sopc, BasicType
     case Op_AddReductionVI: // fallthrough
     case Op_AddReductionVL: // fallthrough
     case Op_AddReductionVF: // fallthrough
+    case Op_AddReductionVHF:// fallthrough
     case Op_AddReductionVD:
     case Op_OrReductionV:
     case Op_XorReductionV:

@@ -2068,6 +2068,7 @@ public:
   void data_processing(unsigned op31, unsigned type, unsigned opcode, unsigned op21,
                        FloatRegister Vd, FloatRegister Vn, FloatRegister Vm) {
     starti;
+    int op21 = (opcode == 0b000101) ? 0b0 : 0b1;
     f(op31, 31, 29);
     f(0b11110, 28, 24);
     f(type, 23, 22), f(op21, 21), f(opcode, 15, 10);
@@ -2128,6 +2129,14 @@ public:
 
   INSN(fabdh, 0b1, 0b1, 0b010); // Floating-point Absolute Difference (half-precision float)
 
+  INSN(fabdh,  0b011, 0b11, 0b000101);
+  INSN(fmulh,  0b000, 0b11, 0b000010);
+  INSN(fdivh,  0b000, 0b11, 0b000110);
+  INSN(faddh,  0b000, 0b11, 0b001010);
+  INSN(fsubh,  0b000, 0b11, 0b001110);
+  INSN(fmaxh,  0b000, 0b11, 0b010010);
+  INSN(fminh,  0b000, 0b11, 0b010110);
+  INSN(fnmulh, 0b000, 0b11, 0b100010);
 #undef INSN
 
    // Floating-point data-processing (3 source)
@@ -2217,8 +2226,9 @@ public:
   INSN(fcvtmssw, 0b0, 0b00, 0b10, 0b000);  // float -> signed word
   INSN(fcvtmsd,  0b1, 0b01, 0b10, 0b000);  // double -> signed xword
 
-  INSN(fmovs, 0b0, 0b00, 0b00, 0b110);
-  INSN(fmovd, 0b1, 0b01, 0b00, 0b110);
+  INSN(fmovs,  0b0, 0b00, 0b00, 0b110);
+  INSN(fmovd,  0b1, 0b01, 0b00, 0b110);
+  INSN(fmovhw, 0b0, 0b11, 0b00, 0b110);    // half-precision -> 32-bit
 
   INSN(fmovhid, 0b1, 0b10, 0b01, 0b110);
 
@@ -2229,8 +2239,9 @@ public:
     float_int_convert(sflag, type, rmode, opcode, as_Register(Vd), Rn); \
   }
 
-  INSN(fmovs, 0b0, 0b00, 0b00, 0b111);
-  INSN(fmovd, 0b1, 0b01, 0b00, 0b111);
+  INSN(fmovs,  0b0, 0b00, 0b00, 0b111);
+  INSN(fmovd,  0b1, 0b01, 0b00, 0b111);
+  INSN(fmovwh, 0b0, 0b11, 0b00, 0b111); // 32-bit -> half-precision
 
   INSN(scvtfws, 0b0, 0b00, 0b00, 0b010);
   INSN(scvtfs,  0b1, 0b00, 0b00, 0b010);
@@ -2973,9 +2984,9 @@ template<typename R, typename... Rx>
 #define INSN(NAME, op1, op2) \
   void NAME(FloatRegister Vd, FloatRegister Vn, SIMD_RegVariant type) {                 \
     starti;                                                                             \
-    assert(type == D || type == S, "Wrong type for faddp/fmaxp/fminp");                 \
-    f(0b0111111, 31, 25), f(op1, 24, 23),                                               \
-    f(type == S ? 0 : 1, 22), f(0b11000, 21, 17), f(op2, 16, 10), rf(Vn, 5), rf(Vd, 0); \
+    assert(type == D || type == S || type == H, "Wrong type for faddp/fmaxp/fminp");    \
+    f(0b01, 31, 30), f(type == H ? 0 : 1, 29), f(0b1111, 28, 25), f(op1, 24, 23),       \
+    f(type == D ? 1 : 0, 22), f(0b11000, 21, 17), f(op2, 16, 10), rf(Vn, 5), rf(Vd, 0); \
   }
 
   INSN(faddp, 0b00, 0b0110110);
@@ -3500,22 +3511,22 @@ public:
   }
 
   INSN(sve_fabd,   0b01100101, 0b001000100); // floating-point absolute difference
-  INSN(sve_fabs,   0b00000100, 0b011100101);
-  INSN(sve_fadd,   0b01100101, 0b000000100);
+  INSN(sve_fabs,   0b00000100, 0b011100101); // floating-point absolute value
+  INSN(sve_fadd,   0b01100101, 0b000000100); // floating-point add vector
   INSN(sve_fadda,  0b01100101, 0b011000001); // add strictly-ordered reduction to scalar Vd
-  INSN(sve_fdiv,   0b01100101, 0b001101100);
+  INSN(sve_fdiv,   0b01100101, 0b001101100); // floating-point divide by vector
   INSN(sve_fmax,   0b01100101, 0b000110100); // floating-point maximum
   INSN(sve_fmaxv,  0b01100101, 0b000110001); // floating-point maximum recursive reduction to scalar
   INSN(sve_fmin,   0b01100101, 0b000111100); // floating-point minimum
   INSN(sve_fminv,  0b01100101, 0b000111001); // floating-point minimum recursive reduction to scalar
-  INSN(sve_fmul,   0b01100101, 0b000010100);
-  INSN(sve_fneg,   0b00000100, 0b011101101);
+  INSN(sve_fmul,   0b01100101, 0b000010100); // floating-point multiply vectors
+  INSN(sve_fneg,   0b00000100, 0b011101101); // floating-point negate
   INSN(sve_frintm, 0b01100101, 0b000010101); // floating-point round to integral value, toward minus infinity
   INSN(sve_frintn, 0b01100101, 0b000000101); // floating-point round to integral value, nearest with ties to even
   INSN(sve_frinta, 0b01100101, 0b000100101); // floating-point round to integral value, nearest with ties to away
   INSN(sve_frintp, 0b01100101, 0b000001101); // floating-point round to integral value, toward plus infinity
-  INSN(sve_fsqrt,  0b01100101, 0b001101101);
-  INSN(sve_fsub,   0b01100101, 0b000001100);
+  INSN(sve_fsqrt,  0b01100101, 0b001101101); // floating-point square root
+  INSN(sve_fsub,   0b01100101, 0b000001100); // floating-point subtract vectors
 #undef INSN
 
   // SVE multiple-add/sub - predicated

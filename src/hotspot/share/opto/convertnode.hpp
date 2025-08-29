@@ -62,7 +62,7 @@ public:
 // Convert double to float
 class ConvD2FNode : public ConvertNode {
   public:
-  ConvD2FNode(Node* in1) : ConvertNode(Type::FLOAT,in1) {}
+  ConvD2FNode(Node* in1) : ConvertNode(Type::FLOAT, in1) {}
   virtual int Opcode() const;
   virtual const Type* in_type() const { return Type::DOUBLE; }
   virtual const Type* Value(PhaseGVN* phase) const;
@@ -70,11 +70,25 @@ class ConvD2FNode : public ConvertNode {
   virtual Node* Ideal(PhaseGVN* phase, bool can_reshape);
 };
 
+//------------------------------ConvD2HFNode------------------------------------
+// Convert Double to Halffloat
+class ConvD2HFNode : public ConvertNode {
+  public:
+  ConvD2HFNode(Node* in1) : ConvertNode(TypeInt::SHORT, in1) {}
+  virtual int Opcode() const;
+  virtual const Type* in_type() const { return Type::DOUBLE; }
+  /*FIXME
+   * virtual const Type* Value(PhaseGVN* phase) const;
+   * virtual Node* Identity(PhaseGVN* phase);
+   * virtual Node* Ideal(PhaseGVN* phase, bool can_reshape);
+   */
+};
+
 //------------------------------ConvD2INode------------------------------------
 // Convert Double to Integer
 class ConvD2INode : public ConvertNode {
   public:
-  ConvD2INode(Node* in1) : ConvertNode(TypeInt::INT,in1) {}
+  ConvD2INode(Node* in1) : ConvertNode(TypeInt::INT, in1) {}
   virtual int Opcode() const;
   virtual const Type* in_type() const { return Type::DOUBLE; }
   virtual const Type* Value(PhaseGVN* phase) const;
@@ -133,6 +147,19 @@ public:
   virtual const Type* in_type() const { return TypeInt::FLOAT; }
   virtual const Type* Value(PhaseGVN* phase) const;
   virtual Node* Identity(PhaseGVN* phase);
+};
+
+//------------------------------ConvHF2DNode------------------------------------
+// Convert Halffloat to Double
+class ConvHF2DNode : public ConvertNode {
+  public:
+  ConvHF2DNode(Node* in1) : ConvertNode(Type::DOUBLE, in1) {}
+  virtual int Opcode() const;
+  virtual const Type* in_type() const { return TypeInt::SHORT; }
+  /*
+   * virtual const Type* Value(PhaseGVN* phase) const;
+   * virtual Node* Identity(PhaseGVN* phase);
+   */
 };
 
 //------------------------------ConvHF2FNode------------------------------------

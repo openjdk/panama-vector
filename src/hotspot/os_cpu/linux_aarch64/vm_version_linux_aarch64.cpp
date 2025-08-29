@@ -55,6 +55,14 @@
 #define HWCAP_ATOMICS (1<<8)
 #endif
 
+#ifndef HWCAP_FPHP
+#define HWCAP_FPHP (1<<9)
+#endif
+
+#ifndef HWCAP_ASIMDHP
+#define HWCAP_ASIMDHP (1<<10)
+#endif
+
 #ifndef HWCAP_DCPOP
 #define HWCAP_DCPOP (1<<16)
 #endif
@@ -143,6 +151,8 @@ void VM_Version::get_os_cpu_info() {
       HWCAP_SHA2    |
       HWCAP_CRC32   |
       HWCAP_ATOMICS |
+      HWCAP_FPHP    |
+      HWCAP_ASIMDHP |
       HWCAP_DCPOP   |
       HWCAP_SHA3    |
       HWCAP_SHA512  |
