@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,7 +34,7 @@ import jdk.incubator.vector.VectorShuffle;
 import jdk.incubator.vector.$Type$Vector;
 
 #if[Halffloat]
-import jdk.incubator.vector.Halffloat;
+import jdk.incubator.vector.Float16;
 #end[Halffloat]
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
@@ -77,7 +77,7 @@ public class $vectorbenchtype$ extends AbstractVectorBenchmark {
 #end[BITWISE]
 
     static $type$ firstNonZero($type$ a, $type$ b) {
-        return $Boxtype$.compare(a, ($type$) 0) != 0 ? a : b;
+        return $Wideboxtype$.compare(a, ($type$) 0) != 0 ? a : b;
     }
 
 #if[BITWISE]
@@ -101,7 +101,7 @@ public class $vectorbenchtype$ extends AbstractVectorBenchmark {
 
     static $type$ genValue(int i) {
 #if[Halffloat]
-        return Halffloat.valueOf(i);
+        return Float16.float16ToRawShortBits(Float16.valueOf(i));
 #else[Halffloat]
         return ($type$) i;
 #end[Halffloat]
@@ -118,7 +118,7 @@ public class $vectorbenchtype$ extends AbstractVectorBenchmark {
         mt = fillMask(size, i -> true);
         rm = fillMask(size, i -> false);
 
-        s = fillInt(size, i -> RANDOM.nextInt(SPECIES.length()));
+        s = fillInt(size, i -> RAND.nextInt(SPECIES.length()));
     }
 
     final IntFunction<$type$[]> fa = vl -> a;

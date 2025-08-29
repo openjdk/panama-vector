@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -102,7 +102,7 @@ import java.net.StandardSocketOptions;      // javadoc
  * </ol>
  *
  * <p> <b>Usage Example:</b>
- * <pre>
+ * {@snippet lang=java :
  *     // join multicast group on this interface, and also use this
  *     // interface for outgoing multicast datagrams
  *     NetworkInterface ni = NetworkInterface.getByName("hme0");
@@ -115,7 +115,7 @@ import java.net.StandardSocketOptions;      // javadoc
  *     InetAddress group = InetAddress.getByName("225.4.5.6");
  *
  *     MembershipKey key = dc.join(group, ni);
- * </pre>
+ * }
  *
  * @spec https://www.rfc-editor.org/info/rfc2236
  *      RFC 2236: Internet Group Management Protocol, Version 2
@@ -182,10 +182,6 @@ public interface MulticastChannel
      *          If this channel is closed
      * @throws  IOException
      *          If an I/O error occurs
-     * @throws  SecurityException
-     *          If a security manager is set, and its
-     *          {@link SecurityManager#checkMulticast(InetAddress) checkMulticast}
-     *          method denies access to the multicast group
      */
     MembershipKey join(InetAddress group, NetworkInterface interf)
         throws IOException;
@@ -231,10 +227,6 @@ public interface MulticastChannel
      *          If this channel is closed
      * @throws  IOException
      *          If an I/O error occurs
-     * @throws  SecurityException
-     *          If a security manager is set, and its
-     *          {@link SecurityManager#checkMulticast(InetAddress) checkMulticast}
-     *          method denies access to the multicast group
      */
     MembershipKey join(InetAddress group, NetworkInterface interf, InetAddress source)
         throws IOException;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -48,12 +48,8 @@ import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.security.AccessControlContext;
-import java.security.AccessController;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivilegedAction;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -75,6 +71,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
@@ -86,16 +83,17 @@ import java.net.http.HttpResponse.PushPromiseHandler;
 import java.net.http.WebSocket;
 
 import jdk.internal.net.http.common.BufferSupplier;
+import jdk.internal.net.http.common.Deadline;
 import jdk.internal.net.http.common.HttpBodySubscriberWrapper;
 import jdk.internal.net.http.common.Log;
 import jdk.internal.net.http.common.Logger;
 import jdk.internal.net.http.common.MinimalFuture;
 import jdk.internal.net.http.common.Pair;
+import jdk.internal.net.http.common.TimeSource;
 import jdk.internal.net.http.common.Utils;
 import jdk.internal.net.http.common.OperationTrackers.Trackable;
 import jdk.internal.net.http.common.OperationTrackers.Tracker;
 import jdk.internal.net.http.websocket.BuilderImpl;
-import jdk.internal.misc.InnocuousThread;
 
 /**
  * Client implementation. Contains all configuration information and also
@@ -129,16 +127,10 @@ final class HttpClientImpl extends HttpClient implements Trackable {
             namePrefix = "HttpClient-" + clientID + "-Worker-";
         }
 
-        @SuppressWarnings("removal")
         @Override
         public Thread newThread(Runnable r) {
             String name = namePrefix + nextId.getAndIncrement();
-            Thread t;
-            if (System.getSecurityManager() == null) {
-                t = new Thread(null, r, name, 0, false);
-            } else {
-                t = InnocuousThread.newThread(name, r);
-            }
+            Thread t = new Thread(null, r, name, 0, false);
             t.setDaemon(true);
             return t;
         }
@@ -180,21 +172,15 @@ final class HttpClientImpl extends HttpClient implements Trackable {
         public void ensureExecutedAsync(Runnable command) {
             try {
                 delegate.execute(command);
-            } catch (Throwable t) {
+            } catch (RejectedExecutionException t) {
                 errorHandler.accept(command, t);
                 ASYNC_POOL.execute(command);
             }
         }
 
-        @SuppressWarnings("removal")
-        private void shutdown() {
+        void shutdown() {
             if (delegate instanceof ExecutorService service) {
-                PrivilegedAction<?> action = () -> {
-                    service.shutdown();
-                    return null;
-                };
-                AccessController.doPrivileged(action, null,
-                        new RuntimePermission("modifyThread"));
+                service.shutdown();
             }
         }
     }
@@ -281,23 +267,25 @@ final class HttpClientImpl extends HttpClient implements Trackable {
         }
     }
 
-    static void registerPending(PendingRequest pending) {
+    static <T> CompletableFuture<T> registerPending(PendingRequest pending, CompletableFuture<T> res) {
         // shortcut if cf is already completed: no need to go through the trouble of
         //    registering it
-        if (pending.cf.isDone()) return;
+        if (pending.cf.isDone()) return res;
 
         var client = pending.client;
         var cf = pending.cf;
         var id = pending.id;
         boolean added = client.pendingRequests.add(pending);
         // this may immediately remove `pending` from the set is the cf is already completed
-        pending.ref = cf.whenComplete((r,t) -> client.pendingRequests.remove(pending));
+        var ref = res.whenComplete((r,t) -> client.pendingRequests.remove(pending));
+        pending.ref = ref;
         assert added : "request %d was already added".formatted(id);
         // should not happen, unless the selector manager has already
         // exited abnormally
         if (client.selmgr.isClosed()) {
             pending.abort(client.selmgr.selectorClosedException());
         }
+        return ref;
     }
 
     static void abortPendingRequests(HttpClientImpl client, Throwable reason) {
@@ -332,7 +320,6 @@ final class HttpClientImpl extends HttpClient implements Trackable {
     private final ConnectionPool connections;
     private final DelegatingExecutor delegatingExecutor;
     private final boolean isDefaultExecutor;
-    // Security parameters
     private final SSLContext sslContext;
     private final SSLParameters sslParams;
     private final SelectorManager selmgr;
@@ -441,16 +428,6 @@ final class HttpClientImpl extends HttpClient implements Trackable {
                            SingleFacadeFactory facadeFactory) {
         id = CLIENT_IDS.incrementAndGet();
         dbgTag = "HttpClientImpl(" + id +")";
-        @SuppressWarnings("removal")
-        var sm = System.getSecurityManager();
-        if (sm != null && builder.localAddr != null) {
-            // when a specific local address is configured, it will eventually
-            // lead to the SocketChannel.bind(...) call with an InetSocketAddress
-            // whose InetAddress is the local address and the port is 0. That ultimately
-            // leads to a SecurityManager.checkListen permission check for that port.
-            // so we do that security manager check here with port 0.
-            sm.checkListen(0);
-        }
         localAddr = builder.localAddr;
         if (builder.sslContext == null) {
             try {
@@ -480,7 +457,7 @@ final class HttpClientImpl extends HttpClient implements Trackable {
                 Redirect.NEVER : builder.followRedirects;
         this.userProxySelector = builder.proxy;
         this.proxySelector = Optional.ofNullable(userProxySelector)
-                .orElseGet(HttpClientImpl::getDefaultProxySelector);
+                .orElseGet(ProxySelector::getDefault);
         if (debug.on())
             debug.log("proxySelector is %s (user-supplied=%s)",
                       this.proxySelector, userProxySelector != null);
@@ -566,16 +543,20 @@ final class HttpClientImpl extends HttpClient implements Trackable {
      */
     public boolean registerSubscriber(HttpBodySubscriberWrapper<?> subscriber) {
         if (!selmgr.isClosed()) {
-            synchronized (selmgr) {
+            selmgr.lock();
+            try {
                 if (!selmgr.isClosed()) {
                     if (subscribers.add(subscriber)) {
                         long count = pendingSubscribersCount.incrementAndGet();
                         if (debug.on()) {
                             debug.log("body subscriber registered: " + count);
                         }
+                        return true;
                     }
-                    return true;
+                    return false;
                 }
+            } finally {
+                selmgr.unlock();
             }
         }
         subscriber.onError(selmgr.selectorClosedException());
@@ -632,12 +613,6 @@ final class HttpClientImpl extends HttpClient implements Trackable {
     private static SSLParameters getDefaultParams(SSLContext ctx) {
         SSLParameters params = ctx.getDefaultSSLParameters();
         return params;
-    }
-
-    @SuppressWarnings("removal")
-    private static ProxySelector getDefaultProxySelector() {
-        PrivilegedAction<ProxySelector> action = ProxySelector::getDefault;
-        return AccessController.doPrivileged(action);
     }
 
     // Returns the facade that was returned to the application code.
@@ -926,8 +901,9 @@ final class HttpClientImpl extends HttpClient implements Trackable {
             cf = sendAsync(req, responseHandler, null, null);
             return cf.get();
         } catch (InterruptedException ie) {
-            if (cf != null )
+            if (cf != null) {
                 cf.cancel(true);
+            }
             throw ie;
         } catch (ExecutionException e) {
             final Throwable throwable = e.getCause();
@@ -955,7 +931,9 @@ final class HttpClientImpl extends HttpClient implements Trackable {
                 // SSLException
                 throw new SSLException(msg, throwable);
             } else if (throwable instanceof ProtocolException) {
-                throw new ProtocolException(msg);
+                ProtocolException pe = new ProtocolException(msg);
+                pe.initCause(throwable);
+                throw pe;
             } else if (throwable instanceof IOException) {
                 throw new IOException(msg, throwable);
             } else {
@@ -981,7 +959,6 @@ final class HttpClientImpl extends HttpClient implements Trackable {
         return sendAsync(userRequest, responseHandler, pushPromiseHandler, delegatingExecutor.delegate);
     }
 
-    @SuppressWarnings("removal")
     private <T> CompletableFuture<HttpResponse<T>>
     sendAsync(HttpRequest userRequest,
               BodyHandler<T> responseHandler,
@@ -1001,11 +978,7 @@ final class HttpClientImpl extends HttpClient implements Trackable {
             return MinimalFuture.failedFuture(selmgr.selectorClosedException());
         }
 
-        AccessControlContext acc = null;
-        if (System.getSecurityManager() != null)
-            acc = AccessController.getContext();
-
-        // Clone the, possibly untrusted, HttpRequest
+        // Clone the possibly untrusted HttpRequest
         HttpRequestImpl requestImpl = new HttpRequestImpl(userRequest, proxySelector);
         if (requestImpl.method().equals("CONNECT"))
             throw new IllegalArgumentException("Unsupported method CONNECT");
@@ -1038,8 +1011,7 @@ final class HttpClientImpl extends HttpClient implements Trackable {
                                                             requestImpl,
                                                             this,
                                                             responseHandler,
-                                                            pushPromiseHandler,
-                                                            acc);
+                                                            pushPromiseHandler);
             CompletableFuture<HttpResponse<T>> mexCf = mex.responseAsync(executor);
             CompletableFuture<HttpResponse<T>> res = mexCf.whenComplete((b,t) -> requestUnreference());
             if (DEBUGELAPSED) {
@@ -1047,19 +1019,23 @@ final class HttpClientImpl extends HttpClient implements Trackable {
                         (b,t) -> debugCompleted("ClientImpl (async)", start, userRequest));
             }
 
-            // makes sure that any dependent actions happen in the CF default
-            // executor. This is only needed for sendAsync(...), when
-            // exchangeExecutor is non-null.
-            if (exchangeExecutor != null) {
-                res = res.whenCompleteAsync((r, t) -> { /* do nothing */}, ASYNC_POOL);
-            }
-
             // The mexCf is the Cf we need to abort if the SelectorManager thread
             // is aborted.
             PendingRequest pending = new PendingRequest(id, requestImpl, mexCf, mex, this);
-            registerPending(pending);
-            return res;
-        } catch(Throwable t) {
+            res = registerPending(pending, res);
+
+            if (exchangeExecutor != null) {
+                // makes sure that any dependent actions happen in the CF default
+                // executor. This is only needed for sendAsync(...), when
+                // exchangeExecutor is non-null.
+                return res.isDone() ? res
+                        : res.whenCompleteAsync((r, t) -> { /* do nothing */}, ASYNC_POOL);
+            } else {
+                // make a defensive copy that can be safely canceled
+                // by the caller
+                return res.isDone() ? res : res.copy();
+            }
+        } catch (Throwable t) {
             requestUnreference();
             debugCompleted("ClientImpl (async)", start, userRequest);
             throw t;
@@ -1103,6 +1079,7 @@ final class HttpClientImpl extends HttpClient implements Trackable {
         private final HttpClientImpl owner;
         private final ConnectionPool pool;
         private final AtomicReference<Throwable> errorRef = new AtomicReference<>();
+        private final ReentrantLock lock = new ReentrantLock();
 
         SelectorManager(HttpClientImpl ref) throws IOException {
             super(null, null,
@@ -1151,11 +1128,14 @@ final class HttpClientImpl extends HttpClient implements Trackable {
         void register(AsyncEvent e) {
             var closed = this.closed;
             if (!closed) {
-                synchronized (this) {
+                lock.lock();
+                try {
                     closed = this.closed;
                     if (!closed) {
                         registrations.add(e);
                     }
+                } finally {
+                    lock.unlock();
                 }
             }
             if (closed) {
@@ -1183,7 +1163,8 @@ final class HttpClientImpl extends HttpClient implements Trackable {
             }
             Set<SelectionKey> keys = new HashSet<>();
             Set<AsyncEvent> toAbort = new HashSet<>();
-            synchronized (this) {
+            lock.lock();
+            try {
                 if (closed = this.closed) return;
                 this.closed = true;
                 try {
@@ -1195,6 +1176,8 @@ final class HttpClientImpl extends HttpClient implements Trackable {
                 toAbort.addAll(this.deregistrations);
                 this.registrations.clear();
                 this.deregistrations.clear();
+            } finally {
+                lock.unlock();
             }
             // double check after closing
             abortPendingRequests(owner, t);
@@ -1214,11 +1197,14 @@ final class HttpClientImpl extends HttpClient implements Trackable {
         // Only called by the selector manager thread
         private void shutdown() {
             try {
-                synchronized (this) {
+                lock.lock();
+                try {
                     Log.logTrace("{0}: shutting down", getName());
                     if (debug.on()) debug.log("SelectorManager shutting down");
                     closed = true;
                     selector.close();
+                } finally {
+                    lock.unlock();
                 }
             } catch (IOException ignored) {
             } finally {
@@ -1240,7 +1226,8 @@ final class HttpClientImpl extends HttpClient implements Trackable {
             try {
                 if (Log.channel()) Log.logChannel(getName() + ": starting");
                 while (!Thread.currentThread().isInterrupted() && !closed) {
-                    synchronized (this) {
+                    lock.lock();
+                    try {
                         assert errorList.isEmpty();
                         assert readyList.isEmpty();
                         assert resetList.isEmpty();
@@ -1290,6 +1277,8 @@ final class HttpClientImpl extends HttpClient implements Trackable {
                         }
                         registrations.clear();
                         selector.selectedKeys().clear();
+                    } finally {
+                        lock.unlock();
                     }
 
                     for (AsyncEvent event : readyList) {
@@ -1450,6 +1439,14 @@ final class HttpClientImpl extends HttpClient implements Trackable {
                 event.handle();
             }
         }
+
+        void lock() {
+            lock.lock();
+        }
+
+        void unlock() {
+            lock.unlock();
+        }
     }
 
     final String debugInterestOps(SelectableChannel channel) {
@@ -1457,10 +1454,10 @@ final class HttpClientImpl extends HttpClient implements Trackable {
             SelectionKey key = channel.keyFor(selmgr.selector);
             if (key == null) return "channel not registered with selector";
             String keyInterestOps = key.isValid()
-                    ? "key.interestOps=" + key.interestOps() : "invalid key";
+                    ? "key.interestOps=" + Utils.interestOps(key) : "invalid key";
             return String.format("channel registered with selector, %s, sa.interestOps=%s",
-                                 keyInterestOps,
-                                 ((SelectorAttachment)key.attachment()).interestOps);
+                    keyInterestOps,
+                    Utils.describeOps(((SelectorAttachment)key.attachment()).interestOps));
         } catch (Throwable t) {
             return String.valueOf(t);
         }
@@ -1499,7 +1496,8 @@ final class HttpClientImpl extends HttpClient implements Trackable {
             interestOps |= newOps;
             pending.add(e);
             if (debug.on())
-                debug.log("Registering %s for %d (%s)", e, newOps, reRegister);
+                debug.log("Registering %s for %s (%s)",
+                        e, Utils.describeOps(newOps), reRegister);
             if (reRegister) {
                 // first time registration happens here also
                 try {
@@ -1692,15 +1690,19 @@ final class HttpClientImpl extends HttpClient implements Trackable {
     // Timer controls.
     // Timers are implemented through timed Selector.select() calls.
 
-    synchronized void registerTimer(TimeoutEvent event) {
+    void registerTimer(TimeoutEvent event) {
         Log.logTrace("Registering timer {0}", event);
-        timeouts.add(event);
-        selmgr.wakeupSelector();
+        synchronized (this) {
+            timeouts.add(event);
+            selmgr.wakeupSelector();
+        }
     }
 
-    synchronized void cancelTimer(TimeoutEvent event) {
+    void cancelTimer(TimeoutEvent event) {
         Log.logTrace("Canceling timer {0}", event);
-        timeouts.remove(event);
+        synchronized (this) {
+            timeouts.remove(event);
+        }
     }
 
     /**
@@ -1713,10 +1715,10 @@ final class HttpClientImpl extends HttpClient implements Trackable {
         List<TimeoutEvent> toHandle = null;
         int remaining = 0;
         // enter critical section to retrieve the timeout event to handle
-        synchronized(this) {
+        synchronized (this) {
             if (timeouts.isEmpty()) return 0L;
 
-            Instant now = Instant.now();
+            Deadline now = TimeSource.now();
             Iterator<TimeoutEvent> itr = timeouts.iterator();
             while (itr.hasNext()) {
                 TimeoutEvent event = itr.next();
@@ -1811,7 +1813,7 @@ final class HttpClientImpl extends HttpClient implements Trackable {
                 if (timeoutVal >= 0) return timeoutVal;
             }
         } catch (NumberFormatException ignored) {
-            Log.logTrace("Invalid value set for " + prop + " property: " + ignored.toString());
+            Log.logTrace("Invalid value set for " + prop + " property: " + ignored);
         }
         return def;
     }

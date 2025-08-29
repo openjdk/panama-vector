@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -71,6 +71,7 @@ do
 
   Boxtype=$Type
   Wideboxtype=$Boxtype
+  ElemLayout=$Type
 
   kind=BITWISE
 
@@ -82,8 +83,9 @@ do
   fptype=$type
   Fptype=$Type
   Boxfptype=$Boxtype
+  carriertype=$type
+  Carriertype=$Type
   elemtype=$type
-  Elemtype=$Type
   FPtype=$type
 
   case $Type in
@@ -102,6 +104,7 @@ do
       ;;
     Int)
       Boxtype=Integer
+      Carriertype=Integer
       Wideboxtype=Integer
       Boxbitstype=Integer
       fptype=float
@@ -140,22 +143,26 @@ do
     Halffloat)
       kind=FP
       bitstype=short
-      maskbitstype=Halffloat
+      maskbitstype=short
       Bitstype=Short
       Boxbitstype=Short
       sizeInBytes=2
-      elemtype=Halffloat
-      Elemtype=Short
+      carriertype=short
+      Carriertype=Short
       FPtype=FP16
+      Boxtype=Float16
+      elemtype=Float16
+      ElemLayout=Short
       args="$args -KbyteOrShort -KshortOrFP -KshortOrHalffloat"
       ;;
   esac
+   
 
   args="$args -K$FPtype -K$kind -DBoxtype=$Boxtype -DWideboxtype=$Wideboxtype"
-  args="$args -Dbitstype=$bitstype -Dmaskbitstype=$maskbitstype -DBitstype=$Bitstype -DBoxbitstype=$Boxbitstype"
+  args="$args -DElemLayout=$ElemLayout -Dbitstype=$bitstype -Dmaskbitstype=$maskbitstype -DBitstype=$Bitstype -DBoxbitstype=$Boxbitstype"
   args="$args -Dfptype=$fptype -DFptype=$Fptype -DBoxfptype=$Boxfptype"
   args="$args -DsizeInBytes=$sizeInBytes"
-  args="$args -Delemtype=$elemtype -DElemtype=$Elemtype"
+  args="$args -Dcarriertype=$carriertype -Delemtype=$elemtype -DCarriertype=$Carriertype"
 
   abstractvectortype=${typeprefix}${Type}Vector
   abstractbitsvectortype=${typeprefix}${Bitstype}Vector

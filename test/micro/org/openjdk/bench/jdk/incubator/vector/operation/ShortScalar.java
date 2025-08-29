@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,7 @@ package org.openjdk.bench.jdk.incubator.vector.operation;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
+import jdk.incubator.vector.VectorMath;
 
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
@@ -75,7 +76,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
         mt = fillMask(size, i -> true);
         rms = fillMask(size, i -> false);
 
-        ss = fillInt(size, i -> RANDOM.nextInt(Math.max(i,1)));
+        ss = fillInt(size, i -> RAND.nextInt(Math.max(i,1)));
     }
 
     final IntFunction<short[]> fa = vl -> as;
@@ -1040,6 +1041,82 @@ public class ShortScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
+    public void UMIN(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        short[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                short b = bs[i];
+                rs[i] = (short)(VectorMath.minUnsigned(a, b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void UMINMasked(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        short[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                short b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = (short)(VectorMath.minUnsigned(a, b));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void UMAX(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        short[] rs = fr.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                short b = bs[i];
+                rs[i] = (short)(VectorMath.maxUnsigned(a, b));
+            }
+        }
+
+        bh.consume(rs);
+    }
+
+    @Benchmark
+    public void UMAXMasked(Blackhole bh) {
+        short[] as = fa.apply(size);
+        short[] bs = fb.apply(size);
+        short[] rs = fr.apply(size);
+        boolean[] ms = fm.apply(size);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < as.length; i++) {
+                short a = as[i];
+                short b = bs[i];
+                if (ms[i % ms.length]) {
+                    rs[i] = (short)(VectorMath.maxUnsigned(a, b));
+                } else {
+                    rs[i] = a;
+                }
+            }
+        }
+        bh.consume(rs);
+    }
+
+    @Benchmark
     public void ANDLanes(Blackhole bh) {
         short[] as = fa.apply(size);
         short r = -1;
@@ -1326,7 +1403,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void UNSIGNED_LT(Blackhole bh) {
+    public void ULT(Blackhole bh) {
         short[] as = fa.apply(size);
         short[] bs = fb.apply(size);
         boolean r = true;
@@ -1341,7 +1418,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void UNSIGNED_GT(Blackhole bh) {
+    public void UGT(Blackhole bh) {
         short[] as = fa.apply(size);
         short[] bs = fb.apply(size);
         boolean r = true;
@@ -1356,7 +1433,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void UNSIGNED_LE(Blackhole bh) {
+    public void ULE(Blackhole bh) {
         short[] as = fa.apply(size);
         short[] bs = fb.apply(size);
         boolean r = true;
@@ -1371,7 +1448,7 @@ public class ShortScalar extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void UNSIGNED_GE(Blackhole bh) {
+    public void UGE(Blackhole bh) {
         short[] as = fa.apply(size);
         short[] bs = fb.apply(size);
         boolean r = true;

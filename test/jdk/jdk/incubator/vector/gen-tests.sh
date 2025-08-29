@@ -1,13 +1,11 @@
 #!/bin/bash
 #
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 only, as
-# published by the Free Software Foundation.  Oracle designates this
-# particular file as subject to the "Classpath" exception as provided
-# by Oracle in the LICENSE file that accompanied this code.
+# published by the Free Software Foundation.
 #
 # This code is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -65,6 +63,7 @@ generate_test_cases() {
     Fptype=$Type
     Boxfptype=$Boxtype
     ClassType=$type
+    fpkind=""
 
     case $type in
       byte)
@@ -94,6 +93,7 @@ generate_test_cases() {
         ;;
       float)
         kind=FP
+        fpkind=FP32
         bitstype=int
         Bitstype=Int
         Boxbitstype=Integer
@@ -103,6 +103,7 @@ generate_test_cases() {
         ;;
       double)
         kind=FP
+        fpkind=FP64
         bitstype=long
         Bitstype=Long
         Boxbitstype=Long
@@ -112,17 +113,18 @@ generate_test_cases() {
         ;;
       halffloat)
         VecEleType=Short
-        ClassType=Halffloat
+        ClassType=Float16
         kind=FP
+        fpkind=FP16
         bitstype=short
         Bitstype=Short
         Boxbitstype=Short
-        Wideboxtype=Halffloat
+        Wideboxtype=Float16
         args="$args -Dtype=short -DType=Halffloat -DTYPE=HALFFLOAT -DElementType=Halffloat"
         ;;
       esac
 
-    args="$args -K$kind -K$Type -DBoxtype=$Boxtype -DWideboxtype=$Wideboxtype -DMaxValue=$MaxValue -DMinValue=$MinValue"
+    args="$args -K$fpkind -K$kind -K$Type -DBoxtype=$Boxtype -DWideboxtype=$Wideboxtype -DMaxValue=$MaxValue -DMinValue=$MinValue"
     args="$args -Dbitstype=$bitstype -DBitstype=$Bitstype -DBoxbitstype=$Boxbitstype -DElementType=$Type -DVecEleType=$VecEleType -DClassType=$ClassType"
     args="$args -Dfptype=$fptype -DFptype=$Fptype -DBoxfptype=$Boxfptype"
 

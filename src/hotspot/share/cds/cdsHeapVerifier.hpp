@@ -22,13 +22,13 @@
  *
  */
 
-#ifndef SHARED_CDS_CDSHEAPVERIFIER_HPP
-#define SHARED_CDS_CDSHEAPVERIFIER_HPP
+#ifndef SHARE_CDS_CDSHEAPVERIFIER_HPP
+#define SHARE_CDS_CDSHEAPVERIFIER_HPP
 
 #include "cds/heapShared.hpp"
 #include "memory/iterator.hpp"
 #include "utilities/growableArray.hpp"
-#include "utilities/resourceHash.hpp"
+#include "utilities/hashTable.hpp"
 
 class InstanceKlass;
 class Symbol;
@@ -47,7 +47,7 @@ class CDSHeapVerifier : public KlassClosure {
     Symbol* _name;
   };
 
-  ResourceHashtable<oop, StaticFieldInfo,
+  HashTable<oop, StaticFieldInfo,
       15889, // prime number
       AnyObj::C_HEAP,
       mtClassShared,
@@ -79,7 +79,7 @@ public:
   // Overrides KlassClosure::do_klass()
   virtual void do_klass(Klass* k);
 
-  // For ResourceHashtable::iterate()
+  // For HashTable::iterate()
   inline bool do_entry(oop& orig_obj, HeapShared::CachedOopInfo& value);
 
   static void verify();
@@ -88,4 +88,4 @@ public:
 };
 
 #endif // INCLUDE_CDS_JAVA_HEAP
-#endif // SHARED_CDS_CDSHEAPVERIFIER_HPP
+#endif // SHARE_CDS_CDSHEAPVERIFIER_HPP

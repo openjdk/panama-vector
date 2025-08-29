@@ -301,7 +301,7 @@ struct indic_shape_plan_t
 #else
   static constexpr bool uniscribe_bug_compatible = false;
 #endif
-  mutable hb_atomic_int_t virama_glyph;
+  mutable hb_atomic_t<hb_codepoint_t> virama_glyph;
 
   hb_indic_would_substitute_feature_t rphf;
   hb_indic_would_substitute_feature_t pref;
@@ -1067,12 +1067,15 @@ final_reordering_syllable_indic (const hb_ot_shape_plan_t *plan,
               base = i;
               while (base < end && is_halant (info[base]))
                 base++;
-              info[base].indic_position() = POS_BASE_C;
+              if (base < end)
+                info[base].indic_position() = POS_BASE_C;
 
               try_pref = false;
             }
             break;
           }
+        if (base == end)
+          break;
       }
       /* For Malayalam, skip over unformed below- (but NOT post-) forms. */
       if (buffer->props.script == HB_SCRIPT_MALAYALAM)

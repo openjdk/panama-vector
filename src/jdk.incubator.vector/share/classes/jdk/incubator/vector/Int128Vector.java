@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,8 @@
 package jdk.incubator.vector;
 
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
@@ -52,7 +54,11 @@ final class Int128Vector extends IntVector {
 
     static final int VLENGTH = VSPECIES.laneCount(); // used by the JVM
 
-    static final Class<Integer> ETYPE = int.class; // used by the JVM
+    static final Class<Integer> CTYPE = int.class; // carrier type used by the JVM
+
+    static final Class<Integer> ETYPE = int.class; // vector element type used by the JVM
+
+    static final int VECTOR_OPER_TYPE = VECTOR_TYPE_PRIM;
 
     Int128Vector(int[] v) {
         super(v);
@@ -87,8 +93,11 @@ final class Int128Vector extends IntVector {
     }
 
     @ForceInline
+    final Class<Integer> carrierType() { return CTYPE; }
+
+    @ForceInline
     @Override
-    public final Class<Integer> elementType() { return int.class; }
+    public final Class<Integer> elementType() { return ETYPE; }
 
     @ForceInline
     @Override
@@ -140,6 +149,12 @@ final class Int128Vector extends IntVector {
     @Override
     @ForceInline
     Int128Shuffle iotaShuffle() { return Int128Shuffle.IOTA; }
+
+    @Override
+    @ForceInline
+    Int128Shuffle iotaShuffle(int start, int step, boolean wrap) {
+        return (Int128Shuffle) iotaShuffleTemplate(start, step, wrap);
+    }
 
     @Override
     @ForceInline
@@ -344,9 +359,14 @@ final class Int128Vector extends IntVector {
 
     @Override
     @ForceInline
-    public final
-    <F> VectorShuffle<F> toShuffle(AbstractSpecies<F> dsp) {
-        return super.toShuffleTemplate(dsp);
+    final <F> VectorShuffle<F> bitsToShuffle(AbstractSpecies<F> dsp) {
+        return bitsToShuffleTemplate(dsp);
+    }
+
+    @Override
+    @ForceInline
+    public final Int128Shuffle toShuffle() {
+        return (Int128Shuffle) toShuffle(vspecies(), false);
     }
 
     // Specialized unary testing
@@ -490,9 +510,16 @@ final class Int128Vector extends IntVector {
                                    VectorMask<Integer> m) {
         return (Int128Vector)
             super.selectFromTemplate((Int128Vector) v,
-                                     (Int128Mask) m);  // specialize
+                                     Int128Mask.class, (Int128Mask) m);  // specialize
     }
 
+    @Override
+    @ForceInline
+    public Int128Vector selectFrom(Vector<Integer> v1,
+                                   Vector<Integer> v2) {
+        return (Int128Vector)
+            super.selectFromTemplate((Int128Vector) v1, (Int128Vector) v2);  // specialize
+    }
 
     @ForceInline
     @Override
@@ -506,9 +533,10 @@ final class Int128Vector extends IntVector {
         }
     }
 
+    @ForceInline
     public int laneHelper(int i) {
         return (int) VectorSupport.extract(
-                                VCLASS, ETYPE, VLENGTH,
+                                VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                 this, i,
                                 (vec, ix) -> {
                                     int[] vecarr = vec.vec();
@@ -528,9 +556,10 @@ final class Int128Vector extends IntVector {
         }
     }
 
+    @ForceInline
     public Int128Vector withLaneHelper(int i, int e) {
         return VectorSupport.insert(
-                                VCLASS, ETYPE, VLENGTH,
+                                VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                 this, i, (long)e,
                                 (v, ix, bits) -> {
                                     int[] res = v.vec().clone();
@@ -543,7 +572,7 @@ final class Int128Vector extends IntVector {
 
     static final class Int128Mask extends AbstractMask<Integer> {
         static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
-        static final Class<Integer> ETYPE = int.class; // used by the JVM
+        static final Class<Integer> CTYPE = int.class; // used by the JVM
 
         Int128Mask(boolean[] bits) {
             this(bits, 0);
@@ -645,7 +674,7 @@ final class Int128Vector extends IntVector {
         /*package-private*/
         Int128Mask indexPartiallyInUpperRange(long offset, long limit) {
             return (Int128Mask) VectorSupport.indexPartiallyInUpperRange(
-                Int128Mask.class, ETYPE, VLENGTH, offset, limit,
+                Int128Mask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, offset, limit,
                 (o, l) -> (Int128Mask) TRUE_MASK.indexPartiallyInRange(o, l));
         }
 
@@ -661,8 +690,9 @@ final class Int128Vector extends IntVector {
         @ForceInline
         public Int128Mask compress() {
             return (Int128Mask)VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                Int128Vector.class, Int128Mask.class, ETYPE, VLENGTH, null, this,
-                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
+                Int128Vector.class, Int128Mask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, null, this,
+                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT,
+                m1.trueCount()));
         }
 
 
@@ -673,7 +703,7 @@ final class Int128Vector extends IntVector {
         public Int128Mask and(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
             Int128Mask m = (Int128Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, Int128Mask.class, null, int.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Int128Mask.class, null, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
@@ -683,7 +713,7 @@ final class Int128Vector extends IntVector {
         public Int128Mask or(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
             Int128Mask m = (Int128Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, Int128Mask.class, null, int.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Int128Mask.class, null, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
@@ -693,7 +723,7 @@ final class Int128Vector extends IntVector {
         public Int128Mask xor(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
             Int128Mask m = (Int128Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, Int128Mask.class, null, int.class, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Int128Mask.class, null, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
@@ -703,22 +733,25 @@ final class Int128Vector extends IntVector {
         @Override
         @ForceInline
         public int trueCount() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Int128Mask.class, int.class, VLENGTH, this,
-                                                      (m) -> trueCountHelper(m.getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Int128Mask.class, int.class, ETYPE,
+                                                            VECTOR_OPER_TYPE, VLENGTH, this,
+                                                            (m) -> trueCountHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int firstTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Int128Mask.class, int.class, VLENGTH, this,
-                                                      (m) -> firstTrueHelper(m.getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Int128Mask.class, int.class, ETYPE,
+                                                            VECTOR_OPER_TYPE, VLENGTH, this,
+                                                            (m) -> firstTrueHelper(m.getBits()));
         }
 
         @Override
         @ForceInline
         public int lastTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Int128Mask.class, int.class, VLENGTH, this,
-                                                      (m) -> lastTrueHelper(m.getBits()));
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Int128Mask.class, int.class, ETYPE,
+                                                            VECTOR_OPER_TYPE, VLENGTH, this,
+                                                            (m) -> lastTrueHelper(m.getBits()));
         }
 
         @Override
@@ -727,8 +760,19 @@ final class Int128Vector extends IntVector {
             if (length() > Long.SIZE) {
                 throw new UnsupportedOperationException("too many lanes for one long");
             }
-            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Int128Mask.class, int.class, VLENGTH, this,
+            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Int128Mask.class, int.class, ETYPE,
+                                                      VECTOR_OPER_TYPE, VLENGTH, this,
                                                       (m) -> toLongHelper(m.getBits()));
+        }
+
+        // laneIsSet
+
+        @Override
+        @ForceInline
+        public boolean laneIsSet(int i) {
+            Objects.checkIndex(i, length());
+            return VectorSupport.extract(Int128Mask.class, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                         this, i, (m, idx) -> (m.getBits()[idx] ? 1L : 0L)) == 1L;
         }
 
         // Reductions
@@ -736,23 +780,23 @@ final class Int128Vector extends IntVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            return VectorSupport.test(BT_ne, Int128Mask.class, int.class, VLENGTH,
-                                         this, vspecies().maskAll(true),
-                                         (m, __) -> anyTrueHelper(((Int128Mask)m).getBits()));
+            return VectorSupport.test(BT_ne, Int128Mask.class, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                      this, vspecies().maskAll(true),
+                                      (m, __) -> anyTrueHelper(((Int128Mask)m).getBits()));
         }
 
         @Override
         @ForceInline
         public boolean allTrue() {
-            return VectorSupport.test(BT_overflow, Int128Mask.class, int.class, VLENGTH,
-                                         this, vspecies().maskAll(true),
-                                         (m, __) -> allTrueHelper(((Int128Mask)m).getBits()));
+            return VectorSupport.test(BT_overflow, Int128Mask.class, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                      this, vspecies().maskAll(true),
+                                      (m, __) -> allTrueHelper(((Int128Mask)m).getBits()));
         }
 
         @ForceInline
         /*package-private*/
         static Int128Mask maskAll(boolean bit) {
-            return VectorSupport.fromBitsCoerced(Int128Mask.class, int.class, VLENGTH,
+            return VectorSupport.fromBitsCoerced(Int128Mask.class, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
                                                  (bit ? -1 : 0), MODE_BROADCAST, null,
                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
@@ -765,7 +809,7 @@ final class Int128Vector extends IntVector {
 
     static final class Int128Shuffle extends AbstractShuffle<Integer> {
         static final int VLENGTH = VSPECIES.laneCount();    // used by the JVM
-        static final Class<Integer> ETYPE = int.class; // used by the JVM
+        static final Class<Integer> CTYPE = int.class; // used by the JVM
 
         Int128Shuffle(int[] indices) {
             super(indices);
@@ -801,14 +845,19 @@ final class Int128Vector extends IntVector {
 
         @Override
         @ForceInline
+        public Int128Vector toVector() {
+            return toBitsVector();
+        }
+
+        @Override
+        @ForceInline
         Int128Vector toBitsVector() {
             return (Int128Vector) super.toBitsVectorTemplate();
         }
 
         @Override
-        @ForceInline
-        IntVector toBitsVector0() {
-            return Int128Vector.VSPECIES.dummyVector().vectorFactory(indices());
+        Int128Vector toBitsVector0() {
+            return ((Int128Vector) vspecies().asIntegral().dummyVector()).vectorFactory(indices());
         }
 
         @Override
@@ -821,6 +870,40 @@ final class Int128Vector extends IntVector {
         @ForceInline
         public void intoArray(int[] a, int offset) {
             toBitsVector().intoArray(a, offset);
+        }
+
+        @Override
+        @ForceInline
+        public void intoMemorySegment(MemorySegment ms, long offset, ByteOrder bo) {
+            toBitsVector().intoMemorySegment(ms, offset, bo);
+         }
+
+        @Override
+        @ForceInline
+        public final Int128Mask laneIsValid() {
+            return (Int128Mask) toBitsVector().compare(VectorOperators.GE, 0)
+                    .cast(vspecies());
+        }
+
+        @ForceInline
+        @Override
+        public final Int128Shuffle rearrange(VectorShuffle<Integer> shuffle) {
+            Int128Shuffle concreteShuffle = (Int128Shuffle) shuffle;
+            return (Int128Shuffle) toBitsVector().rearrange(concreteShuffle)
+                    .toShuffle(vspecies(), false);
+        }
+
+        @ForceInline
+        @Override
+        public final Int128Shuffle wrapIndexes() {
+            Int128Vector v = toBitsVector();
+            if ((length() & (length() - 1)) == 0) {
+                v = (Int128Vector) v.lanewise(VectorOperators.AND, length() - 1);
+            } else {
+                v = (Int128Vector) v.blend(v.lanewise(VectorOperators.ADD, length()),
+                            v.compare(VectorOperators.LT, 0));
+            }
+            return (Int128Shuffle) v.toShuffle(vspecies(), false);
         }
 
         private static int[] prepare(int[] indices, int offset) {
@@ -847,14 +930,9 @@ final class Int128Vector extends IntVector {
             int length = indices.length;
             for (int si : indices) {
                 if (si >= (int)length || si < (int)(-length)) {
-                    boolean assertsEnabled = false;
-                    assert(assertsEnabled = true);
-                    if (assertsEnabled) {
-                        String msg = ("index "+si+"out of range ["+length+"] in "+
+                    String msg = ("index "+si+"out of range ["+length+"] in "+
                                   java.util.Arrays.toString(indices));
-                        throw new AssertionError(msg);
-                    }
-                    return false;
+                    throw new AssertionError(msg);
                 }
             }
             return true;

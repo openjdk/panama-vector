@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,8 @@
  * @modules java.base/jdk.internal.misc
  *          java.management
  * @build jdk.test.whitebox.WhiteBox
+ * @comment Asan changes memory layout and we get a different coops mode
+ * @requires !vm.asan
  * @run driver jdk.test.lib.helpers.ClassFileInstaller jdk.test.whitebox.WhiteBox
  * @run main/othervm/timeout=480 -XX:+UnlockDiagnosticVMOptions -XX:+WhiteBoxAPI -Xbootclasspath/a:. UseCompressedOops
  */
@@ -189,7 +191,7 @@ public class UseCompressedOops {
 
         args.add("-version");
 
-        ProcessBuilder pb = ProcessTools.createJavaProcessBuilder(args);
+        ProcessBuilder pb = ProcessTools.createLimitedTestJavaProcessBuilder(args);
         return new OutputAnalyzer(pb.start());
     }
 }

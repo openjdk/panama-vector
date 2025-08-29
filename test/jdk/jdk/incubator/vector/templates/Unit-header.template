@@ -1,9 +1,5 @@
 /*
-#if[Halffloat]
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
-#else[Halffloat]
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
-#end[Halffloat]
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,8 +23,11 @@
 
 /*
  * @test
+ * @key randomness
+ *
+ * @library /test/lib
  * @modules jdk.incubator.vector
- * @run testng/othervm -ea -esa -Xbatch -XX:-TieredCompilation $vectorteststype$
+ * @run testng/othervm/timeout=300 -ea -esa -Xbatch -XX:{#if[FP16]?TieredStopAtLevel=3:-TieredCompilation} $vectorteststype$
  */
 
 #warn This file is preprocessed before being compiled
@@ -39,6 +38,9 @@ import jdk.incubator.vector.VectorShuffle;
 import jdk.incubator.vector.VectorMask;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.Vector;
+#if[!FP]
+import jdk.incubator.vector.VectorMath;
+#end[!FP]
 
 #if[Byte]
 import jdk.incubator.vector.ByteVector;
@@ -47,7 +49,7 @@ import jdk.incubator.vector.ByteVector;
 import jdk.incubator.vector.FloatVector;
 #end[Float]
 #if[Halffloat]
-import jdk.incubator.vector.Halffloat;
+import jdk.incubator.vector.Float16;
 import jdk.incubator.vector.HalffloatVector;
 #end[Halffloat]
 #if[Int]
@@ -100,8 +102,35 @@ public class $vectorteststype$ extends AbstractVectorTest {
 #if[BITWISE]
     private static final $type$ CONST_SHIFT = $Boxtype$.SIZE / 2;
 #end[BITWISE]
+#if[FP]
+    // for floating point addition reduction ops that may introduce rounding errors
+    private static final $type$ RELATIVE_ROUNDING_ERROR_FACTOR_ADD = ($type$)10.0;
+
+    // for floating point multiplication reduction ops that may introduce rounding errors
+    private static final $type$ RELATIVE_ROUNDING_ERROR_FACTOR_MUL = ($type$)50.0;
+#end[FP]
 
     static final int BUFFER_REPS = Integer.getInteger("jdk.incubator.vector.test.buffer-vectors", 25000 / $bits$);
+
+    static void assertArraysStrictlyEquals($type$[] r, $type$[] a) {
+        for (int i = 0; i < a.length; i++) {
+#if[FP]
+            $bitstype$ ir = {#if[FP16]?r[i]:$Wideboxtype$.$type$ToRaw$Bitstype$Bits(r[i])};
+            $bitstype$ ia = {#if[FP16]?a[i]:$Wideboxtype$.$type$ToRaw$Bitstype$Bits(a[i])};
+            if (ir != ia) {
+#if[Float]
+                Assert.fail(String.format("at index #%d, expected = %08X, actual = %08X", i, ia, ir));
+#else[Float]
+                Assert.fail(String.format("at index #%d, expected = %016X, actual = %016X", i, ia, ir));
+#end[Float]
+            }
+#else[FP]
+            if (r[i] != a[i]) {
+                Assert.fail("at index #" + i + ", expected = " + a[i] + ", actual = " + r[i]);
+            }
+#end[FP]
+        }
+    }
 
     interface FUnOp {
         $type$ apply($type$ a);
@@ -159,6 +188,9 @@ public class $vectorteststype$ extends AbstractVectorTest {
 
     static void assertReductionArraysEquals($type$[] r, $type$ rc, $type$[] a,
                                             FReductionOp f, FReductionAllOp fa) {
+#if[FP]
+        assertReductionArraysEquals(r, rc, a, f, fa, ($type$)0.0);
+#else[FP]
         int i = 0;
         try {
             Assert.assertEquals(rc, fa.apply(a));
@@ -169,7 +201,25 @@ public class $vectorteststype$ extends AbstractVectorTest {
             Assert.assertEquals(rc, fa.apply(a), "Final result is incorrect!");
             Assert.assertEquals(r[i], f.apply(a, i), "at index #" + i);
         }
+#end[FP]
     }
+#if[FP]
+
+    static void assertReductionArraysEquals($type$[] r, $type$ rc, $type$[] a,
+                                            FReductionOp f, FReductionAllOp fa,
+                                            $type$ relativeErrorFactor) {
+        int i = 0;
+        try {
+            Assert.assertEquals(rc, fa.apply(a), Math.ulp(rc) * relativeErrorFactor);
+            for (; i < a.length; i += SPECIES.length()) {
+                Assert.assertEquals(r[i], f.apply(a, i), Math.ulp(r[i]) * relativeErrorFactor);
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(rc, fa.apply(a), Math.ulp(rc) * relativeErrorFactor, "Final result is incorrect!");
+            Assert.assertEquals(r[i], f.apply(a, i), Math.ulp(r[i]) * relativeErrorFactor, "at index #" + i);
+        }
+    }
+#end[FP]
 
     interface FReductionMaskedOp {
         $type$ apply($type$[] a, int idx, boolean[] mask);
@@ -181,6 +231,9 @@ public class $vectorteststype$ extends AbstractVectorTest {
 
     static void assertReductionArraysEqualsMasked($type$[] r, $type$ rc, $type$[] a, boolean[] mask,
                                             FReductionMaskedOp f, FReductionAllMaskedOp fa) {
+#if[FP]
+        assertReductionArraysEqualsMasked(r, rc, a, mask, f, fa, ($type$)0.0);
+#else[FP]
         int i = 0;
         try {
             Assert.assertEquals(rc, fa.apply(a, mask));
@@ -191,7 +244,26 @@ public class $vectorteststype$ extends AbstractVectorTest {
             Assert.assertEquals(rc, fa.apply(a, mask), "Final result is incorrect!");
             Assert.assertEquals(r[i], f.apply(a, i, mask), "at index #" + i);
         }
+#end[FP]
     }
+#if[FP]
+
+    static void assertReductionArraysEqualsMasked($type$[] r, $type$ rc, $type$[] a, boolean[] mask,
+                                            FReductionMaskedOp f, FReductionAllMaskedOp fa,
+                                            $type$ relativeError) {
+        int i = 0;
+        try {
+            Assert.assertEquals(rc, fa.apply(a, mask), Math.abs(rc * relativeError));
+            for (; i < a.length; i += SPECIES.length()) {
+                Assert.assertEquals(r[i], f.apply(a, i, mask), Math.abs(r[i] *
+relativeError));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(rc, fa.apply(a, mask), Math.abs(rc * relativeError), "Final result is incorrect!");
+            Assert.assertEquals(r[i], f.apply(a, i, mask), Math.abs(r[i] * relativeError), "at index #" + i);
+        }
+    }
+#end[FP]
 
 #if[!Long]
     interface FReductionOpLong {
@@ -269,25 +341,6 @@ public class $vectorteststype$ extends AbstractVectorTest {
         }
     }
 
-    static void assertInsertArraysEquals($type$[] r, $type$[] a, $type$ element, int index, int start, int end) {
-        int i = start;
-        try {
-            for (; i < end; i += 1) {
-                if(i%SPECIES.length() == index) {
-                    Assert.assertEquals(r[i], element);
-                } else {
-                    Assert.assertEquals(r[i], a[i]);
-                }
-            }
-        } catch (AssertionError e) {
-            if (i%SPECIES.length() == index) {
-                Assert.assertEquals(r[i], element, "at index #" + i);
-            } else {
-                Assert.assertEquals(r[i], a[i], "at index #" + i);
-            }
-        }
-    }
-
     static void assertRearrangeArraysEquals($type$[] r, $type$[] a, int[] order, int vector_len) {
         int i = 0, j = 0;
         try {
@@ -351,17 +404,38 @@ public class $vectorteststype$ extends AbstractVectorTest {
         }
     }
 
-    static void assertSelectFromArraysEquals($type$[] r, $type$[] a, $type$[] order, int vector_len) {
+    static void assertSelectFromTwoVectorEquals($type$[] r, $type$[] order, $type$[] a, $type$[] b, int vector_len) {
         int i = 0, j = 0;
+        boolean is_exceptional_idx = false;
+        int idx = 0, wrapped_index = 0, oidx = 0;
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
-                    Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                    idx = i + j;
+                    wrapped_index = Math.floorMod((int)order[idx], 2 * vector_len);
+                    is_exceptional_idx = wrapped_index >= vector_len;
+                    oidx = is_exceptional_idx ? (wrapped_index - vector_len) : wrapped_index;
+                    Assert.assertEquals(r[idx], (is_exceptional_idx ? b[i + oidx] : a[i + oidx]));
                 }
             }
         } catch (AssertionError e) {
-            int idx = i + j;
-            Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]]);
+            Assert.assertEquals(r[idx], (is_exceptional_idx ? b[i + oidx] : a[i + oidx]), "at index #" + idx + ", order = " + order[idx] + ", a = " + a[i + oidx] + ", b = " + b[i + oidx]);
+        }
+    }
+
+    static void assertSelectFromArraysEquals($type$[] r, $type$[] a, $type$[] order, int vector_len) {
+        int i = 0, j = 0;
+        int idx = 0, wrapped_index = 0;
+        try {
+            for (; i < a.length; i += vector_len) {
+                for (j = 0; j < vector_len; j++) {
+                    idx = {#if[FP16]?Float16.shortBitsToFloat16(order[i+j]).intValue():(int)order[i+j]};
+                    wrapped_index = Integer.remainderUnsigned(idx, vector_len);
+                    Assert.assertEquals(r[i+j], a[i+wrapped_index]);
+                }
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i+j], a[i+wrapped_index], "at index #" + idx + ", input = " + a[i+wrapped_index]);
         }
     }
 
@@ -387,21 +461,23 @@ public class $vectorteststype$ extends AbstractVectorTest {
 
     static void assertSelectFromArraysEquals($type$[] r, $type$[] a, $type$[] order, boolean[] mask, int vector_len) {
         int i = 0, j = 0;
+        int idx = 0, wrapped_index = 0;
         try {
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
+                    idx = {#if[FP16]?Float16.shortBitsToFloat16(order[i+j]).intValue():(int)order[i+j]};
+                    wrapped_index = Integer.remainderUnsigned(idx, vector_len);
                     if (mask[j % SPECIES.length()])
-                         Assert.assertEquals(r[i+j], a[i+(int)order[i+j]]);
+                         Assert.assertEquals(r[i+j], a[i+wrapped_index]);
                     else
                          Assert.assertEquals(r[i+j], ($type$)0);
                 }
             }
         } catch (AssertionError e) {
-            int idx = i + j;
             if (mask[j % SPECIES.length()])
-                Assert.assertEquals(r[i+j], a[i+(int)order[i+j]], "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], a[i+wrapped_index], "at index #" + idx + ", input = " + a[i+wrapped_index] + ", mask = " + mask[j % SPECIES.length()]);
             else
-                Assert.assertEquals(r[i+j], ($type$)0, "at index #" + idx + ", input = " + a[i+(int)order[i+j]] + ", mask = " + mask[j % SPECIES.length()]);
+                Assert.assertEquals(r[i+j], ($type$)0, "at index #" + idx + ", input = " + a[i+wrapped_index] + ", mask = " + mask[j % SPECIES.length()]);
         }
     }
 
@@ -434,6 +510,52 @@ public class $vectorteststype$ extends AbstractVectorTest {
         }
     }
 
+    static void assertArraysEqualsAssociative($type$[] rl, $type$[] rr, $type$[] a, $type$[] b, $type$[] c, FBinOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                //Left associative
+                Assert.assertEquals(rl[i], f.apply(f.apply(a[i], b[i]), c[i]));
+
+                //Right associative
+                Assert.assertEquals(rr[i], f.apply(a[i], f.apply(b[i], c[i])));
+
+                //Results equal sanity check
+                Assert.assertEquals(rl[i], rr[i]);
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(rl[i], f.apply(f.apply(a[i], b[i]), c[i]), "left associative test at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", input3 = " + c[i]);
+            Assert.assertEquals(rr[i], f.apply(a[i], f.apply(b[i], c[i])), "right associative test at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", input3 = " + c[i]);
+            Assert.assertEquals(rl[i], rr[i], "Result checks not equal at index #" + i + "leftRes = " + rl[i] + ", rightRes = " + rr[i]);
+        }
+    }
+
+   static void assertArraysEqualsAssociative($type$[] rl, $type$[] rr, $type$[] a, $type$[] b, $type$[] c, boolean[] mask, FBinOp f) {
+       assertArraysEqualsAssociative(rl, rr, a, b, c, mask, FBinMaskOp.lift(f));
+   }
+
+    static void assertArraysEqualsAssociative($type$[] rl, $type$[] rr, $type$[] a, $type$[] b, $type$[] c, boolean[] mask, FBinMaskOp f) {
+        int i = 0;
+        boolean mask_bit = false;
+        try {
+            for (; i < a.length; i++) {
+                mask_bit = mask[i % SPECIES.length()];
+                //Left associative
+                Assert.assertEquals(rl[i], f.apply(f.apply(a[i], b[i], mask_bit), c[i], mask_bit));
+
+                //Right associative
+                Assert.assertEquals(rr[i], f.apply(a[i], f.apply(b[i], c[i], mask_bit), mask_bit));
+
+                //Results equal sanity check
+                Assert.assertEquals(rl[i], rr[i]);
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(rl[i], f.apply(f.apply(a[i], b[i], mask_bit), c[i], mask_bit), "left associative masked test at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", input3 = " + c[i] + ", mask = " + mask_bit);
+            Assert.assertEquals(rr[i], f.apply(a[i], f.apply(b[i], c[i], mask_bit), mask_bit), "right associative masked test at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", input3 = " + c[i] + ", mask = " + mask_bit);
+            Assert.assertEquals(rl[i], rr[i], "Result checks not equal at index #" + i + "leftRes = " + rl[i] + ", rightRes = " + rr[i]);
+        }
+    }
+
     static void assertArraysEquals($type$[] r, $type$[] a, $type$[] b, FBinOp f) {
         int i = 0;
         try {
@@ -442,6 +564,17 @@ public class $vectorteststype$ extends AbstractVectorTest {
             }
         } catch (AssertionError e) {
             Assert.assertEquals(r[i], f.apply(a[i], b[i]), "(" + a[i] + ", " + b[i] + ") at index #" + i);
+        }
+    }
+
+    static void assertArraysEquals($type$[] r, $type$[] a, $type$ b, FBinOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], b));
+            }
+        } catch (AssertionError e) {
+            Assert.assertEquals(r[i], f.apply(a[i], b), "(" + a[i] + ", " + b + ") at index #" + i);
         }
     }
 
@@ -481,6 +614,21 @@ public class $vectorteststype$ extends AbstractVectorTest {
             }
         } catch (AssertionError err) {
             Assert.assertEquals(r[i], f.apply(a[i], b[i], mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", mask = " + mask[i % SPECIES.length()]);
+        }
+    }
+
+    static void assertArraysEquals($type$[] r, $type$[] a, $type$ b, boolean[] mask, FBinOp f) {
+        assertArraysEquals(r, a, b, mask, FBinMaskOp.lift(f));
+    }
+
+    static void assertArraysEquals($type$[] r, $type$[] a, $type$ b, boolean[] mask, FBinMaskOp f) {
+        int i = 0;
+        try {
+            for (; i < a.length; i++) {
+                Assert.assertEquals(r[i], f.apply(a[i], b, mask[i % SPECIES.length()]));
+            }
+        } catch (AssertionError err) {
+            Assert.assertEquals(r[i], f.apply(a[i], b, mask[i % SPECIES.length()]), "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b + ", mask = " + mask[i % SPECIES.length()]);
         }
     }
 
@@ -744,22 +892,22 @@ public class $vectorteststype$ extends AbstractVectorTest {
 #if[FP]
     static boolean isWithin1Ulp($type$ actual, $type$ expected) {
 #if[Halffloat]
-        float act = Float.float16ToFloat(actual);
-        float exp = Float.float16ToFloat(expected);
-        if (Float.isNaN(exp) && !Float.isNaN(act)) {
+        Float16 act = Float16.shortBitsToFloat16(actual);
+        Float16 exp = Float16.shortBitsToFloat16(expected);
+        if (Float16.isNaN(exp) && !Float16.isNaN(act)) {
             return false;
-        } else if (!Float.isNaN(exp) && Float.isNaN(act)) {
+        } else if (!Float16.isNaN(exp) && Float16.isNaN(act)) {
              return false;
         }
 
-        float low = Math.nextDown(exp);
-        float high = Math.nextUp(exp);
+        Float16 low = Float16.nextDown(exp);
+        Float16 high = Float16.nextUp(exp);
 
-        if (Float.compare(low, exp) > 0) {
+        if (Float16.compare(low, exp) > 0) {
             return false;
         }
 
-        if (Float.compare(high, exp) < 0) {
+        if (Float16.compare(high, exp) < 0) {
             return false;
         }
 #else[Halffloat]
@@ -789,11 +937,11 @@ public class $vectorteststype$ extends AbstractVectorTest {
         try {
             // Check that result is within 1 ulp of strict math or equivalent to math implementation.
             for (; i < a.length; i++) {
-                Assert.assertTrue($Type$.compare(r[i], mathf.apply(a[i])) == 0 ||
+                Assert.assertTrue($Wideboxtype$.compare({#if[FP16]?Float16.shortBitsToFloat16(r[i]):r[i]}, {#if[FP16]?Float16.shortBitsToFloat16(mathf.apply(a[i])):mathf.apply(a[i])}) == 0 ||
                                     isWithin1Ulp(r[i], strictmathf.apply(a[i])));
             }
         } catch (AssertionError e) {
-            Assert.assertTrue($Type$.compare(r[i], mathf.apply(a[i])) == 0, "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i]));
+            Assert.assertTrue($Wideboxtype$.compare({#if[FP16]?Float16.shortBitsToFloat16(r[i]):r[i]}, {#if[FP16]?Float16.shortBitsToFloat16(mathf.apply(a[i])):mathf.apply(a[i])}) == 0, "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i]));
             Assert.assertTrue(isWithin1Ulp(r[i], strictmathf.apply(a[i])), "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected (within 1 ulp) = " + strictmathf.apply(a[i]));
         }
     }
@@ -803,11 +951,11 @@ public class $vectorteststype$ extends AbstractVectorTest {
         try {
             // Check that result is within 1 ulp of strict math or equivalent to math implementation.
             for (; i < a.length; i++) {
-                Assert.assertTrue($Type$.compare(r[i], mathf.apply(a[i], b[i])) == 0 ||
+                Assert.assertTrue($Wideboxtype$.compare({#if[FP16]?Float16.shortBitsToFloat16(r[i]):r[i]}, {#if[FP16]?Float16.shortBitsToFloat16(mathf.apply(a[i], b[i])):mathf.apply(a[i], b[i])}) == 0 ||
                                     isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])));
             }
         } catch (AssertionError e) {
-            Assert.assertTrue($Type$.compare(r[i], mathf.apply(a[i], b[i])) == 0, "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i], b[i]));
+            Assert.assertTrue($Wideboxtype$.compare({#if[FP16]?Float16.shortBitsToFloat16(r[i]):r[i]}, {#if[FP16]?Float16.shortBitsToFloat16(mathf.apply(a[i], b[i])):mathf.apply(a[i], b[i])}) == 0, "at index #" + i + ", input = " + a[i] + ", actual = " + r[i] + ", expected = " + mathf.apply(a[i], b[i]));
             Assert.assertTrue(isWithin1Ulp(r[i], strictmathf.apply(a[i], b[i])), "at index #" + i + ", input1 = " + a[i] + ", input2 = " + b[i] + ", actual = " + r[i] + ", expected (within 1 ulp) = " + strictmathf.apply(a[i], b[i]));
         }
     }
@@ -818,14 +966,14 @@ public class $vectorteststype$ extends AbstractVectorTest {
         try {
             // Check that result is within 1 ulp of strict math or equivalent to math implementation.
             for (; i < a.length; i++) {
-                Assert.assertTrue($Type$.compare(r[i],
-                                  mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])) == 0 ||
+                Assert.assertTrue($Wideboxtype$.compare({#if[FP16]?Float16.shortBitsToFloat16(r[i]):r[i]},
+                                  {#if[FP16]?Float16.shortBitsToFloat16(mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])):mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])}) == 0 ||
                                   isWithin1Ulp(r[i],
                                   strictmathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])));
             }
         } catch (AssertionError e) {
-            Assert.assertTrue($Type$.compare(r[i],
-                              mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])) == 0,
+            Assert.assertTrue($Wideboxtype$.compare({#if[FP16]?Float16.shortBitsToFloat16(r[i]):r[i]},
+                              {#if[FP16]?Float16.shortBitsToFloat16(mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])):mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()])}) == 0,
                               "at index #" + i + ", input1 = " + a[i] + ", input2 = " +
                               b[(i / SPECIES.length()) * SPECIES.length()] + ", actual = " + r[i] +
                               ", expected = " + mathf.apply(a[i], b[(i / SPECIES.length()) * SPECIES.length()]));
@@ -838,21 +986,6 @@ public class $vectorteststype$ extends AbstractVectorTest {
         }
     }
 #end[FP]
-
-    interface FBinArrayOp {
-        $type$ apply($type$[] a, int b);
-    }
-
-    static void assertArraysEquals($type$[] r, $type$[] a, FBinArrayOp f) {
-        int i = 0;
-        try {
-            for (; i < a.length; i++) {
-                Assert.assertEquals(r[i], f.apply(a, i));
-            }
-        } catch (AssertionError e) {
-            Assert.assertEquals(r[i], f.apply(a,i), "at index #" + i);
-        }
-    }
 
     interface FGatherScatterOp {
         $type$[] apply($type$[] a, int ix, int[] b, int iy);
@@ -1037,7 +1170,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
 
     static $type$ genValue(int i) {
 #if[Halffloat]
-        return (short) Halffloat.valueOf(i);
+        return Float16.float16ToRawShortBits(Float16.valueOf(i));
 #else[Halffloat]
         return ($type$) i;
 #end[Halffloat]
@@ -1115,7 +1248,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
 
     static $type$ genValue(long i) {
 #if[Halffloat]
-        return (short) Halffloat.valueOf(i);
+        return Float16.float16ToRawShortBits(Float16.valueOf(i));
 #else[Halffloat]
         return ($type$) i;
 #end[Halffloat]
@@ -1126,15 +1259,15 @@ public class $vectorteststype$ extends AbstractVectorTest {
                 return fill(s * BUFFER_REPS,
                             i -> genValue(-i * 5));
             }),
-            withToString("Halffloat[i * 5]", (int s) -> {
+            withToString("$ClassType$[i * 5]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> genValue(i * 5));
             }),
-            withToString("Halffloat[i + 1]", (int s) -> {
+            withToString("$ClassType$[i + 1]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> ((($type$)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
-            withToString("Halffloat[cornerCaseValue(i)]", (int s) -> {
+            withToString("$ClassType$[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> ($type$)longCornerCaseValue(i));
             })
@@ -1188,7 +1321,11 @@ public class $vectorteststype$ extends AbstractVectorTest {
 #end[!Double]
 
     static $bitstype$ bits($type$ e) {
-        return {#if[FP]? $Wideboxtype$.$type$To$Bitstype$Bits(e): e};
+#if[FP16]
+        return e;
+#else[FP16]
+        return {#if[FP]?$Wideboxtype$.$type$To$Bitstype$Bits(e): e};
+#end[FP16]
     }
 
     static final List<IntFunction<$type$[]>> $TYPE$_GENERATORS = List.of(
@@ -1204,12 +1341,77 @@ public class $vectorteststype$ extends AbstractVectorTest {
                 return fill(s * BUFFER_REPS,
                             i -> ((($type$)(i + 1) == 0) ? genValue(1) : genValue(i + 1)));
             }),
-            withToString("$ClassType$[cornerCaseValue(i)]", (int s) -> {
+#if[FP]
+#if[FP16]
+            withToString("$Wideboxtype$[0.01 + (i / (i + 1))]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> Float.floatToFloat16((0.01f + ((float)i / (i + 1)))));
+            }),
+            withToString("$Wideboxtype$[i -> i % 17 == 0 ? cornerCaseValue(i) : 0.01f + (i / (i + 1))]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> (i % 17 == 0) ? cornerCaseValue(i) : Float.floatToFloat16((0.01f + ((float)i / (i + 1)))));
+            }),
+#else[FP16]
+            withToString("$type$[0.01 + (i / (i + 1))]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> (($type$)0.01 + (($type$)i / (i + 1))));
+            }),
+            withToString("$type$[i -> i % 17 == 0 ? cornerCaseValue(i) : 0.01 + (i / (i + 1))]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> (i % 17 == 0) ? cornerCaseValue(i) : (($type$)0.01 + (($type$)i / (i + 1))));
+            }),
+#end[FP16]
+#end[FP]
+            withToString("$type$[cornerCaseValue(i)]", (int s) -> {
                 return fill(s * BUFFER_REPS,
                             i -> cornerCaseValue(i));
             })
     );
 
+#if[!FP]
+    static final List<IntFunction<$type$[]>> $TYPE$_SATURATING_GENERATORS = List.of(
+            withToString("$type$[$Boxtype$.MIN_VALUE]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> ($type$)($Boxtype$.MIN_VALUE));
+            }),
+            withToString("$type$[$Boxtype$.MAX_VALUE]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> ($type$)($Boxtype$.MAX_VALUE));
+            }),
+            withToString("$type$[$Boxtype$.MAX_VALUE - 100]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> ($type$)($Boxtype$.MAX_VALUE - 100));
+            }),
+            withToString("$type$[$Boxtype$.MIN_VALUE + 100]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> ($type$)($Boxtype$.MIN_VALUE + 100));
+            }),
+            withToString("$type$[-i * 5]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> ($type$)(-i * 5));
+            }),
+            withToString("$type$[i * 5]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> ($type$)(i * 5));
+            })
+    );
+
+    static final List<IntFunction<$type$[]>> $TYPE$_SATURATING_GENERATORS_ASSOC = List.of(
+            withToString("$type$[$Boxtype$.MAX_VALUE]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> ($type$)($Boxtype$.MAX_VALUE));
+            }),
+            withToString("$type$[$Boxtype$.MAX_VALUE - 100]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> ($type$)($Boxtype$.MAX_VALUE - 100));
+            }),
+            withToString("$type$[-1]", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> ($type$)(-1));
+            })
+    );
+
+#end[!FP]
     // Create combinations of pairs
     // @@@ Might be sensitive to order e.g. div by 0
     static final List<List<IntFunction<$type$[]>>> $TYPE$_GENERATOR_PAIRS =
@@ -1217,6 +1419,19 @@ public class $vectorteststype$ extends AbstractVectorTest {
                 flatMap(fa -> $TYPE$_GENERATORS.stream().skip(1).map(fb -> List.of(fa, fb))).
                 collect(Collectors.toList());
 
+#if[!FP]
+    static final List<List<IntFunction<$type$[]>>> $TYPE$_SATURATING_GENERATOR_PAIRS =
+        Stream.of($TYPE$_GENERATORS.get(0)).
+                flatMap(fa -> $TYPE$_SATURATING_GENERATORS.stream().skip(1).map(fb -> List.of(fa, fb))).
+                collect(Collectors.toList());
+
+    static final List<List<IntFunction<$type$[]>>> $TYPE$_SATURATING_GENERATOR_TRIPLETS =
+            Stream.of($TYPE$_GENERATORS.get(1))
+                    .flatMap(fa -> $TYPE$_SATURATING_GENERATORS_ASSOC.stream().map(fb -> List.of(fa, fb)))
+                    .flatMap(pair -> $TYPE$_SATURATING_GENERATORS_ASSOC.stream().map(f -> List.of(pair.get(0), pair.get(1), f)))
+                    .collect(Collectors.toList());
+
+#end[!FP]
     @DataProvider
     public Object[][] boolUnaryOpProvider() {
         return BOOL_ARRAY_GENERATORS.stream().
@@ -1229,18 +1444,81 @@ public class $vectorteststype$ extends AbstractVectorTest {
                 flatMap(pair -> $TYPE$_GENERATORS.stream().map(f -> List.of(pair.get(0), pair.get(1), f))).
                 collect(Collectors.toList());
 
+    static final List<IntFunction<$type$[]>> SELECT_FROM_INDEX_GENERATORS = List.of(
+            withToString("$type$[0..VECLEN*2)", (int s) -> {
+                return fill(s * BUFFER_REPS,
+                            i -> ($type$)(RAND.nextInt()));
+            })
+    );
+
+    static final List<List<IntFunction<$type$[]>>> $TYPE$_GENERATOR_SELECT_FROM_TRIPLES =
+        $TYPE$_GENERATOR_PAIRS.stream().
+                flatMap(pair -> SELECT_FROM_INDEX_GENERATORS.stream().map(f -> List.of(pair.get(0), pair.get(1), f))).
+                collect(Collectors.toList());
+
     @DataProvider
     public Object[][] $type$BinaryOpProvider() {
         return $TYPE$_GENERATOR_PAIRS.stream().map(List::toArray).
                 toArray(Object[][]::new);
     }
 
+#if[!FP]
+    @DataProvider
+    public Object[][] $type$SaturatingBinaryOpProvider() {
+        return $TYPE$_SATURATING_GENERATOR_PAIRS.stream().map(List::toArray).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] $type$SaturatingBinaryOpAssocProvider() {
+        return $TYPE$_SATURATING_GENERATOR_TRIPLETS.stream().map(List::toArray).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] $type$SaturatingBinaryOpAssocMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> $TYPE$_SATURATING_GENERATOR_TRIPLETS.stream().map(lfa -> {
+                    return Stream.concat(lfa.stream(), Stream.of(fm)).toArray();
+                })).
+                toArray(Object[][]::new);
+    }
+
+
+#end[!FP]
     @DataProvider
     public Object[][] $type$IndexedOpProvider() {
         return $TYPE$_GENERATOR_PAIRS.stream().map(List::toArray).
                 toArray(Object[][]::new);
     }
 
+#if[!FP]
+    @DataProvider
+    public Object[][] $type$SaturatingBinaryOpMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> $TYPE$_SATURATING_GENERATOR_PAIRS.stream().map(lfa -> {
+                    return Stream.concat(lfa.stream(), Stream.of(fm)).toArray();
+                })).
+                toArray(Object[][]::new);
+    }
+
+   @DataProvider
+   public Object[][] $type$SaturatingUnaryOpProvider() {
+       return $TYPE$_SATURATING_GENERATORS.stream().
+                    map(f -> new Object[]{f}).
+                    toArray(Object[][]::new);
+   }
+
+   @DataProvider
+   public Object[][] $type$SaturatingUnaryOpMaskProvider() {
+        return BOOLEAN_MASK_GENERATORS.stream().
+                flatMap(fm -> $TYPE$_SATURATING_GENERATORS.stream().map(fa -> {
+                    return new Object[] {fa, fm};
+                })).
+                toArray(Object[][]::new);
+   }
+
+#end[!FP]
     @DataProvider
     public Object[][] $type$BinaryOpMaskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
@@ -1253,6 +1531,12 @@ public class $vectorteststype$ extends AbstractVectorTest {
     @DataProvider
     public Object[][] $type$TernaryOpProvider() {
         return $TYPE$_GENERATOR_TRIPLES.stream().map(List::toArray).
+                toArray(Object[][]::new);
+    }
+
+    @DataProvider
+    public Object[][] $type$SelectFromTwoVectorOpProvider() {
+        return $TYPE$_GENERATOR_SELECT_FROM_TRIPLES.stream().map(List::toArray).
                 toArray(Object[][]::new);
     }
 
@@ -1466,26 +1750,33 @@ public class $vectorteststype$ extends AbstractVectorTest {
 
     static $type$ cornerCaseValue(int i) {
 #if[FP]
-        switch(i % 7) {
-            case 0:
-                return $Wideboxtype$.MAX_VALUE;
-            case 1:
-                return $Wideboxtype$.MIN_VALUE;
-            case 2:
-                return $Wideboxtype$.NEGATIVE_INFINITY;
-            case 3:
-                return $Wideboxtype$.POSITIVE_INFINITY;
-            case 4:
-                return $Wideboxtype$.NaN;
-            case 5:
-                return ($type$)0.0;
-            default:
-#if[Halffloat]
-                return Short.MIN_VALUE;
-#else[Halffloat]
-                return ($type$)-0.0;
-#end[Halffloat]
-        }
+#if[FP16]
+        return switch(i % 8) {
+            case 0  -> Float16.float16ToRawShortBits($Wideboxtype$.MAX_VALUE);
+            case 1  -> Float16.float16ToRawShortBits($Wideboxtype$.MIN_VALUE);
+            case 2  -> Float16.float16ToRawShortBits($Wideboxtype$.NEGATIVE_INFINITY);
+            case 3  -> Float16.float16ToRawShortBits($Wideboxtype$.POSITIVE_INFINITY);
+            case 4  -> Float16.float16ToRawShortBits($Wideboxtype$.NaN);
+            case 5  -> Float16.float16ToRawShortBits(Float16.shortBitsToFloat16((short)0x7FFA));
+            case 6  -> (($type$)0.0);
+            default -> (($type$)-0.0);
+        };
+#else[FP16]
+        return switch(i % 8) {
+            case 0  -> $Wideboxtype$.MAX_VALUE;
+            case 1  -> $Wideboxtype$.MIN_VALUE;
+            case 2  -> $Wideboxtype$.NEGATIVE_INFINITY;
+            case 3  -> $Wideboxtype$.POSITIVE_INFINITY;
+            case 4  -> $Wideboxtype$.NaN;
+#if[Float]
+            case 5  -> Float.intBitsToFloat(0x7F812345);
+#else[Float]
+            case 5  -> Double.longBitsToDouble(0x7FF123456789ABCDL);
+#end[Float]
+            case 6  -> ($type$)0.0;
+            default -> ($type$)-0.0;
+        };
+#end[FP16]
 #else[FP]
         switch(i % 5) {
             case 0:
@@ -1500,10 +1791,6 @@ public class $vectorteststype$ extends AbstractVectorTest {
                 return ($type$)0;
         }
 #end[FP]
-    }
-
-    static $type$ get($type$[] a, int i) {
-        return ($type$) a[i];
     }
 
     static final IntFunction<$type$[]> fr = (vl) -> {
@@ -1610,38 +1897,38 @@ public class $vectorteststype$ extends AbstractVectorTest {
 #if[Halffloat]
 
     static boolean eq(short a, short b) {
-        Halffloat at = Halffloat.valueOf(a);
-        Halffloat bt = Halffloat.valueOf(b);
+        Float16 at = Float16.shortBitsToFloat16(a);
+        Float16 bt = Float16.shortBitsToFloat16(b);
         return at.floatValue() == bt.floatValue();
     }
 
     static boolean neq(short a, short b) {
-        Halffloat at = Halffloat.valueOf(a);
-        Halffloat bt = Halffloat.valueOf(b);
+        Float16 at = Float16.shortBitsToFloat16(a);
+        Float16 bt = Float16.shortBitsToFloat16(b);
         return at.floatValue() != bt.floatValue();
     }
 
     static boolean lt(short a, short b) {
-        Halffloat at = Halffloat.valueOf(a);
-        Halffloat bt = Halffloat.valueOf(b);
+        Float16 at = Float16.shortBitsToFloat16(a);
+        Float16 bt = Float16.shortBitsToFloat16(b);
         return at.floatValue() < bt.floatValue();
     }
 
     static boolean le(short a, short b) {
-        Halffloat at = Halffloat.valueOf(a);
-        Halffloat bt = Halffloat.valueOf(b);
+        Float16 at = Float16.shortBitsToFloat16(a);
+        Float16 bt = Float16.shortBitsToFloat16(b);
         return at.floatValue() <= bt.floatValue();
     }
 
     static boolean gt(short a, short b) {
-        Halffloat at = Halffloat.valueOf(a);
-        Halffloat bt = Halffloat.valueOf(b);
+        Float16 at = Float16.shortBitsToFloat16(a);
+        Float16 bt = Float16.shortBitsToFloat16(b);
         return at.floatValue() > bt.floatValue();
     }
 
     static boolean ge(short a, short b) {
-        Halffloat at = Halffloat.valueOf(a);
-        Halffloat bt = Halffloat.valueOf(b);
+        Float16 at = Float16.shortBitsToFloat16(a);
+        Float16 bt = Float16.shortBitsToFloat16(b);
         return at.floatValue() >= bt.floatValue();
     }
 #else[Halffloat]
@@ -1696,16 +1983,16 @@ public class $vectorteststype$ extends AbstractVectorTest {
     @Test
     static void smokeTest1() {
 #if[Halffloat]
-        $abstractvectortype$ three = $abstractvectortype$.broadcast(SPECIES, Halffloat.valueOf(-3));
-        $abstractvectortype$ three2 = ($abstractvectortype$) SPECIES.broadcast(Halffloat.valueOf(-3));
+        $abstractvectortype$ three = $abstractvectortype$.broadcast(SPECIES, Float16.float16ToRawShortBits(Float16.valueOf(-3)));
+        $abstractvectortype$ three2 = ($abstractvectortype$) SPECIES.broadcast(Float16.float16ToRawShortBits(Float16.valueOf(-3)));
         assert(three.eq(three2).allTrue());
-        $abstractvectortype$ three3 = three2.broadcast(Halffloat.valueOf(1)).broadcast(Halffloat.valueOf(-3));
+        $abstractvectortype$ three3 = three2.broadcast(Float16.float16ToRawShortBits(Float16.valueOf(1))).broadcast(Float16.float16ToRawShortBits(Float16.valueOf(-3)));
         assert(three.eq(three3).allTrue());
         int scale = 2;
         $abstractvectortype$ higher = three.addIndex(scale);
-        VectorMask<$Boxtype$> m = three.compare(VectorOperators.LE, higher);
+        VectorMask<$Wideboxtype$> m = three.compare(VectorOperators.LE, higher);
         assert(m.allTrue());
-        m = higher.min((Halffloat.valueOf(-1))).test(VectorOperators.IS_NEGATIVE);
+        m = higher.min((Float16.float16ToRawShortBits(Float16.valueOf(-1)))).test(VectorOperators.IS_NEGATIVE);
         assert(m.allTrue());
         m = higher.test(VectorOperators.IS_FINITE);
         assert(m.allTrue());
@@ -1724,7 +2011,7 @@ public class $vectorteststype$ extends AbstractVectorTest {
         else if (ETYPE == byte.class && SPECIES.length() >= 64)
             scale = 1;
         $abstractvectortype$ higher = three.addIndex(scale);
-        VectorMask<$Boxtype$> m = three.compare(VectorOperators.LE, higher);
+        VectorMask<$Wideboxtype$> m = three.compare(VectorOperators.LE, higher);
         assert(m.allTrue());
         m = higher.min(($type$)-1).test(VectorOperators.IS_NEGATIVE);
         assert(m.allTrue());
@@ -1754,8 +2041,8 @@ public class $vectorteststype$ extends AbstractVectorTest {
         $abstractvectortype$ a = io.add(($type$)1); //[1,2]
         $abstractvectortype$ b = a.neg();  //[-1,-2]
         $type$[] abValues = bothToArray(a,b); //[1,2,-1,-2]
-        VectorShuffle<$Boxtype$> zip0 = VectorShuffle.makeZip(SPECIES, 0);
-        VectorShuffle<$Boxtype$> zip1 = VectorShuffle.makeZip(SPECIES, 1);
+        VectorShuffle<$Wideboxtype$> zip0 = VectorShuffle.makeZip(SPECIES, 0);
+        VectorShuffle<$Wideboxtype$> zip1 = VectorShuffle.makeZip(SPECIES, 1);
         $abstractvectortype$ zab0 = a.rearrange(zip0,b); //[1,-1]
         $abstractvectortype$ zab1 = a.rearrange(zip1,b); //[2,-2]
         $type$[] zabValues = bothToArray(zab0, zab1); //[1,-1,2,-2]
@@ -1766,8 +2053,8 @@ public class $vectorteststype$ extends AbstractVectorTest {
             manual[i+1] = abValues[a.length() + i/2];
         }
         Assert.assertEquals(Arrays.toString(zabValues), Arrays.toString(manual));
-        VectorShuffle<$Boxtype$> unz0 = VectorShuffle.makeUnzip(SPECIES, 0);
-        VectorShuffle<$Boxtype$> unz1 = VectorShuffle.makeUnzip(SPECIES, 1);
+        VectorShuffle<$Wideboxtype$> unz0 = VectorShuffle.makeUnzip(SPECIES, 0);
+        VectorShuffle<$Wideboxtype$> unz1 = VectorShuffle.makeUnzip(SPECIES, 1);
         $abstractvectortype$ uab0 = zab0.rearrange(unz0,zab1);
         $abstractvectortype$ uab1 = zab0.rearrange(unz1,zab1);
         $type$[] abValues1 = bothToArray(uab0, uab1);

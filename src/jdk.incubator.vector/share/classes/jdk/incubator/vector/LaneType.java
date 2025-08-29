@@ -41,7 +41,7 @@ enum LaneType {
     SHORT(short.class, Short.class, short[].class, 'I', -1, Short.SIZE, T_SHORT),
     INT(int.class, Integer.class, int[].class, 'I', -1, Integer.SIZE, T_INT),
     LONG(long.class, Long.class, long[].class, 'I', -1, Long.SIZE, T_LONG),
-    HALFFLOAT(Halffloat.class, Short.class, short[].class, 'F', 11, Halffloat.SIZE, T_HALFFLOAT);
+    HALFFLOAT(Float16.class, Short.class, short[].class, 'F', 11, Float16.SIZE, T_HALFFLOAT);
 
     LaneType(Class<?> elementType,
              Class<?> genericElementType,
@@ -253,8 +253,7 @@ enum LaneType {
             // set up asFloating
             if (value.elementKind == 'F') {
                 value.asFloating = value;
-            } else if (value.basicType != T_SHORT) {
-                // FIXME: Support asFloating for short to be Halffloat
+            } else {
                 for (LaneType v : values) {
                     if (v.elementKind == 'F' &&
                         v.elementSize == value.elementSize) {
