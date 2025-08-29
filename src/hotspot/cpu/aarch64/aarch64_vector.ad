@@ -244,6 +244,9 @@ source %{
       case Op_MinVHF:
       case Op_MaxVHF:
       case Op_SqrtVHF:
+      case Op_AbsVHF:
+      case Op_NegVHF:
+      case Op_AddReductionVHF:
         // FEAT_FP16 is enabled if both "fphp" and "asimdhp" features are supported.
         // Only the Neon instructions need this check. SVE supports half-precision floats
         // by default.
@@ -279,20 +282,6 @@ source %{
           return false;
         }
         break;
-      case Op_AddVHF:
-      case Op_SubVHF:
-      case Op_MulVHF:
-      case Op_DivVHF:
-      case Op_AbsVHF:
-      case Op_NegVHF:
-      case Op_FmaVHF:
-      case Op_AddReductionVHF:
-        // FEAT_FP16 is enabled if both "fphp" and "asimdhp" features are supported.
-        // Only the Neon instructions need this check. SVE supports 16-bit floats by default.
-        if (UseSVE > 0 || (VM_Version::supports_fphp() && VM_Version::supports_asimdhp())) {
-          break;
-        }
-        return false;
       default:
         break;
     }
