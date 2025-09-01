@@ -2068,7 +2068,6 @@ public:
   void data_processing(unsigned op31, unsigned type, unsigned opcode, unsigned op21,
                        FloatRegister Vd, FloatRegister Vn, FloatRegister Vm) {
     starti;
-    int op21 = (opcode == 0b000101) ? 0b0 : 0b1;
     f(op31, 31, 29);
     f(0b11110, 28, 24);
     f(type, 23, 22), f(op21, 21), f(opcode, 15, 10);
@@ -2129,17 +2128,9 @@ public:
 
   INSN(fabdh, 0b1, 0b1, 0b010); // Floating-point Absolute Difference (half-precision float)
 
-  INSN(fabdh,  0b011, 0b11, 0b000101);
-  INSN(fmulh,  0b000, 0b11, 0b000010);
-  INSN(fdivh,  0b000, 0b11, 0b000110);
-  INSN(faddh,  0b000, 0b11, 0b001010);
-  INSN(fsubh,  0b000, 0b11, 0b001110);
-  INSN(fmaxh,  0b000, 0b11, 0b010010);
-  INSN(fminh,  0b000, 0b11, 0b010110);
-  INSN(fnmulh, 0b000, 0b11, 0b100010);
 #undef INSN
 
-   // Floating-point data-processing (3 source)
+  // Floating-point data-processing (3 source)
   void data_processing(unsigned op31, unsigned type, unsigned o1, unsigned o0,
                        FloatRegister Vd, FloatRegister Vn, FloatRegister Vm,
                        FloatRegister Va) {
