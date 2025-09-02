@@ -332,18 +332,17 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
       vector_klass == nullptr || vector_klass->const_oop() == nullptr ||
       elem_klass   == nullptr || elem_klass->const_oop()   == nullptr ||
       vlen         == nullptr || !vlen->is_con()) {
-    log_if_needed("  ** missing constant: opr=%s opr_type = %s vclass=%s etype=%s vlen=%s",
+    log_if_needed("  ** missing constant: opr=%s vclass=%s etype=%s opr_type=%s vlen=%s",
                     NodeClassNames[argument(0)->Opcode()],
-                    NodeClassNames[argument(5)->Opcode()],
                     NodeClassNames[argument(1)->Opcode()],
                     NodeClassNames[argument(3)->Opcode()],
-                    NodeClassNames[argument(4)->Opcode()]);
+                    NodeClassNames[argument(5)->Opcode()],
+                    NodeClassNames[argument(6)->Opcode()]);
     return false; // not enough info for intrinsification
   }
 
   ciType* elem_type = elem_klass->const_oop()->as_instance()->java_mirror_type();
-  if (!elem_type->is_primitive_type() ||
-      opr_type->get_con() != VectorSupport::VECTOR_TYPE_PRIM) {
+  if (!elem_type->is_primitive_type()) {
     log_if_needed("  ** not a primitive bt=%d", elem_type->basic_type());
     return false; // should be primitive type
   }
@@ -378,7 +377,7 @@ bool LibraryCallKit::inline_vector_nary_operation(int n) {
   bool is_unsigned = VectorSupport::is_unsigned_op(opr->get_con());
 
   int num_elem = vlen->get_con();
-  int opc = VectorSupport::vop2ideal(opr->get_con(), elem_bt);
+  int opc = VectorSupport::vop2ideal(opr->get_con(), elem_bt, opr_type->get_con());
   int sopc = has_scalar_op ? VectorNode::opcode(opc, elem_bt) : opc;
   if (sopc == 0 || num_elem == 1) {
     log_if_needed("  ** operation not supported: arity=%d opc=%s[%d] vlen=%d etype=%s",
