@@ -1908,6 +1908,10 @@ bool Matcher::match_rule_supported_vector(int opcode, int vlen, BasicType bt) {
       break;
     case Op_VectorCastF2HF:
     case Op_VectorCastHF2F:
+      if (!VM_Version::supports_f16c() && !VM_Version::supports_evex()) {
+        return false;
+      }
+      break;
     case Op_VectorCastD2HF:
     case Op_VectorCastHF2D:
       if (!VM_Version::supports_avx512_fp16()) {
