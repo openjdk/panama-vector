@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -61,6 +61,8 @@ public class Double64VectorTests extends AbstractVectorTest {
                 DoubleVector.SPECIES_64;
 
     static final int INVOC_COUNT = Integer.getInteger("jdk.incubator.vector.test.loop-iterations", 100);
+
+    static DoubleVector bcast_vec = DoubleVector.broadcast(SPECIES, (double)10);
 
 
     // for floating point addition reduction ops that may introduce rounding errors
@@ -2108,8 +2110,6 @@ relativeError));
         assertBroadcastLongArraysEquals(r, a, b, mask, Double64VectorTests::ADD);
     }
 
-    static DoubleVector bv_MIN = DoubleVector.broadcast(SPECIES, (double)10);
-
     @Test(dataProvider = "doubleUnaryOpProvider")
     static void MINDouble64VectorTestsWithMemOp(IntFunction<double[]> fa) {
         double[] a = fa.apply(SPECIES.length());
@@ -2118,14 +2118,12 @@ relativeError));
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MIN, bv_MIN).intoArray(r, i);
+                av.lanewise(VectorOperators.MIN, bcast_vec).intoArray(r, i);
             }
         }
 
         assertArraysEquals(r, a, (double)10, Double64VectorTests::MIN);
     }
-
-    static DoubleVector bv_min = DoubleVector.broadcast(SPECIES, (double)10);
 
     @Test(dataProvider = "doubleUnaryOpProvider")
     static void minDouble64VectorTestsWithMemOp(IntFunction<double[]> fa) {
@@ -2135,14 +2133,12 @@ relativeError));
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-                av.min(bv_min).intoArray(r, i);
+                av.min(bcast_vec).intoArray(r, i);
             }
         }
 
         assertArraysEquals(r, a, (double)10, Double64VectorTests::min);
     }
-
-    static DoubleVector bv_MIN_M = DoubleVector.broadcast(SPECIES, (double)10);
 
     @Test(dataProvider = "doubleUnaryOpMaskProvider")
     static void MINDouble64VectorTestsMaskedWithMemOp(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
@@ -2154,14 +2150,12 @@ relativeError));
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MIN, bv_MIN_M, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.MIN, bcast_vec, vmask).intoArray(r, i);
             }
         }
 
         assertArraysEquals(r, a, (double)10, mask, Double64VectorTests::MIN);
     }
-
-    static DoubleVector bv_MAX = DoubleVector.broadcast(SPECIES, (double)10);
 
     @Test(dataProvider = "doubleUnaryOpProvider")
     static void MAXDouble64VectorTestsWithMemOp(IntFunction<double[]> fa) {
@@ -2171,14 +2165,12 @@ relativeError));
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MAX, bv_MAX).intoArray(r, i);
+                av.lanewise(VectorOperators.MAX, bcast_vec).intoArray(r, i);
             }
         }
 
         assertArraysEquals(r, a, (double)10, Double64VectorTests::MAX);
     }
-
-    static DoubleVector bv_max = DoubleVector.broadcast(SPECIES, (double)10);
 
     @Test(dataProvider = "doubleUnaryOpProvider")
     static void maxDouble64VectorTestsWithMemOp(IntFunction<double[]> fa) {
@@ -2188,14 +2180,12 @@ relativeError));
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-                av.max(bv_max).intoArray(r, i);
+                av.max(bcast_vec).intoArray(r, i);
             }
         }
 
         assertArraysEquals(r, a, (double)10, Double64VectorTests::max);
     }
-
-    static DoubleVector bv_MAX_M = DoubleVector.broadcast(SPECIES, (double)10);
 
     @Test(dataProvider = "doubleUnaryOpMaskProvider")
     static void MAXDouble64VectorTestsMaskedWithMemOp(IntFunction<double[]> fa, IntFunction<boolean[]> fm) {
@@ -2207,7 +2197,7 @@ relativeError));
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 DoubleVector av = DoubleVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MAX, bv_MAX_M, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.MAX, bcast_vec, vmask).intoArray(r, i);
             }
         }
 

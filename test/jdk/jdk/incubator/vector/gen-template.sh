@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # This code is free software; you can redistribute it and/or modify it
@@ -105,6 +105,7 @@ function replace_variables {
   local masked=$8
   local op_name=$9
   local kernel_smoke=${10}
+  local attrib=${11}
 
   if [ "x${kernel}" != "x" ]; then
     local kernel_escaped=$(echo -e "$kernel" | tr '\n' '`')
@@ -121,6 +122,7 @@ function replace_variables {
   # if there is a masked version available for the operation add "withMask" to 'test' argument (e.g. "ADD+add+withMask")
   local test_func=""
   local withMask=""
+  local suffix=""
   local tests=($(awk -F+ '{$1=$1} 1' <<< $test))
   if [ "${tests[2]}" == "withMask" ]; then
     test=${tests[0]}
@@ -135,12 +137,23 @@ function replace_variables {
     test_func=${tests[1]}
   fi
 
+  if [ "${attrib}" == "associative" ]; then
+     suffix=${suffix}"_ASSOC"
+  fi
+  if [ "${attrib}" == "reduction" ]; then
+     suffix=${suffix}"_REDUCTION"
+  fi
+  if [ "${attrib}" == "memoryoper" ]; then
+     suffix=${suffix}"_MEM"
+  fi
+
   sed_prog="
     s/\<OPTIONAL\>\(.*\)\<\\OPTIONAL\>/\1/g
     s/\[\[TEST_TYPE\]\]/${masked}/g
     s/\[\[TEST_OP\]\]/${op}/g
     s/\[\[TEST_INIT\]\]/${init}/g
     s/\[\[OP_NAME\]\]/${op_name}/g
+    s/\[\[SUFFIX\]\]/${suffix}/g
   "
   sed_prog_2="$sed_prog
     s/\[\[TEST\]\]/${test_func}/g
@@ -188,11 +201,16 @@ function gen_op_tmpl {
   local op=$3
   local guard=""
   local init=""
+  local attrib=""
   if [ $# -gt 3 ]; then
     guard=$4
   fi
-  if [ $# == 5 ]; then
+  if [ $# -gt 4 ]; then
     init=$5
+  fi
+
+  if [ $# -gt 5 ]; then
+    attrib=$6
   fi
 
   local masked=""
@@ -229,7 +247,7 @@ function gen_op_tmpl {
   fi
 
   # Replace template variables in unit test files (if any)
-  replace_variables $unit_filename $unit_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" "$kernel_smoke"
+  replace_variables $unit_filename $unit_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" "$kernel_smoke" "$attrib"
 
   local gen_perf_tests=$generate_perf_tests
   if [[ $template == *"-Broadcast-"* ]] || [[ $template == "Miscellaneous" ]] ||
@@ -243,15 +261,15 @@ function gen_op_tmpl {
     local perf_scalar_filename="${TEMPLATE_FOLDER}/Perf-Scalar-${template}.template"
 
     if [ -f $perf_vector_filename ]; then
-      replace_variables $perf_vector_filename  $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
+      replace_variables $perf_vector_filename  $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" "" "$attrib"
     elif [ -f $kernel_filename ]; then
-      replace_variables $perf_wrapper_filename $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
+      replace_variables $perf_wrapper_filename $perf_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" "" "$attrib"
     elif [[ $template != *"-Scalar-"* ]] && [[ $template != "Get-op" ]] && [[ $template != "With-Op" ]]; then
       echo "Warning: missing perf: $@"
     fi
 
     if [ -f $perf_scalar_filename ]; then
-      replace_variables $perf_scalar_filename $perf_scalar_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" ""
+      replace_variables $perf_scalar_filename $perf_scalar_output "$kernel" "$test" "$op" "$init" "$guard" "$masked" "$op_name" "" "$attrib"
     elif [[ $template != *"-Scalar-"* ]] && [[ $template != "Get-op" ]] && [[ $template != "With-Op" ]]; then
       echo "Warning: Missing PERF SCALAR: $perf_scalar_filename"
     fi
@@ -266,8 +284,8 @@ function gen_binary_alu_op {
 
 function gen_binary_alu_mem_op {
   echo "Generating binary op $1 ($2)..."
-  gen_op_tmpl $binary_memop "$@"
-  gen_op_tmpl $binary_masked_memop "$@"
+  gen_op_tmpl $binary_memop "$@" "" "" "memoryoper"
+  gen_op_tmpl $binary_masked_memop "$@" "" "" "memoryoper"
 }
 
 function gen_binary_alu_bcst_op {
@@ -335,8 +353,8 @@ function gen_saturating_binary_op {
 
 function gen_saturating_binary_op_associative {
   echo "Generating saturating binary associative op $1 ($2)..."
-  gen_op_tmpl $saturating_binary_assocative "$@"
-  gen_op_tmpl $saturating_binary_assocative_masked "$@"
+  gen_op_tmpl $saturating_binary_assocative "$@" "" "associative"
+  gen_op_tmpl $saturating_binary_assocative_masked "$@" "" "associative"
 }
 
 function gen_binary_op_no_masked {
@@ -384,10 +402,10 @@ function gen_bool_reduction_op {
 }
 function gen_saturating_reduction_op {
   echo "Generating saturating reduction op $1 ($2)..."
-  gen_op_tmpl $reduction_scalar_func "$@"
-  gen_op_tmpl $reduction_saturating_op "$@"
-  gen_op_tmpl $reduction_scalar_masked_func "$@"
-  gen_op_tmpl $reduction_saturating_op_masked "$@"
+  gen_op_tmpl $reduction_scalar_func "$@" "reduction"
+  gen_op_tmpl $reduction_saturating_op "$@" "reduction"
+  gen_op_tmpl $reduction_scalar_masked_func "$@" "reduction"
+  gen_op_tmpl $reduction_saturating_op_masked "$@" "reduction"
 }
 
 function gen_with_op {

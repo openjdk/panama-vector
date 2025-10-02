@@ -27,6 +27,7 @@ package org.openjdk.bench.jdk.incubator.vector.operation;
 
 import jdk.incubator.vector.Vector;
 import jdk.incubator.vector.VectorMask;
+import jdk.incubator.vector.VectorMath;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorShape;
 import jdk.incubator.vector.VectorSpecies;
@@ -50,6 +51,8 @@ public class Short64Vector extends AbstractVectorBenchmark {
     static final VectorSpecies<Short> SPECIES = ShortVector.SPECIES_64;
 
     static final int INVOC_COUNT = 1; // get rid of outer loop
+
+    static ShortVector bcast_vec = ShortVector.broadcast(SPECIES, (short)10);
 
     static void replaceZero(short[] a, short v) {
         for (int i = 0; i < a.length; i++) {
@@ -955,14 +958,14 @@ public class Short64Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void MIN(Blackhole bh) {
+    public void MIN_MEM(Blackhole bh) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MIN, bv_MIN).intoArray(r, i);
+                av.lanewise(VectorOperators.MIN, bcast_vec).intoArray(r, i);
             }
         }
 
@@ -970,7 +973,7 @@ public class Short64Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void MINMasked(Blackhole bh) {
+    public void MINMasked_MEM(Blackhole bh) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -979,7 +982,7 @@ public class Short64Vector extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MIN, bv_MIN_M, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.MIN, bcast_vec, vmask).intoArray(r, i);
             }
         }
 
@@ -987,14 +990,14 @@ public class Short64Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void MAX(Blackhole bh) {
+    public void MAX_MEM(Blackhole bh) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
 
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MAX, bv_MAX).intoArray(r, i);
+                av.lanewise(VectorOperators.MAX, bcast_vec).intoArray(r, i);
             }
         }
 
@@ -1002,7 +1005,7 @@ public class Short64Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void MAXMasked(Blackhole bh) {
+    public void MAXMasked_MEM(Blackhole bh) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());
@@ -1011,7 +1014,7 @@ public class Short64Vector extends AbstractVectorBenchmark {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MAX, bv_MAX_M, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.MAX, bcast_vec, vmask).intoArray(r, i);
             }
         }
 
@@ -1269,7 +1272,7 @@ public class Short64Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void SUADD(Blackhole bh) {
+    public void SUADD_ASSOC(Blackhole bh) {
         short[] a = fa.apply(SPECIES.length());
         short[] b = fb.apply(SPECIES.length());
         short[] c = fc.apply(SPECIES.length());
@@ -1290,7 +1293,7 @@ public class Short64Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void SUADDMasked(Blackhole bh) {
+    public void SUADDMasked_ASSOC(Blackhole bh) {
         short[] a = fa.apply(SPECIES.length());
         short[] b = fb.apply(SPECIES.length());
         short[] c = fc.apply(SPECIES.length());
@@ -1664,7 +1667,7 @@ public class Short64Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void SUADD(Blackhole bh) {
+    public void SUADD_REDUCTION(Blackhole bh) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         short ra = 0;
@@ -1688,7 +1691,7 @@ public class Short64Vector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
-    public void SUADDMasked(Blackhole bh) {
+    public void SUADDMasked_REDUCTION(Blackhole bh) {
         short[] a = fa.apply(SPECIES.length());
         short[] r = fr.apply(SPECIES.length());
         boolean[] mask = fm.apply(SPECIES.length());

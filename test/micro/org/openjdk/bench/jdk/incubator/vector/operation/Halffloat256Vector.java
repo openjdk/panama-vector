@@ -27,6 +27,7 @@ package org.openjdk.bench.jdk.incubator.vector.operation;
 
 import jdk.incubator.vector.Vector;
 import jdk.incubator.vector.VectorMask;
+import jdk.incubator.vector.VectorMath;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorShape;
 import jdk.incubator.vector.VectorSpecies;
@@ -52,9 +53,11 @@ public class Halffloat256Vector extends AbstractVectorBenchmark {
 
     static final int INVOC_COUNT = 1; // get rid of outer loop
 
+    static HalffloatVector bcast_vec = HalffloatVector.broadcast(SPECIES, (short)10);
+
 
     static short firstNonZero(short a, short b) {
-        return Float16.compare(a, (short) 0) != 0 ? a : b;
+        return Float16.compare(Float16.shortBitsToFloat16(a), Float16.shortBitsToFloat16((short)0)) != 0 ? a : b;
     }
 
 
