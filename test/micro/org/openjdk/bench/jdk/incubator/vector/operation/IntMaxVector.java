@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,7 @@ package org.openjdk.bench.jdk.incubator.vector.operation;
 
 import jdk.incubator.vector.Vector;
 import jdk.incubator.vector.VectorMask;
+import jdk.incubator.vector.VectorMath;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorShape;
 import jdk.incubator.vector.VectorSpecies;
@@ -50,6 +51,8 @@ public class IntMaxVector extends AbstractVectorBenchmark {
     static final VectorSpecies<Integer> SPECIES = IntVector.SPECIES_MAX;
 
     static final int INVOC_COUNT = 1; // get rid of outer loop
+
+    static IntVector bcast_vec = IntVector.broadcast(SPECIES, (int)10);
 
     static void replaceZero(int[] a, int v) {
         for (int i = 0; i < a.length; i++) {
@@ -1025,6 +1028,70 @@ public class IntMaxVector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
+    public void MIN_MEM(Blackhole bh) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.MIN, bcast_vec).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void MINMasked_MEM(Blackhole bh) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.MIN, bcast_vec, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void MAX_MEM(Blackhole bh) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.MAX, bcast_vec).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void MAXMasked_MEM(Blackhole bh) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                av.lanewise(VectorOperators.MAX, bcast_vec, vmask).intoArray(r, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
     public void MIN(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
         int[] b = fb.apply(SPECIES.length());
@@ -1275,6 +1342,51 @@ public class IntMaxVector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
+    public void SUADD_ASSOC(Blackhole bh) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] b = fb.apply(SPECIES.length());
+        int[] c = fc.apply(SPECIES.length());
+        int[] rl = fr.apply(SPECIES.length());
+        int[] rr = fr.apply(SPECIES.length());
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                IntVector bv = IntVector.fromArray(SPECIES, b, i);
+                IntVector cv = IntVector.fromArray(SPECIES, c, i);
+                av.lanewise(VectorOperators.SUADD, bv).lanewise(VectorOperators.SUADD, cv).intoArray(rl, i);
+                av.lanewise(VectorOperators.SUADD, bv.lanewise(VectorOperators.SUADD, cv)).intoArray(rr, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void SUADDMasked_ASSOC(Blackhole bh) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] b = fb.apply(SPECIES.length());
+        int[] c = fc.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        int[] rl = fr.apply(SPECIES.length());
+        int[] rr = fr.apply(SPECIES.length());
+
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                IntVector bv = IntVector.fromArray(SPECIES, b, i);
+                IntVector cv = IntVector.fromArray(SPECIES, c, i);
+                av.lanewise(VectorOperators.SUADD, bv, vmask).lanewise(VectorOperators.SUADD, cv, vmask).intoArray(rl, i);
+                av.lanewise(VectorOperators.SUADD, bv.lanewise(VectorOperators.SUADD, cv, vmask), vmask).intoArray(rr, i);
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
     public void ANDLanes(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
         int ra = -1;
@@ -1499,6 +1611,70 @@ public class IntMaxVector extends AbstractVectorBenchmark {
     }
 
     @Benchmark
+    public void UMINLanes(Blackhole bh) {
+        int[] a = fa.apply(SPECIES.length());
+        int ra = Integer.MAX_VALUE;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            ra = Integer.MAX_VALUE;
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                ra = (int) VectorMath.minUnsigned(ra, av.reduceLanes(VectorOperators.UMIN));
+            }
+        }
+        bh.consume(ra);
+    }
+
+    @Benchmark
+    public void UMINMaskedLanes(Blackhole bh) {
+        int[] a = fa.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        int ra = Integer.MAX_VALUE;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            ra = Integer.MAX_VALUE;
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                ra = (int) VectorMath.minUnsigned(ra, av.reduceLanes(VectorOperators.UMIN, vmask));
+            }
+        }
+        bh.consume(ra);
+    }
+
+    @Benchmark
+    public void UMAXLanes(Blackhole bh) {
+        int[] a = fa.apply(SPECIES.length());
+        int ra = Integer.MIN_VALUE;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            ra = Integer.MIN_VALUE;
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                ra = (int) VectorMath.maxUnsigned(ra, av.reduceLanes(VectorOperators.UMAX));
+            }
+        }
+        bh.consume(ra);
+    }
+
+    @Benchmark
+    public void UMAXMaskedLanes(Blackhole bh) {
+        int[] a = fa.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        int ra = Integer.MIN_VALUE;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            ra = Integer.MIN_VALUE;
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                ra = (int) VectorMath.maxUnsigned(ra, av.reduceLanes(VectorOperators.UMAX, vmask));
+            }
+        }
+        bh.consume(ra);
+    }
+
+    @Benchmark
     public void FIRST_NONZEROLanes(Blackhole bh) {
         int[] a = fa.apply(SPECIES.length());
         int ra = (int) 0;
@@ -1554,6 +1730,56 @@ public class IntMaxVector extends AbstractVectorBenchmark {
             for (int i = 0; i < mask.length; i += SPECIES.length()) {
                 VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, i);
                 r[i] = vmask.allTrue();
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void SUADD_REDUCTION(Blackhole bh) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        int ra = 0;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                r[i] = av.reduceLanes(VectorOperators.SUADD);
+            }
+        }
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            ra = 0;
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                ra = (int) VectorMath.addSaturatingUnsigned(ra, av.reduceLanes(VectorOperators.SUADD));
+            }
+        }
+
+        bh.consume(r);
+    }
+
+    @Benchmark
+    public void SUADDMasked_REDUCTION(Blackhole bh) {
+        int[] a = fa.apply(SPECIES.length());
+        int[] r = fr.apply(SPECIES.length());
+        boolean[] mask = fm.apply(SPECIES.length());
+        VectorMask<Integer> vmask = VectorMask.fromArray(SPECIES, mask, 0);
+        int ra = 0;
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                r[i] = av.reduceLanes(VectorOperators.SUADD, vmask);
+            }
+        }
+
+        for (int ic = 0; ic < INVOC_COUNT; ic++) {
+            ra = 0;
+            for (int i = 0; i < a.length; i += SPECIES.length()) {
+                IntVector av = IntVector.fromArray(SPECIES, a, i);
+                ra = (int) VectorMath.addSaturatingUnsigned(ra, av.reduceLanes(VectorOperators.SUADD, vmask));
             }
         }
 
