@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,7 @@ package org.openjdk.bench.jdk.incubator.vector.operation;
 
 import jdk.incubator.vector.Vector;
 import jdk.incubator.vector.VectorMask;
+import jdk.incubator.vector.VectorMath;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorShape;
 import jdk.incubator.vector.VectorSpecies;
@@ -54,6 +55,8 @@ public class $vectorbenchtype$ extends AbstractVectorBenchmark {
 #end[MaxBit]
 
     static final int INVOC_COUNT = 1; // get rid of outer loop
+
+    static $abstractvectortype$ bcast_vec = $abstractvectortype$.broadcast(SPECIES, ($type$)10);
 
 #if[BITWISE]
     static void replaceZero($type$[] a, $type$ v) {
