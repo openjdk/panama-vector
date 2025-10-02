@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -62,6 +62,8 @@ public class Int256VectorTests extends AbstractVectorTest {
                 IntVector.SPECIES_256;
 
     static final int INVOC_COUNT = Integer.getInteger("jdk.incubator.vector.test.loop-iterations", 100);
+
+    static IntVector bcast_vec = IntVector.broadcast(SPECIES, (int)10);
 
 
     private static final int CONST_SHIFT = Integer.SIZE / 2;
@@ -3084,8 +3086,6 @@ public class Int256VectorTests extends AbstractVectorTest {
     }
 
 
-    static IntVector bv_MIN = IntVector.broadcast(SPECIES, (int)10);
-
     @Test(dataProvider = "intUnaryOpProvider")
     static void MINInt256VectorTestsWithMemOp(IntFunction<int[]> fa) {
         int[] a = fa.apply(SPECIES.length());
@@ -3094,14 +3094,12 @@ public class Int256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MIN, bv_MIN).intoArray(r, i);
+                av.lanewise(VectorOperators.MIN, bcast_vec).intoArray(r, i);
             }
         }
 
         assertArraysEquals(r, a, (int)10, Int256VectorTests::MIN);
     }
-
-    static IntVector bv_min = IntVector.broadcast(SPECIES, (int)10);
 
     @Test(dataProvider = "intUnaryOpProvider")
     static void minInt256VectorTestsWithMemOp(IntFunction<int[]> fa) {
@@ -3111,14 +3109,12 @@ public class Int256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.min(bv_min).intoArray(r, i);
+                av.min(bcast_vec).intoArray(r, i);
             }
         }
 
         assertArraysEquals(r, a, (int)10, Int256VectorTests::min);
     }
-
-    static IntVector bv_MIN_M = IntVector.broadcast(SPECIES, (int)10);
 
     @Test(dataProvider = "intUnaryOpMaskProvider")
     static void MINInt256VectorTestsMaskedWithMemOp(IntFunction<int[]> fa, IntFunction<boolean[]> fm) {
@@ -3130,14 +3126,12 @@ public class Int256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MIN, bv_MIN_M, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.MIN, bcast_vec, vmask).intoArray(r, i);
             }
         }
 
         assertArraysEquals(r, a, (int)10, mask, Int256VectorTests::MIN);
     }
-
-    static IntVector bv_MAX = IntVector.broadcast(SPECIES, (int)10);
 
     @Test(dataProvider = "intUnaryOpProvider")
     static void MAXInt256VectorTestsWithMemOp(IntFunction<int[]> fa) {
@@ -3147,14 +3141,12 @@ public class Int256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MAX, bv_MAX).intoArray(r, i);
+                av.lanewise(VectorOperators.MAX, bcast_vec).intoArray(r, i);
             }
         }
 
         assertArraysEquals(r, a, (int)10, Int256VectorTests::MAX);
     }
-
-    static IntVector bv_max = IntVector.broadcast(SPECIES, (int)10);
 
     @Test(dataProvider = "intUnaryOpProvider")
     static void maxInt256VectorTestsWithMemOp(IntFunction<int[]> fa) {
@@ -3164,14 +3156,12 @@ public class Int256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.max(bv_max).intoArray(r, i);
+                av.max(bcast_vec).intoArray(r, i);
             }
         }
 
         assertArraysEquals(r, a, (int)10, Int256VectorTests::max);
     }
-
-    static IntVector bv_MAX_M = IntVector.broadcast(SPECIES, (int)10);
 
     @Test(dataProvider = "intUnaryOpMaskProvider")
     static void MAXInt256VectorTestsMaskedWithMemOp(IntFunction<int[]> fa, IntFunction<boolean[]> fm) {
@@ -3183,7 +3173,7 @@ public class Int256VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 IntVector av = IntVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MAX, bv_MAX_M, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.MAX, bcast_vec, vmask).intoArray(r, i);
             }
         }
 

@@ -100,6 +100,7 @@ generate_test_cases() {
         Wideboxtype=Float
         MaxValue=POSITIVE_INFINITY
         MinValue=NEGATIVE_INFINITY
+        args="$args -KfloatOrDouble"
         ;;
       double)
         kind=FP
@@ -110,6 +111,7 @@ generate_test_cases() {
         Wideboxtype=Double
         MaxValue=POSITIVE_INFINITY
         MinValue=NEGATIVE_INFINITY
+        args="$args -KfloatOrDouble"
         ;;
       halffloat)
         VecEleType=Short
