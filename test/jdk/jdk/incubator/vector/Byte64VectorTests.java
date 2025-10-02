@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -62,6 +62,8 @@ public class Byte64VectorTests extends AbstractVectorTest {
                 ByteVector.SPECIES_64;
 
     static final int INVOC_COUNT = Integer.getInteger("jdk.incubator.vector.test.loop-iterations", 100);
+
+    static ByteVector bcast_vec = ByteVector.broadcast(SPECIES, (byte)10);
 
 
     private static final byte CONST_SHIFT = Byte.SIZE / 2;
@@ -3040,8 +3042,6 @@ public class Byte64VectorTests extends AbstractVectorTest {
     }
 
 
-    static ByteVector bv_MIN = ByteVector.broadcast(SPECIES, (byte)10);
-
     @Test(dataProvider = "byteUnaryOpProvider")
     static void MINByte64VectorTestsWithMemOp(IntFunction<byte[]> fa) {
         byte[] a = fa.apply(SPECIES.length());
@@ -3050,14 +3050,12 @@ public class Byte64VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MIN, bv_MIN).intoArray(r, i);
+                av.lanewise(VectorOperators.MIN, bcast_vec).intoArray(r, i);
             }
         }
 
         assertArraysEquals(r, a, (byte)10, Byte64VectorTests::MIN);
     }
-
-    static ByteVector bv_min = ByteVector.broadcast(SPECIES, (byte)10);
 
     @Test(dataProvider = "byteUnaryOpProvider")
     static void minByte64VectorTestsWithMemOp(IntFunction<byte[]> fa) {
@@ -3067,14 +3065,12 @@ public class Byte64VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                av.min(bv_min).intoArray(r, i);
+                av.min(bcast_vec).intoArray(r, i);
             }
         }
 
         assertArraysEquals(r, a, (byte)10, Byte64VectorTests::min);
     }
-
-    static ByteVector bv_MIN_M = ByteVector.broadcast(SPECIES, (byte)10);
 
     @Test(dataProvider = "byteUnaryOpMaskProvider")
     static void MINByte64VectorTestsMaskedWithMemOp(IntFunction<byte[]> fa, IntFunction<boolean[]> fm) {
@@ -3086,14 +3082,12 @@ public class Byte64VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MIN, bv_MIN_M, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.MIN, bcast_vec, vmask).intoArray(r, i);
             }
         }
 
         assertArraysEquals(r, a, (byte)10, mask, Byte64VectorTests::MIN);
     }
-
-    static ByteVector bv_MAX = ByteVector.broadcast(SPECIES, (byte)10);
 
     @Test(dataProvider = "byteUnaryOpProvider")
     static void MAXByte64VectorTestsWithMemOp(IntFunction<byte[]> fa) {
@@ -3103,14 +3097,12 @@ public class Byte64VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MAX, bv_MAX).intoArray(r, i);
+                av.lanewise(VectorOperators.MAX, bcast_vec).intoArray(r, i);
             }
         }
 
         assertArraysEquals(r, a, (byte)10, Byte64VectorTests::MAX);
     }
-
-    static ByteVector bv_max = ByteVector.broadcast(SPECIES, (byte)10);
 
     @Test(dataProvider = "byteUnaryOpProvider")
     static void maxByte64VectorTestsWithMemOp(IntFunction<byte[]> fa) {
@@ -3120,14 +3112,12 @@ public class Byte64VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                av.max(bv_max).intoArray(r, i);
+                av.max(bcast_vec).intoArray(r, i);
             }
         }
 
         assertArraysEquals(r, a, (byte)10, Byte64VectorTests::max);
     }
-
-    static ByteVector bv_MAX_M = ByteVector.broadcast(SPECIES, (byte)10);
 
     @Test(dataProvider = "byteUnaryOpMaskProvider")
     static void MAXByte64VectorTestsMaskedWithMemOp(IntFunction<byte[]> fa, IntFunction<boolean[]> fm) {
@@ -3139,7 +3129,7 @@ public class Byte64VectorTests extends AbstractVectorTest {
         for (int ic = 0; ic < INVOC_COUNT; ic++) {
             for (int i = 0; i < a.length; i += SPECIES.length()) {
                 ByteVector av = ByteVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.MAX, bv_MAX_M, vmask).intoArray(r, i);
+                av.lanewise(VectorOperators.MAX, bcast_vec, vmask).intoArray(r, i);
             }
         }
 

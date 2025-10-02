@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
 import jdk.incubator.vector.VectorMath;
 
-import jdk.incubator.vector.Halffloat;
+import jdk.incubator.vector.Float16;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
@@ -55,7 +55,7 @@ public class HalffloatScalar extends AbstractVectorBenchmark {
     }
 
     static short bits(short e) {
-        return Halffloat.shortToShortBits(e);
+        return e;
     }
 
     short[] as, bs, cs, rs;
@@ -63,7 +63,7 @@ public class HalffloatScalar extends AbstractVectorBenchmark {
     int[] ss;
 
     static short genValue(int i) {
-        return Halffloat.valueOf(i);
+        return Float16.float16ToRawShortBits(Float16.valueOf(i));
     }
 
     @Setup
