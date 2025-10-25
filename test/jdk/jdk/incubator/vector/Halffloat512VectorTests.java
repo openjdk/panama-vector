@@ -332,7 +332,7 @@ relativeError));
             for (; i < a.length; i += vector_len) {
                 for (j = 0; j < vector_len; j++) {
                     idx = i + j;
-                    wrapped_index = Math.floorMod((int)order[idx], 2 * vector_len);
+                    wrapped_index = Math.floorMod(Float16.shortBitsToFloat16(order[idx]).intValue(), 2 * vector_len);
                     is_exceptional_idx = wrapped_index >= vector_len;
                     oidx = is_exceptional_idx ? (wrapped_index - vector_len) : wrapped_index;
                     Assert.assertEquals(r[idx], (is_exceptional_idx ? b[i + oidx] : a[i + oidx]));
@@ -2707,7 +2707,7 @@ relativeError));
     static long ADDReduceAllLong(short[] a) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            res += ADDReduceLong(a, i);
+            res = Float.floatToFloat16(Float.float16ToFloat((short)res) + Float.float16ToFloat((short)ADDReduceLong(a, i)));
         }
 
         return res;
@@ -2725,8 +2725,8 @@ relativeError));
         }
 
         ra = 0;
-        for (int i = 0; i < a.length; i ++) {
-            ra += r[i];
+        for (int i = 0; i < a.length; i++) {
+            ra = (long)(Float16.float16ToRawShortBits(Float16.add(Float16.shortBitsToFloat16((short)ra), Float16.shortBitsToFloat16((short)r[i]))));
         }
 
         assertReductionLongArraysEquals(r, ra, a,
@@ -2746,7 +2746,7 @@ relativeError));
     static long ADDReduceAllLongMasked(short[] a, boolean[] mask) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
-            res += ADDReduceLongMasked(a, i, mask);
+            res = Float.floatToFloat16(Float.float16ToFloat((short)res) + Float.float16ToFloat((short)ADDReduceLongMasked(a, i, mask)));
         }
 
         return res;
@@ -2766,8 +2766,8 @@ relativeError));
         }
 
         ra = 0;
-        for (int i = 0; i < a.length; i ++) {
-            ra += r[i];
+        for (int i = 0; i < a.length; i++) {
+            ra = (long)(Float16.float16ToRawShortBits(Float16.add(Float16.shortBitsToFloat16((short)ra), Float16.shortBitsToFloat16((short)r[i]))));
         }
 
         assertReductionLongArraysEqualsMasked(r, ra, a, mask,
