@@ -535,7 +535,8 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         short[] vecPayload2 = ((HalffloatVector)src1).vec();
         short[] vecPayload3 = ((HalffloatVector)src2).vec();
         for (int i = 0; i < vlen; i++) {
-            int wrapped_index = VectorIntrinsics.wrapToRange((int)vecPayload1[i], 2 * vlen);
+            int index = Float16.shortBitsToFloat16(vecPayload1[i]).intValue();
+            int wrapped_index = VectorIntrinsics.wrapToRange(index, 2 * vlen);
             res[i] = wrapped_index >= vlen ? vecPayload3[wrapped_index - vlen] : vecPayload2[wrapped_index];
         }
         return ((HalffloatVector)src1).vectorFactory(res);
@@ -565,7 +566,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
     @ForceInline
     public static HalffloatVector zero(VectorSpecies<Float16> species) {
         HalffloatSpecies vsp = (HalffloatSpecies) species;
-        return VectorSupport.fromBitsCoerced(vsp.vectorType(), short.class, Float16.class, VECTOR_OPER_TYPE, species.length(),
+        return VectorSupport.fromBitsCoerced(vsp.vectorType(), short.class, VECTOR_OPER_TYPE, species.length(),
                         toBits((short) 0), MODE_BROADCAST, vsp,
                         ((bits_, s_) -> s_.rvOp(i -> bits_)));
     }
@@ -687,7 +688,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         }
         int opc = opCode(op);
         return VectorSupport.unaryOp(
-            opc, getClass(), null, short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+            opc, getClass(), null, short.class, VECTOR_OPER_TYPE, length(),
             this, null,
             UN_IMPL.find(op, opc, HalffloatVector::unaryOperations));
     }
@@ -715,7 +716,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         }
         int opc = opCode(op);
         return VectorSupport.unaryOp(
-            opc, getClass(), maskClass, short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+            opc, getClass(), maskClass, short.class, VECTOR_OPER_TYPE, length(),
             this, m,
             UN_IMPL.find(op, opc, HalffloatVector::unaryOperations));
     }
@@ -804,7 +805,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
 
         int opc = opCode(op);
         return VectorSupport.binaryOp(
-            opc, getClass(), null, short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+            opc, getClass(), null, short.class, VECTOR_OPER_TYPE, length(),
             this, that, null,
             BIN_IMPL.find(op, opc, HalffloatVector::binaryOperations));
     }
@@ -842,7 +843,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
 
         int opc = opCode(op);
         return VectorSupport.binaryOp(
-            opc, getClass(), maskClass, short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+            opc, getClass(), maskClass, short.class, VECTOR_OPER_TYPE, length(),
             this, that, m,
             BIN_IMPL.find(op, opc, HalffloatVector::binaryOperations));
     }
@@ -1022,7 +1023,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         tother.check(this);
         int opc = opCode(op);
         return VectorSupport.ternaryOp(
-            opc, getClass(), null, short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+            opc, getClass(), null, short.class, VECTOR_OPER_TYPE, length(),
             this, that, tother, null,
             TERN_IMPL.find(op, opc, HalffloatVector::ternaryOperations));
     }
@@ -1057,7 +1058,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
 
         int opc = opCode(op);
         return VectorSupport.ternaryOp(
-            opc, getClass(), maskClass, short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+            opc, getClass(), maskClass, short.class, VECTOR_OPER_TYPE, length(),
             this, that, tother, m,
             TERN_IMPL.find(op, opc, HalffloatVector::ternaryOperations));
     }
@@ -1929,7 +1930,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         that.check(this);
         int opc = opCode(op);
         return VectorSupport.compare(
-            opc, getClass(), maskType, short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+            opc, getClass(), maskType, short.class, VECTOR_OPER_TYPE, length(),
             this, that, null,
             (cond, v0, v1, m1) -> {
                 AbstractMask<Float16> m
@@ -1951,7 +1952,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         m.check(maskType, this);
         int opc = opCode(op);
         return VectorSupport.compare(
-            opc, getClass(), maskType, short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+            opc, getClass(), maskType, short.class, VECTOR_OPER_TYPE, length(),
             this, that, m,
             (cond, v0, v1, m1) -> {
                 AbstractMask<Float16> cmpM
@@ -2078,7 +2079,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
     blendTemplate(Class<M> maskType, HalffloatVector v, M m) {
         v.check(this);
         return VectorSupport.blend(
-            getClass(), maskType, short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+            getClass(), maskType, short.class, VECTOR_OPER_TYPE, length(),
             this, v, m,
             (v0, v1, m_) -> v0.bOp(v1, m_, (i, a, b) -> b));
     }
@@ -2095,7 +2096,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         // make sure VLENGTH*scale doesn't overflow:
         vsp.checkScale(scale);
         return VectorSupport.indexVector(
-            getClass(), short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+            getClass(), short.class, VECTOR_OPER_TYPE, length(),
             this, scale, vsp,
             (v, scale_, s)
             -> {
@@ -2287,7 +2288,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
     HalffloatVector rearrangeTemplate(Class<S> shuffletype, S shuffle) {
         Objects.requireNonNull(shuffle);
         return VectorSupport.rearrangeOp(
-            getClass(), shuffletype, null, short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+            getClass(), shuffletype, null, short.class, VECTOR_OPER_TYPE, length(),
             this, shuffle, null,
             (v1, s_, m_) -> v1.uOp((i, a) -> {
                 int ei = Integer.remainderUnsigned(s_.laneSource(i), v1.length());
@@ -2314,7 +2315,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         Objects.requireNonNull(shuffle);
         m.check(masktype, this);
         return VectorSupport.rearrangeOp(
-                   getClass(), shuffletype, masktype, short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+                   getClass(), shuffletype, masktype, short.class, VECTOR_OPER_TYPE, length(),
                    this, shuffle, m,
                    (v1, s_, m_) -> v1.uOp((i, a) -> {
                         int ei = Integer.remainderUnsigned(s_.laneSource(i), v1.length());
@@ -2340,7 +2341,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         VectorMask<Float16> valid = shuffle.laneIsValid();
         HalffloatVector r0 =
             VectorSupport.rearrangeOp(
-                getClass(), shuffletype, null, short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+                getClass(), shuffletype, null, short.class, VECTOR_OPER_TYPE, length(),
                 this, shuffle, null,
                 (v0, s_, m_) -> v0.uOp((i, a) -> {
                     int ei = Integer.remainderUnsigned(s_.laneSource(i), v0.length());
@@ -2348,7 +2349,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
                 }));
         HalffloatVector r1 =
             VectorSupport.rearrangeOp(
-                getClass(), shuffletype, null, short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+                getClass(), shuffletype, null, short.class, VECTOR_OPER_TYPE, length(),
                 v, shuffle, null,
                 (v1, s_, m_) -> v1.uOp((i, a) -> {
                     int ei = Integer.remainderUnsigned(s_.laneSource(i), v1.length());
@@ -2392,7 +2393,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
     HalffloatVector compressTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return (HalffloatVector) VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_COMPRESS, getClass(), masktype,
-                                                        short.class, Float16.class, VECTOR_OPER_TYPE, length(), this, m,
+                                                        short.class, VECTOR_OPER_TYPE, length(), this, m,
                                                         (v1, m1) -> compressHelper(v1, m1));
     }
 
@@ -2411,7 +2412,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
     HalffloatVector expandTemplate(Class<M> masktype, M m) {
       m.check(masktype, this);
       return (HalffloatVector) VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_EXPAND, getClass(), masktype,
-                                                        short.class, Float16.class, VECTOR_OPER_TYPE, length(), this, m,
+                                                        short.class, VECTOR_OPER_TYPE, length(), this, m,
                                                         (v1, m1) -> expandHelper(v1, m1));
     }
 
@@ -2426,7 +2427,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
     /*package-private*/
     @ForceInline
     final HalffloatVector selectFromTemplate(HalffloatVector v) {
-        return (HalffloatVector)VectorSupport.selectFromOp(getClass(), null, short.class, Float16.class, VECTOR_OPER_TYPE,
+        return (HalffloatVector)VectorSupport.selectFromOp(getClass(), null, short.class, VECTOR_OPER_TYPE,
                                                         length(), this, v, null,
                                                         (v1, v2, _m) ->
                                                          v2.rearrange(v1.toShuffle()));
@@ -2446,7 +2447,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
     HalffloatVector selectFromTemplate(HalffloatVector v,
                                             Class<M> masktype, M m) {
         m.check(masktype, this);
-        return (HalffloatVector)VectorSupport.selectFromOp(getClass(), masktype, short.class, Float16.class, VECTOR_OPER_TYPE,
+        return (HalffloatVector)VectorSupport.selectFromOp(getClass(), masktype, short.class, VECTOR_OPER_TYPE,
                                                         length(), this, v, m,
                                                         (v1, v2, _m) ->
                                                          v2.rearrange(v1.toShuffle(), _m));
@@ -2464,7 +2465,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
     /*package-private*/
     @ForceInline
     final HalffloatVector selectFromTemplate(HalffloatVector v1, HalffloatVector v2) {
-        return VectorSupport.selectFromTwoVectorOp(getClass(), short.class, Float16.class, VECTOR_OPER_TYPE, length(), this, v1, v2,
+        return VectorSupport.selectFromTwoVectorOp(getClass(), short.class, VECTOR_OPER_TYPE, length(), this, v1, v2,
                                                    (vec1, vec2, vec3) -> selectFromTwoVectorHelper(vec1, vec2, vec3));
     }
 
@@ -2662,7 +2663,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         }
         int opc = opCode(op);
         return fromBits(VectorSupport.reductionCoerced(
-            opc, getClass(), maskClass, short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+            opc, getClass(), maskClass, short.class, VECTOR_OPER_TYPE, length(),
             this, m,
             REDUCE_IMPL.find(op, opc, HalffloatVector::reductionOperations)));
     }
@@ -2680,7 +2681,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         }
         int opc = opCode(op);
         return fromBits(VectorSupport.reductionCoerced(
-            opc, getClass(), null, short.class, Float16.class, VECTOR_OPER_TYPE, length(),
+            opc, getClass(), null, short.class, VECTOR_OPER_TYPE, length(),
             this, null,
             REDUCE_IMPL.find(op, opc, HalffloatVector::reductionOperations)));
     }
@@ -2937,7 +2938,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         }
 
         return VectorSupport.loadWithMap(
-            vectorType, null, short.class, Float16.class, VECTOR_OPER_TYPE, vsp.laneCount(),
+            vectorType, null, short.class, VECTOR_OPER_TYPE, vsp.laneCount(),
             lsp.vectorType(), lsp.length(),
             a, ARRAY_BASE, vix0, vix1, null, null, null,
             a, offset, indexMap, mapOffset, vsp,
@@ -3270,7 +3271,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         offset = checkFromIndexSize(offset, length(), a.length);
         HalffloatSpecies vsp = vspecies();
         VectorSupport.store(
-            vsp.vectorType(), vsp.carrierType(), vsp.elementType(), VECTOR_OPER_TYPE, vsp.laneCount(),
+            vsp.vectorType(), vsp.carrierType(), VECTOR_OPER_TYPE, vsp.laneCount(),
             a, arrayAddress(a, offset), false,
             this,
             a, offset,
@@ -3419,7 +3420,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         offset = checkFromIndexSize(offset, length(), a.length);
         HalffloatSpecies vsp = vspecies();
         VectorSupport.store(
-            vsp.vectorType(), vsp.carrierType(), vsp.elementType(), VECTOR_OPER_TYPE, vsp.laneCount(),
+            vsp.vectorType(), vsp.carrierType(), VECTOR_OPER_TYPE, vsp.laneCount(),
             a, charArrayAddress(a, offset), false,
             this,
             a, offset,
@@ -3624,7 +3625,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
     HalffloatVector fromArray0Template(short[] a, int offset) {
         HalffloatSpecies vsp = vspecies();
         return VectorSupport.load(
-            vsp.vectorType(), vsp.carrierType(), vsp.elementType(), VECTOR_OPER_TYPE, vsp.laneCount(),
+            vsp.vectorType(), vsp.carrierType(), VECTOR_OPER_TYPE, vsp.laneCount(),
             a, arrayAddress(a, offset), false,
             a, offset, vsp,
             (arr, off, s) -> s.ldOp(arr, (int) off,
@@ -3641,7 +3642,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         m.check(species());
         HalffloatSpecies vsp = vspecies();
         return VectorSupport.loadMasked(
-            vsp.vectorType(), maskClass, vsp.carrierType(), vsp.elementType(), VECTOR_OPER_TYPE, vsp.laneCount(),
+            vsp.vectorType(), maskClass, vsp.carrierType(), VECTOR_OPER_TYPE, vsp.laneCount(),
             a, arrayAddress(a, offset), false, m, offsetInRange,
             a, offset, vsp,
             (arr, off, s, vm) -> s.ldOp(arr, (int) off, vm,
@@ -3688,7 +3689,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         }
 
         return VectorSupport.loadWithMap(
-            vectorType, maskClass, short.class, Float16.class, VECTOR_OPER_TYPE, vsp.laneCount(),
+            vectorType, maskClass, short.class, VECTOR_OPER_TYPE, vsp.laneCount(),
             lsp.vectorType(), lsp.length(),
             a, ARRAY_BASE, vix0, vix1, null, null, m,
             a, offset, indexMap, mapOffset, vsp,
@@ -3704,7 +3705,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
     HalffloatVector fromCharArray0Template(char[] a, int offset) {
         HalffloatSpecies vsp = vspecies();
         return VectorSupport.load(
-            vsp.vectorType(), vsp.carrierType(), vsp.elementType(), VECTOR_OPER_TYPE, vsp.laneCount(),
+            vsp.vectorType(), vsp.carrierType(), VECTOR_OPER_TYPE, vsp.laneCount(),
             a, charArrayAddress(a, offset), false,
             a, offset, vsp,
             (arr, off, s) -> s.ldOp(arr, (int) off,
@@ -3721,7 +3722,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         m.check(species());
         HalffloatSpecies vsp = vspecies();
         return VectorSupport.loadMasked(
-                vsp.vectorType(), maskClass, vsp.carrierType(), vsp.elementType(), VECTOR_OPER_TYPE, vsp.laneCount(),
+                vsp.vectorType(), maskClass, vsp.carrierType(), VECTOR_OPER_TYPE, vsp.laneCount(),
                 a, charArrayAddress(a, offset), false, m, offsetInRange,
                 a, offset, vsp,
                 (arr, off, s, vm) -> s.ldOp(arr, (int) off, vm,
@@ -3736,7 +3737,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
     HalffloatVector fromMemorySegment0Template(MemorySegment ms, long offset) {
         HalffloatSpecies vsp = vspecies();
         return ScopedMemoryAccess.loadFromMemorySegment(
-                vsp.vectorType(), vsp.carrierType(), vsp.elementType(), VECTOR_OPER_TYPE, vsp.laneCount(),
+                vsp.vectorType(), vsp.carrierType(), VECTOR_OPER_TYPE, vsp.laneCount(),
                 (AbstractMemorySegmentImpl) ms, offset, vsp,
                 (msp, off, s) -> {
                     return s.ldLongOp((MemorySegment) msp, off, HalffloatVector::memorySegmentGet);
@@ -3752,7 +3753,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         HalffloatSpecies vsp = vspecies();
         m.check(vsp);
         return ScopedMemoryAccess.loadFromMemorySegmentMasked(
-                vsp.vectorType(), maskClass, vsp.carrierType(), vsp.elementType(), VECTOR_OPER_TYPE, vsp.laneCount(),
+                vsp.vectorType(), maskClass, vsp.carrierType(), VECTOR_OPER_TYPE, vsp.laneCount(),
                 (AbstractMemorySegmentImpl) ms, offset, m, vsp, offsetInRange,
                 (msp, off, s, vm) -> {
                     return s.ldLongOp((MemorySegment) msp, off, vm, HalffloatVector::memorySegmentGet);
@@ -3770,7 +3771,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
     void intoArray0Template(short[] a, int offset) {
         HalffloatSpecies vsp = vspecies();
         VectorSupport.store(
-            vsp.vectorType(), vsp.carrierType(), vsp.elementType(), VECTOR_OPER_TYPE, vsp.laneCount(),
+            vsp.vectorType(), vsp.carrierType(), VECTOR_OPER_TYPE, vsp.laneCount(),
             a, arrayAddress(a, offset), false,
             this, a, offset,
             (arr, off, v)
@@ -3787,7 +3788,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         m.check(species());
         HalffloatSpecies vsp = vspecies();
         VectorSupport.storeMasked(
-            vsp.vectorType(), maskClass, vsp.carrierType(), vsp.elementType(), VECTOR_OPER_TYPE, vsp.laneCount(),
+            vsp.vectorType(), maskClass, vsp.carrierType(), VECTOR_OPER_TYPE, vsp.laneCount(),
             a, arrayAddress(a, offset), false,
             this, m, a, offset,
             (arr, off, v, vm)
@@ -3802,7 +3803,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
     void intoMemorySegment0(MemorySegment ms, long offset) {
         HalffloatSpecies vsp = vspecies();
         ScopedMemoryAccess.storeIntoMemorySegment(
-                vsp.vectorType(), vsp.carrierType(), vsp.elementType(), VECTOR_OPER_TYPE, vsp.laneCount(),
+                vsp.vectorType(), vsp.carrierType(), VECTOR_OPER_TYPE, vsp.laneCount(),
                 this,
                 (AbstractMemorySegmentImpl) ms, offset,
                 (msp, off, v) -> {
@@ -3819,7 +3820,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         HalffloatSpecies vsp = vspecies();
         m.check(vsp);
         ScopedMemoryAccess.storeIntoMemorySegmentMasked(
-                vsp.vectorType(), maskClass, vsp.carrierType(), vsp.elementType(), VECTOR_OPER_TYPE, vsp.laneCount(),
+                vsp.vectorType(), maskClass, vsp.carrierType(), VECTOR_OPER_TYPE, vsp.laneCount(),
                 this, m,
                 (AbstractMemorySegmentImpl) ms, offset,
                 (msp, off, v, vm) -> {
@@ -3837,7 +3838,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         m.check(species());
         HalffloatSpecies vsp = vspecies();
         VectorSupport.storeMasked(
-            vsp.vectorType(), maskClass, vsp.carrierType(), vsp.elementType(), VECTOR_OPER_TYPE, vsp.laneCount(),
+            vsp.vectorType(), maskClass, vsp.carrierType(), VECTOR_OPER_TYPE, vsp.laneCount(),
             a, charArrayAddress(a, offset), false,
             this, m, a, offset,
             (arr, off, v, vm)
@@ -4069,7 +4070,7 @@ public abstract class HalffloatVector extends AbstractVector<Float16> {
         final HalffloatVector broadcastBits(long bits) {
             return (HalffloatVector)
                 VectorSupport.fromBitsCoerced(
-                    vectorType, short.class, Float16.class, VECTOR_OPER_TYPE, laneCount,
+                    vectorType, short.class, VECTOR_OPER_TYPE, laneCount,
                     bits, MODE_BROADCAST, this,
                     (bits_, s_) -> s_.rvOp(i -> bits_));
         }
