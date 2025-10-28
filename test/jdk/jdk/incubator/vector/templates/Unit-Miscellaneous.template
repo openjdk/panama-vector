@@ -144,7 +144,11 @@
     static long ADDReduceAllLong($type$[] a) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
+#if[Halffloat]
+            res = Float.floatToFloat16(Float.float16ToFloat((short)res) + Float.float16ToFloat((short)ADDReduceLong(a, i)));
+#else[Halffloat]
             res += ADDReduceLong(a, i);
+#end[Halffloat]
         }
 
         return res;
@@ -162,8 +166,12 @@
         }
 
         ra = 0;
-        for (int i = 0; i < a.length; i ++) {
+        for (int i = 0; i < a.length; i++) {
+#if[Halffloat]
+            ra = (long)(Float16.float16ToRawShortBits(Float16.add(Float16.shortBitsToFloat16((short)ra), Float16.shortBitsToFloat16((short)r[i]))));
+#else[Halffloat]
             ra += r[i];
+#end[Halffloat]
         }
 
         assertReductionLongArraysEquals(r, ra, a,
@@ -187,7 +195,11 @@
     static long ADDReduceAllLongMasked($type$[] a, boolean[] mask) {
         long res = 0;
         for (int i = 0; i < a.length; i += SPECIES.length()) {
+#if[Halffloat]
+            res = Float.floatToFloat16(Float.float16ToFloat((short)res) + Float.float16ToFloat((short)ADDReduceLongMasked(a, i, mask)));
+#else[Halffloat]
             res += ADDReduceLongMasked(a, i, mask);
+#end[Halffloat]
         }
 
         return res;
@@ -207,8 +219,12 @@
         }
 
         ra = 0;
-        for (int i = 0; i < a.length; i ++) {
+        for (int i = 0; i < a.length; i++) {
+#if[Halffloat]
+            ra = (long)(Float16.float16ToRawShortBits(Float16.add(Float16.shortBitsToFloat16((short)ra), Float16.shortBitsToFloat16((short)r[i]))));
+#else[Halffloat]
             ra += r[i];
+#end[Halffloat]
         }
 
         assertReductionLongArraysEqualsMasked(r, ra, a, mask,

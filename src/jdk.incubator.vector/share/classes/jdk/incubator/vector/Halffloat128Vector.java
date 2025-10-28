@@ -529,7 +529,7 @@ final class Halffloat128Vector extends HalffloatVector {
     @ForceInline
     public short laneHelper(int i) {
         return (short) VectorSupport.extract(
-                     VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                     VCLASS, CTYPE, VECTOR_OPER_TYPE, VLENGTH,
                      this, i,
                      (vec, ix) -> {
                      short[] vecarr = vec.vec();
@@ -556,7 +556,7 @@ final class Halffloat128Vector extends HalffloatVector {
     @ForceInline
     public Halffloat128Vector withLaneHelper(int i, short e) {
         return VectorSupport.insert(
-                                VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                VCLASS, CTYPE, VECTOR_OPER_TYPE, VLENGTH,
                                 this, i, (long)e,
                                 (v, ix, bits) -> {
                                     short[] res = v.vec().clone();
@@ -671,7 +671,7 @@ final class Halffloat128Vector extends HalffloatVector {
         /*package-private*/
         Halffloat128Mask indexPartiallyInUpperRange(long offset, long limit) {
             return (Halffloat128Mask) VectorSupport.indexPartiallyInUpperRange(
-                Halffloat128Mask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, offset, limit,
+                Halffloat128Mask.class, CTYPE, VECTOR_OPER_TYPE, VLENGTH, offset, limit,
                 (o, l) -> (Halffloat128Mask) TRUE_MASK.indexPartiallyInRange(o, l));
         }
 
@@ -687,7 +687,7 @@ final class Halffloat128Vector extends HalffloatVector {
         @ForceInline
         public Halffloat128Mask compress() {
             return (Halffloat128Mask)VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                Halffloat128Vector.class, Halffloat128Mask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, null, this,
+                Halffloat128Vector.class, Halffloat128Mask.class, CTYPE, VECTOR_OPER_TYPE, VLENGTH, null, this,
                 (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT,
                 Float16.float16ToShortBits(Float16.valueOf(m1.trueCount()))));
         }
@@ -700,7 +700,7 @@ final class Halffloat128Vector extends HalffloatVector {
         public Halffloat128Mask and(VectorMask<Float16> mask) {
             Objects.requireNonNull(mask);
             Halffloat128Mask m = (Halffloat128Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, Halffloat128Mask.class, null, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Halffloat128Mask.class, null, short.class, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
@@ -710,7 +710,7 @@ final class Halffloat128Vector extends HalffloatVector {
         public Halffloat128Mask or(VectorMask<Float16> mask) {
             Objects.requireNonNull(mask);
             Halffloat128Mask m = (Halffloat128Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, Halffloat128Mask.class, null, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Halffloat128Mask.class, null, short.class, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
@@ -720,7 +720,7 @@ final class Halffloat128Vector extends HalffloatVector {
         public Halffloat128Mask xor(VectorMask<Float16> mask) {
             Objects.requireNonNull(mask);
             Halffloat128Mask m = (Halffloat128Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, Halffloat128Mask.class, null, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Halffloat128Mask.class, null, short.class, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
@@ -730,7 +730,7 @@ final class Halffloat128Vector extends HalffloatVector {
         @Override
         @ForceInline
         public int trueCount() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Halffloat128Mask.class, short.class, ETYPE,
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Halffloat128Mask.class, short.class,
                                                             VECTOR_OPER_TYPE, VLENGTH, this,
                                                             (m) -> trueCountHelper(m.getBits()));
         }
@@ -738,7 +738,7 @@ final class Halffloat128Vector extends HalffloatVector {
         @Override
         @ForceInline
         public int firstTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Halffloat128Mask.class, short.class, ETYPE,
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Halffloat128Mask.class, short.class,
                                                             VECTOR_OPER_TYPE, VLENGTH, this,
                                                             (m) -> firstTrueHelper(m.getBits()));
         }
@@ -746,7 +746,7 @@ final class Halffloat128Vector extends HalffloatVector {
         @Override
         @ForceInline
         public int lastTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Halffloat128Mask.class, short.class, ETYPE,
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Halffloat128Mask.class, short.class,
                                                             VECTOR_OPER_TYPE, VLENGTH, this,
                                                             (m) -> lastTrueHelper(m.getBits()));
         }
@@ -757,7 +757,7 @@ final class Halffloat128Vector extends HalffloatVector {
             if (length() > Long.SIZE) {
                 throw new UnsupportedOperationException("too many lanes for one long");
             }
-            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Halffloat128Mask.class, short.class, ETYPE,
+            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Halffloat128Mask.class, short.class,
                                                       VECTOR_OPER_TYPE, VLENGTH, this,
                                                       (m) -> toLongHelper(m.getBits()));
         }
@@ -768,7 +768,7 @@ final class Halffloat128Vector extends HalffloatVector {
         @ForceInline
         public boolean laneIsSet(int i) {
             Objects.checkIndex(i, length());
-            return VectorSupport.extract(Halffloat128Mask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.extract(Halffloat128Mask.class, short.class, VECTOR_OPER_TYPE, VLENGTH,
                                          this, i, (m, idx) -> (m.getBits()[idx] ? 1L : 0L)) == 1L;
         }
 
@@ -777,7 +777,7 @@ final class Halffloat128Vector extends HalffloatVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            return VectorSupport.test(BT_ne, Halffloat128Mask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.test(BT_ne, Halffloat128Mask.class, short.class, VECTOR_OPER_TYPE, VLENGTH,
                                       this, vspecies().maskAll(true),
                                       (m, __) -> anyTrueHelper(((Halffloat128Mask)m).getBits()));
         }
@@ -785,7 +785,7 @@ final class Halffloat128Vector extends HalffloatVector {
         @Override
         @ForceInline
         public boolean allTrue() {
-            return VectorSupport.test(BT_overflow, Halffloat128Mask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.test(BT_overflow, Halffloat128Mask.class, short.class, VECTOR_OPER_TYPE, VLENGTH,
                                       this, vspecies().maskAll(true),
                                       (m, __) -> allTrueHelper(((Halffloat128Mask)m).getBits()));
         }
@@ -793,7 +793,7 @@ final class Halffloat128Vector extends HalffloatVector {
         @ForceInline
         /*package-private*/
         static Halffloat128Mask maskAll(boolean bit) {
-            return VectorSupport.fromBitsCoerced(Halffloat128Mask.class, short.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.fromBitsCoerced(Halffloat128Mask.class, short.class, VECTOR_OPER_TYPE, VLENGTH,
                                                  (bit ? -1 : 0), MODE_BROADCAST, null,
                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }

@@ -548,7 +548,7 @@ final class Int512Vector extends IntVector {
     @ForceInline
     public int laneHelper(int i) {
         return (int) VectorSupport.extract(
-                                VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                VCLASS, CTYPE, VECTOR_OPER_TYPE, VLENGTH,
                                 this, i,
                                 (vec, ix) -> {
                                     int[] vecarr = vec.vec();
@@ -583,7 +583,7 @@ final class Int512Vector extends IntVector {
     @ForceInline
     public Int512Vector withLaneHelper(int i, int e) {
         return VectorSupport.insert(
-                                VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                VCLASS, CTYPE, VECTOR_OPER_TYPE, VLENGTH,
                                 this, i, (long)e,
                                 (v, ix, bits) -> {
                                     int[] res = v.vec().clone();
@@ -698,7 +698,7 @@ final class Int512Vector extends IntVector {
         /*package-private*/
         Int512Mask indexPartiallyInUpperRange(long offset, long limit) {
             return (Int512Mask) VectorSupport.indexPartiallyInUpperRange(
-                Int512Mask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, offset, limit,
+                Int512Mask.class, CTYPE, VECTOR_OPER_TYPE, VLENGTH, offset, limit,
                 (o, l) -> (Int512Mask) TRUE_MASK.indexPartiallyInRange(o, l));
         }
 
@@ -714,7 +714,7 @@ final class Int512Vector extends IntVector {
         @ForceInline
         public Int512Mask compress() {
             return (Int512Mask)VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                Int512Vector.class, Int512Mask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, null, this,
+                Int512Vector.class, Int512Mask.class, CTYPE, VECTOR_OPER_TYPE, VLENGTH, null, this,
                 (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT,
                 m1.trueCount()));
         }
@@ -727,7 +727,7 @@ final class Int512Vector extends IntVector {
         public Int512Mask and(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
             Int512Mask m = (Int512Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, Int512Mask.class, null, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Int512Mask.class, null, int.class, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
@@ -737,7 +737,7 @@ final class Int512Vector extends IntVector {
         public Int512Mask or(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
             Int512Mask m = (Int512Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, Int512Mask.class, null, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Int512Mask.class, null, int.class, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
@@ -747,7 +747,7 @@ final class Int512Vector extends IntVector {
         public Int512Mask xor(VectorMask<Integer> mask) {
             Objects.requireNonNull(mask);
             Int512Mask m = (Int512Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, Int512Mask.class, null, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Int512Mask.class, null, int.class, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
@@ -757,7 +757,7 @@ final class Int512Vector extends IntVector {
         @Override
         @ForceInline
         public int trueCount() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Int512Mask.class, int.class, ETYPE,
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Int512Mask.class, int.class,
                                                             VECTOR_OPER_TYPE, VLENGTH, this,
                                                             (m) -> trueCountHelper(m.getBits()));
         }
@@ -765,7 +765,7 @@ final class Int512Vector extends IntVector {
         @Override
         @ForceInline
         public int firstTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Int512Mask.class, int.class, ETYPE,
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Int512Mask.class, int.class,
                                                             VECTOR_OPER_TYPE, VLENGTH, this,
                                                             (m) -> firstTrueHelper(m.getBits()));
         }
@@ -773,7 +773,7 @@ final class Int512Vector extends IntVector {
         @Override
         @ForceInline
         public int lastTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Int512Mask.class, int.class, ETYPE,
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Int512Mask.class, int.class,
                                                             VECTOR_OPER_TYPE, VLENGTH, this,
                                                             (m) -> lastTrueHelper(m.getBits()));
         }
@@ -784,7 +784,7 @@ final class Int512Vector extends IntVector {
             if (length() > Long.SIZE) {
                 throw new UnsupportedOperationException("too many lanes for one long");
             }
-            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Int512Mask.class, int.class, ETYPE,
+            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Int512Mask.class, int.class,
                                                       VECTOR_OPER_TYPE, VLENGTH, this,
                                                       (m) -> toLongHelper(m.getBits()));
         }
@@ -795,7 +795,7 @@ final class Int512Vector extends IntVector {
         @ForceInline
         public boolean laneIsSet(int i) {
             Objects.checkIndex(i, length());
-            return VectorSupport.extract(Int512Mask.class, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.extract(Int512Mask.class, int.class, VECTOR_OPER_TYPE, VLENGTH,
                                          this, i, (m, idx) -> (m.getBits()[idx] ? 1L : 0L)) == 1L;
         }
 
@@ -804,7 +804,7 @@ final class Int512Vector extends IntVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            return VectorSupport.test(BT_ne, Int512Mask.class, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.test(BT_ne, Int512Mask.class, int.class, VECTOR_OPER_TYPE, VLENGTH,
                                       this, vspecies().maskAll(true),
                                       (m, __) -> anyTrueHelper(((Int512Mask)m).getBits()));
         }
@@ -812,7 +812,7 @@ final class Int512Vector extends IntVector {
         @Override
         @ForceInline
         public boolean allTrue() {
-            return VectorSupport.test(BT_overflow, Int512Mask.class, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.test(BT_overflow, Int512Mask.class, int.class, VECTOR_OPER_TYPE, VLENGTH,
                                       this, vspecies().maskAll(true),
                                       (m, __) -> allTrueHelper(((Int512Mask)m).getBits()));
         }
@@ -820,7 +820,7 @@ final class Int512Vector extends IntVector {
         @ForceInline
         /*package-private*/
         static Int512Mask maskAll(boolean bit) {
-            return VectorSupport.fromBitsCoerced(Int512Mask.class, int.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.fromBitsCoerced(Int512Mask.class, int.class, VECTOR_OPER_TYPE, VLENGTH,
                                                  (bit ? -1 : 0), MODE_BROADCAST, null,
                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }

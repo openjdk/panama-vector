@@ -526,7 +526,7 @@ final class Long256Vector extends LongVector {
     @ForceInline
     public long laneHelper(int i) {
         return (long) VectorSupport.extract(
-                                VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                VCLASS, CTYPE, VECTOR_OPER_TYPE, VLENGTH,
                                 this, i,
                                 (vec, ix) -> {
                                     long[] vecarr = vec.vec();
@@ -549,7 +549,7 @@ final class Long256Vector extends LongVector {
     @ForceInline
     public Long256Vector withLaneHelper(int i, long e) {
         return VectorSupport.insert(
-                                VCLASS, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+                                VCLASS, CTYPE, VECTOR_OPER_TYPE, VLENGTH,
                                 this, i, (long)e,
                                 (v, ix, bits) -> {
                                     long[] res = v.vec().clone();
@@ -664,7 +664,7 @@ final class Long256Vector extends LongVector {
         /*package-private*/
         Long256Mask indexPartiallyInUpperRange(long offset, long limit) {
             return (Long256Mask) VectorSupport.indexPartiallyInUpperRange(
-                Long256Mask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, offset, limit,
+                Long256Mask.class, CTYPE, VECTOR_OPER_TYPE, VLENGTH, offset, limit,
                 (o, l) -> (Long256Mask) TRUE_MASK.indexPartiallyInRange(o, l));
         }
 
@@ -680,7 +680,7 @@ final class Long256Vector extends LongVector {
         @ForceInline
         public Long256Mask compress() {
             return (Long256Mask)VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                Long256Vector.class, Long256Mask.class, CTYPE, ETYPE, VECTOR_OPER_TYPE, VLENGTH, null, this,
+                Long256Vector.class, Long256Mask.class, CTYPE, VECTOR_OPER_TYPE, VLENGTH, null, this,
                 (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT,
                 m1.trueCount()));
         }
@@ -693,7 +693,7 @@ final class Long256Vector extends LongVector {
         public Long256Mask and(VectorMask<Long> mask) {
             Objects.requireNonNull(mask);
             Long256Mask m = (Long256Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_AND, Long256Mask.class, null, long.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_AND, Long256Mask.class, null, long.class, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a & b));
         }
@@ -703,7 +703,7 @@ final class Long256Vector extends LongVector {
         public Long256Mask or(VectorMask<Long> mask) {
             Objects.requireNonNull(mask);
             Long256Mask m = (Long256Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_OR, Long256Mask.class, null, long.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_OR, Long256Mask.class, null, long.class, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a | b));
         }
@@ -713,7 +713,7 @@ final class Long256Vector extends LongVector {
         public Long256Mask xor(VectorMask<Long> mask) {
             Objects.requireNonNull(mask);
             Long256Mask m = (Long256Mask)mask;
-            return VectorSupport.binaryOp(VECTOR_OP_XOR, Long256Mask.class, null, long.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.binaryOp(VECTOR_OP_XOR, Long256Mask.class, null, long.class, VECTOR_OPER_TYPE, VLENGTH,
                                           this, m, null,
                                           (m1, m2, vm) -> m1.bOp(m2, (i, a, b) -> a ^ b));
         }
@@ -723,7 +723,7 @@ final class Long256Vector extends LongVector {
         @Override
         @ForceInline
         public int trueCount() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Long256Mask.class, long.class, ETYPE,
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TRUECOUNT, Long256Mask.class, long.class,
                                                             VECTOR_OPER_TYPE, VLENGTH, this,
                                                             (m) -> trueCountHelper(m.getBits()));
         }
@@ -731,7 +731,7 @@ final class Long256Vector extends LongVector {
         @Override
         @ForceInline
         public int firstTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Long256Mask.class, long.class, ETYPE,
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_FIRSTTRUE, Long256Mask.class, long.class,
                                                             VECTOR_OPER_TYPE, VLENGTH, this,
                                                             (m) -> firstTrueHelper(m.getBits()));
         }
@@ -739,7 +739,7 @@ final class Long256Vector extends LongVector {
         @Override
         @ForceInline
         public int lastTrue() {
-            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Long256Mask.class, long.class, ETYPE,
+            return (int) VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_LASTTRUE, Long256Mask.class, long.class,
                                                             VECTOR_OPER_TYPE, VLENGTH, this,
                                                             (m) -> lastTrueHelper(m.getBits()));
         }
@@ -750,7 +750,7 @@ final class Long256Vector extends LongVector {
             if (length() > Long.SIZE) {
                 throw new UnsupportedOperationException("too many lanes for one long");
             }
-            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Long256Mask.class, long.class, ETYPE,
+            return VectorSupport.maskReductionCoerced(VECTOR_OP_MASK_TOLONG, Long256Mask.class, long.class,
                                                       VECTOR_OPER_TYPE, VLENGTH, this,
                                                       (m) -> toLongHelper(m.getBits()));
         }
@@ -761,7 +761,7 @@ final class Long256Vector extends LongVector {
         @ForceInline
         public boolean laneIsSet(int i) {
             Objects.checkIndex(i, length());
-            return VectorSupport.extract(Long256Mask.class, long.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.extract(Long256Mask.class, long.class, VECTOR_OPER_TYPE, VLENGTH,
                                          this, i, (m, idx) -> (m.getBits()[idx] ? 1L : 0L)) == 1L;
         }
 
@@ -770,7 +770,7 @@ final class Long256Vector extends LongVector {
         @Override
         @ForceInline
         public boolean anyTrue() {
-            return VectorSupport.test(BT_ne, Long256Mask.class, long.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.test(BT_ne, Long256Mask.class, long.class, VECTOR_OPER_TYPE, VLENGTH,
                                       this, vspecies().maskAll(true),
                                       (m, __) -> anyTrueHelper(((Long256Mask)m).getBits()));
         }
@@ -778,7 +778,7 @@ final class Long256Vector extends LongVector {
         @Override
         @ForceInline
         public boolean allTrue() {
-            return VectorSupport.test(BT_overflow, Long256Mask.class, long.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.test(BT_overflow, Long256Mask.class, long.class, VECTOR_OPER_TYPE, VLENGTH,
                                       this, vspecies().maskAll(true),
                                       (m, __) -> allTrueHelper(((Long256Mask)m).getBits()));
         }
@@ -786,7 +786,7 @@ final class Long256Vector extends LongVector {
         @ForceInline
         /*package-private*/
         static Long256Mask maskAll(boolean bit) {
-            return VectorSupport.fromBitsCoerced(Long256Mask.class, long.class, ETYPE, VECTOR_OPER_TYPE, VLENGTH,
+            return VectorSupport.fromBitsCoerced(Long256Mask.class, long.class, VECTOR_OPER_TYPE, VLENGTH,
                                                  (bit ? -1 : 0), MODE_BROADCAST, null,
                                                  (v, __) -> (v != 0 ? TRUE_MASK : FALSE_MASK));
         }
